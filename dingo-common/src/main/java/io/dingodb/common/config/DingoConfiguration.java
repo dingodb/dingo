@@ -60,6 +60,7 @@ public class DingoConfiguration {
     @Delegate
     private ExchangeConfiguration exchange;
     private SecurityConfiguration security;
+    private VariableConfiguration variable;
     private List<String> servicePkgs;
     private Map<String, Object> server;
     private Map<String, Object> store;

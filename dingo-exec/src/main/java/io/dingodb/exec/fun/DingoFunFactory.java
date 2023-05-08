@@ -137,5 +137,7 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerEvaluator(TIMESTAMP_FORMAT, TimestampFormatEvaluatorsFactory.INSTANCE);
         // system variable
         registerUdf(GlobalVariableFun.NAME, GlobalVariableFun::new);
+
+        registerUdf(AutoIncrementFun.NAME, AutoIncrementFun::new);
     }
 }

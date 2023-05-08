@@ -109,10 +109,20 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
 
     @Override
     public RexNode newColumnDefaultValue(RelOptTable table, int column, InitializerContext context) {
-        String defaultValue = TableUtils.getTableDefinition(table).getColumn(column).getDefaultValue();
+        ColumnDefinition definition = TableUtils.getTableDefinition(table).getColumn(column);
+        String defaultValue = definition.getDefaultValue();
         if (defaultValue == null) {
             return super.newColumnDefaultValue(table, column, context);
         }
+
+        if (definition.isAutoIncrement()) {
+            defaultValue = "AutoIncrementFun("
+                + "'" + ((DingoRelOptTable) table).getSchemaName() + "'"
+                + ", "
+                + "'" + ((DingoRelOptTable) table).getTableName() + "'"
+                + ")";
+        }
+
         RelDataType rowType = table.getRowType();
         SqlNode sqlNode = context.parseExpression(DingoParser.PARSER_CONFIG, defaultValue);
         /*

@@ -94,7 +94,7 @@ public class TableDefinition {
 
     @JsonProperty("autoIncrement")
     @Getter
-    private long autoIncrement;
+    private long autoIncrement = 1;
 
     @JsonCreator
     public TableDefinition(@JsonProperty("name") String name) {

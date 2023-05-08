@@ -50,7 +50,5 @@ public class ScopeVariables {
         globalVariables.put("auto_increment_offset", "1");
 
         sessionVariables.put("transaction_read_only", "0");
-        sessionVariables.put("auto_increment_increment", "1");
-        sessionVariables.put("auto_increment_offset", "1");
     }
 }

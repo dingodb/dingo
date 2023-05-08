@@ -9,3 +9,7 @@ server:
     keyring: TO_BE_CONTINUED
     resourceTag: 1
     mysqlPort: 3307
+variable:
+    autoIncrementCacheCount: 100
+    autoIncrementIncrement: 1
+    autoIncrementOffset: 1
