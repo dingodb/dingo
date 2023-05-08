@@ -56,7 +56,8 @@ public class ShowVariablesOperation implements QueryOperation {
         }
         List<Object[]> tables = new ArrayList<>();
         variablesMap.forEach((key, value) -> {
-            if (StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(key.toString(), sqlLikePattern)) {
+            if ((StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(key.toString(), sqlLikePattern))
+                && !key.toString().startsWith("@")) {
                 tables.add(new Object[] {key,value});
             }
         });

@@ -57,6 +57,9 @@ public class SqlToOperationConverter {
                 String operatorName = sqlBasicCall.getOperator().getName();
                 if (operatorName.equalsIgnoreCase("database")) {
                     return Optional.of(new ShowCurrentDatabase(context));
+                } else if (operatorName.equalsIgnoreCase("@")) {
+                    sqlBasicCall.getOperandList().get(0).toString();
+                    return Optional.of(new ShowUserVariableOperation(sqlBasicCall, connection));
                 }
             }
             return Optional.empty();

@@ -16,12 +16,16 @@
 
 package io.dingodb.common.mysql.scope;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 public class ScopeVariables {
     public static Properties globalVariables = new Properties();
 
     public static Properties sessionVariables = new Properties();
+
+    public static List<String> immutableVariables = new ArrayList<>();
 
     static {
         globalVariables.put("version_comment", "Ubuntu");
@@ -48,9 +52,21 @@ public class ScopeVariables {
         globalVariables.put("character_set_client", "utf8");
         globalVariables.put("auto_increment_increment", "1");
         globalVariables.put("auto_increment_offset", "1");
+        globalVariables.put("lower_case_table_names", "2");
+
+        globalVariables.put("protocol_version", "10");
+        globalVariables.put("port", "3307");
+        globalVariables.put("default_storage_engine", "rocksdb");
 
         sessionVariables.put("transaction_read_only", "0");
         sessionVariables.put("auto_increment_increment", "1");
         sessionVariables.put("auto_increment_offset", "1");
+
+        immutableVariables.add("version_comment");
+        immutableVariables.add("version");
+        immutableVariables.add("version_compile_os");
+        immutableVariables.add("version_compile_machine");
+        immutableVariables.add("license");
+        immutableVariables.add("default_storage_engine");
     }
 }

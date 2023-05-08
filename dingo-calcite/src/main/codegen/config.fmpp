@@ -53,6 +53,8 @@ data: {
       "io.dingodb.calcite.grammar.dql.SqlShowTables"
       "io.dingodb.calcite.grammar.dql.SqlShowVariables"
       "io.dingodb.calcite.grammar.dql.SqlShowWarnings"
+      "io.dingodb.calcite.grammar.dml.SqlExecute"
+      "io.dingodb.calcite.grammar.dml.SqlPrepare"
       "io.dingodb.calcite.grammar.SqlUserDefinedOperators"
       "org.apache.calcite.sql2rel.SqlLikeBinaryOperator"
       "static io.dingodb.calcite.utils.ParseValueUtils.*"
