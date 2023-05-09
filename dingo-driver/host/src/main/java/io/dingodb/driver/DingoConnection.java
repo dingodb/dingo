@@ -21,6 +21,7 @@ import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoRootSchema;
 import io.dingodb.common.mysql.client.SessionVariableChange;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.DataContext;
@@ -191,6 +192,11 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     @Override
     public Properties getClientInfo() throws SQLException {
         return sessionVariables;
+    }
+
+    @Override
+    public void setClientInfo(Properties properties) throws SQLClientInfoException {
+        sessionVariables.putAll(properties);
     }
 
     static class DingoDataContext implements DataContext {

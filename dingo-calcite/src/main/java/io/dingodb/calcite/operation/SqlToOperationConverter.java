@@ -18,6 +18,7 @@ package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.grammar.dql.SqlShowDatabases;
+import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
 import io.dingodb.calcite.grammar.dql.SqlShowTables;
 import io.dingodb.calcite.grammar.dql.SqlShowVariables;
@@ -49,6 +50,9 @@ public class SqlToOperationConverter {
             SqlShowTables sqlShowTables = (SqlShowTables) sqlNode;
             String pattern = sqlShowTables.sqlLikePattern;
             return Optional.of(new ShowTableOperation(usedSchema, connection, pattern));
+        } else if (sqlNode instanceof SqlShowFullTables) {
+            SqlShowFullTables showFullTables = (SqlShowFullTables) sqlNode;
+            return Optional.of(new ShowFullTableOperation(showFullTables.schema, connection));
         } else if (sqlNode instanceof SqlSelect) {
             SqlNodeList sqlNodes = ((SqlSelect) sqlNode).getSelectList();
             SqlNode selectItem1 = sqlNodes.get(0);
@@ -57,6 +61,9 @@ public class SqlToOperationConverter {
                 String operatorName = sqlBasicCall.getOperator().getName();
                 if (operatorName.equalsIgnoreCase("database")) {
                     return Optional.of(new ShowCurrentDatabase(context));
+                } else if (operatorName.equalsIgnoreCase("@")) {
+                    sqlBasicCall.getOperandList().get(0).toString();
+                    return Optional.of(new ShowUserVariableOperation(sqlBasicCall, connection));
                 }
             }
             return Optional.empty();

@@ -27,6 +27,7 @@ import io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
+import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
 import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.verify.privilege.PrivilegeVerify;
 import org.apache.calcite.jdbc.CalciteSchema;
@@ -95,7 +96,17 @@ public class DingoDdlVerify {
             accessTypes.add(DingoSqlAccessEnum.INDEX);
             SqlDropIndex sqlDropIndex = (SqlDropIndex) sqlNode;
             schemaTables = initSchemaTable(sqlDropIndex.table.names, connection);
+        } else if (sqlNode instanceof SqlShowFullTables) {
+            SqlShowFullTables showFullTables = (SqlShowFullTables) sqlNode;
+            String schema = showFullTables.schema;
+            if (schema == null) {
+                schema = connection.getContext().getDefaultSchemaName();
+            }
+            if (!PrivilegeVerify.verify(user, host, schema, null)) {
+                throw new RuntimeException(String.format("Access denied for user '%s'@'%s'", user, host));
+            }
         }
+
         if (schemaTables != null) {
             schemaName = schemaTables[0];
             tableName = schemaTables[1];

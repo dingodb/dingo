@@ -16,9 +16,6 @@
 
 package io.dingodb.calcite.operation;
 
-import io.dingodb.common.util.SqlLikeUtils;
-import org.apache.commons.lang3.StringUtils;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -26,38 +23,38 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ShowDatabaseOperation implements QueryOperation {
+public class ShowFullTableOperation implements QueryOperation {
+    private String schemaName;
+    private Connection connection;
 
-    Connection connection;
+    private static final String BASE_TABLE = "BASE TABLE";
 
-    private String sqlLikePattern;
-
-    public ShowDatabaseOperation(Connection connection, String sqlLikePattern) {
+    public ShowFullTableOperation(String schemaName, Connection connection) {
+        this.schemaName = schemaName;
         this.connection = connection;
-        this.sqlLikePattern = sqlLikePattern;
     }
 
     @Override
     public Iterator getIterator() {
-        List<Object[]> schemas = new ArrayList<>();
         try {
-            ResultSet rs = connection.getMetaData().getSchemas();
+            List<Object[]> tables = new ArrayList<>();
+            ResultSet rs = connection.getMetaData().getTables(null, schemaName.toUpperCase(),
+                null, null);
             while (rs.next()) {
-                String schemaName = rs.getString("TABLE_SCHEM");
-                if (StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(schemaName, sqlLikePattern)) {
-                    schemas.add(new Object[] {schemaName.toLowerCase()});
-                }
+                String tableName = rs.getString("TABLE_NAME");
+                tables.add(new Object[] {tableName.toLowerCase(), BASE_TABLE});
             }
+            return tables.iterator();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return schemas.iterator();
     }
 
     @Override
     public List<String> columns() {
-        List<String> columns =  new ArrayList<>();
-        columns.add("TABLE_SCHEM");
+        List<String> columns = new ArrayList<>();
+        columns.add("Tables_in_" + schemaName);
+        columns.add("Table_type");
         return columns;
     }
 }

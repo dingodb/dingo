@@ -1178,6 +1178,10 @@ SqlNode SqlStmt() :
         stmt = SqlRollback()
     |
         stmt = SqlUseSchema()
+    |
+        stmt = SqlPrepare()
+    |
+        stmt = SqlExecute()
     )
     {
         return stmt;
@@ -4217,6 +4221,8 @@ SqlSetOption SqlSetOption(Span s, String scope) :
               }
         ]
         [ <GLOBAL> { scope = "SYSTEM"; } ]
+        [ <EXECUTOR> { scope = "EXECUTOR"; } ]
+        [ <AT_SPLIT> { scope = "USER"; } ]
         name = CompoundIdentifier()
         (
          <IDENTIFIER>  {
@@ -7824,6 +7830,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < EXCLUDING: "EXCLUDING" >
 |   < EXEC: "EXEC" >
 |   < EXECUTE: "EXECUTE" >
+|   < EXECUTOR: "EXECUTOR" >
 |   < EXISTS: "EXISTS" >
 |   < EXP: "EXP" >
 |   < EXPLAIN: "EXPLAIN" >
@@ -8058,10 +8065,10 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < POSITION: "POSITION" >
 |   < POSITION_REGEX: "POSITION_REGEX" >
 |   < POWER: "POWER" >
+|   < PREPARE: "PREPARE" >
 |   < PRECEDES: "PRECEDES" >
 |   < PRECEDING: "PRECEDING" >
 |   < PRECISION: "PRECISION" >
-|   < PREPARE: "PREPARE" >
 |   < PRESERVE: "PRESERVE" >
 |   < PREV: "PREV" >
 |   < PRIMARY: "PRIMARY" >
