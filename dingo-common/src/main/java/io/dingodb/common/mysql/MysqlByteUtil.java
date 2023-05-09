@@ -16,7 +16,6 @@
 
 package io.dingodb.common.mysql;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.sql.Time;

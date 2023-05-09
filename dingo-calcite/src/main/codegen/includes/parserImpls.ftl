@@ -875,6 +875,8 @@ SqlShow SqlShow(): {
     |
     show = SqlShowTables(s)
     |
+    show = SqlShowFullTables(s)
+    |
     show = SqlShowVariables(s)
     |
     show = SqlShowGlobalVariables(s)
@@ -896,6 +898,14 @@ SqlShow SqlShowTables(Span s): {
 } {
   <TABLES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
   { return new SqlShowTables(s.end(this), pattern); }
+}
+
+SqlShow SqlShowFullTables(Span s): {
+   String schema = null;
+} {
+  <FULL>
+  <TABLES> [ <FROM> <BACK_QUOTED_IDENTIFIER> { schema = token.image; } ]
+  { return new SqlShowFullTables(s.end(this), schema); }
 }
 
 SqlShow SqlShowWarnings(Span s): {
@@ -1004,3 +1014,27 @@ SqlUseSchema SqlUseSchema(): {
   <USE> <IDENTIFIER> { s = span(); return new SqlUseSchema(s.end(this), token.image); }
 }
 
+SqlPrepare SqlPrepare(): {
+   Span s;
+   String statementName;
+   String prepareSql;
+} {
+  <PREPARE> <IDENTIFIER> { s = span(); statementName = token.image; }
+  <FROM> <QUOTED_STRING> { prepareSql = token.image; return new SqlPrepare(s.end(this), statementName, prepareSql); }
+}
+
+SqlExecute SqlExecute(): {
+   Span s;
+   String statementName;
+   List<String> paramList = new ArrayList();
+} {
+   <EXECUTE> <IDENTIFIER> { s = span(); statementName = token.image; }
+   <USING>
+   <AT_SPLIT> <IDENTIFIER> { paramList.add(token.image); }
+   (
+     <COMMA> <AT_SPLIT> <IDENTIFIER> { paramList.add(token.image); }
+   )*
+   {
+      return new SqlExecute(s.end(this), statementName, paramList);
+   }
+}

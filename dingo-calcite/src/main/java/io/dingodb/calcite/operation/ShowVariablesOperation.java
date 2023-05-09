@@ -44,19 +44,24 @@ public class ShowVariablesOperation implements QueryOperation {
 
     @Override
     public Iterator getIterator() {
-        Properties variablesMap;
+        Properties variables;
         if (isGlobal) {
-            variablesMap = ScopeVariables.globalVariables;
+            variables = ScopeVariables.globalVariables;
         } else {
             try {
-                variablesMap = connection.getClientInfo();
+                variables = connection.getClientInfo();
+                if (variables.size() == 0) {
+                    connection.setClientInfo(ScopeVariables.globalVariables);
+                    variables = connection.getClientInfo();
+                }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }
         List<Object[]> tables = new ArrayList<>();
-        variablesMap.forEach((key, value) -> {
-            if (StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(key.toString(), sqlLikePattern)) {
+        variables.forEach((key, value) -> {
+            if ((StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(key.toString(), sqlLikePattern))
+                && !key.toString().startsWith("@")) {
                 tables.add(new Object[] {key,value});
             }
         });

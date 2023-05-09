@@ -16,7 +16,13 @@
 
 package io.dingodb.driver.mysql.util;
 
+import io.dingodb.common.mysql.MysqlByteUtil;
 import io.netty.buffer.ByteBuf;
+
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Calendar;
 
 public class BufferUtil {
 
@@ -151,6 +157,54 @@ public class BufferUtil {
             a = (byte) (a >> 1);
         }
         return result;
+    }
+
+    public static void writeDate(ByteBuf byteBuf, Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(date.getTime());
+        short year = (short) calendar.get(Calendar.YEAR);
+        byte month = (byte) (calendar.get(Calendar.MONTH) + 1);
+        byte day = (byte) calendar.get(Calendar.DAY_OF_MONTH);
+        byteBuf.writeBytes(MysqlByteUtil.shortToBytesLittleEndian(year));
+        byteBuf.writeByte(month);
+        byteBuf.writeByte(day);
+    }
+
+    public static void writeDateTime(ByteBuf byteBuf, Timestamp timestamp) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(timestamp.getTime());
+        short year = (short) calendar.get(Calendar.YEAR);
+        byte month = (byte) (calendar.get(Calendar.MONTH) + 1);
+        byte day = (byte) calendar.get(Calendar.DAY_OF_MONTH);
+        byte hour = (byte) calendar.get(Calendar.HOUR_OF_DAY);
+        byte minute = (byte) calendar.get(Calendar.MINUTE);
+        byte second = (byte) calendar.get(Calendar.SECOND);
+        //int millis = calendar.get(Calendar.MILLISECOND);
+        byteBuf.writeBytes(MysqlByteUtil.shortToBytesLittleEndian(year));
+        byteBuf.writeByte(month);
+        byteBuf.writeByte(day);
+        byteBuf.writeByte(hour);
+        byteBuf.writeByte(minute);
+        byteBuf.writeByte(second);
+        byteBuf.writeInt(0);
+    }
+
+    public static void writeTime(ByteBuf byteBuf, Time time) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(time.getTime());
+        byte hour = (byte) calendar.get(Calendar.HOUR_OF_DAY);
+        byte minute = (byte) calendar.get(Calendar.MINUTE);
+        byte second = (byte) calendar.get(Calendar.SECOND);
+        int millis = calendar.get(Calendar.MILLISECOND);
+        // positive
+        byteBuf.writeByte(0x00);
+        // days
+        byteBuf.writeInt(0);
+        // hour
+        byteBuf.writeByte(hour);
+        byteBuf.writeByte(minute);
+        byteBuf.writeByte(second);
+        byteBuf.writeInt(millis);
     }
 
 }

@@ -251,7 +251,7 @@ public class MysqlCommands {
             });
             if (isSelect) {
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                    MysqlResponseHandler.responseResultSet(resultSet, packetId, mysqlConnection);
+                    MysqlResponseHandler.responsePrepareExecute(resultSet, packetId, mysqlConnection);
                 } catch (Exception e) {
                     MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ER_UNKNOWN_ERROR);
                 }
