@@ -16,48 +16,43 @@
 
 package io.dingodb.calcite.operation;
 
-import io.dingodb.common.util.SqlLikeUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.calcite.sql.SqlBasicCall;
+import org.apache.calcite.sql.SqlNode;
 
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ShowDatabaseOperation implements QueryOperation {
+public class ShowUserVariableOperation implements QueryOperation {
+
+    String variableName;
 
     Connection connection;
 
-    private String sqlLikePattern;
-
-    public ShowDatabaseOperation(Connection connection, String sqlLikePattern) {
+    public ShowUserVariableOperation(SqlBasicCall sqlBasicCall, Connection connection) {
+        SqlNode sqlNode = sqlBasicCall.getOperandList().get(0);
+        this.variableName = "@" + sqlNode.toString().replace("'", "");
         this.connection = connection;
-        this.sqlLikePattern = sqlLikePattern;
     }
 
     @Override
     public Iterator getIterator() {
-        List<Object[]> schemas = new ArrayList<>();
         try {
-            ResultSet rs = connection.getMetaData().getSchemas();
-            while (rs.next()) {
-                String schemaName = rs.getString("TABLE_SCHEM");
-                if (StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(schemaName, sqlLikePattern)) {
-                    schemas.add(new Object[] {schemaName.toLowerCase()});
-                }
-            }
+            List<Object[]> variableValList = new ArrayList<>();
+            String value = connection.getClientInfo(variableName);
+            variableValList.add(new Object[]{value});
+            return variableValList.iterator();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return schemas.iterator();
     }
 
     @Override
     public List<String> columns() {
-        List<String> columns =  new ArrayList<>();
-        columns.add("TABLE_SCHEM");
+        List<String> columns = new ArrayList<>();
+        columns.add(variableName);
         return columns;
     }
 }

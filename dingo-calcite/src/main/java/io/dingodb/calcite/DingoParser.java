@@ -17,6 +17,8 @@
 package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.grammar.dml.SqlExecute;
+import io.dingodb.calcite.grammar.dml.SqlPrepare;
 import io.dingodb.calcite.grammar.dql.SqlShow;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
 import io.dingodb.calcite.operation.Operation;
@@ -179,16 +181,18 @@ public class DingoParser {
             if (selectItem1 instanceof SqlBasicCall) {
                 SqlBasicCall sqlBasicCall = (SqlBasicCall) selectItem1;
                 String operatorName = sqlBasicCall.getOperator().getName();
-                if (operatorName.equalsIgnoreCase("database")) {
+                if (operatorName.equalsIgnoreCase("database")
+                    || operatorName.equalsIgnoreCase("@")) {
                     return true;
                 }
             }
             return false;
         } else if (sqlNode instanceof SqlSetOption) {
-            SqlSetOption setOption = (SqlSetOption) sqlNode;
-            if ("session".equalsIgnoreCase(setOption.getScope())) {
-                return true;
-            }
+            return true;
+        } else if (sqlNode instanceof SqlPrepare) {
+            return true;
+        } else if (sqlNode instanceof SqlExecute) {
+            return true;
         }
         return false;
     }

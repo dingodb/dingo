@@ -24,6 +24,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Set;
 
 public class MysqlConnection {
     @Getter
@@ -54,6 +56,11 @@ public class MysqlConnection {
             channel.close();
         }
         try {
+            DingoConnection dingoConnection = (DingoConnection) connection;
+            Set<Integer> statementIds = dingoConnection.statementMap.keySet();
+            for (Integer statementId : statementIds) {
+                dingoConnection.statementMap.get(statementId).close();
+            }
             if (connection != null && !connection.isClosed()) {
                 connection.close();
             }

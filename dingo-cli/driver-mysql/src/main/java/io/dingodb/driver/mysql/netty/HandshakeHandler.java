@@ -24,6 +24,7 @@ import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.Versions;
 import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.common.mysql.constant.ServerConstant;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.driver.DingoConnection;
@@ -48,7 +49,9 @@ import org.apache.commons.lang3.StringUtils;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Properties;
 import java.util.Random;
 import java.util.TimeZone;
@@ -153,6 +156,8 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         PrivilegeGather privilegeGather = userService.getPrivilegeDef(user, ip);
                         env.getPrivilegeGatherMap().put(privilegeGather.key(), privilegeGather);
                         MysqlNettyServer.connections.put(dingoConnection.id, mysqlConnection);
+
+                        loadGlobalVariables(dingoConnection);
                         if (StringUtils.isNotBlank(authPacket.database)) {
                             String usedSchema = authPacket.database.toUpperCase();
                             CalciteSchema schema = dingoConnection.getContext().getRootSchema()
@@ -305,6 +310,34 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
             return "";
         } else {
             throw new IllegalArgumentException();
+        }
+    }
+
+    public static void loadGlobalVariables(DingoConnection connection) {
+        Statement statement = null;
+        ResultSet resultSet = null;
+        try {
+            statement = connection.createStatement();
+            resultSet = statement
+                .executeQuery("select variable_name, variable_value from information_schema.global_variables");
+            while (resultSet.next()) {
+                String variableName = resultSet.getString("variable_name");
+                String variableValue = resultSet.getString("variable_value");
+                ScopeVariables.globalVariables.put(variableName, variableValue);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                if (resultSet == null) {
+                    resultSet.close();
+                }
+                if (statement == null) {
+                    statement.close();
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }
