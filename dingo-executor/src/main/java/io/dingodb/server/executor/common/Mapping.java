@@ -24,6 +24,7 @@ import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.partition.RangeTupleDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
@@ -56,12 +57,12 @@ public final class Mapping {
     }
 
 
-    public static Table mapping(io.dingodb.common.table.TableDefinition tableDefinition) {
-        return new TableDefinition(tableDefinition);
+    public static Table mapping(TableDefinition tableDefinition) {
+        return new io.dingodb.server.executor.common.TableDefinition(tableDefinition);
     }
 
-    public static io.dingodb.common.table.TableDefinition mapping(Table table) {
-        return new io.dingodb.common.table.TableDefinition(
+    public static TableDefinition mapping(Table table) {
+        return new TableDefinition(
             table.getName(),
             table.getColumns().stream().map(Mapping::mapping).collect(Collectors.toList()),
             null,
@@ -84,6 +85,19 @@ public final class Mapping {
             column.getPrimary(),
             column.getDefaultValue(),
             column.isAutoIncrement());
+    }
+
+    public static Column mapping(ColumnDefinition definition) {
+        return io.dingodb.sdk.common.table.ColumnDefinition.builder()
+            .name(definition.getName())
+            .type(definition.getTypeName())
+            .elementType(definition.getElementType())
+            .precision(definition.getPrecision())
+            .scale(definition.getScale())
+            .nullable(definition.isNullable())
+            .primary(definition.getPrimary())
+            .defaultValue(definition.getDefaultValue())
+            .build();
     }
 
     public static PartitionDefinition mapping(Partition partition) {

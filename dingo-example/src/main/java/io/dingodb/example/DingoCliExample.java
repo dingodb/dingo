@@ -16,13 +16,14 @@
 
 package io.dingodb.example;
 
-import io.dingodb.sdk.operation.Value;
+
+import io.dingodb.client.DingoClient;
+import io.dingodb.client.DingoOpCli;
+import io.dingodb.client.common.Filter;
+import io.dingodb.client.common.Value;
 import io.dingodb.example.model.Person;
-import io.dingodb.sdk.client.DingoOpCli;
-import io.dingodb.sdk.common.Filter;
 
 import java.util.List;
-
 
 public class DingoCliExample {
 
@@ -33,65 +34,69 @@ public class DingoCliExample {
             totalCnt = Integer.parseInt(args[0]);
         }
 
-        String remoteHost = "172.20.31.10:19181,172.20.31.11:19181,172.20.31.12:19181";
-        //DingoClient dingoClient = new DingoClient(remoteHost);
-        //dingoClient.setIdentity("root", "123123");
-        //dingoClient.open();
-        //
-        //DingoOpCli dingoOpCli = new DingoOpCli.Builder(dingoClient).build();
-        //boolean isOK = dingoOpCli.createTable(Person.class);
-        //System.out.println("Create table Status: " + isOK);
-        //
-        //for (int i = 0; i < totalCnt; i++) {
-        //    Person person = new Person();
-        //    person.setId(i + 1);
-        //    person.setAge(10 + i);
-        //    person.setName("dingo" + i);
-        //    person.setSalary(1000.0 * i);
-        //    dingoOpCli.save(person);
-        //}
-        //
-        //for (int i = 0; i < totalCnt; i++) {
-        //    Person person = dingoOpCli.read(Person.class, new Object[]{(i + 1), ("dingo" + i)});
-        //    System.out.println(">>>>>>>>>>Read=>" + person);
-        //}
-        //
-        //
-        //Value[] startKey = new Value[]{Value.get(1), Value.get("dingo0")};
-        //Value[] endKey = new Value[]{Value.get(2000), Value.get("dingo" + (totalCnt - 1))};
-        //List<Person> resultList = dingoOpCli.query(
-        //    Person.class,
-        //    Filter.range(startKey, endKey, "age", Value.get(10), Value.get(13))
-        //);
-        //
-        //for (Person person : resultList) {
-        //    System.out.println("Query===>(age >= 10 && age < 13), result is:" + person.toString());
-        //}
-        //
-        //resultList = dingoOpCli.query(
-        //    Person.class,
-        //    Filter.contains(startKey, endKey, "name", Value.get("dingo1"))
-        //);
-        //
-        //for (Person person : resultList) {
-        //    System.out.println("Query===>(name contains 'dingo1'), result is:" + person.toString());
-        //}
-        //
-        //resultList = dingoOpCli.query(
-        //    Person.class,
-        //    Filter.equal(startKey, endKey, "name", Value.get("dingo1"))
-        //);
-        //for (Person person : resultList) {
-        //    System.out.println("Query===>(name equal 'dingo1'), result is:" + person.toString());
-        //}
-        //
-        //System.out.println("Will drop table ....You can cancel...");
-        //wait(120000);
-        //
-        //isOK = dingoOpCli.dropTable(Person.class);
-        //System.out.println("drop table Status:" + isOK + ".............");
-        //
-        //dingoClient.close();
+        String remoteHost = "172.20.3.20:22001,172.20.3.20:22002,172.20.3.20:22003";
+        DingoClient dingoClient = new DingoClient(remoteHost);
+        dingoClient.open();
+
+        DingoOpCli dingoOpCli = new DingoOpCli.Builder(dingoClient).build();
+        try {
+            dingoOpCli.dropTable(Person.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        boolean isOK = dingoOpCli.createTable(Person.class);
+        System.out.println("Create table Status: " + isOK);
+
+        for (int i = 0; i < totalCnt; i++) {
+            Person person = new Person();
+            person.setId(i + 1);
+            person.setName("dingo" + i);
+            person.setAge(10 + i);
+            person.setSalary(1000.0 * i);
+            dingoOpCli.save(person);
+        }
+
+        for (int i = 0; i < totalCnt; i++) {
+            Person person = dingoOpCli.read(Person.class, new Object[]{(i + 1), ("dingo" + i)});
+            System.out.println(">>>>>>>>>>Read=>" + person);
+        }
+
+
+        Value[] startKey = new Value[]{Value.get(1), Value.get("dingo0")};
+        Value[] endKey = new Value[]{Value.get(2000), Value.get("dingo" + (totalCnt - 1))};
+        List<Person> resultList = dingoOpCli.query(
+            Person.class,
+            Filter.range(startKey, endKey, "age", Value.get(10), Value.get(13))
+        );
+
+        for (Person person : resultList) {
+            System.out.println("Query===>(age >= 10 && age < 13), result is:" + person.toString());
+        }
+
+        resultList = dingoOpCli.query(
+            Person.class,
+            Filter.contains(startKey, endKey, "name", Value.get("dingo1"))
+        );
+
+        for (Person person : resultList) {
+            System.out.println("Query===>(name contains 'dingo1'), result is:" + person.toString());
+        }
+
+        /*resultList = dingoOpCli.query(
+            Person.class,
+            Filter.equal(startKey, endKey, "name", Value.get("dingo1"))
+        );
+        for (Person person : resultList) {
+            System.out.println("Query===>(name equal 'dingo1'), result is:" + person.toString());
+        }*/
+
+        System.out.println("Will drop table ....You can cancel...");
+        wait(120000);
+
+        isOK = dingoOpCli.dropTable(Person.class);
+        System.out.println("drop table Status:" + isOK + ".............");
+
+        dingoClient.close();
     }
 
     private static void wait(int millis) {
