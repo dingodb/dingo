@@ -16,8 +16,8 @@
 
 package io.dingodb.example.model;
 
-import io.dingodb.sdk.annotation.DingoKey;
-import io.dingodb.sdk.annotation.DingoRecord;
+import io.dingodb.client.annotation.DingoKey;
+import io.dingodb.client.annotation.DingoRecord;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

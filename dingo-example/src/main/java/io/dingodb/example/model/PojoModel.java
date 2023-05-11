@@ -16,9 +16,9 @@
 
 package io.dingodb.example.model;
 
-import io.dingodb.sdk.annotation.DingoColumn;
-import io.dingodb.sdk.annotation.DingoKey;
-import io.dingodb.sdk.annotation.DingoRecord;
+import io.dingodb.client.annotation.DingoColumn;
+import io.dingodb.client.annotation.DingoKey;
+import io.dingodb.client.annotation.DingoRecord;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -51,14 +51,14 @@ public class PojoModel {
     @DingoColumn(name = "btimestamp")
     private Timestamp birthtimestamp;
 
-    @DingoColumn(name = "address", elementType = "varchar")
+    /*@DingoColumn(name = "address", elementType = "varchar")
     private List<String> address;
 
 
     @DingoColumn(name = "location", elementType = "varchar")
-    private Set<String> location;
+    private Set<String> location;*/
 
 
-    @DingoColumn(name = "interest")
-    private Map<Integer, String> interest;
+    /*@DingoColumn(name = "interest")
+    private Map<Integer, String> interest;*/
 }
