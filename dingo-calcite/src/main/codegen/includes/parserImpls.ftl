@@ -880,10 +880,28 @@ SqlShow SqlShow(): {
     show = SqlShowVariables(s)
     |
     show = SqlShowGlobalVariables(s)
+    |
+    show = SqlShowCreateTable(s)
+    |
+    show = SqlShowColumns(s)
   )
   {
     return show;
   }
+}
+
+SqlShow SqlShowColumns(Span s): {
+   String tableName = null;
+} {
+  <COLUMNS> (<QUOTED_STRING> | <IDENTIFIER>) { tableName = token.image.toUpperCase(); }
+  { return new SqlShowColumns(s.end(this), tableName); }
+}
+
+SqlShow SqlShowCreateTable(Span s): {
+   String tableName = null;
+} {
+  <CREATE> <TABLE> (<QUOTED_STRING> | <IDENTIFIER>) { tableName = token.image.toUpperCase(); }
+  { return new SqlShowCreateTable(s.end(this), tableName); }
 }
 
 SqlShow SqlShowDatabases(Span s): {

@@ -80,6 +80,11 @@ public class TableDefinition implements Table {
     }
 
     @Override
+    public String createSql() {
+        return tableDefinition.getCreateSql();
+    }
+
+    @Override
     public int getReplica() {
         return tableDefinition.getReplica();
     }

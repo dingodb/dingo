@@ -17,6 +17,8 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.DingoParserContext;
+import io.dingodb.calcite.grammar.dql.SqlShowColumns;
+import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
 import io.dingodb.calcite.grammar.dql.SqlShowDatabases;
 import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
@@ -74,6 +76,10 @@ public class SqlToOperationConverter {
         } else if (sqlNode instanceof SqlSetOption) {
             SqlSetOption setOption = (SqlSetOption) sqlNode;
             return Optional.of(new SetOptionOperation(connection, setOption));
+        } else if (sqlNode instanceof SqlShowCreateTable) {
+            return Optional.of(new ShowCreateTableOperation(sqlNode));
+        } else if (sqlNode instanceof SqlShowColumns) {
+            return Optional.of(new ShowColumnsOperation(sqlNode));
         } else {
             return Optional.empty();
         }
