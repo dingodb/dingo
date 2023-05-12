@@ -95,12 +95,14 @@ public class TableDefinition {
     @JsonProperty("autoIncrement")
     @Getter
     private long autoIncrement = 1;
-
     @JsonProperty("replica")
     @Getter
     @Setter
     private int replica = 3;
-
+    @JsonProperty("createSql")
+    @Getter
+    @Setter
+    private String createSql;
     @JsonCreator
     public TableDefinition(@JsonProperty("name") String name) {
         this.name = name;

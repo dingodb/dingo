@@ -72,7 +72,8 @@ public final class Mapping {
             table.getEngine(),
             null,
             table.autoIncrement(),
-            table.getReplica());
+            table.getReplica(),
+            table.createSql());
     }
 
     public static ColumnDefinition mapping(Column column) {

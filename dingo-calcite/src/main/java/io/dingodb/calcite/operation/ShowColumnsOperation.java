@@ -16,7 +16,8 @@
 
 package io.dingodb.calcite.operation;
 
-import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
+import io.dingodb.calcite.grammar.dql.SqlShowColumns;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
 import lombok.Setter;
@@ -27,7 +28,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ShowCreateTableOperation implements QueryOperation {
+public class ShowColumnsOperation implements QueryOperation {
 
     private static final String SCHEMA_NAME = "DINGO";
 
@@ -38,29 +39,27 @@ public class ShowCreateTableOperation implements QueryOperation {
 
     private String tableName;
 
-    public ShowCreateTableOperation(SqlNode sqlNode) {
-        SqlShowCreateTable showCreateTable = (SqlShowCreateTable) sqlNode;
+    public ShowColumnsOperation(SqlNode sqlNode) {
+        SqlShowColumns showCreateTable = (SqlShowColumns) sqlNode;
         metaService = MetaService.root().getSubMetaService(getSchemaName(showCreateTable.tableName));
         tableName = showCreateTable.tableName;
     }
 
     @Override
     public Iterator getIterator() {
-        List<Object[]> createTableList = new ArrayList<>();
-        String createTable = getCreateTable();
-        if (StringUtils.isNotBlank(createTable)) {
-            Object[] tuples = new Object[]{tableName, createTable};
-            createTableList.add(tuples);
+        List<Object[]> createTable = new ArrayList<>();
+        String createTableStatement = getCreateTableStatement();
+        if (StringUtils.isNotBlank(createTableStatement)) {
+            Object[] tuples = new Object[]{createTableStatement};
+            createTable.add(tuples);
         }
-
-        return createTableList.iterator();
+        return createTable.iterator();
     }
 
     @Override
     public List<String> columns() {
         List<String> columns = new ArrayList<>();
-        columns.add("Table");
-        columns.add("Create Table");
+        columns.add("create table statement");
         return columns;
     }
 
@@ -71,11 +70,14 @@ public class ShowCreateTableOperation implements QueryOperation {
         return SCHEMA_NAME;
     }
 
-    private String getCreateTable() {
+    private String getCreateTableStatement() {
         TableDefinition tableDefinition = metaService.getTableDefinition(tableName);
         if (tableDefinition == null) {
-            throw new RuntimeException("Table " + tableName + " doesn't exist");
+            return "";
         }
-        return tableDefinition.getCreateSql();
+
+        List<ColumnDefinition> columns = tableDefinition.getColumns();
+
+        return "";
     }
 }
