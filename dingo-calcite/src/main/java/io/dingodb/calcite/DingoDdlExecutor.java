@@ -297,7 +297,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             create.getPartDefinition(),
             create.getEngine(),
             create.getProperties(),
-            create.getAutoIncrement()
+            create.getAutoIncrement(),
+            3
         );
         List<Index> indexList = getIndex(create);
 
