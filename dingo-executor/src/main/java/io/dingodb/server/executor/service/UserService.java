@@ -539,7 +539,11 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     public static Object[] get(StoreInstance store, KeyValueCodec codec, Object[] key) {
         try {
-            return Optional.mapOrNull(store.get(codec.encodeKey(key)), wrap(codec::decode));
+            KeyValue keyValue = store.get(codec.encodeKey(key));
+            if (keyValue.getValue() == null || keyValue.getValue().length == 0) {
+                return null;
+            }
+            return codec.decode(keyValue);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

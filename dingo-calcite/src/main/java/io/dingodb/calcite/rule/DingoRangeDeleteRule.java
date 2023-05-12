@@ -119,6 +119,8 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> {
     private List<byte[]> calLeftAndRight(
         byte[] left, byte[] right, DingoTableScan rel, int firstPrimaryColumnIndex, KeyValueCodec codec) {
         List<byte[]> list = new ArrayList();
+        TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
+        Object[] tuple = new Object[td.getColumnsCount()];
         switch (rel.getFilter().getKind()) {
             case AND: {
                 RexCall filter = (RexCall) rel.getFilter();
@@ -133,17 +135,19 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> {
                         switch (info.kind) {
                             case LESS_THAN:
                             case LESS_THAN_OR_EQUAL:
-                                right = codec.encodeKeyPrefix(new Object[]{RexLiteralUtils.convertFromRexLiteral(
+                                tuple[firstPrimaryColumnIndex] = RexLiteralUtils.convertFromRexLiteral(
                                     info.value,
                                     DefinitionMapper.mapToDingoType(info.value.getType())
-                                )}, 1);
+                                );
+                                right = codec.encodeKeyPrefix(tuple, 1);
                                 break;
                             case GREATER_THAN:
                             case GREATER_THAN_OR_EQUAL:
-                                left = codec.encodeKeyPrefix(new Object[]{RexLiteralUtils.convertFromRexLiteral(
+                                tuple[firstPrimaryColumnIndex] = RexLiteralUtils.convertFromRexLiteral(
                                     info.value,
                                     DefinitionMapper.mapToDingoType(info.value.getType())
-                                )}, 1);
+                                );
+                                left = codec.encodeKeyPrefix(tuple, 1);
                                 break;
                             default:
                                 break;

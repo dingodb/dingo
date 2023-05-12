@@ -159,13 +159,18 @@ public class MysqlResponseHandler {
     public static void responseError(AtomicLong packetId,
                                      SocketChannel channel,
                                      io.dingodb.common.mysql.constant.ErrorCode errorCode) {
+        responseError(packetId, channel, errorCode, errorCode.message);
+    }
+
+    public static void responseError(AtomicLong packetId,
+                                     SocketChannel channel,
+                                     io.dingodb.common.mysql.constant.ErrorCode errorCode, String message) {
         ERRPacket ep = new ERRPacket();
         ep.packetId = (byte) packetId.getAndIncrement();
         ep.capabilities = MysqlServer.getServerCapabilities();
         ep.errorCode = errorCode.code;
         ep.sqlState = errorCode.sqlState;
-        ep.errorMessage =
-            errorCode.message;
+        ep.errorMessage = message;
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         ep.write(buffer);
         channel.writeAndFlush(buffer);

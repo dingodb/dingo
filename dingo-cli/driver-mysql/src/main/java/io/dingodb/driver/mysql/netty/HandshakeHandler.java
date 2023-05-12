@@ -48,6 +48,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -157,7 +158,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         env.getPrivilegeGatherMap().put(privilegeGather.key(), privilegeGather);
                         MysqlNettyServer.connections.put(dingoConnection.id, mysqlConnection);
 
-                        loadGlobalVariables(dingoConnection);
+                        loadGlobalVariables();
                         if (StringUtils.isNotBlank(authPacket.database)) {
                             String usedSchema = authPacket.database.toUpperCase();
                             CalciteSchema schema = dingoConnection.getContext().getRootSchema()
@@ -167,10 +168,10 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                             }
                         }
                     } else {
-                        ErrorCode.ER_ACCESS_DENIED_ERROR.message =
+                        String error =
                             String.format(ErrorCode.ER_ACCESS_DENIED_ERROR.message, user, ip, "YES");
                         MysqlResponseHandler.responseError(packetId,
-                            mysqlConnection.channel, ErrorCode.ER_ACCESS_DENIED_ERROR);
+                            mysqlConnection.channel, ErrorCode.ER_ACCESS_DENIED_ERROR, error);
                         if (mysqlConnection.channel.isActive()) {
                             mysqlConnection.channel.close();
                         }
@@ -313,7 +314,11 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         }
     }
 
-    public static void loadGlobalVariables(DingoConnection connection) {
+    public static void loadGlobalVariables() {
+        if (ScopeVariables.globalVariables.size() > 0) {
+            return;
+        }
+        Connection connection = getLocalConnection("root", "%");
         Statement statement = null;
         ResultSet resultSet = null;
         try {
@@ -325,18 +330,21 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                 String variableValue = resultSet.getString("variable_value");
                 ScopeVariables.globalVariables.put(variableName, variableValue);
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            log.info("load global variables:" + e.getMessage());
         } finally {
             try {
-                if (resultSet == null) {
+                if (resultSet != null) {
                     resultSet.close();
                 }
-                if (statement == null) {
+                if (statement != null) {
                     statement.close();
                 }
+                if (connection != null) {
+                    connection.close();
+                }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                log.error(e.getMessage(),  e);
             }
         }
     }

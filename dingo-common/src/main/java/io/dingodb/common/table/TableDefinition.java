@@ -96,6 +96,11 @@ public class TableDefinition {
     @Getter
     private long autoIncrement = 1;
 
+    @JsonProperty("replica")
+    @Getter
+    @Setter
+    private int replica = 3;
+
     @JsonCreator
     public TableDefinition(@JsonProperty("name") String name) {
         this.name = name;

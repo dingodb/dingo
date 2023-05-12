@@ -56,13 +56,15 @@ public class MysqlConnection {
             channel.close();
         }
         try {
-            DingoConnection dingoConnection = (DingoConnection) connection;
-            Set<Integer> statementIds = dingoConnection.statementMap.keySet();
-            for (Integer statementId : statementIds) {
-                dingoConnection.statementMap.get(statementId).close();
-            }
-            if (connection != null && !connection.isClosed()) {
-                connection.close();
+            if (connection != null) {
+                DingoConnection dingoConnection = (DingoConnection) connection;
+                Set<Integer> statementIds = dingoConnection.statementMap.keySet();
+                for (Integer statementId : statementIds) {
+                    dingoConnection.statementMap.get(statementId).close();
+                }
+                if (!connection.isClosed()) {
+                    connection.close();
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();

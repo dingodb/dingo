@@ -81,6 +81,6 @@ public class TableDefinition implements Table {
 
     @Override
     public int getReplica() {
-        return 1;
+        return tableDefinition.getReplica();
     }
 }

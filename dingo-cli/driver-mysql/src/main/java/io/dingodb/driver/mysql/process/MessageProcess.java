@@ -73,9 +73,10 @@ public final class MessageProcess {
                 String user = connection.getContext().getOption("user");
                 String host = connection.getContext().getOption("host");
                 if (!PrivilegeVerify.verify(user, host, usedSchema, null)) {
-                    ErrorCode.ER_ACCESS_DB_DENIED_ERROR.message =
+                    String error =
                         String.format(ErrorCode.ER_ACCESS_DB_DENIED_ERROR.message, user, host, usedSchema);
-                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_ACCESS_DB_DENIED_ERROR);
+                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel,
+                        ErrorCode.ER_ACCESS_DB_DENIED_ERROR, error);
                 }
                 CalciteSchema schema = connection.getContext().getRootSchema().getSubSchema(usedSchema, true);
                 if (schema != null) {

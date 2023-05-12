@@ -64,7 +64,7 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
         if (unit == null) {
             throw new NullPointerException("unit");
         }
-        delayTime = unit.toNanos(600);
+        delayTime = unit.toNanos(5);
         if (allIdleTime <= 0) {
             idleTimeNanos = 0;
         } else {
@@ -242,6 +242,7 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
             if (!reading) {
                 nextDelay -= ticksInNanos() - Math.max(lastReadTime, lastWriteTime);
             }
+            log.info("nextDelay:" + nextDelay + ", idleTimeNanos:" + idleTimeNanos);
             if (nextDelay <= 0) {
                 try {
                     if (service != null && !service.isShutdown()) {
