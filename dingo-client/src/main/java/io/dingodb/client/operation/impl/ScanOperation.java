@@ -20,8 +20,8 @@ import io.dingodb.client.OperationContext;
 import io.dingodb.client.common.Record;
 import io.dingodb.client.common.RouteTable;
 import io.dingodb.sdk.common.KeyValue;
+import io.dingodb.sdk.common.Range;
 import io.dingodb.sdk.common.codec.KeyValueCodec;
-import io.dingodb.sdk.common.table.RangeDistribution;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.ByteArrayUtils;
@@ -31,12 +31,12 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.ByteArrayUtils.compareWithoutLen;
 import static io.dingodb.sdk.common.utils.Any.wrap;
+import static io.dingodb.sdk.common.utils.ByteArrayUtils.lessThan;
 
 public class ScanOperation implements Operation {
 
@@ -109,17 +109,25 @@ public class ScanOperation implements Operation {
         return (R) result;
     }
 
+    private boolean isRequireRange(Range range, OpRange scanRange) {
+        byte[] rangeStart = range.getStartKey();
+        byte[] rangeEnd = range.getEndKey();
+        byte[] scanStart = scanRange.getStartKey();
+        byte[] scanEnd = scanRange.getEndKey();
+        int startExpect = scanRange.isWithStart() ? 0 : 1;
+        int endExpect = scanRange.isWithEnd() ? 0 : -1;
+        return (compareWithoutLen(scanStart, rangeStart) >= startExpect && lessThan(scanStart, rangeEnd))
+            || (compareWithoutLen(scanEnd, rangeEnd) <= -endExpect && compareWithoutLen(scanEnd, rangeStart) >= endExpect);
+    }
+
     private NavigableSet<Task> getSubTasks(RouteTable routeTable, OpRange range) {
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution = routeTable.getRangeDistribution();
-        NavigableSet<Task> subTasks = (rangeDistribution.size() == 1 ? rangeDistribution : rangeDistribution
-                .subMap(
-                        rangeDistribution.floorKey(new ByteArrayUtils.ComparableByteArray(range.getStartKey())), true,
-                        rangeDistribution.floorKey(new ByteArrayUtils.ComparableByteArray(range.getRange().getEndKey())), true
-                )).values().stream()
-                .map(rd -> new Task(
-                        rd.getId(),
-                        wrap(new OpRange(rd.getRange().getStartKey(), rd.getRange().getEndKey(), true, false)))
-                ).collect(Collectors.toCollection(() -> new TreeSet<>(getComparator())));
+        NavigableSet<Task> subTasks = new TreeSet<>(getComparator());
+        routeTable.getRangeDistribution().values().stream()
+            .filter(rangeDistribution -> isRequireRange(rangeDistribution.getRange(), range))
+            .map(rd -> new Task(
+                rd.getId(), wrap(
+                new OpRange(rd.getRange().getStartKey(), rd.getRange().getEndKey(), true, false)))
+            ).forEach(subTasks::add);
         return subTasks;
     }
 
