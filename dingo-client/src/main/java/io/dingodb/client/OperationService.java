@@ -105,7 +105,7 @@ public class OperationService {
             .thenApply(r -> Optional.<Throwable>empty())
             .exceptionally(Optional::of)
             .thenAccept(e -> {
-                e.map(err -> {
+                e.filter(DingoClientException.InvalidRouteTableException.class::isInstance).map(err -> {
                     RouteTable newRouteTable = getAndRefreshRouteTable(metaService, tableId, true);
                     Operation.Fork newFork = operation.fork(context, newRouteTable);
                     return exec(operation, metaService, tableId, table, newRouteTable, newFork, retry - 1).orNull();
