@@ -103,6 +103,7 @@ public class RangeStrategy extends PartitionStrategy<CommonId, byte[]> {
         byte[] start = startKey;
         byte[] end;
         Iterator<ComparableByteArray> iterator = subSet.iterator();
+        byte[] pre = null;
         while (iterator.hasNext()) {
             ComparableByteArray sKey = iterator.next();
 
@@ -116,6 +117,10 @@ public class RangeStrategy extends PartitionStrategy<CommonId, byte[]> {
             }
 
             keyMap.put(start, end);
+            if (pre != null && keyMap.get(pre) == null) {
+                keyMap.put(pre, start);
+            }
+            pre = start;
             start = null;
         }
 
