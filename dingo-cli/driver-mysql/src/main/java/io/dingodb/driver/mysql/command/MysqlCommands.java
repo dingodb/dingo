@@ -68,7 +68,6 @@ public class MysqlCommands {
         String[] sqlItems = sqlCommand.split(";");
         AtomicLong packetId = new AtomicLong(queryPacket.packetId + 1);
         for (String sql : sqlItems) {
-            sql = sql.toLowerCase();
             if (log.isDebugEnabled()) {
                 log.debug("receive sql:" + sql);
             }
