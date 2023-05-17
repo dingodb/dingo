@@ -20,9 +20,7 @@ import io.dingodb.client.OperationContext;
 import io.dingodb.client.common.Record;
 import io.dingodb.client.common.RouteTable;
 import io.dingodb.sdk.common.KeyValue;
-import io.dingodb.sdk.common.Range;
 import io.dingodb.sdk.common.codec.KeyValueCodec;
-import io.dingodb.sdk.common.table.RangeDistribution;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.ByteArrayUtils;
@@ -34,13 +32,10 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableSet;
-import java.util.TreeSet;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
-import static io.dingodb.common.util.ByteArrayUtils.greatThan;
+import static io.dingodb.client.operation.RangeUtils.getSubTasks;
+import static io.dingodb.client.operation.RangeUtils.rangeCheck;
 import static io.dingodb.sdk.common.utils.Any.wrap;
-import static io.dingodb.sdk.common.utils.ByteArrayUtils.lessThan;
 
 public class ScanOperation implements Operation {
 
@@ -66,8 +61,7 @@ public class ScanOperation implements Operation {
                 keyRange.withStart,
                 keyRange.withEnd
             );
-            if (greatThan(range.getStartKey(), range.getEndKey())
-                || (Arrays.equals(range.getStartKey(), range.getEndKey())) && (!range.withEnd || !range.withStart)) {
+            if (rangeCheck(startKey, endKey, range)) {
                 return new Fork(new Iterator[0], Collections.emptyNavigableSet(), true);
             }
             NavigableSet<Task> subTasks = getSubTasks(routeTable, range);
@@ -115,25 +109,6 @@ public class ScanOperation implements Operation {
         LinkedIterator<Record> result = new LinkedIterator<>();
         Arrays.stream(fork.<Iterator<Record>[]>result()).forEach(result::append);
         return (R) result;
-    }
-
-    private NavigableSet<Task> getSubTasks(RouteTable routeTable, OpRange range) {
-        NavigableSet<Task> subTasks = new TreeSet<>(getComparator());
-        Predicate<byte[]> filter = (k) -> ByteArrayUtils.greatThan(range.getEndKey() , k) || (ByteArrayUtils.compareWithoutLen(range.getEndKey(), k) == 0 && range.withEnd);
-        Function<Range, byte[]> keyGetter = Range::getStartKey;
-        for (RangeDistribution rd : routeTable.getRangeDistribution().descendingMap().values()) {
-            if (filter.test(keyGetter.apply(rd.getRange()))) {
-                if (subTasks.isEmpty()) {
-                    filter = k -> lessThan(range.getStartKey(), k);
-                    keyGetter = Range::getEndKey;
-                }
-                subTasks.add(new Task(
-                    rd.getId(),
-                    wrap(new OpRange(rd.getRange().getStartKey(), rd.getRange().getEndKey(), true, false))
-                ));
-            }
-        }
-        return subTasks;
     }
 
     private void buildSubTasks(OpRange range, NavigableSet<Task> subTasks, Task task) {

@@ -22,18 +22,19 @@ dependencies {
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: 'jackson'.v()
     implementation group: 'org.luaj', name: 'luaj-jse', version: 'luaj'.v()
     implementation group: 'com.google.guava', name: 'guava', version: 'guava'.v()
-    implementation group: 'io.dingodb', name: 'dingo-sdk', version: 'dingo-sdk'.v()
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
 
-    implementation project(":dingo-common")
-    implementation project(":dingo-cluster-api")
-    implementation project(":dingo-meta-api")
-    implementation project(":dingo-net-netty")
-    implementation project(":dingo-net-api")
-    implementation project(":dingo-store-api")
-    implementation project(":dingo-verify")
+    api group: 'io.dingodb', name: 'dingo-sdk', version: 'dingo-sdk'.v()
+
+    api project(":dingo-common")
+    api project(":dingo-cluster-api")
+    api project(":dingo-meta-api")
+    api project(":dingo-net-netty")
+    api project(":dingo-net-api")
+    api project(":dingo-store-api")
+    api project(":dingo-verify")
     testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()
 }
 
