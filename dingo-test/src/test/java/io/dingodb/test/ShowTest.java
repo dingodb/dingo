@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.sql.SQLException;
 
-public class ShowCreateTableTest {
+public class ShowTest {
     private static SqlHelper sqlHelper;
 
     @BeforeAll
@@ -51,7 +51,7 @@ public class ShowCreateTableTest {
 
     @Test
     @Disabled
-    public void test() throws SQLException, IOException {
+    public void showCreateTable() throws SQLException, IOException {
         String sql = "show create table t_auto";
 
         sqlHelper.queryTest(
@@ -59,5 +59,43 @@ public class ShowCreateTableTest {
             new String[]{"Table", "Create Table"},
             DingoTypeFactory.tuple("VARCHAR", "VARCHAR"),
             "T_AUTO, CREATE TABLE `t_auto` (`id` INTEGER',' `name` VARCHAR(32)',' `age` INTEGER',' PRIMARY KEY (`id`))");
+    }
+
+    @Test
+    @Disabled
+    public void showAllColumns() throws SQLException, IOException {
+        String sql = "show columns from t_auto";
+
+        sqlHelper.queryTest(
+            sql,
+            new String[]{"Field", "Type", "Null", "Key", "Default"},
+            DingoTypeFactory.tuple("VARCHAR", "VARCHAR", "VARCHAR", "VARCHAR", "VARCHAR"),
+            "id, INT, NO, PRI, \n"
+            + "name, STRING|NULL, YES, , \n"
+            + "age, INT|NULL, YES, , ");
+    }
+
+    @Test
+    @Disabled
+    public void showAllColumnsWithLike() throws SQLException, IOException {
+        String sql = "show columns from t_auto like 'na%'";
+
+        sqlHelper.queryTest(
+            sql,
+            new String[]{"Field", "Type", "Null", "Key", "Default"},
+            DingoTypeFactory.tuple("VARCHAR", "VARCHAR", "VARCHAR", "VARCHAR", "VARCHAR"),
+            "name, STRING|NULL, YES, ,");
+    }
+
+    @Test
+    @Disabled
+    public void showTableDistribution() throws SQLException, IOException {
+        String sql = "show table t_auto distribution";
+
+        sqlHelper.queryTest(
+            sql,
+            new String[]{"Id", "Type", "Value"},
+            DingoTypeFactory.tuple("VARCHAR", "VARCHAR", "VARCHAR"),
+            "id, Range, [ Key(1), Key(3) )");
     }
 }

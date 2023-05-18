@@ -184,7 +184,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
         long count = Optional.ofNullable(DingoConfiguration.instance().getVariable())
             .map(VariableConfiguration::getAutoIncrementCacheCount)
-            .orElse(100L);
+            .orElse(10000L);
 
         Integer increment = Optional.ofNullable(DingoConfiguration.instance().getVariable())
             .map(VariableConfiguration::getAutoIncrementIncrement)

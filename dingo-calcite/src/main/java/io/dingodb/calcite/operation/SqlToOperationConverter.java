@@ -19,9 +19,11 @@ package io.dingodb.calcite.operation;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.grammar.dql.SqlShowColumns;
 import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
+import io.dingodb.calcite.grammar.dql.SqlShowCreateUser;
 import io.dingodb.calcite.grammar.dql.SqlShowDatabases;
 import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
+import io.dingodb.calcite.grammar.dql.SqlShowTableDistribution;
 import io.dingodb.calcite.grammar.dql.SqlShowTables;
 import io.dingodb.calcite.grammar.dql.SqlShowVariables;
 import io.dingodb.calcite.grammar.dql.SqlShowWarnings;
@@ -78,8 +80,14 @@ public class SqlToOperationConverter {
             return Optional.of(new SetOptionOperation(connection, setOption));
         } else if (sqlNode instanceof SqlShowCreateTable) {
             return Optional.of(new ShowCreateTableOperation(sqlNode));
+        } else if (sqlNode instanceof SqlShowCreateUser) {
+            SqlShowCreateUser sqlShowCreateUser = (SqlShowCreateUser) sqlNode;
+            return Optional.of(new ShowCreateUserOperation(sqlNode, sqlShowCreateUser.userName, sqlShowCreateUser.host));
         } else if (sqlNode instanceof SqlShowColumns) {
             return Optional.of(new ShowColumnsOperation(sqlNode));
+        } else if (sqlNode instanceof SqlShowTableDistribution) {
+            SqlShowTableDistribution sqlShowTableDistribution = (SqlShowTableDistribution) sqlNode;
+            return Optional.of(new ShowTableDistributionOperation(sqlNode, sqlShowTableDistribution.tableName));
         } else {
             return Optional.empty();
         }

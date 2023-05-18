@@ -104,4 +104,9 @@ public class DingoKeyValueCodec implements KeyValueCodec {
     public byte[] encodeKeyPrefix(Object[] record, int columnCount) throws IOException {
         return keyCodec.encodeKeyForRangeScan(keyMapping.revMap(record), columnCount);
     }
+
+    @Override
+    public Object[] decodeKeyPrefix(byte[] keyPrefix) throws IOException {
+        return new Object[0];
+    }
 }

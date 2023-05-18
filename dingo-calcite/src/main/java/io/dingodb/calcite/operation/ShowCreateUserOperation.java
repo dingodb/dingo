@@ -16,17 +16,54 @@
 
 package io.dingodb.calcite.operation;
 
+import io.dingodb.common.privilege.UserDefinition;
+import io.dingodb.verify.service.UserService;
+import io.dingodb.verify.service.UserServiceProvider;
+import lombok.Setter;
+import org.apache.calcite.sql.SqlNode;
+
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 public class ShowCreateUserOperation implements QueryOperation {
+
+    static UserService userService = UserServiceProvider.getRoot();
+
+    @Setter
+    public SqlNode sqlNode;
+
+    private String userName;
+
+    private String host;
+
+    public ShowCreateUserOperation(SqlNode sqlNode, String userName, String host) {
+        this.sqlNode = sqlNode;
+        this.userName = userName;
+        this.host = host;
+    }
+
     @Override
     public Iterator getIterator() {
-        return null;
+        List<Object[]> createUserList = new ArrayList<>();
+        String createUser = getCreateUser();
+        Object[] tuples = new Object[]{createUser};
+        createUserList.add(tuples);
+        return createUserList.iterator();
     }
 
     @Override
     public List<String> columns() {
-        return null;
+        List<String> columns = new ArrayList<>();
+        columns.add("Create User");
+        return columns;
+    }
+
+    private String getCreateUser() {
+        UserDefinition userDefinition = userService.getUserDefinition(this.userName, this.host);
+        if (userDefinition == null) {
+            throw new RuntimeException("Unknown user '" + this.userName + "'@'" + this.host + "'");
+        }
+        return "Create user '" + this.userName + "' identified by ******";
     }
 }

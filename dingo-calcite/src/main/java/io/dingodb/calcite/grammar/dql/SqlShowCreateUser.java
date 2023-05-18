@@ -22,29 +22,30 @@ import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
-public class SqlShowColumns extends SqlShow {
+public class SqlShowCreateUser extends SqlShow {
 
-    public String tableName;
+    public String userName;
 
-    public String sqlLikePattern;
+    public String host;
 
-    private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("SHOW COLUMNS FROM TABLE", SqlKind.SELECT);
+    private static final SqlOperator OPERATOR = new SqlSpecialOperator("SHOW CREATE USER", SqlKind.SELECT);
 
-    /**
+     /**
      * Creates a sqlDql.
      *
      * @param pos      pos
      */
-    public SqlShowColumns(SqlParserPos pos, String tableName, String sqlLikePattern) {
+    public SqlShowCreateUser(SqlParserPos pos, String userName, String host) {
         super(OPERATOR, pos);
-        this.tableName = tableName;
-        this.sqlLikePattern = sqlLikePattern;
+        this.userName = userName;
+        this.host = host;
     }
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.keyword("SHOW COLUMNS FROM ");
-        writer.keyword(tableName);
+        writer.keyword("SHOW CREATE USER ");
+        writer.keyword(userName);
+        writer.keyword("@");
+        writer.keyword(host);
     }
 }
