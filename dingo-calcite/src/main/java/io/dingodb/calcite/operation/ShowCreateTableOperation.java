@@ -17,6 +17,7 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
+import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
 import lombok.Setter;
@@ -29,8 +30,6 @@ import java.util.List;
 
 public class ShowCreateTableOperation implements QueryOperation {
 
-    private static final String SCHEMA_NAME = "DINGO";
-
     @Setter
     public SqlNode sqlNode;
 
@@ -40,7 +39,7 @@ public class ShowCreateTableOperation implements QueryOperation {
 
     public ShowCreateTableOperation(SqlNode sqlNode) {
         SqlShowCreateTable showCreateTable = (SqlShowCreateTable) sqlNode;
-        metaService = MetaService.root().getSubMetaService(getSchemaName(showCreateTable.tableName));
+        metaService = MetaService.root().getSubMetaService(MetaServiceUtils.getSchemaName(showCreateTable.tableName));
         tableName = showCreateTable.tableName;
     }
 
@@ -62,13 +61,6 @@ public class ShowCreateTableOperation implements QueryOperation {
         columns.add("Table");
         columns.add("Create Table");
         return columns;
-    }
-
-    private String getSchemaName(String tableName) {
-        if (tableName.contains("\\.")) {
-            return tableName.split("\\.")[0];
-        }
-        return SCHEMA_NAME;
     }
 
     private String getCreateTable() {

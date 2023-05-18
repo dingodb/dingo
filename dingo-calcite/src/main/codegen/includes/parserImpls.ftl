@@ -883,27 +883,48 @@ SqlShow SqlShow(): {
     |
     show = SqlShowGlobalVariables(s)
     |
-    show = SqlShowCreateTable(s)
+    show = SqlShowCreate(s)
     |
     show = SqlShowColumns(s)
+    |
+    show = SqlShowTableDistribution(s)
   )
   {
     return show;
   }
 }
+SqlShow SqlShowTableDistribution(Span s): {
+   String tableName = null;
+} {
+   <TABLE> (<QUOTED_STRING> | <IDENTIFIER>) { tableName = token.image.toUpperCase(); } <DISTRIBUTION>
+   { return new SqlShowTableDistribution(s.end(this), tableName); }
+}
 
 SqlShow SqlShowColumns(Span s): {
    String tableName = null;
+   String pattern = null;
 } {
-  <COLUMNS> (<QUOTED_STRING> | <IDENTIFIER>) { tableName = token.image.toUpperCase(); }
-  { return new SqlShowColumns(s.end(this), tableName); }
+   <COLUMNS> <FROM> (<QUOTED_STRING> | <IDENTIFIER>) { tableName = token.image.toUpperCase(); }
+   [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+   { return new SqlShowColumns(s.end(this), tableName, pattern); }
 }
 
-SqlShow SqlShowCreateTable(Span s): {
+SqlShow SqlShowCreate(Span s): {
    String tableName = null;
+   String userName = null;
+   String host = "%";
 } {
-  <CREATE> <TABLE> (<QUOTED_STRING> | <IDENTIFIER>) { tableName = token.image.toUpperCase(); }
-  { return new SqlShowCreateTable(s.end(this), tableName); }
+   <CREATE>
+   (
+       <TABLE>
+       ( <QUOTED_STRING> | <IDENTIFIER> ) { tableName = token.image.toUpperCase(); }
+       { return new SqlShowCreateTable(s.end(this), tableName); }
+   |
+       <USER>
+       <QUOTED_STRING> { userName = token.image.replace("'", ""); }
+       [<AT_SPLIT> <QUOTED_STRING> { host = token.image.replace("'", "");} ]
+       { return new SqlShowCreateUser(s.end(this), userName, host); }
+   )
 }
 
 SqlShow SqlShowDatabases(Span s): {

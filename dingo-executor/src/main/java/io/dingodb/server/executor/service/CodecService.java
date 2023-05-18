@@ -83,6 +83,11 @@ public final class CodecService implements io.dingodb.codec.CodecService {
         public byte[] encodeKeyPrefix(Object[] record, int columnCount) throws IOException {
             return delegate.encodeKeyPrefix(record, columnCount);
         }
+
+        @Override
+        public Object[] decodeKeyPrefix(byte[] keyPrefix) throws IOException {
+            return delegate.decodeKeyPrefix(keyPrefix);
+        }
     }
 
     @Override

@@ -24,6 +24,9 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.List;
 
 public final class MetaServiceUtils {
+
+    public static final String SCHEMA_NAME = "DINGO";
+
     private MetaServiceUtils() {
     }
 
@@ -56,5 +59,12 @@ public final class MetaServiceUtils {
             metaService = metaService.getSubMetaService(names.get(i));
         }
         return metaService;
+    }
+
+    public static String getSchemaName(String tableName) {
+        if (tableName.contains("\\.")) {
+            return tableName.split("\\.")[0];
+        }
+        return SCHEMA_NAME;
     }
 }

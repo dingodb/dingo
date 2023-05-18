@@ -17,8 +17,10 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.grammar.dql.SqlShowColumns;
+import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.util.SqlLikeUtils;
 import io.dingodb.meta.MetaService;
 import lombok.Setter;
 import org.apache.calcite.sql.SqlNode;
@@ -30,8 +32,6 @@ import java.util.List;
 
 public class ShowColumnsOperation implements QueryOperation {
 
-    private static final String SCHEMA_NAME = "DINGO";
-
     @Setter
     public SqlNode sqlNode;
 
@@ -39,45 +39,61 @@ public class ShowColumnsOperation implements QueryOperation {
 
     private String tableName;
 
+    private String sqlLikePattern;
+
     public ShowColumnsOperation(SqlNode sqlNode) {
-        SqlShowColumns showCreateTable = (SqlShowColumns) sqlNode;
-        metaService = MetaService.root().getSubMetaService(getSchemaName(showCreateTable.tableName));
-        tableName = showCreateTable.tableName;
+        SqlShowColumns showColumns = (SqlShowColumns) sqlNode;
+        this.metaService = MetaService.root().getSubMetaService(MetaServiceUtils.getSchemaName(showColumns.tableName));
+        this.tableName = showColumns.tableName;
+        this.sqlLikePattern = showColumns.sqlLikePattern;
     }
 
     @Override
     public Iterator getIterator() {
-        List<Object[]> createTable = new ArrayList<>();
-        String createTableStatement = getCreateTableStatement();
-        if (StringUtils.isNotBlank(createTableStatement)) {
-            Object[] tuples = new Object[]{createTableStatement};
-            createTable.add(tuples);
+        List<Object[]> tuples = new ArrayList<>();
+        List<List<String>> columnList = getColumnFields();
+        for (List<String> values : columnList) {
+            Object[] tuple = values.toArray();
+            tuples.add(tuple);
         }
-        return createTable.iterator();
+        return tuples.iterator();
     }
 
     @Override
     public List<String> columns() {
         List<String> columns = new ArrayList<>();
-        columns.add("create table statement");
+        columns.add("Field");
+        columns.add("Type");
+        columns.add("Null");
+        columns.add("Key");
+        columns.add("Default");
         return columns;
     }
 
-    private String getSchemaName(String tableName) {
-        if (tableName.contains("\\.")) {
-            return tableName.split("\\.")[0];
-        }
-        return SCHEMA_NAME;
-    }
-
-    private String getCreateTableStatement() {
+    private List<List<String>> getColumnFields() {
         TableDefinition tableDefinition = metaService.getTableDefinition(tableName);
         if (tableDefinition == null) {
-            return "";
+            throw new RuntimeException("Table " + tableName + " doesn't exist");
         }
 
         List<ColumnDefinition> columns = tableDefinition.getColumns();
+        List<List<String>> columnList = new ArrayList<>();
+        boolean haveLike = !StringUtils.isBlank(sqlLikePattern);
+        for (ColumnDefinition column : columns) {
+            List<String> columnValues = new ArrayList<>();
 
-        return "";
+            String columnName = column.getName();
+            if (haveLike && !SqlLikeUtils.like(columnName, sqlLikePattern)) {
+                continue;
+            }
+            columnValues.add(columnName);
+            columnValues.add(column.getType().toString());
+            columnValues.add(column.isNullable() ? "YES" : "NO");
+            columnValues.add(column.isPrimary() ? "PRI" : "");
+            columnValues.add(column.getDefaultValue() != null ? column.getDefaultValue() : "NULL");
+
+            columnList.add(columnValues);
+        }
+        return columnList;
     }
 }

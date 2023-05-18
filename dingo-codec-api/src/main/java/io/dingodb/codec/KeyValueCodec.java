@@ -32,5 +32,7 @@ public interface KeyValueCodec {
 
     byte[] encodeKeyPrefix(Object[] record, int columnCount) throws IOException;
 
+    Object[] decodeKeyPrefix(byte[] keyPrefix) throws IOException;
+
     Object[] mapKeyAndDecodeValue(Object[] keys, byte[] bytes) throws IOException;
 }

@@ -7802,6 +7802,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < DISCONNECT: "DISCONNECT" >
 |   < DISPATCH: "DISPATCH" >
 |   < DISTINCT: "DISTINCT" >
+|   < DISTRIBUTION: "DISTRIBUTION" >
 |   < DOMAIN: "DOMAIN" >
 |   < DOT_FORMAT: "DOT" >
 |   < DOUBLE: "DOUBLE" >
