@@ -37,7 +37,7 @@ import static io.dingodb.sdk.common.utils.ByteArrayUtils.greatThan;
 
 public class RangeUtils {
 
-    public static boolean rangeCheck(List<Object> startKey, List<Object> endKey, OpRange range) {
+    public static boolean isInvalidRange(List<Object> startKey, List<Object> endKey, OpRange range) {
         return compareWithoutLen(range.getStartKey(), range.getEndKey()) > 0
             || (Arrays.equals(range.getStartKey(), range.getEndKey())) && (!range.withEnd || !range.withStart)
             || (!range.withStart && startKey.size() == 0)

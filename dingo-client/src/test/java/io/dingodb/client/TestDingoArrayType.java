@@ -16,7 +16,6 @@
 
 package io.dingodb.client;
 
-import io.dingodb.client.mock.MockApiRegistry;
 import io.dingodb.client.mock.MockMetaClient;
 import io.dingodb.client.model.AnnotatedArrayClass;
 import io.dingodb.client.model.ChildClass;
@@ -27,17 +26,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-
-
 public class TestDingoArrayType {
 
     //private DingoClient dingoClient;
 
     private MockMetaClient metaClient = new MockMetaClient("src/test/resources/config.yaml");
-
-    private MockApiRegistry apiRegistry = new MockApiRegistry();
 
     private AnnotatedArrayClass arrayClass;
 
