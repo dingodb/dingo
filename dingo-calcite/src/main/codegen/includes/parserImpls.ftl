@@ -259,6 +259,7 @@ SqlCreate SqlCreateUser(Span s, boolean replace) :
     String host = "%";
     SqlNode create = null;
     Boolean ifNotExists = false;
+    String requireSsl = null;
 }
 {
     <USER> ifNotExists = IfNotExistsOpt()
@@ -266,8 +267,9 @@ SqlCreate SqlCreateUser(Span s, boolean replace) :
      { user = token.image; }
     [ <AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER>) { host = token.image; }  ]
     <IDENTIFIED> <BY>  <QUOTED_STRING> { password = token.image; }
+    [ <REQUIRE> (  <SSL> { requireSsl = "SSL"; } | <NONE> { requireSsl  = "NONE"; }) ]
     {
-       return new SqlCreateUser(user, password, host, s.end(this), replace, ifNotExists);
+       return new SqlCreateUser(user, password, host, s.end(this), replace, ifNotExists, requireSsl);
     }
 }
 
@@ -1055,4 +1057,22 @@ SqlExecute SqlExecute(): {
    {
       return new SqlExecute(s.end(this), statementName, paramList);
    }
+}
+
+SqlAlterUser SqlAlterUser(Span s, String scope): {
+    final String user;
+    String password = null;
+    String host = "%";
+    SqlNode create = null;
+    String requireSsl = null;
+} {
+   <USER>
+   ( <QUOTED_STRING> | <IDENTIFIER> )
+     { s = span(); user = token.image; }
+    [ <AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER>) { host = token.image; }  ]
+    [ <IDENTIFIED> <BY>  <QUOTED_STRING> { password = token.image; } ]
+    [ <REQUIRE> (  <SSL> { requireSsl = "SSL"; } | <NONE> { requireSsl  = "NONE"; }) ]
+    {
+      return new SqlAlterUser(user, password, host, requireSsl, s.end(this));
+    }
 }

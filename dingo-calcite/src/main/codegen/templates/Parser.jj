@@ -4221,6 +4221,7 @@ SqlSetOption SqlSetOption(Span s, String scope) :
               }
         ]
         [ <GLOBAL> { scope = "SYSTEM"; } ]
+        [ <SESSION> { scope = "SESSION"; } ]
         [ <EXECUTOR> { scope = "EXECUTOR"; } ]
         [ <AT_SPLIT> { scope = "USER"; } ]
         name = CompoundIdentifier()
@@ -4274,7 +4275,7 @@ SqlSetOption SqlSetOption(Span s, String scope) :
 SqlAlter SqlAlter() :
 {
     final Span s;
-    final String scope;
+    String scope = null;
     final SqlIdentifier id;
     final String index;
     boolean isUnique = false;
@@ -4284,7 +4285,7 @@ SqlAlter SqlAlter() :
 }
 {
     <ALTER> { s = span(); }
-    scope = Scope()
+    [ scope = Scope() ]
     [
     (
 <#-- additional literal parser methods are included here -->
@@ -8102,6 +8103,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < RELOAD: "RELOAD" >
 |   < REPEATABLE: "REPEATABLE" >
 |   < REPLACE: "REPLACE" >
+|   < REQUIRE: "REQUIRE" >
 |   < RESET: "RESET" >
 |   < RESPECT: "RESPECT" >
 |   < RESTART: "RESTART" >
@@ -8225,6 +8227,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < SQL_VARBINARY: "SQL_VARBINARY" >
 |   < SQL_VARCHAR: "SQL_VARCHAR" >
 |   < SQRT: "SQRT" >
+|   < SSL: "SSL" >
 |   < START: "START" >
 |   < STATE: "STATE" >
 |   < STATEMENT: "STATEMENT" >

@@ -37,10 +37,15 @@ public class AuthPacket extends MysqlPacket {
 
     public boolean isSSL;
 
+    public boolean interActive;
+
     @Override
     public void read(byte[] data) {
         MysqlMessage mm = new MysqlMessage(data);
         clientFlags = mm.readUB2();
+        if ((clientFlags & CapabilityFlags.CLIENT_INTERACTIVE.getCode()) != 0) {
+            interActive = true;
+        }
         extendClientFlags = mm.readUB2();
         maxPacketSize = mm.readUB4();
         charsetIndex = (mm.read() & 0xff);

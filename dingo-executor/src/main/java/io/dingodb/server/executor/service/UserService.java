@@ -46,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 
-import static io.dingodb.common.util.NoBreakFunctions.wrap;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Slf4j
@@ -124,16 +123,23 @@ public class UserService implements io.dingodb.verify.service.UserService {
     }
 
     @Override
-    public void setPassword(UserDefinition userDefinition) {
+    public void updateUser(UserDefinition userDefinition) {
         try {
             Object[] key = getUserKeys(userDefinition);
             Object[] values = userCodec.decode(userStore.get(userCodec.encodeKey(key)));
             if (values == null) {
                 throw new RuntimeException("user not exists");
             }
-            String plugin = (String) values[39];
-            String digestPwd = AlgorithmPlugin.digestAlgorithm(userDefinition.getPassword(), plugin);
-            values[40] = digestPwd;
+            if (userDefinition.getPassword() != null) {
+                String plugin = (String) values[39];
+                String digestPwd = AlgorithmPlugin.digestAlgorithm(userDefinition.getPassword(), plugin);
+                values[40] = digestPwd;
+            }
+            if ("NONE".equalsIgnoreCase(userDefinition.getRequireSsl())) {
+                values[31] = "";
+            } else if ("SSL".equalsIgnoreCase(userDefinition.getRequireSsl())) {
+                values[31] = "ANY";
+            }
 
             // todo fix null old value
             KeyValue row = userCodec.encode(values);
@@ -231,6 +237,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
         userDefinition.setUser(userPrivilege[1].toString());
         userDefinition.setPassword((String) userPrivilege[40]);
         userDefinition.setPlugin((String) userPrivilege[39]);
+        userDefinition.setRequireSsl((String) userPrivilege[31]);
         userDefinition.setHost(userPrivilege[0].toString());
         userDefinition.setPrivileges(upMapping(userPrivilege));
         return userDefinition;
@@ -266,6 +273,11 @@ public class UserService implements io.dingodb.verify.service.UserService {
                     row[i] = user.getPassword();
                     break;
                 case "SSL_TYPE":
+                    if (StringUtils.isNotBlank(user.getRequireSsl())
+                        && !"NONE".equalsIgnoreCase(user.getRequireSsl())) {
+                        row[i] = "ANY";
+                    }
+                    break;
                 case "SSL_CIPHER":
                 case "X509_ISSUER":
                 case "X509_SUBJECT":

@@ -45,7 +45,7 @@ public class UserTestService implements UserService {
     }
 
     @Override
-    public void setPassword(UserDefinition userDefinition) {
+    public void updateUser(UserDefinition userDefinition) {
 
     }
 

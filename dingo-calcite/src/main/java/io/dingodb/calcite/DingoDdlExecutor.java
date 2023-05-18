@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
@@ -426,6 +427,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw new RuntimeException("user is exists");
         } else {
             userDefinition.setPlugin("mysql_native_password");
+            userDefinition.setRequireSsl(sqlCreateUser.requireSsl);
             String digestPwd = AlgorithmPlugin.digestAlgorithm(sqlCreateUser.password, userDefinition.getPlugin());
             userDefinition.setPassword(digestPwd);
             userService.createUser(userDefinition);
@@ -453,7 +455,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .build();
         if (userService.existsUser(userDefinition)) {
             userDefinition.setPassword(sqlSetPassword.password);
-            userService.setPassword(userDefinition);
+            userService.updateUser(userDefinition);
         } else {
             throw new RuntimeException("user is not exist");
         }
@@ -486,6 +488,20 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         validateDropIndex(schema, tableName, sqlDropIndex.index);
         schema.dropIndex(tableName, sqlDropIndex.index);
+    }
+
+    public void execute(@NonNull SqlAlterUser sqlAlterUser, CalcitePrepare.Context context) {
+        UserDefinition userDefinition = UserDefinition.builder()
+            .user(sqlAlterUser.user)
+            .host(getRealAddress(sqlAlterUser.host))
+            .build();
+        if (userService.existsUser(userDefinition)) {
+            userDefinition.setPassword(sqlAlterUser.password);
+            userDefinition.setRequireSsl(sqlAlterUser.requireSsl);
+            userService.updateUser(userDefinition);
+        } else {
+            throw new RuntimeException("user is not exist");
+        }
     }
 
     public void execute(@NonNull SqlSetOption sqlSetOption, CalcitePrepare.Context context) {

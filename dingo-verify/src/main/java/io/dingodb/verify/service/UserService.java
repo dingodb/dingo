@@ -36,7 +36,7 @@ public interface UserService {
     void dropUser(UserDefinition userDefinition);
 
     @ApiDeclaration
-    void setPassword(UserDefinition userDefinition);
+    void updateUser(UserDefinition userDefinition);
 
     @ApiDeclaration
     void grant(PrivilegeDefinition privilegeDefinition);

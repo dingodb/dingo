@@ -124,7 +124,7 @@ public class MysqlResponseHandler {
             ResultSetRowPacket resultSetRowPacket = new ResultSetRowPacket();
             resultSetRowPacket.packetId = (byte) packetId.getAndIncrement();
             for (int i = 1; i <= columnCount; i ++) {
-                resultSetRowPacket.addColumnValue(resultSet.getString(i));
+                resultSetRowPacket.addColumnValue(resultSet.getObject(i));
             }
             resultSetRowPacket.write(buffer);
             int writerIndex = buffer.writerIndex();
