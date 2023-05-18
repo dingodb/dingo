@@ -18,15 +18,9 @@ package io.dingodb.client.utils;
 
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.net.api.ApiRegistry;
-import org.junit.jupiter.api.Assertions;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class MetaServiceUtils {
 

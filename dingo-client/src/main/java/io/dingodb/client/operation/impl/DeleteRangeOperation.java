@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.NavigableSet;
 
 import static io.dingodb.client.operation.RangeUtils.getSubTasks;
-import static io.dingodb.client.operation.RangeUtils.rangeCheck;
+import static io.dingodb.client.operation.RangeUtils.isInvalidRange;
 import static io.dingodb.sdk.common.utils.Any.wrap;
 
 public class DeleteRangeOperation implements Operation {
@@ -63,7 +63,7 @@ public class DeleteRangeOperation implements Operation {
                 keyRange.withStart,
                 keyRange.withEnd
             );
-            if (rangeCheck(startKey, endKey, range)) {
+            if (isInvalidRange(startKey, endKey, range)) {
                 return new Fork(new long[0], Collections.emptyNavigableSet(), true);
             }
             NavigableSet<Task> subTasks = getSubTasks(routeTable, range);
