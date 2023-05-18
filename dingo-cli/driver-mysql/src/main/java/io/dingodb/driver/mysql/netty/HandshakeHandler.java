@@ -141,6 +141,18 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                     //mysql protocol packet auto increment based by 0;
                     packetId.incrementAndGet();
                     if (isUserExists && validator(dbPwd, fullSeed, authPacket.password)) {
+                        if (StringUtils.isNotEmpty(userDefinition.getRequireSsl())) {
+                            if (ctx.channel().pipeline().get("tls") == null) {
+                                String error =
+                                    String.format(ErrorCode.ER_ACCESS_DENIED_ERROR.message, user, ip, "YES");
+                                MysqlResponseHandler.responseError(packetId,
+                                    mysqlConnection.channel, ErrorCode.ER_ACCESS_DENIED_ERROR, error);
+                                if (mysqlConnection.channel.isActive()) {
+                                    mysqlConnection.channel.close();
+                                }
+                                return;
+                            }
+                        }
                         OKPacket okPacket = new OKPacket();
                         okPacket.capabilities = MysqlServer.getServerCapabilities();
                         okPacket.affectedRows = 0;

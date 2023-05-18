@@ -32,9 +32,18 @@ public class IdleTimeWatcher implements Observer {
         SessionVariableChange sessionVariable = (SessionVariableChange) arg;
         if ("wait_timeout".equalsIgnoreCase(sessionVariable.getName())) {
             MysqlConnection connection = MysqlNettyServer.connections.get(sessionVariable.getId());
-            connection.mysqlIdleStateHandler.setIdleTimeout(Long.parseLong(sessionVariable.getValue()),
-                TimeUnit.SECONDS);
-            log.info("update connection idle time:" + sessionVariable);
+            if (connection != null && !connection.authPacket.interActive) {
+                connection.mysqlIdleStateHandler.setIdleTimeout(Long.parseLong(sessionVariable.getValue()),
+                    TimeUnit.SECONDS);
+                log.info("update connection idle time:" + sessionVariable);
+            }
+        } else if ("interactive_timeout".equalsIgnoreCase(sessionVariable.getName())) {
+            MysqlConnection connection = MysqlNettyServer.connections.get(sessionVariable.getId());
+            if (connection != null && connection.authPacket.interActive) {
+                connection.mysqlIdleStateHandler.setIdleTimeout(Long.parseLong(sessionVariable.getValue()),
+                    TimeUnit.SECONDS);
+                log.info("update interactive connection idle time:" + sessionVariable);
+            }
         }
 
     }

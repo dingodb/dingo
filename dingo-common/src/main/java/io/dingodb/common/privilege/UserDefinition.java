@@ -29,15 +29,17 @@ import lombok.ToString;
 public class UserDefinition extends PrivilegeDefinition {
     private String plugin;
     private String password;
+    private String requireSsl;
 
     Boolean[] privileges;
 
     @Builder(toBuilder = true)
     public UserDefinition(String user, String host, String plugin,
-                          String password) {
+                          String password, String requireSsl) {
         super(user, host);
         this.plugin = plugin;
         this.password = password;
+        this.requireSsl = requireSsl;
     }
 
     public String getKey() {

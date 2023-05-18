@@ -115,10 +115,10 @@ public class ResultSetRowPacket extends MysqlPacket {
                 + "}\n";
     }
 
-    public void addColumnValue(String val) {
-        if (StringUtils.isBlank(val)) {
+    public void addColumnValue(Object val) {
+        if (val == null) {
             val = "";
         }
-        values.add(val);
+        values.add(val.toString());
     }
 }
