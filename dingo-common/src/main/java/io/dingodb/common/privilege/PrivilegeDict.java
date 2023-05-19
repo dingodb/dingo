@@ -113,7 +113,7 @@ public final class PrivilegeDict {
         dbPrivilegeIndex.put(DingoSqlAccessEnum.INSERT.getAccessType(), 4);
         dbPrivilegeIndex.put(DingoSqlAccessEnum.UPDATE.getAccessType(), 5);
         dbPrivilegeIndex.put(DingoSqlAccessEnum.DELETE.getAccessType(), 6);
-        dbPrivilegeIndex.put(DingoSqlAccessEnum.DELETE.getAccessType(), 7);
+        dbPrivilegeIndex.put(DingoSqlAccessEnum.CREATE.getAccessType(), 7);
         dbPrivilegeIndex.put(DingoSqlAccessEnum.DROP.getAccessType(), 8);
         dbPrivilegeIndex.put(DingoSqlAccessEnum.GRANT.getAccessType(), 9);
         dbPrivilegeIndex.put(DingoSqlAccessEnum.REFERENCES.getAccessType(), 10);
