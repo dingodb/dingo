@@ -1,0 +1,38 @@
+plugins {
+    id 'java'
+}
+
+group 'io.dingodb'
+version '0.6.0-SNAPSHOT'
+
+repositories {
+    mavenLocal()
+    maven {
+        url "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+    }
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+
+    implementation group: 'io.dingodb', name: 'dingo-sdk', version: 'dingo-sdk'.v()
+    implementation group: 'com.alibaba', name: 'fastjson', version: 'fastjson'.v()
+}
+
+task fatJar(type: Jar) {
+    classifier 'all'
+    from(
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
+    )
+    with jar
+
+    exclude "META-INF/*.SF"
+    exclude "META-INF/*.DSA"
+    exclude "META-INF/*.RSA"
+}
+
+tasks.named("build") { x ->
+    x.finalizedBy("fatJar")
+}

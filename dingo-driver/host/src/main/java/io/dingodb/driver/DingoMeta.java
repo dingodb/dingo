@@ -191,6 +191,21 @@ public class DingoMeta extends MetaImpl {
         );
     }
 
+    private <E> MetaResultSet createArrayResultSet(
+        Enumerable enumerable,
+        String... names
+    ) {
+        requireNonNull(names, "names");
+        final List<ColumnMetaData> columns = new ArrayList<>(names.length);
+        for (int i = 0; i < names.length; i ++) {
+            columns.add(columnMetaData(names[i], i, String.class, false));
+        }
+        final Iterable<Object> iterable = (Iterable<Object>) enumerable;
+        return createResultSet(Collections.emptyMap(),
+            columns, Meta.CursorFactory.ARRAY,
+            new Frame(0, true, iterable));
+    }
+
     @SuppressWarnings("unchecked")
     private <E> MetaResultSet createResultSet(
         Enumerable<E> enumerable,
@@ -466,15 +481,14 @@ public class DingoMeta extends MetaImpl {
             getMatchedSubSchema(((DingoConnection) connection).getContext().getRootSchema(), schemaPattern),
             tableNamePattern
         );
-        return createResultSet(
+        return createArrayResultSet(
             Linq4j.asEnumerable(tables)
-                .select(t -> new MetaTable(
+                .select(t -> new Object[]{
                     catalog,
                     t.schema.name,
                     t.name,
                     t.getTable().getJdbcTableType().jdbcName
-                )),
-            MetaTable.class,
+                }),
             "TABLE_CAT",
             "TABLE_SCHEM",
             "TABLE_NAME",
