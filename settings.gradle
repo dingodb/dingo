@@ -70,4 +70,5 @@ findProject(':dingo-cli:driver-mysql')?.name = 'driver-mysql'
 include 'dingo-executor'
 include 'dingo-codec-api'
 include 'dingo-codec-serial'
+include 'dingo-mysql-init'
 

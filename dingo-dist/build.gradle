@@ -62,6 +62,11 @@ task copyDepends(type: Copy) {
     }
     into layout.projectDirectory.dir("dingo")
 
+    from(project(':dingo-mysql-init').layout.buildDirectory) {
+        include('libs/dingo-mysql-init-*-all.jar')
+    }
+    into layout.projectDirectory.dir("dingo")
+
     rename { fileName ->
         fileName.replace("-$project.version", "")
     }
@@ -82,7 +87,8 @@ copyDepends.dependsOn([
     ':dingo-web:build',
     ':dingo-net-netty:fatJar',
     ':dingo-cli:sqlline:fatJar',
-    ':dingo-executor:fatJar'
+    ':dingo-executor:fatJar',
+    ':dingo-mysql-init:fatJar'
 ])
 
 packageDistribution.mustRunAfter(copyDepends)

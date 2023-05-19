@@ -166,10 +166,11 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> {
                     break;
                 }
                 try {
-                    right = codec.encodeKeyPrefix(new Object[]{RexLiteralUtils.convertFromRexLiteral(
+                    tuple[firstPrimaryColumnIndex] = RexLiteralUtils.convertFromRexLiteral(
                         info.value,
                         DefinitionMapper.mapToDingoType(info.value.getType())
-                    )}, 1);
+                    );
+                    right = codec.encodeKeyPrefix(tuple, 1);
                     left = null;
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -183,10 +184,11 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> {
                     break;
                 }
                 try {
-                    left = codec.encodeKeyPrefix(new Object[]{RexLiteralUtils.convertFromRexLiteral(
+                    tuple[firstPrimaryColumnIndex] = RexLiteralUtils.convertFromRexLiteral(
                         info.value,
                         DefinitionMapper.mapToDingoType(info.value.getType())
-                    )}, 1);
+                    );
+                    left = codec.encodeKeyPrefix(tuple, 1);
                     right = null;
                 } catch (IOException e) {
                     throw new RuntimeException(e);
