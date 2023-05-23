@@ -3,7 +3,7 @@
 
 As a distributed database, DingoDB is designed to consist of multiple components. These components communicate with each other and form a complete DingoDB system. The architecture is as follows:
 
-![Architecture about DingoDB](../images/dingo-architecture.png)
+![Architecture about DingoDB](../images/dingo-architecture_old.png)
 
 ## Computer Layer
 
