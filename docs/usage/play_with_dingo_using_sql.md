@@ -4,19 +4,28 @@
 
 ### Setup Connection to DingoDB 
 
-- add driver configuration
+1. Launch DBeaver tool, navigate to menu Window -> Driver Manager
 
-![Operater Using Editor](../images/usage_dbeaver_setup_connection.png)
+![Operater Using Editor](../images/usage_dbeaver_driver_manager.png)
 
-- import driver class
+2. In the Driver Manager dialog, click on “New” button,create new driver
 
- ![Operater Using Editor](../images/usage_dbeaver_import_connection.png)
+3. In the New Driver dialog, provide the “Driver Name” and “Class Name”, here please input the class name as “io.dingodb.driver.client.DingoDriverClient”
 
+ ![Operater Using Editor](../images/usage_dbeaver_import_driver_file.png)
+4. Then click on the “library” tab, and click “Add file” button.
+5. Add the DingoDB driver “dingo-driver-client-all.jar”, click “Search” and select the DingoDB driver “io.dingodb.driver.client.DingoDriverClient”.
+   ![Operater Using Editor](../images/usage_dbeaver_find_class.png)
+6. Click “OK”, then you will see the DingoDB driver shown in driver list.
+7. Back to DBeaver main screen, click on “New Database Connection” from the toolbar, and select “DingoDB” item.
+8. In New Database Connection dialog, provide valid JDBC URL, User and Password, then “Test Connection” and see the Database connected successfully.
+   ![Operater Using Editor](../images/usage_dbeaver_new_databases.png)
+9. Click Finish and see the DingoDB connection displayed in Database Connections Navigator on left.
+   ![Operater Using Editor](../images/usage_dbeaver_successful_connection.png)
 ### Do Operation using Editor
 
 You can use dbeaver to view tables and queries.
 
-![Operater Using Editor](../images/usage_dbeaver_operation.png)
 
 - Create Table
 

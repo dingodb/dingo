@@ -5,7 +5,10 @@ Design
    :maxdepth: 1
    :glob:
 
-   sql_execution
    network
    expression
+   sql_execution
    kvstore
+   executor
+   coordinator
+   store

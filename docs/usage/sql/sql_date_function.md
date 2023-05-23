@@ -13,7 +13,7 @@ Now()
 - Return Type
 
 ```
-Timestamp
+Timestamp,Returns a date in the format 'yyyy-MM-dd HH:mm:ss.sss'.
 ```
 
 - Examples
@@ -40,7 +40,7 @@ CurDate()
 - Return Type
 
 ```
-Date, Returns a date in the format 'YYYY-MM-DD'.
+Date, Returns a date in the format 'yyyy-MM-dd'.
 ```
 
 - Examples
@@ -67,7 +67,7 @@ Current_Date()
 - Return Type
 
 ```
-Returns a date in the format 'YYYY-MM-DD'.
+Returns a date in the format 'yyyy-MM-dd'.
 ```
 
 - Examples
@@ -94,18 +94,18 @@ CurTime()
 - Return Type
 
 ```
-Returns the time in 'HH:mm:ss' format.
+Returns the time in 'HH:mm:ss.sss' format.
 ```
 
 - Examples
 
 ```sql
 dingo> Select CurTime();
-+----------+
-|  EXPR$0  |
-+----------+
-| 16:56:43 |
-+----------+
++---------------+
+|  EXPR$0       |
++---------------+
+| 16:56:43.342  |
++---------------+
 ```
 
 ## Current_Time
@@ -121,18 +121,18 @@ Current_Time()
 - Return Type
 
 ```
-Returns the time in 'HH:mm:ss' format.
+Returns the time in 'HH:mm:ss.sss' format.
 ```
 
 - Examples
 
 ```sql
 dingo> Select Current_Time();
-+----------+
-|  EXPR$0  |
-+----------+
-| 17:00:41 |
-+----------+
++--------------+
+|  EXPR$0      |
++--------------+
+| 17:00:41.532 |
++--------------+
 ```
 
 ## Current_TimeStamp
@@ -148,18 +148,18 @@ Current_TimeStamp()
 - Return Type
 
 ```
-Returns the date and time in the format "YYYY-MM-DD HH:mm:ss".
+Returns the date and time in the format "yyyy-MM-ss HH:mm:ss.sss".
 ```
 
 - Examples
 
 ```sql
 dingo> Select Current_TimeStamp();
-+---------------------+
-|   EXPR$0            |
-+---------------------+
-| 2022-04-26 17:01:43 |
-+---------------------+
++-------------------------+
+|   EXPR$0                |
++-------------------------+
+| 2022-04-26 17:01:43.123 |
++-------------------------+
 ```
 
 ## Form_UnixTime
@@ -184,11 +184,11 @@ Return the processed result according to the date format specified by Format.The
 
 ```sql
 dingo> Select From_UnixTime(1650968681);
-+---------------------+
-|       EXPR$0        |
-+---------------------+
-| 2022-04-26 18:24:41 |
-+---------------------+
++-------------------------+
+|       EXPR$0            |
++-------------------------+
+| 2022-04-26 18:24:41.000 |
++-------------------------+
 ```
 
 ## Unix_TimeStamp
@@ -198,7 +198,19 @@ Return a Unix timestamp.
 - Syntax
 
 ```
-Unix_TimeStamp([date])
+Unix_TimeStamp([expr])
+```
+
+- Parameter
+
+```
++------------+-----------------+------------------------+
+| parameter  | paratemer type  |  example               |
++------------+-----------------+------------------------+
+|            | Timestamp       | 2000-01-01 12:00:00.000|
+|     expr   |-----------------+------------------------+
+|            | Long            | 1646591400             |
++------------+-----------------+------------------------+
 ```
 
 - Return Type
