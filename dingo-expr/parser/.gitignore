@@ -1,1 +1,3 @@
+# ANTLR4 generated files
 gen/
+*.tokens

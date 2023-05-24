@@ -81,20 +81,19 @@ final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor<Expr> 
     @Override
     public Expr visitVar(DingoExprParser.@NonNull VarContext ctx) {
         String name = ctx.getText();
-        if (name.equals("null") || name.equals("NULL")) {
+        if (name.equalsIgnoreCase("null")) {
             return Null.INSTANCE;
+        } else if (name.equalsIgnoreCase("true")) {
+            return Value.TRUE;
+        } else if (name.equalsIgnoreCase("false")) {
+            return Value.FALSE;
         }
-        return new Var(ctx.ID().getText());
+        return Var.of(ctx.ID().getText());
     }
 
     @Override
     public @NonNull Expr visitPosNeg(DingoExprParser.@NonNull PosNegContext ctx) {
         return internalVisitUnaryOp(ctx.op.getType(), ctx.expr());
-    }
-
-    @Override
-    public @NonNull Expr visitStringOp(DingoExprParser.@NonNull StringOpContext ctx) {
-        return internalVisitBinaryOp(ctx.op.getType(), ctx.expr());
     }
 
     @Override
@@ -129,11 +128,6 @@ final class DingoExprParserVisitorImpl extends DingoExprParserBaseVisitor<Expr> 
         Op op = new IndexOp();
         op.setExprArray(new Expr[]{visit(ctx.expr()), Value.of(ctx.ID().getText())});
         return op;
-    }
-
-    @Override
-    public @NonNull Expr visitBool(DingoExprParser.@NonNull BoolContext ctx) {
-        return Value.parseBoolean(ctx.getText());
     }
 
     @Override

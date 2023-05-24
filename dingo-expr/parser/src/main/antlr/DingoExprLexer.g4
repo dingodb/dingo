@@ -3,7 +3,6 @@ lexer grammar DingoExprLexer;
 INT             : NUM ;
 REAL            : (NUM '.' NUM EXP? | NUM EXP) ;
 STR             : '\'' (ESC | ~['\\])* '\'' | '"' (ESC | ~["\\])* '"' ;
-BOOL            : 'true' | 'false' ;
 
 // operators
 ADD             : '+' ;
@@ -21,11 +20,6 @@ NE              : '<>' | '!=' ;
 AND             : 'and' | '&&' ;
 OR              : 'or' | '||' ;
 NOT             : 'not' | '!' ;
-
-STARTS_WITH     : 'startsWith' ;
-ENDS_WITH       : 'endsWith' ;
-CONTAINS        : 'contains' ;
-MATCHES         : 'matches' ;
 
 ID              : (ALPHA | '_' | '$') (ALPHA | DIGIT | '_' )* ;
 

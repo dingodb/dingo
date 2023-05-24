@@ -34,10 +34,6 @@ import io.dingodb.expr.runtime.evaluator.relational.LeEvaluatorsFactory;
 import io.dingodb.expr.runtime.evaluator.relational.LtEvaluatorsFactory;
 import io.dingodb.expr.runtime.evaluator.relational.NeEvaluatorsFactory;
 import io.dingodb.expr.runtime.op.logical.RtNotOp;
-import io.dingodb.expr.runtime.op.string.RtContainsOp;
-import io.dingodb.expr.runtime.op.string.RtEndsWithOp;
-import io.dingodb.expr.runtime.op.string.RtMatchesOp;
-import io.dingodb.expr.runtime.op.string.RtStartsWithOp;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -96,14 +92,6 @@ public final class OpFactory {
                 return AndOp.op();
             case DingoExprParser.OR:
                 return OrOp.op();
-            case DingoExprParser.STARTS_WITH:
-                return new RtOpWrapper(OpType.STARTS_WITH, RtStartsWithOp::new);
-            case DingoExprParser.ENDS_WITH:
-                return new RtOpWrapper(OpType.ENDS_WITH, RtEndsWithOp::new);
-            case DingoExprParser.CONTAINS:
-                return new RtOpWrapper(OpType.CONTAINS, RtContainsOp::new);
-            case DingoExprParser.MATCHES:
-                return new RtOpWrapper(OpType.MATCHES, RtMatchesOp::new);
             default:
                 throw new ParseCancellationException("Invalid operator type: " + type);
         }

@@ -17,6 +17,7 @@
 package io.dingodb.expr.parser.op;
 
 import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.ExprVisitor;
 import io.dingodb.expr.parser.exception.ExprCompileException;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.EvalEnv;
@@ -94,6 +95,11 @@ public abstract class Op implements Expr {
     public @NonNull RtExpr compileIn(CompileContext ctx) throws ExprCompileException {
         RtExpr[] rtExprArray = compileExprArray(ctx);
         return evalNullConst(rtExprArray, ctx != null ? ctx.getEnv() : null);
+    }
+
+    @Override
+    public <T> T accept(@NonNull ExprVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 
     /**

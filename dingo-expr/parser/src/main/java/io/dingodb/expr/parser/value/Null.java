@@ -17,6 +17,7 @@
 package io.dingodb.expr.parser.value;
 
 import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.ExprVisitor;
 import io.dingodb.expr.parser.exception.ExprCompileException;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.RtExpr;
@@ -32,6 +33,11 @@ public final class Null implements Expr {
     @Override
     public @NonNull RtExpr compileIn(CompileContext ctx) throws ExprCompileException {
         return RtNull.INSTANCE;
+    }
+
+    @Override
+    public <T> T accept(@NonNull ExprVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

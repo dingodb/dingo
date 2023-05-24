@@ -29,13 +29,20 @@ import java.util.Map;
 public final class TypeCode {
     public static final int NULL = 0;
     public static final int INT = 1;
+    public static final String INT_NAME = "INT";
     public static final int LONG = 2;
+    public static final String LONG_NAME = "LONG";
     public static final int BOOL = 3;
-    public static final int DOUBLE = 4;
-    public static final int DECIMAL = 5;
-    public static final int STRING = 6;
-    public static final int BINARY = 7;
-    public static final int FLOAT = 8;
+    public static final String BOOL_NAME = "BOOL";
+    public static final int FLOAT = 4;
+    public static final String FLOAT_NAME = "FLOAT";
+    public static final int DOUBLE = 5;
+    public static final String DOUBLE_NAME = "DOUBLE";
+    public static final int DECIMAL = 6;
+    public static final String DECIMAL_NAME = "DECIMAL";
+    public static final int STRING = 7;
+    public static final String STRING_NAME = "STRING";
+    public static final int BINARY = 8;
     public static final int DATE = 101;
     public static final int TIME = 102;
     public static final int TIMESTAMP = 103;
@@ -54,17 +61,17 @@ public final class TypeCode {
             case NULL:
                 return "NULL";
             case INT:
-                return "INT";
+                return INT_NAME;
             case LONG:
-                return "LONG";
+                return LONG_NAME;
             case BOOL:
-                return "BOOL";
+                return BOOL_NAME;
             case DOUBLE:
-                return "DOUBLE";
+                return DOUBLE_NAME;
             case DECIMAL:
-                return "DECIMAL";
+                return DECIMAL_NAME;
             case STRING:
-                return "STRING";
+                return STRING_NAME;
             case BINARY:
                 return "BINARY";
             case FLOAT:
@@ -97,24 +104,24 @@ public final class TypeCode {
         switch (name) {
             case "NULL":
                 return NULL;
-            case "INT":
+            case INT_NAME:
             case "INTEGER":
             case "TINYINT":
                 return INT;
-            case "LONG":
+            case LONG_NAME:
             case "BIGINT":
                 return LONG;
-            case "BOOL":
+            case BOOL_NAME:
             case "BOOLEAN":
                 return BOOL;
-            case "DOUBLE":
+            case FLOAT_NAME:
+                return FLOAT;
+            case DOUBLE_NAME:
             case "REAL":
                 return DOUBLE;
-            case "FLOAT":
-                return FLOAT;
-            case "DECIMAL":
+            case DECIMAL_NAME:
                 return DECIMAL;
-            case "STRING":
+            case STRING_NAME:
             case "CHAR":
             case "VARCHAR":
                 return STRING;

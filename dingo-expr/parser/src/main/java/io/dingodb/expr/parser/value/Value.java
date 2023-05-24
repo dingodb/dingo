@@ -19,8 +19,11 @@ package io.dingodb.expr.parser.value;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.expr.parser.DefaultFunFactory;
 import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.ExprVisitor;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.RtConst;
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.text.StringEscapeUtils;
@@ -33,23 +36,18 @@ import java.sql.Timestamp;
 
 import static io.dingodb.expr.runtime.utils.DateTimeUtils.toSecond;
 
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Value<T> implements Expr {
+    public static final Value<Boolean> TRUE = new Value<>(true);
+    public static final Value<Boolean> FALSE = new Value<>(false);
+
     @Getter
+    @EqualsAndHashCode.Include
     private final T value;
 
     public static <T> @NonNull Value<T> of(T value) {
         return new Value<>(value);
-    }
-
-    /**
-     * Create a Value from a String. {@code "false"} -&gt; {@code false} {@code "true"} -&gt; {@code true}
-     *
-     * @param text the String
-     * @return the Value
-     */
-    public static @NonNull Value<Boolean> parseBoolean(String text) {
-        return of(Boolean.parseBoolean(text));
     }
 
     public static @NonNull Value<Integer> parseInteger(String text) {
@@ -111,9 +109,18 @@ public class Value<T> implements Expr {
         return DefaultFunFactory.castFunName(typeCode) + "(" + valueStr + ")";
     }
 
+    static @NonNull String timestampString(long timestamp) {
+        return toSecond(timestamp).toString();
+    }
+
     @Override
     public @NonNull RtConst compileIn(CompileContext ctx) {
         return new RtConst(getValue());
+    }
+
+    @Override
+    public <V> V accept(@NonNull ExprVisitor<V> visitor) {
+        return visitor.visit(this);
     }
 
     @Override
@@ -150,9 +157,5 @@ public class Value<T> implements Expr {
             return wrapByCast(TypeCode.TIMESTAMP, timestampString(((Timestamp) value).getTime()));
         }
         return value.toString();
-    }
-
-    static @NonNull String timestampString(long timestamp) {
-        return toSecond(timestamp).toString();
     }
 }

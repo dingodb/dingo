@@ -17,6 +17,7 @@
 package io.dingodb.exec.expr;
 
 import io.dingodb.common.type.DingoType;
+import io.dingodb.expr.parser.var.Var;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.EvalEnv;
 import lombok.Getter;
@@ -26,17 +27,16 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 @ToString(of = {"tupleType", "parasType"})
 public class SqlExprCompileContext implements CompileContext {
-    public static final String SQL_DYNAMIC_VAR_NAME = "_P";
-    public static final String SQL_TUPLE_VAR_NAME = "_";
+    private static final String TUPLE_VAR_NAME = "_";
+    private static final String SQL_DYNAMIC_VAR_NAME = "_P";
+
+    public static final Var TUPLE = Var.of(TUPLE_VAR_NAME);
+    public static final Var PARAS = Var.of(SQL_DYNAMIC_VAR_NAME);
 
     @Getter
     private final EvalEnv env;
     private final DingoType tupleType;
     private final DingoType parasType;
-
-    public SqlExprCompileContext(DingoType tupleType) {
-        this(tupleType, null);
-    }
 
     public SqlExprCompileContext(DingoType tupleType, @Nullable DingoType parasType) {
         this(tupleType, parasType, null);
@@ -56,7 +56,7 @@ public class SqlExprCompileContext implements CompileContext {
 
     @Override
     public CompileContext getChild(@NonNull Object index) {
-        if (index.equals(SQL_TUPLE_VAR_NAME)) {
+        if (index.equals(TUPLE_VAR_NAME)) {
             return tupleType;
         } else if (index.equals(SQL_DYNAMIC_VAR_NAME)) {
             return parasType;
