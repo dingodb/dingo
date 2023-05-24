@@ -34,7 +34,6 @@ import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.partition.PartitionDefinition;
-import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.privilege.PrivilegeDefinition;
 import io.dingodb.common.privilege.PrivilegeType;
 import io.dingodb.common.privilege.SchemaPrivDefinition;
@@ -44,8 +43,7 @@ import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.IndexStatus;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.converter.StrParseConverter;
+import io.dingodb.common.util.DefinitionUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
@@ -552,42 +550,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         @NonNull TableDefinition tableDefinition,
         @NonNull PartitionDefinition partDefinition
     ) {
-        if (!partDefinition.getDetails().isEmpty() && tableDefinition.getEngine() != null
-		&& tableDefinition.getEngine().equals("MergeTree")) {
-            throw new RuntimeException("dingo column storage partition error.");
-	}
-
-        StrParseConverter converter = StrParseConverter.INSTANCE;
-        List<ColumnDefinition> cols = keyList.stream().map(tableDefinition::getColumn).collect(Collectors.toList());
         String strategy = partDefinition.getFuncName().toUpperCase();
         switch (strategy) {
             case "RANGE":
-                if (partDefinition.getCols() == null || partDefinition.getCols().isEmpty()) {
-                    partDefinition.setCols(keyList);
-                } else {
-                    partDefinition.setCols(
-                        partDefinition.getCols().stream().map(String::toUpperCase).collect(Collectors.toList())
-                    );
-                }
-                if (!keyList.equals(partDefinition.getCols())) {
-                    throw new IllegalArgumentException(
-                        "Partition columns must be equals primary key columns, but " + partDefinition.getCols()
-                    );
-                }
-
-                for (PartitionDetailDefinition rangePart : partDefinition.getDetails()) {
-                    Object[] operand = rangePart.getOperand().toArray(new Object[keyList.size()]);
-                    if (operand.length != keyList.size()) {
-                        throw new IllegalArgumentException(
-                            "Partition values count must be <= key columns count, but values count is " + operand.length
-                        );
-                    }
-                    for (int i = 0; i < keyList.size(); i++) {
-                        DingoType type = cols.get(i).getType();
-                        operand[i] = mapOrNull(operand[i], v -> type.convertFrom(v.toString(), converter));
-                    }
-                    rangePart.setOperand(Arrays.asList(operand));
-                }
+                DefinitionUtils.checkAndConvertRangePartition(tableDefinition);
                 break;
             default:
                 throw new IllegalStateException("Unsupported " + strategy);

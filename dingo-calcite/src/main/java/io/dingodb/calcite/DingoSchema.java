@@ -47,7 +47,7 @@ public class DingoSchema extends MutableSchema {
     @Override
     protected Map<String, Table> getTableMap() {
         if (metaService.name().equalsIgnoreCase("root")) {
-           return new HashMap<>();
+            return new HashMap<>();
         }
         Map<String, TableDefinition> tds = metaService.getTableDefinitions();
         if (tds == null) {

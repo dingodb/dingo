@@ -19,7 +19,6 @@ package io.dingodb.server.executor.common;
 import io.dingodb.sdk.common.table.Column;
 import lombok.experimental.Delegate;
 
-
 public class ColumnDefinition implements Column {
 
     @Delegate

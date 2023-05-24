@@ -16,39 +16,24 @@
 
 package io.dingodb.client.common;
 
-import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.DingoCommonId;
-import io.dingodb.sdk.common.codec.KeyValueCodec;
-import io.dingodb.sdk.common.partition.DistributionStrategy;
 import io.dingodb.sdk.common.table.RangeDistribution;
+import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.ByteArrayUtils;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 
 import java.util.NavigableMap;
 
 @AllArgsConstructor
 public class RouteTable {
 
-    @Getter
-    private DingoCommonId tableId;
-
-    @Getter
-    private KeyValueCodec codec;
-    @Getter
-    private NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution;
-    private DistributionStrategy<ByteArrayUtils.ComparableByteArray> distributionStrategy;
-
-    public RangeDistribution getRangeDistribution(byte[] key) {
-        if (rangeDistribution == null) {
-            throw new DingoClientException("The tableRange is empty");
-        }
-        ByteArrayUtils.ComparableByteArray byteArray = distributionStrategy.calcPartId(key);
-        return rangeDistribution.get(byteArray);
-    }
+    public final DingoCommonId tableId;
+    public final Table table;
+    public final KeyValueCodec codec;
+    public final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution;
 
     public DingoCommonId calcRegionId(byte[] key) {
-        return getRangeDistribution(key).getId();
+        return rangeDistribution.floorEntry(new ByteArrayUtils.ComparableByteArray(key)).getValue().getId();
     }
 
 }

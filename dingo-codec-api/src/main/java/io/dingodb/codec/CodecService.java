@@ -17,9 +17,12 @@
 package io.dingodb.codec;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+
+import java.util.List;
 
 public interface CodecService {
 
@@ -29,7 +32,9 @@ public interface CodecService {
 
     KeyValueCodec createKeyValueCodec(CommonId id, DingoType type, TupleMapping keyMapping);
 
+    KeyValueCodec createKeyValueCodec(CommonId id, List<ColumnDefinition> columns);
+
     default KeyValueCodec createKeyValueCodec(CommonId id, TableDefinition tableDefinition) {
-        return createKeyValueCodec(id, tableDefinition.getDingoType(), tableDefinition.getKeyMapping());
+        return createKeyValueCodec(id, tableDefinition.getColumns());
     }
 }

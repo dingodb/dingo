@@ -27,6 +27,8 @@ import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.Parameters;
+import io.dingodb.common.util.RangeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Iterator;
@@ -69,62 +71,16 @@ public class RangeStrategy extends PartitionStrategy<CommonId, byte[]> {
     }
 
     @Override
-    public Map<byte[], byte[]> calcPartitionRange(
-        byte @NonNull [] startKey,
-        byte @NonNull [] endKey,
-        boolean includeEnd
+    public NavigableSet<RangeDistribution> calcPartitionRange(
+        byte [] startKey,
+        byte [] endKey,
+        boolean withStart,
+        boolean withEnd
     ) {
-        NavigableSet<ComparableByteArray> ranges = this.ranges.navigableKeySet();
-        Map<byte[], byte[]> keyMap = new TreeMap<>(ByteArrayUtils::compare);
-        LinkedHashSet<ComparableByteArray> keySet = new LinkedHashSet<>();
-        // Support > < condition when deleting
-        if (startKey == null) {
-            for (ComparableByteArray key : ranges) {
-                if (ByteArrayUtils.lessThanOrEqual(key.getBytes(), endKey)) {
-                    keySet.add(key);
-                }
-            }
-        } else if (endKey == null) {
-            for (ComparableByteArray key : ranges) {
-                if (ByteArrayUtils.greatThanOrEqual(key.getBytes(), startKey)) {
-                    keySet.add(key);
-                }
-            }
-        } else {
-            for (ComparableByteArray key : ranges) {
-                if (ByteArrayUtils.greatThanOrEqual(key.getBytes(), startKey)
-                    && ByteArrayUtils.lessThanOrEqual(key.getBytes(), endKey)) {
-                    keySet.add(key);
-                }
-            }
-        }
-        LinkedHashSet<ComparableByteArray> subSet = keySet;
-
-        byte[] start = startKey;
-        byte[] end;
-        Iterator<ComparableByteArray> iterator = subSet.iterator();
-        byte[] pre = null;
-        while (iterator.hasNext()) {
-            ComparableByteArray sKey = iterator.next();
-
-            if (start == null) {
-                start = sKey.getBytes();
-            }
-            if (iterator.hasNext()) {
-                end = null;
-            } else {
-                end = endKey;
-            }
-
-            keyMap.put(start, end);
-            if (pre != null && keyMap.get(pre) == null) {
-                keyMap.put(pre, start);
-            }
-            pre = start;
-            start = null;
-        }
-
-        return keyMap;
+        startKey = Parameters.cleanNull(startKey, ranges.firstEntry().getValue()::getStartKey);
+        endKey = Parameters.cleanNull(endKey, ranges.lastEntry().getValue().getEndKey());
+        RangeDistribution range = new RangeDistribution(null, startKey, endKey, withStart, withEnd);
+        return RangeUtils.getSubRangeDistribution(ranges.values(), range);
     }
 
     @Override

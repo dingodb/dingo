@@ -20,13 +20,17 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.util.RangeUtils;
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Objects;
+import java.util.TreeSet;
 
 @JsonPropertyOrder({"type", "partNum"})
 @JsonTypeName("simpleHash")
@@ -50,12 +54,13 @@ public final class SimplePartitionStrategy extends PartitionStrategy<String, Obj
     }
 
     @Override
-    public @NonNull Map<byte[], byte[]> calcPartitionRange(
+    public NavigableSet<RangeDistribution> calcPartitionRange(
         byte @NonNull [] startKey,
         byte @NonNull [] endKey,
-        boolean includeEnd
+        boolean withStart,
+        boolean withEnd
     ) {
-        return Collections.emptyMap();
+        return new TreeSet<>(RangeUtils.rangeComparator());
     }
 
     @Override

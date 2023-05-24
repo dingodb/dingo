@@ -21,24 +21,20 @@ import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.PartRangeDeleteOperator;
-import io.dingodb.exec.partition.PartitionStrategy;
 import io.dingodb.exec.partition.RangeStrategy;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
+import java.util.NavigableSet;
 
 public final class DingoRangeDeleteVisitFun {
 
@@ -52,28 +48,20 @@ public final class DingoRangeDeleteVisitFun {
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
         List<Output> outputs = new ArrayList<>();
 
-        NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
-        // Get all partitions based on startKey and endKey
-        final PartitionStrategy<CommonId, byte[]> ps = new RangeStrategy(td, distributions);
-        byte[] startKey = rel.getStartKey();
-        byte[] endKey = rel.getEndKey();
-        if (startKey == null) {
-            startKey = distributions.firstEntry().getValue().getStartKey();
-        }
-        if (endKey == null) {
-            endKey = distributions.lastEntry().getValue().getEndKey();
-        }
-        Map<byte[], byte[]> partMap = ps.calcPartitionRange(startKey, endKey, false);
-        for (Map.Entry<byte[], byte[]> next : partMap.entrySet()) {
+        NavigableSet<RangeDistribution> distributions = new RangeStrategy(
+            td, tableInfo.getRangeDistributions()
+        ).calcPartitionRange(rel.getStartKey(), rel.getEndKey(), rel.isIncludeStart(), rel.isIncludeEnd());
+
+        for (RangeDistribution rd : distributions) {
             PartRangeDeleteOperator operator = new PartRangeDeleteOperator(
                 tableInfo.getId(),
-                distributions.floorEntry(new ComparableByteArray(next.getKey())).getValue().id(),
+                rd.id(),
                 td.getDingoType(),
                 td.getKeyMapping(),
-                next.getKey(),
-                next.getValue(),
-                rel.isIncludeStart(),
-                rel.isIncludeEnd()
+                rd.getStartKey(),
+                rd.getEndKey(),
+                rd.isWithStart(),
+                rd.isWithEnd()
             );
             operator.setId(idGenerator.get());
             Task task = job.getOrCreate(currentLocation, idGenerator);

@@ -18,8 +18,6 @@ package io.dingodb.server.executor.common;
 
 import io.dingodb.sdk.common.partition.PartitionDetail;
 
-import java.util.List;
-
 public class PartitionDetailDefinition implements PartitionDetail {
 
     private final io.dingodb.common.partition.PartitionDetailDefinition partitionDetailDefinition;
@@ -39,7 +37,7 @@ public class PartitionDetailDefinition implements PartitionDetail {
     }
 
     @Override
-    public List<Object> getOperand() {
+    public Object[] getOperand() {
         return partitionDetailDefinition.getOperand();
     }
 }

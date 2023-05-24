@@ -16,7 +16,6 @@
 
 package io.dingodb.server.executor.common;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.PartitionDefinition;
@@ -25,10 +24,7 @@ import io.dingodb.common.partition.RangeTupleDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
-import io.dingodb.expr.json.runtime.Parser;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.Range;
 import io.dingodb.sdk.common.RangeWithOptions;
@@ -68,12 +64,12 @@ public final class Mapping {
             null,
             table.getVersion(),
             table.getTtl(),
-            mapping(table.getPartDefinition()),
+            mapping(table.getPartition()),
             table.getEngine(),
             null,
-            table.autoIncrement(),
+            table.getAutoIncrement(),
             table.getReplica(),
-            table.createSql());
+            table.getCreateSql());
     }
 
     public static ColumnDefinition mapping(Column column) {
@@ -167,25 +163,4 @@ public final class Mapping {
         return new RangeWithOptions(new Range(range.start, range.end), range.withStart, range.withEnd);
     }
 
-    public static DingoType mapping(io.dingodb.sdk.common.type.DingoType type) {
-        //todo need optimize
-        try {
-            return Parser.JSON.parse(Parser.JSON.stringify(type), DingoType.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static io.dingodb.sdk.common.type.DingoType mapping(DingoType type) {
-        //todo need optimize
-        try {
-            return Parser.JSON.parse(Parser.JSON.stringify(type), io.dingodb.sdk.common.type.DingoType.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static io.dingodb.sdk.common.type.TupleMapping mapping(TupleMapping mapping) {
-        return io.dingodb.sdk.common.type.TupleMapping.of(mapping.getMappings());
-    }
 }

@@ -78,7 +78,7 @@ public class SqlHelper {
 
         TreeMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> defaultDistribution = new TreeMap<>();
         byte[] startKey = ByteArrayUtils.EMPTY_BYTES;
-        byte[] endKey = ByteArrayUtils.MAX_BYTES;
+        byte[] endKey = ByteArrayUtils.MAX;
 
         defaultDistribution.put(
             new ByteArrayUtils.ComparableByteArray(startKey),

@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NavigableSet;
 
 import static io.dingodb.client.operation.RangeUtils.getSubTasks;
@@ -51,13 +50,13 @@ public class ScanOperation implements Operation {
     @Override
     public Fork fork(Any parameters, Table table, RouteTable routeTable) {
         try {
-            KeyValueCodec codec = routeTable.getCodec();
+            KeyValueCodec codec = routeTable.codec;
             OpKeyRange keyRange = parameters.getValue();
-            List<Object> startKey = keyRange.start.getUserKey();
-            List<Object> endKey = keyRange.end.getUserKey();
+            Object[] startKey = mapKeyPrefix(table, keyRange.start);
+            Object[] endKey = mapKeyPrefix(table, keyRange.end);
             OpRange range = new OpRange(
-                codec.encodeKeyPrefix(startKey.toArray(new Object[table.getColumns().size()]), startKey.size()),
-                codec.encodeKeyPrefix(endKey.toArray(new Object[table.getColumns().size()]), endKey.size()),
+                codec.encodeKeyPrefix(startKey, keyRange.start.userKey.size()),
+                codec.encodeKeyPrefix(endKey, keyRange.end.userKey.size()),
                 keyRange.withStart,
                 keyRange.withEnd
             );
@@ -65,11 +64,6 @@ public class ScanOperation implements Operation {
                 return new Fork(new Iterator[0], Collections.emptyNavigableSet(), true);
             }
             NavigableSet<Task> subTasks = getSubTasks(routeTable, range);
-            Task task = subTasks.pollFirst();
-            if (task == null) {
-                return new Fork(new Iterator[0], subTasks, true);
-            }
-            buildSubTasks(range, subTasks, task);
             return new Fork(new Iterator[subTasks.size()], subTasks, true);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -80,16 +74,7 @@ public class ScanOperation implements Operation {
     public Fork fork(OperationContext context, RouteTable routeTable) {
         OpRange range = context.parameters();
         NavigableSet<Task> subTasks = getSubTasks(routeTable, range);
-        Task task = subTasks.pollFirst();
-        if (task == null) {
-            return new Fork(new Iterator[0], subTasks, true);
-        }
-        buildSubTasks(range, subTasks, task);
         return new Fork(context.result(), subTasks, true);
-    }
-
-    private Comparator<Task> getComparator() {
-        return (e1, e2) -> ByteArrayUtils.compare(e1.<OpRange>parameters().getStartKey(), e2.<OpRange>parameters().getStartKey());
     }
 
     @Override
@@ -111,17 +96,4 @@ public class ScanOperation implements Operation {
         return (R) result;
     }
 
-    private void buildSubTasks(OpRange range, NavigableSet<Task> subTasks, Task task) {
-        OpRange taskScan = task.parameters();
-        subTasks.add(new Task(
-                task.getRegionId(),
-                wrap(new OpRange(range.getStartKey(), taskScan.getEndKey(), range.withStart, taskScan.withEnd))
-        ));
-        task = subTasks.pollLast();
-        taskScan = task.parameters();
-        subTasks.add(new Task(
-                task.getRegionId(),
-                wrap(new OpRange(taskScan.getStartKey(), range.getEndKey(), taskScan.withStart, range.withEnd))
-        ));
-    }
 }

@@ -45,19 +45,35 @@ public class RangeDistribution implements Distribution {
     @JsonProperty("endKey")
     private byte[] endKey;
 
+    @JsonProperty("withStart")
+    private boolean withStart = true;
+
+    @JsonProperty("withEnd")
+    private boolean withEnd = false;
+
     public RangeDistribution(@JsonProperty("id") CommonId id) {
         this.id = id;
+    }
+
+    public RangeDistribution(CommonId id, byte[] startKey, byte[] endKey) {
+        this.id = id;
+        this.startKey = startKey;
+        this.endKey = endKey;
     }
 
     @JsonCreator
     public RangeDistribution(
         @JsonProperty("id") CommonId id,
         @JsonProperty("startKey") byte[] startKey,
-        @JsonProperty("endKey") byte[] endKey
+        @JsonProperty("endKey") byte[] endKey,
+        @JsonProperty("withStart") boolean withStart,
+        @JsonProperty("withEnd") boolean withEnd
     ) {
         this.id = id;
         this.startKey = startKey;
         this.endKey = endKey;
+        this.withStart = withStart;
+        this.withEnd = withEnd;
     }
 
     @Override

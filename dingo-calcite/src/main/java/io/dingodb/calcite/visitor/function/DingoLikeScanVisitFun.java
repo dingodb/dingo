@@ -27,6 +27,7 @@ import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Output;
@@ -38,9 +39,7 @@ import io.dingodb.exec.partition.RangeStrategy;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
 
 public final class DingoLikeScanVisitFun {
@@ -59,18 +58,16 @@ public final class DingoLikeScanVisitFun {
         NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
         final PartitionStrategy<CommonId, byte[]> ps = new RangeStrategy(td, distributions);
-        Map<byte[], byte[]> prefixRange = ps.calcPartitionByPrefix(rel.getPrefix());
+
         List<Output> outputs = new ArrayList<>();
 
-        Iterator<Map.Entry<byte[], byte[]>> partIterator = prefixRange.entrySet().iterator();
-        while (partIterator.hasNext()) {
-            Map.Entry<byte[], byte[]> next = partIterator.next();
+        for (RangeDistribution distribution : ps.calcPartitionRange(rel.getPrefix(), rel.getPrefix(), true, true)) {
             LikeScanOperator operator = new LikeScanOperator(
                 tableInfo.getId(),
-                distributions.floorEntry(new ComparableByteArray(next.getKey())).getValue().id(),
+                distribution.id(),
                 td.getDingoType(),
                 td.getKeyMapping(),
-                filter,
+                Optional.mapOrNull(filter, SqlExpr::copy),
                 rel.getSelection(),
                 rel.getPrefix()
             );
@@ -79,6 +76,7 @@ public final class DingoLikeScanVisitFun {
             task.putOperator(operator);
             outputs.addAll(operator.getOutputs());
         }
+
         return outputs;
     }
 }

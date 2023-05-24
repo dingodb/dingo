@@ -25,7 +25,6 @@ import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -59,7 +58,7 @@ public class DingoRangeScanRule extends RelRule<DingoRangeScanRule.Config> {
         if (rel.getFilter().getKind() == SqlKind.AND) {
             RexCall filter = (RexCall) rel.getFilter();
             byte[] left = ByteArrayUtils.EMPTY_BYTES;
-            byte[] right = ByteArrayUtils.MAX_BYTES;
+            byte[] right = ByteArrayUtils.MAX;
             boolean isNotBetween = false;
             boolean includeStart = true;
             boolean includeEnd = true;
@@ -87,6 +86,10 @@ public class DingoRangeScanRule extends RelRule<DingoRangeScanRule.Config> {
                                 info.value,
                                 DefinitionMapper.mapToDingoType(info.value.getType())
                             );
+                            if (tuple[firstPrimaryColumnIndex] == null) {
+                                right = codec.encodeKeyPrefix(tuple, 0);
+                                break;
+                            }
                             right = codec.encodeKeyPrefix(tuple, 1);
                             break;
                         case GREATER_THAN:
@@ -96,6 +99,10 @@ public class DingoRangeScanRule extends RelRule<DingoRangeScanRule.Config> {
                                 info.value,
                                 DefinitionMapper.mapToDingoType(info.value.getType())
                             );
+                            if (tuple[firstPrimaryColumnIndex] == null) {
+                                left = codec.encodeKeyPrefix(tuple, 0);
+                                break;
+                            }
                             left = codec.encodeKeyPrefix(tuple, 1);
                             break;
                         default:
@@ -106,7 +113,7 @@ public class DingoRangeScanRule extends RelRule<DingoRangeScanRule.Config> {
                     throw new RuntimeException(e);
                 }
             }
-            if (Arrays.equals(left, ByteArrayUtils.EMPTY_BYTES) || Arrays.equals(right, ByteArrayUtils.MAX_BYTES)) {
+            if (Arrays.equals(left, ByteArrayUtils.EMPTY_BYTES) || Arrays.equals(right, ByteArrayUtils.MAX)) {
                 return;
             }
             if (ByteArrayUtils.lessThan(left, right)) {

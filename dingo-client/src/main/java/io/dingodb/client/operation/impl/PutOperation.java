@@ -54,7 +54,7 @@ public class PutOperation implements Operation {
                 Record record = records.get(i);
                 checkParameters(table, record);
 
-                KeyValue keyValue = routeTable.getCodec().encode(record.getValues().toArray());
+                KeyValue keyValue = routeTable.codec.encode(record.getValues().toArray());
 
                 Map<KeyValue, Integer> regionParams = subTaskMap.computeIfAbsent(
                     routeTable.calcRegionId(keyValue.getKey()), k -> new Any(new HashMap<>())
