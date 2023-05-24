@@ -16,20 +16,18 @@
 
 package io.dingodb.expr.parser;
 
-import io.dingodb.expr.parser.exception.ExprCompileException;
-import io.dingodb.expr.runtime.CompileContext;
-import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.parser.op.Op;
+import io.dingodb.expr.parser.value.Null;
+import io.dingodb.expr.parser.value.Value;
+import io.dingodb.expr.parser.var.Var;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-public interface Expr {
-    /**
-     * Get an RtExpr by compiling this Expr in a specified CompileContext.
-     *
-     * @param ctx the CompileContext
-     * @return the RtExpr
-     * @throws ExprCompileException if something is wrong when compiling
-     */
-    @NonNull RtExpr compileIn(CompileContext ctx) throws ExprCompileException;
+public interface ExprVisitor<T> {
+    T visit(@NonNull Null op);
 
-    <T> T accept(@NonNull ExprVisitor<T> visitor);
+    <V> T visit(@NonNull Value<V> op);
+
+    T visit(@NonNull Op op);
+
+    T visit(@NonNull Var op);
 }

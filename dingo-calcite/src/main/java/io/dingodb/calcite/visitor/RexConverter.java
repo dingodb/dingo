@@ -35,7 +35,6 @@ import io.dingodb.expr.parser.op.Op;
 import io.dingodb.expr.parser.op.OpWithEvaluator;
 import io.dingodb.expr.parser.value.Null;
 import io.dingodb.expr.parser.value.Value;
-import io.dingodb.expr.parser.var.Var;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexDynamicParam;
@@ -94,10 +93,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
     @Override
     public @NonNull Expr visitInputRef(@NonNull RexInputRef inputRef) {
         IndexOp op = new IndexOp();
-        op.setExprArray(new Expr[]{
-            new Var(SqlExprCompileContext.SQL_TUPLE_VAR_NAME),
-            Value.of(inputRef.getIndex())
-        });
+        op.setExprArray(new Expr[]{SqlExprCompileContext.TUPLE, Value.of(inputRef.getIndex())});
         return op;
     }
 
@@ -180,7 +176,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
                     op = funFactory.getFun(CastListItemsOp.NAME);
                     RelDataType newType = type.getComponentType();
                     op.setExprArray(new Expr[]{
-                        new Value<>(Objects.requireNonNull(newType).getSqlTypeName().getName()),
+                        Value.of(Objects.requireNonNull(newType).getSqlTypeName().getName()),
                         operand.accept(this)
                     });
                     return op;
@@ -221,7 +217,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         for (RexNode node : call.getOperands()) {
             Expr expr = node.accept(this);
             if (REX_CONST_LITERAL.contains(expr.toString())) {
-                exprList.add(new Value<String>(expr.toString()));
+                exprList.add(Value.of(expr.toString()));
             } else {
                 exprList.add(expr);
             }
@@ -234,7 +230,7 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
     public @NonNull Expr visitDynamicParam(@NonNull RexDynamicParam dynamicParam) {
         IndexOp op = new IndexOp();
         op.setExprArray(new Expr[]{
-            new Var(SqlExprCompileContext.SQL_DYNAMIC_VAR_NAME),
+            SqlExprCompileContext.PARAS,
             Value.of(dynamicParam.getIndex())
         });
         return op;

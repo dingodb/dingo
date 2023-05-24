@@ -18,6 +18,7 @@ package io.dingodb.expr.runtime.var;
 
 import io.dingodb.expr.runtime.EvalContext;
 import io.dingodb.expr.runtime.RtExpr;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Objects;
@@ -25,6 +26,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public final class RtVar implements RtExpr {
     private static final long serialVersionUID = -7434384449038456900L;
+
+    @Getter
     private final Object id;
     private final int typeCode;
 

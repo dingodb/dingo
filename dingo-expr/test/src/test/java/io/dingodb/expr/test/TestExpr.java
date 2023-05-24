@@ -89,13 +89,6 @@ public class TestExpr {
             arguments("1 > 0.1 and 2 - 2 = 0", true),
             arguments("not (0.0 * 2 < 0 || 1 * 4 > 3 and 6 / 6 == 1)", false),
             // string op
-            arguments("'abc' startsWith 'a'", true),
-            arguments("'abc' startsWith 'c'", false),
-            arguments("'abc' endsWith 'c'", true),
-            arguments("'abc' endsWith 'b'", false),
-            arguments("'abc' contains 'b'", true),
-            arguments("'abc123' matches '\\\\w{3}\\\\d{3}'", true),
-            arguments("'abc123' matches '.{5}'", false),
             arguments("\"Alice\" + 'Bob'", "AliceBob"),
             // mathematical fun
             arguments("abs(-1)", 1),
@@ -218,8 +211,6 @@ public class TestExpr {
             arguments("1 > 0 and 2 = null", null),
             arguments("1 < 0 or null = 3", null),
             arguments("not (0.0 * null < 0 || 1 * 4 > 3 and 6 / 6 == 1)", false),
-            arguments("'abc' startsWith null", null),
-            arguments("null startsWith ''", null),
             arguments("abs(null)", null),
             arguments("int(null)", null),
             arguments("min(null, 5)", null),

@@ -17,17 +17,35 @@
 package io.dingodb.expr.parser.var;
 
 import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.ExprVisitor;
 import io.dingodb.expr.parser.exception.ElementNotExists;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.RtConst;
 import io.dingodb.expr.runtime.RtExpr;
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Var implements Expr {
+    public static final String WHOLE_VAR_NAME = "$";
+
+    public static final Var WHOLE = new Var(WHOLE_VAR_NAME);
+
+    @Getter
+    @EqualsAndHashCode.Include
     private final String name;
+
+    public static Var of(@NonNull String name) {
+        if (name.equals(WHOLE_VAR_NAME)) {
+            return WHOLE;
+        }
+        return new Var(name);
+    }
 
     static @NonNull RtExpr createVar(@NonNull CompileContext ctx) {
         RtExpr rtExpr = ctx.createVar();
@@ -41,7 +59,7 @@ public class Var implements Expr {
             return rtConst;
         }
         if (ctx != null) {
-            if (name.equals("$")) {
+            if (name.equals(WHOLE_VAR_NAME)) {
                 return createVar(ctx);
             }
             CompileContext child = ctx.getChild(name);
@@ -50,6 +68,11 @@ public class Var implements Expr {
             }
         }
         throw new ElementNotExists(name, ctx);
+    }
+
+    @Override
+    public <T> T accept(@NonNull ExprVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 
     @Override
