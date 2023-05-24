@@ -21,14 +21,26 @@ import io.dingodb.codec.CodecServiceProvider;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.NullableType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.TupleType;
+import io.dingodb.common.type.converter.DingoConverter;
+import io.dingodb.expr.core.TypeCode;
+import io.dingodb.sdk.common.codec.CodecUtils;
 import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
+import io.dingodb.sdk.common.serial.schema.DingoSchema;
+import io.dingodb.server.executor.common.Mapping;
 import lombok.AllArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
+import static io.dingodb.common.type.DingoTypeFactory.tuple;
 import static io.dingodb.server.executor.common.Mapping.mapping;
 
 public final class CodecService implements io.dingodb.codec.CodecService {
@@ -53,10 +65,11 @@ public final class CodecService implements io.dingodb.codec.CodecService {
     @AllArgsConstructor
     static class KeyValueCodec implements io.dingodb.codec.KeyValueCodec {
         private final DingoKeyValueCodec delegate;
+        private final DingoType type;
 
         @Override
         public Object[] decode(KeyValue keyValue) throws IOException {
-            return delegate.decode(mapping(keyValue));
+            return (Object[]) type.convertFrom(delegate.decode(mapping(keyValue)), DingoConverter.INSTANCE);
         }
 
         @Override
@@ -66,12 +79,12 @@ public final class CodecService implements io.dingodb.codec.CodecService {
 
         @Override
         public KeyValue encode(Object @NonNull [] tuple) throws IOException {
-            return mapping(delegate.encode(tuple));
+            return mapping(delegate.encode((Object[]) type.convertTo(tuple, DingoConverter.INSTANCE)));
         }
 
         @Override
         public byte[] encodeKey(Object[] keys) throws IOException {
-            return delegate.encodeKey(keys);
+            return delegate.encodeKey((Object[]) type.convertTo(keys, DingoConverter.INSTANCE));
         }
 
         @Override
@@ -81,18 +94,44 @@ public final class CodecService implements io.dingodb.codec.CodecService {
 
         @Override
         public byte[] encodeKeyPrefix(Object[] record, int columnCount) throws IOException {
-            return delegate.encodeKeyPrefix(record, columnCount);
+            return delegate.encodeKeyPrefix((Object[]) type.convertTo(record, DingoConverter.INSTANCE), columnCount);
         }
 
         @Override
         public Object[] decodeKeyPrefix(byte[] keyPrefix) throws IOException {
-            return delegate.decodeKeyPrefix(keyPrefix);
+            return (Object[]) type.convertFrom(delegate.decodeKeyPrefix(keyPrefix), DingoConverter.INSTANCE);
         }
     }
 
     @Override
-    public KeyValueCodec createKeyValueCodec(CommonId id, DingoType type, TupleMapping keyMapping) {
-        return new KeyValueCodec(new DingoKeyValueCodec(mapping(type), mapping(keyMapping), id.seq));
+    public KeyValueCodec createKeyValueCodec(CommonId id, List<io.dingodb.common.table.ColumnDefinition> columns
+    ) {
+        return new KeyValueCodec(
+            DingoKeyValueCodec.of(id.seq, columns.stream().map(Mapping::mapping).collect(Collectors.toList())),
+            tuple(columns.stream().map(io.dingodb.common.table.ColumnDefinition::getType).toArray(DingoType[]::new))
+        );
     }
 
+    @Override
+    public KeyValueCodec createKeyValueCodec(CommonId id, DingoType type, TupleMapping keyMapping) {
+        return new KeyValueCodec(new DingoKeyValueCodec(id.seq, createSchemasForType(type, keyMapping)), type);
+    }
+
+    private static List<DingoSchema> createSchemasForType(DingoType type, TupleMapping keyMapping) {
+        if (type instanceof TupleType) {
+            TupleType tupleType = (TupleType) type;
+            DingoType[] fields = tupleType.getFields();
+            List<DingoSchema> schemas = new ArrayList<>(fields.length);
+            for (int i = 0; i < fields.length; i++) {
+                DingoSchema schema = CodecUtils.createSchemaForTypeName(TypeCode.nameOf(fields[i].getTypeCode()));
+                schema.setIndex(i);
+                schema.setIsKey(keyMapping.contains(i));
+                schema.setAllowNull(((NullableType) fields[i]).isNullable());
+                schemas.add(schema);
+            }
+            return schemas;
+        } else {
+            return Collections.singletonList(CodecUtils.createSchemaForTypeName(TypeCode.nameOf(type.getTypeCode())));
+        }
+    }
 }

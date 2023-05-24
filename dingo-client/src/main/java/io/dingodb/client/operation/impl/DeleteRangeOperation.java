@@ -22,17 +22,13 @@ import io.dingodb.sdk.common.RangeWithOptions;
 import io.dingodb.sdk.common.codec.KeyValueCodec;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
-import io.dingodb.sdk.common.utils.ByteArrayUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 import java.util.NavigableSet;
 
 import static io.dingodb.client.operation.RangeUtils.getSubTasks;
 import static io.dingodb.client.operation.RangeUtils.isInvalidRange;
-import static io.dingodb.sdk.common.utils.Any.wrap;
 
 public class DeleteRangeOperation implements Operation {
 
@@ -46,20 +42,16 @@ public class DeleteRangeOperation implements Operation {
         return INSTANCE;
     }
 
-    private Comparator<Task> getComparator() {
-        return (e1, e2) -> ByteArrayUtils.compare(e1.<OpRange>parameters().getStartKey(), e2.<OpRange>parameters().getStartKey());
-    }
-
     @Override
     public Fork fork(Any parameters, Table table, RouteTable routeTable) {
         try {
-            KeyValueCodec codec = routeTable.getCodec();
+            KeyValueCodec codec = routeTable.codec;
             OpKeyRange keyRange = parameters.getValue();
-            List<Object> startKey = keyRange.start.getUserKey();
-            List<Object> endKey = keyRange.end.getUserKey();
+            Object[] startKey = mapKeyPrefix(table, keyRange.start);
+            Object[] endKey = mapKeyPrefix(table, keyRange.end);
             OpRange range = new OpRange(
-                codec.encodeKeyPrefix(startKey.toArray(new Object[table.getColumns().size()]), startKey.size()),
-                codec.encodeKeyPrefix(endKey.toArray(new Object[table.getColumns().size()]), endKey.size()),
+                codec.encodeKeyPrefix(startKey, keyRange.start.userKey.size()),
+                codec.encodeKeyPrefix(endKey, keyRange.end.userKey.size()),
                 keyRange.withStart,
                 keyRange.withEnd
             );
@@ -67,11 +59,6 @@ public class DeleteRangeOperation implements Operation {
                 return new Fork(new long[0], Collections.emptyNavigableSet(), true);
             }
             NavigableSet<Task> subTasks = getSubTasks(routeTable, range);
-            Task task = subTasks.pollFirst();
-            if (task == null) {
-                return new Fork(new long[0], subTasks, true);
-            }
-            buildSubTasks(range, subTasks, task);
             return new Fork(new long[subTasks.size()], subTasks, true);
 
         } catch (Exception e) {
@@ -83,11 +70,6 @@ public class DeleteRangeOperation implements Operation {
     public Fork fork(OperationContext context, RouteTable routeTable) {
         OpRange range = context.parameters();
         NavigableSet<Task> subTasks = getSubTasks(routeTable, range);
-        Task task = subTasks.pollFirst();
-        if (task == null) {
-            return new Fork(new long[0], subTasks, true);
-        }
-        buildSubTasks(range, subTasks, task);
         return new Fork(context.result(), subTasks, true);
     }
 
@@ -103,17 +85,4 @@ public class DeleteRangeOperation implements Operation {
         return (R) (Long) Arrays.stream(context.<long[]>result()).reduce(Long::sum).orElse(0L);
     }
 
-    private void buildSubTasks(OpRange range, NavigableSet<Task> subTasks, Task task) {
-        OpRange taskRange = task.parameters();
-        subTasks.add(new Task(
-                task.getRegionId(),
-                wrap(new OpRange(range.getStartKey(), taskRange.getEndKey(), range.withStart, taskRange.withEnd))
-        ));
-        task = subTasks.pollLast();
-        taskRange = task.parameters();
-        subTasks.add(new Task(
-                task.getRegionId(),
-                wrap(new OpRange(taskRange.getStartKey(), range.getEndKey(), taskRange.withStart, range.withEnd))
-        ));
-    }
 }

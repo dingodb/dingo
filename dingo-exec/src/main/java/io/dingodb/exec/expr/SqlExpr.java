@@ -69,4 +69,8 @@ public class SqlExpr {
         etx.setTuple(tuple);
         return type.convertFrom(expr.eval(etx), ExprConverter.INSTANCE);
     }
+
+    public SqlExpr copy() {
+        return new SqlExpr(exprString, type);
+    }
 }

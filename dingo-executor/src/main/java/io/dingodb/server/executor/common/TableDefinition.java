@@ -55,7 +55,7 @@ public class TableDefinition implements Table {
     }
 
     @Override
-    public Partition getPartDefinition() {
+    public Partition getPartition() {
         if (tableDefinition.getPartDefinition() == null) {
             return null;
         }
@@ -75,12 +75,12 @@ public class TableDefinition implements Table {
     }
 
     @Override
-    public long autoIncrement() {
+    public long getAutoIncrement() {
         return tableDefinition.getAutoIncrement();
     }
 
     @Override
-    public String createSql() {
+    public String getCreateSql() {
         return tableDefinition.getCreateSql();
     }
 

@@ -326,7 +326,7 @@ List<PartitionDetailDefinition> readPartitionDetails() : {
     ]
 }
 
-List<Object> readValues() : {
+Object[] readValues() : {
    List<Object> values = new ArrayList<Object>();
 }{
      <LPAREN>
@@ -336,7 +336,7 @@ List<Object> readValues() : {
           { values.add(anything());}
         )*
      <RPAREN>
-     { return values; }
+     { return values.toArray(); }
 }
 
 List<String> readNames()  : {

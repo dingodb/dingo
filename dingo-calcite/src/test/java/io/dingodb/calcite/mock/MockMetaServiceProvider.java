@@ -20,6 +20,7 @@ import io.dingodb.calcite.DingoRootSchema;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.local.LocalMetaService;
 
@@ -61,25 +62,27 @@ public class MockMetaServiceProvider {
                 TableDefinition.readJson(MockMetaServiceProvider.class.getResourceAsStream("/table-with-array.json"))
             );
 
-            byte[] key0 = {};
-            byte[] keyA = {1, 0, 0, 1, 0, 0, 0, 2};
+            byte[] begin = ByteArrayUtils.MIN;
+            byte[] partition = {1, 0, 0, 1, 0, 0, 0, 2};
+            byte[] end = ByteArrayUtils.MAX;
+
             CommonId testTableId = metaService.getTableId(test);
             CommonId test1TableId = metaService.getTableId(test1);
             CommonId testDateTableId = metaService.getTableId(tableDate);
             CommonId testArrayTableId = metaService.getTableId(tableArray);
 
-            ((LocalMetaService) metaService).addRangeDistributions(testTableId, key0, keyA);
-            ((LocalMetaService) metaService).addRangeDistributions(testTableId, keyA, null);
+            ((LocalMetaService) metaService).addRangeDistributions(testTableId, begin, partition);
+            ((LocalMetaService) metaService).addRangeDistributions(testTableId, partition, end);
 
-            ((LocalMetaService) metaService).addRangeDistributions(test1TableId, key0, keyA);
-            ((LocalMetaService) metaService).addRangeDistributions(test1TableId, keyA, null);
+            ((LocalMetaService) metaService).addRangeDistributions(test1TableId, begin, partition);
+            ((LocalMetaService) metaService).addRangeDistributions(test1TableId, partition, end);
 
 
-            ((LocalMetaService) metaService).addRangeDistributions(testDateTableId, key0, keyA);
-            ((LocalMetaService) metaService).addRangeDistributions(testDateTableId, keyA, null);
+            ((LocalMetaService) metaService).addRangeDistributions(testDateTableId, begin, partition);
+            ((LocalMetaService) metaService).addRangeDistributions(testDateTableId, partition, end);
 
-            ((LocalMetaService) metaService).addRangeDistributions(testArrayTableId, key0, keyA);
-            ((LocalMetaService) metaService).addRangeDistributions(testArrayTableId, keyA, null);
+            ((LocalMetaService) metaService).addRangeDistributions(testArrayTableId, begin, partition);
+            ((LocalMetaService) metaService).addRangeDistributions(testArrayTableId, partition, end);
 
             LocalMetaService.setLocation(LOC_0);
         } catch (IOException e) {

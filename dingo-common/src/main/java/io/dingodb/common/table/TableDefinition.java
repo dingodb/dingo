@@ -240,14 +240,14 @@ public class TableDefinition {
         return getColumnIndices(true);
     }
 
-    public List<DingoSchema> getDingoSchemaOfKey() {
-        List<DingoSchema> keySchema = new ArrayList<>();
-        TupleMapping keyMapping = getKeyMapping();
-        int[] mappings = keyMapping.getMappings();
-        for (int mapping : mappings) {
-            keySchema.add(columns.get(mapping).getType().toDingoSchema(mapping));
+    public List<ColumnDefinition> getKeyColumns() {
+        List<ColumnDefinition> keyCols = new LinkedList<>();
+        for (ColumnDefinition column : columns) {
+            if (column.isPrimary()) {
+                keyCols.add(column);
+            }
         }
-        return keySchema;
+        return keyCols;
     }
 
     public List<DingoSchema> getDingoSchemaOfValue() {
@@ -259,14 +259,6 @@ public class TableDefinition {
             }
         }
         return valueSchema;
-    }
-
-    public List<DingoSchema> getDingoSchema() {
-        List<DingoSchema> schema = new ArrayList<>();
-        for (int i = 0; i < columns.size(); i++) {
-            schema.add(columns.get(i).getType().toDingoSchema(i));
-        }
-        return schema;
     }
 
     public DingoType getDingoType() {

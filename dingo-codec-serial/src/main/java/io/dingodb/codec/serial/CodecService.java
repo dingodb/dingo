@@ -20,8 +20,12 @@ import com.google.auto.service.AutoService;
 import io.dingodb.codec.CodecServiceProvider;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+
+import java.util.List;
 
 public class CodecService implements io.dingodb.codec.CodecService {
 
@@ -38,5 +42,15 @@ public class CodecService implements io.dingodb.codec.CodecService {
     @Override
     public KeyValueCodec createKeyValueCodec(CommonId id, DingoType type, TupleMapping keyMapping) {
         return new DingoKeyValueCodec(type, keyMapping);
+    }
+
+    @Override
+    public KeyValueCodec createKeyValueCodec(CommonId id, List<ColumnDefinition> columns) {
+        return null;
+    }
+
+    @Override
+    public KeyValueCodec createKeyValueCodec(CommonId id, TableDefinition tableDefinition) {
+        return createKeyValueCodec(id, tableDefinition.getDingoType(), tableDefinition.getKeyMapping());
     }
 }
