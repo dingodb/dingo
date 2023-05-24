@@ -17,31 +17,31 @@
 package io.dingodb.client.operation;
 
 import io.dingodb.client.common.RouteTable;
-import io.dingodb.client.operation.impl.Operation;
-import io.dingodb.sdk.common.Range;
-import io.dingodb.sdk.common.table.RangeDistribution;
 import io.dingodb.client.operation.impl.OpRange;
+import io.dingodb.client.operation.impl.Operation;
+import io.dingodb.common.CommonId;
+import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.sdk.common.DingoCommonId;
+import io.dingodb.sdk.common.SDKCommonId;
 import io.dingodb.sdk.common.utils.ByteArrayUtils;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
-import java.util.List;
 import java.util.NavigableSet;
 import java.util.TreeSet;
-import java.util.function.Function;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static io.dingodb.sdk.common.utils.Any.wrap;
 import static io.dingodb.sdk.common.utils.ByteArrayUtils.compareWithoutLen;
-import static io.dingodb.sdk.common.utils.ByteArrayUtils.greatThan;
 
 public class RangeUtils {
 
-    public static boolean isInvalidRange(List<Object> startKey, List<Object> endKey, OpRange range) {
+    public static boolean isInvalidRange(Object[] startKey, Object[] endKey, OpRange range) {
         return compareWithoutLen(range.getStartKey(), range.getEndKey()) > 0
             || (Arrays.equals(range.getStartKey(), range.getEndKey())) && (!range.withEnd || !range.withStart)
-            || (!range.withStart && startKey.size() == 0)
-            || (!range.withEnd && endKey.size() == 0);
+            || (!range.withStart && startKey.length == 0)
+            || (!range.withEnd && endKey.length == 0);
     }
 
     public static Comparator<Operation.Task> getComparator() {
@@ -49,22 +49,36 @@ public class RangeUtils {
     }
 
     public static NavigableSet<Operation.Task> getSubTasks(RouteTable routeTable, OpRange range) {
-        NavigableSet<Operation.Task> subTasks = new TreeSet<>(getComparator());
-        Predicate<byte[]> filter = (k) -> greatThan(range.getEndKey(), k) || (compareWithoutLen(range.getEndKey(), k) == 0 && range.withEnd);
-        Function<Range, byte[]> keyGetter = Range::getStartKey;
-        for (RangeDistribution rd : routeTable.getRangeDistribution().descendingMap().values()) {
-            if (filter.test(keyGetter.apply(rd.getRange()))) {
-                if (subTasks.isEmpty()) {
-                    filter = k -> !(greatThan(range.getStartKey(), k) || compareWithoutLen(range.getStartKey(), k) == 0 && !range.withStart);
-                    keyGetter = Range::getEndKey;
-                }
-                subTasks.add(new Operation.Task(
-                    rd.getId(),
-                    wrap(new OpRange(rd.getRange().getStartKey(), rd.getRange().getEndKey(), true, false))
-                ));
-            }
-        }
+        Collection<RangeDistribution> src = routeTable.rangeDistribution.values().stream()
+            .map(RangeUtils::mapping)
+            .collect(Collectors.toSet());
+        RangeDistribution rangeDistribution = new RangeDistribution(
+            mapping(routeTable.tableId), range.getStartKey(), range.getEndKey(), range.withStart, range.withEnd);
 
-        return subTasks;
+        return io.dingodb.common.util.RangeUtils.getSubRangeDistribution(src, rangeDistribution).stream()
+            .map(rd -> new Operation.Task(
+                mapping(rd.id()),
+                wrap(new OpRange(rd.getStartKey(), rd.getEndKey(), rd.isWithStart(), rd.isWithEnd()))
+            ))
+            .collect(Collectors.toCollection(() -> new TreeSet<>(getComparator())));
+    }
+
+    public static CommonId mapping(DingoCommonId commonId) {
+        return new CommonId(
+            CommonId.CommonType.of(commonId.type().ordinal()),
+            (int) commonId.parentId(),
+            (int) commonId.entityId());
+    }
+
+    public static DingoCommonId mapping(CommonId commonId) {
+        return new SDKCommonId(DingoCommonId.Type.values()[commonId.type.code], commonId.domain, commonId.seq);
+    }
+
+    public static RangeDistribution mapping(io.dingodb.sdk.common.table.RangeDistribution rangeDistribution) {
+        return new RangeDistribution(
+            mapping(rangeDistribution.getId()),
+            rangeDistribution.getRange().getStartKey(),
+            rangeDistribution.getRange().getEndKey()
+        );
     }
 }

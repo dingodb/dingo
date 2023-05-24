@@ -88,12 +88,12 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> {
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(TableUtils.getTableId(rel.getTable()), td);
 
         List<byte[]> byteList = calLeftAndRight(
-            ByteArrayUtils.EMPTY_BYTES, ByteArrayUtils.MAX_BYTES, rel, td.getFirstPrimaryColumnIndex(), codec
+            ByteArrayUtils.EMPTY_BYTES, ByteArrayUtils.MAX, rel, td.getFirstPrimaryColumnIndex(), codec
         );
         byte[] left = byteList.get(0);
         byte[] right = byteList.get(1);
 
-        if (Arrays.equals(left, ByteArrayUtils.EMPTY_BYTES) || Arrays.equals(right, ByteArrayUtils.MAX_BYTES)) {
+        if (Arrays.equals(left, ByteArrayUtils.EMPTY_BYTES) || Arrays.equals(right, ByteArrayUtils.MAX)) {
             return;
         }
         if (rel.getFilter().getKind() == SqlKind.AND && !ByteArrayUtils.lessThan(left, right)) {

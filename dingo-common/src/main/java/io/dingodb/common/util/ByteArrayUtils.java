@@ -30,8 +30,6 @@ import lombok.ToString;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -87,7 +85,9 @@ public class ByteArrayUtils {
     }
 
     public static final byte[] EMPTY_BYTES = new byte[0];
-    public static final byte[] MAX_BYTES = new byte[] {(byte) 0xFF };
+
+    public static final byte[] MIN = EMPTY_BYTES;
+    public static final byte[] MAX = new byte[] {(byte) 0xFF };
 
     public static int compare(byte[] bytes1, byte[] bytes2, boolean ignoreLen) {
         if (bytes1 == bytes2) {
@@ -129,32 +129,6 @@ public class ByteArrayUtils {
 
     public static boolean greatThanOrEqual(byte[] bytes1, byte[] bytes2) {
         return compareWithoutLen(bytes1, bytes2) >= 0;
-    }
-
-    public static String enCodeBytes2Base64(byte[] input) {
-        return new String(Base64.getEncoder().encode(input), StandardCharsets.UTF_8);
-    }
-
-    public static byte[] deCodeBase64String2Bytes(final String input) {
-        return Base64.getDecoder().decode(input);
-    }
-
-    public static byte[] increment(@NonNull byte[] input) {
-        if (input == null) {
-            return null;
-        }
-        byte[] ret = new byte[input.length];
-        int carry = 1;
-        for (int i = input.length - 1; i >= 0; i--) {
-            if (input[i] == (byte) 0xFF && carry == 1) {
-                ret[i] = (byte) 0x00;
-            } else {
-                ret[i] = (byte) (input[i] + carry);
-                carry = 0;
-            }
-        }
-
-        return (carry == 0) ? ret : input;
     }
 
     public static List<byte[]> toList(byte[]... bytes) {

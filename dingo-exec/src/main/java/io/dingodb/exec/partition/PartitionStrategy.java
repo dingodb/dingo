@@ -18,6 +18,7 @@ package io.dingodb.exec.partition;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.dingodb.common.partition.RangeDistribution;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
@@ -25,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.function.Function;
 
 @JsonTypeInfo(
@@ -44,10 +46,11 @@ public abstract class PartitionStrategy<I, K> {
         return calcPartId(getKeyFunction.apply(key));
     }
 
-    public abstract Map<byte[], byte[]> calcPartitionRange(
-        final byte @NonNull [] startKey,
-        final byte @NonNull [] endKey,
-        boolean includeEnd
+    public abstract NavigableSet<RangeDistribution> calcPartitionRange(
+        final byte [] startKey,
+        final byte [] endKey,
+        boolean withStart,
+        boolean withEnd
     );
 
     public abstract Map<byte[], byte[]> calcPartitionPrefixRange(

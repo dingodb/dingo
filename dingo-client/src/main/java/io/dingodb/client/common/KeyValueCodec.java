@@ -27,7 +27,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 
-public class KeyValueCodec {
+public class KeyValueCodec implements io.dingodb.sdk.common.codec.KeyValueCodec {
 
     @Getter
     private io.dingodb.sdk.common.codec.KeyValueCodec keyValueCodec;
@@ -54,6 +54,11 @@ public class KeyValueCodec {
         return (Object[]) dingoType.convertFrom(keyValueCodec.decode(keyValue), DingoConverter.INSTANCE);
     }
 
+    @Override
+    public Object[] decodeKeyPrefix(byte[] keyPrefix) throws IOException {
+        return (Object[]) dingoType.convertFrom(keyValueCodec.decodeKeyPrefix(keyPrefix), DingoConverter.INSTANCE);
+    }
+
     public KeyValue encode(Object @NonNull [] record) throws IOException {
         Object[] converted = (Object[]) dingoType.convertTo(record, DingoConverter.INSTANCE);
         return keyValueCodec.encode(converted);
@@ -69,11 +74,11 @@ public class KeyValueCodec {
         return keyValueCodec.encodeKeyPrefix(converted, columnCount);
     }
 
-    public byte[] encodeMinKeyPrefix() throws IOException {
+    public byte[] encodeMinKeyPrefix() {
         return keyValueCodec.encodeMinKeyPrefix();
     }
 
-    public byte[] encodeMaxKeyPrefix() throws IOException {
+    public byte[] encodeMaxKeyPrefix() {
         return keyValueCodec.encodeMaxKeyPrefix();
     }
 }

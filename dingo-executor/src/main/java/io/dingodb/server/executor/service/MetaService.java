@@ -45,7 +45,8 @@ import static io.dingodb.server.executor.common.Mapping.mapping;
 
 public class MetaService implements io.dingodb.meta.MetaService {
 
-    public static final MetaService ROOT = new MetaService(new MetaServiceClient(Configuration.coordinators()));
+    private static final String coordinators = "172.20.3.77:19190";
+    public static final MetaService ROOT = new MetaService(new MetaServiceClient(coordinators));
 
     @AutoService(MetaServiceProvider.class)
     public static class Provider implements MetaServiceProvider {

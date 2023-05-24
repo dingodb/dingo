@@ -30,7 +30,6 @@ import lombok.ToString;
 @EqualsAndHashCode
 public class RangeTupleDistribution implements Distribution {
 
-
     private static final long serialVersionUID = -2767354268752865267L;
 
     @JsonProperty("id")

@@ -26,8 +26,9 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.RangeUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Output;
@@ -40,11 +41,10 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.util.NavigableSet;
+import java.util.TreeSet;
 
 @Slf4j
 public final class DingoRangeScanVisitFun {
@@ -62,61 +62,47 @@ public final class DingoRangeScanVisitFun {
             filter = SqlExprUtils.toSqlExpr(rel.getFilter());
         }
 
-        NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
+        NavigableSet<RangeDistribution> distributions;
+        NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
+        PartitionStrategy<CommonId, byte[]> ps = new RangeStrategy(td, ranges);
+
         byte[] startKey = rel.getStartKey();
         byte[] endKey = rel.getEndKey();
-        if (startKey == null) {
-            startKey = distributions.firstEntry().getValue().getStartKey();
-        }
-        if (endKey == null) {
-            endKey = distributions.lastEntry().getValue().getEndKey();
-        }
+        boolean withStart = rel.isIncludeStart();
+        boolean withEnd = rel.isIncludeEnd();
 
-        ComparableByteArray startByteArray = distributions.floorKey(new ComparableByteArray(startKey));
-        if (!rel.isNotBetween() && startByteArray == null) {
-            log.warn("Get part from table:{} by startKey:{}, result is null", td.getName(), startKey);
-            return null;
-        }
-
-        // Get all ranges that need to be queried
-        Map<byte[], byte[]> allRangeMap = new TreeMap<>(ByteArrayUtils::compare);
         if (rel.isNotBetween()) {
-            allRangeMap.put(distributions.firstKey().getBytes(), startKey);
-            allRangeMap.put(endKey, distributions.lastKey().getBytes());
+            distributions = new TreeSet<>(RangeUtils.rangeComparator());
+            distributions.addAll(ps.calcPartitionRange(null, startKey, true, !withStart));
+            distributions.addAll(ps.calcPartitionRange(endKey, null, !withEnd, true));
         } else {
-            allRangeMap.put(startKey, endKey);
+            distributions = ps.calcPartitionRange(
+                rel.getStartKey(), rel.getEndKey(), withStart, withEnd
+            );
         }
 
         List<Output> outputs = new ArrayList<Output>();
 
-        Iterator<Map.Entry<byte[], byte[]>> allRangeIterator = allRangeMap.entrySet().iterator();
-        while (allRangeIterator.hasNext()) {
-            Map.Entry<byte[], byte[]> entry = allRangeIterator.next();
-            startKey = entry.getKey();
-            endKey = entry.getValue();
-
-            // Get all partitions based on startKey and endKey
-            final PartitionStrategy<CommonId, byte[]> ps = new RangeStrategy(td, distributions);
-            Map<byte[], byte[]> partMap = ps.calcPartitionRange(startKey, endKey, rel.isIncludeEnd());
-
-            Iterator<Map.Entry<byte[], byte[]>> partIterator = partMap.entrySet().iterator();
-            boolean includeStart = rel.isIncludeStart();
-            while (partIterator.hasNext()) {
-                Map.Entry<byte[], byte[]> next = partIterator.next();
-                PartRangeScanOperator operator = new PartRangeScanOperator(
-                    tableInfo.getId(),
-                    distributions.floorEntry(new ComparableByteArray(next.getKey())).getValue().id(),
-                    td.getDingoType(), td.getKeyMapping(), filter, rel.getSelection(), next.getKey(), next.getValue(),
-                    includeStart, next.getValue() != null && rel.isIncludeEnd()
-                );
-                operator.setId(idGenerator.get());
-                Task task = job.getOrCreate(currentLocation, idGenerator);
-                task.putOperator(operator);
-                outputs.addAll(operator.getOutputs());
-                includeStart = true;
-            }
+        for (RangeDistribution rd : distributions) {
+            PartRangeScanOperator operator = new PartRangeScanOperator(
+                tableInfo.getId(),
+                rd.id(),
+                td.getDingoType(),
+                td.getKeyMapping(),
+                Optional.mapOrNull(filter, SqlExpr::copy),
+                rel.getSelection(),
+                rd.getStartKey(),
+                rd.getEndKey(),
+                rd.isWithStart(),
+                rd.isWithEnd()
+            );
+            operator.setId(idGenerator.get());
+            Task task = job.getOrCreate(currentLocation, idGenerator);
+            task.putOperator(operator);
+            outputs.addAll(operator.getOutputs());
         }
 
         return outputs;
+
     }
 }

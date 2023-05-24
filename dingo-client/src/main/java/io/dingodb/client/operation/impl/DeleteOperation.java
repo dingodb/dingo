@@ -16,14 +16,13 @@
 
 package io.dingodb.client.operation.impl;
 
+import io.dingodb.client.OperationContext;
 import io.dingodb.client.common.ArrayWrapperList;
 import io.dingodb.client.common.Key;
-import io.dingodb.client.OperationContext;
 import io.dingodb.client.common.RouteTable;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.codec.KeyValueCodec;
 import io.dingodb.sdk.common.table.Table;
-import io.dingodb.sdk.common.type.TupleMapping;
 import io.dingodb.sdk.common.utils.Any;
 
 import java.util.ArrayList;
@@ -52,10 +51,9 @@ public class DeleteOperation implements Operation {
             List<Key> keys = parameters.getValue();
             NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparingLong(t -> t.getRegionId().entityId()));
             Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
-            KeyValueCodec codec = routeTable.getCodec();
-            TupleMapping keyMapping = table.getKeyMapping();
+            KeyValueCodec codec = routeTable.codec;
             for (int i = 0; i < keys.size(); i++) {
-                Object[] mapKey = mapKey(table, keys.get(i), keyMapping);
+                Object[] mapKey = mapKey(table, keys.get(i));
                 byte[] key = codec.encodeKey(mapKey);
 
                 Map<byte[], Integer> regionParams = subTaskMap.computeIfAbsent(

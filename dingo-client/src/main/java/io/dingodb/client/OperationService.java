@@ -16,15 +16,19 @@
 
 package io.dingodb.client;
 
+import io.dingodb.client.common.KeyValueCodec;
 import io.dingodb.client.common.RouteTable;
 import io.dingodb.client.operation.impl.Operation;
+import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.common.util.DefinitionUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
-import io.dingodb.sdk.common.codec.KeyValueCodec;
-import io.dingodb.sdk.common.concurrent.Executors;
-import io.dingodb.sdk.common.partition.RangeStrategy;
+import io.dingodb.sdk.common.partition.PartitionDetail;
+import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.RangeDistribution;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
@@ -36,12 +40,14 @@ import io.dingodb.sdk.service.store.StoreServiceClient;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class OperationService {
@@ -97,7 +103,7 @@ public class OperationService {
         if (retry <= 0) {
             return Optional.of(new RuntimeException("Exceeded the retry limit for performing " + operation.getClass()));
         }
-        List<OperationContext> contexts = generateContext(tableId, table, routeTable.getCodec(), fork);
+        List<OperationContext> contexts = generateContext(tableId, table, routeTable.codec, fork);
         Optional<Throwable> error = Optional.empty();
         CountDownLatch countDownLatch = new CountDownLatch(contexts.size());
         contexts.forEach(context -> CompletableFuture
@@ -136,7 +142,25 @@ public class OperationService {
     public synchronized boolean createTable(String schema, String name, Table table) {
         MetaServiceClient metaService = Parameters
             .nonNull(rootMetaService.getSubMetaService(schema), "Schema not found: " + schema);
+        Optional.ifPresent(table.getPartition(), __ -> checkAndConvertRangePartition(table));
         return metaService.createTable(name, table);
+    }
+
+    private void checkAndConvertRangePartition(Table table) {
+        List<Column> columns = table.getColumns();
+        List<String> keyNames = new ArrayList<>();
+        List<DingoType> keyTypes = new ArrayList<>();
+        columns.stream().filter(Column::isPrimary)
+            .sorted(Comparator.comparingInt(Column::getPrimary))
+            .peek(col -> keyNames.add(col.getName()))
+            .map(col -> DingoTypeFactory.fromName(col.getType(), col.getElementType(), col.isNullable()))
+            .forEach(keyTypes::add);
+        DefinitionUtils.checkAndConvertRangePartition(
+            keyNames,
+            table.getPartition().cols(),
+            keyTypes,
+            table.getPartition().details().stream().map(PartitionDetail::getOperand).collect(Collectors.toList())
+        );
     }
 
     public boolean dropTable(String schema, String tableName) {
@@ -167,15 +191,12 @@ public class OperationService {
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
                     metaService.getRangeDistribution(table.getName());
 
-            KeyValueCodec keyValueCodec = new DingoKeyValueCodec(
-                    table.getDingoType(),
-                    table.getKeyMapping(),
-                    tableId.entityId()
+            KeyValueCodec keyValueCodec = new io.dingodb.client.common.KeyValueCodec(
+                DingoKeyValueCodec.of(tableId.entityId(), table),
+                table
             );
 
-            RangeStrategy rangeStrategy = new RangeStrategy(parts.navigableKeySet(), keyValueCodec);
-
-            routeTable = new RouteTable(tableId, keyValueCodec, parts, rangeStrategy);
+            routeTable = new RouteTable(tableId, table, keyValueCodec, parts);
 
             dingoRouteTables.put(tableId, routeTable);
         }
