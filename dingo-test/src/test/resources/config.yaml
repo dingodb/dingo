@@ -2,7 +2,7 @@ cluster:
   name: dingo
 exchange:
   host: localhost
-  port: 0
+  port: 10000
 client:
   coordinatorExchangeSvrList: localhost:19181
 security:
