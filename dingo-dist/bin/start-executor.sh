@@ -17,7 +17,7 @@
 #
 
 ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-JAR_PATH=$(find $ROOT -name dingo-*-executor-*.jar)
+JAR_PATH=$(find $ROOT -name dingo-executor-*.jar)
 #STORE_JAR_PATH=$(find $ROOT -name dingo-store*.jar)
 NET_JAR_PATH=$(find $ROOT -name dingo-net-*.jar)
 JAVA_OPTS="-Xms1g -Xmx1g -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+HeapDumpOnOutOfMemoryError"

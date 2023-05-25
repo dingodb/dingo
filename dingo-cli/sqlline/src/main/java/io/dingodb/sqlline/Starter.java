@@ -37,8 +37,20 @@ public class Starter {
     @Parameter(names = "--config", description = "Config file path.", order = 2)
     private String config;
 
-    @Parameter(names = "--port", description = "Coordinator port.", order = 6)
+    @Parameter(names = "--local", description = "Local sqlline.", order = 3)
+    private boolean local = false;
+
+    @Parameter(names = "--port", description = "Executor port.", order = 6)
     private Integer port = 8765;
+
+    @Parameter(names = "--host", description = "Executor host.", order = 7)
+    private String host = "localhost";
+
+    @Parameter(names = "--user", description = "User name.", order = 8)
+    private String user = "root";
+
+    @Parameter(names = "--password", description = "Password.", order = 9)
+    private String password = "";
 
     public static void main(String[] args) throws Exception {
         Starter starter = new Starter();
@@ -52,16 +64,28 @@ public class Starter {
             commander.usage();
             return;
         }
-        DingoConfiguration.parse(this.config);
-        NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
-
-        log.info("Listen exchange port {}.", listenRandomPort(netService));
         DingoSqlline sqlline = new DingoSqlline();
-        sqlline.connect();
-        Services.initControlMsgService();
-        SqlLine.Status status = sqlline.begin(new String[0], null, true);
-        if (!Boolean.getBoolean("sqlline.system.exit")) {
-            System.exit(status.ordinal());
+
+
+        if (local) {
+            // todo keep this sqlline mode?
+            //DingoConfiguration.parse(this.config);
+            //NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
+            //
+            //log.info("Listen exchange port {}.", listenRandomPort(netService));
+            //sqlline.connect();
+            //Services.initControlMsgService();
+            //SqlLine.Status status = sqlline.begin(new String[0], null, true);
+            //if (!Boolean.getBoolean("sqlline.system.exit")) {
+            //    System.exit(status.ordinal());
+            //}
+            throw new UnsupportedOperationException("Unsupported local mode.");
+        } else {
+            sqlline.connect(host, port, user, password);
+            SqlLine.Status status = sqlline.begin(new String[0], null, true);
+            if (!Boolean.getBoolean("sqlline.system.exit")) {
+                System.exit(status.ordinal());
+            }
         }
     }
 
