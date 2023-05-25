@@ -24,12 +24,12 @@ import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.Optional;
 import io.dingodb.meta.Meta;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.TableStatistic;
-import io.dingodb.sdk.common.table.Table;
-import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.DingoCommonId;
+import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.server.executor.Configuration;
 import io.dingodb.server.executor.common.Mapping;
@@ -45,8 +45,7 @@ import static io.dingodb.server.executor.common.Mapping.mapping;
 
 public class MetaService implements io.dingodb.meta.MetaService {
 
-    private static final String coordinators = "172.20.3.77:19190";
-    public static final MetaService ROOT = new MetaService(new MetaServiceClient(coordinators));
+    public static final MetaService ROOT = new MetaService(new MetaServiceClient(Configuration.coordinators()));
 
     @AutoService(MetaServiceProvider.class)
     public static class Provider implements MetaServiceProvider {
@@ -106,7 +105,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public boolean dropSubMetaService(String name) {
-        return metaServiceClient.dropSubMetaService(name);
+        return metaServiceClient.dropSubMetaService(mapping(getSubMetaService(name).id()));
     }
 
     @Override
