@@ -19,6 +19,8 @@ package sqlline;
 import io.dingodb.calcite.DingoRootSchema;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.environment.ExecutionEnvironment;
+import io.dingodb.driver.DingoDriver;
+import io.dingodb.driver.client.DingoDriverClient;
 import lombok.experimental.Delegate;
 
 import java.sql.Connection;
@@ -56,11 +58,18 @@ public class DingoSqlline {
         TimeZone timeZone = TimeZone.getDefault();
         properties.setProperty("timeZone", timeZone.getID());
         properties.setProperty("user", "root");
-        properties.setProperty("password", "123123");
+        properties.setProperty("password", "");
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         env.setRole(DingoRole.SQLLINE);
         env.putAll(properties);
         Connection connection = DriverManager.getConnection("jdbc:dingo:", properties);
+        setConnection(new SqllineDatabaseConnection(this.sqlLine, connection));
+    }
+
+    public void connect(String host, int port, String user, String password) throws Exception {
+        Class.forName("io.dingodb.driver.client.DingoDriverClient");
+        String url = "url=" + host + ":" + port;
+        Connection connection = DriverManager.getConnection(DingoDriverClient.CONNECT_STRING_PREFIX + url, user, password);
         setConnection(new SqllineDatabaseConnection(this.sqlLine, connection));
     }
 
