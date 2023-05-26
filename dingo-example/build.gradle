@@ -40,7 +40,7 @@ task fatJar(type: Jar) {
 
 fatJar.dependsOn([
     ':dingo-driver:dingo-driver-client:fatJar',
-    ':dingo-client:build',
+    ':dingo-client:fatJar',
 ])
 
 tasks.named("build") { x ->
