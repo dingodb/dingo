@@ -120,7 +120,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public CommonId getTableId(@NonNull String tableName) {
-        return mapping(metaServiceClient.getTableId(tableName));
+        return Optional.mapOrNull(metaServiceClient.getTableId(tableName), Mapping::mapping);
     }
 
     @Override
@@ -131,12 +131,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public TableDefinition getTableDefinition(@NonNull String name) {
-        return mapping(metaServiceClient.getTableDefinition(name));
+        return Optional.mapOrNull(metaServiceClient.getTableDefinition(name), Mapping::mapping);
     }
 
     @Override
     public TableDefinition getTableDefinition(@NonNull CommonId id) {
-        return mapping(metaServiceClient.getTableDefinition(mapping(id)));
+        return Optional.mapOrNull(metaServiceClient.getTableDefinition(mapping(id)), Mapping::mapping);
     }
 
     public RangeDistribution getRangeDistribution(CommonId tableId, CommonId distributionId) {

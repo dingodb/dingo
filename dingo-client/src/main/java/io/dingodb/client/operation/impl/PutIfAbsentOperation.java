@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 
+import static io.dingodb.client.utils.OperationUtils.checkParameters;
+
 public class PutIfAbsentOperation implements Operation {
 
     private static final PutIfAbsentOperation INSTANCE = new PutIfAbsentOperation();

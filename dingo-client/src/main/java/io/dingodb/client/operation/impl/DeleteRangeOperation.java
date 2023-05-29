@@ -27,8 +27,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.NavigableSet;
 
+import static io.dingodb.client.operation.RangeUtils.convert;
 import static io.dingodb.client.operation.RangeUtils.getSubTasks;
-import static io.dingodb.client.operation.RangeUtils.isInvalidRange;
+import static io.dingodb.client.operation.RangeUtils.validateOpRange;
+import static io.dingodb.client.operation.RangeUtils.validateKeyRange;
 
 public class DeleteRangeOperation implements Operation {
 
@@ -46,21 +48,13 @@ public class DeleteRangeOperation implements Operation {
     public Fork fork(Any parameters, Table table, RouteTable routeTable) {
         try {
             KeyValueCodec codec = routeTable.codec;
+            NavigableSet<Task> subTasks = Collections.emptyNavigableSet();
             OpKeyRange keyRange = parameters.getValue();
-            Object[] startKey = mapKeyPrefix(table, keyRange.start);
-            Object[] endKey = mapKeyPrefix(table, keyRange.end);
-            OpRange range = new OpRange(
-                codec.encodeKeyPrefix(startKey, keyRange.start.userKey.size()),
-                codec.encodeKeyPrefix(endKey, keyRange.end.userKey.size()),
-                keyRange.withStart,
-                keyRange.withEnd
-            );
-            if (isInvalidRange(startKey, endKey, range)) {
-                return new Fork(new long[0], Collections.emptyNavigableSet(), true);
+            OpRange range;
+            if (validateKeyRange(keyRange) && validateOpRange(range = convert(codec, table, keyRange))) {
+                subTasks = getSubTasks(routeTable, range);
             }
-            NavigableSet<Task> subTasks = getSubTasks(routeTable, range);
             return new Fork(new long[subTasks.size()], subTasks, true);
-
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

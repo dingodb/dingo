@@ -16,8 +16,8 @@
 
 package io.dingodb.client.operation.impl;
 
-import io.dingodb.client.common.ArrayWrapperList;
 import io.dingodb.client.OperationContext;
+import io.dingodb.client.common.ArrayWrapperList;
 import io.dingodb.client.common.Record;
 import io.dingodb.client.common.RouteTable;
 import io.dingodb.sdk.common.DingoCommonId;
@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.TreeSet;
+
+import static io.dingodb.client.utils.OperationUtils.checkParameters;
 
 public class PutOperation implements Operation {
 

@@ -38,6 +38,8 @@ import java.util.NavigableSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import static io.dingodb.client.utils.OperationUtils.mapKey;
+
 public class GetOperation implements Operation {
 
     private static final GetOperation INSTANCE = new GetOperation();

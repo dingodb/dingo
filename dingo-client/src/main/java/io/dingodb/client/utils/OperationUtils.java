@@ -1,0 +1,72 @@
+/*
+ * Copyright 2021 DataCanvas
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.dingodb.client.utils;
+
+import io.dingodb.client.common.Key;
+import io.dingodb.client.common.Record;
+import io.dingodb.sdk.common.table.Column;
+import io.dingodb.sdk.common.table.Table;
+
+import java.util.Comparator;
+import java.util.List;
+
+public final class OperationUtils {
+
+    private OperationUtils() {
+    }
+
+    public static Object[] mapKey(Table table, Key key) {
+        Object[] dst = new Object[table.getColumns().size()];
+        return mapKey(key.getUserKey().toArray(), dst, table.getColumns(), table.getKeyColumns());
+    }
+
+    public static Object[] mapKeyPrefix(Table table, Key key) {
+        List<Column> keyColumns = table.getKeyColumns();
+        keyColumns.sort(Comparator.comparingInt(Column::getPrimary));
+        Object[] dst = new Object[table.getColumns().size()];
+        Object[] src = key.getUserKey().toArray();
+        return mapKey(src, dst, table.getColumns(), keyColumns.subList(0, src.length));
+    }
+
+    public static Object[] mapKey(Object[] src, Object[] dst, List<Column> columns, List<Column> keyColumns) {
+        if (keyColumns.size() != src.length) {
+            throw new IllegalArgumentException(
+                "Key column count is: " + keyColumns.size() + ", but give key count: " + src.length
+            );
+        }
+        for (int i = 0; i < keyColumns.size(); i++) {
+            Column column = keyColumns.get(i);
+            if ((dst[columns.indexOf(column)] = src[i]) == null && !column.isNullable()) {
+                throw new IllegalArgumentException("Non-null column [" + column.getName() + "] cannot be null");
+            }
+        }
+        return dst;
+    }
+
+    public static void checkParameters(List<Column> columns, Object[] record) {
+        for (int i = 0; i < columns.size() && i < record.length; i++) {
+            if (!columns.get(i).isNullable() && record[i] == null) {
+                throw new IllegalArgumentException("Non-null column [" + columns.get(i).getName() + "] cannot be null");
+            }
+        }
+    }
+
+    public static void checkParameters(Table table, Record record) {
+        checkParameters(table.getColumns(), record.getValues().toArray());
+    }
+
+}
