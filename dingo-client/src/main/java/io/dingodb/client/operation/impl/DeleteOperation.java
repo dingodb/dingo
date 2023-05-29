@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 
+import static io.dingodb.client.utils.OperationUtils.mapKey;
+
 public class DeleteOperation implements Operation {
 
     private static final DeleteOperation INSTANCE = new DeleteOperation();

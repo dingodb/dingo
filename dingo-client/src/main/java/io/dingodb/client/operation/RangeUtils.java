@@ -17,31 +17,48 @@
 package io.dingodb.client.operation;
 
 import io.dingodb.client.common.RouteTable;
+import io.dingodb.client.operation.impl.OpKeyRange;
 import io.dingodb.client.operation.impl.OpRange;
 import io.dingodb.client.operation.impl.Operation;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.SDKCommonId;
+import io.dingodb.sdk.common.codec.KeyValueCodec;
+import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.ByteArrayUtils;
 
-import java.util.Arrays;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import static io.dingodb.client.utils.OperationUtils.mapKeyPrefix;
 import static io.dingodb.sdk.common.utils.Any.wrap;
-import static io.dingodb.sdk.common.utils.ByteArrayUtils.compareWithoutLen;
+import static io.dingodb.sdk.common.utils.ByteArrayUtils.lessThanOrEqual;
 
 public class RangeUtils {
 
-    public static boolean isInvalidRange(Object[] startKey, Object[] endKey, OpRange range) {
-        return compareWithoutLen(range.getStartKey(), range.getEndKey()) > 0
-            || (Arrays.equals(range.getStartKey(), range.getEndKey())) && (!range.withEnd || !range.withStart)
-            || (!range.withStart && startKey.length == 0)
-            || (!range.withEnd && endKey.length == 0);
+    public static boolean validateKeyRange(OpKeyRange keyRange) {
+        return (!keyRange.getStart().userKey.isEmpty() || keyRange.withStart)
+            && (!keyRange.getEnd().userKey.isEmpty() || keyRange.withEnd);
+    }
+
+    public static boolean validateOpRange(OpRange range) {
+        return lessThanOrEqual(range.getStartKey(), range.getEndKey());
+    }
+
+    public static OpRange convert(KeyValueCodec codec, Table table, OpKeyRange keyRange) throws IOException {
+        Object[] startKey = mapKeyPrefix(table, keyRange.start);
+        Object[] endKey = mapKeyPrefix(table, keyRange.end);
+        return new OpRange(
+            codec.encodeKeyPrefix(startKey, keyRange.start.userKey.size()),
+            codec.encodeKeyPrefix(endKey, keyRange.end.userKey.size()),
+            keyRange.withStart,
+            keyRange.withEnd
+        );
     }
 
     public static Comparator<Operation.Task> getComparator() {

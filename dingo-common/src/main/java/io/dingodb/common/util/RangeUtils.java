@@ -42,22 +42,17 @@ public class RangeUtils {
         byte[] rangeStart = range.getStartKey();
         byte[] rangeEnd = range.getEndKey();
         NavigableSet<RangeDistribution> subRanges = new TreeSet<>(rangeComparator());
-        Predicate<byte[]> filter = (k) ->
-            greatThan(rangeEnd, k) || (compareWithoutLen(rangeEnd, k) == 0 && range.isWithEnd())
-        ;
+        Predicate<byte[]> filter = __ -> checkEndIn(rangeEnd, __, range.isWithEnd());
         Function<RangeDistribution, byte[]> keyGetter = RangeDistribution::getStartKey;
 
         for (RangeDistribution rd : rangeSet.descendingSet()) {
             if (filter.test(keyGetter.apply(rd))) {
                 if (subRanges.isEmpty()) {
-                    filter = k ->
-                        !(greatThan(rangeStart, k) || compareWithoutLen(rangeStart, k) == 0 && !range.isWithStart())
-                    ;
+                    filter = __ -> checkStartIn(rangeStart, __, range.isWithStart());
                     keyGetter = RangeDistribution::getEndKey;
                 }
                 subRanges.add(new RangeDistribution(
-                    rd.getId(),
-                    rd.getStartKey(), rd.getEndKey(), rd.isWithStart(), rd.isWithEnd()
+                    rd.getId(), rd.getStartKey(), rd.getEndKey(), rd.isWithStart(), rd.isWithEnd()
                 ));
             }
         }
@@ -71,6 +66,15 @@ public class RangeUtils {
         }
 
         return subRanges;
+    }
+
+    private static boolean checkStartIn(byte[] rangeStart, byte[] regionEnd, boolean withStart) {
+        return compareWithoutLen(rangeStart, regionEnd) < 0
+            || (withStart && rangeStart.length != regionEnd.length && compareWithoutLen(rangeStart, regionEnd) == 0);
+    }
+
+    private static boolean checkEndIn(byte[] rangeEnd, byte[] regionStart, boolean withEnd) {
+        return greatThan(rangeEnd, regionStart) || (compareWithoutLen(rangeEnd, regionStart) == 0 && withEnd);
     }
 
 }
