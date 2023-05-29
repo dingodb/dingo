@@ -260,6 +260,8 @@ SqlCreate SqlCreateUser(Span s, boolean replace) :
     SqlNode create = null;
     Boolean ifNotExists = false;
     String requireSsl = null;
+    String lock = "N";
+    Object expireDays = null;
 }
 {
     <USER> ifNotExists = IfNotExistsOpt()
@@ -268,8 +270,10 @@ SqlCreate SqlCreateUser(Span s, boolean replace) :
     [ <AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER>) { host = token.image; }  ]
     <IDENTIFIED> <BY>  <QUOTED_STRING> { password = token.image; }
     [ <REQUIRE> (  <SSL> { requireSsl = "SSL"; } | <NONE> { requireSsl  = "NONE"; }) ]
+    [ <PASSWORD> <EXPIRE> { expireDays = "0"; } [ <INTERVAL> expireDays = number() <DAY> ] ]
+    [ <ACCOUNT> [ <LOCK> { lock = "Y"; } ] [ <UNLOCK> { lock = "N"; } ] ]
     {
-       return new SqlCreateUser(user, password, host, s.end(this), replace, ifNotExists, requireSsl);
+       return new SqlCreateUser(user, password, host, s.end(this), replace, ifNotExists, requireSsl, lock, expireDays);
     }
 }
 
@@ -1086,6 +1090,8 @@ SqlAlterUser SqlAlterUser(Span s, String scope): {
     String host = "%";
     SqlNode create = null;
     String requireSsl = null;
+    String lock = null;
+    Object expireDays = null;
 } {
    <USER>
    ( <QUOTED_STRING> | <IDENTIFIER> )
@@ -1093,7 +1099,9 @@ SqlAlterUser SqlAlterUser(Span s, String scope): {
     [ <AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER>) { host = token.image; }  ]
     [ <IDENTIFIED> <BY>  <QUOTED_STRING> { password = token.image; } ]
     [ <REQUIRE> (  <SSL> { requireSsl = "SSL"; } | <NONE> { requireSsl  = "NONE"; }) ]
+    [ <PASSWORD> <EXPIRE> { expireDays = "0"; } [ <INTERVAL> expireDays = number() <DAY> ] ]
+    [ <ACCOUNT> [ <LOCK> { lock = "Y";} ] [ <UNLOCK> { lock = "N"; } ] ]
     {
-      return new SqlAlterUser(user, password, host, requireSsl, s.end(this));
+      return new SqlAlterUser(user, password, host, requireSsl, s.end(this), lock, expireDays);
     }
 }

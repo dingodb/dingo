@@ -353,17 +353,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 RESOURCE.tableNotFound(name.toString())
             );
         }
-        List<Index> indexList = tableDefinition.getIndexes().values().stream().map(index -> {
-            index.setStatus(IndexStatus.NEW);
-            return index;
-        }).collect(Collectors.toList());
-        tableDefinition.getIndexes().clear();
         schema.createTable(tableName, tableDefinition);
-
-        if (indexList.size() > 0) {
-            schema.createIndex(tableName, indexList);
-        }
-
     }
 
 
@@ -379,8 +369,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 throw new RuntimeException("table doesn't exist");
             }
         }
+        sqlGrant.host = getRealAddress(sqlGrant.host);
         if (userService.existsUser(UserDefinition.builder().user(sqlGrant.user)
-            .host(getRealAddress(sqlGrant.host)).build())) {
+            .host(sqlGrant.host).build())) {
             PrivilegeDefinition privilegeDefinition = getPrivilegeDefinition(sqlGrant, context);
             userService.grant(privilegeDefinition);
         } else {
@@ -400,8 +391,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 throw new RuntimeException("table doesn't exist");
             }
         }
+        sqlRevoke.host = getRealAddress(sqlRevoke.host);
         if (userService.existsUser(UserDefinition.builder().user(sqlRevoke.user)
-            .host(getRealAddress(sqlRevoke.host)).build())) {
+            .host(sqlRevoke.host).build())) {
             PrivilegeDefinition privilegeDefinition = getPrivilegeDefinition(sqlRevoke, context);
             userService.revoke(privilegeDefinition);
         } else {
@@ -426,8 +418,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else {
             userDefinition.setPlugin("mysql_native_password");
             userDefinition.setRequireSsl(sqlCreateUser.requireSsl);
+            userDefinition.setLock(sqlCreateUser.lock);
             String digestPwd = AlgorithmPlugin.digestAlgorithm(sqlCreateUser.password, userDefinition.getPlugin());
             userDefinition.setPassword(digestPwd);
+            userDefinition.setExpireDays(sqlCreateUser.expireDays);
             userService.createUser(userDefinition);
         }
     }
@@ -496,6 +490,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (userService.existsUser(userDefinition)) {
             userDefinition.setPassword(sqlAlterUser.password);
             userDefinition.setRequireSsl(sqlAlterUser.requireSsl);
+            userDefinition.setLock(sqlAlterUser.lock);
+            userDefinition.setExpireDays(sqlAlterUser.expireDays);
             userService.updateUser(userDefinition);
         } else {
             throw new RuntimeException("user is not exist");

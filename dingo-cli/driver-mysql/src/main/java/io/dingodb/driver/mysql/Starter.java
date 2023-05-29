@@ -62,7 +62,7 @@ public class Starter {
             .iterator().next().get();
         mysqlNetService.listenPort(port);
 
-        SessionVariableWatched.getInstance().addObserver(new IdleTimeWatcher());
+        SessionVariableWatched.getInstance().addObserver(new SessionVariableChangeWatcher());
     }
 
     private int listenRandomPort(NetService netService)  {

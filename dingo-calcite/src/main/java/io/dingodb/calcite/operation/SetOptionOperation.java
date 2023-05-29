@@ -77,7 +77,7 @@ public class SetOptionOperation implements DdlOperation {
                 }
                 connection.setClientInfo(name, valStr);
             } else if ("SYSTEM".equals(scope)) {
-                if (!ScopeVariables.globalVariables.contains(name)) {
+                if (!ScopeVariables.globalVariables.containsKey(name)) {
                     throw new RuntimeException(String.format(ErrorCode.ER_UNKNOWN_VARIABLES.message, name));
                 }
                 String sql = SQL_TEMPLATE.replace("tmpValue", value.toString()).replace("tmpName", name);

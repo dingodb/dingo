@@ -7635,6 +7635,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < ABS: "ABS" >
 |   < ABSENT: "ABSENT" >
 |   < ABSOLUTE: "ABSOLUTE" >
+|   < ACCOUNT: "ACCOUNT" >
 |   < ACTION: "ACTION" >
 |   < ADA: "ADA" >
 |   < ADD: "ADD" >
@@ -7836,6 +7837,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < EXECUTOR: "EXECUTOR" >
 |   < EXISTS: "EXISTS" >
 |   < EXP: "EXP" >
+|   < EXPIRE: "EXPIRE" >
 |   < EXPLAIN: "EXPLAIN" >
 |   < EXTEND: "EXTEND" >
 |   < EXTERNAL: "EXTERNAL" >
@@ -7954,6 +7956,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < LOCALTIME: "LOCALTIME" >
 |   < LOCALTIMESTAMP: "LOCALTIMESTAMP" >
 |   < LOCATOR: "LOCATOR" >
+|   < LOCK: "LOCK" >
 |   < LOWER: "LOWER" >
 |   < M: "M" >
 |   < MAP: "MAP" >
@@ -8305,6 +8308,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < UNION: "UNION" >
 |   < UNIQUE: "UNIQUE" >
 |   < UNKNOWN: "UNKNOWN" >
+|   < UNLOCK: "UNLOCK" >
 |   < UNPIVOT: "UNPIVOT" >
 |   < UNNAMED: "UNNAMED" >
 |   < UNNEST: "UNNEST" >

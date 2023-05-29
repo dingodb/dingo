@@ -33,7 +33,7 @@
       "default": "",
       "scale": -2147483648,
       "primary": -1,
-      "nullable": false
+      "nullable": true
     },
     {
       "name": "Timestamp",

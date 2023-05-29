@@ -17,6 +17,7 @@
 package io.dingodb.driver.mysql.command;
 
 import io.dingodb.common.mysql.MysqlByteUtil;
+import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.DingoPreparedStatement;
 import io.dingodb.driver.mysql.MysqlConnection;
@@ -50,6 +51,12 @@ import static io.dingodb.common.mysql.constant.ErrorCode.ER_UNKNOWN_ERROR;
 @Slf4j
 public class MysqlCommands {
 
+    public static final String setPwdSqlTemp1 = "set password for %s@%s";
+    public static final String setPwdSqlTemp2 = "set password for %s =";
+
+    public static final String alterUserPwdSqlTemp1 = "alter user %s@%s identified by";
+    public static final String alterUserPwdSqlTemp2 = "alter user %s identified by";
+
     MysqlPacketFactory mysqlPacketFactory = MysqlPacketFactory.getInstance();
 
     public static void executeShowFields(String table, AtomicLong packetId, MysqlConnection mysqlConnection) {
@@ -71,8 +78,37 @@ public class MysqlCommands {
             if (log.isDebugEnabled()) {
                 log.debug("receive sql:" + sql);
             }
+            if (mysqlConnection.passwordExpire && !doExpire(mysqlConnection, sql, packetId)) {
+                MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE);
+                return;
+            }
             executeSingleQuery(sql, packetId, mysqlConnection);
         }
+    }
+
+    private boolean doExpire(MysqlConnection mysqlConnection, String sql, AtomicLong packetId) {
+        sql = sql.trim().toLowerCase().replace("'", "");
+        DingoConnection dingoConnection = (DingoConnection) mysqlConnection.getConnection();
+        String user = dingoConnection.getContext().getOption("user");
+        String host = dingoConnection.getContext().getOption("host");
+        String setPwdSql1 = String.format(setPwdSqlTemp1, user, host);
+        String alterUserPwdSql1 = String.format(alterUserPwdSqlTemp1, user, host);
+        String setPwdSql2;
+        String alterUserPwdSql2;
+        if (host.contains("%")) {
+            setPwdSql2 = String.format(setPwdSqlTemp2, user, host);
+            alterUserPwdSql2 = String.format(alterUserPwdSqlTemp2, user, host);
+            if (sql.startsWith(setPwdSql2) || sql.startsWith(alterUserPwdSql2)) {
+                return true;
+            }
+        }
+
+        if (sql.startsWith(setPwdSql1) || sql.startsWith(alterUserPwdSql1)) {
+            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel,
+                ErrorCode.ER_PASSWORD_EXPIRE);
+            return true;
+        }
+        return false;
     }
 
     public void prepare(MysqlConnection mysqlConnection, String sql) {

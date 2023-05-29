@@ -53,6 +53,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
+import java.util.Calendar;
 import java.util.Properties;
 import java.util.Random;
 import java.util.TimeZone;
@@ -141,6 +143,15 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                     //mysql protocol packet auto increment based by 0;
                     packetId.incrementAndGet();
                     if (isUserExists && validator(dbPwd, fullSeed, authPacket.password)) {
+//                        if ("Y".equalsIgnoreCase(userDefinition.getLock())) {
+//                            String error = String.format(ErrorCode.ER_LOCK_ACCOUNT.message, user, ip);
+//                            MysqlResponseHandler.responseError(packetId,
+//                                mysqlConnection.channel, ErrorCode.ER_LOCK_ACCOUNT, error);
+//                            if (mysqlConnection.channel.isActive()) {
+//                                mysqlConnection.channel.close();
+//                            }
+//                            return;
+//                        }
                         if (StringUtils.isNotEmpty(userDefinition.getRequireSsl())) {
                             if (ctx.channel().pipeline().get("tls") == null) {
                                 String error =
@@ -153,6 +164,25 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                                 return;
                             }
                         }
+//                        if (userDefinition.getPasswordExpire() != null) {
+//                            String passwordExpire = userDefinition.getPasswordExpire().toString();
+//                            if (passwordExpire.equalsIgnoreCase("Y")) {
+//                                mysqlConnection.passwordExpire = true;
+//                            } else {
+//                                if (userDefinition.getExpireDays() != null) {
+//                                    Timestamp pwdLastChange = userDefinition.getPwdLastChange();
+//                                    Integer expireDay = Integer.valueOf((Integer) userDefinition.getExpireDays());
+//                                    Calendar calendar = Calendar.getInstance();
+//                                    calendar.setTimeInMillis(pwdLastChange.getTime());
+//                                    calendar.add(Calendar.DAY_OF_MONTH, expireDay);
+//                                    if (calendar.getTimeInMillis() > System.currentTimeMillis()) {
+//                                        mysqlConnection.passwordExpire = true;
+//                                    }
+//                                }
+//                                mysqlConnection.passwordExpire = false;
+//                            }
+//                        }
+
                         OKPacket okPacket = new OKPacket();
                         okPacket.capabilities = MysqlServer.getServerCapabilities();
                         okPacket.affectedRows = 0;
@@ -164,7 +194,8 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         ctx.writeAndFlush(buffer);
                         mysqlConnection.authed = true;
                         mysqlConnection.authPacket = authPacket;
-                        DingoConnection dingoConnection = (DingoConnection) getLocalConnection(user, ip);
+                        DingoConnection dingoConnection = (DingoConnection) getLocalConnection(user,
+                            userDefinition.getHost());
                         mysqlConnection.setConnection(dingoConnection);
                         PrivilegeGather privilegeGather = userService.getPrivilegeDef(user, ip);
                         env.getPrivilegeGatherMap().put(privilegeGather.key(), privilegeGather);

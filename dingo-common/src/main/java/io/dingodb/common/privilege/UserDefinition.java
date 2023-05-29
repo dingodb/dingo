@@ -22,6 +22,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.sql.Timestamp;
+
 @Setter
 @Getter
 @NoArgsConstructor
@@ -31,15 +33,27 @@ public class UserDefinition extends PrivilegeDefinition {
     private String password;
     private String requireSsl;
 
+    private String lock;
+
+    private Object passwordExpire;
+
+    private Timestamp pwdLastChange;
+
+    private Object expireDays;
+
     Boolean[] privileges;
 
     @Builder(toBuilder = true)
     public UserDefinition(String user, String host, String plugin,
-                          String password, String requireSsl) {
+                          String password, String requireSsl,
+                          String lock,
+                          Object expireDays) {
         super(user, host);
         this.plugin = plugin;
         this.password = password;
         this.requireSsl = requireSsl;
+        this.lock = lock;
+        this.expireDays = expireDays;
     }
 
     public String getKey() {

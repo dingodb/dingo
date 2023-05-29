@@ -51,7 +51,7 @@ public class ResultSetRowPacket extends MysqlPacket {
 
             for (int i = 0; i < values.size(); i++) {
                 byte[] fv = values.get(i).getBytes();
-                if (fv == null) {
+                if (fv == null || fv.length == 0) {
                     buf.writeByte(NULL_MARK);
                 } else {
                     BufferUtil.writeLength(buf, fv.length);
@@ -80,7 +80,7 @@ public class ResultSetRowPacket extends MysqlPacket {
             buffer.writeByte(packetId);
             for (int i = 0; i < values.size(); i++) {
                 byte[] fv = values.get(i).getBytes();
-                if (fv == null) {
+                if (fv == null || fv.length == 0) {
                     buffer.writeByte(NULL_MARK);
                 } else {
                     BufferUtil.writeLength(buffer, fv.length);

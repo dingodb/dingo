@@ -25,7 +25,7 @@ import java.util.Observer;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class IdleTimeWatcher implements Observer {
+public class SessionVariableChangeWatcher implements Observer {
 
     @Override
     public void update(Observable observable, Object arg) {
@@ -44,6 +44,9 @@ public class IdleTimeWatcher implements Observer {
                     TimeUnit.SECONDS);
                 log.info("update interactive connection idle time:" + sessionVariable);
             }
+        } else if ("@password_reset".equalsIgnoreCase(sessionVariable.getName())) {
+            MysqlConnection connection = MysqlNettyServer.connections.get(sessionVariable.getId());
+            connection.passwordExpire = false;
         }
 
     }

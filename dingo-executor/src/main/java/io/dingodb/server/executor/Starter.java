@@ -22,7 +22,7 @@ import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
-import io.dingodb.driver.mysql.IdleTimeWatcher;
+import io.dingodb.driver.mysql.SessionVariableChangeWatcher;
 import io.dingodb.exec.Services;
 import io.dingodb.net.MysqlNetService;
 import io.dingodb.net.MysqlNetServiceProvider;
@@ -65,11 +65,12 @@ public class Starter {
         ClusterService.register();
 
         Services.initControlMsgService();
+        Services.initNetService();
         MysqlNetService mysqlNetService = ServiceLoader.load(MysqlNetServiceProvider.class)
             .iterator().next().get();
         mysqlNetService.listenPort(Configuration.mysqlPort());
 
-        SessionVariableWatched.getInstance().addObserver(new IdleTimeWatcher());
+        SessionVariableWatched.getInstance().addObserver(new SessionVariableChangeWatcher());
 
     }
 

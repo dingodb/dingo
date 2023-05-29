@@ -13,3 +13,10 @@ variable:
     autoIncrementCacheCount: 100
     autoIncrementIncrement: 1
     autoIncrementOffset: 1
+security:
+    cipher:
+        keyPath: /opt/dingo/conf/dingodb.jks
+        keyPass: dingodb
+        storePass: dingodb
+        alias: dingodb
+        issuer: dingo
