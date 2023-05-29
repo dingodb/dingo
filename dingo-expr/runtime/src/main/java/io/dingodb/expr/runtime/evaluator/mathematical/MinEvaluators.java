@@ -29,7 +29,8 @@ import java.sql.Timestamp;
         BigDecimal.class,
         double.class,
         long.class,
-        int.class
+        int.class,
+        boolean.class
     }
 )
 final class MinEvaluators {

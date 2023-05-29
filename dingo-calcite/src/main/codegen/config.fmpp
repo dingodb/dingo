@@ -39,6 +39,7 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlAlterUser"
       "io.dingodb.calcite.grammar.ddl.SqlCreateUser"
       "io.dingodb.calcite.grammar.ddl.SqlCreateIndex"
+      "io.dingodb.calcite.grammar.dql.SqlDesc"
       "io.dingodb.calcite.grammar.ddl.SqlDropUser"
       "io.dingodb.calcite.grammar.ddl.SqlDropIndex"
       "io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges"

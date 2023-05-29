@@ -867,6 +867,15 @@ SqlFlushPrivileges SqlFlush ():{
    <FLUSH> { s = span(); } <PRIVILEGES> { return new SqlFlushPrivileges(s.end(this)); }
 }
 
+SqlDesc SqlDesc(): {
+    final Span s;
+    String tableName = null;
+} {
+    <DESC> { s = span(); }
+    (<QUOTED_STRING> | <IDENTIFIER>) { tableName = token.image.toUpperCase(); }
+    { return new SqlDesc(s.end(this), tableName); }
+}
+
 SqlShow SqlShow(): {
   final Span s;
   final SqlShow show;
@@ -897,6 +906,7 @@ SqlShow SqlShow(): {
     return show;
   }
 }
+
 SqlShow SqlShowTableDistribution(Span s): {
    String tableName = null;
 } {
