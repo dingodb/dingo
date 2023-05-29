@@ -20,7 +20,6 @@ import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Input;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.operator.PartRangeScanOperator;
-import io.dingodb.exec.operator.PartScanOperator;
 import io.dingodb.exec.operator.SoleOutOperator;
 
 import javax.annotation.Nonnull;
@@ -42,12 +41,6 @@ public final class AssertOperator extends Assert<Operator, AssertOperator> {
         isA(SoleOutOperator.class);
         Input input = instance.getSoleOutput().getLink();
         return operator(input != null ? instance.getTask().getOperator(input.getOperatorId()) : null);
-    }
-
-    public AssertOperator isPartScan(CommonId tableId, CommonId partId) {
-        return isA(PartScanOperator.class)
-            .prop("tableId", tableId)
-            .prop("partId", partId);
     }
 
     public AssertOperator isPartRangeScan(CommonId tableId, CommonId partId) {

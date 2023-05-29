@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.aggregate;
 
+import io.dingodb.common.AggregationOperator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -46,4 +47,8 @@ public interface Agg {
      * @return the output value
      */
     Object getValue(@Nullable Object var);
+
+    AggregationOperator.AggregationType getAggregationType();
+
+    int getIndex();
 }

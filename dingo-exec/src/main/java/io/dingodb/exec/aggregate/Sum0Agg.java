@@ -19,6 +19,7 @@ package io.dingodb.exec.aggregate;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.AggregationOperator;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.converter.ValueConverter;
 
@@ -30,6 +31,11 @@ public class Sum0Agg extends SumAgg {
         @JsonProperty("type") DingoType type
     ) {
         super(index, type);
+    }
+
+    @Override
+    public AggregationOperator.AggregationType getAggregationType() {
+        return AggregationOperator.AggregationType.SUM0;
     }
 
     @Override

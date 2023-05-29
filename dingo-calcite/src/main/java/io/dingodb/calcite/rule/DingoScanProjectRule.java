@@ -67,7 +67,11 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
             scan.getHints(),
             scan.getTable(),
             scan.getFilter(),
-            TupleMapping.of(selectedColumns)
+            TupleMapping.of(selectedColumns),
+            scan.getAggCalls(),
+            scan.getGroupSet(),
+            scan.getGroupSets(),
+            scan.isPushDown()
         );
         Mapping mapping = Mappings.target(selectedColumns, scan.getRowType().getFieldCount());
         final List<RexNode> newProjectRexNodes = RexUtil.apply(mapping, project.getProjects());
@@ -81,7 +85,8 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
                     project.getHints(),
                     newScan,
                     newProjectRexNodes,
-                    project.getRowType()
+                    project.getRowType(),
+                    project.getVariablesSet()
                 )
             );
         }

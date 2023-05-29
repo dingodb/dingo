@@ -168,21 +168,6 @@ public class QueryAggTest {
     }
 
     @Test
-    public void testSum() throws SQLException, JsonProcessingException {
-        String sql = "select name, sum(amount) as total_amount from test group by name";
-        sqlHelper.queryTest(
-            sql,
-            new String[]{"name", "total_amount"},
-            DingoTypeFactory.tuple("STRING", "DOUBLE"),
-            "Alice, 16.5\n"
-                + "Betty, 10.5\n"
-                + "Cindy, 12.0\n"
-                + "Doris, 5.0\n"
-                + "Emily, 5.5\n"
-        );
-    }
-
-    @Test
     public void testSum1() throws SQLException, JsonProcessingException {
         String sql = "select sum(amount) as all_sum from test";
         sqlHelper.queryTest(

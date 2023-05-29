@@ -17,6 +17,7 @@
 package io.dingodb.exec.aggregate;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.AggregationOperator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -40,5 +41,15 @@ public class CountAllAgg extends AbstractAgg {
     @Override
     public Object getValue(Object var) {
         return var != null ? var : 0L;
+    }
+
+    @Override
+    public AggregationOperator.AggregationType getAggregationType() {
+        return AggregationOperator.AggregationType.COUNT_WITH_NULL;
+    }
+
+    @Override
+    public int getIndex() {
+        return -1;
     }
 }

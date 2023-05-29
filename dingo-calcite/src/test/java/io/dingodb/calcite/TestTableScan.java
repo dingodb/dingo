@@ -26,6 +26,7 @@ import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.impl.JobManagerImpl;
@@ -43,6 +44,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -93,7 +96,7 @@ public class TestTableScan {
             .soleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNull();
-        assertThat((scan).getSelection()).isNull();
+        assertThat((scan).getSelection()).isEqualTo(TupleMapping.of(Arrays.asList(0, 1, 2)));
         // To job.
         Job job = jobManager.createJob(getClass().getName());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
@@ -120,7 +123,7 @@ public class TestTableScan {
             .soleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNotNull();
-        assertThat((scan).getSelection()).isNull();
+        assertThat((scan).getSelection()).isEqualTo(TupleMapping.of(Arrays.asList(0, 1, 2)));
         // To job.
         Job job = jobManager.createJob(getClass().getName());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
@@ -200,7 +203,7 @@ public class TestTableScan {
             .soleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNotNull();
-        assertThat((scan).getSelection()).isNull();
+        assertThat((scan).getSelection()).isEqualTo(TupleMapping.of(Arrays.asList(0, 1, 2)));
         // To job.
         Job job = jobManager.createJob(getClass().getName());
         DingoJobVisitor.renderJob(job, relNode, currentLocation);

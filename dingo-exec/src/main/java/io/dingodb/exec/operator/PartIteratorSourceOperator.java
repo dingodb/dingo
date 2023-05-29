@@ -19,15 +19,12 @@ package io.dingodb.exec.operator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.exec.Services;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.table.Part;
-import io.dingodb.exec.table.PartInKvStore;
 
 public abstract class PartIteratorSourceOperator extends FilterProjectSourceOperator {
     @JsonProperty("table")
@@ -58,14 +55,5 @@ public abstract class PartIteratorSourceOperator extends FilterProjectSourceOper
         OutputHint hint = new OutputHint();
         hint.setPartId(partId);
         output.setHint(hint);
-    }
-
-    @Override
-    public void init() {
-        super.init();
-        part = new PartInKvStore(
-            Services.KV_STORE.getInstance(tableId, partId),
-            CodecService.getDefault().createKeyValueCodec(tableId, schema, keyMapping)
-        );
     }
 }

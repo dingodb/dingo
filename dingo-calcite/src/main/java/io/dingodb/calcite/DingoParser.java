@@ -66,6 +66,8 @@ import java.sql.Connection;
 import java.util.List;
 import java.util.Objects;
 
+import static io.dingodb.calcite.rule.DingoRules.DINGO_AGGREGATE_SCAN_RULE;
+
 // Each sql parsing requires a new instance.
 @Slf4j
 public class DingoParser {
@@ -160,14 +162,16 @@ public class DingoParser {
             .replace(DingoConvention.INSTANCE)
             .replace(DingoRelStreaming.ROOT);
         List<RelOptRule> rules = DingoRules.rules();
+        ImmutableList.Builder<RelOptRule> builder = ImmutableList.builder();
+        builder.addAll(rules);
         if (!context.getConfig().topDownOpt()) {
-            rules = ImmutableList.<RelOptRule>builder()
-                .addAll(rules)
-                // This is needed for `IterativeRuleDriver`.
-                .add(AbstractConverter.ExpandConversionRule.INSTANCE)
-                .build();
+            // This is needed for `IterativeRuleDriver`.
+            builder.add(AbstractConverter.ExpandConversionRule.INSTANCE);
         }
-        final Program program = Programs.ofRules(rules);
+        if (context.isPushDown()) {
+            builder.add(DINGO_AGGREGATE_SCAN_RULE);
+        }
+        final Program program = Programs.ofRules(builder.build());
         // Seems the only way to prevent rex simplifying in optimization.
         try (Hook.Closeable ignored = Hook.REL_BUILDER_SIMPLIFY.addThread((Holder<Boolean> h) -> h.set(false))) {
             return program.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());

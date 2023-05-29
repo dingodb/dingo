@@ -27,6 +27,8 @@ public final class DingoRules {
         = DingoAggregateReduceRule.Config.DEFAULT.toRule();
     public static final DingoAggregateRule DINGO_AGGREGATE_RULE
         = DingoAggregateRule.DEFAULT.toRule(DingoAggregateRule.class);
+    public static final DingoAggregateScanRule DINGO_AGGREGATE_SCAN_RULE
+        = DingoAggregateScanRule.Config.DEFAULT.toRule();
     public static final DingoFilterRule DINGO_FILTER_RULE
         = DingoFilterRule.DEFAULT.toRule(DingoFilterRule.class);
     public static final DingoGetByIndexRule DINGO_GET_BY_INDEX_RULE
@@ -78,7 +80,7 @@ public final class DingoRules {
 
     private static final List<RelOptRule> rules = ImmutableList.of(
         CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN,
-        //CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES,
+        // CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES,
         CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
         CoreRules.FILTER_INTO_JOIN,
         CoreRules.JOIN_EXTRACT_FILTER,

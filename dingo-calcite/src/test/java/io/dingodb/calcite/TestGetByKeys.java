@@ -25,6 +25,7 @@ import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.utils.TableUtils;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.test.asserts.Assert;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,7 +77,7 @@ public class TestGetByKeys {
             .soleInput().isA(DingoTableScan.class)
             .getInstance();
         assertThat((scan).getFilter()).isNotNull();
-        assertThat((scan).getSelection()).isNull();
+        assertThat((scan).getSelection()).isEqualTo(TupleMapping.of(Arrays.asList(0, 1, 2, 3, 4)));
     }
 
     @Test

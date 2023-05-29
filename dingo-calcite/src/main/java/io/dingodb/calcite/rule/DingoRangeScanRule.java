@@ -54,11 +54,15 @@ public class DingoRangeScanRule extends RelRule<DingoRangeScanRule.Config> imple
                 rel.getTable(),
                 rel.getFilter(),
                 rel.getSelection(),
+                rel.getAggCalls(),
+                rel.getGroupSet(),
+                rel.getGroupSets(),
                 range.getStartKey(),
                 range.getEndKey(),
                 rel.getFilter().getKind() == SqlKind.NOT,
                 range.isWithStart(),
-                range.isWithEnd()
+                range.isWithEnd(),
+                rel.isPushDown()
             ));
         }
     }

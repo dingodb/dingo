@@ -27,8 +27,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 @ToString(of = {"tupleType", "parasType"})
 public class SqlExprCompileContext implements CompileContext {
-    private static final String TUPLE_VAR_NAME = "_";
-    private static final String SQL_DYNAMIC_VAR_NAME = "_P";
+    public static final String TUPLE_VAR_NAME = "_";
+    public static final String SQL_DYNAMIC_VAR_NAME = "_P";
 
     public static final Var TUPLE = Var.of(TUPLE_VAR_NAME);
     public static final Var PARAS = Var.of(SQL_DYNAMIC_VAR_NAME);

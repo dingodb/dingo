@@ -18,6 +18,7 @@ package io.dingodb.common.type;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -26,9 +27,11 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public final class TupleMapping {
     @JsonValue
     @Getter
+    @EqualsAndHashCode.Include
     private final int[] mappings;
 
     private TupleMapping(int[] mappings) {

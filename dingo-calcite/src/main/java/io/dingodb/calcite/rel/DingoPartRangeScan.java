@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.rel;
 
+import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
@@ -25,9 +26,11 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelWriter;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -59,7 +62,43 @@ public class DingoPartRangeScan extends LogicalDingoTableScan implements DingoRe
         boolean includeStart,
         boolean includeEnd
     ) {
-        super(cluster, traitSet, hints, table, filter, selection);
+        this(
+            cluster,
+            traitSet,
+            hints,
+            table,
+            filter,
+            selection,
+            null,
+            null,
+            null,
+            startKey,
+            endKey,
+            isNotBetween,
+            includeStart,
+            includeEnd,
+            false
+        );
+    }
+
+    public DingoPartRangeScan(
+        RelOptCluster cluster,
+        RelTraitSet traitSet,
+        List<RelHint> hints,
+        RelOptTable table,
+        @Nullable RexNode filter,
+        @Nullable TupleMapping selection,
+        @Nullable List<AggregateCall> aggCalls,
+        @Nullable ImmutableBitSet groupSet,
+        @Nullable ImmutableList<ImmutableBitSet> groupSets,
+        byte[] startKey,
+        byte[] endKey,
+        boolean isNotBetween,
+        boolean includeStart,
+        boolean includeEnd,
+        boolean pushDown
+    ) {
+        super(cluster, traitSet, hints, table, filter, selection, aggCalls, groupSet, groupSets, pushDown);
         this.startKey = startKey;
         this.endKey = endKey;
         this.isNotBetween = isNotBetween;
@@ -90,7 +129,7 @@ public class DingoPartRangeScan extends LogicalDingoTableScan implements DingoRe
         return visitor.visit(this);
     }
 
-    public static DingoPartRangeScan of(DingoTableScan tableScan) {
+    public static @NonNull DingoPartRangeScan of(@NonNull DingoTableScan tableScan) {
         return new DingoPartRangeScan(
             tableScan.getCluster(),
             tableScan.getTraitSet(),
@@ -98,12 +137,15 @@ public class DingoPartRangeScan extends LogicalDingoTableScan implements DingoRe
             tableScan.getTable(),
             tableScan.getFilter(),
             tableScan.getSelection(),
+            tableScan.getAggCalls(),
+            tableScan.getGroupSet(),
+            tableScan.getGroupSets(),
             null,
             null,
             false,
             true,
-            false
+            false,
+            tableScan.isPushDown()
         );
     }
-
 }

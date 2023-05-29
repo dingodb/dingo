@@ -17,6 +17,7 @@
 package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.calcite.rel.DingoPartRangeScan;
+import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.utils.TableInfo;
@@ -76,7 +77,7 @@ public final class DingoRangeScanVisitFun {
             );
         }
 
-        List<Output> outputs = new ArrayList<Output>();
+        List<Output> outputs = new ArrayList<>();
 
         for (RangeDistribution rd : distributions) {
             PartRangeScanOperator operator = new PartRangeScanOperator(
@@ -89,7 +90,13 @@ public final class DingoRangeScanVisitFun {
                 rd.getStartKey(),
                 rd.getEndKey(),
                 rd.isWithStart(),
-                rd.isWithEnd()
+                rd.isWithEnd(),
+                rel.getGroupSet() == null ? null
+                    : AggFactory.getAggKeys(rel.getGroupSet()),
+                rel.getAggCalls() == null ? null
+                    : AggFactory.getAggList(rel.getAggCalls(), DefinitionMapper.mapToDingoType(rel.getSelectedType())),
+                DefinitionMapper.mapToDingoType(rel.getRowType()),
+                rel.isPushDown()
             );
             operator.setId(idGenerator.get());
             Task task = job.getOrCreate(currentLocation, idGenerator);
@@ -98,6 +105,5 @@ public final class DingoRangeScanVisitFun {
         }
 
         return outputs;
-
     }
 }

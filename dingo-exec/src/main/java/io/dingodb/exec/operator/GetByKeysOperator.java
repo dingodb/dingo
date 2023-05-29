@@ -22,12 +22,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.Services;
 import io.dingodb.exec.codec.RawJsonDeserializer;
 import io.dingodb.exec.converter.JsonConverter;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.table.PartInKvStore;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -92,5 +95,14 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
         return keyTuples.stream()
             .map(i -> (Object[]) schema.select(keyMapping).convertTo(i, JsonConverter.INSTANCE))
             .collect(Collectors.toList());
+    }
+
+    @Override
+    public void init() {
+        super.init();
+        part = new PartInKvStore(
+            Services.KV_STORE.getInstance(tableId, partId),
+            CodecService.getDefault().createKeyValueCodec(tableId, schema, keyMapping)
+        );
     }
 }

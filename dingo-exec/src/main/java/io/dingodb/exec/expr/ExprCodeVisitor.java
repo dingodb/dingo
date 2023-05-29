@@ -21,6 +21,7 @@ import io.dingodb.expr.core.TypeCode;
 import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.parser.ExprVisitor;
 import io.dingodb.expr.parser.exception.ExprCompileException;
+import io.dingodb.expr.parser.op.AndOp;
 import io.dingodb.expr.parser.op.IsFalseOp;
 import io.dingodb.expr.parser.op.IsNotFalseOp;
 import io.dingodb.expr.parser.op.IsNotNullOp;
@@ -29,10 +30,12 @@ import io.dingodb.expr.parser.op.IsNullOp;
 import io.dingodb.expr.parser.op.IsTrueOp;
 import io.dingodb.expr.parser.op.Op;
 import io.dingodb.expr.parser.op.OpType;
+import io.dingodb.expr.parser.op.OrOp;
 import io.dingodb.expr.parser.value.Null;
 import io.dingodb.expr.parser.value.Value;
 import io.dingodb.expr.parser.var.Var;
 import io.dingodb.expr.runtime.CompileContext;
+import io.dingodb.expr.runtime.EvalContext;
 import io.dingodb.expr.runtime.var.RtVar;
 import lombok.SneakyThrows;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -42,6 +45,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.Objects;
 
 public class ExprCodeVisitor implements ExprVisitor<ExprCodeType> {
     private static final byte TYPE_INT32 = (byte) 0x01;
@@ -101,9 +105,11 @@ public class ExprCodeVisitor implements ExprVisitor<ExprCodeType> {
     private static final byte CAST = (byte) 0xF0;
 
     private final CompileContext ctx;
+    private final EvalContext etx;
 
-    public ExprCodeVisitor(@Nullable CompileContext ctx) {
+    public ExprCodeVisitor(@Nullable CompileContext ctx, @Nullable EvalContext etx) {
         this.ctx = ctx;
+        this.etx = etx;
     }
 
     private static byte codingType(int type) {
@@ -152,6 +158,45 @@ public class ExprCodeVisitor implements ExprVisitor<ExprCodeType> {
             buf.write(CAST);
             buf.write(codingType(targetType) << 4 | codingType(type));
         }
+    }
+
+    @SneakyThrows(IOException.class)
+    private static @NonNull ExprCodeType codingConst(int typeCode, @NonNull Object value) {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        switch (typeCode) {
+            case TypeCode.INT:
+                if (((Integer) value) >= 0) {
+                    buf.write(CONST_INT32);
+                    CodecUtils.encodeVarInt(buf, (Integer) value);
+                } else {
+                    buf.write(CONST_N_INT32);
+                    CodecUtils.encodeVarInt(buf, -(Integer) value);
+                }
+                break;
+            case TypeCode.LONG:
+                if (((Long) value) >= 0) {
+                    buf.write(CONST_INT64);
+                    CodecUtils.encodeVarInt(buf, (Long) value);
+                } else {
+                    buf.write(CONST_N_INT64);
+                    CodecUtils.encodeVarInt(buf, -(Long) value);
+                }
+                break;
+            case TypeCode.BOOL:
+                buf.write(((Boolean) value) ? CONST_BOOL : CONST_N_BOOL);
+                break;
+            case TypeCode.FLOAT:
+                buf.write(CONST_FLOAT);
+                CodecUtils.encodeFloat(buf, (Float) value);
+                break;
+            case TypeCode.DOUBLE:
+                buf.write(CONST_DOUBLE);
+                CodecUtils.encodeDouble(buf, (Double) value);
+                break;
+            default:
+                break;
+        }
+        return new ExprCodeType(typeCode, buf.toByteArray());
     }
 
     @SneakyThrows(IOException.class)
@@ -219,6 +264,8 @@ public class ExprCodeVisitor implements ExprVisitor<ExprCodeType> {
         if (targetType == -1) {
             if (type0 == TypeCode.STRING && type1 == TypeCode.STRING) {
                 targetType = TypeCode.STRING;
+            } else if (type0 == TypeCode.BOOL && type1 == TypeCode.BOOL) {
+                targetType = TypeCode.BOOL;
             } else {
                 throw new RuntimeException("Type mismatch.");
             }
@@ -293,46 +340,11 @@ public class ExprCodeVisitor implements ExprVisitor<ExprCodeType> {
         return null;
     }
 
-    @SneakyThrows(IOException.class)
     @Override
     public <V> ExprCodeType visit(@NonNull Value<V> op) {
-        ByteArrayOutputStream buf = new ByteArrayOutputStream();
         V value = op.getValue();
         int typeCode = TypeCode.getTypeCode(value);
-        switch (typeCode) {
-            case TypeCode.INT:
-                if (((Integer) value) >= 0) {
-                    buf.write(CONST_INT32);
-                    CodecUtils.encodeVarInt(buf, (Integer) value);
-                } else {
-                    buf.write(CONST_N_INT32);
-                    CodecUtils.encodeVarInt(buf, -(Integer) value);
-                }
-                break;
-            case TypeCode.LONG:
-                if (((Long) value) >= 0) {
-                    buf.write(CONST_INT64);
-                    CodecUtils.encodeVarInt(buf, (Long) value);
-                } else {
-                    buf.write(CONST_N_INT64);
-                    CodecUtils.encodeVarInt(buf, -(Long) value);
-                }
-                break;
-            case TypeCode.BOOL:
-                buf.write(((Boolean) value) ? CONST_BOOL : CONST_N_BOOL);
-                break;
-            case TypeCode.FLOAT:
-                buf.write(CONST_FLOAT);
-                CodecUtils.encodeFloat(buf, (Float) value);
-                break;
-            case TypeCode.DOUBLE:
-                buf.write(CONST_DOUBLE);
-                CodecUtils.encodeDouble(buf, (Double) value);
-                break;
-            default:
-                break;
-        }
-        return new ExprCodeType(typeCode, buf.toByteArray());
+        return codingConst(typeCode, value);
     }
 
     @SneakyThrows({ExprCompileException.class})
@@ -340,14 +352,24 @@ public class ExprCodeVisitor implements ExprVisitor<ExprCodeType> {
     public ExprCodeType visit(@NonNull Op op) {
         if (op.getType() == OpType.INDEX) {
             Expr[] exprArray = op.getExprArray();
-            if (SqlExprCompileContext.TUPLE.equals(exprArray[0])) {
-                RtVar rtVar = (RtVar) op.compileIn(ctx);
-                return codingTupleVar(rtVar.typeCode(), (int) rtVar.getId());
+            if (exprArray[0] instanceof Var) {
+                Var var = (Var) exprArray[0];
+                if (SqlExprCompileContext.TUPLE_VAR_NAME.equals(var.getName())) {
+                    RtVar rtVar = (RtVar) op.compileIn(ctx);
+                    return codingTupleVar(rtVar.typeCode(), (int) rtVar.getId());
+                } else if (SqlExprCompileContext.SQL_DYNAMIC_VAR_NAME.equals(var.getName())) {
+                    RtVar rtVar = (RtVar) op.compileIn(ctx);
+                    Object value = rtVar.eval(etx);
+                    return codingConst(rtVar.typeCode(), value);
+                }
             }
         }
         ExprCodeType[] exprCodeTypes = Arrays.stream(op.getExprArray())
             .map(expr -> expr.accept(this))
             .toArray(ExprCodeType[]::new);
+        if (Arrays.stream(exprCodeTypes).anyMatch(Objects::isNull)) {
+            return null;
+        }
         switch (op.getType()) {
             case NOT:
                 return codingUnaryLogicalOperator(NOT, exprCodeTypes[0]);
@@ -381,6 +403,10 @@ public class ExprCodeVisitor implements ExprVisitor<ExprCodeType> {
                 return codingRelationalOperator(NE, exprCodeTypes);
             case FUN:
                 switch (op.getName()) {
+                    case AndOp.FUN_NAME:
+                        return codingBinaryLogicalOperator(AND, exprCodeTypes);
+                    case OrOp.FUN_NAME:
+                        return codingBinaryLogicalOperator(OR, exprCodeTypes);
                     case IsNullOp.FUN_NAME:
                         return codingSpecialFun(IS_NULL, exprCodeTypes[0], false);
                     case IsNotNullOp.FUN_NAME:

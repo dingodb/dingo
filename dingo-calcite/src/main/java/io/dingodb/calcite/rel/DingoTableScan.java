@@ -16,14 +16,17 @@
 
 package io.dingodb.calcite.rel;
 
+import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.type.TupleMapping;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -40,7 +43,22 @@ public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
         @Nullable RexNode filter,
         @Nullable TupleMapping selection
     ) {
-        super(cluster, traitSet, hints, table, filter, selection);
+        this(cluster, traitSet, hints, table, filter, selection, null, null, null, false);
+    }
+
+    public DingoTableScan(
+        RelOptCluster cluster,
+        RelTraitSet traitSet,
+        List<RelHint> hints,
+        RelOptTable table,
+        @Nullable RexNode filter,
+        @Nullable TupleMapping selection,
+        @Nullable List<AggregateCall> aggCalls,
+        @Nullable ImmutableBitSet groupSet,
+        @Nullable ImmutableList<ImmutableBitSet> groupSets,
+        boolean pushDown
+    ) {
+        super(cluster, traitSet, hints, table, filter, selection, aggCalls, groupSet, groupSets, pushDown);
     }
 
     @Override
@@ -53,10 +71,14 @@ public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
         return new DingoTableScan(
             getCluster(),
             traitSet,
-            getHints(),
-            getTable(),
-            getFilter(),
-            getSelection()
+            hints,
+            table,
+            filter,
+            selection,
+            aggCalls,
+            groupSet,
+            groupSets,
+            pushDown
         );
     }
 }

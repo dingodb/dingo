@@ -30,9 +30,9 @@ public abstract class FilterProjectSourceOperator extends IteratorSourceOperator
     @JsonProperty("schema")
     protected final DingoType schema;
     @JsonProperty("filter")
-    protected final SqlExpr filter;
+    protected SqlExpr filter;
     @JsonProperty("selection")
-    protected final TupleMapping selection;
+    protected TupleMapping selection;
 
     public FilterProjectSourceOperator(DingoType schema, SqlExpr filter, TupleMapping selection) {
         super();
