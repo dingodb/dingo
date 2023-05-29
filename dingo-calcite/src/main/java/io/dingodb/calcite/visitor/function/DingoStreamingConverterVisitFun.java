@@ -26,6 +26,7 @@ import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
+import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
@@ -142,7 +143,7 @@ public class DingoStreamingConverterVisitFun {
     ) {
         List<Output> outputs = new LinkedList<>();
         // TODO: ClusterService.getDefault().getComputingLocations();
-        final Collection<Location> locations = Collections.singletonList(DingoConfiguration.location());
+        final Collection<Location> locations = ClusterService.getDefault().getComputingLocations();
         final HashStrategy hs = new SimpleHashStrategy();
         for (Output input : inputs) {
             Task task = input.getTask();

@@ -28,20 +28,30 @@ import java.util.List;
 
 public class SqlAlterUser extends SqlAlter {
 
-    public final String password;
+    public String password;
     public final String user;
     public String host;
     public String requireSsl;
+    public String lock;
+    public Object expireDays;
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("ALTER USER", SqlKind.OTHER_DDL);
 
-    public SqlAlterUser(String user, String password, String host, String requireSsl, SqlParserPos pos) {
+    public SqlAlterUser(String user, String password, String host,
+                        String requireSsl,
+                        SqlParserPos pos,
+                        String lock,
+                        Object expireDays) {
         super(pos);
-        this.password = password.contains("'") ? password.replace("'", "") : password;
+        if (password != null) {
+            this.password = password.contains("'") ? password.replace("'", "") : password;
+        }
         this.user = user.contains("'") ? user.replace("'", "") : user;
         this.host = host == null ? "%" : host.contains("'") ? host.replace("'", "") : host;
         this.requireSsl = requireSsl;
+        this.lock = lock;
+        this.expireDays = expireDays;
     }
 
     @Override

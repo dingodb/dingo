@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.uncapitalize;
 
 @Slf4j
 public class UserService implements io.dingodb.verify.service.UserService {
@@ -131,14 +132,34 @@ public class UserService implements io.dingodb.verify.service.UserService {
                 throw new RuntimeException("user not exists");
             }
             if (userDefinition.getPassword() != null) {
-                String plugin = (String) values[39];
-                String digestPwd = AlgorithmPlugin.digestAlgorithm(userDefinition.getPassword(), plugin);
+                String digestPwd = null;
+                if (StringUtils.isEmpty(userDefinition.getPassword())) {
+                    digestPwd = "";
+                } else {
+                    String plugin = (String) values[39];
+                    digestPwd = AlgorithmPlugin.digestAlgorithm(userDefinition.getPassword(), plugin);
+                }
                 values[40] = digestPwd;
+                values[42] = new Timestamp(System.currentTimeMillis());
+                values[41] = "N";
             }
             if ("NONE".equalsIgnoreCase(userDefinition.getRequireSsl())) {
                 values[31] = "";
             } else if ("SSL".equalsIgnoreCase(userDefinition.getRequireSsl())) {
                 values[31] = "ANY";
+            }
+            if (StringUtils.isNotBlank(userDefinition.getLock())) {
+                values[44] = userDefinition.getLock();
+            }
+            if (userDefinition.getExpireDays() != null) {
+                int expireDays = Integer.parseInt(userDefinition.getExpireDays().toString());
+                if (expireDays == 0) {
+                    values[41] = "Y";
+                    values[43] = null;
+                } else if (expireDays >= 0) {
+                    values[41] = "N";
+                    values[43] = expireDays;
+                }
             }
 
             // todo fix null old value
@@ -239,6 +260,10 @@ public class UserService implements io.dingodb.verify.service.UserService {
         userDefinition.setPlugin((String) userPrivilege[39]);
         userDefinition.setRequireSsl((String) userPrivilege[31]);
         userDefinition.setHost(userPrivilege[0].toString());
+        userDefinition.setLock((String) userPrivilege[44]);
+        userDefinition.setPasswordExpire(userPrivilege[41]);
+        userDefinition.setExpireDays(userPrivilege[43]);
+        userDefinition.setPwdLastChange((Timestamp) userPrivilege[42]);
         userDefinition.setPrivileges(upMapping(userPrivilege));
         return userDefinition;
     }
@@ -283,7 +308,23 @@ public class UserService implements io.dingodb.verify.service.UserService {
                 case "X509_SUBJECT":
                     row[i] = "";
                     break;
+                case "PASSWORD_EXPIRE":
+                    if (user.getExpireDays() != null) {
+                        int expireDays = Integer.parseInt(user.getExpireDays().toString());
+                        if (expireDays == 0) {
+                            row[i] = "Y";
+                        } else if (expireDays > 0) {
+                            row[i] = "N";
+                        }
+                    }
                 case "PASSWORD_LIFETIME":
+                    if (user.getExpireDays() != null) {
+                        int expireDays = Integer.parseInt(user.getExpireDays().toString());
+                        if (expireDays > 0) {
+                            row[i] = expireDays;
+                        }
+                    }
+                    break;
                 case "MAX_QUESTIONS":
                 case "MAX_UPDATES":
                 case "MAX_CONNECTIONS":
@@ -295,6 +336,9 @@ public class UserService implements io.dingodb.verify.service.UserService {
                     break;
                 case "PASSWORD_LAST_CHANGED":
                     row[i] = new Timestamp(System.currentTimeMillis());
+                    break;
+                case "ACCOUNT_LOCKED":
+                    row[i] = user.getLock();
                     break;
                 default:
                     row[i] = "N";
@@ -396,6 +440,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
         tpValues[1] = user;
         tpValues[2] = db;
         tpValues[3] = tableName;
+        tpValues[4] = "";
         tpValues[5] = new Timestamp(System.currentTimeMillis());
         tpValues[6] = "";
         tpValues[7] = "";
@@ -471,7 +516,10 @@ public class UserService implements io.dingodb.verify.service.UserService {
         Arrays.fill(tablePrivileges, false);
         String[] tpList = String.valueOf(tpValues[6]).split(",");
         for (String tp : tpList) {
-            tablePrivileges[PrivilegeDict.privilegeIndexDict.get(tp.toLowerCase())] = true;
+            Integer index = PrivilegeDict.privilegeIndexDict.get(tp.toLowerCase());
+            if (index != null) {
+                tablePrivileges[index] = true;
+            }
         }
         return tablePrivileges;
     }

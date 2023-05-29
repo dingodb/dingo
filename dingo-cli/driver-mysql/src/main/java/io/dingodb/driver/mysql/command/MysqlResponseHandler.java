@@ -120,11 +120,26 @@ public class MysqlResponseHandler {
 
     private static void handlerRowPacket(ResultSet resultSet, AtomicLong packetId, MysqlConnection mysqlConnection,
                                   ByteBuf buffer, int columnCount) throws SQLException {
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        String typeName;
         while (resultSet.next()) {
             ResultSetRowPacket resultSetRowPacket = new ResultSetRowPacket();
             resultSetRowPacket.packetId = (byte) packetId.getAndIncrement();
             for (int i = 1; i <= columnCount; i ++) {
-                resultSetRowPacket.addColumnValue(resultSet.getObject(i));
+                Object val = resultSet.getObject(i);
+                typeName = metaData.getColumnTypeName(i);
+                if (typeName.equalsIgnoreCase("BOOLEAN")) {
+                    if (val == null) {
+                        val = "";
+                    } else {
+                        if ("TRUE".equalsIgnoreCase(val.toString())) {
+                            val = "1";
+                        } else {
+                            val = "0";
+                        }
+                    }
+                }
+                resultSetRowPacket.addColumnValue(val);
             }
             resultSetRowPacket.write(buffer);
             int writerIndex = buffer.writerIndex();

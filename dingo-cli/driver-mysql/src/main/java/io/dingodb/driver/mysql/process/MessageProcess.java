@@ -55,6 +55,10 @@ public final class MessageProcess {
         byte packetIdByte = array[0];
         AtomicLong packetId = new AtomicLong(packetIdByte);
         packetId.incrementAndGet();
+        if (flg != NativeConstants.COM_QUIT && flg != NativeConstants.COM_QUERY && mysqlConnection.passwordExpire)  {
+            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE);
+            return;
+        }
         switch (flg) {
             case NativeConstants.COM_QUIT:
                 // quit
@@ -77,6 +81,7 @@ public final class MessageProcess {
                         String.format(ErrorCode.ER_ACCESS_DB_DENIED_ERROR.message, user, host, usedSchema);
                     MysqlResponseHandler.responseError(packetId, mysqlConnection.channel,
                         ErrorCode.ER_ACCESS_DB_DENIED_ERROR, error);
+                    return;
                 }
                 CalciteSchema schema = connection.getContext().getRootSchema().getSubSchema(usedSchema, true);
                 if (schema != null) {

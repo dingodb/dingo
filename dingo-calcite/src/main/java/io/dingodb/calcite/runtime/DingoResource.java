@@ -27,4 +27,11 @@ public interface DingoResource {
 
     @BaseMessage("Primary keys are required in table ''{0}''")
     ExInst<DingoSqlException> primaryKeyRequired(String a0);
+
+    @BaseMessage("''{0}'' command denied to user ''{1}''@''{2}'' for table ''{3}''")
+    ExInst<DingoSqlException> operatorDenied(String a0, String a1, String a2, String a3);
+
+    @BaseMessage("Access denied; you need (at least one of) the CREATE USER privilege(s) for this operation")
+    ExInst<DingoSqlException> createUserDenied();
+
 }

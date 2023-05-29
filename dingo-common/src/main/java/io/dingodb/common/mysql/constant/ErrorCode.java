@@ -29,12 +29,16 @@ public enum ErrorCode {
     ER_BAD_DB_ERROR(1049, "42000", "Unknown database '%s'"),
     ER_COLUMN_ERROR(1054, "42S22", "Unknown column '%s' in '%s'"),
     ER_UNKNOWN_CHARACTER_SET(1115, "42000", "Unknown character set: '%s'"),
+    ER_CREATE_TABLE(1142, "42000", "%s command denied to user '%s'@'%s' for table '%s'"),
     ER_NO_SUCH_TABLE(1146, "42S02", "Table '%s' doesn't exist"),
     ER_NOT_ALLOWED_COMMAND(1148, "42000", "The used command is not allowed with this MySQL version"),
     ER_ERROR_DURING_COMMIT(1180, "HY000", "Got error %d during COMMIT"),
     ER_UNKNOWN_ERROR(1105, "3D000", "Unknown error"),
     ER_UNKNOWN_VARIABLES(1193, "HY000", "Unknown system variable '%s'"),
-    ER_IMMUTABLE_VARIABLES(1238, "HY000", "Variable '%s' is a read-only variable");
+    ER_IMMUTABLE_VARIABLES(1238, "HY000", "Variable '%s' is a read-only variable"),
+    ER_PASSWORD_EXPIRE(1820, "HY000", "You must reset your password using ALTER USER statement before executing this statement."),
+
+    ER_LOCK_ACCOUNT(3118, "HY000", "Access denied for user '%s'@'%s'. Account is locked.");
 
     public int code;
     public String sqlState;

@@ -42,6 +42,8 @@ public class MysqlConnection {
 
     public MysqlIdleStateHandler mysqlIdleStateHandler;
 
+    public volatile Boolean passwordExpire = false;
+
     public MysqlConnection(SocketChannel channel) {
         this.channel = channel;
     }

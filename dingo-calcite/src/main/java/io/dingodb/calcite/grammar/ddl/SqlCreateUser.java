@@ -32,6 +32,8 @@ public class SqlCreateUser extends SqlCreate {
     public final String user;
     public String host;
     public String requireSsl;
+    public Object expireDays;
+    public String lock;
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("CREATE USER", SqlKind.OTHER_DDL);
@@ -42,12 +44,16 @@ public class SqlCreateUser extends SqlCreate {
                          SqlParserPos pos,
                          boolean replace,
                          boolean ifNotExists,
-                         String requireSsl) {
+                         String requireSsl,
+                         String lock,
+                         Object expireDays) {
         super(OPERATOR, pos, replace, ifNotExists);
         this.password = password.contains("'") ? password.replace("'", "") : password;
         this.user = user.contains("'") ? user.replace("'", "") : user;
         this.host = host == null ? "%" : host.contains("'") ? host.replace("'", "") : host;
         this.requireSsl = requireSsl;
+        this.lock = lock;
+        this.expireDays = expireDays;
     }
 
     @Override
@@ -67,6 +73,20 @@ public class SqlCreateUser extends SqlCreate {
         if (StringUtils.isNotBlank(requireSsl)) {
             writer.keyword(" REQUIRE ");
             writer.keyword(requireSsl);
+        }
+        if (expireDays != null) {
+            writer.keyword(" PASSWORD EXPIRE");
+            if (!expireDays.equals("0")) {
+                writer.keyword("INTERVAL");
+                writer.keyword(expireDays.toString());
+                writer.keyword("DAY");
+            }
+        }
+        writer.keyword("ACCOUNT");
+        if ("Y".equalsIgnoreCase(lock)) {
+            writer.keyword("LOCK");
+        } else if ("N".equalsIgnoreCase(lock)) {
+            writer.keyword("UNLOCK");
         }
     }
 }

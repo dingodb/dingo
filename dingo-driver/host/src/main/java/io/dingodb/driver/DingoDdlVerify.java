@@ -19,6 +19,7 @@ package io.dingodb.driver;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
 import io.dingodb.calcite.grammar.ddl.SqlDropIndex;
@@ -28,6 +29,8 @@ import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
+import io.dingodb.common.error.DingoException;
+import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.verify.privilege.PrivilegeVerify;
 import org.apache.calcite.jdbc.CalciteSchema;
@@ -35,8 +38,11 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.ddl.SqlDropTable;
 
+import java.sql.SQLClientInfoException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
 
 public class DingoDdlVerify {
 
@@ -75,9 +81,18 @@ public class DingoDdlVerify {
         } else if (sqlNode instanceof SqlFlushPrivileges) {
             accessTypes.add(DingoSqlAccessEnum.RELOAD);
         } else if (sqlNode instanceof SqlSetPassword) {
-            if (!"root".equals(user)) {
-                throw new RuntimeException("Access denied");
+            SqlSetPassword sqlSetPassword = (SqlSetPassword) sqlNode;
+            // allowed user modify self password
+            if (user.equals(sqlSetPassword.user) && host.equals(sqlSetPassword.host)) {
+                try {
+                    connection.setClientInfo("@password_reset", "true");
+                } catch (SQLClientInfoException e) {
+                    throw new RuntimeException(e);
+                }
+                return;
             }
+            accessTypes.add(DingoSqlAccessEnum.UPDATE);
+            schemaTables = new String[] {"mysql", "user"};
         } else if (sqlNode instanceof SqlTruncate) {
             accessTypes.add(DingoSqlAccessEnum.DROP);
             accessTypes.add(DingoSqlAccessEnum.CREATE);
@@ -105,6 +120,20 @@ public class DingoDdlVerify {
             if (!PrivilegeVerify.verify(user, host, schema, null)) {
                 throw new RuntimeException(String.format("Access denied for user '%s'@'%s'", user, host));
             }
+        } else if (sqlNode instanceof SqlAlterUser) {
+            SqlAlterUser sqlAlterUser = (SqlAlterUser) sqlNode;
+            // allow user modify self password
+            if (user.equals(sqlAlterUser.user) && host.equals(sqlAlterUser.host)) {
+                if (sqlAlterUser.password != null) {
+                    try {
+                        connection.setClientInfo("@password_reset", "true");
+                    } catch (SQLClientInfoException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                return;
+            }
+            accessTypes.add(DingoSqlAccessEnum.CREATE_USER);
         }
 
         if (schemaTables != null) {
@@ -113,7 +142,19 @@ public class DingoDdlVerify {
         }
         if (!PrivilegeVerify.verifyDuplicate(user, host, schemaName, tableName,
             accessTypes)) {
-            throw new RuntimeException(String.format("Access denied for user '%s'@'%s'", user, host));
+            throw throwable(accessTypes, sqlNode, user, host, tableName);
+        }
+    }
+
+    public static DingoSqlException throwable(List<DingoSqlAccessEnum> accessTypes, SqlNode sqlNode,
+                                              String user, String host,
+                                              String tableName) {
+        if (accessTypes.contains(DingoSqlAccessEnum.CREATE) || accessTypes.contains(DingoSqlAccessEnum.DROP)) {
+            return DINGO_RESOURCE.operatorDenied(accessTypes.get(0).getAccessType(), user, host, tableName).ex();
+        } else if (accessTypes.contains(DingoSqlAccessEnum.CREATE_USER) || sqlNode instanceof SqlDropUser) {
+            return DINGO_RESOURCE.createUserDenied().ex();
+        } else {
+            return new DingoSqlException(String.format("Access denied for user '%s'@'%s'", user, host));
         }
     }
 

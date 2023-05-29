@@ -273,6 +273,8 @@ public class MysqlInit {
                     map.put(column.getName(), "");
                     break;
                 case "PASSWORD_LIFETIME":
+                    map.put(column.getName(), null);
+                    break;
                 case "MAX_QUESTIONS":
                 case "MAX_UPDATES":
                 case "MAX_CONNECTIONS":
@@ -284,6 +286,10 @@ public class MysqlInit {
                     break;
                 case "PASSWORD_LAST_CHANGED":
                     map.put(column.getName(), new Timestamp(System.currentTimeMillis()).getTime());
+                    break;
+                case "ACCOUNT_LOCKED":
+                case "PASSWORD_EXPIRED":
+                    map.put(column.getName(), "N");
                     break;
                 default:
                     map.put(column.getName(), "Y");
