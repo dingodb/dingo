@@ -34,4 +34,7 @@ public interface DingoResource {
     @BaseMessage("Access denied; you need (at least one of) the CREATE USER privilege(s) for this operation")
     ExInst<DingoSqlException> createUserDenied();
 
+    @BaseMessage("Invalid default value for ''{0}''")
+    ExInst<DingoSqlException> invalidDefaultValue(String a0);
+
 }

@@ -62,7 +62,7 @@ public final class PrivilegeVerify {
 
     public static boolean verify(String user, String host, String schema, String table,
                                  DingoSqlAccessEnum accessType) {
-        if (prefilter(user)) {
+        if (prefilter(user) || verifyInformationSchema(schema, accessType)) {
             return true;
         }
         PrivilegeGather privilegeGather = env.getPrivilegeGatherMap().get(user + "#"
@@ -74,6 +74,14 @@ public final class PrivilegeVerify {
             }
         }
         return verify(user, host, schema, table, accessType, privilegeGather);
+    }
+
+    public static boolean verifyInformationSchema(String schema, DingoSqlAccessEnum accessType) {
+        if ("INFORMATION_SCHEMA".equalsIgnoreCase(schema) && accessType == DingoSqlAccessEnum.SELECT) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public static boolean verify(String user, String host, String schema, String table,
