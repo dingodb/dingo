@@ -30,7 +30,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 public class FloatType extends AbstractScalarType {
     @JsonCreator
     public FloatType(@JsonProperty("nullable") boolean nullable) {
-        super(TypeCode.FLOAT, nullable);
+        super(TypeCode.DOUBLE, nullable);
     }
 
     @Override

@@ -49,6 +49,18 @@ final class MinEvaluators {
         return Math.min(value0, value1);
     }
 
+    static boolean min(boolean value0, boolean value1) {
+        if (value0 && value1) {
+            return value0;
+        } else if (value0 && !value1){
+            return value1;
+        } else if (!value0 && value1) {
+            return value0;
+        } else {
+            return value1;
+        }
+    }
+
     static @NonNull BigDecimal min(@NonNull BigDecimal value0, @NonNull BigDecimal value1) {
         return value0.compareTo(value1) <= 0 ? value0 : value1;
     }
