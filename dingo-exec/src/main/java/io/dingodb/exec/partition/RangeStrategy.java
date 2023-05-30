@@ -27,7 +27,6 @@ import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
-import io.dingodb.common.util.Parameters;
 import io.dingodb.common.util.RangeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -77,8 +76,14 @@ public class RangeStrategy extends PartitionStrategy<CommonId, byte[]> {
         boolean withStart,
         boolean withEnd
     ) {
-        startKey = Parameters.cleanNull(startKey, ranges.firstEntry().getValue()::getStartKey);
-        endKey = Parameters.cleanNull(endKey, ranges.lastEntry().getValue().getEndKey());
+        if (startKey == null) {
+            startKey = ranges.firstEntry().getValue().getStartKey();
+            withStart = ranges.firstEntry().getValue().isWithStart();
+        }
+        if (endKey == null) {
+            endKey = ranges.lastEntry().getValue().getEndKey();
+            withEnd = ranges.lastEntry().getValue().isWithEnd();
+        }
         RangeDistribution range = new RangeDistribution(null, startKey, endKey, withStart, withEnd);
         return RangeUtils.getSubRangeDistribution(ranges.values(), range);
     }

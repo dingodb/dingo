@@ -66,18 +66,13 @@ public final class DingoRangeScanVisitFun {
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
         PartitionStrategy<CommonId, byte[]> ps = new RangeStrategy(td, ranges);
 
-        byte[] startKey = rel.getStartKey();
-        byte[] endKey = rel.getEndKey();
-        boolean withStart = rel.isIncludeStart();
-        boolean withEnd = rel.isIncludeEnd();
-
         if (rel.isNotBetween()) {
             distributions = new TreeSet<>(RangeUtils.rangeComparator());
-            distributions.addAll(ps.calcPartitionRange(null, startKey, true, !withStart));
-            distributions.addAll(ps.calcPartitionRange(endKey, null, !withEnd, true));
+            distributions.addAll(ps.calcPartitionRange(null, rel.getStartKey(), true, !rel.isIncludeStart()));
+            distributions.addAll(ps.calcPartitionRange(rel.getEndKey(), null, !rel.isIncludeEnd(), true));
         } else {
             distributions = ps.calcPartitionRange(
-                rel.getStartKey(), rel.getEndKey(), withStart, withEnd
+                rel.getStartKey(), rel.getEndKey(), rel.isIncludeStart(), rel.isIncludeEnd()
             );
         }
 

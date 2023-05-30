@@ -77,8 +77,8 @@ public class OperationService {
         MetaServiceClient metaService = Parameters
             .nonNull(rootMetaService.getSubMetaService(schemaName), "Schema not found: " + schemaName);
         DingoCommonId tableId = Parameters.nonNull(metaService.getTableId(tableName), "Table not found: " + tableName);
-        Table table = metaService.getTableDefinition(tableId);
         RouteTable routeTable = getAndRefreshRouteTable(metaService, tableId, false);
+        Table table = routeTable.table;
 
         Operation.Fork fork = operation.fork(Any.wrap(parameters), table, routeTable);
 

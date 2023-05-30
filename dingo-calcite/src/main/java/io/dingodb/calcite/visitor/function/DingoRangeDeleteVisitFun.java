@@ -21,20 +21,26 @@ import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.RangeUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.PartRangeDeleteOperator;
+import io.dingodb.exec.partition.PartitionStrategy;
 import io.dingodb.exec.partition.RangeStrategy;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.TreeSet;
 
 public final class DingoRangeDeleteVisitFun {
 
@@ -46,11 +52,21 @@ public final class DingoRangeDeleteVisitFun {
     ) {
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        List<Output> outputs = new ArrayList<>();
+        NavigableSet<RangeDistribution> distributions;
+        NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
+        PartitionStrategy<CommonId, byte[]> ps = new RangeStrategy(td, ranges);
 
-        NavigableSet<RangeDistribution> distributions = new RangeStrategy(
-            td, tableInfo.getRangeDistributions()
-        ).calcPartitionRange(rel.getStartKey(), rel.getEndKey(), rel.isIncludeStart(), rel.isIncludeEnd());
+        if (rel.isNotBetween()) {
+            distributions = new TreeSet<>(RangeUtils.rangeComparator());
+            distributions.addAll(ps.calcPartitionRange(null, rel.getStartKey(), true, !rel.isIncludeStart()));
+            distributions.addAll(ps.calcPartitionRange(rel.getEndKey(), null, !rel.isIncludeEnd(), true));
+        } else {
+            distributions = ps.calcPartitionRange(
+                rel.getStartKey(), rel.getEndKey(), rel.isIncludeStart(), rel.isIncludeEnd()
+            );
+        }
+
+        List<Output> outputs = new ArrayList<Output>();
 
         for (RangeDistribution rd : distributions) {
             PartRangeDeleteOperator operator = new PartRangeDeleteOperator(
@@ -68,6 +84,7 @@ public final class DingoRangeDeleteVisitFun {
             task.putOperator(operator);
             outputs.addAll(operator.getOutputs());
         }
+
         return outputs;
     }
 }

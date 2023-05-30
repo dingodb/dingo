@@ -40,7 +40,8 @@ public final class DingoPartRangeDelete extends AbstractRelNode implements Dingo
     private final byte[] startKey;
     @Getter
     private final byte[] endKey;
-
+    @Getter
+    private final boolean notBetween;
     @Getter
     private final boolean includeStart;
     @Getter
@@ -53,6 +54,7 @@ public final class DingoPartRangeDelete extends AbstractRelNode implements Dingo
         RelDataType rowType,
         byte[] startKey,
         byte[] endKey,
+        boolean notBetween,
         boolean includeStart,
         boolean includeEnd
     ) {
@@ -61,6 +63,7 @@ public final class DingoPartRangeDelete extends AbstractRelNode implements Dingo
         this.rowType = rowType;
         this.startKey = startKey;
         this.endKey = endKey;
+        this.notBetween = notBetween;
         this.includeStart = includeStart;
         this.includeEnd = includeEnd;
     }
