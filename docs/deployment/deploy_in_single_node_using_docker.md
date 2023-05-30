@@ -1,4 +1,4 @@
-# Docker-compose Mode
+# Deploy In Single Node Using Docker
 
 For the convenience of developers, the deployment of DingoDB can also choose docker-compse mode.
 
@@ -7,6 +7,26 @@ For the convenience of developers, the deployment of DingoDB can also choose doc
 
 There are many types of roles in the cluster mode of DingoDB, such as coordinator, executor, driver-proxy, and the cluster mode requires at least three machines. The architecture view can refer [dingo-deploy-architecture](https://dingodb.readthedocs.io/en/latest/deployment/deploy_on_cluster.html).
 
+## Directory Structure Planning
+
+| Directory Types                                                                | Path                     |
+|--------------------------------------------------------------------------------|:-------------------------|
+| Program installation path                                                      | /opt                     |
+| dingo-store script path                                                        | /opt/dingo-store/scripts |
+| dingo-store deployment path <br/>(including separate data and log directories) | /opt/dingo-store/dist    |
+| executor's script path                                                         | /opt/dingo/bin           |
+| executor's log path                                                            | /opt/dingo/log           |
+
+## User group planning
+
+| Deployment Method | User name | Gorup name |
+|-------------------|-----------|------------|
+| docker deploy     | root      | root       |
+
+## Component list and port usage
+| Component | Version | Port                                                                                             | Remarks                                         |
+|-----------|---------|--------------------------------------------------------------------------------------------------|-------------------------------------------------|
+| DingoDB   | 0.6.0   | raft:22101-22103/20101-20103     <br/>server:22001-22003/20001-20003     <br/>executor:3307/8765 | Real-time analytics database                    |
 
 ## Installation Notes
 
@@ -20,15 +40,25 @@ docker pull dingodatabase/dingo-store:latest
 #### (1) Pull the corresponding Docker Compose configuration
 
 ```shell
-# Option one
+# Mode one
 curl https://raw.githubusercontent.com/dingodb/dingo-store/main/docker/docker-compose.yml -o docker-compose.yml
  
-# Option two
+# Mode two
 git clone https://github.com/dingodb/dingo-store.git
 cd dingo-store/docker
 ```
+#### (2) Deploy dingo-store and executor
+ * Pull the corresponding docker-compose configuration.
+```shell
+# Mode One
+curl https://raw.githubusercontent.com/dingodb/dingo-deploy/main/container/docker-compose/docker-compose.yml -o docker-compose.yml
+ 
+# Mode Two
+git clone https://github.com/dingodb/dingo-deploy.git
+cd  dingo-deploy/container/docker-compose
+```
 
-#### (2) Start the corresponding container.
+#### (3) Start the corresponding container.
 
 ```shell
 #  Change to your IP address.

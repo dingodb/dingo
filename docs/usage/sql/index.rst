@@ -15,3 +15,4 @@ SQL
    sql_aggregate_function.md
    sql_join_function.md
    sql_code_and_state.md
+   mysql_protocol.md
