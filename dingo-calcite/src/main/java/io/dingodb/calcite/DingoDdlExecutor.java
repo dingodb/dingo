@@ -32,6 +32,7 @@ import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
+import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.privilege.PrivilegeDefinition;
@@ -177,6 +178,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
 
         String name = scd.name.getSimple().toUpperCase();
+        if (!dataType.isNullable() && "NULL".equalsIgnoreCase(defaultValue)) {
+            throw DINGO_RESOURCE.invalidDefaultValue(name).ex();
+        }
         assert pkSet != null;
         int primary = pkSet.indexOf(name);
         RelDataType elementType = dataType.getComponentType();

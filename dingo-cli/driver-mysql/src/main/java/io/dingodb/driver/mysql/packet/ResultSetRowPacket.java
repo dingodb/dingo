@@ -48,16 +48,7 @@ public class ResultSetRowPacket extends MysqlPacket {
         int size = calcPacketSize();
         if (size > max) {
             ByteBuf buf = Unpooled.buffer(size, size);
-
-            for (int i = 0; i < values.size(); i++) {
-                byte[] fv = values.get(i).getBytes();
-                if (fv == null || fv.length == 0) {
-                    buf.writeByte(NULL_MARK);
-                } else {
-                    BufferUtil.writeLength(buf, fv.length);
-                    buf.writeBytes(fv);
-                }
-            }
+            writeItem(buf);
 
             int mod = 0;
             int loop = mod = size % max == 0 ? size / max : size / max + 1;
@@ -78,14 +69,20 @@ public class ResultSetRowPacket extends MysqlPacket {
         } else {
             BufferUtil.writeUB3(buffer, calcPacketSize());
             buffer.writeByte(packetId);
-            for (int i = 0; i < values.size(); i++) {
+            writeItem(buffer);
+        }
+    }
+
+    private void writeItem(ByteBuf buf) {
+        Object val;
+        for (int i = 0; i < values.size(); i++) {
+            val = values.get(i);
+            if (val == null) {
+                buf.writeByte(NULL_MARK);
+            } else {
                 byte[] fv = values.get(i).getBytes();
-                if (fv == null || fv.length == 0) {
-                    buffer.writeByte(NULL_MARK);
-                } else {
-                    BufferUtil.writeLength(buffer, fv.length);
-                    buffer.writeBytes(fv);
-                }
+                BufferUtil.writeLength(buf, fv.length);
+                buf.writeBytes(fv);
             }
         }
     }
@@ -94,9 +91,14 @@ public class ResultSetRowPacket extends MysqlPacket {
     @Override
     public int calcPacketSize() {
         int size = 0;
+        Object val;
         for (int i = 0; i < values.size(); i++) {
-            byte[] v = values.get(i).getBytes();
-            size += (v == null || v.length == 0) ? 1 : BufferUtil.getLength(v);
+            val = values.get(i);
+            if (val == null) {
+                size += 1;
+            } else {
+                size += BufferUtil.getLength(val.toString().getBytes());
+            }
         }
         return size;
     }
@@ -117,8 +119,9 @@ public class ResultSetRowPacket extends MysqlPacket {
 
     public void addColumnValue(Object val) {
         if (val == null) {
-            val = "";
+            values.add(null);
+        } else {
+            values.add(val.toString());
         }
-        values.add(val.toString());
     }
 }
