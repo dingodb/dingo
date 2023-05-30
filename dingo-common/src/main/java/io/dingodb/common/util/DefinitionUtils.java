@@ -25,6 +25,7 @@ import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.type.converter.StrParseConverter;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -74,7 +75,7 @@ public final class DefinitionUtils {
     public static void checkAndConvertRangePartition(TableDefinition tableDefinition) {
         List<ColumnDefinition> keyColumns = tableDefinition.getKeyColumns();
         PartitionDefinition partDefinition = tableDefinition.getPartDefinition();
-
+        keyColumns.sort(Comparator.comparingInt(ColumnDefinition::getPrimary));
         checkAndConvertRangePartition(
             keyColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
             partDefinition.getCols(),
