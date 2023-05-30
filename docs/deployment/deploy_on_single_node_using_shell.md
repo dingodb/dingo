@@ -1,17 +1,4 @@
-## Get the release package
-Visit http://172.20.3.14/ to obtain the download link.
-
-Currently, this package is automatically compiled and released every hour. It is compiled based on CentOS8+GCC11, with the following compilation parameters:
-```shell
-cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DTHIRD_PARTY_BUILD_TYPE=RelWithDebInfo -DDINGO_BUILD_STATIC=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-bear --append -- make -j8
-```
-The git commit hash value is located below the link, and referring to this value can confirm which location on the main branch it corresponds to.
-
-```shell
-wget http://172.20.3.14/dingo-store.tar.gz
-tar -zxvf dingo-store.tar.gz
-```
+# Deploy On Single Node Using Shell
 
 ## Deploy a 3-node cluster on a single machine
 ```shell

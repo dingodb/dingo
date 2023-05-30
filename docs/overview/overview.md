@@ -9,7 +9,7 @@ DingoDB can provide integrated persistent storage of historical and real-time da
 and provide high-concurrency microsecond-level data query and second-level data calculation service capabilities. 
 It also realizes unified data processing based on SQL, with integrated writing, analysis, and calculation SQL.
 
-![](../images/dingo_stack.png)
+![Dingo stack](../images/dingo_stack.png)
 
 ## Key Features
 

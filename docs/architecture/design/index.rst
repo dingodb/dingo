@@ -5,10 +5,13 @@ Design
    :maxdepth: 1
    :glob:
 
-   network
-   expression
-   sql_execution
-   kvstore
-   executor
    coordinator
    store
+   executor
+   Raft
+   network
+   expression
+
+
+
+
