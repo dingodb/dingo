@@ -1,4 +1,4 @@
-## View the cluster status
+## Check DingoDB cluster status
 ```shell
 # Enter the directory configured in installer_root_path
 # View the coordinator status # Modify the following IP address to the IP address of your host machine cd dingo-store/build/bin

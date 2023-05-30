@@ -5,7 +5,7 @@ Steps about Deployment using Ansible
    :maxdepth: 1
    :glob:
 
-   environmental_preparation
-   configuration
-   deploy_on_ansible
-   cluster_status
+   01_environmental_preparation
+   02_configuration
+   03_deploy_on_ansible
+   04_cluster_status

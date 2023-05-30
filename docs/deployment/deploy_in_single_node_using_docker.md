@@ -5,7 +5,7 @@ For the convenience of developers, the deployment of DingoDB can also choose doc
 
 ## Deploy Architecture View
 
-There are many types of roles in the cluster mode of DingoDB, such as coordinator, executor, driver-proxy, and the cluster mode requires at least three machines. The architecture view can refer [dingo-deploy-architecture](https://dingodb.readthedocs.io/en/latest/deployment/deploy_on_cluster.html).
+There are many types of roles in the cluster mode of DingoDB, such as coordinator, executor, dingo-store, and the cluster mode requires at least three machines. The architecture view can refer [dingo-deploy-architecture](https://dingodb.readthedocs.io/en/latest/deployment/deploy_on_cluster_by_ansible.html).
 
 ## Directory Structure Planning
 

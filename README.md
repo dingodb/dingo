@@ -26,7 +26,7 @@
 4. As a distributed storage engine, it provides the ability to store massive amounts of data. At the same time, with the increase in data scale, it can easily perform horizontal scaling operations on clusters.
 5. As a distributed storage engine, It is designed based on Raft to provide a multi-replicated management mechanism, which provides extremely high data reliability. It can ensure high data consistency in the event of disk or machine failures, and also provides a fast automatic recovery mechanism.
 
-## Projects about DingoDB
+## Related Projects about DingoDB
 
 Welcome to visit [DingoDB](https://github.com/dingodb/dingo). The documentation of DingoDB is located on the website: [https://dingodb.readthedocs.io](https://dingodb.readthedocs.io).  The main projects about DingoDB are as follows:
 

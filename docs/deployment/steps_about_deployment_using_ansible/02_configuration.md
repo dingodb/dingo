@@ -1,4 +1,5 @@
-# Configuration 
+# Update Configuration about Ansible playbook
+
 ## Pull git deploy code
 ```shell
 git clone https://github.com/dingodb/dingo-deploy.git
@@ -7,6 +8,7 @@ git clone https://github.com/dingodb/dingo-deploy.git
 ```
 
 ## Deployment configuration
+
 **Configure installation options**
 
 Configuration file address: dingo-deploy/group_vars/all/_shared.yml
@@ -128,7 +130,8 @@ dingo_executor_http_tmp_list: "{% for item in dingo_tmp_executor_list %} '{{item
 dingo_executor_http_monitor_list: "[ {{ dingo_executor_http_tmp_list.split() | join(\",\") | default(\"\") }} ]"
 ```
 
-## Download deployment package
+## Download Package
+
 ```shell
 # Download the deployment package configured above to the dingo-deploy/artifacts directory
 wget -r -nH http://172.20.3.202:9000   Download all files with one click
@@ -144,8 +147,7 @@ wget http://172.20.3.202:9000/process-exporter-0.7.10.linux-amd64.tar.gz
 wget http://172.20.3.202:9000/prometheus-2.14.0.linux-amd64.tar.gz  
 wget http://172.20.3.202:9000/pushgateway-1.0.0.linux-amd64.tar.gz
 
-jdk:  
-wget http://172.20.3.202:9000/jdk-8u171-linux-x64.tar.gz
+jdk: wget http://172.20.3.202:9000/jdk-8u171-linux-x64.tar.gz
 
 exector:
 wget http://172.20.3.202:9000/dingo.zip

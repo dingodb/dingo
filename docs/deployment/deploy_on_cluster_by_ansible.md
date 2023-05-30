@@ -1,4 +1,4 @@
-# Deploy On Cluster By Ansible
+# Deploy DingoDB Cluster By Ansible
 
 [DingoDB](https://github.com/dingodb/dingo) is a real-time Hybrid Serving & Analytical Processing (HSAP) Database. It can execute high-frequency queries and upsert, interactive analysis, multi-dimensional analysis in extremely low latency. To achieve high concurrency and high throughput, DingoDB uses an elastic distributed deployment mode.
 
@@ -22,7 +22,7 @@ The roles in the cluster are mainly divided into:
 
     Executor act as the worker of the cluster. It is responsible for executing the physical execution plan of  SQL to scan and compute the data.
 
-- Driver-MySQL/Driver-DIngo
+- Driver-MySQL/Driver-Dingo
 
     DingoDB uses JDBC driver to perform table-level data operations, such as create, insert, update, delete, etc. Driver Proxy act as the proxy of JDBC Connection.
 
@@ -97,15 +97,3 @@ ansible all_nodes --become -m raw -a "yum install -y python3" -i ansible_hosts
 ```shell
  ansible-playbook playbook.yml
 ```
-## 2. Docker compose mode
-
-Due to the network firewall, for the convenience of developers, DingoDB team no longer provide a unified GitHub docker repository.
-
-### 2.1 Installation prerequisites
-
-- docker
-- docker-compose
-
-### 2.2 Install Steps
-
-[![asciicast](https://asciinema.org/a/J2BENeRd6yJoDVDfgfDFk7fao.svg)](https://asciinema.org/a/J2BENeRd6yJoDVDfgfDFk7fao)

@@ -1,6 +1,6 @@
 # Deploy On Ansible
 
-## Deploy 
+## Start to Deploy DingoDB
 ```shell
 cd dingo-deploy
 ansible-playbook playbook.yml
@@ -10,7 +10,7 @@ cd dingo-deploy
 /usr/local/miniconda3/bin/ansible-playbook playbook.yml
 ```
 
-## ansible usage
+## Ansible usage
 
 **Command-line usage**
 ```shell

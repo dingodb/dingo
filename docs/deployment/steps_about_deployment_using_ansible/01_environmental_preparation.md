@@ -1,8 +1,9 @@
-# Environment preparation
+# Environment Preparation
 
-Operating system：centos8.x
+> Requirement
+> Operating system：centos8.x
 
-## System check for libc
+## Libc Requirement
 ```shell
 ls -l /lib64/libc.so.6
 
