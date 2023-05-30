@@ -1,5 +1,10 @@
 # Deploy On Single Node Using Shell
 
+## Deploy Architecture View
+
+There are many types of roles in the cluster mode of DingoDB, such as coordinator, executor, dingo-store, and the cluster mode requires at least three machines. The architecture view can refer [dingo-deploy-architecture](https://dingodb.readthedocs.io/en/latest/deployment/deploy_on_cluster_by_ansible.html).
+
+
 ## Deploy a 3-node cluster on a single machine
 ```shell
 cd dingodb_test/scripts
