@@ -128,7 +128,7 @@ public class DefaultFunFactory implements FunFactory {
     }
 
     public static EvaluatorFactory getCastEvaluatorFactory(int toTypeCode) {
-        return getCastEvaluatorFactory(toTypeCode, false);
+        return getCastEvaluatorFactory(toTypeCode, true);
     }
 
     public static EvaluatorFactory getCastEvaluatorFactory(int toTypeCode, boolean checkRange) {
