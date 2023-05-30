@@ -80,6 +80,10 @@ public class ExceptionCasesJUnit5 implements ArgumentsProvider {
                 "insert into {table} values (1, 3.5)",
                 "update {table} set data = 'abc'"
             ), 60000, "60000", true),
+            // Unknown
+            arguments("Cast float to int", ImmutableList.of(
+                "select cast(18293824503.55 as int) ca"
+            ), 90001, "90001", false),
             // intentionally
             arguments("By `thrown` function", ImmutableList.of(
                 "select throw(null)"
