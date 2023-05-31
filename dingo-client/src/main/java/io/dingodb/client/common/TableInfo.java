@@ -25,10 +25,13 @@ import lombok.AllArgsConstructor;
 import java.util.NavigableMap;
 
 @AllArgsConstructor
-public class RouteTable {
+public class TableInfo {
 
+    public final String schemaName;
+    public final String tableName;
     public final DingoCommonId tableId;
-    public final Table table;
+
+    public final Table definition;
     public final KeyValueCodec codec;
     public final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution;
 

@@ -113,6 +113,18 @@ public final class Record {
         return Stream.of(values).map(Value::getObject).collect(Collectors.toList());
     }
 
+    public Object[] extractValues(List<String> cols) {
+        Object[] values = new Object[cols.size()];
+        int index;
+        for (int i = 0; i < cols.size(); i++) {
+            String col = cols.get(i).toUpperCase();
+            index = Parameters.check(columnIndex.get(col), Objects::nonNull,
+                () -> new DingoClientException("column name: " + col + " that does not exist"));
+            values[i] = this.values[index].getObject();
+        }
+        return values;
+    }
+
     public Record extract(List<String> cols) {
         Column[] columns = new Column[cols.size()];
         Value[] values = new Value[cols.size()];

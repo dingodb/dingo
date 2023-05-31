@@ -19,9 +19,10 @@ package io.dingodb.client.operation.impl;
 import io.dingodb.client.OperationContext;
 import io.dingodb.client.common.ArrayWrapperList;
 import io.dingodb.client.common.Record;
-import io.dingodb.client.common.RouteTable;
+import io.dingodb.client.common.TableInfo;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.KeyValue;
+import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import static io.dingodb.client.utils.OperationUtils.checkParameters;
 
@@ -47,19 +49,23 @@ public class PutOperation implements Operation {
     }
 
     @Override
-    public Fork fork(Any parameters, Table table, RouteTable routeTable) {
+    public Fork fork(Any parameters, TableInfo tableInfo) {
         try {
+            Table definition = tableInfo.definition;
             List<Record> records = parameters.getValue();
             NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparingLong(t -> t.getRegionId().entityId()));
             Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
             for (int i = 0; i < records.size(); i++) {
                 Record record = records.get(i);
-                checkParameters(table, record);
-
-                KeyValue keyValue = routeTable.codec.encode(record.getValues().toArray());
+                Object[] values = record.extractValues(
+                    definition.getColumns().stream().map(Column::getName).collect(Collectors.toList())
+                );
+                checkParameters(definition, values);
+                KeyValue keyValue = tableInfo.codec.encode(values
+                );
 
                 Map<KeyValue, Integer> regionParams = subTaskMap.computeIfAbsent(
-                    routeTable.calcRegionId(keyValue.getKey()), k -> new Any(new HashMap<>())
+                    tableInfo.calcRegionId(keyValue.getKey()), k -> new Any(new HashMap<>())
                 ).getValue();
 
                 regionParams.put(keyValue, i);
@@ -72,14 +78,14 @@ public class PutOperation implements Operation {
     }
 
     @Override
-    public Fork fork(OperationContext context, RouteTable routeTable) {
+    public Fork fork(OperationContext context, TableInfo tableInfo) {
         Map<KeyValue, Integer> parameters = context.parameters();
         NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparingLong(t -> t.getRegionId().entityId()));
 
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
         for (Map.Entry<KeyValue, Integer> parameter : parameters.entrySet()) {
             Map<KeyValue, Integer> regionParams = subTaskMap.computeIfAbsent(
-                    routeTable.calcRegionId(parameter.getKey().getKey()), k -> new Any(new HashMap<>())
+                    tableInfo.calcRegionId(parameter.getKey().getKey()), k -> new Any(new HashMap<>())
             ).getValue();
 
             regionParams.put(parameter.getKey(), parameter.getValue());

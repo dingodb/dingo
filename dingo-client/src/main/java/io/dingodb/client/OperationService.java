@@ -17,7 +17,7 @@
 package io.dingodb.client;
 
 import io.dingodb.client.common.KeyValueCodec;
-import io.dingodb.client.common.RouteTable;
+import io.dingodb.client.common.TableInfo;
 import io.dingodb.client.operation.impl.Operation;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.type.DingoType;
@@ -32,7 +32,7 @@ import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.RangeDistribution;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
-import io.dingodb.sdk.common.utils.ByteArrayUtils;
+import io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.sdk.common.utils.Parameters;
 import io.dingodb.sdk.service.connector.MetaServiceConnector;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class OperationService {
 
-    private static Map<DingoCommonId, RouteTable> dingoRouteTables = new ConcurrentHashMap<>();
+    private final Map<String, TableInfo> routeTables = new ConcurrentHashMap<>();
 
     private final MetaServiceConnector metaServiceConnector;
     private final MetaServiceClient rootMetaService;
@@ -74,36 +74,39 @@ public class OperationService {
     }
 
     public <R> R exec(String schemaName, String tableName, Operation operation, Object parameters) {
-        MetaServiceClient metaService = Parameters
-            .nonNull(rootMetaService.getSubMetaService(schemaName), "Schema not found: " + schemaName);
-        DingoCommonId tableId = Parameters.nonNull(metaService.getTableId(tableName), "Table not found: " + tableName);
-        RouteTable routeTable = getAndRefreshRouteTable(metaService, tableId, false);
-        Table table = routeTable.table;
+        TableInfo tableInfo = Parameters.nonNull(getRouteTable(schemaName, tableName, false), "Table not found.");
 
-        Operation.Fork fork = operation.fork(Any.wrap(parameters), table, routeTable);
+        Operation.Fork fork;
+        try {
+            fork = operation.fork(Any.wrap(parameters), tableInfo);
+        } catch (Exception ignore) {
+            tableInfo = Parameters.nonNull(getRouteTable(schemaName, tableName, true), "Table not found.");
+            fork = operation.fork(Any.wrap(parameters), tableInfo);
+        }
 
-        exec(operation, metaService, tableId, table, routeTable, fork, retryTimes).ifPresent(e -> {
-            if (!fork.isIgnoreError()) {
-                throw new DingoClientException(-1, e);
-            }
-        });
+        exec(tableInfo, operation, fork);
 
         return operation.reduce(fork);
     }
 
+    private void exec(TableInfo tableInfo, Operation operation, Operation.Fork fork) {
+        exec(operation, tableInfo, fork, retryTimes).ifPresent(e -> {
+            if (!fork.isIgnoreError()) {
+                throw new DingoClientException(-1, e);
+            }
+        });
+    }
+
     private Optional<Throwable> exec(
         Operation operation,
-        MetaServiceClient metaService,
-        DingoCommonId tableId,
-        Table table,
-        RouteTable routeTable,
+        TableInfo tableInfo,
         Operation.Fork fork,
         int retry
     ) {
         if (retry <= 0) {
             return Optional.of(new RuntimeException("Exceeded the retry limit for performing " + operation.getClass()));
         }
-        List<OperationContext> contexts = generateContext(tableId, table, routeTable.codec, fork);
+        List<OperationContext> contexts = generateContext(tableInfo, fork);
         Optional<Throwable> error = Optional.empty();
         CountDownLatch countDownLatch = new CountDownLatch(contexts.size());
         contexts.forEach(context -> CompletableFuture
@@ -112,9 +115,9 @@ public class OperationService {
             .exceptionally(Optional::of)
             .thenAccept(e -> {
                 e.filter(DingoClientException.InvalidRouteTableException.class::isInstance).map(err -> {
-                    RouteTable newRouteTable = getAndRefreshRouteTable(metaService, tableId, true);
-                    Operation.Fork newFork = operation.fork(context, newRouteTable);
-                    return exec(operation, metaService, tableId, table, newRouteTable, newFork, retry - 1).orNull();
+                    TableInfo newTableInfo = getRouteTable(tableInfo.schemaName, tableInfo.tableName, true);
+                    Operation.Fork newFork = operation.fork(context, newTableInfo);
+                    return exec(operation, newTableInfo, newFork, retry - 1).orNull();
                 }).ifPresent(error::ifAbsentSet);
                 countDownLatch.countDown();
             }));
@@ -126,22 +129,26 @@ public class OperationService {
         return error;
     }
 
-    private List<OperationContext> generateContext(
-        DingoCommonId tableId, Table table, KeyValueCodec codec, Operation.Fork fork
-    ) {
+    private List<OperationContext> generateContext(TableInfo table, Operation.Fork fork) {
         int i = 0;
         List<OperationContext> contexts = new ArrayList<>(fork.getSubTasks().size());
         for (Operation.Task subTask : fork.getSubTasks()) {
             contexts.add(new OperationContext(
-                tableId, subTask.getRegionId(), table, codec, storeService, i++, subTask.getParameters(), Any.wrap(fork.result())
+                table.tableId,
+                subTask.getRegionId(),
+                table.definition,
+                table.codec,
+                storeService,
+                i++,
+                subTask.getParameters(),
+                Any.wrap(fork.result())
             ));
         }
         return contexts;
     }
 
     public synchronized boolean createTable(String schema, String name, Table table) {
-        MetaServiceClient metaService = Parameters
-            .nonNull(rootMetaService.getSubMetaService(schema), "Schema not found: " + schema);
+        MetaServiceClient metaService = getSubMetaService(schema);
         Optional.ifPresent(table.getPartition(), __ -> checkAndConvertRangePartition(table));
         return metaService.createTable(name, table);
     }
@@ -164,44 +171,40 @@ public class OperationService {
     }
 
     public boolean dropTable(String schema, String tableName) {
-        MetaServiceClient metaService = Parameters
-            .nonNull(rootMetaService.getSubMetaService(schema), "Schema not found: " + schema);
+        MetaServiceClient metaService = getSubMetaService(schema);
+        routeTables.remove(schema + "." + tableName);
         return metaService.dropTable(tableName);
     }
 
-    public Table getTableDefinition(String schema, String tableName) {
-        MetaServiceClient metaService = Parameters
-            .nonNull(rootMetaService.getSubMetaService(schema), "Schema not found: " + schema);
-        return metaService.getTableDefinition(tableName);
+    public Table getTableDefinition(String schemaName, String tableName) {
+        return Parameters.nonNull(getRouteTable(schemaName, tableName, true), "Table not found.").definition;
     }
 
-    public synchronized RouteTable getAndRefreshRouteTable(
-        MetaServiceClient metaService, DingoCommonId tableId, boolean isRefresh
-    ) {
-        if (isRefresh) {
-            dingoRouteTables.remove(tableId);
+    private MetaServiceClient getSubMetaService(String schemaName) {
+        return Parameters.nonNull(rootMetaService.getSubMetaService(schemaName), "Schema not found: " + schemaName);
+    }
+
+    private TableInfo getRouteTable(String schemaName, String tableName, boolean forceRefresh) {
+        return routeTables.compute(
+            schemaName + "." + tableName,
+            (k, v) -> Parameters.cleanNull(forceRefresh ? null : v, () -> refreshRouteTable(schemaName, tableName))
+        );
+    }
+
+    private TableInfo refreshRouteTable(String schemaName, String tableName) {
+        try {
+            MetaServiceClient metaService = getSubMetaService(schemaName);
+
+            DingoCommonId tableId = Parameters.nonNull(metaService.getTableId(tableName), "Table not found.");
+            Table table = Parameters.nonNull(metaService.getTableDefinition(tableName), "Table not found.");
+            NavigableMap<ComparableByteArray, RangeDistribution> parts = metaService.getRangeDistribution(tableId);
+            KeyValueCodec keyValueCodec = new KeyValueCodec(DingoKeyValueCodec.of(tableId.entityId(), table), table);
+
+            return new TableInfo(schemaName, tableName, tableId, table, keyValueCodec, parts);
+        } catch (Exception e) {
+            log.error("Refresh route table failed, schema: {}, table: {}", schemaName, tableName, e);
+            return null;
         }
-        RouteTable routeTable = dingoRouteTables.get(tableId);
-        if (routeTable == null) {
-            Table table = metaService.getTableDefinition(tableId);
-            if (table == null) {
-                return null;
-            }
-
-            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
-                    metaService.getRangeDistribution(table.getName());
-
-            KeyValueCodec keyValueCodec = new io.dingodb.client.common.KeyValueCodec(
-                DingoKeyValueCodec.of(tableId.entityId(), table),
-                table
-            );
-
-            routeTable = new RouteTable(tableId, table, keyValueCodec, parts);
-
-            dingoRouteTables.put(tableId, routeTable);
-        }
-
-        return routeTable;
     }
 
 }

@@ -17,7 +17,7 @@
 package io.dingodb.client.operation.impl;
 
 import io.dingodb.client.OperationContext;
-import io.dingodb.client.common.RouteTable;
+import io.dingodb.client.common.TableInfo;
 import io.dingodb.sdk.common.RangeWithOptions;
 import io.dingodb.sdk.common.codec.KeyValueCodec;
 import io.dingodb.sdk.common.table.Table;
@@ -45,14 +45,14 @@ public class DeleteRangeOperation implements Operation {
     }
 
     @Override
-    public Fork fork(Any parameters, Table table, RouteTable routeTable) {
+    public Fork fork(Any parameters, TableInfo tableInfo) {
         try {
-            KeyValueCodec codec = routeTable.codec;
+            KeyValueCodec codec = tableInfo.codec;
             NavigableSet<Task> subTasks = Collections.emptyNavigableSet();
             OpKeyRange keyRange = parameters.getValue();
             OpRange range;
-            if (validateKeyRange(keyRange) && validateOpRange(range = convert(codec, table, keyRange))) {
-                subTasks = getSubTasks(routeTable, range);
+            if (validateKeyRange(keyRange) && validateOpRange(range = convert(codec, tableInfo.definition, keyRange))) {
+                subTasks = getSubTasks(tableInfo, range);
             }
             return new Fork(new long[subTasks.size()], subTasks, true);
         } catch (Exception e) {
@@ -61,9 +61,9 @@ public class DeleteRangeOperation implements Operation {
     }
 
     @Override
-    public Fork fork(OperationContext context, RouteTable routeTable) {
+    public Fork fork(OperationContext context, TableInfo tableInfo) {
         OpRange range = context.parameters();
-        NavigableSet<Task> subTasks = getSubTasks(routeTable, range);
+        NavigableSet<Task> subTasks = getSubTasks(tableInfo, range);
         return new Fork(context.result(), subTasks, true);
     }
 
