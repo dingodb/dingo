@@ -7,7 +7,7 @@
       "nullable": false
     },
     {
-      "name": "User",
+      "name": "Name",
       "type": "varchar",
       "scale": -2147483648,
       "primary": 1,

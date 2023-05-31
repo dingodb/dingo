@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.KeyDeserializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.ByteUtils;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 
@@ -156,7 +157,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     public static class JacksonKeySerializer extends JsonSerializer<CommonId> {
         @Override
         public void serialize(CommonId value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            gen.writeFieldName(new String(value.encode()));
+            gen.writeFieldName(ByteUtils.byteArrayToHexString(value.encode()));
         }
     }
 
@@ -164,7 +165,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
 
         @Override
         public Object deserializeKey(String key, DeserializationContext ctxt) throws IOException {
-            return decode(key.getBytes());
+            return decode(ByteUtils.hexStringToByteArray(key));
         }
 
     }

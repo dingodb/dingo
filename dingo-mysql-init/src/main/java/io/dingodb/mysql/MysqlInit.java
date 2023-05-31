@@ -102,8 +102,7 @@ public class MysqlInit {
     }
 
     public static void initMetaStore(String coordinatorSvr) {
-        ServiceConnector connector = MetaServiceConnector.getMetaServiceConnector(coordinatorSvr);
-        rootMeta = new MetaServiceClient(connector);
+        rootMeta = new MetaServiceClient(coordinatorSvr);
 
         storeServiceClient = new StoreServiceClient(rootMeta);
     }
@@ -259,7 +258,7 @@ public class MysqlInit {
         Map<String, Object> map = Maps.newLinkedHashMap();
         columnList.forEach(column -> {
             switch (column.getName()) {
-                case "USER":
+                case "NAME":
                     map.put(column.getName(), "root");
                     break;
                 case "HOST":

@@ -80,22 +80,6 @@ public class MysqlByteUtil {
         return (short) (((bytes[0] << 8) | bytes[1] & 0xff));
     }
 
-    public static byte[] hexStringToByteArray(String hexStr) {
-        hexStr = hexStr.toUpperCase();
-        int len = hexStr.length() / 2;
-        char[] hexChars = hexStr.toCharArray();
-        byte[] bytes = new byte[len];
-        for (int i = 0; i < len; i++) {
-            int pos = i * 2;
-            bytes[i] = (byte) (charToByte(hexChars[pos]) << 4 | charToByte(hexChars[pos + 1]));
-        }
-        return bytes;
-    }
-
-    public static byte charToByte(char operand) {
-        return (byte) "0123456789ABCDEF".indexOf(operand);
-    }
-
     public static long bytesToLongLittleEndian(byte[] bytes) {
         int position = 0;
         long i = bytes[position++] & 0xff;

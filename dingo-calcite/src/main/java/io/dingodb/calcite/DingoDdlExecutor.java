@@ -407,14 +407,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void execute(@NonNull SqlCreateUser sqlCreateUser, CalcitePrepare.Context context) {
         log.info("DDL execute: {}", sqlCreateUser);
-        if ("localhost".equalsIgnoreCase(sqlCreateUser.host) || "127.0.0.1".equalsIgnoreCase(sqlCreateUser.host)) {
-            try {
-                InetAddress localHost = InetAddress.getLocalHost();
-                sqlCreateUser.host = localHost.getHostAddress();
-            } catch (UnknownHostException e) {
-                log.error(e.getMessage(), e);
-            }
-        }
         UserDefinition userDefinition = UserDefinition.builder().user(sqlCreateUser.user)
             .host(getRealAddress(sqlCreateUser.host)).build();
         if (userService.existsUser(userDefinition)) {
