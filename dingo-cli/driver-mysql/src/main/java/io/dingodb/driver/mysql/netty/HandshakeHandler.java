@@ -27,6 +27,7 @@ import io.dingodb.common.mysql.constant.ServerConstant;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.UserDefinition;
+import io.dingodb.common.util.ByteUtils;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.mysql.MysqlConnection;
 import io.dingodb.driver.mysql.command.MysqlResponseHandler;
@@ -276,7 +277,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         } catch (NoSuchAlgorithmException ex) {
             throw new RuntimeException(ex);
         }
-        byte[] pwd = MysqlByteUtil.hexStringToByteArray(dbPwd);
+        byte[] pwd = ByteUtils.hexStringToByteArray(dbPwd);
 
         md.update(seed);
         md.update(pwd);
