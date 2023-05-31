@@ -18,10 +18,9 @@ package io.dingodb.client.operation.impl;
 
 import io.dingodb.client.OperationContext;
 import io.dingodb.client.common.Record;
-import io.dingodb.client.common.RouteTable;
+import io.dingodb.client.common.TableInfo;
 import io.dingodb.sdk.common.KeyValue;
 import io.dingodb.sdk.common.codec.KeyValueCodec;
-import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.LinkedIterator;
 
@@ -32,8 +31,8 @@ import java.util.NavigableSet;
 
 import static io.dingodb.client.operation.RangeUtils.convert;
 import static io.dingodb.client.operation.RangeUtils.getSubTasks;
-import static io.dingodb.client.operation.RangeUtils.validateOpRange;
 import static io.dingodb.client.operation.RangeUtils.validateKeyRange;
+import static io.dingodb.client.operation.RangeUtils.validateOpRange;
 
 public class ScanOperation implements Operation {
 
@@ -47,14 +46,14 @@ public class ScanOperation implements Operation {
     }
 
     @Override
-    public Fork fork(Any parameters, Table table, RouteTable routeTable) {
+    public Fork fork(Any parameters, TableInfo tableInfo) {
         try {
-            KeyValueCodec codec = routeTable.codec;
+            KeyValueCodec codec = tableInfo.codec;
             NavigableSet<Task> subTasks = Collections.emptyNavigableSet();
             OpKeyRange keyRange = parameters.getValue();
             OpRange range;
-            if (validateKeyRange(keyRange) && validateOpRange(range = convert(codec, table, keyRange))) {
-                subTasks = getSubTasks(routeTable, range);
+            if (validateKeyRange(keyRange) && validateOpRange(range = convert(codec, tableInfo.definition, keyRange))) {
+                subTasks = getSubTasks(tableInfo, range);
             }
             return new Fork(new Iterator[subTasks.size()], subTasks, true);
         } catch (Exception e) {
@@ -63,9 +62,9 @@ public class ScanOperation implements Operation {
     }
 
     @Override
-    public Fork fork(OperationContext context, RouteTable routeTable) {
+    public Fork fork(OperationContext context, TableInfo tableInfo) {
         OpRange range = context.parameters();
-        NavigableSet<Task> subTasks = getSubTasks(routeTable, range);
+        NavigableSet<Task> subTasks = getSubTasks(tableInfo, range);
         return new Fork(context.result(), subTasks, true);
     }
 

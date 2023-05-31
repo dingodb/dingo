@@ -16,7 +16,7 @@
 
 package io.dingodb.client.operation;
 
-import io.dingodb.client.common.RouteTable;
+import io.dingodb.client.common.TableInfo;
 import io.dingodb.client.operation.impl.OpKeyRange;
 import io.dingodb.client.operation.impl.OpRange;
 import io.dingodb.client.operation.impl.Operation;
@@ -65,12 +65,12 @@ public class RangeUtils {
         return (e1, e2) -> ByteArrayUtils.compare(e1.<OpRange>parameters().getStartKey(), e2.<OpRange>parameters().getStartKey());
     }
 
-    public static NavigableSet<Operation.Task> getSubTasks(RouteTable routeTable, OpRange range) {
-        Collection<RangeDistribution> src = routeTable.rangeDistribution.values().stream()
+    public static NavigableSet<Operation.Task> getSubTasks(TableInfo tableInfo, OpRange range) {
+        Collection<RangeDistribution> src = tableInfo.rangeDistribution.values().stream()
             .map(RangeUtils::mapping)
             .collect(Collectors.toSet());
         RangeDistribution rangeDistribution = new RangeDistribution(
-            mapping(routeTable.tableId), range.getStartKey(), range.getEndKey(), range.withStart, range.withEnd);
+            mapping(tableInfo.tableId), range.getStartKey(), range.getEndKey(), range.withStart, range.withEnd);
 
         return io.dingodb.common.util.RangeUtils.getSubRangeDistribution(src, rangeDistribution).stream()
             .map(rd -> new Operation.Task(

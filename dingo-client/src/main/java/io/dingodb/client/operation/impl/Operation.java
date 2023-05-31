@@ -17,7 +17,7 @@
 package io.dingodb.client.operation.impl;
 
 import io.dingodb.client.OperationContext;
-import io.dingodb.client.common.RouteTable;
+import io.dingodb.client.common.TableInfo;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
@@ -56,9 +56,9 @@ public interface Operation {
 
     void exec(OperationContext context);
 
-    Fork fork(Any parameters, Table table, RouteTable routeTable);
+    Fork fork(Any parameters, TableInfo tableInfo);
 
-    Fork fork(OperationContext context, RouteTable routeTable);
+    Fork fork(OperationContext context, TableInfo tableInfo);
 
     <R> R reduce(Fork context);
 

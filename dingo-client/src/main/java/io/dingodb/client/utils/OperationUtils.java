@@ -23,6 +23,7 @@ import io.dingodb.sdk.common.table.Table;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public final class OperationUtils {
 
@@ -66,7 +67,13 @@ public final class OperationUtils {
     }
 
     public static void checkParameters(Table table, Record record) {
-        checkParameters(table.getColumns(), record.getValues().toArray());
+        checkParameters(
+            table.getColumns(),
+            record.extractValues(table.getColumns().stream().map(Column::getName).collect(Collectors.toList())));
+    }
+
+    public static void checkParameters(Table table, Object[] record) {
+        checkParameters(table.getColumns(), record);
     }
 
 }

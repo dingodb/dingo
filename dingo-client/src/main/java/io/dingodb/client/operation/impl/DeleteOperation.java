@@ -19,7 +19,7 @@ package io.dingodb.client.operation.impl;
 import io.dingodb.client.OperationContext;
 import io.dingodb.client.common.ArrayWrapperList;
 import io.dingodb.client.common.Key;
-import io.dingodb.client.common.RouteTable;
+import io.dingodb.client.common.TableInfo;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.codec.KeyValueCodec;
 import io.dingodb.sdk.common.table.Table;
@@ -48,18 +48,19 @@ public class DeleteOperation implements Operation {
     }
 
     @Override
-    public Fork fork(Any parameters, Table table, RouteTable routeTable) {
+    public Fork fork(Any parameters, TableInfo tableInfo) {
         try {
+            Table definition = tableInfo.definition;
             List<Key> keys = parameters.getValue();
             NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparingLong(t -> t.getRegionId().entityId()));
             Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
-            KeyValueCodec codec = routeTable.codec;
+            KeyValueCodec codec = tableInfo.codec;
             for (int i = 0; i < keys.size(); i++) {
-                Object[] mapKey = mapKey(table, keys.get(i));
+                Object[] mapKey = mapKey(definition, keys.get(i));
                 byte[] key = codec.encodeKey(mapKey);
 
                 Map<byte[], Integer> regionParams = subTaskMap.computeIfAbsent(
-                    routeTable.calcRegionId(key), k -> new Any(new HashMap<>())
+                    tableInfo.calcRegionId(key), k -> new Any(new HashMap<>())
                 ).getValue();
 
                 regionParams.put(key, i);
@@ -72,7 +73,7 @@ public class DeleteOperation implements Operation {
     }
 
     @Override
-    public Fork fork(OperationContext context, RouteTable routeTable) {
+    public Fork fork(OperationContext context, TableInfo tableInfo) {
         Map<byte[], Integer> parameters = context.parameters();
         NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparingLong(t -> t.getRegionId().entityId()));
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
@@ -80,7 +81,7 @@ public class DeleteOperation implements Operation {
         for (Map.Entry<byte[], Integer> parameter : parameters.entrySet()) {
 
             Map<byte[], Integer> regionParams = subTaskMap.computeIfAbsent(
-                routeTable.calcRegionId(parameter.getKey()), k -> new Any(new HashMap<>())
+                tableInfo.calcRegionId(parameter.getKey()), k -> new Any(new HashMap<>())
             ).getValue();
 
             regionParams.put(parameter.getKey(), parameter.getValue());
