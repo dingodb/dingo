@@ -14,25 +14,20 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.cases.test;
+package io.dingodb.test.run;
 
 import io.dingodb.test.SqlHelper;
-import io.dingodb.test.cases.ClassTestMethod;
-import io.dingodb.test.cases.provider.ParametersCasesJUnit5;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+import io.dingodb.test.cases.CasesJUnit5;
+import io.dingodb.test.dsl.Case;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
-@Slf4j
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class ParametersTest {
-    @Getter
+public class CasesTest {
     private static SqlHelper sqlHelper;
 
     @BeforeAll
@@ -45,14 +40,15 @@ public class ParametersTest {
         sqlHelper.cleanUp();
     }
 
-    @Test
-    public void testTemp() throws Exception {
-        new ParametersCasesJUnit5().getByKeys(sqlHelper.getConnection());
+    @ParameterizedTest(name = "[{index}] {0}")
+    @ArgumentsSource(CasesJUnit5.class)
+    public void test(String ignored, @NonNull Case testCase) throws Exception {
+        testCase.run(sqlHelper.getConnection());
     }
 
-    @ParameterizedTest(name = "[{index}] {0}")
-    @ArgumentsSource(ParametersCasesJUnit5.class)
-    public void test(String ignored, @NonNull ClassTestMethod method) throws Exception {
-        method.getMethod().run(sqlHelper.getConnection());
+    @ParameterizedTest(name = "StatementForEachStep [{index}] {0}")
+    @ArgumentsSource(CasesJUnit5.class)
+    public void testWithStatementForEachStep(String ignored, @NonNull Case testCase) throws Exception {
+        testCase.runWithStatementForEachStep(sqlHelper.getConnection());
     }
 }

@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.cases.provider;
+package io.dingodb.test.cases;
 
 import io.dingodb.calcite.DingoRootSchema;
-import io.dingodb.test.cases.Case;
+import io.dingodb.test.dsl.Case;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 
 import java.util.stream.Stream;
 
-import static io.dingodb.test.cases.Case.exec;
-import static io.dingodb.test.cases.Case.file;
+import static io.dingodb.test.dsl.Case.exec;
+import static io.dingodb.test.dsl.Case.file;
 
 public class CasesJUnit5 implements ArgumentsProvider {
     public static final String SELECT_ALL = "select * from {table}";
 
     @Override
     public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
-        return Stream.of(
+        Stream<Arguments> stream = Stream.of(
             Case.of(
                 "Create, insert and select",
                 exec(file("string_double/create.sql")),
@@ -176,6 +176,13 @@ public class CasesJUnit5 implements ArgumentsProvider {
                     .result(file("boolean/data_of_true.csv"))
             ),
             Case.of(
+                "Double as primary key",
+                exec(file("double_pm/create.sql")),
+                exec(file("double_pm/data.sql")).updateCount(3),
+                exec(SELECT_ALL)
+                    .result(file("double_pm/data.csv"))
+            ),
+            Case.of(
                 "Date as primary key",
                 exec(file("date_key/create.sql")),
                 exec(file("date_key/data.sql")).updateCount(2),
@@ -197,7 +204,7 @@ public class CasesJUnit5 implements ArgumentsProvider {
                     .result(file("string_double/select_case_when.csv"))
             ),
             Case.of(
-                "Function `case` with multi `when`",
+                "Function `case` with multiple `when`",
                 exec(file("string_double/create.sql")),
                 exec(file("string_double/data.sql")).updateCount(9),
                 exec(file("string_double/select_case_when_1.sql"))
@@ -226,13 +233,6 @@ public class CasesJUnit5 implements ArgumentsProvider {
                 exec(file("array/data.sql")),
                 exec(file("array/select_array_item_all.sql"))
                     .result(file("array/data_array_item_all.csv"))
-            ),
-            Case.of(
-                "Double as primary key",
-                exec(file("double_pm/create.sql")),
-                exec(file("double_pm/data.sql")).updateCount(3),
-                exec(SELECT_ALL)
-                    .result(file("double_pm/data.csv"))
             ),
             Case.of(
                 "Update using function",
@@ -274,46 +274,28 @@ public class CasesJUnit5 implements ArgumentsProvider {
                 exec("update {table} set amount = 0.0 where name = 'Alice' and name = 'Betty'").updateCount(0),
                 exec(SELECT_ALL).result(file("string_double/data.csv"))
             ),
-            // todo unsupport index
-            //Case.of(
-            //    "Nested indices",
-            //    exec(file("index/create.sql")),
-            //    exec(file("index/data.sql")),
-            //    exec(
-            //        "alter TABLE {table} add index int_index2(CARD_NO);"
-            //            + "alter TABLE {table} add index char_index2(NAME);"
-            //            + "create index multi_index on {table} (card_no, account)"
-            //    ),
-            //    exec(
-            //        "select * from {table} where card_no=23 and account=14"
-            //    ).result(
-            //        "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
-            //        "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
-            //    )
-            //),
-            //Case.of(
-            //    "Index of date/time",
-            //    exec(file("index/create.sql")),
-            //    exec(file("index/data.sql")),
-            //    exec(
-            //        "alter TABLE {table} add index int_index2(CARD_NO);"
-            //            + "alter TABLE {table} add index char_index2(NAME);"
-            //            + "alter TABLE {table} add index date_index(TIME_DATE);"
-            //            + "alter TABLE {table} add index datetime_index(TIME_DATETIME)"
-            //    ),
-            //    exec(
-            //        "select * from {table} where time_datetime=now()"
-            //    ).result(
-            //        "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
-            //        "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
-            //    ),
-            //    exec(
-            //        "select * from {table} where time_date='2023-01-09'"
-            //    ).result(
-            //        "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
-            //        "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
-            //    )
-            //),
+            Case.of(
+                "Select nothing",
+                exec(file("float_date_timestamp/create.sql")),
+                exec(file("float_date_timestamp/data.sql")),
+                exec(
+                    "select * from {table} where card_no=23 and `account`=14"
+                ).result(
+                    "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
+                    "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
+                )
+            ),
+            Case.of(
+                "Select by timestamp = now()",
+                exec(file("float_date_timestamp/create.sql")),
+                exec(file("float_date_timestamp/data.sql")),
+                exec(
+                    "select * from {table} where time_datetime=now()"
+                ).result(
+                    "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
+                    "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
+                )
+            ),
             Case.of(
                 "Insert int to long",
                 exec(file("long_double/create.sql")),
@@ -323,7 +305,28 @@ public class CasesJUnit5 implements ArgumentsProvider {
                     "INT,LONG,DOUBLE",
                     "1,55,23.45"
                 )
+            ),
+            Case.of(
+                "Update long with init",
+                exec(file("long_double/create.sql")),
+                exec(file("long_double/data.sql")),
+                exec("update {table} set amt=15 where id = 1"),
+                exec(SELECT_ALL).result(
+                    "ID,AMT,AMOUNT",
+                    "INT,LONG,DOUBLE",
+                    "1,15,23.45"
+                )
+            ),
+            Case.of(
+                "Aggregation of empty table",
+                exec(file("string_double/create.sql")),
+                exec("select sum(id) as `sum`, avg(amount) as `avg` from {table}").result(
+                    "SUM,AVG",
+                    "INT,DOUBLE",
+                    "NULL,NULL"
+                )
             )
         );
+        return stream;//.filter(arg -> arg.get()[0].equals("Insert int to long"));
     }
 }

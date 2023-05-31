@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.cases;
+package io.dingodb.test.dsl;
 
 import io.dingodb.test.asserts.Assert;
 import lombok.AccessLevel;
@@ -24,6 +24,7 @@ import org.apache.commons.io.input.ReaderInputStream;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.params.provider.Arguments;
 
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
@@ -33,20 +34,22 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Case {
+    private final boolean enabled;
     private final List<Step> steps;
 
     public static @NonNull Case of(Step... steps) {
-        return new Case(Arrays.asList(steps));
+        return new Case(true, Arrays.asList(steps));
     }
 
-    public static @NonNull Arguments of(String name, Step... steps) {
-        return Arguments.arguments(name, of(steps));
+    public static @NonNull Arguments of(@NonNull String name, Step... steps) {
+        boolean enabled = !name.startsWith("[skip]");
+        return Arguments.arguments(name, new Case(enabled, Arrays.asList(steps)));
     }
 
     public static @NonNull Step exec(String sqlString) {
@@ -58,7 +61,21 @@ public final class Case {
     }
 
     public static @NonNull InputStream file(String fileName) {
-        return Objects.requireNonNull(Case.class.getResourceAsStream(fileName));
+        try {
+            throw new Exception();
+        } catch (Exception exception) {
+            String className = exception.getStackTrace()[1].getClassName();
+            try {
+                InputStream is = Class.forName(className).getResourceAsStream(fileName);
+                if (is != null) {
+                    return is;
+                }
+                throw new FileNotFoundException("Cannot access file \"" + fileName
+                    + "\" in resources of class \"" + className + "\".");
+            } catch (ClassNotFoundException | FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private static String transSql(String sqlString, RandomTable @NonNull ... tables) {
@@ -88,6 +105,7 @@ public final class Case {
     }
 
     public void run(Connection connection, RandomTable... randomTables) throws Exception {
+        assumeTrue(enabled);
         try (Statement statement = connection.createStatement()) {
             for (Step step : steps) {
                 step.run(statement, randomTables);
@@ -110,6 +128,7 @@ public final class Case {
     }
 
     public void runWithStatementForEachStep(Connection connection, int randomTableNum) throws Exception {
+        assumeTrue(enabled);
         RandomTable[] randomTables = initRandomTable(randomTableNum);
         for (Step step : steps) {
             try (Statement statement = connection.createStatement()) {

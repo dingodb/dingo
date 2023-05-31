@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.cases;
+package io.dingodb.test.dsl;
 
 
 import lombok.Getter;
