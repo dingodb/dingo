@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.index;
+package io.dingodb.test.run;
 
-import io.dingodb.test.RandomTable;
 import io.dingodb.test.SqlHelper;
+import io.dingodb.test.cases.StressCasesJUnit5;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -25,12 +25,10 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import java.io.IOException;
-import java.sql.SQLException;
-
 @Slf4j
+@Disabled
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class IndexTest {
+public class StressTest {
     private static SqlHelper sqlHelper;
 
     @BeforeAll
@@ -43,13 +41,18 @@ public class IndexTest {
         sqlHelper.cleanUp();
     }
 
-    // todo Not supported at the moment.
-    @Disabled
     @Test
-    public void test() throws SQLException, IOException {
-        RandomTable randomTable = sqlHelper.randomTable();
-        randomTable.execFiles("string_double/create.sql");
-        randomTable.execSqls("create index idx_1 on {table} (name)");
-        randomTable.execSqls("select * from {table} where name = 'Alice'");
+    public void testInsert() throws Exception {
+        new StressCasesJUnit5().insert(sqlHelper.getConnection());
+    }
+
+    @Test
+    public void testInsertParameters() throws Exception {
+        new StressCasesJUnit5().insertWithParameters(sqlHelper.getConnection());
+    }
+
+    @Test
+    public void testInsertParametersBatch() throws Exception {
+        new StressCasesJUnit5().insertWithParametersBatch(sqlHelper.getConnection());
     }
 }

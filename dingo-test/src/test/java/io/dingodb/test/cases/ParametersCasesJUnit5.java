@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.cases.provider;
+package io.dingodb.test.cases;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.test.asserts.Assert;
-import io.dingodb.test.cases.Case;
-import io.dingodb.test.cases.ClassTestMethod;
-import io.dingodb.test.cases.RandomTable;
+import io.dingodb.test.dsl.Case;
+import io.dingodb.test.dsl.ClassTestMethod;
+import io.dingodb.test.dsl.RandomTable;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
@@ -35,8 +35,8 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.stream.Stream;
 
-import static io.dingodb.test.cases.Case.exec;
-import static io.dingodb.test.cases.Case.file;
+import static io.dingodb.test.dsl.Case.exec;
+import static io.dingodb.test.dsl.Case.file;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings("MethodMayBeStatic")

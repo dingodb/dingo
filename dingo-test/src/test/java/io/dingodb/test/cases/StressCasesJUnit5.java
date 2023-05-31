@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.cases.provider;
+package io.dingodb.test.cases;
 
-import io.dingodb.test.cases.Case;
-import io.dingodb.test.cases.ClassTestMethod;
-import io.dingodb.test.cases.RandomTable;
+import io.dingodb.test.dsl.Case;
+import io.dingodb.test.dsl.ClassTestMethod;
+import io.dingodb.test.dsl.RandomTable;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -32,8 +32,8 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static io.dingodb.test.cases.Case.exec;
-import static io.dingodb.test.cases.Case.file;
+import static io.dingodb.test.dsl.Case.exec;
+import static io.dingodb.test.dsl.Case.file;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings("MethodMayBeStatic")

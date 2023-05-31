@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.expr.SqlExpr;
 import lombok.extern.slf4j.Slf4j;
 
@@ -60,22 +61,26 @@ public final class PartUpdateOperator extends PartModifyOperator {
 
     @Override
     public boolean pushTuple(Object[] tuple) {
-        Object[] newTuple = Arrays.copyOf(tuple, tuple.length);
+        // The input tuple contains all old values and the new values, so make a new tuple for updating.
+        // The new values are not converted to correct type, so are useless.
+        int tupleSize = schema.fieldCount();
+        Object[] newTuple = Arrays.copyOf(tuple, tupleSize);
         boolean updated = false;
         int i = 0;
         try {
             for (i = 0; i < mapping.size(); ++i) {
-                Object newValue = updates.get(i).eval(newTuple);
+                // This is the new value.
+                Object newValue = updates.get(i).eval(tuple);
                 int index = mapping.get(i);
-                if ((tuple[index] == null && newValue != null)
-                    || (tuple[index] != null && !tuple[index].equals(newValue))
+                if ((newTuple[index] == null && newValue != null)
+                    || (newTuple[index] != null && !newTuple[index].equals(newValue))
                 ) {
-                    tuple[index] = newValue;
+                    newTuple[index] = newValue;
                     updated = true;
                 }
             }
             if (updated) {
-                part.update(Arrays.copyOf(tuple, schema.fieldCount()));
+                part.update((Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE));
                 count++;
             }
         } catch (Exception ex) {

@@ -16,12 +16,8 @@
 
 package io.dingodb.test;
 
-import io.dingodb.test.cases.InputTestFile;
-import org.apache.commons.io.IOUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -69,18 +65,6 @@ public class RandomTable {
         try (Statement statement = sqlHelper.getConnection().createStatement()) {
             for (String sql : sqlStrings) {
                 execSql(statement, transSql(sql));
-            }
-        }
-    }
-
-    public void execFiles(String @NonNull ... fileNames) throws SQLException, IOException {
-        try (Statement statement = sqlHelper.getConnection().createStatement()) {
-            for (String fileName : fileNames) {
-                InputTestFile file = InputTestFile.fromFileName(fileName);
-                if (file.getType() == InputTestFile.Type.SQL) {
-                    String sql = IOUtils.toString(file.getStream(), StandardCharsets.UTF_8);
-                    execSql(statement, transSql(sql));
-                }
             }
         }
     }

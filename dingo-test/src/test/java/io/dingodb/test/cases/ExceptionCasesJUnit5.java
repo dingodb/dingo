@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.cases.provider;
+package io.dingodb.test.cases;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.jupiter.api.extension.ExtensionContext;
