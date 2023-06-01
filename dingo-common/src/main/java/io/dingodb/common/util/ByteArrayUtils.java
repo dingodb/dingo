@@ -17,6 +17,8 @@
 package io.dingodb.common.util;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.Base64Variant;
+import com.fasterxml.jackson.core.Base64Variants;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -56,6 +58,19 @@ public class ByteArrayUtils {
             this.bytes = bytes;
         }
 
+        public String encodeToString() {
+            byte[] tmp = unsliced(bytes, 1, bytes.length + 1);
+            tmp[0] = (byte) (ignoreLen ? 1 : 0);
+            Base64Variant base64Variant = Base64Variants.getDefaultVariant();
+            return base64Variant.encode(tmp);
+        }
+
+        public static ComparableByteArray decode(String key) {
+            Base64Variant base64Variant = Base64Variants.getDefaultVariant();
+            byte[] tmp = base64Variant.decode(key);
+            return new ComparableByteArray(slice(tmp, 1, tmp.length - 1), tmp[0] != 0);
+        }
+
         @Override
         public int compareTo(@NonNull ComparableByteArray other) {
             if (!ignoreLen) {
@@ -69,17 +84,14 @@ public class ByteArrayUtils {
             @Override
             public void serialize(ComparableByteArray value, JsonGenerator gen, SerializerProvider serializers)
                 throws IOException {
-                byte[] bytes = unsliced(value.bytes, 1, value.bytes.length + 1);
-                bytes[0] = (byte) (value.ignoreLen ? 1 : 0);
-                gen.writeFieldName(new String(bytes));
+                gen.writeFieldName(value.encodeToString());
             }
         }
 
         public static class JacksonKeyDeserializer extends com.fasterxml.jackson.databind.KeyDeserializer {
             @Override
             public Object deserializeKey(String key, DeserializationContext ctxt) throws IOException {
-                byte[] bytes = key.getBytes();
-                return new ComparableByteArray(slice(bytes, 1, bytes.length - 1), bytes[0] != 0);
+                return ComparableByteArray.decode(key);
             }
         }
     }

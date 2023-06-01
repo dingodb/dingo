@@ -16,6 +16,8 @@
 
 package io.dingodb.common;
 
+import com.fasterxml.jackson.core.Base64Variant;
+import com.fasterxml.jackson.core.Base64Variants;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -118,6 +120,20 @@ public class CommonId implements Comparable<CommonId>, Serializable {
         return target;
     }
 
+    /**
+     * PartitionOperator partIndices Serializable .
+     * @return commonId base64 str
+     */
+    public String encodeToString() {
+        Base64Variant base64Variant = Base64Variants.getDefaultVariant();
+        return base64Variant.encode(encode());
+    }
+
+    public static CommonId decode(String key) {
+        Base64Variant base64Variant = Base64Variants.getDefaultVariant();
+        return decode(base64Variant.decode(key));
+    }
+
     public static CommonId decode(byte[] content) {
         return decode(content, 0);
     }
@@ -157,7 +173,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     public static class JacksonKeySerializer extends JsonSerializer<CommonId> {
         @Override
         public void serialize(CommonId value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            gen.writeFieldName(ByteUtils.byteArrayToHexString(value.encode()));
+            gen.writeFieldName(value.encodeToString());
         }
     }
 
@@ -165,7 +181,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
 
         @Override
         public Object deserializeKey(String key, DeserializationContext ctxt) throws IOException {
-            return decode(ByteUtils.hexStringToByteArray(key));
+            return decode(key);
         }
 
     }
