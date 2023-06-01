@@ -130,7 +130,7 @@ public class MysqlResponseHandler {
                 typeName = metaData.getColumnTypeName(i);
                 if (typeName.equalsIgnoreCase("BOOLEAN")) {
                     if (val == null) {
-                        val = "";
+                        val = "0";
                     } else {
                         if ("TRUE".equalsIgnoreCase(val.toString())) {
                             val = "1";
