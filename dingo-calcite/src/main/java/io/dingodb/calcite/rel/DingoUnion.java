@@ -57,14 +57,4 @@ public class DingoUnion extends Union implements DingoRel {
         }
         return Pair.of(childTraits, traitSetList);
     }
-
-    @Override
-    public @Nullable Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(@NonNull RelTraitSet required) {
-        int size = this.inputs.size();
-        List<RelTraitSet> traitSetList = new ArrayList<>(size);
-        for (int i = 0; i < size; i++) {
-            traitSetList.add(required);
-        }
-        return Pair.of(required, traitSetList);
-    }
 }
