@@ -197,6 +197,40 @@ public class ParametersCasesJUnit5 implements ArgumentsProvider {
         Case.dropRandomTables(connection, randomTable);
     }
 
+    public void insertMultiValues(@NonNull Connection connection) throws Exception {
+        RandomTable randomTable = new RandomTable();
+        Case.of(
+            exec(file("string_double/create.sql")),
+            exec(file("string_double/data.sql"))
+        ).run(connection, randomTable);
+        String sql = "insert into {table} values(?, ?, ?), (?, ?, ?), (?, ?, ?)";
+        try (PreparedStatement statement = connection.prepareStatement(randomTable.transSql(sql))) {
+            statement.setInt(1, 10);
+            statement.setString(2, "Alice");
+            statement.setDouble(3, 10.0);
+            statement.setInt(4, 11);
+            statement.setString(5, "Betty");
+            statement.setDouble(6, 11.0);
+            statement.setInt(7, 12);
+            statement.setString(8, "Cindy");
+            statement.setDouble(9, 12.0);
+            int count = statement.executeUpdate();
+            assertThat(count).isEqualTo(3);
+        }
+        Case.of(
+            exec(
+                "select * from {table} where id >= 10"
+            ).result(
+                "ID,NAME,AMOUNT",
+                "INT,STRING,DOUBLE",
+                "10,Alice,10.0",
+                "11,Betty,11.0",
+                "12,Cindy,12.0"
+            )
+        ).run(connection, randomTable);
+        Case.dropRandomTables(connection, randomTable);
+    }
+
     public void insertWithDateTime(@NonNull Connection connection) throws Exception {
         RandomTable randomTable = new RandomTable();
         Case.of(
@@ -289,16 +323,18 @@ public class ParametersCasesJUnit5 implements ArgumentsProvider {
 
     @Override
     public Stream<? extends Arguments> provideArguments(@NonNull ExtensionContext context) {
-        return Stream.of(
+        Stream<Arguments> stream = Stream.of(
             ClassTestMethod.argumentsOf(this::simple, "Simple values"),
             ClassTestMethod.argumentsOf(this::query, "Query"),
             ClassTestMethod.argumentsOf(this::getByKeys, "Get by primary keys"),
             ClassTestMethod.argumentsOf(this::filter, "Filter"),
             ClassTestMethod.argumentsOf(this::filterWithFun, "Filter with fun"),
             ClassTestMethod.argumentsOf(this::insert, "Insert"),
+            ClassTestMethod.argumentsOf(this::insertMultiValues, "Insert multiple values"),
             ClassTestMethod.argumentsOf(this::insertBatch, "Insert batch"),
             ClassTestMethod.argumentsOf(this::insertWithDateTime, "Insert with date/time"),
             ClassTestMethod.argumentsOf(this::delete, "Delete")
         );
+        return stream;//.filter(arg -> arg.get()[0].equals("Insert multiple values"));
     }
 }
