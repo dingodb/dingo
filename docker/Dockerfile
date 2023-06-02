@@ -5,7 +5,7 @@ ENV TZ=Asia/Shanghai \
 SHELL ["/bin/bash", "-c"]
 
 RUN apt-get update  \
-    && apt-get install -y openjdk-8-jdk vim unzip netcat net-tools tzdata \
+    && apt-get install -y openjdk-8-jdk vim unzip netcat net-tools tzdata curl \
     && unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY \
     && ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime \
     && echo ${TZ} > /etc/timezone \

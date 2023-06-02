@@ -13,7 +13,8 @@ services:
     environment:
        DINGO_ROLE: executor
        DINGO_HOSTNAME: executor
-       DINGO_COORDINATORS: coordinator:12321
+       DINGO_COORDINATORS: coordinator:22001,coordinator:22002,coordinator:22003
+       DINGO_MYSQL_COORDINATORS: coordinator:22001
 
 
   web:

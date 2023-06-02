@@ -39,6 +39,7 @@ sed -i 's/COORDINATORS/'"$COORDINATORS"'/g' ${ROOT}/conf/application-dev.yaml
 
 if [[ $ROLE == "executor" ]]
 then
+    ./bin/mysql_init.sh 
     ./bin/start-executor.sh  
 elif [[ $ROLE == "web" ]]
 then
