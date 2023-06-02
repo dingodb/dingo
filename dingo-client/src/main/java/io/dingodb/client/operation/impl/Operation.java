@@ -54,11 +54,11 @@ public interface Operation {
         }
     }
 
-    void exec(OperationContext context);
-
     Fork fork(Any parameters, TableInfo tableInfo);
 
     Fork fork(OperationContext context, TableInfo tableInfo);
+
+    void exec(OperationContext context);
 
     <R> R reduce(Fork context);
 

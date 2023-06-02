@@ -23,9 +23,9 @@ import io.dingodb.common.Coprocessor;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.sdk.common.DingoCommonId;
+import io.dingodb.sdk.common.KeyValueWithExpect;
 import io.dingodb.sdk.service.store.StoreServiceClient;
 import io.dingodb.server.executor.common.Mapping;
-import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -88,8 +88,9 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         @Override
         public boolean update(KeyValue row, KeyValue old) {
             if (ByteArrayUtils.equal(row.getKey(), old.getKey())) {
-                // todo use compare and set
-                return storeService.kvPut(tableId, regionId, mapping(row));
+                return storeService.kvCompareAndSet(
+                    tableId, regionId, new KeyValueWithExpect(row.getKey(), row.getValue(), old.getValue())
+                );
             }
             throw new IllegalArgumentException();
         }

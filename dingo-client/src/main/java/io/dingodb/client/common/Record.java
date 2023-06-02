@@ -22,7 +22,6 @@ import io.dingodb.sdk.common.table.ColumnDefinition;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.common.utils.Parameters;
 import lombok.EqualsAndHashCode;
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
@@ -31,15 +30,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Container object for records.
- * Records are equivalent to rows.
+ * Container object for records. Records are equivalent to rows.
  */
 @Slf4j
-@ToString
 @EqualsAndHashCode
 public final class Record {
 
@@ -119,7 +117,8 @@ public final class Record {
         for (int i = 0; i < cols.size(); i++) {
             String col = cols.get(i).toUpperCase();
             index = Parameters.check(columnIndex.get(col), Objects::nonNull,
-                () -> new DingoClientException("column name: " + col + " that does not exist"));
+                () -> new DingoClientException("column name: " + col + " that does not exist")
+            );
             values[i] = this.values[index].getObject();
         }
         return values;
@@ -132,7 +131,8 @@ public final class Record {
         for (int i = 0; i < cols.size(); i++) {
             String col = cols.get(i).toUpperCase();
             index = Parameters.check(columnIndex.get(col), Objects::nonNull,
-                () -> new DingoClientException("column name: " + col + " that does not exist"));
+                () -> new DingoClientException("column name: " + col + " that does not exist")
+            );
             columns[i] = this.columns[index];
             values[i] = this.values[index];
         }
@@ -161,7 +161,8 @@ public final class Record {
         // Convert bits if returned as long.
         Object result = getValue(name);
         return (result instanceof Double)
-            ? (Double)result : (result != null) ? Double.longBitsToDouble((Long)result) : 0.0;
+               ? (Double) result
+               : (result != null) ? Double.longBitsToDouble((Long) result) : 0.0;
     }
 
     /**
@@ -178,7 +179,7 @@ public final class Record {
         // The server always returns numbers as longs if column found.
         // If column not found, the result will be null.  Convert null to zero.
         Object result = getValue(name);
-        return (result != null) ? (Long)result : 0;
+        return (result != null) ? (Long) result : 0;
     }
 
     /**
@@ -186,21 +187,21 @@ public final class Record {
      */
     public int getInt(String name) {
         // The server always returns numbers as longs, so get long and cast.
-        return (int)getLong(name);
+        return (int) getLong(name);
     }
 
     /**
      * Get column value as short.
      */
     public short getShort(String name) {
-        return (short)getLong(name);
+        return (short) getLong(name);
     }
 
     /**
      * Get column value as byte.
      */
     public byte getByte(String name) {
-        return (byte)getLong(name);
+        return (byte) getLong(name);
     }
 
     /**
@@ -210,11 +211,11 @@ public final class Record {
         Object result = getValue(name);
 
         if (result instanceof Boolean) {
-            return (Boolean)result;
+            return (Boolean) result;
         }
 
         if (result != null) {
-            long v = (Long)result;
+            long v = (Long) result;
             return v != 0;
         }
         return false;
@@ -230,8 +231,16 @@ public final class Record {
     /**
      * Get column value as map.
      */
-    public Map<?,?> getMap(String name) {
+    public Map<?, ?> getMap(String name) {
         return getValue(name);
     }
 
+    @Override
+    public String toString() {
+        StringJoiner stringJoiner = new StringJoiner(", ", Record.class.getSimpleName() + "[", "]");
+        for (int i = 0; i < columns.length; i++) {
+            stringJoiner.add(columns[i].getName() + "=" + values[i]);
+        }
+        return stringJoiner.toString();
+    }
 }

@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -125,8 +126,15 @@ public class MemoryStoreInstance implements StoreInstance {
 
     @Override
     public boolean update(KeyValue row, KeyValue old) {
-        db.put(row.getKey(), row.getValue());
-        return true;
+        if (Arrays.equals(row.getKey(), old.getKey())) {
+            if (Arrays.equals(db.get(row.getKey()), old.getValue())) {
+                db.put(row.getKey(), row.getValue());
+                return true;
+            } else {
+                return false;
+            }
+        }
+        throw new IllegalArgumentException();
     }
 
     @Override

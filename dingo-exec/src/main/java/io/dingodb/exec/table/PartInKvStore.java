@@ -109,6 +109,27 @@ public final class PartInKvStore implements Part {
     }
 
     @Override
+    public boolean update(@NonNull KeyValue newKeyValue, @NonNull KeyValue oldKeyValue) {
+        final long startTime = System.currentTimeMillis();
+        try {
+            return store.update(newKeyValue, oldKeyValue);
+        } finally {
+            if (log.isDebugEnabled()) {
+                log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
+            }
+        }
+    }
+
+    @Override
+    public boolean update(@NonNull Object[] newTuple, @NonNull Object[] oldTuple) {
+        try {
+            return update(codec.encode(newTuple), codec.encode(oldTuple));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public boolean remove(@NonNull Object[] tuple) {
         try {
             return remove(codec.encode(tuple).getKey());
