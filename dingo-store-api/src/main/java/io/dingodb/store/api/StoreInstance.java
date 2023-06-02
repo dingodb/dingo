@@ -16,6 +16,7 @@
 
 package io.dingodb.store.api;
 
+import io.dingodb.common.Coprocessor;
 import io.dingodb.common.store.KeyValue;
 import lombok.AllArgsConstructor;
 
@@ -61,6 +62,10 @@ public interface StoreInstance {
     }
 
     default Iterator<KeyValue> scan(Range range) {
+        throw new UnsupportedOperationException();
+    }
+
+    default Iterator<KeyValue> scan(Range range, Coprocessor coprocessor) {
         throw new UnsupportedOperationException();
     }
 

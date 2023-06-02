@@ -19,11 +19,13 @@ package io.dingodb.server.executor.service;
 import com.google.auto.service.AutoService;
 import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.Coprocessor;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.service.store.StoreServiceClient;
 import io.dingodb.server.executor.common.Mapping;
+import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -117,6 +119,14 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         public Iterator<KeyValue> scan(Range range) {
             return Iterators.transform(
                 storeService.scan(tableId, regionId, mapping(range).getRange(), range.withStart, range.withEnd),
+                Mapping::mapping
+            );
+        }
+
+        @Override
+        public Iterator<KeyValue> scan(Range range, Coprocessor coprocessor) {
+            return Iterators.transform(
+                storeService.scan(tableId, regionId, mapping(range).getRange(), range.withStart, range.withEnd, new io.dingodb.server.executor.common.Coprocessor(coprocessor)),
                 Mapping::mapping
             );
         }

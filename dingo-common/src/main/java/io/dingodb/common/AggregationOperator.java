@@ -16,10 +16,33 @@
 
 package io.dingodb.common;
 
-public interface Executive<D, T> {
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
 
-    CommonId getId();
+@Builder
+@EqualsAndHashCode
+public class AggregationOperator {
 
-    DingoOpResult execute(D context, T record);
+    public final AggregationType operation;
 
+    public final int indexOfColumn;
+
+    public enum AggregationType {
+        AGGREGATION_NONE(0),
+        SUM(1),
+        COUNT(2),
+        COUNTWITHNULL(3),
+        MAX(4),
+        MIN(5);
+
+        private final int code;
+
+        AggregationType(int code) {
+            this.code = code;
+        }
+
+        public int getCode() {
+            return code;
+        }
+    }
 }

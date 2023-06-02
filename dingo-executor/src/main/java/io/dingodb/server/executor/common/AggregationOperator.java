@@ -14,11 +14,23 @@
  * limitations under the License.
  */
 
-package io.dingodb.common;
+package io.dingodb.server.executor.common;
 
-public interface DingoOpResult<V> {
+public class AggregationOperator implements io.dingodb.sdk.service.store.AggregationOperator {
 
-    V getValue();
+    private final io.dingodb.common.AggregationOperator aggregation;
 
-    DingoOpResult merge(V value);
+    public AggregationOperator(io.dingodb.common.AggregationOperator aggregation) {
+        this.aggregation = aggregation;
+    }
+
+    @Override
+    public AggregationType getOperation() {
+        return AggregationType.valueOf(aggregation.operation.name());
+    }
+
+    @Override
+    public int getIndexOfColumn() {
+        return aggregation.indexOfColumn;
+    }
 }
