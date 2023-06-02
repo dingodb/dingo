@@ -18,6 +18,7 @@ package io.dingodb.client;
 
 import io.dingodb.client.common.Key;
 import io.dingodb.client.common.Record;
+import io.dingodb.client.operation.impl.CompareAndSetOperation;
 import io.dingodb.client.operation.impl.DeleteOperation;
 import io.dingodb.client.operation.impl.DeleteRangeOperation;
 import io.dingodb.client.operation.impl.GetOperation;
@@ -82,6 +83,21 @@ public class DingoClient {
 
     public List<Boolean> putIfAbsent(String tableName, List<Record> records) {
         return operationService.exec(schema, tableName, PutIfAbsentOperation.getInstance(), records);
+    }
+
+    public boolean compareAndSet(String tableName, Record record, Record expect) {
+        return Parameters.cleanNull(
+            compareAndSet(tableName, Collections.singletonList(record), Collections.singletonList(expect)).get(0), false
+        );
+    }
+
+    public List<Boolean> compareAndSet(String tableName, List<Record> records, List<Record> expects) {
+        return operationService.exec(
+            schema,
+            tableName,
+            CompareAndSetOperation.getInstance(),
+            new CompareAndSetOperation.Parameter(records, expects)
+        );
     }
 
     public Record get(String tableName, Key key) {

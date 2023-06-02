@@ -41,7 +41,11 @@ public interface Part {
 
     boolean update(@NonNull KeyValue keyValue);
 
+    boolean update(@NonNull KeyValue newKeyValue, @NonNull KeyValue oldKeyValue);
+
     boolean update(@NonNull Object[] keyValue);
+
+    boolean update(@NonNull Object[] newTuple, @NonNull Object[] oldTuple);
 
     boolean remove(byte @NonNull [] key);
 

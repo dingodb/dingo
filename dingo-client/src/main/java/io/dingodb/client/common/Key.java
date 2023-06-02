@@ -22,10 +22,7 @@ import java.util.stream.Collectors;
 
 public class Key {
 
-    /**
-     * Optional database for the key.
-     */
-    private final String database;
+    public static Key EMPTY = new Key(Collections.emptyList());
 
     /**
      * Required, user keys for with multiple columns.
@@ -37,11 +34,11 @@ public class Key {
     }
 
     public Key(List<Value> userKey) {
-        this("dingo", userKey);
+        this.userKey = userKey;
     }
 
+    @Deprecated
     public Key(String database, List<Value> userKey) {
-        this.database = database;
         this.userKey = userKey;
     }
 

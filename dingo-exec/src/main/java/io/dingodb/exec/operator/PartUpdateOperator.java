@@ -80,7 +80,10 @@ public final class PartUpdateOperator extends PartModifyOperator {
                 }
             }
             if (updated) {
-                part.update((Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE));
+                part.update(
+                    (Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE),
+                    Arrays.copyOf(tuple, tupleSize)
+                );
                 count++;
             }
         } catch (Exception ex) {
