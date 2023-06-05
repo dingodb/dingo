@@ -18,9 +18,6 @@ package io.dingodb.server.executor.service;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.config.VariableConfiguration;
-import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
@@ -28,7 +25,6 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.meta.Meta;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.TableStatistic;
-import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.server.executor.Configuration;
@@ -180,23 +176,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public Long getAutoIncrement(CommonId tableId) {
-        DingoCommonId dingoCommonId = mapping(tableId);
-
-        long count = Optional.ofNullable(DingoConfiguration.instance().getVariable())
-            .map(VariableConfiguration::getAutoIncrementCacheCount)
-            .orElse(10000L);
-
-        Integer increment = Optional.ofNullable(DingoConfiguration.instance().getVariable())
-            .map(VariableConfiguration::getAutoIncrementIncrement)
-            .ifAbsentSet(() -> Integer.valueOf(ScopeVariables.globalVariables.getProperty("auto_increment_increment")))
-            .orElse(1);
-
-        Integer offset = Optional.ofNullable(DingoConfiguration.instance().getVariable())
-            .map(VariableConfiguration::getAutoIncrementOffset)
-            .ifAbsentSet(() -> Integer.valueOf(ScopeVariables.globalVariables.getProperty("auto_increment_offset")))
-            .orElse(1);
-
-        metaServiceClient.generateAutoIncrement(dingoCommonId, count, increment, offset);
-        return metaServiceClient.getIncrementId(dingoCommonId);
+        return AutoIncrementService.INSTANCE.getAutoIncrement(tableId);
     }
 }

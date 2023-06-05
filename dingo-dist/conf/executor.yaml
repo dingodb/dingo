@@ -10,7 +10,7 @@ server:
     resourceTag: 1
     mysqlPort: 3307
 variable:
-    autoIncrementCacheCount: 100
+    autoIncrementCacheCount: 10000
     autoIncrementIncrement: 1
     autoIncrementOffset: 1
 security:
