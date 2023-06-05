@@ -8109,6 +8109,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < RELOAD: "RELOAD" >
 |   < REPEATABLE: "REPEATABLE" >
 |   < REPLACE: "REPLACE" >
+|   < REPLICA: "REPLICA" >
 |   < REQUIRE: "REQUIRE" >
 |   < RESET: "RESET" >
 |   < RESPECT: "RESPECT" >

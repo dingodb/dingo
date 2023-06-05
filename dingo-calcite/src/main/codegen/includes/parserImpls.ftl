@@ -285,6 +285,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     SqlNode query = null;
     int ttl = -1;
     PartitionDefinition partitionDefinition = null;
+    int replica = 3;
     String engine = null;
     Properties properties = null;
     int autoIncrement = 1;
@@ -305,12 +306,15 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
            partitionDefinition.setDetails(readPartitionDetails());
        }
     ]
+    [
+        <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
+    ]
     [ <WITH> properties = readProperties() ]
     [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
     [ <AUTO_INCREMENT> <EQ> {autoIncrement = positiveInteger(getNextToken().image, "auto_increment"); }]
     {
         return DingoSqlDdlNodes.createTable(
-            s.end(this), replace, ifNotExists, id, tableElementList, query, ttl, partitionDefinition,
+            s.end(this), replace, ifNotExists, id, tableElementList, query, ttl, partitionDefinition, replica,
             engine, properties, autoIncrement
         );
     }

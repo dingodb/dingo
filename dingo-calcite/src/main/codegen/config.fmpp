@@ -334,6 +334,7 @@ data: {
     "RELATIVE"
     "REPEATABLE"
     "REPLACE"
+    "REPLICA"
     "RESPECT"
     "RESTART"
     "RESTRICT"
