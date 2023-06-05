@@ -27,6 +27,7 @@ import io.dingodb.exec.Services;
 import io.dingodb.net.MysqlNetService;
 import io.dingodb.net.MysqlNetServiceProvider;
 import io.dingodb.net.NetService;
+import io.dingodb.server.executor.service.AutoIncrementService;
 import io.dingodb.server.executor.service.ClusterService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -72,6 +73,8 @@ public class Starter {
 
         SessionVariableWatched.getInstance().addObserver(new SessionVariableChangeWatcher());
 
+        // Initialize auto increment
+        AutoIncrementService.INSTANCE.resetAutoIncrement();
     }
 
 }
