@@ -43,6 +43,7 @@ public class DingoSqlDdlNodes {
         SqlNode query,
         int ttl,
         PartitionDefinition partitionDefinition,
+        int replica,
         String engine,
         Properties properties,
         int autoIncrement
@@ -56,6 +57,7 @@ public class DingoSqlDdlNodes {
             query,
             ttl,
             partitionDefinition,
+            replica,
             engine,
             properties,
             autoIncrement

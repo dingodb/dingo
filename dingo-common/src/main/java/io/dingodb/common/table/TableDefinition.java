@@ -98,7 +98,7 @@ public class TableDefinition {
     @JsonProperty("replica")
     @Getter
     @Setter
-    private int replica = 3;
+    private int replica;
     @JsonProperty("createSql")
     @Getter
     @Setter
