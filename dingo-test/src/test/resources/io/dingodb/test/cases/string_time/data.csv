@@ -1,0 +1,4 @@
+ID, NAME, BIRTH
+INT, STRING, STRING
+1, Alice, 00:00:01
+2, Betty, 00:01:02

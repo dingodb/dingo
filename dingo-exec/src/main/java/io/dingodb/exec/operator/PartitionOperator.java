@@ -27,9 +27,11 @@ import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
+import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.impl.OutputIml;
 import io.dingodb.exec.partition.PartitionStrategy;
 import io.dingodb.meta.MetaService;
@@ -76,7 +78,11 @@ public final class PartitionOperator extends FanOutOperator {
 
     @Override
     protected int calcOutputIndex(int pin, Object @NonNull [] tuple) {
-        Object[] newTuple = Arrays.copyOf(tuple, tableDefinition.getColumns().size());
+        DingoType schema = tableDefinition.getDingoType();
+        Object[] newTuple = (Object[]) schema.convertFrom(
+            Arrays.copyOf(tuple, schema.fieldCount()),
+            ValueConverter.INSTANCE
+        );
         CommonId partId = strategy.calcPartId(newTuple, wrap(codec::encodeKey));
         return partIndices.get(partId);
     }
