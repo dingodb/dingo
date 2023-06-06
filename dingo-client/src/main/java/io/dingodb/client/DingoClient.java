@@ -22,9 +22,11 @@ import io.dingodb.client.operation.impl.CompareAndSetOperation;
 import io.dingodb.client.operation.impl.DeleteOperation;
 import io.dingodb.client.operation.impl.DeleteRangeOperation;
 import io.dingodb.client.operation.impl.GetOperation;
+import io.dingodb.client.operation.impl.KeyRangeCoprocessor;
 import io.dingodb.client.operation.impl.OpKeyRange;
 import io.dingodb.client.operation.impl.PutIfAbsentOperation;
 import io.dingodb.client.operation.impl.PutOperation;
+import io.dingodb.client.operation.impl.ScanCoprocessorOperation;
 import io.dingodb.client.operation.impl.ScanOperation;
 import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.DingoClientException;
@@ -119,6 +121,24 @@ public class DingoClient {
     public Iterator<Record> scan(final String tableName, Key begin, Key end, boolean withBegin, boolean withEnd) {
         return operationService.exec(
             schema, tableName, ScanOperation.getInstance(), new OpKeyRange(begin, end, withBegin, withEnd)
+        );
+    }
+
+    public Iterator<Record> scan(
+        final String tableName, Key begin, Key end, boolean withBegin, boolean withEnd,
+        List<KeyRangeCoprocessor.Aggregation> aggregationOperators) {
+        return scan(tableName, begin, end, withBegin, withEnd, aggregationOperators, Collections.emptyList());
+    }
+
+    public Iterator<Record> scan(
+        final String tableName, Key begin, Key end, boolean withBegin, boolean withEnd,
+        List<KeyRangeCoprocessor.Aggregation> aggregationOperators,
+        List<String> groupBy) {
+        return operationService.exec(
+            schema,
+            tableName,
+            ScanCoprocessorOperation.getInstance(),
+            new KeyRangeCoprocessor(new OpKeyRange(begin, end, withBegin, withEnd), aggregationOperators, groupBy)
         );
     }
 
