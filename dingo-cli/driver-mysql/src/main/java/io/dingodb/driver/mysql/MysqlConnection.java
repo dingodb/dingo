@@ -55,7 +55,7 @@ public class MysqlConnection {
 
     public void close() {
         if (channel.isActive()) {
-            channel.close();
+            channel.disconnect();
         }
         try {
             if (connection != null) {
