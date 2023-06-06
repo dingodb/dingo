@@ -25,6 +25,7 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -96,7 +97,11 @@ public final class Record {
     }
 
     public List<String> getKeyColumnNames() {
-        return Stream.of(columns).filter(Column::isPrimary).map(Column::getName).collect(Collectors.toList());
+        return Stream.of(columns)
+            .filter(Column::isPrimary)
+            .sorted(Comparator.comparingInt(Column::getPrimary))
+            .map(Column::getName)
+            .collect(Collectors.toList());
     }
 
     public List<Object> getValues() {

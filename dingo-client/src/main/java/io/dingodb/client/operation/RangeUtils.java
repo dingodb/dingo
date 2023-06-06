@@ -17,14 +17,20 @@
 package io.dingodb.client.operation;
 
 import io.dingodb.client.common.TableInfo;
+import io.dingodb.client.operation.impl.KeyRangeCoprocessor;
 import io.dingodb.client.operation.impl.OpKeyRange;
 import io.dingodb.client.operation.impl.OpRange;
+import io.dingodb.client.operation.impl.OpRangeCoprocessor;
 import io.dingodb.client.operation.impl.Operation;
+import io.dingodb.common.AggregationOperator;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.Coprocessor;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.SDKCommonId;
 import io.dingodb.sdk.common.codec.KeyValueCodec;
+import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.ByteArrayUtils;
 
@@ -66,18 +72,31 @@ public class RangeUtils {
     }
 
     public static NavigableSet<Operation.Task> getSubTasks(TableInfo tableInfo, OpRange range) {
+        return getSubTasks(tableInfo, range, null);
+    }
+
+    public static NavigableSet<Operation.Task> getSubTasks(TableInfo tableInfo, OpRange range, Coprocessor coprocessor) {
         Collection<RangeDistribution> src = tableInfo.rangeDistribution.values().stream()
             .map(RangeUtils::mapping)
             .collect(Collectors.toSet());
         RangeDistribution rangeDistribution = new RangeDistribution(
             mapping(tableInfo.tableId), range.getStartKey(), range.getEndKey(), range.withStart, range.withEnd);
 
-        return io.dingodb.common.util.RangeUtils.getSubRangeDistribution(src, rangeDistribution).stream()
-            .map(rd -> new Operation.Task(
-                mapping(rd.id()),
-                wrap(new OpRange(rd.getStartKey(), rd.getEndKey(), rd.isWithStart(), rd.isWithEnd()))
-            ))
-            .collect(Collectors.toCollection(() -> new TreeSet<>(getComparator())));
+        if (coprocessor == null) {
+            return io.dingodb.common.util.RangeUtils.getSubRangeDistribution(src, rangeDistribution).stream()
+                .map(rd -> new Operation.Task(
+                    mapping(rd.id()),
+                    wrap(new OpRange(rd.getStartKey(), rd.getEndKey(), rd.isWithStart(), rd.isWithEnd()))
+                ))
+                .collect(Collectors.toCollection(() -> new TreeSet<>(getComparator())));
+        } else {
+            return io.dingodb.common.util.RangeUtils.getSubRangeDistribution(src, rangeDistribution).stream()
+                .map(rd -> new Operation.Task(
+                    mapping(rd.id()),
+                    wrap(new OpRangeCoprocessor(rd.getStartKey(), rd.getEndKey(), rd.isWithStart(), rd.isWithEnd(), coprocessor))
+                ))
+                .collect(Collectors.toCollection(() -> new TreeSet<>(getComparator())));
+        }
     }
 
     public static CommonId mapping(DingoCommonId commonId) {
@@ -97,5 +116,38 @@ public class RangeUtils {
             rangeDistribution.getRange().getStartKey(),
             rangeDistribution.getRange().getEndKey()
         );
+    }
+
+    public static AggregationOperator mapping(KeyRangeCoprocessor.Aggregation aggregation, Table table) {
+        return AggregationOperator.builder()
+            .operation(AggregationOperator.AggregationType.valueOf(aggregation.operation.name()))
+            .indexOfColumn(table.getColumnIndex(aggregation.columnName))
+            .build();
+    }
+
+    public static ColumnDefinition mapping(Column column) {
+        return ColumnDefinition.getInstance(
+            column.getName(),
+            column.getType().equals("STRING") ? "VARCHAR" : column.getType(),
+            column.getElementType(),
+            column.getPrecision(),
+            column.getScale(),
+            column.isNullable(),
+            column.getPrimary(),
+            column.getDefaultValue(),
+            column.isAutoIncrement());
+    }
+
+    public static Column mapping(ColumnDefinition definition) {
+        return io.dingodb.sdk.common.table.ColumnDefinition.builder()
+            .name(definition.getName())
+            .type(definition.getTypeName())
+            .elementType(definition.getElementType())
+            .precision(definition.getPrecision())
+            .scale(definition.getScale())
+            .nullable(definition.isNullable())
+            .primary(definition.getPrimary())
+            .defaultValue(definition.getDefaultValue())
+            .build();
     }
 }
