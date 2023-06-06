@@ -193,12 +193,13 @@ public class DingoMeta extends MetaImpl {
 
     private <E> MetaResultSet createArrayResultSet(
         Enumerable enumerable,
+        Class[] classes,
         String... names
     ) {
         requireNonNull(names, "names");
         final List<ColumnMetaData> columns = new ArrayList<>(names.length);
         for (int i = 0; i < names.length; i ++) {
-            columns.add(columnMetaData(names[i], i, String.class, false));
+            columns.add(columnMetaData(names[i], i, classes[i], false));
         }
         final Iterable<Object> iterable = (Iterable<Object>) enumerable;
         return createResultSet(Collections.emptyMap(),
@@ -489,6 +490,7 @@ public class DingoMeta extends MetaImpl {
                     t.name,
                     t.getTable().getJdbcTableType().jdbcName
                 }),
+            new Class[] {String.class, String.class, String.class, String.class},
             "TABLE_CAT",
             "TABLE_SCHEM",
             "TABLE_NAME",
@@ -540,9 +542,30 @@ public class DingoMeta extends MetaImpl {
                     });
             })
             .collect(Collectors.toList());
-        return createResultSet(
-            Linq4j.asEnumerable(columns),
-            MetaColumn.class,
+        return createArrayResultSet(
+            Linq4j.asEnumerable(columns).select(column -> new Object[] {
+                column.tableCat,
+                column.tableSchem,
+                column.tableName,
+                column.columnName,
+                column.dataType,
+                column.typeName,
+                column.columnSize,
+                column.decimalDigits,
+                column.numPrecRadix,
+                column.nullable,
+                column.charOctetLength,
+                column.ordinalPosition,
+                column.isNullable,
+                column.isAutoincrement,
+                column.isGeneratedcolumn
+            }),
+            new Class[] {String.class, String.class, String.class, String.class,
+                Integer.class, String.class, Integer.class,
+                String.class, Integer.class, Integer.class,
+                Integer.class, Integer.class, String.class,
+                String.class, String.class
+            },
             "TABLE_CAT",
             "TABLE_SCHEM",
             "TABLE_NAME",
@@ -565,10 +588,10 @@ public class DingoMeta extends MetaImpl {
     public MetaResultSet getSchemas(ConnectionHandle ch, String catalog, Pat schemaPattern) {
         final CalciteSchema rootSchema = ((DingoConnection) connection).getContext().getRootSchema();
         final Collection<CalciteSchema> schemas = getMatchedSubSchema(rootSchema, schemaPattern);
-        return createResultSet(
+        return createArrayResultSet(
             Linq4j.asEnumerable(schemas)
-                .select(schema -> new MetaSchema(catalog, schema.name)),
-            MetaSchema.class,
+                .select(schema -> new Object[]{schema.name, catalog}),
+            new Class[] {String.class, String.class},
             "TABLE_SCHEM",
             "TABLE_CATALOG");
     }
@@ -582,21 +605,21 @@ public class DingoMeta extends MetaImpl {
         final CalciteSchema.TableEntry table = schema.getTable(tableName, false);
         final TableDefinition tableDefinition = ((DingoTable) table.getTable()).getTableDefinition();
         final TupleMapping mapping = tableDefinition.getKeyMapping();
-        return createResultSet(
+        return createArrayResultSet(
             Linq4j.asEnumerable(IntStream.range(0, mapping.size())
                 .mapToObj(i -> {
                     ColumnDefinition c = tableDefinition.getColumn(mapping.get(i));
-                    return new DingoMetaPrimaryKey(
+                    return new Object[] {
                         catalog,
-                        schemaName,
-                        tableName,
-                        c.getName(),
-                        (short) (i + 1)
-                    );
+                            schemaName,
+                            tableName,
+                            c.getName(),
+                            (short) (i + 1)
+                    };
                 })
                 .collect(Collectors.toList())
             ),
-            DingoMetaPrimaryKey.class,
+            new Class[]{String.class, String.class, String.class, String.class, Short.class},
             "TABLE_CAT",
             "TABLE_SCHEM",
             "TABLE_NAME",
@@ -611,7 +634,7 @@ public class DingoMeta extends MetaImpl {
         final DingoConnection dingoConnection = (DingoConnection) connection;
         final DingoParserContext context = dingoConnection.getContext();
         final CalciteSchema rootSchema = context.getRootSchema();
-        List indexScanList = new ArrayList();
+        List<IndexScan> indexScanList = new ArrayList();
         if (schemaName != null) {
             final CalciteSchema calciteSchema = rootSchema.getSubSchema(schemaName, false);
             if (calciteSchema == null) {
@@ -638,9 +661,27 @@ public class DingoMeta extends MetaImpl {
             }
         }
 
-        return createResultSet(
-            Linq4j.asEnumerable(indexScanList),
-            IndexScan.class,
+        return createArrayResultSet(
+            Linq4j.asEnumerable(indexScanList).select(indexScan -> new Object[] {
+                indexScan.tableCat,
+                indexScan.tableSchema,
+                indexScan.tableName,
+                indexScan.unique,
+                indexScan.indexQualifier,
+                indexScan.indexName,
+                indexScan.type,
+                indexScan.ordinalPosition,
+                indexScan.columnName,
+                indexScan.ascOrDesc,
+                indexScan.cardinality,
+                indexScan.pages,
+                indexScan.filterCondition
+            }),
+            new Class[] {String.class, String.class, String.class, Boolean.class,
+                String.class, String.class, Short.class,
+                Short.class, String.class, String.class,
+                String.class, Integer.class, String.class
+            },
             "TABLE_CAT",
             "TABLE_SCHEMA",
             "TABLE_NAME",

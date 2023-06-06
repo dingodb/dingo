@@ -47,7 +47,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.apache.commons.lang3.StringUtils.uncapitalize;
 
 @Slf4j
 public class UserService implements io.dingodb.verify.service.UserService {
@@ -127,12 +126,13 @@ public class UserService implements io.dingodb.verify.service.UserService {
     public void updateUser(UserDefinition userDefinition) {
         try {
             Object[] key = getUserKeys(userDefinition);
-            Object[] values = userCodec.decode(userStore.get(userCodec.encodeKey(key)));
+            KeyValue old = userStore.get(userCodec.encodeKey(key));
+            Object[] values = userCodec.decode(old);
             if (values == null) {
                 throw new RuntimeException("user not exists");
             }
             if (userDefinition.getPassword() != null) {
-                String digestPwd = null;
+                String digestPwd;
                 if (StringUtils.isEmpty(userDefinition.getPassword())) {
                     digestPwd = "";
                 } else {
@@ -162,9 +162,8 @@ public class UserService implements io.dingodb.verify.service.UserService {
                 }
             }
 
-            // todo fix null old value
             KeyValue row = userCodec.encode(values);
-            userStore.update(row, new KeyValue(row.getKey(), null));
+            userStore.update(row, old);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -349,18 +348,16 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     private void grantUser(UserDefinition userDefinition) {
         try {
-            Object[] userValues = userCodec.decode(
-                userStore.get(userCodec.encodeKey(getUserKeys(userDefinition)))
-            );
+            KeyValue old = userStore.get(userCodec.encodeKey(getUserKeys(userDefinition)));
+            Object[] userValues = userCodec.decode(old);
             userDefinition.getPrivilegeList().forEach(privilege -> {
                 Integer index = PrivilegeDict.userPrivilegeIndex.get(privilege.toLowerCase());
                 if (index != null) {
                     userValues[index] = "Y";
                 }
             });
-            // todo fix null old value
             KeyValue row = userCodec.encode(userValues);
-            userStore.update(row, new KeyValue(row.getKey(), null));
+            userStore.update(row, old);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -368,9 +365,10 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     private void grantDbPrivilege(SchemaPrivDefinition schemaPrivDefinition) {
         boolean exist = true;
-        Object[] dbValues = get(
+        KeyValue old = getKeyValue(
             dbPrivStore, dbPrivCodec, getDbPrivilegeKeys(schemaPrivDefinition, schemaPrivDefinition.getSchemaName())
         );
+        Object[] dbValues = decode(dbPrivCodec, old);
         if (dbValues == null) {
             log.info("db privilege is empty");
             dbValues = getDbPrivilege(schemaPrivDefinition.getUser(), schemaPrivDefinition.getHost(),
@@ -382,7 +380,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
             finalDbValues[PrivilegeDict.dbPrivilegeIndex.get(privilege.toLowerCase())] = "Y");
 
         if (exist) {
-            update(dbPrivStore, dbPrivCodec, finalDbValues);
+            update(dbPrivStore, dbPrivCodec, finalDbValues, old);
         } else {
             insert(dbPrivStore, dbPrivCodec, finalDbValues);
         }
@@ -392,9 +390,10 @@ public class UserService implements io.dingodb.verify.service.UserService {
         boolean exist = true;
         String schemaName = tablePrivDefinition.getSchemaName();
         String tableName = tablePrivDefinition.getTableName();
-        Object[] tpValues = get(
+        KeyValue old = getKeyValue(
             tablePrivStore, tablePrivCodec, getTablePrivilegeKeys(tablePrivDefinition, schemaName, tableName)
         );
+        Object[] tpValues = decode(tablePrivCodec, old);
         if (tpValues == null) {
             tpValues = getTablePrivilege(
                 tablePrivDefinition.getUser(), tablePrivDefinition.getHost(), schemaName, tableName
@@ -412,7 +411,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
         tpValues[6] = String.join(",", privilegeList);
         if (exist) {
-            update(tablePrivStore, tablePrivCodec, tpValues);
+            update(tablePrivStore, tablePrivCodec, tpValues, old);
         } else {
             insert(tablePrivStore, tablePrivCodec, tpValues);
         }
@@ -431,7 +430,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     private List<Object[]> getTablePrivilegeList(UserDefinition user) {
         Object[] keys = getTablePrivilegeKeys(user, "", "");
-        return scan(tablePrivStore, tablePrivCodec, keys, keys);
+        return scan(tablePrivStore, tablePrivCodec, keys);
     }
 
     private Object[] getTablePrivilege(String user, String host, String db, String tableName) {
@@ -448,16 +447,18 @@ public class UserService implements io.dingodb.verify.service.UserService {
     }
 
     public void revokeUser(PrivilegeDefinition privilege, List<String> privilegeList) {
-        Object[] userValues = get(userStore, userCodec, getUserKeys(privilege));
+        KeyValue old = getKeyValue(userStore, userCodec, getUserKeys(privilege));
+        Object[] userValues = decode(userCodec, old);
         if (userValues == null) {
             return;
         }
         privilegeList.forEach(priv -> userValues[PrivilegeDict.userPrivilegeIndex.get(priv.toLowerCase())] = "N");
-        update(userStore, userCodec, userValues);
+        update(userStore, userCodec, userValues, old);
     }
 
     public void revokeDbPrivilege(PrivilegeDefinition privilege, String schema, List<String> privilegeList) {
-        Object[] dbValues = get(dbPrivStore, dbPrivCodec, getDbPrivilegeKeys(privilege, schema));
+        KeyValue old = getKeyValue(dbPrivStore, dbPrivCodec, getDbPrivilegeKeys(privilege, schema));
+        Object[] dbValues = decode(dbPrivCodec, old);
         if (dbValues == null) {
             return;
         }
@@ -472,16 +473,17 @@ public class UserService implements io.dingodb.verify.service.UserService {
         if (n == 19) {
             delete(dbPrivStore, dbPrivCodec, dbValues);
         } else {
-            update(dbPrivStore, dbPrivCodec, dbValues);
+            update(dbPrivStore, dbPrivCodec, dbValues, old);
         }
     }
 
     public void revokeTablePrivilege(
         PrivilegeDefinition privilege, String schemaName, String tableNameOwner, List<String> privilegeList
     ) {
-        Object[] tablesPrivValues = get(
+        KeyValue old = getKeyValue(
             tablePrivStore, tablePrivCodec, getTablePrivilegeKeys(privilege, schemaName, tableNameOwner)
         );
+        Object[] tablesPrivValues = decode(tablePrivCodec, old);
         if (tablesPrivValues == null) {
             return;
         }
@@ -502,13 +504,13 @@ public class UserService implements io.dingodb.verify.service.UserService {
         if (StringUtils.isBlank(tablePriv)) {
             delete(tablePrivStore, tablePrivCodec, tablesPrivValues);
         } else {
-            update(tablePrivStore, tablePrivCodec, tablesPrivValues);
+            update(tablePrivStore, tablePrivCodec, tablesPrivValues, old);
         }
     }
 
     private List<Object[]> getSchemaPrivilegeList(PrivilegeDefinition user) {
         Object[] keys = getDbPrivilegeKeys(user, "");
-        return scan(dbPrivStore, dbPrivCodec, keys, keys);
+        return scan(dbPrivStore, dbPrivCodec, keys);
     }
 
     private static Boolean[] tpMapping(Object[] tpValues) {
@@ -568,17 +570,16 @@ public class UserService implements io.dingodb.verify.service.UserService {
         }
     }
 
-    private static void update(StoreInstance store, KeyValueCodec codec, Object[] row) {
+    private static void update(StoreInstance store, KeyValueCodec codec, Object[] row, KeyValue old) {
         try {
-            // todo fix old row is null
             KeyValue keyValue = codec.encode(row);
-            store.update(keyValue, new KeyValue(keyValue.getKey(), null));
+            store.update(keyValue, old);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static List<Object[]> scan(StoreInstance store, KeyValueCodec codec, Object[] startKey, Object[] endKey) {
+    private static List<Object[]> scan(StoreInstance store, KeyValueCodec codec, Object[] startKey) {
         try {
             byte[] prefix = codec.encodeKeyPrefix(startKey, 2);
             Iterator<KeyValue> iterator = store.scan(
@@ -609,9 +610,28 @@ public class UserService implements io.dingodb.verify.service.UserService {
         }
     }
 
-    public static boolean delete(StoreInstance store, KeyValueCodec codec, Object[] key) {
+    public static Object[] decode(KeyValueCodec codec, KeyValue keyValue) {
         try {
-            return store.delete(codec.encodeKey(key));
+            if (keyValue.getValue() == null || keyValue.getValue().length == 0) {
+                return null;
+            }
+            return codec.decode(keyValue);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static KeyValue getKeyValue(StoreInstance store, KeyValueCodec codec, Object[] key) {
+        try {
+            return store.get(codec.encodeKey(key));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void delete(StoreInstance store, KeyValueCodec codec, Object[] key) {
+        try {
+            store.delete(codec.encodeKey(key));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
