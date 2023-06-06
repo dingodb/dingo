@@ -95,6 +95,9 @@ public interface DataConverter {
     }
 
     default Long convertLongFrom(@NonNull Object value) {
+        if(value instanceof Integer) {
+            return ((Integer) value).longValue();
+        }
         return (Long) value;
     }
 
