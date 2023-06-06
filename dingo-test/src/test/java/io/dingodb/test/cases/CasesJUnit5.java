@@ -190,11 +190,65 @@ public class CasesJUnit5 implements ArgumentsProvider {
                     .result(file("date_key/data_all.csv"))
             ),
             Case.of(
+                "Date",
+                exec(file("string_date/create.sql")),
+                exec(file("string_date/data.sql")).updateCount(2),
+                exec(SELECT_ALL)
+                    .result(file("string_date/data.csv"))
+            ),
+            Case.of(
+                "Time",
+                exec(file("string_time/create.sql")),
+                exec(file("string_time/data.sql")).updateCount(2),
+                exec(SELECT_ALL)
+                    .result(file("string_time/data.csv"))
+            ),
+            Case.of(
+                "Timestamp",
+                exec(file("string_timestamp/create.sql")),
+                exec(file("string_timestamp/data.sql")).updateCount(2),
+                exec(SELECT_ALL)
+                    .result(file("string_timestamp/data.csv"))
+            ),
+            Case.of(
                 "Concat null",
                 exec(file("strings/create.sql")),
                 exec(file("strings/data_with_null.sql")).updateCount(1),
                 exec(file("strings/select_concat_all.sql"))
                     .result(file("strings/data_with_null_concat_all.csv"))
+            ),
+            Case.of(
+                "Concat date",
+                exec(file("string_date/create.sql")),
+                exec(file("string_date/data.sql")).updateCount(2),
+                exec("select 'test-' || birth from {table} where id = 1")
+                    .result(
+                        "EXPR$0",
+                        "STRING",
+                        "test-2020-01-01"
+                    )
+            ),
+            Case.of(
+                "Concat time",
+                exec(file("string_time/create.sql")),
+                exec(file("string_time/data.sql")).updateCount(2),
+                exec("select 'test-' || birth from {table} where id = 1")
+                    .result(
+                        "EXPR$0",
+                        "STRING",
+                        "test-00:00:01"
+                    )
+            ),
+            Case.of(
+                "Concat int-string-time",
+                exec(file("string_time/create.sql")),
+                exec(file("string_time/data.sql")).updateCount(2),
+                exec("select id || name || birth from {table} where id = 1")
+                    .result(
+                        "EXPR$0",
+                        "STRING",
+                        "1Alice00:00:01"
+                    )
             ),
             Case.of(
                 "Function `case`",
@@ -307,6 +361,16 @@ public class CasesJUnit5 implements ArgumentsProvider {
                 )
             ),
             Case.of(
+                "Insert int to long key",
+                exec(file("long_key/create.sql")),
+                exec(file("long_key/data.sql")),
+                exec(SELECT_ALL).result(
+                    "ID,AMT,AMOUNT",
+                    "LONG,LONG,DOUBLE",
+                    "1,55,23.45"
+                )
+            ),
+            Case.of(
                 "Update long with init",
                 exec(file("long_double/create.sql")),
                 exec(file("long_double/data.sql")),
@@ -327,6 +391,6 @@ public class CasesJUnit5 implements ArgumentsProvider {
                 )
             )
         );
-        return stream;//.filter(arg -> arg.get()[0].equals("Insert int to long"));
+        return stream;//.filter(arg -> arg.get()[0].equals("Concat int-string-time"));
     }
 }
