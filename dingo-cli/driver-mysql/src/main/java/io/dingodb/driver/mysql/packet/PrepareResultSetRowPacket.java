@@ -45,6 +45,10 @@ public class PrepareResultSetRowPacket extends MysqlPacket {
             String typeName;
             for (int i = 1; i <= columnCount; i++) {
                 typeName = metaData.getColumnTypeName(i);
+                Object val = values.get(i - 1);
+                if (val == null) {
+                    continue;
+                }
                 switch (typeName) {
                     case "INTEGER":
                     case "FLOAT":
@@ -72,7 +76,6 @@ public class PrepareResultSetRowPacket extends MysqlPacket {
                     case "CHAR":
                     case "ARRAY":
                     case "MULTISET":
-                        Object val = values.get(i - 1);
                         if (val != null) {
                             byte[] v = val.toString().getBytes();
                             values.set(i - 1, v);
@@ -117,7 +120,10 @@ public class PrepareResultSetRowPacket extends MysqlPacket {
                             BufferUtil.writeInt(buffer, (Integer) val);
                             break;
                         case "FLOAT":
-                            BufferUtil.writeFloat(buffer, (Float) val);
+                            if (val instanceof Double) {
+                                val = ((Double) val).floatValue();
+                            }
+                            BufferUtil.writeFloat(buffer, (float) val);
                             break;
                         case "BIGINT":
                             BufferUtil.writeLong(buffer, (Long) val);

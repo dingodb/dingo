@@ -288,6 +288,7 @@ public class MysqlCommands {
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
                     MysqlResponseHandler.responsePrepareExecute(resultSet, packetId, mysqlConnection);
                 } catch (Exception e) {
+                    log.error(e.getMessage(), e);
                     MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ER_UNKNOWN_ERROR);
                 }
             } else {
