@@ -19,6 +19,7 @@ package io.dingodb.driver;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoSchema;
+import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.operation.DdlOperation;
 import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.QueryOperation;
@@ -187,6 +188,9 @@ public final class DingoDriverParser extends DingoParser {
         SqlNode sqlNode;
         try {
             sqlNode = parse(sql);
+            if (sqlNode instanceof DingoSqlCreateTable) {
+                ((DingoSqlCreateTable) sqlNode).setOriginalCreateSql(sql);
+            }
         } catch (SqlParseException e) {
             throw ExceptionUtils.toRuntime(e);
         }

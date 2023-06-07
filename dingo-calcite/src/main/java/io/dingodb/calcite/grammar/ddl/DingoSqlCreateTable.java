@@ -18,6 +18,7 @@ package io.dingodb.calcite.grammar.ddl;
 
 import io.dingodb.common.partition.PartitionDefinition;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -40,6 +41,10 @@ public class DingoSqlCreateTable extends SqlCreateTable {
     @Getter String engine;
 
     @Getter int autoIncrement;
+
+    @Getter
+    @Setter
+    private String originalCreateSql;
 
     /**
      * Creates a SqlCreateTable.

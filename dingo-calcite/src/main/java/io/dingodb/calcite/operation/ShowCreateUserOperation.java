@@ -21,6 +21,7 @@ import io.dingodb.verify.service.UserService;
 import io.dingodb.verify.service.UserServiceProvider;
 import lombok.Setter;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -64,6 +65,26 @@ public class ShowCreateUserOperation implements QueryOperation {
         if (userDefinition == null) {
             throw new RuntimeException("Unknown user '" + this.userName + "'@'" + this.host + "'");
         }
-        return "Create user '" + this.userName + "' identified by ******";
+        StringBuilder builder = new StringBuilder("CREATE USER '");
+        builder.append(this.userName);
+        builder.append("'@'");
+        builder.append(this.host);
+        builder.append("' IDENTIFIED WITH '");
+        builder.append(userDefinition.getPlugin());
+        builder.append("' AS '");
+        builder.append(userDefinition.getPassword());
+        builder.append("' REQUIRE ");
+        String requireSsl = userDefinition.getRequireSsl();
+        if (requireSsl.isEmpty()) {
+            builder.append("NONE");
+        } else {
+            builder.append(requireSsl);
+        }
+        builder.append(" PASSWORD EXPIRE ");
+        builder.append(userDefinition.getPasswordExpire().toString());
+        builder.append(" ACCOUNT LOCK ");
+        builder.append(userDefinition.getLock());
+
+        return builder.toString();
     }
 }
