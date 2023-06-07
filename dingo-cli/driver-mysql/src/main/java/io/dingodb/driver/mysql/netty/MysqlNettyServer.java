@@ -48,7 +48,8 @@ public class MysqlNettyServer {
 
     public void start() throws Exception {
         server = new ServerBootstrap();
-        eventLoopGroup = new NioEventLoopGroup(151, new ThreadPoolBuilder().name("Netty server " + port).build());
+        eventLoopGroup = new NioEventLoopGroup(151,
+            new ThreadPoolBuilder().name("mysql server " + port).coreThreads(151).maximumThreads(151).build());
         server
             .channel(NioServerSocketChannel.class)
             .group(eventLoopGroup)

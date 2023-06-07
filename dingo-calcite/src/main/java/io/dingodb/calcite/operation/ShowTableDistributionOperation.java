@@ -28,6 +28,7 @@ import io.dingodb.meta.MetaService;
 import lombok.Setter;
 import org.apache.calcite.sql.SqlNode;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -90,9 +91,58 @@ public class ShowTableDistributionOperation implements QueryOperation {
 
             // Value like [ Key(1, a), key(2, a) )
             StringBuilder builder = new StringBuilder("[ ");
-            builder.append(ByteUtils.byteArrayToHexString(range.getStartKey()));
+            try {
+                List<Integer> keyColumnIndices = tableDefinition.getKeyColumnIndices();
+                // Concatenate start key
+                Object[] objects = codec.decodeKeyPrefix(range.getStartKey());
+                for (int i = 0; ; i++) {
+                    Object object;
+                    if (i >= keyColumnIndices.size() || (object = objects[keyColumnIndices.get(i)]) == null) {
+                        if (i == 0) {
+                            builder.append("Infinity");
+                        } else {
+                            builder.append(")");
+                        }
+                        break;
+                    }
+
+                    if (i == 0) {
+                        builder.append("Key(");
+                    } else {
+                        builder.append(", ");
+                    }
+                    builder.append(object.toString());
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             builder.append(", ");
-            builder.append(ByteUtils.byteArrayToHexString(range.getEndKey()));
+            try {
+                List<Integer> keyColumnIndices = tableDefinition.getKeyColumnIndices();
+                // Concatenate end key
+                Object[] objects = iterator.hasNext() ? codec.decodeKeyPrefix(range.getEndKey()) : new Object[tableDefinition.getColumnsCount()];
+                for (int i = 0; ; i++) {
+                    Object object;
+                    if (i >= keyColumnIndices.size() || (object = objects[keyColumnIndices.get(i)]) == null) {
+                        if (i == 0) {
+                            builder.append("Infinity");
+                        } else {
+                            builder.append(")");
+                        }
+                        break;
+                    }
+
+                    if (i == 0) {
+                        builder.append("Key(");
+                    } else {
+                        builder.append(", ");
+                    }
+                    builder.append(object.toString());
+                }
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             builder.append(" )");
             rangeValues.add(builder.toString());
 

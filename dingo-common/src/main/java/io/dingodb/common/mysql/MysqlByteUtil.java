@@ -20,6 +20,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Calendar;
 
 public class MysqlByteUtil {
@@ -94,8 +97,21 @@ public class MysqlByteUtil {
     }
 
     public static long bytesToDateLittleEndian(byte[] bytes) {
-        Calendar calendar = getCalendar(bytes);
-        return calendar.getTimeInMillis();
+        byte[] yearBytes = new byte[2];
+        System.arraycopy(bytes, 0, yearBytes, 0, yearBytes.length);
+        ByteBuffer buffer = ByteBuffer.wrap(yearBytes);
+        buffer.order(ByteOrder.LITTLE_ENDIAN); // 设置为小端字节序
+        int year = buffer.getShort();
+
+        int month = bytes[2] & 0xff;
+        int day = bytes[3] & 0xff;
+
+
+        LocalDate localDate = LocalDate.now();
+        localDate = localDate.withYear(year).withMonth(month).withDayOfMonth(day);
+        return localDate.atStartOfDay(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli();
     }
 
     public static Time bytesToTimeLittleEndian(byte[] bytes) {
@@ -115,15 +131,6 @@ public class MysqlByteUtil {
     }
 
     public static Timestamp bytesToTimeStampLittleEndian(byte[] bytes) {
-        Calendar calendar = getCalendar(bytes);
-        calendar.set(Calendar.HOUR, bytes[4] & 0xff);
-        calendar.set(Calendar.MINUTE, bytes[5] & 0xff);
-        calendar.set(Calendar.SECOND, bytes[6] & 0xff);
-        Timestamp timestamp = new Timestamp(calendar.getTimeInMillis());
-        return timestamp;
-    }
-
-    private static Calendar getCalendar(byte[] bytes) {
         byte[] yearBytes = new byte[2];
         System.arraycopy(bytes, 0, yearBytes, 0, yearBytes.length);
         ByteBuffer buffer = ByteBuffer.wrap(yearBytes);
@@ -132,11 +139,17 @@ public class MysqlByteUtil {
 
         int month = bytes[2] & 0xff;
         int day = bytes[3] & 0xff;
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.YEAR, year);
-        calendar.set(Calendar.MONTH, month - 1);
-        calendar.set(Calendar.DAY_OF_MONTH, day);
-        return calendar;
+        int hour =  bytes[4] & 0xff;
+        int minute = bytes[5] & 0xff;
+        int second = bytes[6] & 0xff;
+        LocalDateTime dateTime = LocalDateTime.now();
+        dateTime = dateTime.withYear(year)
+            .withMonth(month)
+            .withDayOfMonth(day)
+            .withHour(hour)
+            .withMinute(minute)
+            .withSecond(second);
+        return Timestamp.valueOf(dateTime);
     }
 
 }

@@ -129,9 +129,7 @@ public class MysqlResponseHandler {
                 Object val = resultSet.getObject(i);
                 typeName = metaData.getColumnTypeName(i);
                 if (typeName.equalsIgnoreCase("BOOLEAN")) {
-                    if (val == null) {
-                        val = "0";
-                    } else {
+                    if (val != null) {
                         if ("TRUE".equalsIgnoreCase(val.toString())) {
                             val = "1";
                         } else {
