@@ -302,7 +302,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             create.getProperties(),
             create.getAutoIncrement(),
             create.getReplica(),
-            create.toString()
+            create.getOriginalCreateSql()
         );
         List<Index> indexList = getIndex(create);
 
