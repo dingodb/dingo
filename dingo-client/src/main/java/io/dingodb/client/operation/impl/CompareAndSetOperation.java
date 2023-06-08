@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -42,13 +43,19 @@ import static io.dingodb.client.utils.OperationUtils.checkParameters;
 
 public class CompareAndSetOperation implements Operation {
 
-    private static final CompareAndSetOperation INSTANCE = new CompareAndSetOperation();
+    private static final CompareAndSetOperation INSTANCE = new CompareAndSetOperation(false);
+    private static final CompareAndSetOperation INTERNAL = new CompareAndSetOperation(true);
 
-    private CompareAndSetOperation() {
+    private CompareAndSetOperation(boolean internal) {
+        this.internal = internal;
     }
 
     public static CompareAndSetOperation getInstance() {
         return INSTANCE;
+    }
+
+    public static CompareAndSetOperation getInternal() {
+        return INTERNAL;
     }
 
     @AllArgsConstructor
@@ -57,13 +64,7 @@ public class CompareAndSetOperation implements Operation {
         public final List<Record> expects;
     }
 
-    //@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-    //@AllArgsConstructor
-    //private static class RegionParameter {
-    //    @EqualsAndHashCode.Include
-    //    private final KeyValue keyValue;
-    //    private final byte[] expect;
-    //}
+    private final boolean internal;
 
     @Override
     public Fork fork(Any parameters, TableInfo tableInfo) {
@@ -72,6 +73,10 @@ public class CompareAndSetOperation implements Operation {
             Parameter parameter = parameters.getValue();
             NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparingLong(t -> t.getRegionId().entityId()));
             Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
+            Set<byte[]> checkSet = null;
+            if (!internal) {
+                checkSet = new TreeSet<>(ByteArrayUtils::compare);
+            }
             for (int i = 0; i < parameter.records.size(); i++) {
                 Record record = parameter.records.get(i);
                 Object[] values = record.extractValues(
@@ -80,6 +85,13 @@ public class CompareAndSetOperation implements Operation {
 
                 checkParameters(definition, values);
                 KeyValue keyValue = tableInfo.codec.encode(values);
+
+                if (!internal) {
+                    if (checkSet.contains(keyValue.getKey())) {
+                        throw new IllegalArgumentException("Not internal, but has duplicate key on [" + i + "]");
+                    }
+                    checkSet.add(keyValue.getKey());
+                }
 
                 record = parameter.expects.get(i);
                 values = record.extractValues(

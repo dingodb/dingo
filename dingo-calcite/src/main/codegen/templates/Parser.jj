@@ -4278,17 +4278,10 @@ SqlAlter SqlAlter() :
 {
     final Span s;
     String scope = null;
-    final SqlIdentifier id;
-    final String index;
-    boolean isUnique = false;
     SqlAlter alterNode = null;
-    SqlIdentifier column;
-    List<SqlIdentifier> columns;
 }
 {
     <ALTER> { s = span(); }
-    [ scope = Scope() ]
-    [
     (
 <#-- additional literal parser methods are included here -->
 <#list (parser.alterStatementParserMethods!) as method>
@@ -4298,21 +4291,6 @@ SqlAlter SqlAlter() :
 
         alterNode = SqlSetOption(s, scope)
     )
-    ]
-    [
-       id = CompoundIdentifier()
-       <ADD> [ <UNIQUE> { isUnique = true;} ] [ <INDEX> ]
-       ( <QUOTED_STRING> | <IDENTIFIER> )
-       { index = token.image.toUpperCase(); }
-       <LPAREN>
-            column = SimpleIdentifier() { columns = new ArrayList<SqlIdentifier>(); columns.add(column); }
-            (
-               <COMMA>
-               column = SimpleIdentifier() { columns.add(column); }
-            )*
-        <RPAREN>
-        { return new SqlAlterAddIndex(s.end(this), id, index, columns, isUnique); }
-    ]
     {
         return alterNode;
     }

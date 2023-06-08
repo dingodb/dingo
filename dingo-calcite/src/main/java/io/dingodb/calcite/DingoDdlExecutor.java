@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
 import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
@@ -32,9 +33,9 @@ import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
-import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.partition.PartitionDefinition;
+import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.privilege.PrivilegeDefinition;
 import io.dingodb.common.privilege.PrivilegeType;
 import io.dingodb.common.privilege.SchemaPrivDefinition;
@@ -42,7 +43,6 @@ import io.dingodb.common.privilege.TablePrivDefinition;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.Index;
-import io.dingodb.common.table.IndexStatus;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.DefinitionUtils;
 import io.dingodb.common.util.Optional;
@@ -77,8 +77,6 @@ import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -447,6 +445,18 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else {
             throw new RuntimeException("user is not exist");
         }
+    }
+
+    public void execute(@NonNull SqlAlterTableDistribution sqlAlterTableDistribution, CalcitePrepare.Context context) {
+        log.info("DDL execute: {}", sqlAlterTableDistribution);
+        final Pair<MutableSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlAlterTableDistribution.table, context);
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
+        PartitionDetailDefinition detail = sqlAlterTableDistribution.getPartitionDefinition();
+        DefinitionUtils.checkAndConvertRangePartitionDetail(tableDefinition, detail);
+        schema.addDistribution(tableName, sqlAlterTableDistribution.getPartitionDefinition());
     }
 
     public void execute(@NonNull SqlAlterAddIndex sqlAlterAddIndex, CalcitePrepare.Context context) {

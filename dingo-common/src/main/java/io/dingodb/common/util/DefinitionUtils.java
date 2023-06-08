@@ -25,6 +25,7 @@ import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.type.converter.StrParseConverter;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -81,6 +82,19 @@ public final class DefinitionUtils {
             partDefinition.getCols(),
             keyColumns.stream().map(ColumnDefinition::getType).collect(Collectors.toList()),
             partDefinition.getDetails().stream().map(PartitionDetailDefinition::getOperand).collect(Collectors.toList())
+        );
+    }
+
+    public static void checkAndConvertRangePartitionDetail(
+        TableDefinition tableDefinition, PartitionDetailDefinition detail
+    ) {
+        List<ColumnDefinition> keyColumns = tableDefinition.getKeyColumns();
+        keyColumns.sort(Comparator.comparingInt(ColumnDefinition::getPrimary));
+        checkAndConvertRangePartition(
+            keyColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
+            Collections.emptyList(),
+            keyColumns.stream().map(ColumnDefinition::getType).collect(Collectors.toList()),
+            Collections.singletonList(detail.getOperand())
         );
     }
 

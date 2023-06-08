@@ -31,6 +31,7 @@ import io.dingodb.sdk.common.RangeWithOptions;
 import io.dingodb.sdk.common.SDKCommonId;
 import io.dingodb.sdk.common.partition.Partition;
 import io.dingodb.sdk.common.partition.PartitionDetail;
+import io.dingodb.sdk.common.partition.PartitionDetailDefinition;
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.ByteArrayUtils;
@@ -137,6 +138,10 @@ public final class Mapping {
             partitionDetail.getPartName(),
             partitionDetail.getOperator(),
             partitionDetail.getOperand());
+    }
+
+    public static PartitionDetailDefinition mapping(io.dingodb.common.partition.PartitionDetailDefinition detail) {
+        return new PartitionDetailDefinition(detail.getPartName(), detail.getOperator(), detail.getOperand());
     }
 
     public static CommonId mapping(DingoCommonId commonId) {

@@ -29,6 +29,7 @@ dependencies {
 
     api project(":dingo-common")
     testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()
+    testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: 'slf4j'.v()
 }
 
 test {

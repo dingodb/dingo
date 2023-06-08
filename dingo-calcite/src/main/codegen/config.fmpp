@@ -37,6 +37,8 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlRollback"
       "io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex"
       "io.dingodb.calcite.grammar.ddl.SqlAlterUser"
+      "io.dingodb.calcite.grammar.ddl.SqlAlterTable"
+      "io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution"
       "io.dingodb.calcite.grammar.ddl.SqlCreateUser"
       "io.dingodb.calcite.grammar.ddl.SqlCreateIndex"
       "io.dingodb.calcite.grammar.dql.SqlDesc"
@@ -123,6 +125,7 @@ data: {
     ]
 
     alterStatementParserMethods: [
+       "SqlAlterTable"
        "SqlAlterUser"
     ]
 
@@ -133,6 +136,7 @@ data: {
     # Example: "parserImpls.ftl".
     implementationFiles: [
       "parserImpls.ftl"
+      "AlterTable.ftl"
     ]
 
     includePosixOperators: false

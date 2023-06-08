@@ -22,24 +22,19 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Collections;
 import java.util.List;
 
 public class SqlAlterTable extends SqlAlter {
 
     private final SqlOperator operator;
 
-    public SqlIdentifier table;
+    public final SqlIdentifier table;
 
     public SqlAlterTable(SqlParserPos pos, SqlIdentifier sqlIdentifier, SqlOperator operator) {
         super(pos);
         this.table = sqlIdentifier;
-        this.operator = operator;
-    }
-
-    public SqlAlterTable(SqlParserPos pos, @Nullable String scope, SqlOperator operator) {
-        super(pos, scope);
         this.operator = operator;
     }
 
@@ -55,7 +50,7 @@ public class SqlAlterTable extends SqlAlter {
 
     @Override
     public List<SqlNode> getOperandList() {
-        return null;
+        return Collections.emptyList();
     }
 
 }
