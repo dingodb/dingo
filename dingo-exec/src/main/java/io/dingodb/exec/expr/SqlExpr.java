@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.fun.DingoFunFactory;
 import io.dingodb.exec.type.converter.ExprConverter;
+import io.dingodb.expr.parser.Expr;
 import io.dingodb.expr.parser.exception.ExprCompileException;
 import io.dingodb.expr.parser.exception.ExprParseException;
 import io.dingodb.expr.parser.parser.DingoExprCompiler;
@@ -28,7 +29,7 @@ import io.dingodb.expr.runtime.RtExpr;
 import lombok.Getter;
 
 public class SqlExpr {
-    public static final DingoExprCompiler compiler = new DingoExprCompiler(
+    private static final DingoExprCompiler compiler = new DingoExprCompiler(
         DingoFunFactory.getInstance()
     );
 
@@ -51,9 +52,25 @@ public class SqlExpr {
         this.etx = new SqlExprEvalContext(null);
     }
 
+    private Expr getExpr() throws ExprParseException {
+        return compiler.parse(exprString);
+    }
+
+    public ExprCodeType getCoding(DingoType tupleType, DingoType parasType) {
+        try {
+            ExprCodeVisitor visitor = new ExprCodeVisitor(
+                new SqlExprCompileContext(tupleType, parasType),
+                etx
+            );
+            return getExpr().accept(visitor);
+        } catch (ExprParseException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     public void compileIn(DingoType tupleType, DingoType parasType) {
         try {
-            expr = compiler.parse(exprString).compileIn(
+            expr = getExpr().compileIn(
                 new SqlExprCompileContext(tupleType, parasType)
             );
         } catch (ExprParseException | ExprCompileException e) {

@@ -43,7 +43,6 @@ import lombok.Setter;
     @JsonSubTypes.Type(PartDeleteOperator.class),
     @JsonSubTypes.Type(PartInsertOperator.class),
     @JsonSubTypes.Type(PartitionOperator.class),
-    @JsonSubTypes.Type(PartScanOperator.class),
     @JsonSubTypes.Type(PartRangeDeleteOperator.class),
     @JsonSubTypes.Type(PartRangeScanOperator.class),
     @JsonSubTypes.Type(PartUpdateOperator.class),

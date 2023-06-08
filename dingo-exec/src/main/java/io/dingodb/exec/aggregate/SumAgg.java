@@ -19,6 +19,7 @@ package io.dingodb.exec.aggregate;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.AggregationOperator;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.expr.runtime.evaluator.arithmetic.AddEvaluatorsFactory;
 
@@ -31,5 +32,10 @@ public class SumAgg extends UnityEvaluatorAgg {
     ) {
         super(index, type);
         setEvaluator(AddEvaluatorsFactory.INSTANCE);
+    }
+
+    @Override
+    public AggregationOperator.AggregationType getAggregationType() {
+        return AggregationOperator.AggregationType.SUM;
     }
 }

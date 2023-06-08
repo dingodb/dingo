@@ -382,15 +382,46 @@ public class CasesJUnit5 implements ArgumentsProvider {
                 )
             ),
             Case.of(
+                "Count of empty table",
+                exec(file("string_double/create.sql")),
+                exec("select count(amount) from {table}")
+                    .result(
+                        "EXPR$0",
+                        "LONG",
+                        "0"
+                    )
+            ),
+            Case.of(
                 "Aggregation of empty table",
                 exec(file("string_double/create.sql")),
-                exec("select sum(id) as `sum`, avg(amount) as `avg` from {table}").result(
-                    "SUM,AVG",
-                    "INT,DOUBLE",
-                    "NULL,NULL"
-                )
+                exec("select sum(id) as `sum`, avg(amount) as `avg` from {table}")
+                    .result(
+                        "SUM,AVG",
+                        "INT,DOUBLE",
+                        "NULL,NULL"
+                    )
+            ),
+            Case.of(
+                "Count group by bool",
+                exec(file("int_string_double_boolean/create.sql")),
+                exec(file("int_string_double_boolean/data.sql")),
+                exec("select is_delete, count(*) from {table} group by is_delete")
+                    .result(
+                        "IS_DELETE,EXPR$1",
+                        "BOOL,LONG",
+                        "true,3",
+                        "false,3",
+                        "null,2"
+                    )
+            ),
+            Case.of(
+                "Aggregation group by",
+                exec(file("string_double/create.sql")),
+                exec(file("string_double/data.sql")),
+                exec("select name, sum(amount) as `sum` from {table} group by name")
+                    .result(file("string_double/select_sum_group_by.csv"))
             )
         );
-        return stream;//.filter(arg -> arg.get()[0].equals("Concat int-string-time"));
+        return stream;//.filter(arg -> arg.get()[0].equals("Count group by bool"));
     }
 }

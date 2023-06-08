@@ -29,11 +29,11 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-@JsonPropertyOrder({"name", "type", "precision", "scale", "nullable", "primary", "default", })
+@JsonPropertyOrder({"name", "type", "precision", "scale", "nullable", "primary", "default",})
 @EqualsAndHashCode
 @Builder
 @Slf4j
-public class    ColumnDefinition {
+public class ColumnDefinition {
     public static final int DEFAULT_PRECISION = -1;
     public static final int DEFAULT_SCALE = Integer.MIN_VALUE;
 
@@ -125,7 +125,6 @@ public class    ColumnDefinition {
     }
 
     public boolean isNullable() {
-        return !isPrimary() && nullable;
+        return nullable;
     }
-
 }

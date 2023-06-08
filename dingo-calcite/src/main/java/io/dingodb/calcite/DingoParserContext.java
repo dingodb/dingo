@@ -19,14 +19,12 @@ package io.dingodb.calcite;
 import io.dingodb.calcite.grammar.SqlUserDefinedOperators;
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import lombok.Getter;
-import lombok.Setter;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.Context;
-import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -36,7 +34,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.TimeZone;
@@ -56,6 +53,9 @@ public final class DingoParserContext implements Context {
     private final CalciteConnectionConfig config;
     @Getter
     private final TimeZone timeZone;
+    @Getter
+    private final boolean pushDown;
+
     private final Properties options;
     @Getter
     private CalciteSchema usedSchema;
@@ -67,8 +67,11 @@ public final class DingoParserContext implements Context {
     public DingoParserContext(@NonNull String defaultSchemaName, @Nullable Properties options) {
         this.defaultSchemaName = defaultSchemaName;
 
-        String timeZoneId = options != null ? options.getProperty("timeZone") : null;
-        timeZone = timeZoneId != null ? TimeZone.getTimeZone(timeZoneId) : TimeZone.getDefault();
+        String timeZoneId = (options != null ? options.getProperty("timeZone") : null);
+        timeZone = (timeZoneId != null ? TimeZone.getTimeZone(timeZoneId) : TimeZone.getDefault());
+
+        String pushDownStr = (options != null ? options.getProperty("pushDown") : null);
+        pushDown = (pushDownStr == null || Boolean.parseBoolean(pushDownStr));
 
         rootSchema = CalciteSchema.createRootSchema(
             false,

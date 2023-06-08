@@ -17,18 +17,23 @@
 package io.dingodb.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.traits.DingoRelPartition;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.traits.DingoRelStreamingDef;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
+import java.util.Set;
 
 public class DingoStreamingConverter extends SingleRel implements DingoRel {
     public DingoStreamingConverter(
@@ -40,17 +45,34 @@ public class DingoStreamingConverter extends SingleRel implements DingoRel {
     }
 
     @Override
-    public double estimateRowCount(RelMetadataQuery mq) {
-        double rowCount = super.estimateRowCount(mq);
+    public double estimateRowCount(@NonNull RelMetadataQuery mq) {
+        double rowCount = mq.getRowCount(input);
         DingoRelStreaming inputStreaming = getInput().getTraitSet().getTrait(DingoRelStreamingDef.INSTANCE);
         assert inputStreaming != null;
-        if (getStreaming().getDistribution() != null && inputStreaming.getDistribution() == null) {
-            return rowCount / 3.0d;
-        }
-        if (getStreaming().getDistribution() == null && inputStreaming.getDistribution() != null) {
-            return rowCount * 3.0d;
+        Set<DingoRelPartition> partitions = getStreaming().getPartitions();
+        Set<DingoRelPartition> inputPartitions = inputStreaming.getPartitions();
+        assert partitions != null && inputPartitions != null;
+        if (partitions.size() > inputPartitions.size()) {
+            for (int i = 0; i < partitions.size() - inputPartitions.size(); ++i) {
+                rowCount /= 3.0d;
+            }
+        } else if (inputPartitions.size() > partitions.size()) {
+            for (int i = 0; i < inputPartitions.size() - partitions.size(); ++i) {
+                rowCount *= 3.0d;
+            }
         }
         return rowCount;
+    }
+
+    @Override
+    public @Nullable RelOptCost computeSelfCost(RelOptPlanner planner, @NonNull RelMetadataQuery mq) {
+        double rowCount = mq.getRowCount(input);
+        DingoRelStreaming inputStreaming = getInput().getTraitSet().getTrait(DingoRelStreamingDef.INSTANCE);
+        assert inputStreaming != null;
+        if (getStreaming().getDistribution() != inputStreaming.getDistribution()) {
+            return planner.getCostFactory().makeCost(rowCount, rowCount, rowCount);
+        }
+        return planner.getCostFactory().makeTinyCost();
     }
 
     @Override

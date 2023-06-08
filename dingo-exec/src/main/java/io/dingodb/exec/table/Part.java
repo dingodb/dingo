@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.table;
 
+import io.dingodb.common.Coprocessor;
 import io.dingodb.common.store.KeyValue;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -32,6 +33,14 @@ public interface Part {
     }
 
     @NonNull Iterator<Object[]> scan(byte[] start, byte[] end, boolean withStart, boolean withEnd);
+
+    @NonNull Iterator<Object[]> scan(
+        byte[] start,
+        byte[] end,
+        boolean withStart,
+        boolean withEnd,
+        Coprocessor coprocessor
+    );
 
     long delete(byte[] start, byte[] end, boolean withStart, boolean withEnd);
 

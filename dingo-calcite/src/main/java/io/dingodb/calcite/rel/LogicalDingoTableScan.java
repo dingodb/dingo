@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.rel;
 
+import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.utils.RelDataTypeUtils;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
@@ -26,6 +27,8 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMdUtil;
@@ -44,6 +47,14 @@ public class LogicalDingoTableScan extends TableScan {
     protected final RexNode filter;
     @Getter
     protected final TupleMapping selection;
+    @Getter
+    protected final List<AggregateCall> aggCalls;
+    @Getter
+    protected final ImmutableBitSet groupSet;
+    @Getter
+    protected final ImmutableList<ImmutableBitSet> groupSets;
+    @Getter
+    protected final boolean pushDown;
 
     public LogicalDingoTableScan(
         RelOptCluster cluster,
@@ -53,9 +64,28 @@ public class LogicalDingoTableScan extends TableScan {
         @Nullable RexNode filter,
         @Nullable TupleMapping selection
     ) {
+        this(cluster, traitSet, hints, table, filter, selection, null, null, null, false);
+    }
+
+    public LogicalDingoTableScan(
+        RelOptCluster cluster,
+        RelTraitSet traitSet,
+        List<RelHint> hints,
+        RelOptTable table,
+        @Nullable RexNode filter,
+        @Nullable TupleMapping selection,
+        @Nullable List<AggregateCall> aggCalls,
+        @Nullable ImmutableBitSet groupSet,
+        @Nullable ImmutableList<ImmutableBitSet> groupSets,
+        boolean pushDown
+    ) {
         super(cluster, traitSet, hints, table);
         this.filter = filter;
         this.selection = selection;
+        this.aggCalls = aggCalls;
+        this.groupSet = groupSet;
+        this.groupSets = groupSets;
+        this.pushDown = pushDown;
     }
 
     public boolean isKey(ImmutableBitSet columns) {
@@ -83,6 +113,16 @@ public class LogicalDingoTableScan extends TableScan {
         } else {
             rowCount = super.estimateRowCount(mq) / DingoTableScan.ASSUME_PARTS;
         }
+        if (selection != null) {
+            rowCount *= (double) selection.size() / (double) table.getRowType().getFieldCount();
+        }
+        if (groupSet != null) {
+            if (groupSet.cardinality() == 0) {
+                rowCount = 1.0;
+            } else {
+                rowCount *= 1.0 - Math.pow(.5, groupSet.cardinality() - 0.5);
+            }
+        }
         return rowCount;
     }
 
@@ -95,15 +135,31 @@ public class LogicalDingoTableScan extends TableScan {
     public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, @NonNull RelMetadataQuery mq) {
         double rowCount = estimateRowCount(mq);
         double cpu = rowCount + 1;
-        if (selection != null) {
-            rowCount += rowCount * (double) selection.size() / (double) table.getRowType().getFieldCount();
-        }
         return planner.getCostFactory().makeCost(rowCount, cpu, 0);
     }
 
     @Override
     public RelDataType deriveRowType() {
-        return RelDataTypeUtils.mapType(getCluster().getTypeFactory(), table.getRowType(), selection);
+        RelDataType selected = getSelectedType();
+        if (aggCalls != null) {
+            return Aggregate.deriveRowType(
+                getCluster().getTypeFactory(),
+                selected,
+                false,
+                groupSet,
+                groupSets,
+                aggCalls
+            );
+        }
+        return selected;
+    }
+
+    public RelDataType getSelectedType() {
+        return RelDataTypeUtils.mapType(
+            getCluster().getTypeFactory(),
+            table.getRowType(),
+            selection
+        );
     }
 
     @Override
@@ -112,6 +168,9 @@ public class LogicalDingoTableScan extends TableScan {
         // crucial, this is how Calcite distinguish between different node with different props.
         pw.itemIf("filter", filter, filter != null);
         pw.itemIf("selection", selection, selection != null);
+        pw.itemIf("groupSet", groupSet, groupSet != null);
+        pw.itemIf("aggCalls", aggCalls, aggCalls != null);
+        pw.itemIf("pushDown", pushDown, pushDown);
         return pw;
     }
 }

@@ -19,6 +19,7 @@ package io.dingodb.exec.aggregate;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.AggregationOperator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -64,5 +65,10 @@ public class CountAgg extends UnityAgg {
     @Override
     public Object getValue(@Nullable Object var) {
         return var != null ? var : 0L;
+    }
+
+    @Override
+    public AggregationOperator.AggregationType getAggregationType() {
+        return AggregationOperator.AggregationType.COUNT;
     }
 }

@@ -20,13 +20,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.exec.codec.RawJsonCodecWithProtostuff;
+import io.dingodb.exec.Services;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.table.PartInKvStore;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -58,5 +58,14 @@ public final class LikeScanOperator extends PartIteratorSourceOperator {
     @Override
     protected @NonNull Iterator<Object[]> createSourceIterator() {
         return part.scan(prefix);
+    }
+
+    @Override
+    public void init() {
+        super.init();
+        part = new PartInKvStore(
+            Services.KV_STORE.getInstance(tableId, partId),
+            CodecService.getDefault().createKeyValueCodec(tableId, schema, keyMapping)
+        );
     }
 }

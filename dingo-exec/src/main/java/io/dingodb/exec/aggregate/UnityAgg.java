@@ -17,9 +17,11 @@
 package io.dingodb.exec.aggregate;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
 
 public abstract class UnityAgg extends AbstractAgg {
     @JsonProperty("index")
+    @Getter
     protected final int index;
 
     protected UnityAgg(int index) {

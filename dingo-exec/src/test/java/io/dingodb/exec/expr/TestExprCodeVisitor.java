@@ -76,7 +76,7 @@ public class TestExprCodeVisitor {
         CompileContext ctx
     ) throws ExprParseException {
         Expr expr = compiler.parse(exprString);
-        ExprCodeVisitor visitor = new ExprCodeVisitor(ctx);
+        ExprCodeVisitor visitor = new ExprCodeVisitor(ctx, null);
         ExprCodeType ect = expr.accept(visitor);
         assertThat(ect.getType()).isEqualTo(targetTypeCode);
         assertThat(ect.getCode()).isEqualTo(CodecUtils.hexStringToBytes(targetCode));

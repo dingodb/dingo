@@ -18,6 +18,7 @@ package io.dingodb.exec.table;
 
 import com.google.common.collect.Iterators;
 import io.dingodb.codec.KeyValueCodec;
+import io.dingodb.common.Coprocessor;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.Optional;
 import io.dingodb.store.api.StoreInstance;
@@ -33,7 +34,7 @@ import static io.dingodb.common.util.NoBreakFunctions.wrap;
 @Slf4j
 public final class PartInKvStore implements Part {
     private final StoreInstance store;
-    private final KeyValueCodec codec;
+    final KeyValueCodec codec;
 
     public PartInKvStore(StoreInstance store, KeyValueCodec codec) {
         this.store = store;
@@ -52,6 +53,19 @@ public final class PartInKvStore implements Part {
                 log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
             }
         }
+    }
+
+    @Override
+    public @NonNull Iterator<Object[]> scan(
+        byte[] start,
+        byte[] end,
+        boolean withStart,
+        boolean withEnd,
+        Coprocessor coprocessor
+    ) {
+        return Iterators.transform(store.scan(new StoreInstance.Range(start, end, withStart, withEnd), coprocessor),
+            wrap(codec::decode)::apply
+        );
     }
 
     @Override
