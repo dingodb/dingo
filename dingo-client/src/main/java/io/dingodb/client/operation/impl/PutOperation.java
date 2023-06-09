@@ -25,6 +25,7 @@ import io.dingodb.sdk.common.KeyValue;
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
+import io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -55,14 +56,23 @@ public class PutOperation implements Operation {
             List<Record> records = parameters.getValue();
             NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparingLong(t -> t.getRegionId().entityId()));
             Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
+            List<ComparableByteArray> checkList =  new ArrayList<>(records.size());
+
             for (int i = 0; i < records.size(); i++) {
                 Record record = records.get(i);
                 Object[] values = record.extractValues(
                     definition.getColumns().stream().map(Column::getName).collect(Collectors.toList())
                 );
                 checkParameters(definition, values);
-                KeyValue keyValue = tableInfo.codec.encode(values
-                );
+                KeyValue keyValue = tableInfo.codec.encode(values);
+
+                ComparableByteArray key = new ComparableByteArray(keyValue.getKey());
+                if (checkList.contains(key)) {
+                    throw new IllegalArgumentException(
+                        "Has duplicate key on [" + i + "] and [" + checkList.indexOf(key) + "]"
+                    );
+                }
+                checkList.add(key);
 
                 Map<KeyValue, Integer> regionParams = subTaskMap.computeIfAbsent(
                     tableInfo.calcRegionId(keyValue.getKey()), k -> new Any(new HashMap<>())

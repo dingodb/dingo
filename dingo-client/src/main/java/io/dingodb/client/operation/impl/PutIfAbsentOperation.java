@@ -25,14 +25,9 @@ import io.dingodb.sdk.common.KeyValue;
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
+import io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableSet;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.dingodb.client.utils.OperationUtils.checkParameters;
@@ -55,6 +50,7 @@ public class PutIfAbsentOperation implements Operation {
             List<Record> records = parameters.getValue();
             NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparingLong(t -> t.getRegionId().entityId()));
             Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
+            List<ComparableByteArray> checkList =  new ArrayList<>(records.size());
             for (int i = 0; i < records.size(); i++) {
                 Record record = records.get(i);
                 Object[] values = record.extractValues(
@@ -64,8 +60,16 @@ public class PutIfAbsentOperation implements Operation {
                 checkParameters(definition, values);
                 KeyValue keyValue = tableInfo.codec.encode(values);
 
+                ComparableByteArray key = new ComparableByteArray(keyValue.getKey());
+                if (checkList.contains(key)) {
+                    throw new IllegalArgumentException(
+                        "Has duplicate key on [" + i + "] and [" + checkList.indexOf(key) + "]"
+                    );
+                }
+                checkList.add(key);
+
                 Map<KeyValue, Integer> regionParams = subTaskMap.computeIfAbsent(
-                    tableInfo.calcRegionId(keyValue.getKey()), k -> new Any(new HashMap<>())
+                    tableInfo.calcRegionId(key.getBytes()), k -> new Any(new HashMap<>())
                 ).getValue();
 
                 regionParams.put(keyValue, i);

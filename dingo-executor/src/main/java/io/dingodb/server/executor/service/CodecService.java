@@ -35,7 +35,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -121,17 +121,33 @@ public final class CodecService implements io.dingodb.codec.CodecService {
         if (type instanceof TupleType) {
             TupleType tupleType = (TupleType) type;
             DingoType[] fields = tupleType.getFields();
-            List<DingoSchema> schemas = new ArrayList<>(fields.length);
+            DingoSchema[] schemas = new DingoSchema[fields.length];
+            int[] mappings = keyMapping.getMappings();
+            int valueIndex = mappings.length;
             for (int i = 0; i < fields.length; i++) {
                 DingoSchema schema = CodecUtils.createSchemaForTypeName(TypeCode.nameOf(fields[i].getTypeCode()));
+                if (keyMapping.contains(i)) {
+                    schema.setIsKey(true);
+                    schemas[getKeyIndex(mappings, i)] = schema;
+                } else {
+                    schema.setIsKey(false);
+                    schemas[valueIndex++] = schema;
+                }
                 schema.setIndex(i);
-                schema.setIsKey(keyMapping.contains(i));
                 schema.setAllowNull(((NullableType) fields[i]).isNullable());
-                schemas.add(schema);
             }
-            return schemas;
+            return Arrays.<DingoSchema>asList(schemas);
         } else {
             return Collections.singletonList(CodecUtils.createSchemaForTypeName(TypeCode.nameOf(type.getTypeCode())));
         }
+    }
+
+    private static int getKeyIndex(int[] mappings, int index) {
+        for (int i = 0; i < mappings.length; i++) {
+            if (mappings[i] == index) {
+                return i;
+            }
+        }
+        throw new IllegalArgumentException("Not found [" + "] in mappings");
     }
 }

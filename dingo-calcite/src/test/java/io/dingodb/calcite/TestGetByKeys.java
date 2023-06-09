@@ -101,7 +101,7 @@ public class TestGetByKeys {
             TableUtils.getTableDefinition(getByKeys.getTable())
         );
         assertThat(keyTuples)
-            .containsExactlyInAnyOrder(new Object[]{1, "A", true});
+            .containsExactlyInAnyOrder(new Object[]{1, "A", true, null, null});
     }
 
     @Test
@@ -125,7 +125,7 @@ public class TestGetByKeys {
             TableUtils.getTableDefinition(getByKeys.getTable())
         );
         assertThat(keyTuples)
-            .containsExactlyInAnyOrder(new Object[]{1, "A", false});
+            .containsExactlyInAnyOrder(new Object[]{1, "A", false, null, null});
     }
 
     @Test
@@ -150,10 +150,10 @@ public class TestGetByKeys {
         );
         assertThat(keyTuples)
             .containsExactlyInAnyOrder(
-                new Object[]{1, "A", true},
-                new Object[]{1, "B", true},
-                new Object[]{2, "A", true},
-                new Object[]{2, "B", true}
+                new Object[]{1, "A", true, null, null},
+                new Object[]{1, "B", true, null, null},
+                new Object[]{2, "A", true, null, null},
+                new Object[]{2, "B", true, null, null}
             );
     }
 }

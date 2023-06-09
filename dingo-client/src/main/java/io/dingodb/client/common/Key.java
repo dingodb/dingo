@@ -16,6 +16,7 @@
 
 package io.dingodb.client.common;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,17 +30,41 @@ public class Key {
      */
     public final List<Value> userKey;
 
+    public final boolean columnOrder;
+
     public Key(Value userKey) {
         this(Collections.singletonList(userKey));
     }
 
     public Key(List<Value> userKey) {
+        this(userKey, false);
+    }
+
+    public Key(Value userKey, boolean columnOrder) {
+        this(Collections.singletonList(userKey), columnOrder);
+    }
+
+    public Key(List<Value> userKey, boolean columnOrder) {
         this.userKey = userKey;
+        this.columnOrder = columnOrder;
     }
 
     @Deprecated
     public Key(String database, List<Value> userKey) {
-        this.userKey = userKey;
+        this(userKey);
+    }
+
+    @Deprecated
+    public Key(String database, List<Value> userKey, boolean columnOrder) {
+        this(userKey, columnOrder);
+    }
+
+    public static Key of(boolean columnOrder, Object... userKey) {
+        return new Key(Arrays.stream(userKey).map(Value::get).collect(Collectors.toList()), columnOrder);
+    }
+
+    public static Key of(Object... userKey) {
+        return new Key(Arrays.stream(userKey).map(Value::get).collect(Collectors.toList()));
     }
 
     public List<Object> getUserKey() {
