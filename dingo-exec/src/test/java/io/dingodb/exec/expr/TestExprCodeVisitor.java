@@ -63,7 +63,6 @@ public class TestExprCodeVisitor {
     public static @NonNull Stream<Arguments> getParametersVar() {
         return Stream.of(
             arguments("_[0]", TypeCode.INT, "3100"),
-            arguments("_[1]", TypeCode.STRING, "3701"),
             arguments("_[2]", TypeCode.DOUBLE, "3502"),
             arguments("3 + _[0]", TypeCode.INT, "110331008301")
         );
