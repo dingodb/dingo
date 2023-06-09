@@ -17,6 +17,7 @@
 package io.dingodb.calcite;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
@@ -50,6 +51,10 @@ public abstract class MutableSchema extends AbstractSchema {
         metaService.createTable(tableName, tableDefinition);
     }
 
+    public boolean dropTable(@NonNull String tableName) {
+        return metaService.dropTable(tableName);
+    }
+
     public void createIndex(@NonNull String tableName, @NonNull List<Index> indexList) {
         metaService.createIndex(tableName, indexList);
     }
@@ -67,8 +72,8 @@ public abstract class MutableSchema extends AbstractSchema {
         }
     }
 
-    public boolean dropTable(@NonNull String tableName) {
-        return metaService.dropTable(tableName);
+    public void addDistribution(String tableName, PartitionDetailDefinition partitionDetail) {
+        metaService.addDistribution(tableName, partitionDetail);
     }
 
     public CommonId getTableId(String tableName) {

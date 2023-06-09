@@ -24,6 +24,7 @@ import io.dingodb.client.operation.impl.DeleteRangeOperation;
 import io.dingodb.client.operation.impl.GetOperation;
 import io.dingodb.client.operation.impl.KeyRangeCoprocessor;
 import io.dingodb.client.operation.impl.OpKeyRange;
+import io.dingodb.client.operation.impl.Operation;
 import io.dingodb.client.operation.impl.PutIfAbsentOperation;
 import io.dingodb.client.operation.impl.PutOperation;
 import io.dingodb.client.operation.impl.ScanCoprocessorOperation;
@@ -31,6 +32,7 @@ import io.dingodb.client.operation.impl.ScanOperation;
 import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.table.Table;
+import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.Parameters;
 
 import java.util.Collections;
@@ -69,6 +71,10 @@ public class DingoClient {
 
     public boolean dropTable(String tableName) {
         return operationService.dropTable(schema, tableName);
+    }
+
+    public Any exec(String tableName, Operation operation, Any parameter) {
+        return operationService.exec(schema, tableName, operation, parameter);
     }
 
     public boolean upsert(String tableName, Record record) {

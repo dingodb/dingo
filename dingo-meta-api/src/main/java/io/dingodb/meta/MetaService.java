@@ -19,6 +19,7 @@ package io.dingodb.meta;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.partition.RangeTupleDistribution;
 import io.dingodb.common.table.Index;
@@ -141,6 +142,10 @@ public interface MetaService {
      * @return table definition or null if not found.
      */
     TableDefinition getTableDefinition(@NonNull CommonId id);
+
+    default void addDistribution(String tableName, PartitionDetailDefinition detail) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Get range distributions by table id.

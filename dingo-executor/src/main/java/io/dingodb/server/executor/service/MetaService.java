@@ -18,6 +18,7 @@ package io.dingodb.server.executor.service;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
@@ -133,6 +134,10 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public TableDefinition getTableDefinition(@NonNull CommonId id) {
         return Optional.mapOrNull(metaServiceClient.getTableDefinition(mapping(id)), Mapping::mapping);
+    }
+
+    public void addDistribution(String tableName, PartitionDetailDefinition partitionDetail) {
+        metaServiceClient.addDistribution(tableName, mapping(partitionDetail));
     }
 
     public RangeDistribution getRangeDistribution(CommonId tableId, CommonId distributionId) {

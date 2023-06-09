@@ -16,38 +16,34 @@
 
 package io.dingodb.calcite.grammar.ddl;
 
+import io.dingodb.common.partition.PartitionDetailDefinition;
+import lombok.Getter;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
-import java.util.List;
+public class SqlAlterTableDistribution extends SqlAlterTable {
 
-public class SqlAlterAddIndex extends SqlAlterTable {
+    private static final SqlOperator OPERATOR = new SqlSpecialOperator("ALTER TABLE ADD PARTITION", SqlKind.ALTER_TABLE);
 
-    public String type;
+    public static enum Op {
+        ADD
+    }
 
-    public String index;
+    @Getter
+    private final PartitionDetailDefinition partitionDefinition;
 
-    public List<SqlIdentifier> columns;
+    // todo now, only support add
+    @Getter
+    private final Op op = Op.ADD;
 
-    public boolean isUnique;
-
-    private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("CREATE INDEX", SqlKind.OTHER_DDL);
-
-    public SqlAlterAddIndex(SqlParserPos pos, SqlIdentifier sqlIdentifier, String index, List<SqlIdentifier> columns, Boolean isUnique) {
+    public SqlAlterTableDistribution(
+        SqlParserPos pos, SqlIdentifier sqlIdentifier, PartitionDetailDefinition partitionDefinition
+    ) {
         super(pos, sqlIdentifier, OPERATOR);
-        this.index = index;
-        this.columns = columns;
-        this.isUnique = isUnique;
+        this.partitionDefinition = partitionDefinition;
     }
 
-    public String[] getColumnNames() {
-        String[] columnNames = columns.stream().map(column -> column.getSimple())
-            .map(String::toUpperCase)
-            .toArray(String[]::new);
-        return columnNames;
-    }
 }
