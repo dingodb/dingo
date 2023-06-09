@@ -963,7 +963,7 @@ SqlShow SqlShowFullTables(Span s): {
    String schema = null;
 } {
   <FULL>
-  <TABLES> [ <FROM> <BACK_QUOTED_IDENTIFIER> { schema = token.image; } ]
+  <TABLES> [ <FROM> (<BACK_QUOTED_IDENTIFIER> { schema = token.image; } | <IDENTIFIER> { schema = token.image; })]
   { return new SqlShowFullTables(s.end(this), schema); }
 }
 
