@@ -161,7 +161,7 @@ public class ExprCodeVisitor implements ExprVisitor<ExprCodeType> {
     }
 
     @SneakyThrows(IOException.class)
-    private static @NonNull ExprCodeType codingConst(int typeCode, @NonNull Object value) {
+    private static @Nullable ExprCodeType codingConst(int typeCode, @NonNull Object value) {
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         switch (typeCode) {
             case TypeCode.INT:
@@ -194,7 +194,7 @@ public class ExprCodeVisitor implements ExprVisitor<ExprCodeType> {
                 CodecUtils.encodeDouble(buf, (Double) value);
                 break;
             default:
-                break;
+                return null;
         }
         return new ExprCodeType(typeCode, buf.toByteArray());
     }
@@ -326,8 +326,8 @@ public class ExprCodeVisitor implements ExprVisitor<ExprCodeType> {
                 buf.write(VAR_I_DECIMAL);
                 break;
             case TypeCode.STRING:
-                buf.write(VAR_I_STRING);
-                break;
+                // TODO: dingo-store does not support string op.
+                return null;
             default:
                 return null;
         }
