@@ -40,12 +40,13 @@ public class KeyRangeCoprocessor {
     }
 
     public enum AggType {
-        AGGREGATION_NONE(0),
         SUM(1),
         COUNT(2),
-        COUNTWITHNULL(3),
+        COUNT_WITH_NULL(3), COUNTWITHNULL(3),
         MAX(4),
-        MIN(5);
+        MIN(5),
+        SUM_0(6), SUM0(6)
+        ;
 
         private final int code;
 
@@ -56,5 +57,13 @@ public class KeyRangeCoprocessor {
         public int getCode() {
             return code;
         }
+
+        public String resultType(String originType) {
+            if (this.code == COUNT.code || this.code == COUNT_WITH_NULL.code) {
+                return "LONG";
+            }
+            return originType;
+        }
+
     }
 }

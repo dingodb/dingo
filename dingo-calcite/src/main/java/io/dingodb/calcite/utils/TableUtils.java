@@ -55,7 +55,7 @@ public final class TableUtils {
         final TupleMapping revMapping = mapping.reverse(td.getColumnsCount());
         return items.stream()
             .map(item -> {
-                Object[] tuple = new Object[item.size()];
+                Object[] tuple = new Object[td.getColumnsCount()];
                 for (Map.Entry<Integer, RexNode> entry : item.entrySet()) {
                     Expr expr = RexConverter.convert(entry.getValue());
                     try {

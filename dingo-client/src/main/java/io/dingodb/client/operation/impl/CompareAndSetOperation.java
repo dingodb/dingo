@@ -27,6 +27,7 @@ import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.ByteArrayUtils;
+import io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray;
 import lombok.AllArgsConstructor;
 
 import java.util.ArrayList;
@@ -35,7 +36,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
-import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -73,12 +73,14 @@ public class CompareAndSetOperation implements Operation {
             Parameter parameter = parameters.getValue();
             NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparingLong(t -> t.getRegionId().entityId()));
             Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
-            Set<byte[]> checkSet = null;
+            List<Record> records = parameter.records;
+            List<ComparableByteArray> checkList = null;
+
             if (!internal) {
-                checkSet = new TreeSet<>(ByteArrayUtils::compare);
+                checkList =  new ArrayList<>(records.size());
             }
-            for (int i = 0; i < parameter.records.size(); i++) {
-                Record record = parameter.records.get(i);
+            for (int i = 0; i < records.size(); i++) {
+                Record record = records.get(i);
                 Object[] values = record.extractValues(
                     definition.getColumns().stream().map(Column::getName).collect(Collectors.toList())
                 );
@@ -86,11 +88,15 @@ public class CompareAndSetOperation implements Operation {
                 checkParameters(definition, values);
                 KeyValue keyValue = tableInfo.codec.encode(values);
 
+                ComparableByteArray key = new ComparableByteArray(keyValue.getKey());
+
                 if (!internal) {
-                    if (checkSet.contains(keyValue.getKey())) {
-                        throw new IllegalArgumentException("Not internal, but has duplicate key on [" + i + "]");
+                    if (checkList.contains(key)) {
+                        throw new IllegalArgumentException(
+                            "Has duplicate key on [" + i + "] and [" + checkList.indexOf(key) + "]"
+                        );
                     }
-                    checkSet.add(keyValue.getKey());
+                    checkList.add(key);;
                 }
 
                 record = parameter.expects.get(i);
@@ -109,7 +115,7 @@ public class CompareAndSetOperation implements Operation {
                 regionParams.put(new KeyValueWithExpect(keyValue, expect.getValue()), i);
             }
             subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
-            return new Fork(new Boolean[parameter.records.size()], subTasks, true);
+            return new Fork(new Boolean[records.size()], subTasks, true);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

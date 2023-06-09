@@ -18,10 +18,10 @@ package io.dingodb.client.utils;
 
 import io.dingodb.client.common.Key;
 import io.dingodb.client.common.Record;
+import io.dingodb.sdk.common.codec.CodecUtils;
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,16 +31,27 @@ public final class OperationUtils {
     }
 
     public static Object[] mapKey(Table table, Key key) {
-        Object[] dst = new Object[table.getColumns().size()];
-        return mapKey(key.getUserKey().toArray(), dst, table.getColumns(), table.getKeyColumns());
+        List<Column> columns = table.getColumns();
+        List<Column> keyColumns = table.getKeyColumns();
+        Object[] dst = new Object[columns.size()];
+        Object[] src = key.getUserKey().toArray();
+        if (key.columnOrder) {
+            return mapKey(src, dst, columns, keyColumns);
+        } else {
+            return mapKey(src, dst, columns, CodecUtils.sortColumns(keyColumns));
+        }
     }
 
     public static Object[] mapKeyPrefix(Table table, Key key) {
+        List<Column> columns = table.getColumns();
         List<Column> keyColumns = table.getKeyColumns();
-        keyColumns.sort(Comparator.comparingInt(Column::getPrimary));
-        Object[] dst = new Object[table.getColumns().size()];
+        Object[] dst = new Object[columns.size()];
         Object[] src = key.getUserKey().toArray();
-        return mapKey(src, dst, table.getColumns(), keyColumns.subList(0, src.length));
+        if (key.columnOrder) {
+            throw new IllegalArgumentException("Key prefix not support column order key.");
+        } else {
+            return mapKey(src, dst, columns, CodecUtils.sortColumns(keyColumns).subList(0, src.length));
+        }
     }
 
     public static Object[] mapKey(Object[] src, Object[] dst, List<Column> columns, List<Column> keyColumns) {

@@ -16,7 +16,19 @@
 
 package io.dingodb.client.operation;
 
+import lombok.AllArgsConstructor;
+
 public class AggregationOperator implements io.dingodb.sdk.service.store.AggregationOperator {
+
+    @AllArgsConstructor
+    private static class AggregationType implements io.dingodb.sdk.service.store.AggregationOperator.AggregationType {
+
+        private final io.dingodb.common.AggregationOperator.AggregationType type;
+
+        public int getCode() {
+            return type.getCode();
+        }
+    }
 
     private final io.dingodb.common.AggregationOperator aggregation;
 
@@ -26,7 +38,7 @@ public class AggregationOperator implements io.dingodb.sdk.service.store.Aggrega
 
     @Override
     public AggregationType getOperation() {
-        return AggregationType.valueOf(aggregation.operation.name());
+        return new AggregationType(aggregation.operation);
     }
 
     @Override

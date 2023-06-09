@@ -39,11 +39,7 @@ import java.util.List;
 import java.util.NavigableSet;
 import java.util.stream.Collectors;
 
-import static io.dingodb.client.operation.RangeUtils.convert;
-import static io.dingodb.client.operation.RangeUtils.getSubTasks;
-import static io.dingodb.client.operation.RangeUtils.mapping;
-import static io.dingodb.client.operation.RangeUtils.validateKeyRange;
-import static io.dingodb.client.operation.RangeUtils.validateOpRange;
+import static io.dingodb.client.operation.RangeUtils.*;
 
 public class ScanCoprocessorOperation implements Operation {
 
@@ -75,26 +71,11 @@ public class ScanCoprocessorOperation implements Operation {
             }
             keyRangeCoprocessor.aggregationOperators.stream().map(agg -> {
                 Column column = definition.getColumn(agg.columnName);
-                switch (agg.operation) {
-                    case AGGREGATION_NONE:
-                    case SUM:
-                    case MAX:
-                    case MIN:
-                        return buildColumnDefinition(
-                            Parameters.cleanNull(agg.alias, column.getName()),
-                            column.getType(),
-                            column.getPrimary(),
-                            column);
-                    case COUNT:
-                    case COUNTWITHNULL:
-                        return buildColumnDefinition(
-                            Parameters.cleanNull(agg.alias, column.getName()),
-                            "LONG",
-                            column.getPrimary(),
-                            column);
-                    default:
-                        throw new IllegalStateException("Unexpected value: " + agg.operation);
-                }
+                return buildColumnDefinition(
+                    Parameters.cleanNull(agg.alias, column.getName()),
+                    agg.operation.resultType(Parameters.nonNull(column.getType(), "Agg type must non null.")),
+                    column.getPrimary(),
+                    column);
             }).forEach(resultSchemas::add);
             Coprocessor coprocessor = Coprocessor.builder()
                 .originalSchema(
