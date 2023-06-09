@@ -213,11 +213,12 @@ public class ExprCodeVisitor implements ExprVisitor<ExprCodeType> {
     @SneakyThrows(IOException.class)
     private static @NonNull ExprCodeType codingBinaryLogicalOperator(
         byte code,
-        @NonNull ExprCodeType @NonNull [] operandCodeTypes
+        @NonNull ExprCodeType operandCodeType0,
+        @NonNull ExprCodeType operandCodeType1
     ) {
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
-        writeOperandWithCasting(buf, operandCodeTypes[0], TypeCode.BOOL);
-        writeOperandWithCasting(buf, operandCodeTypes[1], TypeCode.BOOL);
+        writeOperandWithCasting(buf, operandCodeType0, TypeCode.BOOL);
+        writeOperandWithCasting(buf, operandCodeType1, TypeCode.BOOL);
         buf.write(code);
         return new ExprCodeType(TypeCode.BOOL, buf.toByteArray());
     }
@@ -335,6 +336,14 @@ public class ExprCodeVisitor implements ExprVisitor<ExprCodeType> {
         return new ExprCodeType(type, buf.toByteArray());
     }
 
+    private static ExprCodeType cascadeCodingLogicalOperator(byte code, ExprCodeType @NonNull [] exprCodeTypes) {
+        ExprCodeType exprCodeType = exprCodeTypes[0];
+        for (int i = 1; i < exprCodeTypes.length; ++i) {
+            exprCodeType = codingBinaryLogicalOperator(code, exprCodeType, exprCodeTypes[i]);
+        }
+        return exprCodeType;
+    }
+
     @Override
     public ExprCodeType visit(@NonNull Null op) {
         return null;
@@ -374,9 +383,9 @@ public class ExprCodeVisitor implements ExprVisitor<ExprCodeType> {
             case NOT:
                 return codingUnaryLogicalOperator(NOT, exprCodeTypes[0]);
             case AND:
-                return codingBinaryLogicalOperator(AND, exprCodeTypes);
+                return codingBinaryLogicalOperator(AND, exprCodeTypes[0], exprCodeTypes[1]);
             case OR:
-                return codingBinaryLogicalOperator(OR, exprCodeTypes);
+                return codingBinaryLogicalOperator(OR, exprCodeTypes[0], exprCodeTypes[1]);
             case POS:
                 return codingUnaryArithmeticOperator(POS, exprCodeTypes[0]);
             case NEG:
@@ -404,9 +413,9 @@ public class ExprCodeVisitor implements ExprVisitor<ExprCodeType> {
             case FUN:
                 switch (op.getName()) {
                     case AndOp.FUN_NAME:
-                        return codingBinaryLogicalOperator(AND, exprCodeTypes);
+                        return cascadeCodingLogicalOperator(AND, exprCodeTypes);
                     case OrOp.FUN_NAME:
-                        return codingBinaryLogicalOperator(OR, exprCodeTypes);
+                        return cascadeCodingLogicalOperator(OR, exprCodeTypes);
                     case IsNullOp.FUN_NAME:
                         return codingSpecialFun(IS_NULL, exprCodeTypes[0], false);
                     case IsNotNullOp.FUN_NAME:
