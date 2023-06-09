@@ -36,6 +36,7 @@ public class KeyRangeCoprocessor {
     public static class Aggregation {
         public final AggType operation;
         public final String columnName;
+        public final String alias;
     }
 
     public enum AggType {

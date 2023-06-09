@@ -29,6 +29,7 @@ import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.LinkedIterator;
+import io.dingodb.sdk.common.utils.Parameters;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -69,38 +70,28 @@ public class ScanCoprocessorOperation implements Operation {
             if (!groupBy.isEmpty()) {
                 for (int i = 0; i < groupBy.size(); i++) {
                     Column column = definition.getColumn(groupBy.get(i));
-                    resultSchemas.add(ColumnDefinition.getInstance(
-                        column.getName(),
-                        column.getType(),
-                        column.getElementType(),
-                        column.getPrecision(),
-                        column.getScale(),
-                        column.isNullable(),
-                        i,
-                        column.getDefaultValue(),
-                        column.isAutoIncrement()));
+                    resultSchemas.add(buildColumnDefinition(column.getName(), column.getType(), i, column));
                 }
             }
             keyRangeCoprocessor.aggregationOperators.stream().map(agg -> {
+                Column column = definition.getColumn(agg.columnName);
                 switch (agg.operation) {
                     case AGGREGATION_NONE:
                     case SUM:
                     case MAX:
                     case MIN:
-                        return mapping(definition.getColumn(agg.columnName));
+                        return buildColumnDefinition(
+                            Parameters.cleanNull(agg.alias, column.getName()),
+                            column.getType(),
+                            column.getPrimary(),
+                            column);
                     case COUNT:
                     case COUNTWITHNULL:
-                        Column column = definition.getColumn(agg.columnName);
-                        return ColumnDefinition.getInstance(
-                            column.getName(),
+                        return buildColumnDefinition(
+                            Parameters.cleanNull(agg.alias, column.getName()),
                             "LONG",
-                            column.getElementType(),
-                            column.getPrecision(),
-                            column.getScale(),
-                            column.isNullable(),
                             column.getPrimary(),
-                            column.getDefaultValue(),
-                            column.isAutoIncrement());
+                            column);
                     default:
                         throw new IllegalStateException("Unexpected value: " + agg.operation);
                 }
@@ -131,6 +122,19 @@ public class ScanCoprocessorOperation implements Operation {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static ColumnDefinition buildColumnDefinition(String name, String type, int primary, Column column) {
+        return ColumnDefinition.getInstance(
+            name,
+            type,
+            column.getElementType(),
+            column.getPrecision(),
+            column.getScale(),
+            column.isNullable(),
+            primary,
+            column.getDefaultValue(),
+            column.isAutoIncrement());
     }
 
     @Override
