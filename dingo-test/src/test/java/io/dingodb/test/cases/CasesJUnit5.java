@@ -120,6 +120,27 @@ public class CasesJUnit5 implements ArgumentsProvider {
                     )
             ),
             Case.of(
+                "Multiple primary keys",
+                exec(file("string_double/create_with_multi_keys.sql")),
+                exec(file("string_double/data.sql")).updateCount(9),
+                exec("select * from {table} where name between 'Betty' and 'Cindy'")
+                    .result(
+                        "id, name, amount",
+                        "INT, STRING, DOUBLE",
+                        "2, Betty, 4.0",
+                        "3, Cindy, 4.5",
+                        "7, Betty, 6.5",
+                        "9, Cindy, 7.5"
+                    )
+            ),
+            Case.of(
+                "Mismatched type in expression",
+                exec(file("string_double/create.sql")),
+                exec(file("string_double/data.sql")).updateCount(9),
+                exec("select * from {table} where amount < 2147483648")
+                    .result(file("string_double/data.csv"))
+            ),
+            Case.of(
                 "Select filtered by `not in list` of primary key",
                 exec(file("string_double/create.sql")),
                 exec(file("string_double/data.sql")).updateCount(9),
@@ -427,13 +448,27 @@ public class CasesJUnit5 implements ArgumentsProvider {
                 exec(file("misc/data.sql")),
                 exec("select avg(age) aa, min(amount) ma, address from {table}" +
                     " where id in (1,3,5,7,9,13,35) or name<>'zhangsan' group by address order by ma limit 2")
-                    .result("AA, MA, ADDRESS",
+                    .result(
+                        "AA, MA, ADDRESS",
                         "INT, DOUBLE, STRING",
                         "544, 0.0, 543",
                         "76, 2.3, beijing changyang"
                     )
+            ),
+            Case.of(
+                "Aggregation 1",
+                exec(file("misc/create.sql")),
+                exec(file("misc/data.sql")),
+                exec("select address, sum(amount) sa from {table} where address between 'C' and 'c' group by address")
+                    .result(
+                        "address, sa",
+                        "STRING, DOUBLE",
+                        "beijing changyang, 2.3",
+                        "beijing, 23.5",
+                        "CHANGping, 9.0762556"
+                    )
             )
         );
-        return stream;//.filter(arg -> arg.get()[0].equals("Aggregation"));
+        return stream;//.filter(arg -> arg.get()[0].equals("Aggregation 1"));
     }
 }

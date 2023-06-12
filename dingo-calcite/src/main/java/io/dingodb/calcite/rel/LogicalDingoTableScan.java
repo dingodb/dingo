@@ -157,9 +157,13 @@ public class LogicalDingoTableScan extends TableScan {
     public RelDataType getSelectedType() {
         return RelDataTypeUtils.mapType(
             getCluster().getTypeFactory(),
-            table.getRowType(),
+            getTableType(),
             selection
         );
+    }
+
+    public RelDataType getTableType() {
+        return table.getRowType();
     }
 
     @Override
