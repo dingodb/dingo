@@ -420,8 +420,20 @@ public class CasesJUnit5 implements ArgumentsProvider {
                 exec(file("string_double/data.sql")),
                 exec("select name, sum(amount) as `sum` from {table} group by name")
                     .result(file("string_double/select_sum_group_by.csv"))
+            ),
+            Case.of(
+                "Aggregation",
+                exec(file("misc/create.sql")),
+                exec(file("misc/data.sql")),
+                exec("select avg(age) aa, min(amount) ma, address from {table}" +
+                    " where id in (1,3,5,7,9,13,35) or name<>'zhangsan' group by address order by ma limit 2")
+                    .result("AA, MA, ADDRESS",
+                        "INT, DOUBLE, STRING",
+                        "544, 0.0, 543",
+                        "76, 2.3, beijing changyang"
+                    )
             )
         );
-        return stream;//.filter(arg -> arg.get()[0].equals("Count group by bool"));
+        return stream;//.filter(arg -> arg.get()[0].equals("Aggregation"));
     }
 }

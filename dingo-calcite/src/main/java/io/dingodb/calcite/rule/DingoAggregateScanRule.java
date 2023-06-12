@@ -18,9 +18,13 @@ package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.type.converter.DefinitionMapper;
+import io.dingodb.calcite.utils.SqlExprUtils;
+import io.dingodb.exec.expr.ExprCodeType;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
@@ -35,6 +39,15 @@ public class DingoAggregateScanRule extends RelRule<RelRule.Config> {
         DingoAggregate aggregate = call.rel(0);
         DingoTableScan scan = call.rel(1);
         RelOptCluster cluster = aggregate.getCluster();
+        RexNode filter = scan.getFilter();
+        if (filter != null) {
+            ExprCodeType ect = SqlExprUtils.toSqlExpr(filter)
+                .getCoding(DefinitionMapper.mapToDingoType(scan.getRowType()), null);
+            // Do not push-down if the filter can not be pushed down.
+            if (ect == null) {
+                return;
+            }
+        }
         call.transformTo(
             new DingoTableScan(
                 cluster,
