@@ -367,9 +367,11 @@ public class ExprCodeVisitor implements ExprVisitor<ExprCodeType> {
                     RtVar rtVar = (RtVar) op.compileIn(ctx);
                     return codingTupleVar(rtVar.typeCode(), (int) rtVar.getId());
                 } else if (SqlExprCompileContext.SQL_DYNAMIC_VAR_NAME.equals(var.getName())) {
-                    RtVar rtVar = (RtVar) op.compileIn(ctx);
-                    Object value = rtVar.eval(etx);
-                    return codingConst(rtVar.typeCode(), value);
+                    // TODO: current not support.
+                    return null;
+//                    RtVar rtVar = (RtVar) op.compileIn(ctx);
+//                    Object value = rtVar.eval(etx);
+//                    return codingConst(rtVar.typeCode(), value);
                 }
             }
         }
