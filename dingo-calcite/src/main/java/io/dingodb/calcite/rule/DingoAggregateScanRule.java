@@ -42,7 +42,7 @@ public class DingoAggregateScanRule extends RelRule<RelRule.Config> {
         RexNode filter = scan.getFilter();
         if (filter != null) {
             ExprCodeType ect = SqlExprUtils.toSqlExpr(filter)
-                .getCoding(DefinitionMapper.mapToDingoType(scan.getRowType()), null);
+                .getCoding(DefinitionMapper.mapToDingoType(scan.getTableType()), null);
             // Do not push-down if the filter can not be pushed down.
             if (ect == null) {
                 return;
