@@ -17,14 +17,8 @@
 package io.dingodb.client.operation;
 
 import io.dingodb.client.common.TableInfo;
-import io.dingodb.client.operation.impl.KeyRangeCoprocessor;
-import io.dingodb.client.operation.impl.OpKeyRange;
-import io.dingodb.client.operation.impl.OpRange;
-import io.dingodb.client.operation.impl.OpRangeCoprocessor;
-import io.dingodb.client.operation.impl.Operation;
-import io.dingodb.common.AggregationOperator;
+import io.dingodb.client.operation.impl.*;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.Coprocessor;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.sdk.common.DingoCommonId;
@@ -118,11 +112,8 @@ public class RangeUtils {
         );
     }
 
-    public static AggregationOperator mapping(KeyRangeCoprocessor.Aggregation aggregation, Table table) {
-        return AggregationOperator.builder()
-            .operation(AggregationOperator.AggregationType.valueOf(aggregation.operation.name()))
-            .indexOfColumn(table.getColumnIndex(aggregation.columnName))
-            .build();
+    public static Coprocessor.AggregationOperator mapping(KeyRangeCoprocessor.Aggregation aggregation, Table table) {
+        return new Coprocessor.AggregationOperator(aggregation.operation, table.getColumnIndex(aggregation.columnName));
     }
 
     public static ColumnDefinition mapping(Column column) {

@@ -17,26 +17,22 @@
 package io.dingodb.client.operation.impl;
 
 import io.dingodb.client.OperationContext;
+import io.dingodb.client.common.KeyValueCodec;
 import io.dingodb.client.common.Record;
 import io.dingodb.client.common.TableInfo;
+import io.dingodb.client.operation.Coprocessor;
+import io.dingodb.client.operation.Coprocessor.SchemaWrapper;
 import io.dingodb.client.operation.RangeUtils;
-import io.dingodb.common.Coprocessor;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.sdk.common.KeyValue;
 import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
-import io.dingodb.sdk.common.codec.KeyValueCodec;
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.LinkedIterator;
 import io.dingodb.sdk.common.utils.Parameters;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NavigableSet;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.dingodb.client.operation.RangeUtils.*;
@@ -69,32 +65,20 @@ public class ScanCoprocessorOperation implements Operation {
                     resultSchemas.add(buildColumnDefinition(column.getName(), column.getType(), i, column));
                 }
             }
-            keyRangeCoprocessor.aggregationOperators.stream().map(agg -> {
+            keyRangeCoprocessor.aggregations.stream().map(agg -> {
                 Column column = definition.getColumn(agg.columnName);
                 return buildColumnDefinition(
                     Parameters.cleanNull(agg.alias, column.getName()),
                     agg.operation.resultType(Parameters.nonNull(column.getType(), "Agg type must non null.")),
-                    column.getPrimary(),
+                    -1,
                     column);
             }).forEach(resultSchemas::add);
-            Coprocessor coprocessor = Coprocessor.builder()
-                .originalSchema(
-                    Coprocessor.SchemaWrapper.builder().schemas(
-                            definition.getColumns()
-                                .stream()
-                                .map(RangeUtils::mapping)
-                                .collect(Collectors.toList()))
-                        .commonId(tableInfo.tableId.entityId())
-                        .build())
-                .resultSchema(
-                    Coprocessor.SchemaWrapper.builder().schemas(resultSchemas)
-                        .commonId(tableInfo.tableId.entityId())
-                        .build())
-                .aggregations(keyRangeCoprocessor.aggregationOperators.stream()
-                    .map(agg -> mapping(agg, definition))
-                    .collect(Collectors.toList()))
-                .groupBy(groupBy.stream().map(definition::getColumnIndex).collect(Collectors.toList()))
-                .build();
+            Coprocessor coprocessor = new Coprocessor(
+                keyRangeCoprocessor.aggregations.stream().map(agg -> mapping(agg, definition)).collect(Collectors.toList()),
+                new SchemaWrapper(tableInfo.tableId.entityId(), definition.getColumns()),
+                new SchemaWrapper(tableInfo.tableId.entityId(), resultSchemas.stream().map(RangeUtils::mapping).collect(Collectors.toList())),
+                groupBy.stream().map(definition::getColumnIndex).collect(Collectors.toList())
+            );
 
             if (validateKeyRange(keyRange) && validateOpRange(range = convert(codec, definition, keyRange))) {
                 subTasks = getSubTasks(tableInfo, range, coprocessor);
@@ -136,13 +120,13 @@ public class ScanCoprocessorOperation implements Operation {
             rangeCoprocessor.range,
             rangeCoprocessor.withStart,
             rangeCoprocessor.withEnd,
-            new io.dingodb.client.operation.Coprocessor(coprocessor));
+            coprocessor
+        );
 
-        List<Column> columnDefinitions = coprocessor.getResultSchema().getSchemas()
-            .stream()
-            .map(RangeUtils::mapping)
-            .collect(Collectors.toList());
-        KeyValueCodec codec = DingoKeyValueCodec.of(context.getTableId().entityId(), columnDefinitions);
+        List<Column> columnDefinitions = coprocessor.getResultSchema().getSchemas();
+        KeyValueCodec codec = new KeyValueCodec(
+            DingoKeyValueCodec.of(context.getTableId().entityId(), columnDefinitions), columnDefinitions
+        );
         context.<Iterator<Record>[]>result()[context.getSeq()] = new RecordIterator(
             columnDefinitions, codec, scanResult
         );

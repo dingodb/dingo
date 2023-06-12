@@ -21,11 +21,13 @@ import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.sdk.common.KeyValue;
 import io.dingodb.sdk.common.table.Column;
+import io.dingodb.sdk.common.table.ColumnDefinition;
 import io.dingodb.sdk.common.table.Table;
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
+import java.util.List;
 
 public class KeyValueCodec implements io.dingodb.sdk.common.codec.KeyValueCodec {
 
@@ -38,12 +40,19 @@ public class KeyValueCodec implements io.dingodb.sdk.common.codec.KeyValueCodec 
         this.dingoType = getDingoType(table);
     }
 
+    public KeyValueCodec(io.dingodb.sdk.common.codec.KeyValueCodec keyValueCodec, List<Column> columns) {
+        this.keyValueCodec = keyValueCodec;
+        this.dingoType = getDingoType(columns);
+    }
+
     private static DingoType getDingoType(Table table) {
         return DingoTypeFactory.tuple(
-            table.getColumns().stream()
-                .map(KeyValueCodec::getDingoType)
-                .toArray(DingoType[]::new)
+            table.getColumns().stream().map(KeyValueCodec::getDingoType).toArray(DingoType[]::new)
         );
+    }
+
+    private static DingoType getDingoType(List<Column> columns) {
+        return DingoTypeFactory.tuple(columns.stream().map(KeyValueCodec::getDingoType).toArray(DingoType[]::new));
     }
 
     private static DingoType getDingoType(Column column) {

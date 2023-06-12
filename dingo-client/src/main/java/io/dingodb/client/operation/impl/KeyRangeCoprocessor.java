@@ -16,6 +16,7 @@
 
 package io.dingodb.client.operation.impl;
 
+import io.dingodb.sdk.service.store.AggregationOperator;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,7 +28,7 @@ import java.util.List;
 @AllArgsConstructor
 public class KeyRangeCoprocessor {
     public final OpKeyRange opKeyRange;
-    public final List<Aggregation> aggregationOperators;
+    public final List<Aggregation> aggregations;
     public final List<String> groupBy;
 
     @Getter
@@ -39,7 +40,7 @@ public class KeyRangeCoprocessor {
         public final String alias;
     }
 
-    public enum AggType {
+    public enum AggType implements AggregationOperator.AggregationType {
         SUM(1),
         COUNT(2),
         COUNT_WITH_NULL(3), COUNTWITHNULL(3),
