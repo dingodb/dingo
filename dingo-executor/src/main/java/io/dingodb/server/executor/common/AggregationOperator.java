@@ -17,7 +17,12 @@
 package io.dingodb.server.executor.common;
 
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
+@Getter
+@EqualsAndHashCode
+@AllArgsConstructor
 public class AggregationOperator implements io.dingodb.sdk.service.store.AggregationOperator {
 
     @AllArgsConstructor
@@ -30,19 +35,12 @@ public class AggregationOperator implements io.dingodb.sdk.service.store.Aggrega
         }
     }
 
-    private final io.dingodb.common.AggregationOperator aggregation;
+    public final io.dingodb.sdk.service.store.AggregationOperator.AggregationType operation;
+    public final int indexOfColumn;
 
     public AggregationOperator(io.dingodb.common.AggregationOperator aggregation) {
-        this.aggregation = aggregation;
+        this.operation = new AggregationType(aggregation.operation);
+        this.indexOfColumn = aggregation.indexOfColumn;
     }
 
-    @Override
-    public AggregationType getOperation() {
-        return new AggregationType(aggregation.operation);
-    }
-
-    @Override
-    public int getIndexOfColumn() {
-        return aggregation.indexOfColumn;
-    }
 }

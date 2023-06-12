@@ -16,60 +16,39 @@
 
 package io.dingodb.client.operation;
 
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.sdk.common.table.Column;
-import io.dingodb.sdk.service.store.AggregationOperator;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
+@Getter
 @EqualsAndHashCode
+@AllArgsConstructor
 public class Coprocessor implements io.dingodb.sdk.service.store.Coprocessor {
 
-    private final io.dingodb.common.Coprocessor coprocessor;
-
-    public Coprocessor(io.dingodb.common.Coprocessor coprocessor) {
-        this.coprocessor = coprocessor;
-    }
+    public final List<io.dingodb.sdk.service.store.AggregationOperator> aggregations;
+    public final SchemaWrapper originalSchema;
+    public final SchemaWrapper resultSchema;
+    public final List<Integer> groupBy;
 
     @Override
     public int getSchemaVersion() {
-        return coprocessor.getSchemaVersion();
-    }
-
-    @Override
-    public io.dingodb.sdk.service.store.Coprocessor.SchemaWrapper getOriginalSchema() {
-        return new SchemaWrapper(coprocessor.getOriginalSchema());
-    }
-
-    @Override
-    public SchemaWrapper getResultSchema() {
-        return new SchemaWrapper(coprocessor.getResultSchema());
+        return 0;
     }
 
     @Override
     public List<Integer> getSelection() {
-        return coprocessor.getSelection();
+        return Collections.emptyList();
     }
 
     @Override
     public byte[] getExpression() {
-        return coprocessor.getExpression();
-    }
-
-    @Override
-    public List<Integer> getGroupBy() {
-        return coprocessor.getGroupBy();
-    }
-
-    @Override
-    public List<AggregationOperator> getAggregations() {
-        return coprocessor.getAggregations().stream()
-            .map(io.dingodb.client.operation.AggregationOperator::new)
-            .collect(Collectors.toList());
+        return ByteArrayUtils.EMPTY_BYTES;
     }
 
     @Getter
@@ -77,17 +56,18 @@ public class Coprocessor implements io.dingodb.sdk.service.store.Coprocessor {
     @AllArgsConstructor
     public static class SchemaWrapper implements io.dingodb.sdk.service.store.Coprocessor.SchemaWrapper {
 
-        private final io.dingodb.common.Coprocessor.SchemaWrapper schemaWrapper;
+        private final long commonId;
+        private final List<Column> schemas;
 
-        @Override
-        public List<Column> getSchemas() {
-            return schemaWrapper.getSchemas().stream().map(RangeUtils::mapping).collect(Collectors.toList());
-        }
-
-        @Override
-        public long getCommonId() {
-            return schemaWrapper.getCommonId();
-        }
     }
 
+    @Getter
+    @EqualsAndHashCode
+    @AllArgsConstructor
+    public static class AggregationOperator implements io.dingodb.sdk.service.store.AggregationOperator {
+
+        public final AggregationType operation;
+        public final int indexOfColumn;
+
+    }
 }

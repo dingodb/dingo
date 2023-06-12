@@ -16,10 +16,8 @@
 
 package io.dingodb.client.operation.impl;
 
-import io.dingodb.common.Coprocessor;
+import io.dingodb.client.operation.Coprocessor;
 import lombok.Getter;
-
-import java.util.function.Function;
 
 @Getter
 public class OpRangeCoprocessor extends OpRange {
