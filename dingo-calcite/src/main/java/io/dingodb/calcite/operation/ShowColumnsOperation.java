@@ -88,8 +88,15 @@ public class ShowColumnsOperation implements QueryOperation {
             if (haveLike && !SqlLikeUtils.like(columnName, sqlLikePattern)) {
                 continue;
             }
+
             columnValues.add(columnName);
-            columnValues.add(column.getType().toString());
+            String type = column.getTypeName();
+            if (type.equals("VARCHAR")) {
+                if (column.getPrecision() > 0) {
+                    type = type + "(" + column.getPrecision() + ")";
+                }
+            }
+            columnValues.add(type);
             columnValues.add(column.isNullable() ? "YES" : "NO");
             columnValues.add(column.isPrimary() ? "PRI" : "");
             columnValues.add(column.getDefaultValue() != null ? column.getDefaultValue() : "NULL");

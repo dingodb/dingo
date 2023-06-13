@@ -75,7 +75,7 @@ public class ShowCreateUserOperation implements QueryOperation {
         builder.append(userDefinition.getPassword());
         builder.append("' REQUIRE ");
         String requireSsl = userDefinition.getRequireSsl();
-        if (requireSsl.isEmpty()) {
+        if (requireSsl == null || requireSsl.isEmpty()) {
             builder.append("NONE");
         } else {
             builder.append(requireSsl);
