@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.grammar.dql;
 
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
@@ -24,7 +25,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 
 public class SqlShowCreateTable extends SqlShow {
 
-    public String tableName;
+    public SqlIdentifier tableIdentifier;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator("SHOW CREATE TABLE", SqlKind.SELECT);
 
@@ -33,14 +34,20 @@ public class SqlShowCreateTable extends SqlShow {
      *
      * @param pos      pos
      */
-    public SqlShowCreateTable(SqlParserPos pos, String tableName) {
+    public SqlShowCreateTable(SqlParserPos pos, SqlIdentifier tableIdentifier) {
         super(OPERATOR, pos);
-        this.tableName = tableName;
+        this.tableIdentifier = tableIdentifier;
     }
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword("SHOW CREATE TABLE ");
-        writer.keyword(tableName);
+        if (tableIdentifier.names.size() == 1) {
+            writer.keyword(tableIdentifier.names.get(0));
+        } else {
+            writer.keyword(tableIdentifier.names.get(0));
+            writer.keyword(".");
+            writer.keyword(tableIdentifier.names.get(1));
+        }
     }
 }

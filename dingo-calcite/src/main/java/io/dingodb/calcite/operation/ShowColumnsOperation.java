@@ -37,13 +37,15 @@ public class ShowColumnsOperation implements QueryOperation {
 
     private MetaService metaService;
 
+    private String schemaName;
     private String tableName;
 
     private String sqlLikePattern;
 
     public ShowColumnsOperation(SqlNode sqlNode) {
         SqlShowColumns showColumns = (SqlShowColumns) sqlNode;
-        this.metaService = MetaService.root().getSubMetaService(MetaServiceUtils.getSchemaName(showColumns.tableName));
+        this.schemaName = showColumns.schemaName;
+        this.metaService = MetaService.root().getSubMetaService(schemaName);
         this.tableName = showColumns.tableName;
         this.sqlLikePattern = showColumns.sqlLikePattern;
     }

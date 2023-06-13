@@ -17,6 +17,7 @@
 package io.dingodb.calcite.grammar.dql;
 
 import org.apache.calcite.sql.SqlDdl;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
@@ -30,6 +31,8 @@ public class SqlDesc extends SqlDdl {
 
     public SqlParserPos pos;
 
+    public String schemaName;
+
     public String tableName;
 
     private static final SqlOperator OPERATOR =
@@ -40,10 +43,15 @@ public class SqlDesc extends SqlDdl {
      *
      * @param pos pos
      */
-    public SqlDesc(SqlParserPos pos, String tableName) {
+    public SqlDesc(SqlParserPos pos, SqlIdentifier tableName) {
         super(OPERATOR, pos);
         this.pos = pos;
-        this.tableName = tableName;
+        if (tableName.names.size() == 1) {
+            this.tableName = tableName.names.get(0);
+        } else {
+            this.schemaName = tableName.names.get(0);
+            this.tableName = tableName.names.get(1);
+        }
     }
 
     @Override

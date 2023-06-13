@@ -1,0 +1,175 @@
+ [
+    {
+      "name": "TRIGGER_CATALOG",
+      "type": "varchar",
+      "precision": 512,
+      "scale": -2147483648,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "TRIGGER_SCHEMA",
+      "type": "varchar",
+      "precision": 64,
+      "scale": -2147483648,
+      "primary": 1,
+      "nullable": false
+    },
+   {
+     "name": "TRIGGER_NAME",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": 2,
+     "nullable": false
+   },
+   {
+     "name": "EVENT_MANIPULATION",
+     "type": "varchar",
+     "precision": 6,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "EVENT_OBJECT_CATALOG",
+     "type": "varchar",
+     "precision": 512,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "EVENT_OBJECT_SCHEMA",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "EVENT_OBJECT_TABLE",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "ACTION_ORDER",
+     "type": "bigint",
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "ACTION_CONDITION",
+     "type": "varchar",
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "ACTION_STATEMENT",
+     "type": "varchar",
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "ACTION_ORIENTATION",
+     "type": "varchar",
+     "precision": 9,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "ACTION_TIMING",
+     "type": "varchar",
+     "precision": 6,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "ACTION_REFERENCE_OLD_TABLE",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "ACTION_REFERENCE_NEW_TABLE",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "ACTION_REFERENCE_OLD_ROW",
+     "type": "varchar",
+     "precision": 3,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "ACTION_REFERENCE_NEW_ROW",
+     "type": "varchar",
+     "precision": 3,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "CREATED",
+     "type": "timestamp",
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "SQL_MODE",
+     "type": "varchar",
+     "precision": 8192,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "DEFINER",
+     "type": "varchar",
+     "precision": 93,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "CHARACTER_SET_CLIENT",
+     "type": "varchar",
+     "precision": 32,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "COLLATION_CONNECTION",
+     "type": "varchar",
+     "precision": 32,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "DATABASE_COLLATION",
+     "type": "varchar",
+     "precision": 32,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   }
+ ]

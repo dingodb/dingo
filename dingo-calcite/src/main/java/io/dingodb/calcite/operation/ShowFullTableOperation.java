@@ -16,6 +16,9 @@
 
 package io.dingodb.calcite.operation;
 
+import io.dingodb.common.util.SqlLikeUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -25,12 +28,15 @@ import java.util.List;
 
 public class ShowFullTableOperation implements QueryOperation {
     private String schemaName;
+
+    private String sqlLikePattern;
     private Connection connection;
 
     private static final String BASE_TABLE = "BASE TABLE";
 
-    public ShowFullTableOperation(String schemaName, Connection connection) {
+    public ShowFullTableOperation(String schemaName, String pattern, Connection connection) {
         this.schemaName = schemaName;
+        this.sqlLikePattern = pattern;
         this.connection = connection;
     }
 
@@ -42,7 +48,9 @@ public class ShowFullTableOperation implements QueryOperation {
                 null, null);
             while (rs.next()) {
                 String tableName = rs.getString("TABLE_NAME");
-                tables.add(new Object[] {tableName.toLowerCase(), BASE_TABLE});
+                if (StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(tableName, sqlLikePattern)) {
+                    tables.add(new Object[]{tableName.toLowerCase(), BASE_TABLE});
+                }
             }
             return tables.iterator();
         } catch (SQLException e) {
