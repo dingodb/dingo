@@ -22,6 +22,7 @@ import io.dingodb.sdk.common.table.ColumnDefinition;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.common.utils.Parameters;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
@@ -43,6 +44,7 @@ import java.util.stream.Stream;
 public final class Record {
 
     private final Map<String, Integer> columnIndex = new HashMap<>();
+    @Getter
     private final Column[] columns;
     private final Value[] values;
 
@@ -102,6 +104,10 @@ public final class Record {
             .sorted(Comparator.comparingInt(Column::getPrimary))
             .map(Column::getName)
             .collect(Collectors.toList());
+    }
+
+    public void setValue(Object value, int index) {
+        values[index] = Value.get(value);
     }
 
     public List<Object> getValues() {
