@@ -21,31 +21,34 @@ import io.dingodb.client.common.ArrayWrapperList;
 import io.dingodb.client.common.Key;
 import io.dingodb.client.common.TableInfo;
 import io.dingodb.sdk.common.DingoCommonId;
+import io.dingodb.sdk.common.codec.CodecUtils;
 import io.dingodb.sdk.common.codec.KeyValueCodec;
+import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableSet;
-import java.util.TreeSet;
+import java.util.*;
 
 import static io.dingodb.client.utils.OperationUtils.mapKey;
 
 public class DeleteOperation implements Operation {
 
-    private static final DeleteOperation INSTANCE = new DeleteOperation();
+    private static final DeleteOperation INSTANCE = new DeleteOperation(true);
+    private static final DeleteOperation NOT_STANDARD_INSTANCE = new DeleteOperation(false);
 
-    private DeleteOperation() {
-
+    private DeleteOperation(boolean standard) {
+        this.standard = standard;
     }
 
     public static DeleteOperation getInstance() {
         return INSTANCE;
     }
+
+    public static DeleteOperation getNotStandardInstance() {
+        return NOT_STANDARD_INSTANCE;
+    }
+
+    private final boolean standard;
 
     @Override
     public Fork fork(Any parameters, TableInfo tableInfo) {
@@ -55,15 +58,22 @@ public class DeleteOperation implements Operation {
             NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparingLong(t -> t.getRegionId().entityId()));
             Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
             KeyValueCodec codec = tableInfo.codec;
+            List<Column> columns = definition.getColumns();
+            List<Column> keyColumns = definition.getKeyColumns();
+            List<Column> sortedKeyColumns = CodecUtils.sortColumns(keyColumns);
             for (int i = 0; i < keys.size(); i++) {
-                Object[] mapKey = mapKey(definition, keys.get(i));
-                byte[] key = codec.encodeKey(mapKey);
+                Object[] dst = new Object[columns.size()];
+                Key key = keys.get(i);
+                Object[] src = key.getUserKey().toArray();
+                byte[] keyBytes = codec.encodeKey(
+                    mapKey(src, dst, columns, key.columnOrder ? keyColumns : sortedKeyColumns)
+                );
 
                 Map<byte[], Integer> regionParams = subTaskMap.computeIfAbsent(
-                    tableInfo.calcRegionId(key), k -> new Any(new HashMap<>())
+                    tableInfo.calcRegionId(keyBytes), k -> new Any(new HashMap<>())
                 ).getValue();
 
-                regionParams.put(key, i);
+                regionParams.put(keyBytes, i);
             }
             subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
             return new Fork(new Boolean[keys.size()], subTasks, true);

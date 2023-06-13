@@ -34,14 +34,22 @@ import static io.dingodb.client.utils.OperationUtils.checkParameters;
 
 public class PutIfAbsentOperation implements Operation {
 
-    private static final PutIfAbsentOperation INSTANCE = new PutIfAbsentOperation();
+    private static final PutIfAbsentOperation INSTANCE = new PutIfAbsentOperation(true);
+    private static final PutIfAbsentOperation NOT_STANDARD_INSTANCE = new PutIfAbsentOperation(false);
 
-    private PutIfAbsentOperation() {
+    private PutIfAbsentOperation(boolean standard) {
+        this.standard = standard;
     }
 
     public static PutIfAbsentOperation getInstance() {
         return INSTANCE;
     }
+
+    public static PutIfAbsentOperation getNotStandardInstance() {
+        return NOT_STANDARD_INSTANCE;
+    }
+
+    private final boolean standard;
 
     @Override
     public Fork fork(Any parameters, TableInfo tableInfo) {
@@ -53,23 +61,35 @@ public class PutIfAbsentOperation implements Operation {
             List<ComparableByteArray> checkList =  new ArrayList<>(records.size());
             for (int i = 0; i < records.size(); i++) {
                 Record record = records.get(i);
-                Object[] values = record.extractValues(
-                    definition.getColumns().stream().map(Column::getName).collect(Collectors.toList())
-                );
+                Object[] values;
 
-                checkParameters(definition, values);
+                if (standard) {
+                    values = record.extractValues(
+                        definition.getColumns().stream().map(Column::getName).collect(Collectors.toList())
+                    );
+                } else {
+                    values = record.getDingoColumnValuesInOrder();
+                }
+
+                if (standard) {
+                    checkParameters(definition, values);
+                }
+
                 KeyValue keyValue = tableInfo.codec.encode(values);
 
-                ComparableByteArray key = new ComparableByteArray(keyValue.getKey());
-                if (checkList.contains(key)) {
-                    throw new IllegalArgumentException(
-                        "Has duplicate key on [" + i + "] and [" + checkList.indexOf(key) + "]"
-                    );
+                byte[] key = keyValue.getKey();
+                if (standard) {
+                    ComparableByteArray checkKey = new ComparableByteArray(key);
+                    if (checkList.contains(checkKey)) {
+                        throw new IllegalArgumentException(
+                            "Has duplicate key on [" + i + "] and [" + checkList.indexOf(checkKey) + "]"
+                        );
+                    }
+                    checkList.add(checkKey);
                 }
-                checkList.add(key);
 
                 Map<KeyValue, Integer> regionParams = subTaskMap.computeIfAbsent(
-                    tableInfo.calcRegionId(key.getBytes()), k -> new Any(new HashMap<>())
+                    tableInfo.calcRegionId(key), k -> new Any(new HashMap<>())
                 ).getValue();
 
                 regionParams.put(keyValue, i);

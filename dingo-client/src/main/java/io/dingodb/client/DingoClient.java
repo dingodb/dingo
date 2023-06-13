@@ -18,17 +18,7 @@ package io.dingodb.client;
 
 import io.dingodb.client.common.Key;
 import io.dingodb.client.common.Record;
-import io.dingodb.client.operation.impl.CompareAndSetOperation;
-import io.dingodb.client.operation.impl.DeleteOperation;
-import io.dingodb.client.operation.impl.DeleteRangeOperation;
-import io.dingodb.client.operation.impl.GetOperation;
-import io.dingodb.client.operation.impl.KeyRangeCoprocessor;
-import io.dingodb.client.operation.impl.OpKeyRange;
-import io.dingodb.client.operation.impl.Operation;
-import io.dingodb.client.operation.impl.PutIfAbsentOperation;
-import io.dingodb.client.operation.impl.PutOperation;
-import io.dingodb.client.operation.impl.ScanCoprocessorOperation;
-import io.dingodb.client.operation.impl.ScanOperation;
+import io.dingodb.client.operation.impl.*;
 import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.table.Table;
@@ -60,6 +50,11 @@ public class DingoClient {
         this.schema = schema;
     }
 
+    public DingoClient(String schema, OperationService operationService) {
+        this.schema = schema;
+        this.operationService = operationService;
+    }
+
     public boolean open() {
         operationService.init();
         return true;
@@ -71,6 +66,13 @@ public class DingoClient {
 
     public boolean dropTable(String tableName) {
         return operationService.dropTable(schema, tableName);
+    }
+
+    public Table getTableDefinition(final String tableName) {
+        if (tableName == null || tableName.isEmpty()) {
+            throw new DingoClientException("Invalid table name: " + tableName);
+        }
+        return operationService.getTableDefinition(schema, tableName);
     }
 
     public Any exec(String tableName, Operation operation, Any parameter) {
@@ -85,12 +87,20 @@ public class DingoClient {
         return operationService.exec(schema, tableName, PutOperation.getInstance(), records);
     }
 
+    public List<Boolean> upsertNotStandard(String tableName, List<Record> records) {
+        return operationService.exec(schema, tableName, PutOperation.getNotStandardInstance(), records);
+    }
+
     public boolean putIfAbsent(String tableName, Record record) {
         return Parameters.cleanNull(putIfAbsent(tableName, Collections.singletonList(record)).get(0), false);
     }
 
     public List<Boolean> putIfAbsent(String tableName, List<Record> records) {
         return operationService.exec(schema, tableName, PutIfAbsentOperation.getInstance(), records);
+    }
+
+    public List<Boolean> putIfAbsentNotStandard(String tableName, List<Record> records) {
+        return operationService.exec(schema, tableName, PutIfAbsentOperation.getNotStandardInstance(), records);
     }
 
     public boolean compareAndSet(String tableName, Record record, Record expect) {
@@ -108,6 +118,15 @@ public class DingoClient {
         );
     }
 
+    public List<Boolean> compareAndSetNotStandard(String tableName, List<Record> records, List<Record> expects) {
+        return operationService.exec(
+            schema,
+            tableName,
+            CompareAndSetOperation.getNotStandardInstance(),
+            new CompareAndSetOperation.Parameter(records, expects)
+        );
+    }
+
     public Record get(String tableName, Key key) {
         List<Record> records = get(tableName, Collections.singletonList(key));
         if (records != null && records.size() > 0) {
@@ -118,6 +137,10 @@ public class DingoClient {
 
     public List<Record> get(String tableName, List<Key> keys) {
         return operationService.exec(schema, tableName, GetOperation.getInstance(), keys);
+    }
+
+    public List<Record> getNotStandard(String tableName, List<Key> keys) {
+        return operationService.exec(schema, tableName, GetOperation.getNotStandardInstance(), keys);
     }
 
     public Record get(final String tableName, final Key firstKey, List<String> colNames) {
@@ -148,12 +171,28 @@ public class DingoClient {
         );
     }
 
+    public Iterator<Record> scanNotStandard(
+        final String tableName, Key begin, Key end, boolean withBegin, boolean withEnd,
+        List<KeyRangeCoprocessor.Aggregation> aggregationOperators,
+        List<String> groupBy) {
+        return operationService.exec(
+            schema,
+            tableName,
+            ScanCoprocessorOperation.getNotStandardInstance(),
+            new KeyRangeCoprocessor(new OpKeyRange(begin, end, withBegin, withEnd), aggregationOperators, groupBy)
+        );
+    }
+
     public boolean delete(final String tableName, Key key) {
         return Parameters.cleanNull(delete(tableName, Collections.singletonList(key)).get(0), false);
     }
 
     public List<Boolean> delete(final String tableName, List<Key> keys) {
         return operationService.exec(schema, tableName, DeleteOperation.getInstance(), keys);
+    }
+
+    public List<Boolean> deleteNotStandard(final String tableName, List<Key> keys) {
+        return operationService.exec(schema, tableName, DeleteOperation.getNotStandardInstance(), keys);
     }
 
     public long delete(String tableName, Key begin, Key end, boolean withBegin, boolean withEnd) {
@@ -163,13 +202,6 @@ public class DingoClient {
             DeleteRangeOperation.getInstance(),
             new OpKeyRange(begin, end, withBegin, withEnd)
         );
-    }
-
-    public Table getTableDefinition(final String tableName) {
-        if (tableName == null || tableName.isEmpty()) {
-            throw new DingoClientException("Invalid table name: " + tableName);
-        }
-        return operationService.getTableDefinition(schema, tableName);
     }
 
     public void close() {

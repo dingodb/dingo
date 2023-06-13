@@ -16,8 +16,8 @@
 
 package io.dingodb.client;
 
+import io.dingodb.client.common.KeyValueCodec;
 import io.dingodb.sdk.common.DingoCommonId;
-import io.dingodb.sdk.common.codec.KeyValueCodec;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.service.store.StoreServiceClient;

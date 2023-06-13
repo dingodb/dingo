@@ -29,21 +29,26 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.NavigableSet;
 
-import static io.dingodb.client.operation.RangeUtils.convert;
-import static io.dingodb.client.operation.RangeUtils.getSubTasks;
-import static io.dingodb.client.operation.RangeUtils.validateKeyRange;
-import static io.dingodb.client.operation.RangeUtils.validateOpRange;
+import static io.dingodb.client.operation.RangeUtils.*;
 
 public class ScanOperation implements Operation {
 
-    private static final ScanOperation INSTANCE = new ScanOperation();
+    private static final ScanOperation INSTANCE = new ScanOperation(true);
+    private static final ScanOperation NOT_STANDARD_INSTANCE = new ScanOperation(false);
 
-    private ScanOperation() {
+    private ScanOperation(boolean standard) {
+        this.standard = standard;
     }
 
     public static ScanOperation getInstance() {
         return INSTANCE;
     }
+
+    public static ScanOperation getNotStandardInstance() {
+        return NOT_STANDARD_INSTANCE;
+    }
+
+    private final boolean standard;
 
     @Override
     public Fork fork(Any parameters, TableInfo tableInfo) {
@@ -55,7 +60,7 @@ public class ScanOperation implements Operation {
             if (validateKeyRange(keyRange) && validateOpRange(range = convert(codec, tableInfo.definition, keyRange))) {
                 subTasks = getSubTasks(tableInfo, range);
             }
-            return new Fork(new Iterator[subTasks.size()], subTasks, true);
+            return new Fork(new Iterator[subTasks.size()], subTasks, false);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -76,7 +81,9 @@ public class ScanOperation implements Operation {
             .scan(context.getTableId(), context.getRegionId(), scan.range, scan.withStart, scan.withEnd);
 
         context.<Iterator<Record>[]>result()[context.getSeq()] = new RecordIterator(
-            context.getTable().getColumns(), context.getCodec(), scanResult
+            context.getTable().getColumns(),
+            standard ? context.getCodec() : context.getCodec().getKeyValueCodec(),
+            scanResult
         );
     }
 
