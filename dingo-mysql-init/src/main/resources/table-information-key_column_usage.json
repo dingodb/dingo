@@ -1,0 +1,98 @@
+ [
+    {
+      "name": "CONSTRAINT_CATALOG",
+      "type": "varchar",
+      "precision": 512,
+      "scale": -2147483648,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "CONSTRAINT_SCHEMA",
+      "type": "varchar",
+      "precision": 64,
+      "scale": -2147483648,
+      "primary": 1,
+      "nullable": false
+    },
+    {
+       "name": "CONSTRAINT_NAME",
+       "type": "varchar",
+       "precision": 64,
+       "scale": -2147483648,
+       "primary": 2,
+       "nullable": false
+    },
+   {
+     "name": "TABLE_CATALOG",
+     "type": "varchar",
+     "precision": 512,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "TABLE_SCHEMA",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "TABLE_NAME",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "COLUMN_NAME",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "ORDINAL_POSITION",
+     "type": "bigint",
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "POSITION_IN_UNIQUE_CONSTRAINT",
+     "type": "bigint",
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "REFERENCED_TABLE_SCHEMA",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "REFERENCED_TABLE_NAME",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "REFERENCED_COLUMN_NAME",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   }
+ ]

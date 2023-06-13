@@ -16,13 +16,17 @@
 
 package io.dingodb.calcite.grammar.dql;
 
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.commons.lang3.StringUtils;
 
 public class SqlShowColumns extends SqlShow {
+
+    public String schemaName;
 
     public String tableName;
 
@@ -36,8 +40,20 @@ public class SqlShowColumns extends SqlShow {
      *
      * @param pos      pos
      */
-    public SqlShowColumns(SqlParserPos pos, String tableName, String sqlLikePattern) {
+    public SqlShowColumns(SqlParserPos pos, SqlIdentifier tableName, String sqlLikePattern) {
         super(OPERATOR, pos);
+        if (tableName.names.size() == 1) {
+            this.tableName = tableName.names.get(0);
+        } else {
+            this.schemaName = tableName.names.get(0);
+            this.tableName = tableName.names.get(1);
+        }
+        this.sqlLikePattern = sqlLikePattern;
+    }
+
+    public SqlShowColumns(SqlParserPos pos, String schemaName, String tableName, String sqlLikePattern) {
+        super(OPERATOR, pos);
+        this.schemaName = schemaName;
         this.tableName = tableName;
         this.sqlLikePattern = sqlLikePattern;
     }
@@ -45,6 +61,10 @@ public class SqlShowColumns extends SqlShow {
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword("SHOW COLUMNS FROM ");
+        if (StringUtils.isNotBlank(schemaName)) {
+            writer.keyword(schemaName);
+            writer.keyword(".");
+        }
         writer.keyword(tableName);
     }
 }

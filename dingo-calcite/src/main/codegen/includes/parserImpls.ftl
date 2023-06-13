@@ -860,8 +860,8 @@ String privilege() : {
   }
   |
     <CREATE>
-    [ <VIEW> { return "create_view"; }]
-    [ <USER> { return "create_user"; }]
+    [ <VIEW> { return "create view"; }]
+    [ <USER> { return "create user"; }]
     { return token.image; }
 }
 
@@ -873,10 +873,10 @@ SqlFlushPrivileges SqlFlush ():{
 
 SqlDesc SqlDesc(): {
     final Span s;
-    String tableName = null;
+    SqlIdentifier tableName = null;
 } {
     <DESC> { s = span(); }
-    (<QUOTED_STRING> | <IDENTIFIER>) { tableName = token.image.toUpperCase(); }
+    tableName = CompoundTableIdentifier()
     { return new SqlDesc(s.end(this), tableName); }
 }
 
@@ -919,23 +919,22 @@ SqlShow SqlShowTableDistribution(Span s): {
 }
 
 SqlShow SqlShowColumns(Span s): {
-   String tableName = null;
+   SqlIdentifier tableName = null;
    String pattern = null;
 } {
-   <COLUMNS> <FROM> (<QUOTED_STRING> | <IDENTIFIER>) { tableName = token.image.toUpperCase(); }
+   <COLUMNS> <FROM> tableName = CompoundTableIdentifier()
    [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
    { return new SqlShowColumns(s.end(this), tableName, pattern); }
 }
 
 SqlShow SqlShowCreate(Span s): {
-   String tableName = null;
+   SqlIdentifier tableName = null;
    String userName = null;
    String host = "%";
 } {
    <CREATE>
    (
-       <TABLE>
-       ( <QUOTED_STRING> | <IDENTIFIER> ) { tableName = token.image.toUpperCase(); }
+       <TABLE> tableName = CompoundTableIdentifier()
        { return new SqlShowCreateTable(s.end(this), tableName); }
    |
        <USER>
@@ -960,11 +959,12 @@ SqlShow SqlShowTables(Span s): {
 }
 
 SqlShow SqlShowFullTables(Span s): {
-   String schema = null;
+   String schema = null; String pattern = null;
 } {
   <FULL>
   <TABLES> [ <FROM> (<BACK_QUOTED_IDENTIFIER> { schema = token.image; } | <IDENTIFIER> { schema = token.image; })]
-  { return new SqlShowFullTables(s.end(this), schema); }
+  [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); }  ]
+  { return new SqlShowFullTables(s.end(this), schema, pattern); }
 }
 
 SqlShow SqlShowWarnings(Span s): {

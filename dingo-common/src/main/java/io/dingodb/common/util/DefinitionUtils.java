@@ -24,7 +24,9 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.type.converter.StrParseConverter;
+import io.dingodb.common.type.scalar.TimeType;
 
+import java.sql.Time;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -65,10 +67,14 @@ public final class DefinitionUtils {
             }
             for (int i = 0; i < operand.length; i++) {
                 DingoType type = keyTypes.get(i);
-                operand[i] = mapOrNull(
-                    operand[i],
-                    v -> type.convertTo(type.convertFrom(v.toString(), fromConverter), toConverter)
-                );
+                if (type instanceof TimeType) {
+                   operand[i] = Time.valueOf(operand[i].toString()).getTime();
+                } else {
+                    operand[i] = mapOrNull(
+                        operand[i],
+                        v -> type.convertTo(type.convertFrom(v.toString(), fromConverter), toConverter)
+                    );
+                }
             }
         }
     }

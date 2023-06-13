@@ -68,6 +68,13 @@ public class MysqlInit {
         initDbPrivilege(DB);
         initTablePrivilege(TABLES_PRIV);
         initGlobalVariables(GLOBAL_VARIABLES);
+        initTableByTemplate("information_schema", "COLUMNS");
+        initTableByTemplate("information_schema", "PARTITIONS");
+        initTableByTemplate("information_schema", "EVENTS");
+        initTableByTemplate("information_schema", "TRIGGERS");
+        initTableByTemplate("information_schema", "STATISTICS");
+        initTableByTemplate("information_schema", "ROUTINES");
+        initTableByTemplate("information_schema", "KEY_COLUMN_USAGE");
         close();
         // check
         initMetaStore(coordinatorSvr);
@@ -160,6 +167,18 @@ public class MysqlInit {
         System.out.println("init global variables success");
     }
 
+    public static void initTableByTemplate(String schema, String tableName) throws IOException {
+        TableDefinition tableDefinition = getTableDefinition(tableName);
+        MetaServiceClient mysqlMetaClient = rootMeta.getSubMetaService(schema);
+        try {
+            mysqlMetaClient.createTable(tableName, tableDefinition);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        String log = "init %s.%s success";
+        System.out.println(String.format(log, schema, tableName));
+    }
+
     public static List<Object[]> initGlobalVariables() {
         List<Object[]> values = new ArrayList<>();
         values.add(new Object[]{"version_comment", "Ubuntu"});
@@ -236,6 +255,27 @@ public class MysqlInit {
             case "GLOBAL_VARIABLES":
                 jsonFile = "/table-information-global_variables.json";
                 break;
+            case "KEY_COLUMN_USAGE":
+                jsonFile = "/table-information-key_column_usage.json";
+                break;
+            case "COLUMNS":
+                jsonFile = "/table-information-columns.json";
+                break;
+            case "EVENTS":
+                jsonFile = "/table-information-events.json";
+                break;
+            case "TRIGGERS":
+                jsonFile = "/table-information-triggers.json";
+                break;
+            case "PARTITIONS":
+                jsonFile = "/table-information-partitions.json";
+                break;
+            case "ROUTINES":
+                jsonFile = "/table-information-routines.json";
+                break;
+            case "STATISTICS":
+                jsonFile = "/table-information-statistics.json";
+                break;
             default:
                 throw new RuntimeException("table not found");
         }
@@ -265,6 +305,8 @@ public class MysqlInit {
                     map.put(column.getName(), "%");
                     break;
                 case "AUTHENTICATION_STRING":
+                    map.put(column.getName(), "e56a114692fe0de073f9a1dd68a00eeb9703f3f1");
+                    break;
                 case "SSL_TYPE":
                 case "SSL_CIPHER":
                 case "X509_ISSUER":

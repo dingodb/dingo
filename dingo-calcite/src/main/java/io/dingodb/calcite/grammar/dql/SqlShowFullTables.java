@@ -31,6 +31,8 @@ public class SqlShowFullTables extends SqlShow {
 
     public String schema;
 
+    public String pattern;
+
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("SHOW FULL TABLES", SqlKind.SELECT);
 
@@ -39,11 +41,12 @@ public class SqlShowFullTables extends SqlShow {
      *
      * @param pos      pos
      */
-    public SqlShowFullTables(SqlParserPos pos, String schema) {
+    public SqlShowFullTables(SqlParserPos pos, String schema, String pattern) {
         super(OPERATOR, pos);
         if (StringUtils.isNotBlank(schema)) {
             this.schema = schema.replace("`", "");
         }
+        this.pattern = pattern;
     }
 
 

@@ -47,9 +47,11 @@ import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlBasicCall;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlSetOption;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -63,6 +65,7 @@ import org.apache.calcite.util.Holder;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -201,6 +204,31 @@ public class DingoParser {
             return true;
         } else if (sqlNode instanceof SqlExecute) {
             return true;
+        } else if (sqlNode instanceof SqlOrderBy) {
+            // for dbeaver sql: SELECT * FROM mysql.user ORDER BY user
+            // user is default function
+            SqlOrderBy sqlOrderBy = (SqlOrderBy) sqlNode;
+            SqlSelect sqlSelect = (SqlSelect) sqlOrderBy.query;
+            if (sqlSelect.getFrom() instanceof  SqlIdentifier) {
+                SqlIdentifier from = (SqlIdentifier) sqlSelect.getFrom();
+                if (from.names.size() == 2) {
+                    String schema = from.names.get(0);
+                    String table = from.names.get(1);
+                    if ("mysql".equalsIgnoreCase(schema) && "user".equalsIgnoreCase(table)) {
+                        for (SqlNode orderNode : sqlOrderBy.orderList) {
+                            SqlIdentifier orderColumnNode = (SqlIdentifier) orderNode;
+                            List<String> orderColumns = new ArrayList<>();
+                            for (String column: orderColumnNode.names) {
+                                if (column.equalsIgnoreCase("user")) {
+                                    column = "name";
+                                }
+                                orderColumns.add(column);
+                            }
+                            orderColumnNode.names = ImmutableList.copyOf(orderColumns);
+                        }
+                    }
+                }
+            }
         }
         return false;
     }

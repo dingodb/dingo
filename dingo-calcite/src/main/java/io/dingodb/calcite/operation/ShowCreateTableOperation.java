@@ -21,6 +21,7 @@ import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
 import lombok.Setter;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.commons.lang3.StringUtils;
 
@@ -35,12 +36,20 @@ public class ShowCreateTableOperation implements QueryOperation {
 
     private MetaService metaService;
 
+    private String schemaName;
     private String tableName;
 
-    public ShowCreateTableOperation(SqlNode sqlNode) {
+    public ShowCreateTableOperation(SqlNode sqlNode, String defaultSchemaName) {
         SqlShowCreateTable showCreateTable = (SqlShowCreateTable) sqlNode;
-        metaService = MetaService.root().getSubMetaService(MetaServiceUtils.getSchemaName(showCreateTable.tableName));
-        tableName = showCreateTable.tableName;
+        SqlIdentifier tableIdentifier = showCreateTable.tableIdentifier;
+        if (tableIdentifier.names.size() == 1) {
+            this.schemaName = defaultSchemaName;
+            tableName = tableIdentifier.names.get(0);
+        } else if (tableIdentifier.names.size() == 2) {
+            this.schemaName = tableIdentifier.names.get(0);
+            tableName = tableIdentifier.names.get(1);
+        }
+        metaService = MetaService.root().getSubMetaService(schemaName);
     }
 
     @Override
