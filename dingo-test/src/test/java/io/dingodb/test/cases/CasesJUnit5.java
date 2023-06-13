@@ -95,6 +95,17 @@ public class CasesJUnit5 implements ArgumentsProvider {
                     )
             ),
             Case.of(
+                "Get by primary key 1",
+                exec(file("misc/create.sql")),
+                exec(file("misc/data.sql")),
+                exec("select * from {table} where id = 1")
+                    .result(
+                        "id,name,age,gmt,price,amount,address,birthday,create_time,update_time,zip_code,is_delete",
+                        "INT,STRING,INT,LONG,DOUBLE,DOUBLE,STRING,DATE,STRING,TIMESTAMP,STRING,BOOL",
+                        "1,zhangsan,18,99,0.0,23.5,beijing,1998-04-06,08:10:10,2022-04-08 18:05:07,null,true"
+                    )
+            ),
+            Case.of(
                 "Get by `or` of primary key",
                 exec(file("string_double/create.sql")),
                 exec(file("string_double/data.sql")).updateCount(9),
@@ -469,6 +480,6 @@ public class CasesJUnit5 implements ArgumentsProvider {
                     )
             )
         );
-        return stream;//.filter(arg -> arg.get()[0].equals("Aggregation 1"));
+        return stream;//.filter(arg -> arg.get()[0].equals("Get by primary key 1"));
     }
 }
