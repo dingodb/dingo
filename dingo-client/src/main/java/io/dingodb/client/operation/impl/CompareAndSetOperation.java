@@ -30,32 +30,26 @@ import io.dingodb.sdk.common.utils.ByteArrayUtils;
 import io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray;
 import lombok.AllArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableSet;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.dingodb.client.utils.OperationUtils.checkParameters;
 
 public class CompareAndSetOperation implements Operation {
 
-    private static final CompareAndSetOperation INSTANCE = new CompareAndSetOperation(false);
-    private static final CompareAndSetOperation INTERNAL = new CompareAndSetOperation(true);
+    private static final CompareAndSetOperation INSTANCE = new CompareAndSetOperation(true);
+    private static final CompareAndSetOperation NOT_STANDARD_INSTANCE = new CompareAndSetOperation(false);
 
-    private CompareAndSetOperation(boolean internal) {
-        this.internal = internal;
+    private CompareAndSetOperation(boolean standard) {
+        this.standard = standard;
     }
 
     public static CompareAndSetOperation getInstance() {
         return INSTANCE;
     }
 
-    public static CompareAndSetOperation getInternal() {
-        return INTERNAL;
+    public static CompareAndSetOperation getNotStandardInstance() {
+        return NOT_STANDARD_INSTANCE;
     }
 
     @AllArgsConstructor
@@ -64,7 +58,7 @@ public class CompareAndSetOperation implements Operation {
         public final List<Record> expects;
     }
 
-    private final boolean internal;
+    private final boolean standard;
 
     @Override
     public Fork fork(Any parameters, TableInfo tableInfo) {
@@ -76,21 +70,30 @@ public class CompareAndSetOperation implements Operation {
             List<Record> records = parameter.records;
             List<ComparableByteArray> checkList = null;
 
-            if (!internal) {
+            if (standard) {
                 checkList =  new ArrayList<>(records.size());
             }
             for (int i = 0; i < records.size(); i++) {
                 Record record = records.get(i);
-                Object[] values = record.extractValues(
-                    definition.getColumns().stream().map(Column::getName).collect(Collectors.toList())
-                );
+                Object[] values;
 
-                checkParameters(definition, values);
+                if (standard) {
+                    values = record.extractValues(
+                        definition.getColumns().stream().map(Column::getName).collect(Collectors.toList())
+                    );
+                } else {
+                    values = record.getDingoColumnValuesInOrder();
+                }
+
+                if (standard) {
+                    checkParameters(definition, values);
+                }
+
                 KeyValue keyValue = tableInfo.codec.encode(values);
 
                 ComparableByteArray key = new ComparableByteArray(keyValue.getKey());
 
-                if (!internal) {
+                if (standard) {
                     if (checkList.contains(key)) {
                         throw new IllegalArgumentException(
                             "Has duplicate key on [" + i + "] and [" + checkList.indexOf(key) + "]"
@@ -100,11 +103,17 @@ public class CompareAndSetOperation implements Operation {
                 }
 
                 record = parameter.expects.get(i);
-                values = record.extractValues(
-                    definition.getColumns().stream().map(Column::getName).collect(Collectors.toList())
-                );
+                if (standard) {
+                    values = record.extractValues(
+                        definition.getColumns().stream().map(Column::getName).collect(Collectors.toList())
+                    );
+                } else {
+                    values = record.getDingoColumnValuesInOrder();
+                }
+
                 KeyValue expect = tableInfo.codec.encode(values);
-                if (!ByteArrayUtils.equal(keyValue.getKey(), expect.getKey())) {
+
+                if (standard && !ByteArrayUtils.equal(keyValue.getKey(), expect.getKey())) {
                     throw new IllegalArgumentException("Key not equal on [" + i + "] record.");
                 }
 

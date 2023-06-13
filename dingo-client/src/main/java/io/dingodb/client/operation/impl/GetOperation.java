@@ -22,35 +22,36 @@ import io.dingodb.client.common.Record;
 import io.dingodb.client.common.TableInfo;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.KeyValue;
+import io.dingodb.sdk.common.codec.CodecUtils;
 import io.dingodb.sdk.common.codec.KeyValueCodec;
+import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.ByteArrayUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
 import static io.dingodb.client.utils.OperationUtils.mapKey;
 
 public class GetOperation implements Operation {
 
-    private static final GetOperation INSTANCE = new GetOperation();
+    private static final GetOperation INSTANCE = new GetOperation(true);
+    private static final GetOperation NOT_STANDARD_INSTANCE = new GetOperation(false);
 
-    private GetOperation() {
-
+    private GetOperation(boolean standard) {
+        this.standard = standard;
     }
 
     public static GetOperation getInstance() {
         return INSTANCE;
     }
+
+    public static GetOperation getNotStandardInstance() {
+        return NOT_STANDARD_INSTANCE;
+    }
+
+    private final boolean standard;
 
     @Override
     public Operation.Fork fork(Any parameters, TableInfo tableInfo) {
@@ -60,18 +61,25 @@ public class GetOperation implements Operation {
             NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparingLong(t -> t.getRegionId().entityId()));
             Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
             KeyValueCodec codec = tableInfo.codec;
+            List<Column> columns = definition.getColumns();
+            List<Column> keyColumns = definition.getKeyColumns();
+            List<Column> sortedKeyColumns = CodecUtils.sortColumns(keyColumns);
             for (int i = 0; i < keys.size(); i++) {
-                // todo not support wrong order key
-                Object[] mapKey = mapKey(definition, keys.get(i));
-                byte[] key = codec.encodeKey(mapKey);
+                Object[] dst = new Object[columns.size()];
+                Key key = keys.get(i);
+                Object[] src = key.getUserKey().toArray();
+                byte[] keyBytes = codec.encodeKey(
+                    mapKey(src, dst, columns, key.columnOrder ? keyColumns : sortedKeyColumns)
+                );
+
                 Map<byte[], Integer> regionParams = subTaskMap.computeIfAbsent(
-                    tableInfo.calcRegionId(key), k -> new Any(new HashMap<>())
+                    tableInfo.calcRegionId(keyBytes), k -> new Any(new HashMap<>())
                 ).getValue();
 
-                regionParams.put(key, i);
+                regionParams.put(keyBytes, i);
             }
             subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
-            return new Fork(new Record[keys.size()], subTasks, true);
+            return new Fork(new Record[keys.size()], subTasks, false);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -108,8 +116,14 @@ public class GetOperation implements Operation {
                 if (result.get(keys.get(i)) == null) {
                     continue;
                 }
+                Object[] values;
+                if (standard) {
+                    values = context.getCodec().decode(result.get(keys.get(i)));
+                } else {
+                    values = context.getCodec().getKeyValueCodec().decode(result.get(keys.get(i)));
+                }
                 context.<Record[]>result()[parameters.get(keys.get(i))] = new Record(
-                    context.getTable().getColumns(), context.getCodec().decode(result.get(keys.get(i)))
+                    context.getTable().getColumns(), values
                 );
             }
         } catch (IOException e) {

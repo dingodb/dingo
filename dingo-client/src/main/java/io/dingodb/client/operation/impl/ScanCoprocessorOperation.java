@@ -36,28 +36,31 @@ import io.dingodb.sdk.common.utils.Parameters;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableSet;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static io.dingodb.client.operation.RangeUtils.*;
+import static java.math.RoundingMode.HALF_UP;
 
 public class ScanCoprocessorOperation implements Operation {
 
-    private static final ScanCoprocessorOperation INSTANCE = new ScanCoprocessorOperation();
+    private static final ScanCoprocessorOperation INSTANCE = new ScanCoprocessorOperation(true);
+    private static final ScanCoprocessorOperation NOT_STANDARD_INSTANCE = new ScanCoprocessorOperation(false);
 
-    private ScanCoprocessorOperation() {
+    private ScanCoprocessorOperation(boolean standard) {
+        this.standard = standard;
     }
 
     public static ScanCoprocessorOperation getInstance() {
         return INSTANCE;
     }
+
+    public static ScanCoprocessorOperation getNotStandardInstance() {
+        return NOT_STANDARD_INSTANCE;
+    }
+
+    private final boolean standard;
 
     @Override
     public Fork fork(Any parameters, TableInfo tableInfo) {
@@ -96,6 +99,9 @@ public class ScanCoprocessorOperation implements Operation {
                 if (aggrAliases.contains(alias)) {
                     throw new IllegalArgumentException("Has duplicate aggregation alias");
                 }
+                if (standard && !agg.operation.checkType(column.getType())) {
+                    throw new IllegalArgumentException("Unsupported " + agg.operation + " " + column.getType());
+                }
                 aggrAliases.add(alias);
                 resultSchemas.add(buildColumnDefinition(alias, agg.operation.resultType(column.getType()), -1, column));
             }
@@ -109,7 +115,7 @@ public class ScanCoprocessorOperation implements Operation {
             if (validateKeyRange(keyRange) && validateOpRange(range = convert(codec, definition, keyRange))) {
                 subTasks = getSubTasks(tableInfo, range, coprocessor);
             }
-            return new Fork(new Iterator[subTasks.size()], subTasks, true);
+            return new Fork(new Iterator[subTasks.size()], subTasks, false);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -130,9 +136,7 @@ public class ScanCoprocessorOperation implements Operation {
 
     @Override
     public Fork fork(OperationContext context, TableInfo tableInfo) {
-        OpRangeCoprocessor rangeCoprocessor = context.parameters();
-        NavigableSet<Task> subTasks = getSubTasks(tableInfo, rangeCoprocessor, rangeCoprocessor.coprocessor);
-        return new Fork(context.result(), subTasks, true);
+        return null;
     }
 
     @Override
@@ -197,12 +201,23 @@ public class ScanCoprocessorOperation implements Operation {
             }
         }
 
-        return (R) Iterators.transform(cache.values().iterator(),
-            r -> new Record(r.getColumns(),
-                (Object[]) codec.getDingoType().convertFrom(r.getDingoColumnValuesInOrder(), DingoConverter.INSTANCE)));
+        if (standard) {
+            return (R) Iterators.transform(cache.values().iterator(), r -> new Record(
+                r.getColumns(),
+                (Object[]) codec.getDingoType().convertFrom(r.getDingoColumnValuesInOrder(), DingoConverter.INSTANCE))
+            );
+        } else {
+            return (R) cache.values().iterator();
+        }
     }
 
     private static Object reduce(KeyRangeCoprocessor.AggType operation, Object current, Object old, Column column) {
+        if (current == null) {
+            return old;
+        }
+        if (old == null) {
+            return current;
+        }
         Object value;
         switch (operation) {
             case SUM:
@@ -220,10 +235,18 @@ public class ScanCoprocessorOperation implements Operation {
                         value = currentDecimal.add(oldDecimal).longValue();
                         break;
                     case "DOUBLE":
-                        value = currentDecimal.add(oldDecimal).doubleValue();
+                        currentDecimal = currentDecimal.add(oldDecimal);
+                        if (column.getScale() > 0) {
+                            currentDecimal = currentDecimal.setScale(column.getScale(), HALF_UP);
+                        }
+                        value = currentDecimal.doubleValue();
                         break;
                     case "FLOAT":
-                        value = currentDecimal.add(oldDecimal).floatValue();
+                        currentDecimal = currentDecimal.add(oldDecimal);
+                        if (column.getScale() > 0) {
+                            currentDecimal = currentDecimal.setScale(column.getScale(), HALF_UP);
+                        }
+                        value = currentDecimal.floatValue();
                         break;
                     default:
                         throw new IllegalStateException("Unexpected value: " + column.getType().toUpperCase());

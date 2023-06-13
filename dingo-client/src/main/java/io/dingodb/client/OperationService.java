@@ -39,11 +39,7 @@ import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.sdk.service.store.StoreServiceClient;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -104,7 +100,7 @@ public class OperationService {
         int retry
     ) {
         if (retry <= 0) {
-            return Optional.of(new RuntimeException("Exceeded the retry limit for performing " + operation.getClass()));
+            return Optional.of(new DingoClientException(-1, "Exceeded the retry limit for performing " + operation.getClass()));
         }
         List<OperationContext> contexts = generateContext(tableInfo, fork);
         Optional<Throwable> error = Optional.empty();
@@ -117,6 +113,9 @@ public class OperationService {
                 e.filter(DingoClientException.InvalidRouteTableException.class::isInstance).map(err -> {
                     TableInfo newTableInfo = getRouteTable(tableInfo.schemaName, tableInfo.tableName, true);
                     Operation.Fork newFork = operation.fork(context, newTableInfo);
+                    if (newFork == null) {
+                        return exec(operation, newTableInfo, newFork, 0).orNull();
+                    }
                     return exec(operation, newTableInfo, newFork, retry - 1).orNull();
                 }).ifPresent(error::ifAbsentSet);
                 countDownLatch.countDown();

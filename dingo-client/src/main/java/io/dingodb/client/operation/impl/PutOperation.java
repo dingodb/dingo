@@ -27,27 +27,29 @@ import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableSet;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.dingodb.client.utils.OperationUtils.checkParameters;
 
 public class PutOperation implements Operation {
 
-    private static final PutOperation INSTANCE = new PutOperation();
+    private static final PutOperation INSTANCE = new PutOperation(true);
+    private static final PutOperation NOT_STANDARD_INSTANCE = new PutOperation(false);
 
-    private PutOperation() {
+    private PutOperation(boolean standard) {
+        this.standard = standard;
     }
 
     public static PutOperation getInstance() {
         return INSTANCE;
     }
+
+    public static PutOperation getNotStandardInstance() {
+        return NOT_STANDARD_INSTANCE;
+    }
+
+    private final boolean standard;
 
     @Override
     public Fork fork(Any parameters, TableInfo tableInfo) {
@@ -60,19 +62,31 @@ public class PutOperation implements Operation {
 
             for (int i = 0; i < records.size(); i++) {
                 Record record = records.get(i);
-                Object[] values = record.extractValues(
-                    definition.getColumns().stream().map(Column::getName).collect(Collectors.toList())
-                );
-                checkParameters(definition, values);
-                KeyValue keyValue = tableInfo.codec.encode(values);
-
-                ComparableByteArray key = new ComparableByteArray(keyValue.getKey());
-                if (checkList.contains(key)) {
-                    throw new IllegalArgumentException(
-                        "Has duplicate key on [" + i + "] and [" + checkList.indexOf(key) + "]"
+                Object[] values;
+                if (standard) {
+                    values = record.extractValues(
+                        definition.getColumns().stream().map(Column::getName).collect(Collectors.toList())
                     );
+                } else {
+                    values = record.getDingoColumnValuesInOrder();
                 }
-                checkList.add(key);
+
+                if (standard) {
+                    checkParameters(definition, values);
+                }
+
+                KeyValue keyValue = tableInfo.codec.encode(values);
+                byte[] key = keyValue.getKey();
+
+                if (standard) {
+                    ComparableByteArray checkKey = new ComparableByteArray(key);
+                    if (checkList.contains(checkKey)) {
+                        throw new IllegalArgumentException(
+                            "Has duplicate key on [" + i + "] and [" + checkList.indexOf(checkKey) + "]"
+                        );
+                    }
+                    checkList.add(checkKey);
+                }
 
                 Map<KeyValue, Integer> regionParams = subTaskMap.computeIfAbsent(
                     tableInfo.calcRegionId(keyValue.getKey()), k -> new Any(new HashMap<>())

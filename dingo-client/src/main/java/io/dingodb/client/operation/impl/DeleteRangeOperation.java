@@ -20,29 +20,33 @@ import io.dingodb.client.OperationContext;
 import io.dingodb.client.common.TableInfo;
 import io.dingodb.sdk.common.RangeWithOptions;
 import io.dingodb.sdk.common.codec.KeyValueCodec;
-import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.NavigableSet;
 
-import static io.dingodb.client.operation.RangeUtils.convert;
-import static io.dingodb.client.operation.RangeUtils.getSubTasks;
-import static io.dingodb.client.operation.RangeUtils.validateOpRange;
-import static io.dingodb.client.operation.RangeUtils.validateKeyRange;
+import static io.dingodb.client.operation.RangeUtils.*;
 
 public class DeleteRangeOperation implements Operation {
 
+    private static final DeleteRangeOperation INSTANCE = new DeleteRangeOperation(true);
+    private static final DeleteRangeOperation NOT_STANDARD_INSTANCE = new DeleteRangeOperation(false);
 
-    private static final DeleteRangeOperation INSTANCE = new DeleteRangeOperation();
+    private DeleteRangeOperation(boolean standard) {
+        this.standard = standard;
 
-    private DeleteRangeOperation() {
     }
 
     public static DeleteRangeOperation getInstance() {
         return INSTANCE;
     }
+
+    public static DeleteRangeOperation getNotStandardInstance() {
+        return NOT_STANDARD_INSTANCE;
+    }
+
+    private final boolean standard;
 
     @Override
     public Fork fork(Any parameters, TableInfo tableInfo) {
