@@ -93,7 +93,7 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
     @JsonProperty("keys")
     public List<Object[]> getJsonKeyTuples() {
         return keyTuples.stream()
-            .map(i -> (Object[]) schema.select(keyMapping).convertTo(i, JsonConverter.INSTANCE))
+            .map(i -> (Object[]) schema.convertTo(i, JsonConverter.INSTANCE))
             .collect(Collectors.toList());
     }
 
