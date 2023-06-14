@@ -142,6 +142,7 @@ public class MysqlResponseHandler {
             resultSetRowPacket.write(buffer);
             int writerIndex = buffer.writerIndex();
             if (writerIndex > 1048576) {
+                buffer.retain();
                 mysqlConnection.channel.writeAndFlush(buffer);
                 buffer.clear();
             }
