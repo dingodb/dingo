@@ -1369,6 +1369,11 @@ SqlSelect SqlSelect() :
 }
 {
     <SELECT> { s = span(); }
+    [
+        <NEXT_AUTO_INCREMENT> <FROM>
+        { return new SqlNextAutoIncrement(s.end(this), CompoundTableIdentifier()); }
+    ]
+
     [ <HINT_BEG> AddHint(hints) ( <COMMA> AddHint(hints) )* <COMMENT_END> ]
     SqlSelectKeywords(keywords)
     (
@@ -7985,6 +7990,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < NESTING: "NESTING" >
 |   < NEW: "NEW" >
 |   < NEXT: "NEXT" >
+|   < NEXT_AUTO_INCREMENT: "NEXT_AUTO_INCREMENT" >
 |   < NO: "NO" >
 |   < NONE: "NONE" >
 |   < NORMALIZE: "NORMALIZE" >

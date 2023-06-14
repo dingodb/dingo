@@ -21,6 +21,7 @@ import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.dml.SqlExecute;
 import io.dingodb.calcite.grammar.dml.SqlPrepare;
 import io.dingodb.calcite.grammar.dql.SqlDesc;
+import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
 import io.dingodb.calcite.grammar.dql.SqlShow;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
 import io.dingodb.calcite.operation.Operation;
@@ -182,9 +183,7 @@ public class DingoParser {
     }
 
     protected boolean compatibleMysql(SqlNode sqlNode) {
-        if (sqlNode instanceof SqlShow) {
-            return true;
-        } else if (sqlNode instanceof SqlDesc) {
+        if (sqlNode instanceof SqlShow || sqlNode instanceof SqlDesc || sqlNode instanceof SqlNextAutoIncrement) {
             return true;
         } else if (sqlNode instanceof SqlSelect) {
             SqlNodeList sqlNodes = ((SqlSelect) sqlNode).getSelectList();

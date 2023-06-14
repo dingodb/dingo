@@ -209,4 +209,10 @@ public class LocalMetaService implements MetaService {
     public Long getAutoIncrement(CommonId tableId) {
         return autoIncrementId++;
     }
+
+    @Override
+    public Long getNextAutoIncrement(CommonId tableId) {
+        return 1L;
+    }
+
 }

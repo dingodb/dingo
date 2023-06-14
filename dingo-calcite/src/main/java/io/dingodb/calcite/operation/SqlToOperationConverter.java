@@ -18,6 +18,7 @@ package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.grammar.dql.SqlDesc;
+import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
 import io.dingodb.calcite.grammar.dql.SqlShowColumns;
 import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
 import io.dingodb.calcite.grammar.dql.SqlShowCreateUser;
@@ -60,6 +61,12 @@ public class SqlToOperationConverter {
         } else if (sqlNode instanceof SqlShowFullTables) {
             SqlShowFullTables showFullTables = (SqlShowFullTables) sqlNode;
             return Optional.of(new ShowFullTableOperation(showFullTables.schema, showFullTables.pattern, connection));
+        } else if (sqlNode instanceof SqlNextAutoIncrement) {
+            SqlNextAutoIncrement sqlNextAutoIncrement = (SqlNextAutoIncrement) sqlNode;
+            if (StringUtils.isEmpty(sqlNextAutoIncrement.schemaName)) {
+                sqlNextAutoIncrement.schemaName = getSchemaName(context);
+            }
+            return Optional.of(new ShowNextAutoIncrementOperation(sqlNextAutoIncrement));
         } else if (sqlNode instanceof SqlSelect) {
             SqlSelect sqlSelect = ((SqlSelect) sqlNode);
             SqlNodeList sqlNodes = sqlSelect.getSelectList();
@@ -83,26 +90,14 @@ public class SqlToOperationConverter {
             SqlSetOption setOption = (SqlSetOption) sqlNode;
             return Optional.of(new SetOptionOperation(connection, setOption));
         } else if (sqlNode instanceof SqlShowCreateTable) {
-            String schemaName;
-            if (context.getUsedSchema() == null) {
-                schemaName = context.getDefaultSchemaName();
-            } else {
-                schemaName = context.getUsedSchema().getName();
-            }
-            return Optional.of(new ShowCreateTableOperation(sqlNode, schemaName));
+            return Optional.of(new ShowCreateTableOperation(sqlNode, getSchemaName(context)));
         } else if (sqlNode instanceof SqlShowCreateUser) {
             SqlShowCreateUser sqlShowCreateUser = (SqlShowCreateUser) sqlNode;
             return Optional.of(new ShowCreateUserOperation(sqlNode, sqlShowCreateUser.userName, sqlShowCreateUser.host));
         } else if (sqlNode instanceof SqlShowColumns) {
             SqlShowColumns showColumns = (SqlShowColumns) sqlNode;
             if (StringUtils.isEmpty(showColumns.schemaName)) {
-                String schemaName;
-                if (context.getUsedSchema() == null) {
-                    schemaName = context.getDefaultSchemaName();
-                } else {
-                    schemaName = context.getUsedSchema().getName();
-                }
-                showColumns.schemaName = schemaName;
+                showColumns.schemaName = getSchemaName(context);
             }
             return Optional.of(new ShowColumnsOperation(sqlNode));
         } else if (sqlNode instanceof SqlShowTableDistribution) {
@@ -111,13 +106,7 @@ public class SqlToOperationConverter {
         } else if (sqlNode instanceof SqlDesc) {
             SqlDesc sqlDesc = (SqlDesc) sqlNode;
             if (StringUtils.isEmpty(sqlDesc.schemaName)) {
-                String schemaName;
-                if (context.getUsedSchema() == null) {
-                    schemaName = context.getDefaultSchemaName();
-                } else {
-                    schemaName = context.getUsedSchema().getName();
-                }
-                sqlDesc.schemaName = schemaName;
+                sqlDesc.schemaName = getSchemaName(context);
             }
             SqlShowColumns sqlShowColumns = new SqlShowColumns(sqlDesc.pos, sqlDesc.schemaName, sqlDesc.tableName, "");
             return Optional.of(new ShowColumnsOperation(sqlShowColumns));
@@ -128,4 +117,12 @@ public class SqlToOperationConverter {
             return Optional.empty();
         }
     }
+
+    private static String getSchemaName(DingoParserContext context) {
+        if (context.getUsedSchema() == null) {
+            return context.getDefaultSchemaName();
+        }
+        return context.getUsedSchema().getName();
+    }
+
 }
