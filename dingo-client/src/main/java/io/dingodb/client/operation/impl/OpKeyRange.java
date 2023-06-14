@@ -19,8 +19,10 @@ package io.dingodb.client.operation.impl;
 import io.dingodb.client.common.Key;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.ToString;
 
 @Getter
+@ToString
 @AllArgsConstructor
 public class OpKeyRange {
     public final Key start;

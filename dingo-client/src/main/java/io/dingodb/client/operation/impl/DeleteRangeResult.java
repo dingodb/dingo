@@ -18,10 +18,12 @@ package io.dingodb.client.operation.impl;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.ToString;
 
 import java.util.List;
 
 @Getter
+@ToString
 @AllArgsConstructor
 public class DeleteRangeResult {
 
@@ -29,6 +31,7 @@ public class DeleteRangeResult {
     private List<DeleteResult> deleteResults;
 
     @Getter
+    @ToString
     @AllArgsConstructor
     public static class DeleteResult {
         private Long count;

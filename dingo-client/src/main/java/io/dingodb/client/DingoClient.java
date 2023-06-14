@@ -195,7 +195,7 @@ public class DingoClient {
         return operationService.exec(schema, tableName, DeleteOperation.getNotStandardInstance(), keys);
     }
 
-    public long delete(String tableName, Key begin, Key end, boolean withBegin, boolean withEnd) {
+    public DeleteRangeResult delete(String tableName, Key begin, Key end, boolean withBegin, boolean withEnd) {
         return operationService.exec(
             schema,
             tableName,
