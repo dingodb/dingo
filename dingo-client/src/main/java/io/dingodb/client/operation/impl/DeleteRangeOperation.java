@@ -17,14 +17,19 @@
 package io.dingodb.client.operation.impl;
 
 import io.dingodb.client.OperationContext;
+import io.dingodb.client.common.Key;
 import io.dingodb.client.common.TableInfo;
+import io.dingodb.client.common.Value;
 import io.dingodb.sdk.common.RangeWithOptions;
 import io.dingodb.sdk.common.codec.KeyValueCodec;
 import io.dingodb.sdk.common.utils.Any;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.NavigableSet;
+import java.util.stream.Collectors;
 
 import static io.dingodb.client.operation.RangeUtils.*;
 
@@ -58,7 +63,7 @@ public class DeleteRangeOperation implements Operation {
             if (validateKeyRange(keyRange) && validateOpRange(range = convert(codec, tableInfo.definition, keyRange))) {
                 subTasks = getSubTasks(tableInfo, range);
             }
-            return new Fork(new long[subTasks.size()], subTasks, true);
+            return new Fork(new DeleteRangeResult.DeleteResult[subTasks.size()], subTasks, true);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -66,21 +71,40 @@ public class DeleteRangeOperation implements Operation {
 
     @Override
     public Fork fork(OperationContext context, TableInfo tableInfo) {
-        OpRange range = context.parameters();
+        /*OpRange range = context.parameters();
         NavigableSet<Task> subTasks = getSubTasks(tableInfo, range);
-        return new Fork(context.result(), subTasks, true);
+        return new Fork(context.result(), subTasks, true);*/
+        return null;
     }
 
     @Override
     public void exec(OperationContext context) {
         OpRange range = context.parameters();
-        context.<long[]>result()[context.getSeq()] = context.getStoreService()
-            .kvDeleteRange(context.getTableId(), context.getRegionId(), new RangeWithOptions(range.range, range.withStart, range.withEnd));
+        long count;
+        try {
+            count = context.getStoreService()
+                .kvDeleteRange(context.getTableId(), context.getRegionId(), new RangeWithOptions(range.range, range.withStart, range.withEnd));
+        } catch (Exception e) {
+            count = -1;
+        }
+        try {
+            context.<DeleteRangeResult.DeleteResult[]>result()[context.getSeq()] = new DeleteRangeResult.DeleteResult(
+                count,
+                new OpKeyRange(
+                    new Key(Arrays.stream(context.getCodec().decodeKeyPrefix(range.getStartKey())).map(Value::get).collect(Collectors.toList())),
+                    new Key(Arrays.stream(context.getCodec().decodeKeyPrefix(range.getEndKey())).map(Value::get).collect(Collectors.toList())),
+                    range.withStart, range.withEnd));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public <R> R reduce(Fork context) {
-        return (R) (Long) Arrays.stream(context.<long[]>result()).reduce(Long::sum).orElse(0L);
+        List<DeleteRangeResult.DeleteResult> list = Arrays.stream(context.<DeleteRangeResult.DeleteResult[]>result()).collect(Collectors.toList());
+        return (R) new DeleteRangeResult(
+            list.stream().mapToLong(DeleteRangeResult.DeleteResult::getCount).reduce(Long::sum).orElse(0L),
+            list);
     }
 
 }

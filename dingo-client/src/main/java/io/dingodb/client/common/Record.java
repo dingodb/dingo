@@ -25,6 +25,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -35,6 +37,8 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.math.RoundingMode.HALF_UP;
 
 /**
  * Container object for records. Records are equivalent to rows.
@@ -95,6 +99,13 @@ public final class Record {
     }
 
     public Object[] getDingoColumnValuesInOrder() {
+        for (int i = 0; i < columns.length; i++) {
+            if ((columns[i].getType().equalsIgnoreCase("DOUBLE")
+                || columns[i].getType().equalsIgnoreCase("FLOAT")) && values[i].getObject() != null) {
+                this.values[i] = Value.get(new BigDecimal(
+                    String.valueOf(this.values[i].getObject())).setScale(columns[i].getScale(), HALF_UP).doubleValue());
+            }
+        }
         return Stream.of(values).map(Value::getObject).toArray(Object[]::new);
     }
 
