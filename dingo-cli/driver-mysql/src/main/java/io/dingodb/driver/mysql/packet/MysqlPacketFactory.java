@@ -159,10 +159,6 @@ public class MysqlPacketFactory {
                 String tableName = resultSet.getString("TABLE_NAME");
                 String columnName = resultSet.getString("COLUMN_NAME");
                 String schemaName = resultSet.getString("TABLE_SCHEM");
-                if ("mysql".equalsIgnoreCase(schemaName) && "user".equalsIgnoreCase(tableName)
-                    && "name".equalsIgnoreCase(columnName)) {
-                    columnName = "user";
-                }
                 ColumnPacket columnPacket = getColumnPacket(catalog,
                     schemaName,
                     tableName,

@@ -57,8 +57,9 @@ data: {
       "io.dingodb.calcite.grammar.dql.SqlShowCreateUser"
       "io.dingodb.calcite.grammar.dql.SqlShowDatabases"
       "io.dingodb.calcite.grammar.dql.SqlShowGrants"
-      "io.dingodb.calcite.grammar.dql.SqlShowTables"
       "io.dingodb.calcite.grammar.dql.SqlShowTableDistribution"
+      "io.dingodb.calcite.grammar.dql.SqlShowTables"
+      "io.dingodb.calcite.grammar.dql.SqlShowTableStatus"
       "io.dingodb.calcite.grammar.dql.SqlShowFullTables"
       "io.dingodb.calcite.grammar.dql.SqlShowVariables"
       "io.dingodb.calcite.grammar.dql.SqlShowWarnings"
@@ -137,6 +138,7 @@ data: {
     implementationFiles: [
       "parserImpls.ftl"
       "AlterTable.ftl"
+      "Show.ftl"
     ]
 
     includePosixOperators: false
@@ -434,6 +436,7 @@ data: {
     "STYLE"
     "SUBCLASS_ORIGIN"
     "SUBSTITUTE"
+    "TABLES"
     "TABLE_NAME"
     "TEMPORARY"
     "TIES"

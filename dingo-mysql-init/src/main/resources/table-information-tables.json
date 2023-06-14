@@ -1,0 +1,181 @@
+ [
+    {
+      "name": "TABLE_CATALOG",
+      "type": "varchar",
+      "precision": 512,
+      "scale": -2147483648,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "TABLE_SCHEMA",
+      "type": "varchar",
+      "precision": 64,
+      "scale": -2147483648,
+      "primary": 1,
+      "nullable": false
+    },
+   {
+     "name": "TABLE_NAME",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": 2,
+     "nullable": false
+   },
+   {
+     "name": "TABLE_TYPE",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "ENGINE",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "VERSION",
+     "type": "bigint",
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "ROW_FORMAT",
+     "type": "varchar",
+     "precision": 10,
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "TABLE_ROWS",
+     "type": "bigint",
+     "precision": -1,
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "AVG_ROW_LENGTH",
+     "type": "bigint",
+     "precision": -1,
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "DATA_LENGTH",
+     "type": "bigint",
+     "precision": -1,
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "MAX_DATA_LENGTH",
+     "type": "bigint",
+     "precision": -1,
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "INDEX_LENGTH",
+     "type": "bigint",
+     "precision": -1,
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "DATA_FREE",
+     "type": "bigint",
+     "precision": -1,
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "AUTO_INCREMENT",
+     "type": "bigint",
+     "precision": -1,
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "CREATE_TIME",
+     "type": "timestamp",
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "UPDATE_TIME",
+     "type": "timestamp",
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "CHECK_TIME",
+     "type": "timestamp",
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "TABLE_COLLATION",
+     "type": "varchar",
+     "precision": 32,
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "CHECKSUM",
+     "type": "bigint",
+     "precision": -1,
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "CREATE_OPTIONS",
+     "type": "varchar",
+     "precision": 255,
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "TABLE_COMMENT",
+     "type": "varchar",
+     "precision": 2048,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   }
+ ]

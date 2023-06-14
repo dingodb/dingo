@@ -482,14 +482,17 @@ public class DingoMeta extends MetaImpl {
             getMatchedSubSchema(((DingoConnection) connection).getContext().getRootSchema(), schemaPattern),
             tableNamePattern
         );
+        tables.removeIf(t ->
+             t == null || t.schema == null || t.getTable() == null || t.getTable().getJdbcTableType() == null
+        );
         return createArrayResultSet(
             Linq4j.asEnumerable(tables)
                 .select(t -> new Object[]{
-                    catalog,
-                    t.schema.name,
-                    t.name,
-                    t.getTable().getJdbcTableType().jdbcName
-                }),
+                            catalog,
+                            t.schema.name,
+                            t.name,
+                            t.getTable().getJdbcTableType().jdbcName
+                        }),
             new Class[] {String.class, String.class, String.class, String.class},
             "TABLE_CAT",
             "TABLE_SCHEM",

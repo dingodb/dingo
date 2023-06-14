@@ -287,7 +287,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
         for (int i = 0; i < userTd.getColumns().size(); i++) {
             ColumnDefinition column = userTd.getColumn(i);
             switch (column.getName()) {
-                case "NAME":
+                case "USER":
                     row[i] = user.getUser();
                     break;
                 case "HOST":

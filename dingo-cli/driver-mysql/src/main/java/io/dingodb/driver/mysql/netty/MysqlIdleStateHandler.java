@@ -74,20 +74,19 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
 
     public void setIdleTimeout(long idleTimeout, TimeUnit unit) {
         if (idleTimeout <= 0) {
-            idleTimeNanos = 0;
-        } else {
-            long idleTimeNanosTmp = Math.max(unit.toNanos(idleTimeout), MIN_TIMEOUT_NANOS);
-            if (idleTimeNanosTmp != idleTimeNanos) {
-                if (idleTimeoutFuture != null) {
-                    idleTimeoutFuture.cancel(false);
-                    idleTimeoutFuture = null;
-                }
-                lastReadTime = lastWriteTime = ticksInNanos();
-                idleTimeNanos = idleTimeNanosTmp;
-                if (idleTimeNanos > 0) {
-                    idleTimeoutFuture = schedule(command, idleTimeNanos, TimeUnit.NANOSECONDS);
-                    log.info("modify idleTimeNanos:" + idleTimeNanos);
-                }
+            idleTimeout = 28800;
+        }
+        long idleTimeNanosTmp = Math.max(unit.toNanos(idleTimeout), MIN_TIMEOUT_NANOS);
+        if (idleTimeNanosTmp != idleTimeNanos) {
+            if (idleTimeoutFuture != null) {
+                idleTimeoutFuture.cancel(false);
+                idleTimeoutFuture = null;
+            }
+            lastReadTime = lastWriteTime = ticksInNanos();
+            idleTimeNanos = idleTimeNanosTmp;
+            if (idleTimeNanos > 0) {
+                idleTimeoutFuture = schedule(command, idleTimeNanos, TimeUnit.NANOSECONDS);
+                log.info("modify idleTimeNanos:" + idleTimeNanos);
             }
         }
     }

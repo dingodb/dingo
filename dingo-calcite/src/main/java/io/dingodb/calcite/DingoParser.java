@@ -204,31 +204,6 @@ public class DingoParser {
             return true;
         } else if (sqlNode instanceof SqlExecute) {
             return true;
-        } else if (sqlNode instanceof SqlOrderBy) {
-            // for dbeaver sql: SELECT * FROM mysql.user ORDER BY user
-            // user is default function
-            SqlOrderBy sqlOrderBy = (SqlOrderBy) sqlNode;
-            SqlSelect sqlSelect = (SqlSelect) sqlOrderBy.query;
-            if (sqlSelect.getFrom() instanceof  SqlIdentifier) {
-                SqlIdentifier from = (SqlIdentifier) sqlSelect.getFrom();
-                if (from.names.size() == 2) {
-                    String schema = from.names.get(0);
-                    String table = from.names.get(1);
-                    if ("mysql".equalsIgnoreCase(schema) && "user".equalsIgnoreCase(table)) {
-                        for (SqlNode orderNode : sqlOrderBy.orderList) {
-                            SqlIdentifier orderColumnNode = (SqlIdentifier) orderNode;
-                            List<String> orderColumns = new ArrayList<>();
-                            for (String column: orderColumnNode.names) {
-                                if (column.equalsIgnoreCase("user")) {
-                                    column = "name";
-                                }
-                                orderColumns.add(column);
-                            }
-                            orderColumnNode.names = ImmutableList.copyOf(orderColumns);
-                        }
-                    }
-                }
-            }
         }
         return false;
     }
