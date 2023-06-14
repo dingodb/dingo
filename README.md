@@ -1,30 +1,30 @@
 # DingoDB
 
-[DingoDB](https://github.com/dingodb/dingo) is a distributed real-time multi-modal database. It combines the features of a data lake and a vector database. It can store any type of data (key-value, PDF, audio, video, etc) with data of any size.Using it, you can build your **Vector Ocean** (The Next Generation data architecture following data warehouse and data lake initiated by [DataCanvas](https://www.datacanvas.com/)) and analyze structured and unstructured data with extremely low latency.
+[DingoDB](https://github.com/dingodb/dingo) is a distributed multi-modal vector database. It combines the features of a data lake and a vector database, allowing for the storage of any type of data (key-value, PDF, audio, video, etc.) regardless of its size. Utilizing DingoDB, you can construct your own **Vector Ocean** (the next-generation data architecture following data warehouse and data lake, as introduced by [DataCanvas](https://www.datacanvas.com/)). This enables the analysis of both structured and unstructured data through a singular SQL with exceptionally low latency in real time.
 
 ![](docs/images/dingo_stack.png)
 
 ## Key Features
 
-### As A Distributed Vector database for Any Data
+### As a Distributed Vector Database for Any Data
 
-1. Offering storage for all data types (embeddings, audio, text, videos, images, pdfs, annotations, etc.)
-2. query and vector search in low latency 
-3. Perform hybrid search including embeddings and structured data such as label or attributes
+1. Provides comprehensive data storage solutions, accommodating a wide range of data types including but not limited to embeddings, audio files, text, videos, images, PDFs, and annotations.
+2. Facilitates efficient querying and vector searching with minimal latency using a singular SQL approach.
+3. Employs a hybrid search mechanism that caters to both structured and unstructured data, supporting operations like metadata querying and vector querying.
+4. Possesses the ability to dynamically ingest data and construct corresponding indexes in real time, promoting operational efficiency.
   
 ### As A Distributed Relation database
 
-1. Compliant with MySQL-Compatible
-   Based on the popular [Apache Calcite](https://calcite.apache.org/) SQL engine, DingoDB can parse, optimize and
-   execute standard SQL statements, and is capable to run part of TPC-H and TPC-DS (See [TPC](http://www.tpc.org/))
-   queries. DingoDB is also compliant with MySQL Shell and MySQL-JDBC-Driver Client, So you can be seamlessly integrated with web services, BI tools, etc.
-2. Support high frequency write operation  
-   By using [RAFT](https://raft.github.io/) and log-structured key-value storage [RocksDB](https://rocksdb.org/). You can perform high-frequency INSERT, UPDATE, DELETE and short-QUERY while ensuring strong data consistency. 
-3. Support point query and multi-dimensional analysis simultaneously  
-   DingoDB can push down the expressioin to store to accelerate 
-   query and fast multi-dimensional analysis in low latency.
-4. As a distributed storage engine, it provides the ability to store massive amounts of data. At the same time, with the increase in data scale, it can easily perform horizontal scaling operations on clusters.
-5. As a distributed storage engine, It is designed based on Raft to provide a multi-replicated management mechanism, which provides extremely high data reliability. It can ensure high data consistency in the event of disk or machine failures, and also provides a fast automatic recovery mechanism.
+1. MySQL Compatibility
+   Built upon the acclaimed [Apache Calcite](https://calcite.apache.org/) SQL engine, DingoDB is capable of parsing, optimizing, and executing standard SQL statements, and can handle parts of TPC-H and TPC-DS(See [TPC](http://www.tpc.org/)) queries. Compliant with MySQL Shell and MySQL-JDBC-Driver Client, it offers seamless integration with web services, BI tools, and more.
+2. Supports High Frequency Write Operations:
+   With the use of [RAFT](https://raft.github.io/) and the log-structured key-value storage [RocksDB](https://rocksdb.org/)., DingoDB can handle high-frequency INSERT, UPDATE, DELETE, and short-QUERY operations while maintaining strong data consistency.
+3. Facilitates Point Queries and Multi-dimensional Analysis Simultaneously:
+   DingoDB can push down expressions to accelerate queries and quickly carry out multi-dimensional analysis with low latency.
+4. Distributed Storage Capabilities
+   As a distributed storage engine, DingoDB has the capacity to store vast amounts of data. It allows for easy horizontal scaling operations on clusters as data scale increases.
+5. High Data Reliability and Recovery:
+   Designed based on Raft, DingoDB provides a multi-replicated management mechanism, ensuring extraordinarily high data reliability. It can maintain high data consistency even in the event of disk or machine failures and offers a swift automatic recovery mechanism.
 
 ## Related Projects about DingoDB
 
