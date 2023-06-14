@@ -47,6 +47,7 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges"
       "io.dingodb.calcite.grammar.ddl.SqlGrant"
       "io.dingodb.calcite.grammar.ddl.SqlIndexDeclaration"
+      "io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement"
       "io.dingodb.calcite.grammar.ddl.SqlRevoke"
       "io.dingodb.calcite.grammar.ddl.SqlSetPassword"
       "io.dingodb.calcite.grammar.ddl.SqlTruncate"
