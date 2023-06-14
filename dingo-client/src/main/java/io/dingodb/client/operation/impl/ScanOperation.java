@@ -68,9 +68,10 @@ public class ScanOperation implements Operation {
 
     @Override
     public Fork fork(OperationContext context, TableInfo tableInfo) {
-        OpRange range = context.parameters();
+        /*OpRange range = context.parameters();
         NavigableSet<Task> subTasks = getSubTasks(tableInfo, range);
-        return new Fork(context.result(), subTasks, true);
+        return new Fork(context.result(), subTasks, true);*/
+        return null;
     }
 
     @Override
