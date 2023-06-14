@@ -76,8 +76,10 @@ public class DingoDdlVerify {
             accessTypes.add(DingoSqlAccessEnum.DROP);
             SqlDropTable sqlDropTable = (SqlDropTable) sqlNode;
             schemaTables = initSchemaTable(sqlDropTable.name.names, connection);
-        } else if (sqlNode instanceof SqlCreateUser || sqlNode instanceof SqlGrant) {
+        } else if (sqlNode instanceof SqlCreateUser) {
             accessTypes.add(DingoSqlAccessEnum.CREATE_USER);
+        } else if (sqlNode instanceof SqlGrant) {
+            accessTypes.add(DingoSqlAccessEnum.GRANT);
         } else if (sqlNode instanceof SqlFlushPrivileges) {
             accessTypes.add(DingoSqlAccessEnum.RELOAD);
         } else if (sqlNode instanceof SqlSetPassword) {
