@@ -25,6 +25,7 @@ import io.dingodb.calcite.grammar.dql.SqlShowDatabases;
 import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
 import io.dingodb.calcite.grammar.dql.SqlShowTableDistribution;
+import io.dingodb.calcite.grammar.dql.SqlShowTableStatus;
 import io.dingodb.calcite.grammar.dql.SqlShowTables;
 import io.dingodb.calcite.grammar.dql.SqlShowVariables;
 import io.dingodb.calcite.grammar.dql.SqlShowWarnings;
@@ -60,7 +61,8 @@ public class SqlToOperationConverter {
             SqlShowFullTables showFullTables = (SqlShowFullTables) sqlNode;
             return Optional.of(new ShowFullTableOperation(showFullTables.schema, showFullTables.pattern, connection));
         } else if (sqlNode instanceof SqlSelect) {
-            SqlNodeList sqlNodes = ((SqlSelect) sqlNode).getSelectList();
+            SqlSelect sqlSelect = ((SqlSelect) sqlNode);
+            SqlNodeList sqlNodes = sqlSelect.getSelectList();
             SqlNode selectItem1 = sqlNodes.get(0);
             if (selectItem1 instanceof SqlBasicCall) {
                 SqlBasicCall sqlBasicCall = (SqlBasicCall) selectItem1;
@@ -119,6 +121,9 @@ public class SqlToOperationConverter {
             }
             SqlShowColumns sqlShowColumns = new SqlShowColumns(sqlDesc.pos, sqlDesc.schemaName, sqlDesc.tableName, "");
             return Optional.of(new ShowColumnsOperation(sqlShowColumns));
+        } else if (sqlNode instanceof SqlShowTableStatus) {
+            SqlShowTableStatus showTableStatus = (SqlShowTableStatus) sqlNode;
+            return Optional.of(new ShowTableStatusOperation(showTableStatus.schema, showTableStatus.sqlLikePattern));
         } else {
             return Optional.empty();
         }

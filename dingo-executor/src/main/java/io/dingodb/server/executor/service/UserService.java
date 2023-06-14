@@ -19,6 +19,7 @@ package io.dingodb.server.executor.service;
 import com.google.auto.service.AutoService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.privilege.PrivilegeDefinition;
 import io.dingodb.common.privilege.PrivilegeDict;
@@ -249,7 +250,11 @@ public class UserService implements io.dingodb.verify.service.UserService {
             keys[0] = "%";
             userPrivilege = get(userStore, userCodec, keys);
             if (userPrivilege == null) {
-                return null;
+                keys[0] = DingoConfiguration.host();
+                userPrivilege = get(userStore, userCodec, keys);
+                if (userPrivilege == null) {
+                    return null;
+                }
             }
         }
 
@@ -287,7 +292,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
         for (int i = 0; i < userTd.getColumns().size(); i++) {
             ColumnDefinition column = userTd.getColumn(i);
             switch (column.getName()) {
-                case "NAME":
+                case "USER":
                     row[i] = user.getUser();
                     break;
                 case "HOST":

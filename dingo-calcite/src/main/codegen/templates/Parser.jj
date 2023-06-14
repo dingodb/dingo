@@ -8218,6 +8218,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < SQL_VARCHAR: "SQL_VARCHAR" >
 |   < SQRT: "SQRT" >
 |   < SSL: "SSL" >
+|   < STATUS: "STATUS" >
 |   < START: "START" >
 |   < STATE: "STATE" >
 |   < STATEMENT: "STATEMENT" >

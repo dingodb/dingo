@@ -78,6 +78,9 @@ public class ShowCreateUserOperation implements QueryOperation {
         if (requireSsl == null || requireSsl.isEmpty()) {
             builder.append("NONE");
         } else {
+            if ("ANY".equals(requireSsl)) {
+                requireSsl = "SSL";
+            }
             builder.append(requireSsl);
         }
         builder.append(" PASSWORD EXPIRE ");

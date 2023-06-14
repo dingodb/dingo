@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite;
 
+import com.google.common.collect.Multimap;
 import io.dingodb.calcite.grammar.SqlUserDefinedOperators;
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import lombok.Getter;
@@ -29,12 +30,16 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
 import org.apache.calcite.sql2rel.SqlLikeBinaryOperator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.TimeZone;
 
@@ -109,10 +114,39 @@ public final class DingoParserContext implements Context {
         tableInstance.register(SqlUserDefinedOperators.LIKE_BINARY);
         tableInstance.register(SqlUserDefinedOperators.NOT_LIKE_BINARY);
         SqlLikeBinaryOperator.register();
+        eliminateUserOperator(tableInstance);
 
         this.options = options;
 
         usedSchema = getDefaultSchema();
+    }
+
+    private static void eliminateUserOperator(SqlStdOperatorTable tableInstance) {
+        try {
+            Field caseSensitiveOperators = ReflectiveSqlOperatorTable.class.getDeclaredField("caseSensitiveOperators");
+            Field caseInsensitiveOperators = ReflectiveSqlOperatorTable.class.getDeclaredField("caseInsensitiveOperators");
+            caseSensitiveOperators.setAccessible(true);
+            caseInsensitiveOperators.setAccessible(true);
+            Multimap caseSensitiveMap = (Multimap) caseSensitiveOperators.get(tableInstance);
+            Multimap caseInsensitiveMap = (Multimap) caseInsensitiveOperators.get(tableInstance);
+
+            Iterator<Map.Entry> caseSensitiveIterator = caseSensitiveMap.entries().iterator();
+            while (caseSensitiveIterator.hasNext()) {
+                Map.Entry entry = caseSensitiveIterator.next();
+                if (entry.getValue() == SqlStdOperatorTable.USER) {
+                    caseSensitiveIterator.remove();
+                }
+            }
+
+            Iterator<Map.Entry> caseInsensitiveIterator = caseInsensitiveMap.entries().iterator();
+            while (caseInsensitiveIterator.hasNext()) {
+                Map.Entry entry = caseInsensitiveIterator.next();
+                if (entry.getValue() == SqlStdOperatorTable.USER) {
+                    caseInsensitiveIterator.remove();
+                }
+            }
+        } catch (Exception e1) {
+        }
     }
 
     @SuppressWarnings("MethodMayBeStatic")
