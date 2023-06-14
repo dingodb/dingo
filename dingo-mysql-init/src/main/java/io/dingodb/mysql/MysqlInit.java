@@ -75,6 +75,8 @@ public class MysqlInit {
         initTableByTemplate("information_schema", "STATISTICS");
         initTableByTemplate("information_schema", "ROUTINES");
         initTableByTemplate("information_schema", "KEY_COLUMN_USAGE");
+        initTableByTemplate("information_schema", "SCHEMATA");
+        initTableByTemplate("information_schema", "TABLES");
         close();
         // check
         initMetaStore(coordinatorSvr);
@@ -276,6 +278,12 @@ public class MysqlInit {
             case "STATISTICS":
                 jsonFile = "/table-information-statistics.json";
                 break;
+            case "SCHEMATA":
+                jsonFile = "/table-information-schemata.json";
+                break;
+            case "TABLES":
+                jsonFile = "/table-information-tables.json";
+                break;
             default:
                 throw new RuntimeException("table not found");
         }
@@ -298,7 +306,7 @@ public class MysqlInit {
         Map<String, Object> map = Maps.newLinkedHashMap();
         columnList.forEach(column -> {
             switch (column.getName()) {
-                case "NAME":
+                case "USER":
                     map.put(column.getName(), "root");
                     break;
                 case "HOST":
