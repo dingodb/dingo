@@ -55,7 +55,7 @@ public class SetOptionOperation implements DdlOperation {
         SqlNode sqlNode = setOption.getValue();
         if (sqlNode instanceof SqlNumericLiteral) {
             SqlNumericLiteral numericLiteral = (SqlNumericLiteral) sqlNode;
-            value = numericLiteral.getValue();
+            value = numericLiteral.getValue().toString();
         } else if (sqlNode instanceof SqlIdentifier) {
             sqlIdentifier = (SqlIdentifier) sqlNode;
             value = sqlIdentifier.names.get(0);
