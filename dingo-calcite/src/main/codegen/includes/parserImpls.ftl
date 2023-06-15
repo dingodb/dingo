@@ -863,6 +863,9 @@ String privilege() : {
     [ <VIEW> { return "create view"; }]
     [ <USER> { return "create user"; }]
     { return token.image; }
+  |
+    <SHOW><DATABASES>
+    { return "show databases"; }
 }
 
 SqlFlushPrivileges SqlFlush ():{

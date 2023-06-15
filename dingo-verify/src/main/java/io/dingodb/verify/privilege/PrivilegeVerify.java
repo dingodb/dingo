@@ -18,6 +18,7 @@ package io.dingodb.verify.privilege;
 
 import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.auth.DingoRole;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.config.SecurityConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.privilege.DingoSqlAccessEnum;
@@ -31,6 +32,7 @@ import io.dingodb.net.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -41,6 +43,18 @@ public final class PrivilegeVerify {
 
     static {
         isVerify = SecurityConfiguration.isVerify();
+    }
+
+    private final static List<Integer> filterPx = new ArrayList<Integer>();
+    static {
+        filterPx.add(0);
+        filterPx.add(1);
+        filterPx.add(2);
+        filterPx.add(3);
+        filterPx.add(4);
+        filterPx.add(5);
+        filterPx.add(6);
+        filterPx.add(7);
     }
 
     public static boolean isVerify;
@@ -70,7 +84,10 @@ public final class PrivilegeVerify {
         if (privilegeGather == null) {
             privilegeGather = env.getPrivilegeGatherMap().get(user + "#%");
             if (privilegeGather == null) {
-                return false;
+                privilegeGather = env.getPrivilegeGatherMap().get(user + "#" + DingoConfiguration.host());
+                if (privilegeGather == null) {
+                    return false;
+                }
             }
         }
         return verify(user, host, schema, table, accessType, privilegeGather);
@@ -113,18 +130,21 @@ public final class PrivilegeVerify {
         return tableDef != null && tableDef.getPrivileges()[index];
     }
 
-    public static boolean verify(String user, String host, String schema, String table) {
-        if (prefilter(user)) return true;
+    public static boolean verify(String user, String host, String schema, String table, String command) {
+        if (prefilter(user) || verifyInformationSchema(schema, DingoSqlAccessEnum.SELECT)) return true;
 
         PrivilegeGather privilegeGather = env.getPrivilegeGatherMap().get(user + "#"
             + PrivilegeUtils.getRealAddress(host));
         if (privilegeGather == null) {
             privilegeGather = env.getPrivilegeGatherMap().get(user + "#%");
             if (privilegeGather == null) {
-                return false;
+                privilegeGather = env.getPrivilegeGatherMap().get(user + "#" + DingoConfiguration.host());
+                if (privilegeGather == null) {
+                    return false;
+                }
             }
         }
-        return verify(schema, table, privilegeGather);
+        return verify(schema, table, privilegeGather, command);
     }
 
     private static boolean prefilter(String user) {
@@ -138,15 +158,16 @@ public final class PrivilegeVerify {
     }
 
     public static boolean verify(String schema, String table,
-                                 PrivilegeGather privilegeGather) {
+                                 PrivilegeGather privilegeGather, String command) {
         if (privilegeGather == null) {
             return false;
         }
 
         UserDefinition userDef = privilegeGather.getUserDef();
         if (userDef != null) {
-            for (boolean privilege: userDef.getPrivileges()) {
-                if (privilege) {
+            for (int i = 0; i < userDef.getPrivileges().length; i ++) {
+                boolean privilege = userDef.getPrivileges()[i];
+                if (privilege && isFilter(command, i)) {
                     return true;
                 }
             }
@@ -157,8 +178,9 @@ public final class PrivilegeVerify {
 
         SchemaPrivDefinition schemaDef = privilegeGather.getSchemaPrivDefMap().get(schema);
         if (schemaDef != null) {
-            for (boolean privilege: schemaDef.getPrivileges()) {
-                if (privilege) {
+            for (int i = 0; i < schemaDef.getPrivileges().length; i ++) {
+                boolean privilege = schemaDef.getPrivileges()[i];
+                if (privilege && isFilter(command, i)) {
                     return true;
                 }
             }
@@ -169,8 +191,9 @@ public final class PrivilegeVerify {
             return definitionCollection.stream().anyMatch(tableDef -> {
                 if (schema.equalsIgnoreCase(tableDef.getSchemaName())) {
                     log.info("schema verify:" + schema);
-                    for (boolean privilege : tableDef.getPrivileges()) {
-                        if (privilege) {
+                    for (int i = 0; i < tableDef.getPrivileges().length; i ++) {
+                        boolean privilege = tableDef.getPrivileges()[i];
+                        if (privilege && isFilter(command, i)) {
                             return true;
                         }
                     }
@@ -180,14 +203,26 @@ public final class PrivilegeVerify {
         } else {
             TablePrivDefinition tableDef = privilegeGather.getTablePrivDefMap().get(table);
             if (tableDef != null) {
-                for (boolean privilege : tableDef.getPrivileges()) {
-                    if (privilege) {
+                for (int i = 0; i < tableDef.getPrivileges().length; i ++) {
+                    boolean privilege = tableDef.getPrivileges()[i];
+                    if (privilege && isFilter(command, i)) {
                         return true;
                     }
                 }
             }
         }
         return false;
+    }
+
+    private static boolean isFilter(String command, int i) {
+        boolean filter = false;
+        if ("use".equals(command) || "getTables".equals(command)) {
+            filter = filterPx.contains(i);
+        } else if ("getSchemas".equals(command)) {
+            // 23 means show databases
+            filter = filterPx.contains(i) || i == 23;
+        }
+        return filter;
     }
 
     public static boolean verifyDuplicate(String user, String host, String schema, String table,

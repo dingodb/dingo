@@ -158,21 +158,21 @@ public class DingoMeta extends MetaImpl {
         return schemas.stream()
             .flatMap(s -> s.getTableNames().stream()
                 .filter(filter)
-                .filter(name -> verifyPrivilege((DingoSchema) s.schema, name))
+                .filter(name -> verifyPrivilege((DingoSchema) s.schema, name, "getTables"))
                 .map(name -> s.getTable(name, false)))
             .collect(Collectors.toList());
     }
 
     private boolean verifyPrivilege(DingoSchema schema) {
-        return verifyPrivilege(schema, null);
+        return verifyPrivilege(schema, null, "getSchemas");
     }
 
-    private boolean verifyPrivilege(DingoSchema schema, String tableName) {
+    private boolean verifyPrivilege(DingoSchema schema, String tableName, String command) {
         try {
             DingoConnection dingoConnection = (DingoConnection) connection;
             String user = dingoConnection.getContext().getOption("user");
             String host = dingoConnection.getContext().getOption("host");
-            return PrivilegeVerify.verify(user, host, schema.name(), tableName);
+            return PrivilegeVerify.verify(user, host, schema.name(), tableName, command);
         } catch (Exception e) {
             return true;
         }
