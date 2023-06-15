@@ -120,7 +120,7 @@ public class LogicalDingoTableScan extends TableScan {
             if (groupSet.cardinality() == 0) {
                 rowCount = 1.0;
             } else {
-                rowCount *= 1.0 - Math.pow(.5, groupSet.cardinality() - 0.5);
+                rowCount *= 1.0 - Math.pow(.8, groupSet.cardinality());
             }
         }
         return rowCount;

@@ -69,7 +69,7 @@ public class DingoAggregateScanRule extends RelRule<RelRule.Config> {
         Config DEFAULT = ImmutableDingoAggregateScanRule.Config.builder()
             .description("DingoAggregateScanRule")
             .operandSupplier(b0 ->
-                b0.operand(DingoAggregate.class).predicate(agg -> agg.getGroupCount() <= 1).oneInput(b1 ->
+                b0.operand(DingoAggregate.class).oneInput(b1 ->
                     b1.operand(DingoTableScan.class).noInputs()
                 )
             )
