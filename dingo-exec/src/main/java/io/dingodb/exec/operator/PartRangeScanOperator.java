@@ -104,11 +104,15 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
         Iterator<Object[]> iterator;
         DingoType realOutputSchema;
         if (coprocessor == null) {
-            iterator = part.scan(startKey, endKey, includeStart, includeEnd);
             realOutputSchema = schema;
+            iterator = part.scan(startKey, endKey, includeStart, includeEnd);
         } else {
             iterator = part.scan(startKey, endKey, includeStart, includeEnd, coprocessor);
-            realOutputSchema = outputSchema;
+            if (!coprocessor.getAggregations().isEmpty()) {
+                realOutputSchema = outputSchema;
+            } else {
+                realOutputSchema = schema;
+            }
         }
         if (log.isDebugEnabled()) {
             iterator = Iterators.filter(
