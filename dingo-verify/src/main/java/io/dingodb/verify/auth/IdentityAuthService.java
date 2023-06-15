@@ -19,6 +19,7 @@ package io.dingodb.verify.auth;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.auth.Certificate;
+import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.net.service.AuthService;
@@ -69,6 +70,9 @@ public class IdentityAuthService implements AuthService<Authentication> {
     }
 
     public boolean identification(UserDefinition userDef, Authentication authentication) {
+        if (authentication.getRole() == DingoRole.EXECUTOR && env.getRole() == DingoRole.EXECUTOR) {
+            return true;
+        }
         if (userDef == null) {
             return false;
         }
