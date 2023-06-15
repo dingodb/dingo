@@ -52,6 +52,7 @@ import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
@@ -202,7 +203,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         env.getPrivilegeGatherMap().put(privilegeGather.key(), privilegeGather);
                         MysqlNettyServer.connections.put(dingoConnection.id, mysqlConnection);
 
-                        loadGlobalVariables();
+                        loadGlobalVariables(dingoConnection);
                         if (StringUtils.isNotBlank(authPacket.database)) {
                             String usedSchema = authPacket.database.toUpperCase();
                             CalciteSchema schema = dingoConnection.getContext().getRootSchema()
@@ -358,22 +359,35 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         }
     }
 
-    public static void loadGlobalVariables() {
+    public static void loadGlobalVariables(DingoConnection dingoConnection) {
         if (ScopeVariables.globalVariables.size() > 0) {
+            String waitTimeout = ScopeVariables.globalVariables.getProperty("wait_timeout");
+            String interactiveTimeout = ScopeVariables.globalVariables.getProperty("interactive_timeout");
+            try {
+                dingoConnection.setClientInfo("wait_timeout", waitTimeout);
+                dingoConnection.setClientInfo("interactive_timeout", interactiveTimeout);
+            } catch (SQLClientInfoException e) {
+            }
             return;
         }
-        Connection connection = getLocalConnection("root", "%");
         Statement statement = null;
         ResultSet resultSet = null;
         try {
-            statement = connection.createStatement();
+            statement = dingoConnection.createStatement();
             resultSet = statement
                 .executeQuery("select variable_name, variable_value from information_schema.global_variables");
             while (resultSet.next()) {
                 String variableName = resultSet.getString("variable_name");
                 String variableValue = resultSet.getString("variable_value");
                 ScopeVariables.globalVariables.put(variableName, variableValue);
+                if ("wait_timeout".equalsIgnoreCase(variableName)
+                    || "interactive_timeout".equalsIgnoreCase(variableName)
+                    || "time_zone".equalsIgnoreCase(variableName)
+                ) {
+                    dingoConnection.setClientInfo(variableName, variableValue);
+                }
             }
+            dingoConnection.setClientInfo(ScopeVariables.globalVariables);
         } catch (Exception e) {
             log.info("load global variables:" + e.getMessage());
         } finally {
@@ -383,9 +397,6 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                 }
                 if (statement != null) {
                     statement.close();
-                }
-                if (connection != null) {
-                    connection.close();
                 }
             } catch (Exception e) {
                 log.error(e.getMessage(),  e);

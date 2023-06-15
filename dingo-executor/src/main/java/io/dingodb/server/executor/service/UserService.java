@@ -17,6 +17,7 @@
 package io.dingodb.server.executor.service;
 
 import com.google.auto.service.AutoService;
+import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
@@ -47,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 
+import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Slf4j
@@ -465,7 +467,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
         KeyValue old = getKeyValue(dbPrivStore, dbPrivCodec, getDbPrivilegeKeys(privilege, schema));
         Object[] dbValues = decode(dbPrivCodec, old);
         if (dbValues == null) {
-            return;
+            throw DINGO_RESOURCE.noDbGrantsForRevoke(privilege.getUser(), privilege.getHost()).ex();
         }
         privilegeList.forEach(priv -> dbValues[PrivilegeDict.dbPrivilegeIndex.get(priv.toLowerCase())] = "N");
 
@@ -483,14 +485,14 @@ public class UserService implements io.dingodb.verify.service.UserService {
     }
 
     public void revokeTablePrivilege(
-        PrivilegeDefinition privilege, String schemaName, String tableNameOwner, List<String> privilegeList
+        PrivilegeDefinition privilege, String schemaName, String tableName, List<String> privilegeList
     ) {
         KeyValue old = getKeyValue(
-            tablePrivStore, tablePrivCodec, getTablePrivilegeKeys(privilege, schemaName, tableNameOwner)
+            tablePrivStore, tablePrivCodec, getTablePrivilegeKeys(privilege, schemaName, tableName)
         );
         Object[] tablesPrivValues = decode(tablePrivCodec, old);
         if (tablesPrivValues == null) {
-            return;
+            throw DINGO_RESOURCE.noTableGrantsForRevoke(privilege.getUser(), privilege.getHost(), tableName).ex();
         }
         String tablePriv = (String) tablesPrivValues[6];
         String[] privileges = tablePriv.split(",");

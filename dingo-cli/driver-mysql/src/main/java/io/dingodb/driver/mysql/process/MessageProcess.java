@@ -76,7 +76,7 @@ public final class MessageProcess {
                 usedSchema = usedSchema.toUpperCase();
                 String user = connection.getContext().getOption("user");
                 String host = connection.getContext().getOption("host");
-                if (!PrivilegeVerify.verify(user, host, usedSchema, null)) {
+                if (!PrivilegeVerify.verify(user, host, usedSchema, null, "use")) {
                     String error =
                         String.format(ErrorCode.ER_ACCESS_DB_DENIED_ERROR.message, user, host, usedSchema);
                     MysqlResponseHandler.responseError(packetId, mysqlConnection.channel,

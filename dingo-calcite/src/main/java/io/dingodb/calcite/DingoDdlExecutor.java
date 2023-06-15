@@ -383,16 +383,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void execute(@NonNull SqlRevoke sqlRevoke, CalcitePrepare.Context context) {
         log.info("DDL execute: {}", sqlRevoke);
-        if (!"*".equals(sqlRevoke.table)) {
-            SqlIdentifier name = sqlRevoke.tableIdentifier;
-            final Pair<MutableSchema, String> schemaTableName
-                = getSchemaAndTableName(name, context);
-            final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
-            final MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
-            if (schema.getTable(tableName) == null) {
-                throw new RuntimeException("table doesn't exist");
-            }
-        }
         sqlRevoke.host = getRealAddress(sqlRevoke.host);
         if (userService.existsUser(UserDefinition.builder().user(sqlRevoke.user)
             .host(sqlRevoke.host).build())) {
@@ -408,7 +398,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         UserDefinition userDefinition = UserDefinition.builder().user(sqlCreateUser.user)
             .host(getRealAddress(sqlCreateUser.host)).build();
         if (userService.existsUser(userDefinition)) {
-            throw new RuntimeException("user is exists");
+            throw DINGO_RESOURCE.createUserFailed(sqlCreateUser.user, sqlCreateUser.host).ex();
         } else {
             userDefinition.setPlugin("mysql_native_password");
             userDefinition.setRequireSsl(sqlCreateUser.requireSsl);
@@ -425,7 +415,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         UserDefinition userDefinition = UserDefinition.builder().user(sqlDropUser.name)
             .host(getRealAddress(sqlDropUser.host)).build();
         if (!userService.existsUser(userDefinition)) {
-            throw new RuntimeException("user does not exist");
+            throw DINGO_RESOURCE.dropUserFailed(sqlDropUser.name, sqlDropUser.host).ex();
         }
         userService.dropUser(userDefinition);
     }
@@ -443,7 +433,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             userDefinition.setPassword(sqlSetPassword.password);
             userService.updateUser(userDefinition);
         } else {
-            throw new RuntimeException("user is not exist");
+            throw DINGO_RESOURCE.NoMatchingRowForUser().ex();
         }
     }
 
@@ -500,7 +490,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             userDefinition.setExpireDays(sqlAlterUser.expireDays);
             userService.updateUser(userDefinition);
         } else {
-            throw new RuntimeException("user is not exist");
+            throw DINGO_RESOURCE.alterUserFailed(sqlAlterUser.user, sqlAlterUser.host).ex();
         }
     }
 

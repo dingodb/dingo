@@ -37,4 +37,22 @@ public interface DingoResource {
     @BaseMessage("Invalid default value for ''{0}''")
     ExInst<DingoSqlException> invalidDefaultValue(String a0);
 
+    @BaseMessage("There is no such grant defined for user ''{0}'' on host ''{1}''")
+    ExInst<DingoSqlException> noDbGrantsForRevoke(String a0, String a1);
+
+    @BaseMessage("There is no such grant defined for user ''{0}'' on host ''{1}'' on table ''{2}''")
+    ExInst<DingoSqlException> noTableGrantsForRevoke(String a0, String a1, String a2);
+
+    @BaseMessage("Operation CREATE USER failed for ''{0}''@''{1}''")
+    ExInst<DingoSqlException> createUserFailed(String a0, String a1);
+
+    @BaseMessage("Operation DROP USER failed for ''{0}''@''{1}''")
+    ExInst<DingoSqlException> dropUserFailed(String a0, String a1);
+
+    @BaseMessage("Operation DROP USER failed for ''{0}''@''{1}''")
+    ExInst<DingoSqlException> alterUserFailed(String a0, String a1);
+
+    @BaseMessage("Can't find any matching row in the user table")
+    ExInst<DingoSqlException> NoMatchingRowForUser();
+
 }

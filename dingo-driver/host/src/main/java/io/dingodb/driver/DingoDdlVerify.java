@@ -29,6 +29,7 @@ import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
+import io.dingodb.calcite.grammar.dql.SqlShowGrants;
 import io.dingodb.common.error.DingoException;
 import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.privilege.DingoSqlAccessEnum;
@@ -119,7 +120,7 @@ public class DingoDdlVerify {
             if (schema == null) {
                 schema = connection.getContext().getDefaultSchemaName();
             }
-            if (!PrivilegeVerify.verify(user, host, schema, null)) {
+            if (!PrivilegeVerify.verify(user, host, schema, null, "getTables")) {
                 throw new RuntimeException(String.format("Access denied for user '%s'@'%s'", user, host));
             }
         } else if (sqlNode instanceof SqlAlterUser) {
@@ -136,6 +137,13 @@ public class DingoDdlVerify {
                 return;
             }
             accessTypes.add(DingoSqlAccessEnum.CREATE_USER);
+        } else if (sqlNode instanceof SqlShowGrants) {
+            SqlShowGrants sqlShowGrants = (SqlShowGrants) sqlNode;
+            if (user.equals(sqlShowGrants.user) && host.equals(sqlShowGrants.host)) {
+                 return;
+            }
+            accessTypes.add(DingoSqlAccessEnum.SELECT);
+            schemaTables = new String[] {"mysql", ""};
         }
 
         if (schemaTables != null) {
