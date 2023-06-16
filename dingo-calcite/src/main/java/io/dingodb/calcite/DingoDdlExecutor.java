@@ -433,7 +433,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             userDefinition.setPassword(sqlSetPassword.password);
             userService.updateUser(userDefinition);
         } else {
-            throw DINGO_RESOURCE.NoMatchingRowForUser().ex();
+            throw DINGO_RESOURCE.noMatchingRowForUser().ex();
         }
     }
 

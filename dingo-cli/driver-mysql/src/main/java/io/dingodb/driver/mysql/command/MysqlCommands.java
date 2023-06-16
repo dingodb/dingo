@@ -71,19 +71,16 @@ public class MysqlCommands {
 
     public void execute(QueryPacket queryPacket,
                         MysqlConnection mysqlConnection) {
-        String sqlCommand = new String(queryPacket.message);
-        String[] sqlItems = sqlCommand.split(";");
+        String sql = new String(queryPacket.message);
         AtomicLong packetId = new AtomicLong(queryPacket.packetId + 1);
-        for (String sql : sqlItems) {
-            if (log.isDebugEnabled()) {
-                log.debug("receive sql:" + sql);
-            }
-            if (mysqlConnection.passwordExpire && !doExpire(mysqlConnection, sql, packetId)) {
-                MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE);
-                return;
-            }
-            executeSingleQuery(sql, packetId, mysqlConnection);
+        if (log.isDebugEnabled()) {
+            log.debug("receive sql:" + sql);
         }
+        if (mysqlConnection.passwordExpire && !doExpire(mysqlConnection, sql, packetId)) {
+            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE);
+            return;
+        }
+        executeSingleQuery(sql, packetId, mysqlConnection);
     }
 
     private boolean doExpire(MysqlConnection mysqlConnection, String sql, AtomicLong packetId) {

@@ -198,7 +198,13 @@ public class MysqlResponseHandler {
         ep.capabilities = MysqlServer.getServerCapabilities();
         ep.errorCode = exception.getErrorCode();
         ep.sqlState = exception.getSQLState();
-        ep.errorMessage = exception.getMessage();
+        if (exception.getMessage() == null) {
+            ep.errorMessage = "";
+        } else if (exception.getMessage().startsWith("Encountered")) {
+            ep.errorMessage = "You have an error in your SQL syntax";
+        } else {
+            ep.errorMessage = exception.getMessage();
+        }
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         ep.write(buffer);
         channel.writeAndFlush(buffer);
