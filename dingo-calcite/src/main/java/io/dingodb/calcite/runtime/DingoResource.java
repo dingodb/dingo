@@ -53,6 +53,9 @@ public interface DingoResource {
     ExInst<DingoSqlException> alterUserFailed(String a0, String a1);
 
     @BaseMessage("Can't find any matching row in the user table")
-    ExInst<DingoSqlException> NoMatchingRowForUser();
+    ExInst<DingoSqlException> noMatchingRowForUser();
+
+    @BaseMessage("You have an error in your SQL syntax")
+    ExInst<DingoSqlException> parseSqlSyntaxError();
 
 }

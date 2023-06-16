@@ -34,7 +34,7 @@ public class MysqlServer {
         flag |= CapabilityFlags.CLIENT_SECURE_CONNECTION.getCode();
         flag |= CapabilityFlags.CLIENT_SSL.getCode();
         //upper
-        flag |= CapabilityFlags.CLIENT_MULTI_STATEMENTS.getCode();
+        //flag |= CapabilityFlags.CLIENT_MULTI_STATEMENTS.getCode();
         flag |= CapabilityFlags.CLIENT_MULTI_RESULTS.getCode();
         flag |= CapabilityFlags.CLIENT_PS_MULTI_RESULTS.getCode();
         //flag |= CapabilityFlags.CLIENT_PLUGIN_AUTH.getCode();
