@@ -101,10 +101,12 @@ public class DeleteRangeOperation implements Operation {
 
     @Override
     public <R> R reduce(Fork context) {
-        List<DeleteRangeResult.DeleteResult> list = Arrays.stream(context.<DeleteRangeResult.DeleteResult[]>result()).collect(Collectors.toList());
-        return (R) new DeleteRangeResult(
-            list.stream().mapToLong(DeleteRangeResult.DeleteResult::getCount).reduce(Long::sum).orElse(0L),
-            list);
+        List<DeleteRangeResult.DeleteResult> resultList = Arrays.stream(context.<DeleteRangeResult.DeleteResult[]>result()).collect(Collectors.toList());
+        long count = resultList.stream()
+            .mapToLong(DeleteRangeResult.DeleteResult::getCount)
+            .filter(__ -> __ > 0)
+            .reduce(Long::sum).orElse(0L);
+        return (R) new DeleteRangeResult(count, resultList);
     }
 
 }
