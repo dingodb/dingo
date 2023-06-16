@@ -180,8 +180,6 @@ public class MysqlCommands {
             MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, sqlException);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            // error packet
-            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ER_NOT_ALLOWED_COMMAND);
         } finally {
             try {
                 if (statement != null) {
@@ -189,7 +187,6 @@ public class MysqlCommands {
                 }
             } catch (SQLException e) {
                 log.error(e.getMessage(), e);
-                MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ER_NOT_ALLOWED_COMMAND);
             }
         }
     }
@@ -279,7 +276,6 @@ public class MysqlCommands {
                             charVal = new String(v.getValue());
                             preparedStatement.setObject(k, charVal);
                     }
-                    log.info("k:" + k + ", v" + v);
                 } catch (SQLException e) {
                     MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
                 }
@@ -287,9 +283,9 @@ public class MysqlCommands {
             if (isSelect) {
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
                     MysqlResponseHandler.responsePrepareExecute(resultSet, packetId, mysqlConnection);
-                } catch (Exception e) {
+                } catch (SQLException e) {
                     log.error(e.getMessage(), e);
-                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ER_UNKNOWN_ERROR);
+                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
                 }
             } else {
                 int affected = preparedStatement.executeUpdate();
@@ -298,6 +294,8 @@ public class MysqlCommands {
             }
         } catch (SQLException e) {
             MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
         }
     }
 
