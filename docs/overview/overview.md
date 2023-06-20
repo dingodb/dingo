@@ -16,23 +16,27 @@
 
 
 1. **Compliant with MySQL-Compatible**
+
    Based on the popular [Apache Calcite](https://calcite.apache.org/) SQL engine, DingoDB can parse, optimize and
    execute standard SQL statements, and is capable to run part of TPC-H and TPC-DS (See [TPC](http://www.tpc.org/))
    queries. DingoDB is also compliant with MySQL Shell and MySQL-JDBC-Driver Client, So you can be seamlessly integrated with web services, BI tools, etc.
 
 2. **Intelligent Optimizer**
+
    DingoDB supports row storage, column storage, and row-column hybrid, while table-level supports multi-partition and 
    replica mechanisms. DingoDB's SQL optimizer provides the optimal execution plan based on the metadata of the data, 
    achieving automatic selection of structed and unstructed.
 
-3. **Real-time high-frequency updates**  
+3. **Real-time high-frequency updates** 
+
    By using [RAFT](https://raft.github.io/) and log-structured key-value storage [RocksDB](https://rocksdb.org/). You can perform high-frequency INSERT, UPDATE, DELETE and short-QUERY while ensuring strong data consistency.  
 
 4. **Multi-replica policy storage**
+
    By using [RAFT](https://raft.github.io/), DingoDB can store key-value and embedded vectors in multi-nodes with replicates. At the same time, with the increase in data scale, it can easily perform horizontal scaling operations on clusters.
 
-5.  **Unified data service**
-   
+5. **Unified data service** 
+
    Integrated analysis service, supporting point query, interactive analysis, and offline acceleration; providing 
    high-concurrency microsecond-level data query and second-level data calculation service capabilities; providing 
    7*24-hour service capabilities.
