@@ -5,6 +5,7 @@ Release Notes
    :maxdepth: 1
    :glob:
 
+   dingodb_0_6_0_rn.md
    dingodb_0_5_0_rn.md
    dingodb_0_4_0_rn.md
    dingodb_0_3_0_rn.md
