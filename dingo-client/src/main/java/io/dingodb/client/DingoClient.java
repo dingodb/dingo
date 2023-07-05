@@ -18,12 +18,17 @@ package io.dingodb.client;
 
 import io.dingodb.client.common.Key;
 import io.dingodb.client.common.Record;
+import io.dingodb.client.common.VectorDistanceArray;
+import io.dingodb.client.common.VectorSearch;
+import io.dingodb.client.common.VectorWithId;
 import io.dingodb.client.operation.impl.*;
 import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.DingoClientException;
+import io.dingodb.sdk.common.index.Index;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.Parameters;
+import io.dingodb.sdk.service.meta.AutoIncrementService;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -34,6 +39,7 @@ public class DingoClient {
     private final String schema;
 
     private OperationService operationService;
+    private IndexService indexService;
 
     public static Integer retryTimes = 20;
 
@@ -47,6 +53,7 @@ public class DingoClient {
 
     public DingoClient(String coordinatorSvr, String schema, Integer retryTimes) {
         operationService = new OperationService(coordinatorSvr, retryTimes);
+        indexService = new IndexService(coordinatorSvr, new AutoIncrementService(coordinatorSvr), retryTimes);
         this.schema = schema;
     }
 
@@ -61,14 +68,26 @@ public class DingoClient {
     }
 
     public boolean createTable(Table table) {
+        return createTable(schema, table);
+    }
+
+    public boolean createTable(String schema, Table table) {
         return operationService.createTable(schema, table.getName(), table);
     }
 
     public boolean dropTable(String tableName) {
-        return operationService.dropTable(schema, tableName);
+        return dropTable(schema, tableName);
+    }
+
+    public boolean dropTable(String schema, String table) {
+        return operationService.dropTable(schema, table);
     }
 
     public Table getTableDefinition(final String tableName) {
+        return getTableDefinition(schema, tableName);
+    }
+
+    public Table getTableDefinition(String schema, String tableName) {
         if (tableName == null || tableName.isEmpty()) {
             throw new DingoClientException("Invalid table name: " + tableName);
         }
@@ -84,6 +103,10 @@ public class DingoClient {
     }
 
     public List<Boolean> upsert(String tableName, List<Record> records) {
+        return upsert(schema, tableName, records);
+    }
+
+    public List<Boolean> upsert(String schema, String tableName, List<Record> records) {
         return operationService.exec(schema, tableName, PutOperation.getInstance(), records);
     }
 
@@ -136,6 +159,10 @@ public class DingoClient {
     }
 
     public List<Record> get(String tableName, List<Key> keys) {
+        return get(schema, tableName, keys);
+    }
+
+    public List<Record> get(String schema, String tableName, List<Key> keys) {
         return operationService.exec(schema, tableName, GetOperation.getInstance(), keys);
     }
 
@@ -188,6 +215,10 @@ public class DingoClient {
     }
 
     public List<Boolean> delete(final String tableName, List<Key> keys) {
+        return delete(schema, tableName, keys);
+    }
+
+    public List<Boolean> delete(String schema, final String tableName, List<Key> keys) {
         return operationService.exec(schema, tableName, DeleteOperation.getInstance(), keys);
     }
 
@@ -202,6 +233,54 @@ public class DingoClient {
             DeleteRangeOperation.getInstance(),
             new OpKeyRange(begin, end, withBegin, withEnd)
         );
+    }
+
+    public boolean createIndex(String indexName, Index index) {
+        return createIndex(schema, indexName, index);
+    }
+
+    public boolean createIndex(String schema, String indexName, Index index) {
+        return indexService.createIndex(schema, indexName, index);
+    }
+
+    public boolean dropIndex(String indexName) {
+        return dropIndex(schema, indexName);
+    }
+
+    public boolean dropIndex(String schema, String indexName) {
+        return indexService.dropIndex(schema, indexName);
+    }
+
+    public Index getIndex(String index) {
+        return getIndex(schema, index);
+    }
+
+    public Index getIndex(String schema, String index) {
+        return indexService.getIndex(schema, index);
+    }
+
+    public List<VectorWithId> vectorAdd(String indexName, List<VectorWithId> vectors) {
+        return vectorAdd(schema, indexName, vectors);
+    }
+
+    public List<VectorWithId> vectorAdd(String schema, String indexName, List<VectorWithId> vectors) {
+        return indexService.exec(schema, indexName, VectorAddOperation.getInstance(), vectors);
+    }
+
+    public VectorDistanceArray vectorSearch(String indexName, VectorSearch vectorSearch) {
+        return vectorSearch(schema, indexName, vectorSearch);
+    }
+
+    public VectorDistanceArray vectorSearch(String schema, String indexName, VectorSearch vectorSearch) {
+        return indexService.exec(schema, indexName, VectorSearchOperation.getInstance(), vectorSearch);
+    }
+
+    public boolean vectorDelete(String indexName, List<Long> ids) {
+        return vectorDelete(schema, indexName, ids);
+    }
+
+    public boolean vectorDelete(String schema, String indexName, List<Long> ids) {
+        return indexService.exec(schema, indexName, VectorDeleteOperation.getInstance(), ids);
     }
 
     public void close() {

@@ -20,6 +20,7 @@ import io.dingodb.client.common.KeyValueCodec;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
+import io.dingodb.sdk.service.index.IndexServiceClient;
 import io.dingodb.sdk.service.store.StoreServiceClient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,11 +32,17 @@ import lombok.Getter;
 public class OperationContext {
 
     private final DingoCommonId tableId;
+    private final DingoCommonId indexId;
     private final DingoCommonId regionId;
     private final Table table;
     private final KeyValueCodec codec;
 
     private final StoreServiceClient storeService;
+    private final IndexServiceClient indexService;
+
+    // vector
+    private final boolean replaceDeleted;
+    private final boolean isUpdate;
 
     private final int seq;
     private final Any parameters;

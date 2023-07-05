@@ -132,16 +132,17 @@ public class OperationService {
         int i = 0;
         List<OperationContext> contexts = new ArrayList<>(fork.getSubTasks().size());
         for (Operation.Task subTask : fork.getSubTasks()) {
-            contexts.add(new OperationContext(
-                table.tableId,
-                subTask.getRegionId(),
-                table.definition,
-                table.codec,
-                storeService,
-                i++,
-                subTask.getParameters(),
-                Any.wrap(fork.result())
-            ));
+            contexts.add(OperationContext.builder()
+                .tableId(table.tableId)
+                .regionId(subTask.getRegionId())
+                .table(table.definition)
+                .codec(table.codec)
+                .storeService(storeService)
+                .seq(i++)
+                .parameters(subTask.getParameters())
+                .result(Any.wrap(fork.result()))
+                .build()
+            );
         }
         return contexts;
     }
