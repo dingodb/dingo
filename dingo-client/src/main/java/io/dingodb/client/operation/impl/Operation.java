@@ -17,6 +17,7 @@
 package io.dingodb.client.operation.impl;
 
 import io.dingodb.client.OperationContext;
+import io.dingodb.client.common.IndexInfo;
 import io.dingodb.client.common.TableInfo;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.table.Table;
@@ -54,9 +55,17 @@ public interface Operation {
         }
     }
 
-    Fork fork(Any parameters, TableInfo tableInfo);
+    default Fork fork(Any parameters, TableInfo tableInfo) {
+        throw new UnsupportedOperationException();
+    }
 
-    Fork fork(OperationContext context, TableInfo tableInfo);
+    default Fork fork(OperationContext context, TableInfo tableInfo) {
+        throw new UnsupportedOperationException();
+    }
+
+    default Fork fork(Any parameters, IndexInfo indexInfo) {
+        throw new UnsupportedOperationException();
+    }
 
     void exec(OperationContext context);
 

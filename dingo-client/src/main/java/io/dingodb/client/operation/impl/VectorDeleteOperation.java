@@ -1,0 +1,78 @@
+/*
+ * Copyright 2021 DataCanvas
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.dingodb.client.operation.impl;
+
+import io.dingodb.client.OperationContext;
+import io.dingodb.client.common.ArrayWrapperList;
+import io.dingodb.client.common.IndexInfo;
+import io.dingodb.sdk.common.DingoCommonId;
+import io.dingodb.sdk.common.utils.Any;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.TreeSet;
+
+public class VectorDeleteOperation implements Operation {
+
+    private final static VectorDeleteOperation INSTANCE = new VectorDeleteOperation();
+
+    public static VectorDeleteOperation getInstance() {
+        return INSTANCE;
+    }
+
+    @Override
+    public Fork fork(Any parameters, IndexInfo indexInfo) {
+        List<Long> ids = parameters.getValue();
+        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
+        Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
+
+        for (int i = 0; i < ids.size(); i++) {
+            Long id = ids.get(i);
+
+            int finalI = i;
+            indexInfo.rangeDistribution.values().forEach(r -> {
+                Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
+                    r.getId(), k -> new Any(new HashMap<>())
+                ).getValue();
+
+                regionParams.put(id, finalI);
+            });
+        }
+        subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
+        return new Fork(new Boolean[ids.size()], subTasks, true);
+    }
+
+    @Override
+    public void exec(OperationContext context) {
+        boolean result = context.getIndexService().vectorDelete(
+            context.getIndexId(),
+            context.getRegionId(),
+            new ArrayList<>(context.<Map<Long, Integer>>parameters().keySet())
+        );
+
+        context.<Map<Long, Integer>>parameters().values().forEach(i -> context.<Boolean[]>result()[i] = result);
+    }
+
+    @Override
+    public <R> R reduce(Fork fork) {
+        return (R) new ArrayWrapperList<>(fork.<Boolean[]>result());
+    }
+}

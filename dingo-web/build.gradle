@@ -27,6 +27,10 @@ jar {
 }
 
 repositories {
+    mavenLocal()
+    maven {
+        url "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+    }
     maven {
         url 'http://maven.aliyun.com/nexus/content/groups/public/'
     }
@@ -36,6 +40,10 @@ repositories {
 dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: 'slf4j'.v()
+    implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
+    implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -48,6 +56,9 @@ dependencies {
     implementation project(":dingo-common")
     implementation project(":dingo-meta-api")
     implementation project(":dingo-verify")
+    implementation project(":dingo-client")
+
+    implementation group: 'io.dingodb', name: 'dingo-sdk', version: 'dingo-sdk'.v()
 
     compileOnly group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     compileOnly group: 'org.mapstruct', name: 'mapstruct-processor', version: 'mapstruct'.v()
@@ -55,6 +66,9 @@ dependencies {
     annotationProcessor group: 'org.mapstruct', name: 'mapstruct-processor', version: 'mapstruct'.v()
 }
 
+bootJar.dependsOn([
+    ':dingo-client:fatJar',
+])
 
 test {
     useJUnitPlatform()
