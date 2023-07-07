@@ -17,76 +17,74 @@
 package io.dingodb.client.operation.impl;
 
 import io.dingodb.client.OperationContext;
-import io.dingodb.client.common.ArrayWrapperList;
 import io.dingodb.client.common.IndexInfo;
 import io.dingodb.client.common.VectorWithId;
 import io.dingodb.sdk.common.DingoCommonId;
-import io.dingodb.sdk.common.index.Index;
 import io.dingodb.sdk.common.utils.Any;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
-public class VectorAddOperation implements Operation {
+public class VectorBatchQueryOperation implements Operation {
 
-    private final static VectorAddOperation INSTANCE = new VectorAddOperation();
+    private final static VectorBatchQueryOperation INSTANCE = new VectorBatchQueryOperation();
 
-    public static VectorAddOperation getInstance() {
+    public static VectorBatchQueryOperation getInstance() {
         return INSTANCE;
     }
 
     @Override
     public Fork fork(Any parameters, IndexInfo indexInfo) {
-        List<VectorWithId> vectors = parameters.getValue();
+        List<Long> ids = parameters.getValue();
         NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
 
-        Index index = indexInfo.index;
-
-        for (int i = 0; i < vectors.size(); i++) {
-            VectorWithId vector = vectors.get(i);
-            if (index.isAutoIncrement()) {
-                long id = indexInfo.autoIncrementService.next(indexInfo.indexId);
-                vector.setId(id);
-            }
-
+        for (int i = 0; i < ids.size(); i++) {
             int finalI = i;
             indexInfo.rangeDistribution.values().forEach(r -> {
-                Map<VectorWithId, Integer> regionParams = subTaskMap.computeIfAbsent(
+                Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
                     r.getId(), k -> new Any(new HashMap<>())
                 ).getValue();
 
-                regionParams.put(vector, finalI);
+                regionParams.put(ids.get(finalI), finalI);
             });
         }
+
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
-        return new Fork(new VectorWithId[vectors.size()], subTasks, true);
+        return new Fork(new VectorWithId[ids.size()], subTasks, false);
     }
 
     @Override
     public void exec(OperationContext context) {
-        boolean result = context.getIndexService().vectorAdd(
+        Map<Long, io.dingodb.sdk.common.vector.VectorWithId> result = new HashMap<>();
+        Map<Long, Integer> parameters = context.parameters();
+        List<Long> ids = new ArrayList<>(parameters.keySet());
+        context.getIndexService().vectorBatchQuery(
             context.getIndexId(),
             context.getRegionId(),
-            context.<Map<VectorWithId, Integer>>parameters().keySet().stream()
-                .map(integer -> new io.dingodb.sdk.common.vector.VectorWithId(
-                    integer.getId(),
-                    integer.getVector(),
-                    integer.getScalarData()))
-                .collect(Collectors.toList()),
-            false,
-            false
-        );
-        context.<Map<VectorWithId, Integer>>parameters().forEach((key, value) -> context.<VectorWithId[]>result()[value] = result ? key : null);
+            ids,
+            true,
+            new ArrayList<>()
+        ).forEach(v -> result.put(v.getId(), v));
+        for (Long id : ids) {
+            io.dingodb.sdk.common.vector.VectorWithId withId = result.get(id);
+            if (withId == null) {
+                continue;
+            }
+            context.<VectorWithId[]>result()[parameters.get(id)] = new VectorWithId(
+                withId.getId(), withId.getVector(), withId.getScalarData()
+            );
+        }
     }
 
     @Override
     public <R> R reduce(Fork fork) {
-        return (R) new ArrayWrapperList<>(fork.<VectorWithId[]>result());
+        return (R) Arrays.asList(fork.<VectorWithId[]>result());
     }
 }

@@ -20,7 +20,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import lombok.experimental.Delegate;
 
 @Getter
 @ToString
@@ -28,7 +27,6 @@ import lombok.experimental.Delegate;
 @AllArgsConstructor
 public class VectorWithDistance {
 
-    @Delegate
     private VectorWithId withId;
     private float distance;
 }

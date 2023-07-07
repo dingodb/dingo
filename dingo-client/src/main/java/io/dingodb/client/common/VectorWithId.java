@@ -16,6 +16,7 @@
 
 package io.dingodb.client.common;
 
+import io.dingodb.sdk.common.vector.ScalarValue;
 import io.dingodb.sdk.common.vector.Vector;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -35,7 +36,12 @@ public class VectorWithId implements Serializable {
 
     @Setter
     private long id;
+    @Setter
     private Vector vector;
-    private Map<String, byte[]> metaData;
+    @Setter
+    private Map<String, ScalarValue> scalarData;
 
+    public VectorWithId(Long id) {
+        this.id = id;
+    }
 }

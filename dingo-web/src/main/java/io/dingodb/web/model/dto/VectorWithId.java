@@ -16,6 +16,7 @@
 
 package io.dingodb.web.model.dto;
 
+import io.dingodb.sdk.common.vector.ScalarValue;
 import io.dingodb.sdk.common.vector.Vector;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -32,5 +33,5 @@ public class VectorWithId {
 
     private long id;
     private Vector vector;
-    private Map<String, String> metaData;
+    private Map<String, ScalarValue> scalarData;
 }

@@ -45,8 +45,8 @@ public class IndexController {
 
     @ApiOperation("Create index")
     @PutMapping("/api/{schema}")
-    public ResponseEntity<Boolean> crateIndex(@PathVariable String schema, @PathVariable String index, @RequestBody IndexDefinition definition) {
-        return ResponseEntity.ok(dingoClient.createIndex(schema, index, definition));
+    public ResponseEntity<Boolean> crateIndex(@PathVariable String schema, @RequestBody IndexDefinition definition) {
+        return ResponseEntity.ok(dingoClient.createIndex(schema, definition.getName(), definition));
     }
 
     @ApiOperation("Drop index")

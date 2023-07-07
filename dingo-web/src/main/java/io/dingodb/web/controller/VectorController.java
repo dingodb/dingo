@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -50,7 +51,10 @@ public class VectorController {
 
     @ApiOperation("Vector add")
     @PutMapping("/api/{schema}/{index}")
-    public ResponseEntity<List<VectorWithId>> vectorAdd(@PathVariable String schema, @PathVariable String index, @RequestBody List<VectorWithId> vectors) {
+    public ResponseEntity<List<VectorWithId>> vectorAdd(
+        @PathVariable String schema,
+        @PathVariable String index,
+        @RequestBody List<VectorWithId> vectors) {
         return ResponseEntity.ok(dingoClient.vectorAdd(schema, index, vectors.stream()
             .map(mapper::mapping)
             .collect(Collectors.toList())).stream().map(mapper::mapping).collect(Collectors.toList()));
@@ -58,20 +62,38 @@ public class VectorController {
 
     @ApiOperation("Vector delete")
     @DeleteMapping("/api/{schema}/{index}")
-    public ResponseEntity<Boolean> vectorDelete(@PathVariable String schema, @PathVariable String index, @RequestBody List<Long> ids) {
+    public ResponseEntity<List<Boolean>> vectorDelete(
+        @PathVariable String schema,
+        @PathVariable String index,
+        @RequestBody List<Long> ids) {
         return ResponseEntity.ok(dingoClient.vectorDelete(schema, index, ids));
     }
 
     @ApiOperation("Vector get")
-    @GetMapping("/api/{schema}/{index}")
-    public ResponseEntity<VectorDistanceArray> vectorGet(@PathVariable String schema, @PathVariable String index, List<Long> ids)  {
-        // todo
-        return ResponseEntity.ok(null);
+    @PostMapping("/api/{schema}/{index}/get")
+    public ResponseEntity<List<io.dingodb.client.common.VectorWithId>> vectorGet(
+        @PathVariable String schema,
+        @PathVariable String index,
+        @RequestBody List<Long> ids) {
+        return ResponseEntity.ok(dingoClient.vectorBatchQuery(schema, index, ids));
+    }
+
+    @ApiOperation("Get max vector id")
+    @GetMapping("/api/{schema}/{index}/id")
+    public ResponseEntity<Long> vectorMaxId(
+        @PathVariable String schema,
+        @PathVariable String index,
+        Boolean isGetMin
+    ) {
+        return ResponseEntity.ok(dingoClient.vectorGetBorderId(schema, index, isGetMin));
     }
 
     @ApiOperation("Vector search")
     @PostMapping("/api/{schema}/{index}")
-    public ResponseEntity<VectorDistanceArray> vectorSearch(@PathVariable String schema, @PathVariable String index, @RequestBody VectorSearch vectorSearch) {
+    public ResponseEntity<VectorDistanceArray> vectorSearch(
+        @PathVariable String schema,
+        @PathVariable String index,
+        @RequestBody VectorSearch vectorSearch) {
         return ResponseEntity.ok(dingoClient.vectorSearch(schema, index, vectorSearch));
     }
 }
