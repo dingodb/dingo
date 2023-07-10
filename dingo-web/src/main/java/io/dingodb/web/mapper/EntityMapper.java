@@ -22,6 +22,7 @@ import io.dingodb.sdk.common.partition.PartitionDetailDefinition;
 import io.dingodb.sdk.common.partition.PartitionRule;
 import io.dingodb.sdk.common.table.ColumnDefinition;
 import io.dingodb.sdk.common.table.TableDefinition;
+import io.dingodb.sdk.common.vector.Vector;
 import io.dingodb.web.model.dto.VectorWithId;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
 @Mapper(unmappedSourcePolicy = ReportingPolicy.IGNORE, unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface EntityMapper {
 
+    @Mapping(source = "partDefinition", target = "partition")
     TableDefinition mapping(io.dingodb.common.table.TableDefinition definition);
 
     @Mapping(source = "typeName", target = "type")
@@ -57,8 +59,16 @@ public interface EntityMapper {
         return new PartitionDetailDefinition(definition.getPartName(), definition.getOperator(), definition.getOperand());
     }
 
-    @Mapping(source = "metaData", target = "metaData")
     io.dingodb.client.common.VectorWithId mapping(VectorWithId withId);
+
+    default Vector mapping(Vector vector) {
+        if (vector.getValueType() == Vector.ValueType.BINARY) {
+            return Vector.getBinaryInstance(vector.getDimension(), vector.getBinaryValues());
+        } else {
+            return Vector.getFloatInstance(vector.getDimension(), vector.getFloatValues());
+        }
+
+    }
 
     default Map<String, byte[]> mapping(Map<String, String> metaData) {
         return metaData.entrySet().stream().collect(
@@ -66,8 +76,7 @@ public interface EntityMapper {
     }
 
     default VectorWithId mapping(io.dingodb.client.common.VectorWithId withId) {
-        return new VectorWithId(withId.getId(), withId.getVector(), withId.getMetaData().entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, __ -> Arrays.toString(__.getValue()))));
+        return new VectorWithId(withId.getId(), withId.getVector(), withId.getScalarData());
     }
 
     default Map<String, String> mapping(Properties properties) {

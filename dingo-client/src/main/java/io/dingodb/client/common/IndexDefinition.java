@@ -36,11 +36,16 @@ public class IndexDefinition implements Index {
     private PartitionRule partitionRule;
     private Integer replica;
     private IndexParameter indexParameter;
-    private boolean isAutoIncrement;
+    private Boolean isAutoIncrement;
     private Long autoIncrement;
 
     @Override
     public Partition indexPartition() {
         return partitionRule;
+    }
+
+    @Override
+    public boolean isAutoIncrement() {
+        return isAutoIncrement;
     }
 }

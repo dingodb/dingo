@@ -275,11 +275,26 @@ public class DingoClient {
         return indexService.exec(schema, indexName, VectorSearchOperation.getInstance(), vectorSearch);
     }
 
-    public boolean vectorDelete(String indexName, List<Long> ids) {
+    public List<VectorWithId> vectorBatchQuery(String schema, String indexName, List<Long> ids) {
+        return indexService.exec(schema, indexName, VectorBatchQueryOperation.getInstance(), ids);
+    }
+
+    /**
+     *
+     * @param schema schema name, default is 'dingo'
+     * @param indexName index name
+     * @param isGetMin if true, get min id, else get max id
+     * @return id
+     */
+    public Long vectorGetBorderId(String schema, String indexName, Boolean isGetMin) {
+        return indexService.exec(schema, indexName, VectorGetIdOperation.getInstance(), isGetMin);
+    }
+
+    public List<Boolean> vectorDelete(String indexName, List<Long> ids) {
         return vectorDelete(schema, indexName, ids);
     }
 
-    public boolean vectorDelete(String schema, String indexName, List<Long> ids) {
+    public List<Boolean> vectorDelete(String schema, String indexName, List<Long> ids) {
         return indexService.exec(schema, indexName, VectorDeleteOperation.getInstance(), ids);
     }
 
