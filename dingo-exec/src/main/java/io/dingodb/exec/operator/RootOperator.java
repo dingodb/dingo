@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.exec.base.Status;
 import io.dingodb.exec.exception.TaskFinException;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
@@ -28,7 +29,6 @@ import io.dingodb.exec.utils.QueueUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -37,6 +37,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 @JsonPropertyOrder({"schema"})
 public final class RootOperator extends SinkOperator {
     public static final Object[] FIN = new Object[0];
+
     @JsonProperty("schema")
     private final DingoType schema;
     private Fin errorFin;
@@ -58,6 +59,9 @@ public final class RootOperator extends SinkOperator {
 
     @Override
     public boolean push(Object[] tuple) {
+        if (getTask().getStatus() != Status.RUNNING) {
+            return false;
+        }
         if (log.isDebugEnabled()) {
             log.debug("Put tuple {} into root queue.", schema.format(tuple));
         }
@@ -82,34 +86,10 @@ public final class RootOperator extends SinkOperator {
         return QueueUtils.forceTake(tupleQueue);
     }
 
-    public @NonNull TupleIterator getIterator() {
-        return new TupleIterator();
-    }
-
-    public class TupleIterator implements Iterator<Object[]> {
-        private Object[] current;
-
-        private TupleIterator() {
-            current = RootOperator.this.popValue();
-        }
-
-        @Override
-        public boolean hasNext() {
-            if (current != RootOperator.FIN) {
-                return true;
-            }
-            if (errorFin != null) {
-                String errorMsg = errorFin.detail();
-                throw new TaskFinException(errorMsg, getTask().getJobId());
-            }
-            return false;
-        }
-
-        @Override
-        public Object[] next() {
-            Object[] result = current;
-            current = RootOperator.this.popValue();
-            return result;
+    public void checkError() {
+        if (errorFin != null) {
+            String errorMsg = errorFin.detail();
+            throw new TaskFinException(errorMsg, getTask().getJobId());
         }
     }
 }

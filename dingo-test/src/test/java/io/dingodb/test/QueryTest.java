@@ -26,7 +26,12 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Random;
+import java.util.UUID;
 
 @Slf4j
 public class QueryTest {
@@ -64,5 +69,32 @@ public class QueryTest {
             "5, Emily, 5.5"
         );
         sqlHelper.clearTable("test2");
+    }
+
+    @Test
+    public void testCancel() throws SQLException, IOException {
+        sqlHelper.execFile("/table-test-create.sql");
+        try (PreparedStatement preparedStatement = sqlHelper.getConnection().prepareStatement("insert into test values(?, ?, ?)")) {
+            Random random = new Random();
+            for (int i = 0; i < 10; ++i) {
+                preparedStatement.setInt(1, i);
+                preparedStatement.setString(2, UUID.randomUUID().toString());
+                preparedStatement.setDouble(3, random.nextDouble());
+                preparedStatement.execute();
+            }
+        }
+        sqlHelper.execFile("/table-test-data.sql");
+        try (Statement statement = sqlHelper.getConnection().createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery("select * from test")) {
+                resultSet.next();
+                statement.cancel();
+                try {
+                    Thread.sleep(1000);
+                    resultSet.next(); // exception thrown.
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 }

@@ -28,6 +28,7 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.Operator;
+import io.dingodb.exec.base.Status;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.TaskStatus;
@@ -44,6 +45,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @JsonPropertyOrder({"jobId", "location", "operators", "runList", "parasType"})
@@ -69,7 +71,7 @@ public final class TaskImpl implements Task {
     @JsonProperty("parasType")
     @Getter
     private final DingoType parasType;
-
+    private final transient AtomicReference<Status> status;
     private Id rootOperatorId = null;
     private CountDownLatch activeThreads = null;
     @Getter
@@ -88,6 +90,7 @@ public final class TaskImpl implements Task {
         this.parasType = parasType;
         this.operators = new HashMap<>();
         this.runList = new LinkedList<>();
+        this.status = new AtomicReference<>(Status.BORN);
     }
 
     @Override
@@ -100,6 +103,11 @@ public final class TaskImpl implements Task {
         assert operators.get(operatorId) instanceof RootOperator
             : "The root operator must be a `RootOperator`.";
         rootOperatorId = operatorId;
+    }
+
+    @Override
+    public Status getStatus() {
+        return status.get();
     }
 
     @Override
@@ -134,37 +142,39 @@ public final class TaskImpl implements Task {
         taskInitStatus.setStatus(isStatusOK);
         taskInitStatus.setTaskId(this.id.toString());
         taskInitStatus.setErrorMsg(statusErrMsg);
-        activeThreads = new CountDownLatch(0);
+        if (taskInitStatus.getStatus()) {
+            status.compareAndSet(Status.BORN, Status.READY);
+        }
     }
 
     @Override
-    public synchronized void run(Object @Nullable [] paras) {
-        if (activeThreads != null) {
-            while (true) {
-                try {
-                    activeThreads.await();
-                    break;
-                } catch (InterruptedException ignored) {
-                }
-            }
+    public void run(Object @Nullable [] paras) {
+        if (status.get() == Status.BORN) {
+            log.error("Run task but check task has init failed: {}", taskInitStatus);
+            final Operator operator = operators.get(runList.get(0));
+            // Try to propagate error by any operator, may not succeed because task init failed.
+            operator.fin(0, FinWithException.of(taskInitStatus));
+            return;
+        }
+        // This method should not be blocked, so schedule a running thread.
+        Executors.execute("task-" + jobId + "-" + id, () -> internalRun(paras));
+    }
+
+    // Synchronize to make sure there are only one thread run this.
+    private synchronized void internalRun(Object @Nullable [] paras) {
+        if (!status.compareAndSet(Status.READY, Status.RUNNING)) {
+            throw new RuntimeException("Status should be READY.");
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("Task {}-{} is starting at {}...", jobId, id, location);
         }
         activeThreads = new CountDownLatch(runList.size());
         setParas(paras);
-        if (log.isDebugEnabled()) {
-            log.debug("Task is starting at {}...", location);
-        }
-        for (Id id : runList) {
-            final Operator operator = operators.get(id);
+        for (Id operatorId : runList) {
+            final Operator operator = operators.get(operatorId);
             assert operator instanceof SourceOperator
                 : "Operators in run list must be source operator.";
-
-            if (taskInitStatus != null && !taskInitStatus.getStatus()) {
-                log.error("Run task but check task has init failed: {}", taskInitStatus.toString());
-                operator.fin(0, FinWithException.of(taskInitStatus));
-                break;
-            }
-
-            Executors.execute("execute-" + jobId + "-" + id, () -> {
+            Executors.execute("operator-" + jobId + "-" + id + "-" + operatorId, () -> {
                 final long startTime = System.currentTimeMillis();
                 try {
                     while (operator.push(0, null)) {
@@ -179,13 +189,28 @@ public final class TaskImpl implements Task {
                     taskStatus.setTaskId(operator.getTask().getId().toString());
                     taskStatus.setErrorMsg(e.toString());
                     operator.fin(0, FinWithException.of(taskStatus));
+                } finally {
+                    if (log.isDebugEnabled()) {
+                        log.debug("TaskImpl run cost: {}ms.", System.currentTimeMillis() - startTime);
+                    }
+                    activeThreads.countDown();
                 }
-                if (log.isDebugEnabled()) {
-                    log.debug("TaskImpl run cost: {}ms.", System.currentTimeMillis() - startTime);
-                }
-                activeThreads.countDown();
             });
         }
+        while (true) {
+            try {
+                activeThreads.await();
+                break;
+            } catch (InterruptedException ignored) {
+            }
+        }
+        status.compareAndSet(Status.RUNNING, Status.READY);
+        status.compareAndSet(Status.STOPPED, Status.READY);
+    }
+
+    @Override
+    public boolean cancel() {
+        return status.compareAndSet(Status.RUNNING, Status.STOPPED);
     }
 
     @Override

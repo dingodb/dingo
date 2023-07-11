@@ -16,6 +16,7 @@
 
 package io.dingodb.driver;
 
+import io.dingodb.exec.base.JobIterator;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +45,13 @@ public class DingoResultSet extends AvaticaResultSet {
         Meta.Frame firstFrame
     ) throws SQLException {
         super(statement, state, signature, resultSetMetaData, timeZone, firstFrame);
+    }
+
+    @Override
+    protected void cancel() {
+        if (iterator instanceof JobIterator) {
+            ((JobIterator) iterator).cancel();
+        }
     }
 
     public Meta.Signature getSignature() {

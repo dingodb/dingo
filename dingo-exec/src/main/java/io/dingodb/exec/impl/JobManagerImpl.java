@@ -26,6 +26,7 @@ import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
+import io.dingodb.exec.base.Status;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.base.TaskManager;
 import io.dingodb.exec.impl.message.CreateTaskMessage;
@@ -99,13 +100,12 @@ public final class JobManagerImpl implements JobManager {
         if (job.isEmpty()) {
             return Collections.emptyIterator();
         }
-        if (!job.isDistributed()) {
+        if (job.getStatus() != Status.READY) {
             distributeTasks(job);
-            job.setDistributed(true);
         }
-        runTasks(job, paras);
+        run(job, paras);
         Task root = job.getRoot();
-        return ((RootOperator) root.getRoot()).getIterator();
+        return new JobIteratorImpl(job, (RootOperator) root.getRoot());
     }
 
     @Override
@@ -134,7 +134,7 @@ public final class JobManagerImpl implements JobManager {
         }
     }
 
-    private void runTasks(@NonNull Job job, Object @Nullable [] paras) {
+    private void run(@NonNull Job job, Object @Nullable [] paras) {
         for (Task task : job.getTasks().values()) {
             if (task.getRoot() != null) {
                 task.run(paras);
@@ -146,9 +146,10 @@ public final class JobManagerImpl implements JobManager {
 
     private void sendTaskMessage(@NonNull Task task, Message message) {
         Location location = task.getLocation();
-        @SuppressWarnings("resource")
-        Channel channel = channelMap.computeIfAbsent(location, l ->
-            Services.openNewSysChannel(l.getHost(), l.getPort()));
+        Channel channel = channelMap.computeIfAbsent(
+            location,
+            l -> Services.openNewSysChannel(l.getHost(), l.getPort())
+        );
         channel.setCloseListener(__ -> channelMap.remove(location));
         channel.send(message);
     }

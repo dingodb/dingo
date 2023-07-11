@@ -30,7 +30,6 @@ import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Task;
 import io.dingodb.expr.json.runtime.Parser;
 import lombok.Getter;
-import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -55,9 +54,6 @@ public final class JobImpl implements Job {
     private final DingoType parasType;
 
     private Id rootTaskId = null;
-    @Getter
-    @Setter
-    private transient boolean distributed = false;
 
     @JsonCreator
     public JobImpl(@JsonProperty("jobId") Id jobId) {

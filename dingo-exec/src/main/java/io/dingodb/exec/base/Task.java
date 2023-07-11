@@ -37,6 +37,8 @@ public interface Task {
 
     Map<Id, Operator> getOperators();
 
+    Status getStatus();
+
     default String getHost() {
         return getLocation().getHost();
     }
@@ -53,9 +55,17 @@ public interface Task {
 
     void init();
 
+    /**
+     * Run the task. This method should not be blocked.
+     *
+     * @param paras the paras for this run
+     */
     void run(Object @Nullable [] paras);
 
+    boolean cancel();
+
     default void destroy() {
+        cancel(); // stop the task.
         getOperators().values().forEach(Operator::destroy);
     }
 
