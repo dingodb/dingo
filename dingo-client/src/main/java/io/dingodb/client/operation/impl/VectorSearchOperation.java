@@ -77,7 +77,8 @@ public class VectorSearchOperation implements Operation {
                 vectorSearch.getParameter().isWithoutVectorData(),
                 vectorSearch.getParameter().isWithScalarData(),
                 vectorSearch.getParameter().getSelectedKeys(),
-                vectorSearch.getParameter().getSearch())
+                vectorSearch.getParameter().getSearch(),
+                vectorSearch.getParameter().isUseScalarFilter())
         );
         NavigableSet<VectorWithDistance> distanceList = distances.stream().map(d -> new VectorWithDistance(
             d.getId(), d.getVector(), d.getScalarData(), d.getDistance()
