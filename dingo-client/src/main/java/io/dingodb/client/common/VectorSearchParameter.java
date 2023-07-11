@@ -33,4 +33,6 @@ public class VectorSearchParameter {
     private boolean withScalarData;
     private List<String> selectedKeys;
     private Search search;
+
+    private boolean useScalarFilter;
 }
