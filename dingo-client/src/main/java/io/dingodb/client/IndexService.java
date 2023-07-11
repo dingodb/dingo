@@ -17,12 +17,18 @@
 package io.dingodb.client;
 
 import io.dingodb.client.common.IndexInfo;
+import io.dingodb.client.common.KeyValueCodec;
 import io.dingodb.client.operation.impl.Operation;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.DingoCommonId;
+import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
 import io.dingodb.sdk.common.index.Index;
+import io.dingodb.sdk.common.serial.schema.DingoSchema;
+import io.dingodb.sdk.common.serial.schema.LongSchema;
 import io.dingodb.sdk.common.table.RangeDistribution;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.ByteArrayUtils;
@@ -33,10 +39,13 @@ import io.dingodb.sdk.service.meta.MetaServiceClient;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+
+import static io.dingodb.sdk.common.utils.EntityConversion.mapping;
 
 @Slf4j
 public class IndexService {
@@ -45,6 +54,8 @@ public class IndexService {
     private final IndexServiceClient indexService;
     private final AutoIncrementService autoIncrementService;
     private final int retryTimes;
+    private final DingoSchema<Long> schema = new LongSchema(0);
+    private final DingoType dingoType = new LongType(true);
 
     public IndexService(String coordinatorSvr, AutoIncrementService autoIncrementService, int retryTimes) {
         this.rootMetaService = new MetaServiceClient(coordinatorSvr);
@@ -53,29 +64,32 @@ public class IndexService {
         this.retryTimes = retryTimes;
     }
 
-    public <R> R exec(String schemaName, String indexName, Operation operation, Object parameters) {
+    public <R> R exec(String schemaName, String indexName, Operation operation, Object parameters, VectorContext context) {
         MetaServiceClient metaService = getSubMetaService(schemaName);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
             metaService.getIndexRangeDistribution(indexName);
+        schema.setIsKey(true);
         DingoCommonId indexId = metaService.getIndexId(indexName);
         Index index = metaService.getIndex(indexName);
-        IndexInfo indexInfo = new IndexInfo(schemaName, indexName, indexId, index, this.autoIncrementService, parts);
+        KeyValueCodec codec = new KeyValueCodec(
+            new DingoKeyValueCodec(indexId.entityId(), Collections.singletonList(schema)), dingoType);
+        IndexInfo indexInfo = new IndexInfo(schemaName, indexName, indexId, index, codec, this.autoIncrementService, parts);
         Operation.Fork fork = operation.fork(Any.wrap(parameters), indexInfo);
 
-        exec(indexInfo, operation, fork);
+        exec(indexInfo, operation, fork, context);
 
         return operation.reduce(fork);
     }
 
-    private void exec(IndexInfo indexInfo, Operation operation, Operation.Fork fork) {
-        exec(indexInfo, operation, fork, retryTimes).ifPresent(e -> {
+    private void exec(IndexInfo indexInfo, Operation operation, Operation.Fork fork, VectorContext context) {
+        exec(indexInfo, operation, fork, retryTimes, context).ifPresent(e -> {
             if (!fork.isIgnoreError()) {
                 throw new DingoClientException(-1, e);
             }
         });
     }
 
-    private Optional<Throwable> exec(IndexInfo indexInfo, Operation opeartion, Operation.Fork fork, int retry) {
+    private Optional<Throwable> exec(IndexInfo indexInfo, Operation opeartion, Operation.Fork fork, int retry, VectorContext vectorContext) {
         if (retry <= 0) {
             return Optional.of(new DingoClientException(-1, "Exceeded the retry limit for performing " + opeartion.getClass()));
         }
@@ -89,6 +103,7 @@ public class IndexService {
                 .seq(i++)
                 .parameters(subTask.getParameters())
                 .result(Any.wrap(fork.result()))
+                .vectorContext(vectorContext)
                 .build());
         }
 
@@ -124,6 +139,11 @@ public class IndexService {
     public Index getIndex(String schema, String name) {
         MetaServiceClient metaService = getSubMetaService(schema);
         return metaService.getIndex(name);
+    }
+
+    public List<Index> getIndexes(String schema) {
+        MetaServiceClient metaService = getSubMetaService(schema);
+        return new ArrayList<>(metaService.getIndexes(mapping(metaService.id())).values());
     }
 
     private MetaServiceClient getSubMetaService(String schemaName) {

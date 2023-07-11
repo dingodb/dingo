@@ -69,8 +69,8 @@ public class VectorBatchQueryOperation implements Operation {
             context.getIndexId(),
             context.getRegionId(),
             ids,
-            true,
-            new ArrayList<>()
+            context.getVectorContext().isWithoutVectorData(),
+            context.getVectorContext().getSelectedKeys()
         ).forEach(v -> result.put(v.getId(), v));
         for (Long id : ids) {
             io.dingodb.sdk.common.vector.VectorWithId withId = result.get(id);

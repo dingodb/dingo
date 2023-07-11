@@ -79,8 +79,8 @@ public class VectorAddOperation implements Operation {
                     integer.getVector(),
                     integer.getScalarData()))
                 .collect(Collectors.toList()),
-            false,
-            false
+            context.getVectorContext().isWithoutVectorData(),
+            context.getVectorContext().isUpdate()
         );
         context.<Map<VectorWithId, Integer>>parameters().forEach((key, value) -> context.<VectorWithId[]>result()[value] = result ? key : null);
     }

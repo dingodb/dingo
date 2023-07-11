@@ -14,23 +14,26 @@
  * limitations under the License.
  */
 
-package io.dingodb.client.common;
+package io.dingodb.web.model.dto;
 
-import io.dingodb.sdk.common.vector.Search;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 
 @Getter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class VectorSearchParameter {
+public class VectorGet {
 
-    private Integer topN;
-    private boolean withoutVectorData;
-    private boolean withScalarData;
-    private List<String> selectedKeys;
-    private Search search;
+    private List<Long> ids;
+    @Value("false")
+    private Boolean withoutVectorData;
+    @Value("false")
+    private Boolean withScalarData;
+    private List<String> keys;
 }

@@ -23,6 +23,7 @@ import io.dingodb.sdk.common.utils.ByteArrayUtils;
 import io.dingodb.sdk.service.meta.AutoIncrementService;
 import lombok.AllArgsConstructor;
 
+import java.nio.ByteBuffer;
 import java.util.NavigableMap;
 
 @AllArgsConstructor
@@ -33,7 +34,12 @@ public class IndexInfo {
     public final DingoCommonId indexId;
 
     public final Index index;
+    public final KeyValueCodec codec;
     public final AutoIncrementService autoIncrementService;
 
     public final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution;
+
+    public DingoCommonId calcRegionId(byte[] key) {
+        return rangeDistribution.floorEntry(new ByteArrayUtils.ComparableByteArray(key)).getValue().getId();
+    }
 }
