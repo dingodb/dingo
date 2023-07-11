@@ -40,9 +40,7 @@ public class OperationContext {
     private final StoreServiceClient storeService;
     private final IndexServiceClient indexService;
 
-    // vector
-    private final boolean replaceDeleted;
-    private final boolean isUpdate;
+    private final VectorContext vectorContext;
 
     private final int seq;
     private final Any parameters;

@@ -36,6 +36,11 @@ public class KeyValueCodec implements io.dingodb.sdk.common.codec.KeyValueCodec 
     @Getter
     private final DingoType dingoType;
 
+    public KeyValueCodec(io.dingodb.sdk.common.codec.KeyValueCodec keyValueCodec, DingoType dingoType) {
+        this.keyValueCodec = keyValueCodec;
+        this.dingoType = dingoType;
+    }
+
     public KeyValueCodec(io.dingodb.sdk.common.codec.KeyValueCodec keyValueCodec, Table table) {
         this.keyValueCodec = keyValueCodec;
         this.dingoType = getDingoType(table);

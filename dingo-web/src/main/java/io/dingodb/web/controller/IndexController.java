@@ -32,6 +32,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Api("Index")
 @RestController
 @RequestMapping("/index")
@@ -59,5 +62,11 @@ public class IndexController {
     @GetMapping("/api/{schema}/{index}")
     public ResponseEntity<Index> get(@PathVariable String schema, @PathVariable String index) {
         return ResponseEntity.ok(dingoClient.getIndex(schema, index));
+    }
+
+    @ApiOperation("Get index names")
+    @GetMapping("/api/{schema}")
+    public ResponseEntity<List<String>> getNames(@PathVariable String schema) {
+        return ResponseEntity.ok(dingoClient.getIndexes(schema).stream().map(Index::getName).collect(Collectors.toList()));
     }
 }

@@ -16,10 +16,14 @@
 
 package io.dingodb.client.common;
 
+import io.dingodb.sdk.common.vector.ScalarValue;
+import io.dingodb.sdk.common.vector.Vector;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+
+import java.util.Map;
 
 @Getter
 @ToString
@@ -27,6 +31,8 @@ import lombok.ToString;
 @AllArgsConstructor
 public class VectorWithDistance {
 
-    private VectorWithId withId;
+    private long id;
+    private Vector vector;
+    private Map<String, ScalarValue> scalarData;
     private float distance;
 }

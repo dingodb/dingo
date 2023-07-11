@@ -20,6 +20,7 @@ import io.dingodb.client.DingoClient;
 import io.dingodb.client.common.VectorDistanceArray;
 import io.dingodb.client.common.VectorSearch;
 import io.dingodb.web.mapper.EntityMapper;
+import io.dingodb.web.model.dto.VectorGet;
 import io.dingodb.web.model.dto.VectorWithId;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -32,7 +33,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -74,8 +74,15 @@ public class VectorController {
     public ResponseEntity<List<io.dingodb.client.common.VectorWithId>> vectorGet(
         @PathVariable String schema,
         @PathVariable String index,
-        @RequestBody List<Long> ids) {
-        return ResponseEntity.ok(dingoClient.vectorBatchQuery(schema, index, ids));
+        @RequestBody VectorGet vectorGet
+        ) {
+        return ResponseEntity.ok(dingoClient.vectorBatchQuery(
+            schema,
+            index,
+            vectorGet.getIds(),
+            vectorGet.getWithoutVectorData(),
+            vectorGet.getWithScalarData(),
+            vectorGet.getKeys()));
     }
 
     @ApiOperation("Get max vector id")

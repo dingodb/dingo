@@ -14,23 +14,25 @@
  * limitations under the License.
  */
 
-package io.dingodb.client.common;
+package io.dingodb.client;
 
-import io.dingodb.sdk.common.vector.Search;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+@Builder
 @Getter
-@NoArgsConstructor
 @AllArgsConstructor
-public class VectorSearchParameter {
+public class VectorContext {
 
-    private Integer topN;
-    private boolean withoutVectorData;
-    private boolean withScalarData;
-    private List<String> selectedKeys;
-    private Search search;
+    // vector add
+    private final boolean replaceDeleted;
+    private final boolean isUpdate;
+
+    // vector search
+    private final boolean withoutVectorData;
+    private final boolean withScalarData;
+    private final List<String> selectedKeys;
 }

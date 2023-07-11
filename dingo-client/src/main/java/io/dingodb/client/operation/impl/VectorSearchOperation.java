@@ -74,12 +74,13 @@ public class VectorSearchOperation implements Operation {
                 vectorSearch.getVector().getScalarData()),
             new VectorSearchParameter(
                 vectorSearch.getParameter().getTopN(),
-                vectorSearch.getParameter().isWithAllMetaData(),
-                vectorSearch.getParameter().getSelectedKeys())
+                vectorSearch.getParameter().isWithoutVectorData(),
+                vectorSearch.getParameter().isWithScalarData(),
+                vectorSearch.getParameter().getSelectedKeys(),
+                vectorSearch.getParameter().getSearch())
         );
         NavigableSet<VectorWithDistance> distanceList = distances.stream().map(d -> new VectorWithDistance(
-            new io.dingodb.client.common.VectorWithId(d.getId(), d.getVector(), d.getScalarData()),
-            d.getDistance()
+            d.getId(), d.getVector(), d.getScalarData(), d.getDistance()
         )).collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(VectorWithDistance::getDistance))));
 
         context.<VectorDistanceArray[]>result()[0] = new VectorDistanceArray(distanceList);

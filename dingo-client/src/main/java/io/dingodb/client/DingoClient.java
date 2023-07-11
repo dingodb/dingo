@@ -259,12 +259,22 @@ public class DingoClient {
         return indexService.getIndex(schema, index);
     }
 
+    public List<Index> getIndexes(String schema) {
+        return indexService.getIndexes(schema);
+    }
+
     public List<VectorWithId> vectorAdd(String indexName, List<VectorWithId> vectors) {
         return vectorAdd(schema, indexName, vectors);
     }
 
     public List<VectorWithId> vectorAdd(String schema, String indexName, List<VectorWithId> vectors) {
-        return indexService.exec(schema, indexName, VectorAddOperation.getInstance(), vectors);
+        return indexService.exec(schema, indexName, VectorAddOperation.getInstance(), vectors, VectorContext.builder().build());
+    }
+
+    public List<VectorWithId> vectorAdd(String schema, String indexName, List<VectorWithId> vectors,
+                                        Boolean replaceDeleted, Boolean isUpdate) {
+        VectorContext context = VectorContext.builder().replaceDeleted(replaceDeleted).isUpdate(isUpdate).build();
+        return indexService.exec(schema, indexName, VectorAddOperation.getInstance(), vectors, context);
     }
 
     public VectorDistanceArray vectorSearch(String indexName, VectorSearch vectorSearch) {
@@ -272,11 +282,19 @@ public class DingoClient {
     }
 
     public VectorDistanceArray vectorSearch(String schema, String indexName, VectorSearch vectorSearch) {
-        return indexService.exec(schema, indexName, VectorSearchOperation.getInstance(), vectorSearch);
+        return indexService.exec(schema, indexName, VectorSearchOperation.getInstance(), vectorSearch, VectorContext.builder().build());
     }
 
-    public List<VectorWithId> vectorBatchQuery(String schema, String indexName, List<Long> ids) {
-        return indexService.exec(schema, indexName, VectorBatchQueryOperation.getInstance(), ids);
+    public List<VectorWithId> vectorBatchQuery(String schema, String indexName, List<Long> ids,
+                                               boolean withoutVectorData,
+                                               boolean withScalarData,
+                                               List<String> selectedKeys) {
+        VectorContext vectorContext = VectorContext.builder()
+            .withoutVectorData(withoutVectorData)
+            .withScalarData(withScalarData)
+            .selectedKeys(selectedKeys)
+            .build();
+        return indexService.exec(schema, indexName, VectorBatchQueryOperation.getInstance(), ids, vectorContext);
     }
 
     /**
@@ -287,7 +305,7 @@ public class DingoClient {
      * @return id
      */
     public Long vectorGetBorderId(String schema, String indexName, Boolean isGetMin) {
-        return indexService.exec(schema, indexName, VectorGetIdOperation.getInstance(), isGetMin);
+        return indexService.exec(schema, indexName, VectorGetIdOperation.getInstance(), isGetMin, VectorContext.builder().build());
     }
 
     public List<Boolean> vectorDelete(String indexName, List<Long> ids) {
@@ -295,7 +313,7 @@ public class DingoClient {
     }
 
     public List<Boolean> vectorDelete(String schema, String indexName, List<Long> ids) {
-        return indexService.exec(schema, indexName, VectorDeleteOperation.getInstance(), ids);
+        return indexService.exec(schema, indexName, VectorDeleteOperation.getInstance(), ids, VectorContext.builder().build());
     }
 
     public void close() {
