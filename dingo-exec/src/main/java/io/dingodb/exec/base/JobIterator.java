@@ -16,30 +16,16 @@
 
 package io.dingodb.exec.base;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import lombok.EqualsAndHashCode;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 
-@EqualsAndHashCode(of = {"value"})
-public final class Id implements Comparable<Id> {
-    public static Id NULL = new Id("");
+import java.util.Iterator;
 
-    @JsonValue
-    private final String value;
+@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+public abstract class JobIterator implements Iterator<Object[]> {
+    private final Job job;
 
-    @JsonCreator
-    public Id(String value) {
-        this.value = value;
-    }
-
-    @Override
-    public int compareTo(@NonNull Id obj) {
-        return value.compareTo(obj.value);
-    }
-
-    @Override
-    public String toString() {
-        return value;
+    public boolean cancel() {
+        return job.cancel();
     }
 }

@@ -41,10 +41,6 @@ public interface Job {
 
     void markRoot(Id taskId);
 
-    boolean isDistributed();
-
-    void setDistributed(boolean distributed);
-
     default Task getByLocation(Location location) {
         List<Task> tasks = getTasks().values().stream()
             .filter(t -> t.getLocation().equals(location))
@@ -63,5 +59,13 @@ public interface Job {
 
     default boolean isEmpty() {
         return getTasks().isEmpty();
+    }
+
+    default Status getStatus() {
+        return getRoot().getStatus();
+    }
+
+    default boolean cancel() {
+        return getRoot().cancel();
     }
 }
