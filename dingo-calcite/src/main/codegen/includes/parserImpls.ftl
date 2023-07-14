@@ -432,25 +432,27 @@ Number number(): {
 	 (
         t = <UNSIGNED_INTEGER_LITERAL>
         {
-            if(nativeNumbers) {
-                return new Double(t.image);
-            } else {
-                return new BigInteger(substringBefore(t.image, '.'));
-            }
+                    return new BigInteger(t.image);
         }
       ) | (
           t = <DECIMAL_NUMERIC_LITERAL>
           {
-              if(nativeNumbers) {
+
                   return new Double(t.image);
-              } else {
-                  return new BigInteger(substringBefore(t.image, '.'));
-              }
           }
        ) | (
          <MINUS>
          n = number() {
-            return ((BigInteger) n).multiply(new BigInteger("-1"));
+            if (n instanceof BigInteger) {
+               BigInteger val = (BigInteger)n;
+               return val.multiply(new BigInteger("-1"));
+            } else if (n instanceof Double) {
+               Double val = (Double)n;
+               return val * -1;
+            } else {
+               int val = n.intValue();
+               return val * -1;
+            }
           }
       )
 }
@@ -984,5 +986,24 @@ SqlAlterUser SqlAlterUser(Span s, String scope): {
     [ <ACCOUNT> [ <LOCK> { lock = "Y";} ] [ <UNLOCK> { lock = "N"; } ] ]
     {
       return new SqlAlterUser(user, password, host, requireSsl, s.end(this), lock, expireDays);
+    }
+}
+
+/*
+ * Sql Truncate
+*/
+
+SqlNode SqlTruncate() :
+{
+    final boolean ifExists;
+    final SqlIdentifier id;
+}
+{
+    <TRUNCATE>
+    [
+      <TABLE>
+    ]
+    id = CompoundIdentifier() {
+        return new SqlTruncate(getPos(), id);
     }
 }

@@ -34,7 +34,6 @@ import ${importStr};
 </#list>
 
 import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.CalciteContextException;
@@ -48,7 +47,6 @@ import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlCollation;
 import org.apache.calcite.sql.SqlCollectionTypeNameSpec;
 import org.apache.calcite.sql.SqlDataTypeSpec;
-import org.apache.calcite.sql.SqlDateLiteral;
 import org.apache.calcite.sql.SqlDelete;
 import org.apache.calcite.sql.SqlDescribeSchema;
 import org.apache.calcite.sql.SqlDescribeTable;
@@ -56,13 +54,11 @@ import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainFormat;
 import org.apache.calcite.sql.SqlExplainLevel;
-import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlHint;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlInsertKeyword;
-import org.apache.calcite.sql.SqlIntervalLiteral;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlJdbcDataTypeName;
 import org.apache.calcite.sql.SqlJdbcFunctionCall;
@@ -94,8 +90,6 @@ import org.apache.calcite.sql.SqlSelectKeyword;
 import org.apache.calcite.sql.SqlSetOption;
 import org.apache.calcite.sql.SqlSnapshot;
 import org.apache.calcite.sql.SqlTableRef;
-import org.apache.calcite.sql.SqlTimeLiteral;
-import org.apache.calcite.sql.SqlTimestampLiteral;
 import org.apache.calcite.sql.SqlTypeNameSpec;
 import org.apache.calcite.sql.SqlUnnestOperator;
 import org.apache.calcite.sql.SqlUnpivot;
@@ -120,7 +114,6 @@ import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.Glossary;
-import org.apache.calcite.util.NlsString;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.SourceStringReader;
 import org.apache.calcite.util.Util;
@@ -134,7 +127,6 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -150,7 +142,7 @@ import static org.apache.calcite.util.Static.RESOURCE;
 public class ${parser.class} extends SqlAbstractParserImpl
 {
     private static final Logger LOGGER = CalciteTrace.getParserTracer();
-    private boolean nativeNumbers = false;
+
     // Can't use quoted literal because of a bug in how JavaCC translates
     // backslash-backslash.
     private static final char BACKSLASH = 0x5c;
@@ -185,11 +177,7 @@ public class ${parser.class} extends SqlAbstractParserImpl
           return parser;
         }
     };
-    private static String substringBefore(String str, char delim) {
-		int pos = str.indexOf(delim);
-		if(pos == -1) return str;
-		return str.substring(0, pos);
-	}
+
     public SqlParseException normalizeException(Throwable ex) {
         try {
             if (ex instanceof ParseException) {
@@ -1132,7 +1120,7 @@ SqlNode SqlStmt() :
     (
 <#-- Add methods to parse additional statements here -->
 <#list (parser.statementParserMethods!) as method>
-        LOOKAHEAD(2) stmt = ${method}
+        LOOKAHEAD(2) stmt = ${method}()
     |
 </#list>
         stmt = SqlSetOption(Span.of(), null)
@@ -1166,24 +1154,6 @@ SqlNode SqlStmt() :
         stmt = SqlMerge()
     |
         stmt = SqlProcedureCall()
-    |
-        stmt = SqlGrant()
-    |
-        stmt = SqlRevoke()
-    |
-        stmt = SqlFlush()
-    |
-        stmt = SqlShow()
-    |
-        stmt = SqlCommit()
-    |
-        stmt = SqlRollback()
-    |
-        stmt = SqlUseSchema()
-    |
-        stmt = SqlPrepare()
-    |
-        stmt = SqlExecute()
     )
     {
         return stmt;
@@ -1328,25 +1298,6 @@ SqlNode TableHints(SqlIdentifier tableName) :
         final SqlParserPos pos = Span.of(tableName).addAll(hints).end(this);
         final SqlNodeList hintList = new SqlNodeList(hints, pos);
         return new SqlTableRef(pos, tableName, hintList);
-    }
-}
-
-/*
- * Sql Truncate
-*/
-
-SqlNode SqlTruncate() :
-{
-    final boolean ifExists;
-    final SqlIdentifier id;
-}
-{
-    <TRUNCATE>
-    [
-      <TABLE>
-    ]
-    id = CompoundIdentifier() {
-        return new SqlTruncate(getPos(), id);
     }
 }
 
@@ -3256,11 +3207,11 @@ SqlNode PatternTerm() :
 
 SqlNode PatternFactor() :
 {
-    SqlNode e;
-    SqlNode extra;
+    SqlNode e = null;
+    SqlNode extra = null;
     SqlLiteral startNum = null;
     SqlLiteral endNum = null;
-    SqlLiteral reluctant = SqlLiteral.createBoolean(false, SqlParserPos.ZERO);
+    SqlLiteral reluctant = null;
 }
 {
     e = PatternPrimary()
@@ -7644,7 +7595,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < ABS: "ABS" >
 |   < ABSENT: "ABSENT" >
 |   < ABSOLUTE: "ABSOLUTE" >
-|   < ACCOUNT: "ACCOUNT" >
 |   < ACTION: "ACTION" >
 |   < ADA: "ADA" >
 |   < ADD: "ADD" >
@@ -7676,7 +7626,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < ATTRIBUTE: "ATTRIBUTE" >
 |   < ATTRIBUTES: "ATTRIBUTES" >
 |   < AUTHORIZATION: "AUTHORIZATION" >
-|   < AUTO_INCREMENT: "AUTO_INCREMENT" >
 |   < AVG: "AVG" >
 |   < BEFORE: "BEFORE" >
 |   < BEGIN: "BEGIN" >
@@ -7729,7 +7678,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < COLLATION_SCHEMA: "COLLATION_SCHEMA" >
 |   < COLLECT: "COLLECT" >
 |   < COLUMN: "COLUMN" >
-|   < COLUMNS: "COLUMNS" >
 |   < COLUMN_NAME: "COLUMN_NAME" >
 |   < COMMAND_FUNCTION: "COMMAND_FUNCTION" >
 |   < COMMAND_FUNCTION_CODE: "COMMAND_FUNCTION_CODE" >
@@ -7776,7 +7724,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < CYCLE: "CYCLE" >
 |   < DATA: "DATA" >
 |   < DATABASE: "DATABASE" >
-|   < DATABASES: "DATABASES" >
 |   < DATE: "DATE" >
 |   < DATE_TRUNC: "DATE_TRUNC" >
 |   < DATETIME: "DATETIME" >
@@ -7812,7 +7759,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < DISCONNECT: "DISCONNECT" >
 |   < DISPATCH: "DISPATCH" >
 |   < DISTINCT: "DISTINCT" >
-|   < DISTRIBUTION: "DISTRIBUTION" >
 |   < DOMAIN: "DOMAIN" >
 |   < DOT_FORMAT: "DOT" >
 |   < DOUBLE: "DOUBLE" >
@@ -7831,7 +7777,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < END_EXEC: "END-EXEC" >
 |   < END_FRAME: "END_FRAME" >
 |   < END_PARTITION: "END_PARTITION" >
-|   < ENGINE: "ENGINE" >
 |   < EPOCH: "EPOCH" >
 |   < EQUALS: "EQUALS" >
 |   < ERROR: "ERROR" >
@@ -7843,10 +7788,8 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < EXCLUDING: "EXCLUDING" >
 |   < EXEC: "EXEC" >
 |   < EXECUTE: "EXECUTE" >
-|   < EXECUTOR: "EXECUTOR" >
 |   < EXISTS: "EXISTS" >
 |   < EXP: "EXP" >
-|   < EXPIRE: "EXPIRE" >
 |   < EXPLAIN: "EXPLAIN" >
 |   < EXTEND: "EXTEND" >
 |   < EXTERNAL: "EXTERNAL" >
@@ -7859,7 +7802,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < FIRST_VALUE: "FIRST_VALUE">
 |   < FLOAT: "FLOAT" >
 |   < FLOOR: "FLOOR" >
-|   < FLUSH: "FLUSH" >
 |   < FOLLOWING: "FOLLOWING" >
 |   < FOR: "FOR" >
 |   < FORMAT: "FORMAT" >
@@ -7884,7 +7826,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < GOTO: "GOTO" >
 |   < GRANT: "GRANT" >
 |   < GRANTED: "GRANTED" >
-|   < GRANTS: "GRANTS" >
 |   < GROUP: "GROUP" >
 |   < GROUP_CONCAT: "GROUP_CONCAT" >
 |   < GROUPING: "GROUPING" >
@@ -7895,7 +7836,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < HOP: "HOP" >
 |   < HOUR: "HOUR" >
 |   < HOURS: "HOURS" >
-|   < IDENTIFIED: "IDENTIFIED" >
 |   < IDENTITY: "IDENTITY" >
 |   < IGNORE: "IGNORE" >
 |   < ILIKE: "ILIKE" >
@@ -7907,7 +7847,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < INCLUDE: "INCLUDE" >
 |   < INCLUDING: "INCLUDING" >
 |   < INCREMENT: "INCREMENT" >
-|   < INDEX: "INDEX" >
 |   < INDICATOR: "INDICATOR" >
 |   < INITIAL: "INITIAL" >
 |   < INITIALLY: "INITIALLY" >
@@ -7957,15 +7896,14 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < LEVEL: "LEVEL" >
 |   < LIBRARY: "LIBRARY" >
 |   < LIKE: "LIKE" >
-|   < LIKE_REGEX: "LIKE_REGEX" >
 |   < LIKE_BINARY: "LIKE BINARY" >
+|   < LIKE_REGEX: "LIKE_REGEX" >
 |   < LIMIT: "LIMIT" >
 |   < LN: "LN" >
 |   < LOCAL: "LOCAL" >
 |   < LOCALTIME: "LOCALTIME" >
 |   < LOCALTIMESTAMP: "LOCALTIMESTAMP" >
 |   < LOCATOR: "LOCATOR" >
-|   < LOCK: "LOCK" >
 |   < LOWER: "LOWER" >
 |   < M: "M" >
 |   < MAP: "MAP" >
@@ -8009,7 +7947,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < NESTING: "NESTING" >
 |   < NEW: "NEW" >
 |   < NEXT: "NEXT" >
-|   < NEXT_AUTO_INCREMENT: "NEXT_AUTO_INCREMENT" >
 |   < NO: "NO" >
 |   < NONE: "NONE" >
 |   < NORMALIZE: "NORMALIZE" >
@@ -8062,7 +7999,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < PASCAL: "PASCAL" >
 |   < PASSING: "PASSING" >
 |   < PASSTHROUGH: "PASSTHROUGH" >
-|   < PASSWORD: "PASSWORD" >
 |   < PAST: "PAST" >
 |   < PATH: "PATH" >
 |   < PATTERN: "PATTERN" >
@@ -8081,7 +8017,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < POSITION: "POSITION" >
 |   < POSITION_REGEX: "POSITION_REGEX" >
 |   < POWER: "POWER" >
-|   < PREPARE: "PREPARE" >
 |   < PRECEDES: "PRECEDES" >
 |   < PRECEDING: "PRECEDING" >
 |   < PRECISION: "PRECISION" >
@@ -8114,11 +8049,8 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < REGR_SYY: "REGR_SYY" >
 |   < RELATIVE: "RELATIVE" >
 |   < RELEASE: "RELEASE" >
-|   < RELOAD: "RELOAD" >
 |   < REPEATABLE: "REPEATABLE" >
 |   < REPLACE: "REPLACE" >
-|   < REPLICA: "REPLICA" >
-|   < REQUIRE: "REQUIRE" >
 |   < RESET: "RESET" >
 |   < RESPECT: "RESPECT" >
 |   < RESTART: "RESTART" >
@@ -8150,7 +8082,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < SAVEPOINT: "SAVEPOINT" >
 |   < SCALAR: "SCALAR" >
 |   < SCALE: "SCALE" >
-|   < SCAN: "SCAN" >
 |   < SCHEMA: "SCHEMA" >
 |   < SCHEMA_NAME: "SCHEMA_NAME" >
 |   < SCOPE: "SCOPE" >
@@ -8243,8 +8174,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < SQL_VARBINARY: "SQL_VARBINARY" >
 |   < SQL_VARCHAR: "SQL_VARCHAR" >
 |   < SQRT: "SQRT" >
-|   < SSL: "SSL" >
-|   < STATUS: "STATUS" >
 |   < START: "START" >
 |   < STATE: "STATE" >
 |   < STATEMENT: "STATEMENT" >
@@ -8269,11 +8198,9 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < SYSTEM_TIME: "SYSTEM_TIME" >
 |   < SYSTEM_USER: "SYSTEM_USER" >
 |   < TABLE: "TABLE" > { beforeTableName(); }
-|   < TABLES: "TABLES" >
 |   < TABLE_NAME: "TABLE_NAME" >
 |   < TABLESAMPLE: "TABLESAMPLE" >
 |   < TEMPORARY: "TEMPORARY" >
-|   < THAN: "THAN" >
 |   < THEN: "THEN" >
 |   < THURSDAY: "THURSDAY" >
 |   < TIES: "TIES" >
@@ -8310,7 +8237,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < TRUE: "TRUE" >
 |   < TRUNCATE: "TRUNCATE" >
 |   < TUESDAY: "TUESDAY" >
-|   < TTL: "TTL" >
 |   < TUMBLE: "TUMBLE" >
 |   < TYPE: "TYPE" >
 |   < UESCAPE: "UESCAPE" >
@@ -8321,7 +8247,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < UNION: "UNION" >
 |   < UNIQUE: "UNIQUE" >
 |   < UNKNOWN: "UNKNOWN" >
-|   < UNLOCK: "UNLOCK" >
 |   < UNPIVOT: "UNPIVOT" >
 |   < UNNAMED: "UNNAMED" >
 |   < UNNEST: "UNNEST" >
@@ -8329,7 +8254,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < UPPER: "UPPER" >
 |   < UPSERT: "UPSERT" >
 |   < USAGE: "USAGE" >
-|   < USE: "USE" >
 |   < USER: "USER" >
 |   < USER_DEFINED_TYPE_CATALOG: "USER_DEFINED_TYPE_CATALOG" >
 |   < USER_DEFINED_TYPE_CODE: "USER_DEFINED_TYPE_CODE" >
@@ -8346,13 +8270,10 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < VAR_SAMP: "VAR_SAMP" >
 |   < VARBINARY: "VARBINARY" >
 |   < VARCHAR: "VARCHAR" >
-|   < VARIABLES: "VARIABLES" >
 |   < VARYING: "VARYING" >
-|   < VECTOR: "VECTOR" >
 |   < VERSION: "VERSION" >
 |   < VERSIONING: "VERSIONING" >
 |   < VIEW: "VIEW" >
-|   < WARNINGS: "WARNINGS" >
 |   < WEDNESDAY: "WEDNESDAY" >
 |   < WEEK: "WEEK" >
 |   < WEEKS: "WEEKS" >
