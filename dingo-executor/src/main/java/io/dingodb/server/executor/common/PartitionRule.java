@@ -18,6 +18,7 @@ package io.dingodb.server.executor.common;
 
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.sdk.common.partition.Partition;
+import io.dingodb.sdk.common.partition.PartitionDetail;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,17 +32,17 @@ public class PartitionRule implements Partition {
     }
 
     @Override
-    public String strategy() {
+    public String getFuncName() {
         return partitionDefinition.getFuncName();
     }
 
     @Override
-    public List<String> cols() {
+    public List<String> getCols() {
         return partitionDefinition.getCols();
     }
 
     @Override
-    public List<io.dingodb.sdk.common.partition.PartitionDetail> details() {
+    public List<PartitionDetail> getDetails() {
         return partitionDefinition.getDetails()
             .stream()
             .map(PartitionDetailDefinition::new)

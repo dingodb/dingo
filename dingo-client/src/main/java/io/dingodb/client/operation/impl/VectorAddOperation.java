@@ -24,6 +24,8 @@ import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.index.Index;
 import io.dingodb.sdk.common.utils.Any;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -50,19 +52,20 @@ public class VectorAddOperation implements Operation {
 
         for (int i = 0; i < vectors.size(); i++) {
             VectorWithId vector = vectors.get(i);
-            if (index.isAutoIncrement()) {
+            if (index.getIsAutoIncrement()) {
                 long id = indexInfo.autoIncrementService.next(indexInfo.indexId);
                 vector.setId(id);
             }
-
-            int finalI = i;
-            indexInfo.rangeDistribution.values().forEach(r -> {
+            try {
+                byte[] key = indexInfo.codec.encodeKey(new Object[]{vector.getId()});
                 Map<VectorWithId, Integer> regionParams = subTaskMap.computeIfAbsent(
-                    r.getId(), k -> new Any(new HashMap<>())
+                    indexInfo.calcRegionId(key), k -> new Any(new HashMap<>())
                 ).getValue();
 
-                regionParams.put(vector, finalI);
-            });
+                regionParams.put(vector, i);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
         return new Fork(new VectorWithId[vectors.size()], subTasks, true);
@@ -70,10 +73,12 @@ public class VectorAddOperation implements Operation {
 
     @Override
     public void exec(OperationContext context) {
-        boolean result = context.getIndexService().vectorAdd(
+        Map<VectorWithId, Integer> parameters = context.parameters();
+        List<VectorWithId> vectors = new ArrayList<>(parameters.keySet());
+        List<Boolean> result = context.getIndexService().vectorAdd(
             context.getIndexId(),
             context.getRegionId(),
-            context.<Map<VectorWithId, Integer>>parameters().keySet().stream()
+            parameters.keySet().stream()
                 .map(integer -> new io.dingodb.sdk.common.vector.VectorWithId(
                     integer.getId(),
                     integer.getVector(),
@@ -82,7 +87,9 @@ public class VectorAddOperation implements Operation {
             context.getVectorContext().isWithoutVectorData(),
             context.getVectorContext().isUpdate()
         );
-        context.<Map<VectorWithId, Integer>>parameters().forEach((key, value) -> context.<VectorWithId[]>result()[value] = result ? key : null);
+        for (int i = 0; i < vectors.size(); i++) {
+            context.<VectorWithId[]>result()[parameters.get(vectors.get(i))] = result.get(i) ? vectors.get(i) : null;
+        }
     }
 
     @Override

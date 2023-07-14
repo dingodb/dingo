@@ -18,7 +18,13 @@ package io.dingodb.web.controller;
 
 import io.dingodb.client.DingoClient;
 import io.dingodb.client.common.IndexDefinition;
+import io.dingodb.common.partition.PartitionDefinition;
+import io.dingodb.common.partition.PartitionDetailDefinition;
+import io.dingodb.common.util.Optional;
+import io.dingodb.sdk.common.index.HnswParam;
 import io.dingodb.sdk.common.index.Index;
+import io.dingodb.sdk.common.index.IndexParameter;
+import io.dingodb.sdk.common.index.VectorIndexParameter;
 import io.dingodb.web.mapper.EntityMapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -28,6 +34,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,9 +54,44 @@ public class IndexController {
     private EntityMapper mapper;
 
     @ApiOperation("Create index")
-    @PutMapping("/api/{schema}")
+    @PostMapping("/api/{schema}")
     public ResponseEntity<Boolean> crateIndex(@PathVariable String schema, @RequestBody IndexDefinition definition) {
         return ResponseEntity.ok(dingoClient.createIndex(schema, definition.getName(), definition));
+    }
+
+    @ApiOperation("Update index")
+    @PutMapping("/api/{schema}")
+    public ResponseEntity<Boolean> updateIndex(@PathVariable String schema, @RequestBody IndexDefinition definition) {
+        return ResponseEntity.ok(dingoClient.updateIndex(schema, definition.getName(), definition));
+    }
+
+    @ApiOperation("Update hnsw max_elements")
+    @PutMapping("/api/{schema}/{index}/{maxElements}")
+    public ResponseEntity<Boolean> updateIndex(@PathVariable String schema, @PathVariable String index, @PathVariable Integer maxElements) {
+        Index oldIndex = dingoClient.getIndex(schema, index);
+        VectorIndexParameter vectorIndexParameter = oldIndex.getIndexParameter().getVectorIndexParameter();
+        if (vectorIndexParameter.getHnswParam() == null) {
+            return ResponseEntity.ok(false);
+        }
+        vectorIndexParameter.getHnswParam().setMaxElements(maxElements);
+        IndexDefinition newIndex = IndexDefinition.builder()
+            .name(index)
+            .replica(oldIndex.getReplica())
+            .version(oldIndex.getVersion())
+            .isAutoIncrement(oldIndex.getIsAutoIncrement())
+            .autoIncrement(oldIndex.getAutoIncrement())
+            .indexPartition(Optional.mapOrGet(oldIndex.getIndexPartition(), __ -> new PartitionDefinition(
+                oldIndex.getIndexPartition().getFuncName(),
+                oldIndex.getIndexPartition().getCols(),
+                oldIndex.getIndexPartition().getDetails().stream()
+                    .map(d -> new PartitionDetailDefinition(d.getPartName(), d.getOperator(), d.getOperand()))
+                    .collect(Collectors.toList())), () -> null))
+            .indexParameter(new IndexParameter(
+                oldIndex.getIndexParameter().getIndexType(),
+                new VectorIndexParameter(vectorIndexParameter.getVectorIndexType(), vectorIndexParameter.getHnswParam())))
+            .build();
+
+        return ResponseEntity.ok(dingoClient.updateIndex(schema, index, newIndex));
     }
 
     @ApiOperation("Drop index")

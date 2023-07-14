@@ -17,19 +17,22 @@
 package io.dingodb.client.common;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.NavigableSet;
+import java.util.List;
 
-@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class VectorDistanceArray {
 
-    public NavigableSet<VectorWithDistance> vectorWithDistances;
+    public List<VectorWithDistance> vectorWithDistances;
 
-    public void addAll(NavigableSet<VectorWithDistance> other) {
+    public void addAll(List<VectorWithDistance> other) {
         vectorWithDistances.addAll(other);
+    }
+
+    public List<VectorWithDistance> getVectorWithDistances() {
+        vectorWithDistances.sort((o1, o2) -> Float.compare(o1.getDistance(), o2.getDistance()));
+        return vectorWithDistances;
     }
 }

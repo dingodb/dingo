@@ -131,6 +131,11 @@ public class IndexService {
         return metaService.createIndex(name, index);
     }
 
+    public synchronized boolean updateIndex(String schema, String index, Index newIndex) {
+        MetaServiceClient metaService = getSubMetaService(schema);
+        return metaService.updateIndex(index, newIndex);
+    }
+
     public boolean dropIndex(String schema, String indexName) {
         MetaServiceClient metaService = getSubMetaService(schema);
         return metaService.dropIndex(indexName);

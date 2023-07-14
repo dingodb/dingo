@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Api("Vector")
@@ -55,9 +56,10 @@ public class VectorController {
         @PathVariable String schema,
         @PathVariable String index,
         @RequestBody List<VectorWithId> vectors) {
-        return ResponseEntity.ok(dingoClient.vectorAdd(schema, index, vectors.stream()
+        List<io.dingodb.client.common.VectorWithId> result = dingoClient.vectorAdd(schema, index, vectors.stream()
             .map(mapper::mapping)
-            .collect(Collectors.toList())).stream().map(mapper::mapping).collect(Collectors.toList()));
+            .collect(Collectors.toList()));
+        return ResponseEntity.ok(result.stream().filter(Objects::nonNull).map(mapper::mapping).collect(Collectors.toList()));
     }
 
     @ApiOperation("Vector delete")

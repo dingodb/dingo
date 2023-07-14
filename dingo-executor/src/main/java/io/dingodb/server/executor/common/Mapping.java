@@ -104,9 +104,9 @@ public final class Mapping {
             return null;
         }
         return new PartitionDefinition(
-            partition.strategy(),
-            partition.cols(),
-            partition.details().stream().map(Mapping::mapping).collect(Collectors.toList()));
+            partition.getFuncName(),
+            partition.getCols(),
+            partition.getDetails().stream().map(Mapping::mapping).collect(Collectors.toList()));
     }
 
     public static RangeDistribution mapping(io.dingodb.sdk.common.table.RangeDistribution rangeDistribution) {
