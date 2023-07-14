@@ -22,6 +22,7 @@ import io.dingodb.client.common.IndexInfo;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.utils.Any;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -47,14 +48,17 @@ public class VectorDeleteOperation implements Operation {
         for (int i = 0; i < ids.size(); i++) {
             Long id = ids.get(i);
 
-            int finalI = i;
-            indexInfo.rangeDistribution.values().forEach(r -> {
+            try {
+                byte[] bytes = indexInfo.codec.encodeKey(new Object[]{id});
                 Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
-                    r.getId(), k -> new Any(new HashMap<>())
+                    indexInfo.calcRegionId(bytes),
+                    k -> new Any(new HashMap<>())
                 ).getValue();
 
-                regionParams.put(id, finalI);
-            });
+                regionParams.put(id, i);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
         return new Fork(new Boolean[ids.size()], subTasks, true);
@@ -62,13 +66,17 @@ public class VectorDeleteOperation implements Operation {
 
     @Override
     public void exec(OperationContext context) {
-        boolean result = context.getIndexService().vectorDelete(
+        Map<Long, Integer> parameters = context.parameters();
+        List<Long> ids = new ArrayList<>(parameters.keySet());
+        List<Boolean> result = context.getIndexService().vectorDelete(
             context.getIndexId(),
             context.getRegionId(),
-            new ArrayList<>(context.<Map<Long, Integer>>parameters().keySet())
+            new ArrayList<>(parameters.keySet())
         );
 
-        context.<Map<Long, Integer>>parameters().values().forEach(i -> context.<Boolean[]>result()[i] = result);
+        for (int i = 0; i < ids.size(); i++) {
+            context.<Boolean[]>result()[parameters.get(ids.get(i))] = result.get(i);
+        }
     }
 
     @Override

@@ -22,9 +22,12 @@ import io.dingodb.client.common.VectorDistanceArray;
 import io.dingodb.client.common.VectorSearch;
 import io.dingodb.client.common.VectorWithDistance;
 import io.dingodb.sdk.common.DingoCommonId;
+import io.dingodb.sdk.common.table.RangeDistribution;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.vector.VectorSearchParameter;
 import io.dingodb.sdk.common.vector.VectorWithId;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,21 +53,31 @@ public class VectorSearchOperation implements Operation {
         NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
         Map< DingoCommonId, Any> subTaskMap = new HashMap<>();
 
-        indexInfo.rangeDistribution.values().forEach(r -> {
-            List<VectorSearch> regionParams = subTaskMap.computeIfAbsent(
-                r.getId(), k -> new Any(new ArrayList<>())
+        List<RangeDistribution> rangeDistributions = new ArrayList<>(indexInfo.rangeDistribution.values());
+        for (int i = 0; i < rangeDistributions.size(); i++) {
+            RangeDistribution distribution = rangeDistributions.get(i);
+            Map<DingoCommonId, VectorTuple> regionParam = subTaskMap.computeIfAbsent(
+                distribution.getId(), k -> new Any(new HashMap<>())
             ).getValue();
 
-            regionParams.add(vectorSearch);
-        });
+            regionParam.put(distribution.getId(), new VectorTuple(i, vectorSearch));
+        }
 
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
         return new Fork(new VectorDistanceArray[subTasks.size()], subTasks, false);
     }
 
+    @Getter
+    @RequiredArgsConstructor
+    static class VectorTuple {
+        private final int k;
+        private final VectorSearch v;
+    }
+
     @Override
     public void exec(OperationContext context) {
-        VectorSearch vectorSearch = context.<List<VectorSearch>>parameters().get(0);
+        Map<DingoCommonId, VectorTuple> parameters = context.parameters();
+        VectorSearch vectorSearch = parameters.get(context.getRegionId()).getV();
         List<io.dingodb.sdk.common.vector.VectorWithDistance> distances = context.getIndexService().vectorSearch(
             context.getIndexId(),
             context.getRegionId(),
@@ -80,17 +93,15 @@ public class VectorSearchOperation implements Operation {
                 vectorSearch.getParameter().getSearch(),
                 vectorSearch.getParameter().isUseScalarFilter())
         );
-        NavigableSet<VectorWithDistance> distanceList = distances.stream().map(d -> new VectorWithDistance(
+        List<VectorWithDistance> distanceList = distances.stream().map(d -> new VectorWithDistance(
             d.getId(), d.getVector(), d.getScalarData(), d.getDistance()
-        )).collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(VectorWithDistance::getDistance))));
-
-        context.<VectorDistanceArray[]>result()[0] = new VectorDistanceArray(distanceList);
+        )).collect(Collectors.toList());
+        context.<VectorDistanceArray[]>result()[parameters.get(context.getRegionId()).k] = new VectorDistanceArray(distanceList);
     }
 
     @Override
     public <R> R reduce(Fork context) {
-        VectorDistanceArray distanceArray = new VectorDistanceArray(
-            new TreeSet<>(Comparator.comparing(VectorWithDistance::getDistance)));
+        VectorDistanceArray distanceArray = new VectorDistanceArray(new ArrayList<>());
         Arrays.stream(context.<VectorDistanceArray[]>result()).forEach(v -> distanceArray.addAll(v.vectorWithDistances));
         return (R) distanceArray;
     }

@@ -40,6 +40,9 @@ public class PartitionDetailDefinition implements Serializable {
     @JsonProperty("operand")
     Object[] operand = null;
 
+    public PartitionDetailDefinition() {
+    }
+
     public PartitionDetailDefinition(Object partName, String operator, Object[] operand) {
         if (partName != null) {
             this.partName = partName.toString();

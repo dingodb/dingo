@@ -164,9 +164,9 @@ public class OperationService {
             .forEach(keyTypes::add);
         DefinitionUtils.checkAndConvertRangePartition(
             keyNames,
-            table.getPartition().cols(),
+            table.getPartition().getCols(),
             keyTypes,
-            table.getPartition().details().stream().map(PartitionDetail::getOperand).collect(Collectors.toList())
+            table.getPartition().getDetails().stream().map(PartitionDetail::getOperand).collect(Collectors.toList())
         );
     }
 

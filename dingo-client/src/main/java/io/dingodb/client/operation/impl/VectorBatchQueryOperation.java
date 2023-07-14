@@ -22,6 +22,7 @@ import io.dingodb.client.common.VectorWithId;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.utils.Any;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -46,14 +47,17 @@ public class VectorBatchQueryOperation implements Operation {
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
 
         for (int i = 0; i < ids.size(); i++) {
-            int finalI = i;
-            indexInfo.rangeDistribution.values().forEach(r -> {
+            Long id = ids.get(i);
+            try {
+                byte[] key = indexInfo.codec.encodeKey(new Object[]{id});
                 Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
-                    r.getId(), k -> new Any(new HashMap<>())
+                    indexInfo.calcRegionId(key), k -> new Any(new HashMap<>())
                 ).getValue();
 
-                regionParams.put(ids.get(finalI), finalI);
-            });
+                regionParams.put(id, i);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
@@ -70,6 +74,7 @@ public class VectorBatchQueryOperation implements Operation {
             context.getRegionId(),
             ids,
             context.getVectorContext().isWithoutVectorData(),
+            context.getVectorContext().isWithScalarData(),
             context.getVectorContext().getSelectedKeys()
         ).forEach(v -> result.put(v.getId(), v));
         for (Long id : ids) {

@@ -16,14 +16,23 @@
 
 package io.dingodb.client.common;
 
+import io.dingodb.common.partition.PartitionDefinition;
+import io.dingodb.common.type.converter.DataConverter;
+import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.index.Index;
 import io.dingodb.sdk.common.index.IndexParameter;
 import io.dingodb.sdk.common.partition.Partition;
+import io.dingodb.sdk.common.partition.PartitionDetailDefinition;
 import io.dingodb.sdk.common.partition.PartitionRule;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 @Getter
 @Builder
@@ -31,21 +40,26 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class IndexDefinition implements Index {
 
+    private static final LongType LONG_TYPE = new LongType(false);
+
     private String name;
     private Integer version;
-    private PartitionRule partitionRule;
+    private PartitionDefinition indexPartition;
     private Integer replica;
     private IndexParameter indexParameter;
     private Boolean isAutoIncrement;
     private Long autoIncrement;
 
-    @Override
-    public Partition indexPartition() {
-        return partitionRule;
-    }
-
-    @Override
-    public boolean isAutoIncrement() {
-        return isAutoIncrement;
+    public Partition getIndexPartition() {
+        return new PartitionRule(
+            indexPartition.getFuncName(),
+            indexPartition.getCols(),
+            Optional.mapOrGet(indexPartition.getDetails(), __ -> indexPartition.getDetails().stream().map(d ->
+                    new PartitionDetailDefinition(
+                        d.getPartName(),
+                        d.getOperator(),
+                        Arrays.stream(d.getOperand()).map(o -> LONG_TYPE.convertFrom(o, DataConverter.DEFAULT)).toArray()))
+                .collect(Collectors.toList()), ArrayList::new)
+        );
     }
 }

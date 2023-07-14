@@ -243,6 +243,14 @@ public class DingoClient {
         return indexService.createIndex(schema, indexName, index);
     }
 
+    public boolean updateIndex(String index, Index newIndex) {
+        return indexService.updateIndex(schema, index, newIndex);
+    }
+
+    public boolean updateIndex(String schema, String index, Index newIndex) {
+        return indexService.updateIndex(schema, index, newIndex);
+    }
+
     public boolean dropIndex(String indexName) {
         return dropIndex(schema, indexName);
     }
