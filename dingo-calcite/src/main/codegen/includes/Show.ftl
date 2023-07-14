@@ -59,7 +59,7 @@ SqlShow SqlShowTable(Span s): {
      {
        return new SqlShowTableStatus(s.end(this), schema, pattern);
      }
-    | 
+    |
     (<QUOTED_STRING> | <IDENTIFIER>) { tableName = token.image.toUpperCase(); }
      <DISTRIBUTION> { return new SqlShowTableDistribution(s.end(this), tableName); }
    )
