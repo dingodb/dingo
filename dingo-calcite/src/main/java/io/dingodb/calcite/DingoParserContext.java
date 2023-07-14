@@ -31,6 +31,7 @@ import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
+import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
 import org.apache.calcite.sql2rel.SqlLikeBinaryOperator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -113,7 +114,9 @@ public final class DingoParserContext implements Context {
         SqlStdOperatorTable tableInstance = SqlStdOperatorTable.instance();
         tableInstance.register(SqlUserDefinedOperators.LIKE_BINARY);
         tableInstance.register(SqlUserDefinedOperators.NOT_LIKE_BINARY);
+        tableInstance.register(SqlUserDefinedOperators.SCAN);
         SqlLikeBinaryOperator.register();
+        SqlFunctionScanOperator.register(this);
         eliminateUserOperator(tableInstance);
 
         this.options = options;

@@ -18,6 +18,7 @@ package io.dingodb.calcite.visitor;
 
 import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoFilter;
+import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoHashJoin;
@@ -34,15 +35,10 @@ import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
-import io.dingodb.calcite.traits.DingoRelPartitionByKeys;
-import io.dingodb.calcite.traits.DingoRelPartitionByTable;
-import io.dingodb.calcite.utils.MetaServiceUtils;
-import io.dingodb.calcite.utils.TableInfo;
-import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.function.DingoAggregateVisitFun;
-import io.dingodb.calcite.visitor.function.DingoCoalesce;
 import io.dingodb.calcite.visitor.function.DingoCountDeleteVisitFun;
 import io.dingodb.calcite.visitor.function.DingoFilterVisitFun;
+import io.dingodb.calcite.visitor.function.DingoFunctionScanVisitFun;
 import io.dingodb.calcite.visitor.function.DingoGetByIndexVisitFun;
 import io.dingodb.calcite.visitor.function.DingoGetByKeysFun;
 import io.dingodb.calcite.visitor.function.DingoHashJoinVisitFun;
@@ -57,33 +53,17 @@ import io.dingodb.calcite.visitor.function.DingoStreamingConverterVisitFun;
 import io.dingodb.calcite.visitor.function.DingoTableModifyVisitFun;
 import io.dingodb.calcite.visitor.function.DingoUnionVisitFun;
 import io.dingodb.calcite.visitor.function.DingoValuesVisitFun;
-import io.dingodb.cluster.ClusterService;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Output;
-import io.dingodb.exec.base.Task;
 import io.dingodb.exec.impl.IdGeneratorImpl;
-import io.dingodb.exec.operator.HashOperator;
-import io.dingodb.exec.operator.PartitionOperator;
-import io.dingodb.exec.operator.hash.HashStrategy;
-import io.dingodb.exec.operator.hash.SimpleHashStrategy;
-import io.dingodb.exec.partition.PartitionStrategy;
-import io.dingodb.exec.partition.RangeStrategy;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.NavigableMap;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
 
@@ -205,6 +185,11 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@NonNull DingoLikeScan rel) {
         return DingoLikeScanVisitFun.visit(job, idGenerator, currentLocation, this, rel);
+    }
+
+    @Override
+    public Collection<Output> visit(@NonNull DingoFunctionScan rel) {
+        return DingoFunctionScanVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
 }

@@ -2446,20 +2446,39 @@ SqlNode TableFunctionCall() :
     final Span s;
     final SqlNode call;
     SqlFunctionCategory funcType = SqlFunctionCategory.USER_DEFINED_TABLE_FUNCTION;
+    final List<SqlNode> list = new ArrayList<SqlNode>();
 }
 {
-    <TABLE> { s = span(); } <LPAREN>
-    [
-        <SPECIFIC>
+    (
+        <TABLE> { s = span(); } <LPAREN>
+        [
+            <SPECIFIC>
         {
             funcType = SqlFunctionCategory.USER_DEFINED_TABLE_SPECIFIC_FUNCTION;
         }
-    ]
-    call = NamedRoutineCall(funcType, ExprContext.ACCEPT_CURSOR)
-    <RPAREN>
-    {
-        return SqlStdOperatorTable.COLLECTION_TABLE.createCall(s.end(this), call);
-    }
+        ]
+        call = NamedRoutineCall(funcType, ExprContext.ACCEPT_CURSOR)
+        <RPAREN>
+        {
+            return SqlStdOperatorTable.COLLECTION_TABLE.createCall(s.end(this), call);
+        }
+    |
+        ( <VECTOR> | <SCAN> ) { s = span(); } <LPAREN>
+        [
+            AddArg0(list, ExprContext.ACCEPT_CURSOR)
+            (
+                <COMMA> {
+                    // a comma-list can't appear where only a query is expected
+                    checkNonQueryExpression(ExprContext.ACCEPT_CURSOR);
+                }
+                AddArg(list, ExprContext.ACCEPT_CURSOR)
+            )*
+        ]
+        <RPAREN>
+        {
+            return SqlUserDefinedOperators.SCAN.createCall(s.end(this), list);
+        }
+    )
 }
 
 /**
@@ -8131,6 +8150,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < SAVEPOINT: "SAVEPOINT" >
 |   < SCALAR: "SCALAR" >
 |   < SCALE: "SCALE" >
+|   < SCAN: "SCAN" >
 |   < SCHEMA: "SCHEMA" >
 |   < SCHEMA_NAME: "SCHEMA_NAME" >
 |   < SCOPE: "SCOPE" >
@@ -8328,6 +8348,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < VARCHAR: "VARCHAR" >
 |   < VARIABLES: "VARIABLES" >
 |   < VARYING: "VARYING" >
+|   < VECTOR: "VECTOR" >
 |   < VERSION: "VERSION" >
 |   < VERSIONING: "VERSIONING" >
 |   < VIEW: "VIEW" >

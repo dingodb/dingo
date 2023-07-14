@@ -18,6 +18,7 @@ package io.dingodb.calcite.visitor;
 
 import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoFilter;
+import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoHashJoin;
@@ -72,4 +73,7 @@ public interface DingoRelVisitor<T> {
     T visit(@NonNull DingoPartRangeDelete rel);
 
     T visit(@NonNull DingoLikeScan rel);
+
+    T visit(@NonNull DingoFunctionScan rel);
+
 }
