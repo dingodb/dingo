@@ -16,9 +16,14 @@
 
 package io.dingodb.calcite;
 
+import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.rel.DingoFunctionScan;
+import io.dingodb.calcite.traits.DingoConvention;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.exec.fun.string.SubstringFun;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
@@ -28,6 +33,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -76,5 +82,29 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
             }
         }
         return null;
+    }
+
+    @Override
+    protected void convertCollectionTable(Blackboard bb, SqlCall call) {
+        final SqlOperator operator = call.getOperator();
+        if (!(operator instanceof SqlFunctionScanOperator)) {
+            super.convertCollectionTable(bb, call);
+            return;
+        }
+
+        RelTraitSet traits = cluster.traitSetOf(DingoConvention.NONE).replace(DingoConvention.INSTANCE)
+            .replace(DingoRelStreaming.ROOT);
+        RexNode rexCall = bb.convertExpression(call);
+        DingoFunctionScan callRel = new DingoFunctionScan(
+                cluster,
+                traits,
+                ImmutableList.of(),
+                rexCall,
+               null,
+                rexCall.getType(),
+                null);
+
+        bb.setRoot(callRel, true);
+        afterTableFunction(bb, call, callRel);
     }
 }

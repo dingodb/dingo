@@ -68,6 +68,7 @@ data: {
       "io.dingodb.calcite.grammar.dml.SqlPrepare"
       "io.dingodb.calcite.grammar.SqlUserDefinedOperators"
       "org.apache.calcite.sql2rel.SqlLikeBinaryOperator"
+      "org.apache.calcite.sql2rel.SqlFunctionScanOperator"
       "static io.dingodb.calcite.utils.ParseValueUtils.*"
       "java.util.Properties"
       "java.math.BigInteger"
