@@ -20,6 +20,7 @@ import io.dingodb.client.common.Key;
 import io.dingodb.client.common.Record;
 import io.dingodb.client.common.VectorDistanceArray;
 import io.dingodb.client.common.VectorSearch;
+import io.dingodb.client.common.VectorWithDistance;
 import io.dingodb.client.common.VectorWithId;
 import io.dingodb.client.operation.impl.*;
 import io.dingodb.common.util.Optional;
@@ -290,7 +291,13 @@ public class DingoClient {
     }
 
     public VectorDistanceArray vectorSearch(String schema, String indexName, VectorSearch vectorSearch) {
-        return indexService.exec(schema, indexName, VectorSearchOperation.getInstance(), vectorSearch, VectorContext.builder().build());
+        VectorDistanceArray distanceArray = indexService.exec(schema, indexName, VectorSearchOperation.getInstance(), vectorSearch, VectorContext.builder().build());
+        List<VectorWithDistance> withDistances = distanceArray.getVectorWithDistances();
+        Integer topN = vectorSearch.getParameter().getTopN();
+        if (withDistances.size() <= topN) {
+            return distanceArray;
+        }
+        return new VectorDistanceArray(withDistances.subList(0, withDistances.size() - topN));
     }
 
     public List<VectorWithId> vectorBatchQuery(String schema, String indexName, List<Long> ids,
