@@ -31,6 +31,7 @@ import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.Parameters;
 import io.dingodb.sdk.service.meta.AutoIncrementService;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -286,18 +287,24 @@ public class DingoClient {
         return indexService.exec(schema, indexName, VectorAddOperation.getInstance(), vectors, context);
     }
 
-    public VectorDistanceArray vectorSearch(String indexName, VectorSearch vectorSearch) {
+    public List<VectorDistanceArray> vectorSearch(String indexName, VectorSearch vectorSearch) {
         return vectorSearch(schema, indexName, vectorSearch);
     }
 
-    public VectorDistanceArray vectorSearch(String schema, String indexName, VectorSearch vectorSearch) {
-        VectorDistanceArray distanceArray = indexService.exec(schema, indexName, VectorSearchOperation.getInstance(), vectorSearch, VectorContext.builder().build());
-        List<VectorWithDistance> withDistances = distanceArray.getVectorWithDistances();
-        Integer topN = vectorSearch.getParameter().getTopN();
-        if (withDistances.size() <= topN) {
-            return distanceArray;
+    public List<VectorDistanceArray> vectorSearch(String schema, String indexName, VectorSearch vectorSearch) {
+        List<VectorDistanceArray> distanceArrays = indexService.exec(schema, indexName, VectorSearchOperation.getInstance(), vectorSearch, VectorContext.builder().build());
+
+        List<VectorDistanceArray> result = new ArrayList<>();
+        for (VectorDistanceArray distanceArray : distanceArrays) {
+            List<VectorWithDistance> withDistances = distanceArray.getVectorWithDistances();
+            Integer topN = vectorSearch.getParameter().getTopN();
+            if (withDistances.size() <= topN) {
+                result.add(distanceArray);
+                continue;
+            }
+            result.add(new VectorDistanceArray(withDistances.subList(0, topN)));
         }
-        return new VectorDistanceArray(withDistances.subList(0, withDistances.size() - topN));
+        return result;
     }
 
     public List<VectorWithId> vectorBatchQuery(String schema, String indexName, List<Long> ids,

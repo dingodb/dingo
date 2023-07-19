@@ -16,6 +16,7 @@
 
 package io.dingodb.client.common;
 
+import io.dingodb.sdk.common.index.VectorIndexParameter;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
@@ -32,7 +33,8 @@ public class VectorDistanceArray {
     }
 
     public List<VectorWithDistance> getVectorWithDistances() {
-        vectorWithDistances.sort((o1, o2) -> Float.compare(o1.getDistance(), o2.getDistance()));
+        vectorWithDistances.sort((o1, o2) -> o1.getMetricType() == VectorIndexParameter.MetricType.METRIC_TYPE_L2 ?
+            Float.compare(o1.getDistance(), o2.getDistance()) : Float.compare(o2.getDistance(), o1.getDistance()));
         return vectorWithDistances;
     }
 }
