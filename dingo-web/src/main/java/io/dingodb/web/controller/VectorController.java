@@ -99,7 +99,7 @@ public class VectorController {
 
     @ApiOperation("Vector search")
     @PostMapping("/api/{schema}/{index}")
-    public ResponseEntity<VectorDistanceArray> vectorSearch(
+    public ResponseEntity<List<VectorDistanceArray>> vectorSearch(
         @PathVariable String schema,
         @PathVariable String index,
         @RequestBody VectorSearch vectorSearch) {

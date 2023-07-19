@@ -20,11 +20,13 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class VectorSearch {
 
-    private VectorWithId vector;
     private VectorSearchParameter parameter;
+    private List<VectorWithId> vectors;
 }
