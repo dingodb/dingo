@@ -61,7 +61,7 @@ public class VectorDeleteOperation implements Operation {
             }
         }
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
-        return new Fork(new Boolean[ids.size()], subTasks, true);
+        return new Fork(new Boolean[ids.size()], subTasks, false);
     }
 
     @Override

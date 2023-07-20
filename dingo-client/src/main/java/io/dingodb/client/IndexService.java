@@ -89,9 +89,9 @@ public class IndexService {
         });
     }
 
-    private Optional<Throwable> exec(IndexInfo indexInfo, Operation opeartion, Operation.Fork fork, int retry, VectorContext vectorContext) {
+    private Optional<Throwable> exec(IndexInfo indexInfo, Operation operation, Operation.Fork fork, int retry, VectorContext vectorContext) {
         if (retry <= 0) {
-            return Optional.of(new DingoClientException(-1, "Exceeded the retry limit for performing " + opeartion.getClass()));
+            return Optional.of(new DingoClientException(-1, "Exceeded the retry limit for performing " + operation.getClass()));
         }
         int i = 0;
         List<OperationContext> contexts = new ArrayList<>(fork.getSubTasks().size());
@@ -110,7 +110,7 @@ public class IndexService {
         Optional<Throwable> error = Optional.empty();
         CountDownLatch countDownLatch = new CountDownLatch(contexts.size());
         contexts.forEach(context -> CompletableFuture
-            .runAsync(() -> opeartion.exec(context), Executors.executor("exec-operator"))
+            .runAsync(() -> operation.exec(context), Executors.executor("exec-operator"))
             .thenApply(r -> Optional.<Throwable>empty())
             .exceptionally(Optional::of)
             .thenAccept(e -> {
@@ -121,7 +121,7 @@ public class IndexService {
         try {
             countDownLatch.await();
         } catch (InterruptedException e) {
-            log.warn("Exec {} interrupted.", opeartion.getClass());
+            log.warn("Exec {} interrupted.", operation.getClass());
         }
         return error;
     }

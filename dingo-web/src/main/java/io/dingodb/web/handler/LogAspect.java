@@ -56,8 +56,8 @@ public class LogAspect {
         try {
             result = point.proceed();
         } catch (Exception e) {
-            LOGGER.error("methodName = {}, exception", methodName, e);
-            throw new DingoClientException("Internal server eroor");
+            LOGGER.error("methodName: {}, exception", methodName, e);
+            throw e;
         }
 
         if (LOGGER.isDebugEnabled()) {
