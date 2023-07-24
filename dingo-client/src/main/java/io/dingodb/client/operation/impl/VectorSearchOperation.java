@@ -59,9 +59,9 @@ public class VectorSearchOperation implements Operation {
                 distribution.getId(), k -> new Any(new HashMap<>())
             ).getValue();
 
-            List<VectorTuple> tuples = new ArrayList<>();
+            List<VectorTuple<VectorSearch>> tuples = new ArrayList<>();
             for (int i1 = 0; i1 < vectorSearch.getVectors().size(); i1++) {
-                tuples.add(new VectorTuple(i1, vectorSearch));
+                tuples.add(new VectorTuple<>(i1, vectorSearch));
             }
             regionParam.put(distribution.getId(), new RegionSearchTuple(i, tuples));
         }
@@ -72,13 +72,7 @@ public class VectorSearchOperation implements Operation {
     @RequiredArgsConstructor
     static class RegionSearchTuple {
         private final int regionI;
-        private final List<VectorTuple> vs;
-    }
-
-    @RequiredArgsConstructor
-    static class VectorTuple {
-        private final int k;
-        private final VectorSearch v;
+        private final List<VectorTuple<VectorSearch>> vs;
     }
 
     @Override

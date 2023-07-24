@@ -29,6 +29,8 @@ import io.dingodb.sdk.common.index.Index;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.Parameters;
+import io.dingodb.sdk.common.vector.VectorIndexMetrics;
+import io.dingodb.sdk.common.vector.VectorScanQuery;
 import io.dingodb.sdk.service.meta.AutoIncrementService;
 
 import java.util.ArrayList;
@@ -328,6 +330,14 @@ public class DingoClient {
      */
     public Long vectorGetBorderId(String schema, String indexName, Boolean isGetMin) {
         return indexService.exec(schema, indexName, VectorGetIdOperation.getInstance(), isGetMin, VectorContext.builder().build());
+    }
+
+    public List<VectorWithId> vectorScanQuery(String schema, String indexName, VectorScanQuery query) {
+        return indexService.exec(schema, indexName, VectorScanQueryOperation.getInstance(), query, VectorContext.builder().build());
+    }
+
+    public VectorIndexMetrics getRegionMetrics(String schema, String indexName) {
+        return indexService.exec(schema, indexName, VectorGetRegionMetricsOperation.getInstance(), null, VectorContext.builder().build());
     }
 
     public List<Boolean> vectorDelete(String indexName, List<Long> ids) {

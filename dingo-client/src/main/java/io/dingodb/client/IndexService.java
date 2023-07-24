@@ -127,6 +127,9 @@ public class IndexService {
     }
 
     public synchronized boolean createIndex(String schema, String name, Index index) {
+        if (index.getIsAutoIncrement() && index.getAutoIncrement() <= 0) {
+            throw new DingoClientException("Auto-increment id only supports positive integers.");
+        }
         MetaServiceClient metaService = getSubMetaService(schema);
         return metaService.createIndex(name, index);
     }
