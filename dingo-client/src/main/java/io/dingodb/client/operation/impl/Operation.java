@@ -20,11 +20,11 @@ import io.dingodb.client.OperationContext;
 import io.dingodb.client.common.IndexInfo;
 import io.dingodb.client.common.TableInfo;
 import io.dingodb.sdk.common.DingoCommonId;
-import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.util.NavigableSet;
 
@@ -70,5 +70,11 @@ public interface Operation {
     void exec(OperationContext context);
 
     <R> R reduce(Fork context);
+
+    @RequiredArgsConstructor
+    public static class VectorTuple<V> {
+        public final int k;
+        public final V v;
+    }
 
 }

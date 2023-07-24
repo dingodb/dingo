@@ -20,6 +20,7 @@ import io.dingodb.client.OperationContext;
 import io.dingodb.client.common.ArrayWrapperList;
 import io.dingodb.client.common.IndexInfo;
 import io.dingodb.client.common.VectorWithId;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.index.Index;
 import io.dingodb.sdk.common.utils.Any;
@@ -52,6 +53,9 @@ public class VectorAddOperation implements Operation {
 
         for (int i = 0; i < vectors.size(); i++) {
             VectorWithId vector = vectors.get(i);
+            if (!index.getIsAutoIncrement() && vector.getId() <= 0) {
+                throw new DingoClientException("Vector IDs do not support negative numbers.");
+            }
             if (index.getIsAutoIncrement()) {
                 long id = indexInfo.autoIncrementService.next(indexInfo.indexId);
                 vector.setId(id);

@@ -19,6 +19,8 @@ package io.dingodb.web.controller;
 import io.dingodb.client.DingoClient;
 import io.dingodb.client.common.VectorDistanceArray;
 import io.dingodb.client.common.VectorSearch;
+import io.dingodb.sdk.common.vector.VectorIndexMetrics;
+import io.dingodb.sdk.common.vector.VectorScanQuery;
 import io.dingodb.web.mapper.EntityMapper;
 import io.dingodb.web.model.dto.VectorGet;
 import io.dingodb.web.model.dto.VectorWithId;
@@ -104,5 +106,24 @@ public class VectorController {
         @PathVariable String index,
         @RequestBody VectorSearch vectorSearch) {
         return ResponseEntity.ok(dingoClient.vectorSearch(schema, index, vectorSearch));
+    }
+
+    @ApiOperation("Vector scan query")
+    @PostMapping("/api/{schema}/{index}/scan")
+    public ResponseEntity<List<VectorWithId>> vectorScanQuery(
+        @PathVariable String schema,
+        @PathVariable String index,
+        @RequestBody VectorScanQuery vectorScanQuery) {
+        return ResponseEntity.ok(dingoClient.vectorScanQuery(schema, index, vectorScanQuery)
+            .stream()
+            .filter(Objects::nonNull)
+            .map(mapper::mapping)
+            .collect(Collectors.toList()));
+    }
+
+    @ApiOperation("Vector get region metrics")
+    @GetMapping("/api/{schema}/{index}")
+    public ResponseEntity<VectorIndexMetrics> vectorGetMetrics(@PathVariable String schema, @PathVariable String index) {
+        return ResponseEntity.ok(dingoClient.getRegionMetrics(schema, index));
     }
 }
