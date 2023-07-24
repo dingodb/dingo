@@ -4207,11 +4207,16 @@ SqlSetOption SqlSetOption(Span s, String scope) :
             val = new SqlIdentifier("utf8", s.end(this));
             return new SqlSetOption(s.end(this), scope, name, val);
          }
-         |
+        |
          <IDENTIFIER>  {
             val = new SqlIdentifier(token.image, s.end(this));
             return new SqlSetOption(s.end(this), scope, name, val);
-          }
+         }
+        |
+         <QUOTED_STRING> <COLLATE> <QUOTED_STRING>{
+           val = new SqlIdentifier(token.image, s.end(this));
+            return new SqlSetOption(s.end(this), scope, name, val);
+         }
         |
         <EQ>
         (
