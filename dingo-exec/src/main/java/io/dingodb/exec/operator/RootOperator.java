@@ -36,6 +36,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 @JsonTypeName("root")
 @JsonPropertyOrder({"schema"})
 public final class RootOperator extends SinkOperator {
+    public static final int TUPLE_QUEUE_SIZE = 512;
     public static final Object[] FIN = new Object[0];
 
     @JsonProperty("schema")
@@ -54,7 +55,7 @@ public final class RootOperator extends SinkOperator {
     @Override
     public void init() {
         super.init();
-        tupleQueue = new LinkedBlockingDeque<>();
+        tupleQueue = new LinkedBlockingDeque<>(TUPLE_QUEUE_SIZE);
     }
 
     @Override
