@@ -33,6 +33,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Value.Enclosing
@@ -41,7 +42,10 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
         super(config);
     }
 
-    private static @NonNull List<Integer> getSelectedColumns(List<RexNode> rexNodes) {
+    @Override
+    public void onMatch(@NonNull RelOptRuleCall call) {
+        final LogicalProject project = call.rel(0);
+        final LogicalDingoTableScan scan = call.rel(1);
         final List<Integer> selectedColumns = new ArrayList<>();
         final RexVisitorImpl<Void> visitor = new RexVisitorImpl<Void>(true) {
             @Override
@@ -52,28 +56,29 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
                 return null;
             }
         };
-        visitor.visitEach(rexNodes);
-        return selectedColumns;
-    }
-
-    @Override
-    public void onMatch(@NonNull RelOptRuleCall call) {
-        final LogicalProject project = call.rel(0);
-        final LogicalDingoTableScan scan = call.rel(1);
-        List<Integer> selectedColumns = getSelectedColumns(project.getProjects());
+        List<RexNode> projects = project.getProjects();
+        RexNode filter = scan.getFilter();
+        visitor.visitEach(projects);
+        if (filter != null) {
+            filter.accept(visitor);
+        }
+        // Order naturally to help decoding in push down.
+        selectedColumns.sort(Comparator.naturalOrder());
+        Mapping mapping = Mappings.target(selectedColumns, scan.getRowType().getFieldCount());
+        // Push selection down over filter.
+        RexNode newFilter = (filter != null) ? RexUtil.apply(mapping, filter) : null;
         LogicalDingoTableScan newScan = new LogicalDingoTableScan(
             scan.getCluster(),
             scan.getTraitSet(),
             scan.getHints(),
             scan.getTable(),
-            scan.getFilter(),
+            newFilter,
             TupleMapping.of(selectedColumns),
             scan.getAggCalls(),
             scan.getGroupSet(),
             scan.getGroupSets(),
             scan.isPushDown()
         );
-        Mapping mapping = Mappings.target(selectedColumns, scan.getRowType().getFieldCount());
         final List<RexNode> newProjectRexNodes = RexUtil.apply(mapping, project.getProjects());
         if (RexUtil.isIdentity(newProjectRexNodes, newScan.getRowType())) {
             call.transformTo(newScan);
@@ -107,7 +112,9 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
         Config DEFAULT = ImmutableDingoScanProjectRule.Config.builder()
             .operandSupplier(b0 ->
                 b0.operand(LogicalProject.class).oneInput(b1 ->
-                    b1.operand(LogicalDingoTableScan.class).predicate(rel -> rel.getSelection() == null).noInputs()
+                    b1.operand(LogicalDingoTableScan.class)
+                        .predicate(rel -> rel.getSelection() == null)
+                        .noInputs()
                 )
             )
             .description("DingoScanProjectRule")

@@ -267,17 +267,12 @@ public class TestAggregate {
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
-        DingoTableScan scan = (DingoTableScan) Assert.relNode(optimized)
+        Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoProject.class)
             .soleInput().isA(DingoReduce.class)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoTableScan.class)
-            .getInstance();
-        assertThat(scan.getAggCalls())
-            .map(AggregateCall::getAggregation)
-            .map(SqlAggFunction::getKind)
-            .containsExactly(SqlKind.SUM, SqlKind.COUNT, SqlKind.SUM, SqlKind.COUNT);
+            .soleInput().isA(DingoAggregate.class);
     }
 
     @Test

@@ -151,7 +151,7 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
             }
             if (canPushDown) {
                 // TODO: selection is not supported now.
-                builder.selection(IntStream.range(0, schema.fieldCount()).boxed().collect(Collectors.toList()));
+                builder.selection(selection.stream().boxed().collect(Collectors.toList()));
                 if (aggList != null && !aggList.isEmpty()) {
                     builder.groupBy(
                         aggKeys.stream()

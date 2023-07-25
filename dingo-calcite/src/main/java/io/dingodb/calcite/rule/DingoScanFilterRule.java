@@ -60,7 +60,9 @@ public class DingoScanFilterRule extends RelRule<DingoScanFilterRule.Config> imp
         Config DEFAULT = ImmutableDingoScanFilterRule.Config.builder()
             .operandSupplier(b0 ->
                 b0.operand(LogicalFilter.class).oneInput(b1 ->
-                    b1.operand(LogicalDingoTableScan.class).predicate(rel -> rel.getFilter() == null).noInputs()
+                    b1.operand(LogicalDingoTableScan.class)
+                        .predicate(rel -> rel.getSelection() == null && rel.getFilter() == null)
+                        .noInputs()
                 )
             )
             .description("DingoScanFilterRule")
