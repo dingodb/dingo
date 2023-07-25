@@ -44,14 +44,14 @@ public abstract class FilterProjectSourceOperator extends IteratorSourceOperator
     @Override
     protected @NonNull Iterator<Object[]> createIterator() {
         Iterator<Object[]> iterator = createSourceIterator();
+        if (selection != null) {
+            iterator = Iterators.transform(iterator, selection::revMap);
+        }
         if (filter != null) {
             iterator = Iterators.filter(
                 iterator,
                 tuple -> RtLogicalOp.test(filter.eval(tuple))
             );
-        }
-        if (selection != null) {
-            iterator = Iterators.transform(iterator, selection::revMap);
         }
         return iterator;
     }
