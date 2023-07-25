@@ -30,7 +30,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class VectorBatchQueryOperation implements Operation {
 
@@ -42,19 +45,19 @@ public class VectorBatchQueryOperation implements Operation {
 
     @Override
     public Fork fork(Any parameters, IndexInfo indexInfo) {
-        List<Long> ids = parameters.getValue();
+        Set<Long> ids = parameters.getValue();
         NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
 
-        for (int i = 0; i < ids.size(); i++) {
-            Long id = ids.get(i);
+        int i = 0;
+        for (Long id : ids) {
             try {
                 byte[] key = indexInfo.codec.encodeKey(new Object[]{id});
                 Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
                     indexInfo.calcRegionId(key), k -> new Any(new HashMap<>())
                 ).getValue();
 
-                regionParams.put(id, i);
+                regionParams.put(id, i++);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -90,6 +93,6 @@ public class VectorBatchQueryOperation implements Operation {
 
     @Override
     public <R> R reduce(Fork fork) {
-        return (R) Arrays.asList(fork.<VectorWithId[]>result());
+        return (R) Arrays.stream(fork.<VectorWithId[]>result()).collect(Collectors.toMap(VectorWithId::getId, Function.identity()));
     }
 }

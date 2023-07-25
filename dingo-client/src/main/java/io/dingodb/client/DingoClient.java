@@ -34,9 +34,12 @@ import io.dingodb.sdk.common.vector.VectorScanQuery;
 import io.dingodb.sdk.service.meta.AutoIncrementService;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class DingoClient {
 
@@ -309,10 +312,10 @@ public class DingoClient {
         return result;
     }
 
-    public List<VectorWithId> vectorBatchQuery(String schema, String indexName, List<Long> ids,
-                                               boolean withoutVectorData,
-                                               boolean withScalarData,
-                                               List<String> selectedKeys) {
+    public Map<Long, VectorWithId> vectorBatchQuery(String schema, String indexName, Set<Long> ids,
+                                              boolean withoutVectorData,
+                                              boolean withScalarData,
+                                              List<String> selectedKeys) {
         VectorContext vectorContext = VectorContext.builder()
             .withoutVectorData(withoutVectorData)
             .withScalarData(withScalarData)
@@ -329,7 +332,8 @@ public class DingoClient {
      * @return id
      */
     public Long vectorGetBorderId(String schema, String indexName, Boolean isGetMin) {
-        return indexService.exec(schema, indexName, VectorGetIdOperation.getInstance(), isGetMin, VectorContext.builder().build());
+        long[] longArr = indexService.exec(schema, indexName, VectorGetIdOperation.getInstance(), isGetMin, VectorContext.builder().build());
+        return (isGetMin ? Arrays.stream(longArr).min() : Arrays.stream(longArr).max()).getAsLong();
     }
 
     public List<VectorWithId> vectorScanQuery(String schema, String indexName, VectorScanQuery query) {

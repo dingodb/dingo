@@ -19,10 +19,14 @@ package io.dingodb.client.operation.impl;
 import io.dingodb.client.OperationContext;
 import io.dingodb.client.common.IndexInfo;
 import io.dingodb.sdk.common.DingoCommonId;
+import io.dingodb.sdk.common.table.RangeDistribution;
 import io.dingodb.sdk.common.utils.Any;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.TreeSet;
@@ -41,28 +45,34 @@ public class VectorGetIdOperation implements Operation {
         NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
 
-        indexInfo.rangeDistribution.values().forEach(r -> subTaskMap.computeIfAbsent(
-            r.getId(), k -> new Any(isGetMin)
-        ));
+        List<RangeDistribution> rangeDistributions = new ArrayList<>(indexInfo.rangeDistribution.values());
+        for (int i = 0; i < rangeDistributions.size(); i++) {
+            RangeDistribution distribution = rangeDistributions.get(i);
+            Map<DingoCommonId, VectorTuple<Boolean>> regionParam = subTaskMap.computeIfAbsent(
+                distribution.getId(), k -> new Any(new HashMap<>())
+            ).getValue();
+
+            regionParam.put(distribution.getId(), new VectorTuple<>(i, isGetMin));
+        }
 
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
-        return new Fork(new Long[1], subTasks, false);
+        return new Fork(new long[subTasks.size()], subTasks, false);
     }
 
     @Override
     public void exec(OperationContext context) {
-        Boolean isGetMin = context.<Boolean>parameters();
+        Map<DingoCommonId, VectorTuple<Boolean>> parameters = context.parameters();
         Long result = context.getIndexService().vectorGetBoderId(
             context.getIndexId(),
             context.getRegionId(),
-            isGetMin
+            parameters.get(context.getRegionId()).v
         );
 
-        context.<Long[]>result()[0] = result;
+        context.<long[]>result()[parameters.get(context.getRegionId()).k] = result;
     }
 
     @Override
     public <R> R reduce(Fork fork) {
-        return (R) fork.<Long[]>result()[0];
+        return (R) fork.<long[]>result();
     }
 }
