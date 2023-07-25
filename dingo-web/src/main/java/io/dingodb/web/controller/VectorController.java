@@ -19,6 +19,7 @@ package io.dingodb.web.controller;
 import io.dingodb.client.DingoClient;
 import io.dingodb.client.common.VectorDistanceArray;
 import io.dingodb.client.common.VectorSearch;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.vector.VectorIndexMetrics;
 import io.dingodb.sdk.common.vector.VectorScanQuery;
 import io.dingodb.web.mapper.EntityMapper;
@@ -37,7 +38,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -70,6 +73,10 @@ public class VectorController {
         @PathVariable String schema,
         @PathVariable String index,
         @RequestBody List<Long> ids) {
+        long count = ids.stream().distinct().count();
+        if (ids.size() != count) {
+            throw new DingoClientException("During the delete operation, duplicate ids are not allowed");
+        }
         return ResponseEntity.ok(dingoClient.vectorDelete(schema, index, ids));
     }
 
@@ -80,13 +87,15 @@ public class VectorController {
         @PathVariable String index,
         @RequestBody VectorGet vectorGet
         ) {
-        return ResponseEntity.ok(dingoClient.vectorBatchQuery(
+        List<Long> ids = vectorGet.getIds();
+        Map<Long, io.dingodb.client.common.VectorWithId> vectorWithIdMap = dingoClient.vectorBatchQuery(
             schema,
             index,
-            vectorGet.getIds(),
+            new HashSet<>(vectorGet.getIds()),
             vectorGet.getWithoutVectorData(),
             vectorGet.getWithScalarData(),
-            vectorGet.getKeys()));
+            vectorGet.getKeys());
+        return ResponseEntity.ok(ids.stream().map(vectorWithIdMap::get).collect(Collectors.toList()));
     }
 
     @ApiOperation("Get max vector id")
