@@ -126,72 +126,56 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
         return iterator;
     }
 
-    private static int revMapSelection(TupleMapping selection, int index) {
-        return (selection != null && index != -1) ? selection.get(index) : index;
-    }
-
     @Override
     public void init() {
         super.init();
         if (pushDown) {
             DingoType realOutputSchema = schema;
             Coprocessor.CoprocessorBuilder builder = Coprocessor.builder();
-            boolean canPushDown = true;
-            boolean filterPushDown = false;
+            if (selection != null) {
+                builder.selection(selection.stream().boxed().collect(Collectors.toList()));
+                selection = null;
+            }
             if (filter != null) {
                 ExprCodeType ect = filter.getCoding(schema, getParasType());
                 if (ect != null) {
                     builder = Coprocessor.builder();
                     builder.expression(ect.getCode());
                     filter = null;
-                    filterPushDown = true;
-                } else {
-                    canPushDown = false;
                 }
             }
-            if (canPushDown) {
-                // TODO: selection is not supported now.
-                builder.selection(selection.stream().boxed().collect(Collectors.toList()));
-                if (aggList != null && !aggList.isEmpty()) {
-                    builder.groupBy(
-                        aggKeys.stream()
-                            .map(i -> revMapSelection(selection, i))
-                            .boxed()
-                            .collect(Collectors.toList())
-                    );
-                    builder.aggregations(aggList.stream().map(
-                        agg -> {
-                            AggregationOperator.AggregationOperatorBuilder operatorBuilder = AggregationOperator.builder();
-                            operatorBuilder.operation(agg.getAggregationType());
-                            // TODO: now the store does not do selection here, so restore the original index.
-                            operatorBuilder.indexOfColumn(revMapSelection(selection, agg.getIndex()));
-                            return operatorBuilder.build();
-                        }
-                    ).collect(Collectors.toList()));
-                    // Disable selection if there is aggregation.
-                    selection = null;
-                    // Set to output schema.
-                    realOutputSchema = outputSchema;
-                } else if (!filterPushDown) {
-                    canPushDown = false;
-                }
-            }
-            if (canPushDown) {
-                builder.originalSchema(SchemaWrapperUtils.buildSchemaWrapper(schema, keyMapping, tableId.seq));
-                // Do not put group keys to codec key, for there may be null value.
-                TupleMapping outputKeyMapping = TupleMapping.of(
-                    IntStream.range(0, aggKeys != null ? aggKeys.size() : 0).boxed().collect(Collectors.toList())
+            if (aggList != null && !aggList.isEmpty()) {
+                builder.groupBy(
+                    aggKeys.stream()
+                        .boxed()
+                        .collect(Collectors.toList())
                 );
-                builder.resultSchema(SchemaWrapperUtils.buildSchemaWrapper(
-                    realOutputSchema, outputKeyMapping, tableId.seq
-                ));
-                coprocessor = builder.build();
-                part = new PartInKvStore(
-                    Services.KV_STORE.getInstance(tableId, partId),
-                    CodecService.getDefault().createKeyValueCodec(tableId, realOutputSchema, outputKeyMapping)
-                );
-                return;
+                builder.aggregations(aggList.stream().map(
+                    agg -> {
+                        AggregationOperator.AggregationOperatorBuilder operatorBuilder = AggregationOperator.builder();
+                        operatorBuilder.operation(agg.getAggregationType());
+                        // TODO: now the store does not do selection here, so restore the original index.
+                        operatorBuilder.indexOfColumn(agg.getIndex());
+                        return operatorBuilder.build();
+                    }
+                ).collect(Collectors.toList()));
+                // Set to output schema.
+                realOutputSchema = outputSchema;
             }
+            builder.originalSchema(SchemaWrapperUtils.buildSchemaWrapper(schema, keyMapping, tableId.seq));
+            // Do not put group keys to codec key, for there may be null value.
+            TupleMapping outputKeyMapping = TupleMapping.of(
+                IntStream.range(0, aggKeys != null ? aggKeys.size() : 0).boxed().collect(Collectors.toList())
+            );
+            builder.resultSchema(SchemaWrapperUtils.buildSchemaWrapper(
+                realOutputSchema, outputKeyMapping, tableId.seq
+            ));
+            coprocessor = builder.build();
+            part = new PartInKvStore(
+                Services.KV_STORE.getInstance(tableId, partId),
+                CodecService.getDefault().createKeyValueCodec(tableId, realOutputSchema, outputKeyMapping)
+            );
+            return;
         }
         part = new PartInKvStore(
             Services.KV_STORE.getInstance(tableId, partId),
