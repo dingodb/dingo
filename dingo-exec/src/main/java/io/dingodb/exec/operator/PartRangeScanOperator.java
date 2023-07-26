@@ -130,11 +130,12 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
     public void init() {
         super.init();
         if (pushDown) {
-            DingoType realOutputSchema = schema;
+            TupleMapping outputKeyMapping = keyMapping;
             Coprocessor.CoprocessorBuilder builder = Coprocessor.builder();
             if (selection != null) {
                 builder.selection(selection.stream().boxed().collect(Collectors.toList()));
                 selection = null;
+                outputKeyMapping = TupleMapping.of(new int[]{});
             }
             if (filter != null) {
                 ExprCodeType ect = filter.getCoding(schema, getParasType());
@@ -154,26 +155,23 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
                     agg -> {
                         AggregationOperator.AggregationOperatorBuilder operatorBuilder = AggregationOperator.builder();
                         operatorBuilder.operation(agg.getAggregationType());
-                        // TODO: now the store does not do selection here, so restore the original index.
                         operatorBuilder.indexOfColumn(agg.getIndex());
                         return operatorBuilder.build();
                     }
                 ).collect(Collectors.toList()));
-                // Set to output schema.
-                realOutputSchema = outputSchema;
+                // Do not put group keys to codec key, for there may be null value.
+                outputKeyMapping = TupleMapping.of(
+                    IntStream.range(0, aggKeys.size()).boxed().collect(Collectors.toList())
+                );
             }
             builder.originalSchema(SchemaWrapperUtils.buildSchemaWrapper(schema, keyMapping, tableId.seq));
-            // Do not put group keys to codec key, for there may be null value.
-            TupleMapping outputKeyMapping = TupleMapping.of(
-                IntStream.range(0, aggKeys != null ? aggKeys.size() : 0).boxed().collect(Collectors.toList())
-            );
             builder.resultSchema(SchemaWrapperUtils.buildSchemaWrapper(
-                realOutputSchema, outputKeyMapping, tableId.seq
+                outputSchema, outputKeyMapping, tableId.seq
             ));
             coprocessor = builder.build();
             part = new PartInKvStore(
                 Services.KV_STORE.getInstance(tableId, partId),
-                CodecService.getDefault().createKeyValueCodec(tableId, realOutputSchema, outputKeyMapping)
+                CodecService.getDefault().createKeyValueCodec(tableId, outputSchema, outputKeyMapping)
             );
             return;
         }
