@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
@@ -68,6 +69,28 @@ public class VectorBatchQueryOperation implements Operation {
     }
 
     @Override
+    public Fork fork(OperationContext context, IndexInfo indexInfo) {
+        Map<Long, Integer> parameters = context.parameters();
+        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
+        Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
+
+        for (Map.Entry<Long, Integer> parameter : parameters.entrySet()) {
+            try {
+                byte[] key = indexInfo.codec.encodeKey(new Object[]{parameter.getKey()});
+                Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
+                    indexInfo.calcRegionId(key), k -> new Any(new HashMap<>())
+                ).getValue();
+
+                regionParams.put(parameter.getKey(), parameter.getValue());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
+        return new Fork(context.result(), subTasks, false);
+    }
+
+    @Override
     public void exec(OperationContext context) {
         Map<Long, io.dingodb.sdk.common.vector.VectorWithId> result = new HashMap<>();
         Map<Long, Integer> parameters = context.parameters();
@@ -93,6 +116,8 @@ public class VectorBatchQueryOperation implements Operation {
 
     @Override
     public <R> R reduce(Fork fork) {
-        return (R) Arrays.stream(fork.<VectorWithId[]>result()).collect(Collectors.toMap(VectorWithId::getId, Function.identity()));
+        return (R) Arrays.stream(fork.<VectorWithId[]>result())
+            .filter(Objects::nonNull)
+            .collect(Collectors.toMap(VectorWithId::getId, Function.identity()));
     }
 }

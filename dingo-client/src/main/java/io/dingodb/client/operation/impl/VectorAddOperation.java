@@ -51,6 +51,11 @@ public class VectorAddOperation implements Operation {
 
         Index index = indexInfo.index;
 
+        long count = vectors.stream().map(VectorWithId::getId).distinct().count();
+        if (!index.getIsAutoIncrement() && vectors.size() != count) {
+            throw new DingoClientException("Vectors cannot be added repeatedly");
+        }
+
         for (int i = 0; i < vectors.size(); i++) {
             VectorWithId vector = vectors.get(i);
             if (!index.getIsAutoIncrement() && vector.getId() <= 0) {
@@ -73,6 +78,28 @@ public class VectorAddOperation implements Operation {
         }
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
         return new Fork(new VectorWithId[vectors.size()], subTasks, false);
+    }
+
+    @Override
+    public Fork fork(OperationContext context, IndexInfo indexInfo) {
+        Map<VectorWithId, Integer> parameters = context.parameters();
+        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
+        Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
+        for (Map.Entry<VectorWithId, Integer> parameter : parameters.entrySet()) {
+            try {
+                byte[] key = indexInfo.codec.encodeKey(new Object[]{parameter.getKey().getId()});
+                Map<VectorWithId, Integer> regionParams = subTaskMap.computeIfAbsent(
+                    indexInfo.calcRegionId(key), k -> new Any(new HashMap<>())
+                ).getValue();
+
+                regionParams.put(parameter.getKey(), parameter.getValue());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
+        return new Fork(context.result(), subTasks, false);
     }
 
     @Override

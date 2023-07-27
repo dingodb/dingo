@@ -67,6 +67,10 @@ public interface Operation {
         throw new UnsupportedOperationException();
     }
 
+    default Fork fork(OperationContext context, IndexInfo indexInfo) {
+        throw new UnsupportedOperationException();
+    }
+
     void exec(OperationContext context);
 
     <R> R reduce(Fork context);
