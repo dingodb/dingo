@@ -140,7 +140,6 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
             if (filter != null) {
                 ExprCodeType ect = filter.getCoding(schema, getParasType());
                 if (ect != null) {
-                    builder = Coprocessor.builder();
                     builder.expression(ect.getCode());
                     filter = null;
                 }
