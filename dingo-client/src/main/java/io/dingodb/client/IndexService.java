@@ -41,14 +41,18 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 import static io.dingodb.sdk.common.utils.EntityConversion.mapping;
 
 @Slf4j
 public class IndexService {
+
+    private final Map<String, IndexInfo> routeTables = new ConcurrentHashMap<>();
 
     private final MetaServiceClient rootMetaService;
     private final IndexServiceClient indexService;
@@ -65,16 +69,15 @@ public class IndexService {
     }
 
     public <R> R exec(String schemaName, String indexName, Operation operation, Object parameters, VectorContext context) {
-        MetaServiceClient metaService = getSubMetaService(schemaName);
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
-            metaService.getIndexRangeDistribution(indexName);
-        schema.setIsKey(true);
-        DingoCommonId indexId = metaService.getIndexId(indexName);
-        Index index = metaService.getIndex(indexName);
-        KeyValueCodec codec = new KeyValueCodec(
-            new DingoKeyValueCodec(indexId.entityId(), Collections.singletonList(schema)), dingoType);
-        IndexInfo indexInfo = new IndexInfo(schemaName, indexName, indexId, index, codec, this.autoIncrementService, parts);
-        Operation.Fork fork = operation.fork(Any.wrap(parameters), indexInfo);
+        IndexInfo indexInfo = Parameters.nonNull(getRouteTable(schemaName, indexName, false), "Index not found.");
+
+        Operation.Fork fork = null;
+        try {
+            fork = operation.fork(Any.wrap(parameters), indexInfo);
+        } catch (Exception ignore) {
+            indexInfo = Parameters.nonNull(getRouteTable(schemaName, indexName, true), "Index not found.");
+            fork = operation.fork(Any.wrap(parameters), indexInfo);
+        }
 
         exec(indexInfo, operation, fork, context);
 
@@ -114,7 +117,14 @@ public class IndexService {
             .thenApply(r -> Optional.<Throwable>empty())
             .exceptionally(Optional::of)
             .thenAccept(e -> {
-                e.ifPresent(error::ifAbsentSet);
+                e.filter(DingoClientException.InvalidRouteTableException.class::isInstance).map(err -> {
+                    IndexInfo newIndexInfo = getRouteTable(indexInfo.schemaName, indexInfo.indexName, true);
+                    Operation.Fork newFork = operation.fork(context, newIndexInfo);
+                    if (newFork == null) {
+                        return exec(newIndexInfo, operation, newFork, 0, vectorContext).orNull();
+                    }
+                    return exec(newIndexInfo, operation, newFork, retry - 1, vectorContext).orNull();
+                }).ifPresent(error::ifAbsentSet);
                 countDownLatch.countDown();
             }));
 
@@ -156,5 +166,25 @@ public class IndexService {
 
     private MetaServiceClient getSubMetaService(String schemaName) {
         return Parameters.nonNull(rootMetaService.getSubMetaService(schemaName), "Schema not found: " + schemaName);
+    }
+
+    private IndexInfo getRouteTable(String schemaName, String indexName, boolean forceRefresh) {
+        return routeTables.compute(
+            schemaName + "." + indexName,
+            (k, v) -> Parameters.cleanNull(forceRefresh ? null : v, () -> refreshRouteTable(schemaName, indexName))
+        );
+    }
+
+    private IndexInfo refreshRouteTable(String schemaName, String indexName) {
+        MetaServiceClient metaService = getSubMetaService(schemaName);
+        schema.setIsKey(true);
+        DingoCommonId indexId = Parameters.nonNull(metaService.getIndexId(indexName), "Index not found.");
+        Index index = Parameters.nonNull(metaService.getIndex(indexName), "Index not found.");
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
+            metaService.getIndexRangeDistribution(indexName);
+        KeyValueCodec codec = new KeyValueCodec(
+            new DingoKeyValueCodec(indexId.entityId(), Collections.singletonList(schema)), dingoType);
+
+        return new IndexInfo(schemaName, indexName, indexId, index, codec, this.autoIncrementService, parts);
     }
 }

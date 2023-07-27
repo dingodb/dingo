@@ -59,6 +59,25 @@ public class VectorGetRegionMetricsOperation implements Operation {
     }
 
     @Override
+    public Fork fork(OperationContext context, IndexInfo indexInfo) {
+        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
+        Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
+
+        List<RangeDistribution> rangeDistributions = new ArrayList<>(indexInfo.rangeDistribution.values());
+        for (int i = 0; i < rangeDistributions.size(); i++) {
+            RangeDistribution distribution = rangeDistributions.get(i);
+            Map<DingoCommonId, Integer> regionParam = subTaskMap.computeIfAbsent(
+                distribution.getId(), k -> new Any(new HashMap<>())
+            ).getValue();
+
+            regionParam.put(distribution.getId(), i);
+        }
+
+        subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
+        return new Fork(context.result(), subTasks, false);
+    }
+
+    @Override
     public void exec(OperationContext context) {
         Map<DingoCommonId, Integer> parameters = context.parameters();
         VectorIndexMetrics vectorIndexMetrics = context.getIndexService().vectorGetRegionMetrics(

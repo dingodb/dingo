@@ -60,6 +60,27 @@ public class VectorGetIdOperation implements Operation {
     }
 
     @Override
+    public Fork fork(OperationContext context, IndexInfo indexInfo) {
+        Map<DingoCommonId, VectorTuple<Boolean>> parameters = context.parameters();
+        Boolean isGetMin = new ArrayList<>(parameters.values()).get(0).v;
+        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
+        Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
+
+        List<RangeDistribution> rangeDistributions = new ArrayList<>(indexInfo.rangeDistribution.values());
+        for (int i = 0; i < rangeDistributions.size(); i++) {
+            RangeDistribution distribution = rangeDistributions.get(i);
+            Map<DingoCommonId, VectorTuple<Boolean>> regionParams = subTaskMap.computeIfAbsent(
+                distribution.getId(), k -> new Any(new HashMap<>())
+            ).getValue();
+
+            regionParams.put(distribution.getId(), new VectorTuple<>(i, isGetMin));
+        }
+
+        subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
+        return new Fork(context.result(), subTasks, false);
+    }
+
+    @Override
     public void exec(OperationContext context) {
         Map<DingoCommonId, VectorTuple<Boolean>> parameters = context.parameters();
         Long result = context.getIndexService().vectorGetBoderId(
