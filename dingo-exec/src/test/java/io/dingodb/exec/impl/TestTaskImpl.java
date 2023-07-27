@@ -46,7 +46,7 @@ public class TestTaskImpl {
         );
         values.setId(new Id("0"));
         task.putOperator(values);
-        RootOperator root = new RootOperator(DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"));
+        RootOperator root = new RootOperator(DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"), null);
         root.setId(new Id("1"));
         task.putOperator(root);
         values.getOutputs().get(0).setLink(root.getInput(0));
@@ -75,7 +75,7 @@ public class TestTaskImpl {
         );
         project.setId(new Id("1"));
         task.putOperator(project);
-        RootOperator root = new RootOperator(DingoTypeFactory.tuple("INTEGER", "STRING"));
+        RootOperator root = new RootOperator(DingoTypeFactory.tuple("INTEGER", "STRING"), null);
         root.setId(new Id("2"));
         task.putOperator(root);
         values.getSoleOutput().setLink(project.getInput(0));

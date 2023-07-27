@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.base.Status;
 import io.dingodb.exec.exception.TaskFinException;
 import io.dingodb.exec.fin.Fin;
@@ -28,6 +29,7 @@ import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.utils.QueueUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -41,15 +43,19 @@ public final class RootOperator extends SinkOperator {
 
     @JsonProperty("schema")
     private final DingoType schema;
+    @JsonProperty("selection")
+    private final @Nullable TupleMapping selection;
     private Fin errorFin;
     private BlockingQueue<Object[]> tupleQueue;
 
     @JsonCreator
     public RootOperator(
-        @JsonProperty("schema") DingoType schema
+        @JsonProperty("schema") DingoType schema,
+        @JsonProperty("selection") @Nullable TupleMapping selection
     ) {
         super();
         this.schema = schema;
+        this.selection = selection;
     }
 
     @Override
@@ -84,7 +90,13 @@ public final class RootOperator extends SinkOperator {
     }
 
     public Object @NonNull [] popValue() {
-        return QueueUtils.forceTake(tupleQueue);
+        Object[] tuple = QueueUtils.forceTake(tupleQueue);
+        if (tuple != FIN && selection != null) {
+            Object[] tuple1 = new Object[selection.size()];
+            selection.revMap(tuple1, tuple);
+            return tuple1;
+        }
+        return tuple;
     }
 
     public void checkError() {
