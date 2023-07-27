@@ -65,6 +65,15 @@ public final class TupleMapping {
         return Arrays.stream(mappings);
     }
 
+    public boolean isIdentity() {
+        for (int i = 0; i < mappings.length; ++i) {
+            if (mappings[i] != i) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public @NonNull TupleMapping reverse(int num) {
         if (num < 0) {
             num = Arrays.stream(mappings).max().getAsInt();

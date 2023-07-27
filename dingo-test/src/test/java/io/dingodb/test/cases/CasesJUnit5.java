@@ -478,6 +478,25 @@ public class CasesJUnit5 implements ArgumentsProvider {
                         "beijing, 23.5",
                         "CHANGping, 9.0762556"
                     )
+            ),
+            Case.of(
+                "Root selection",
+                exec("create table {table}(name varchar(32) not null, age int, amount double, primary key(name))"),
+                exec("insert into {table} values\n" +
+                    "('Alice', 18, 3.5),\n" +
+                    "('Betty', 22, 4.1),\n" +
+                    "('Cindy', 39, 4.6),\n" +
+                    "('Doris', 25, 5.2),\n" +
+                    "('Emily', 24, 5.8)"),
+                exec("select name from {table} order by age").result(
+                    "name",
+                    "STRING",
+                    "Alice",
+                    "Betty",
+                    "Emily",
+                    "Doris",
+                    "Cindy"
+                )
             )
         );
         return stream;//.filter(arg -> arg.get()[0].equals("Get by primary key 1"));

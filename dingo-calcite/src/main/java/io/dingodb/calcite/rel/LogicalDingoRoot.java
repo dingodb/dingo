@@ -16,20 +16,34 @@
 
 package io.dingodb.calcite.rel;
 
+import io.dingodb.common.type.TupleMapping;
+import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 
 import java.util.List;
 
 public class LogicalDingoRoot extends SingleRel {
-    public LogicalDingoRoot(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
+    @Getter
+    private final TupleMapping selection;
+
+    public LogicalDingoRoot(RelOptCluster cluster, RelTraitSet traits, RelNode input, TupleMapping selection) {
         super(cluster, traits, input);
+        this.selection = selection;
     }
 
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new LogicalDingoRoot(getCluster(), traitSet, sole(inputs));
+        return new LogicalDingoRoot(getCluster(), traitSet, sole(inputs), selection);
+    }
+
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
+        super.explainTerms(pw);
+        pw.itemIf("selection", selection, selection != null);
+        return pw;
     }
 }

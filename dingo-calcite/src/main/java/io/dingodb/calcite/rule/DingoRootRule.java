@@ -49,7 +49,8 @@ public class DingoRootRule extends ConverterRule {
         return new DingoRoot(
             root.getCluster(),
             traits,
-            convert(root.getInput(), traits)
+            convert(root.getInput(), traits),
+            root.getSelection()
         );
     }
 }

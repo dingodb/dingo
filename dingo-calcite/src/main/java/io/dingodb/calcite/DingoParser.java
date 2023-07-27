@@ -31,6 +31,7 @@ import io.dingodb.calcite.rule.DingoRules;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.traits.DingoRelStreamingDef;
+import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.config.Lex;
@@ -48,11 +49,9 @@ import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlBasicCall;
-import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlSetOption;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -63,12 +62,13 @@ import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 import org.apache.calcite.util.Holder;
+import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.Connection;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rule.DingoRules.DINGO_AGGREGATE_SCAN_RULE;
 
@@ -151,8 +151,14 @@ public class DingoParser {
 
         RelRoot relRoot = sqlToRelConverter.convertQuery(sqlNode, needsValidation, true);
 
+        TupleMapping selection = null;
+        if (relRoot.kind == SqlKind.SELECT) {
+            selection = TupleMapping.of(
+                relRoot.fields.stream().map(Pair::getKey).collect(Collectors.toList())
+            );
+        }
         // Insert a `DingoRoot` to collect the results.
-        return relRoot.withRel(new LogicalDingoRoot(cluster, planner.emptyTraitSet(), relRoot.rel));
+        return relRoot.withRel(new LogicalDingoRoot(cluster, planner.emptyTraitSet(), relRoot.rel, selection));
     }
 
     /**
@@ -191,20 +197,15 @@ public class DingoParser {
             if (selectItem1 instanceof SqlBasicCall) {
                 SqlBasicCall sqlBasicCall = (SqlBasicCall) selectItem1;
                 String operatorName = sqlBasicCall.getOperator().getName();
-                if (operatorName.equalsIgnoreCase("database")
-                    || operatorName.equalsIgnoreCase("@")) {
-                    return true;
-                }
+                return operatorName.equalsIgnoreCase("database")
+                    || operatorName.equalsIgnoreCase("@");
             }
             return false;
         } else if (sqlNode instanceof SqlSetOption && !(sqlNode instanceof SqlSetPassword)) {
             return true;
         } else if (sqlNode instanceof SqlPrepare) {
             return true;
-        } else if (sqlNode instanceof SqlExecute) {
-            return true;
-        }
-        return false;
+        } else return sqlNode instanceof SqlExecute;
     }
 
     public Operation convertToOperation(SqlNode sqlNode, Connection connection, DingoParserContext context) {

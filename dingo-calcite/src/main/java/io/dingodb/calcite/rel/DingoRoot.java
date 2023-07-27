@@ -18,6 +18,8 @@ package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.traits.DingoRelTraitsUtils;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
+import io.dingodb.common.type.TupleMapping;
+import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -31,13 +33,17 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.List;
 
 public class DingoRoot extends SingleRel implements DingoRel {
-    public DingoRoot(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
+    @Getter
+    private final TupleMapping selection;
+
+    public DingoRoot(RelOptCluster cluster, RelTraitSet traits, RelNode input, TupleMapping selection) {
         super(cluster, traits, input);
+        this.selection = selection;
     }
 
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new DingoRoot(getCluster(), traitSet, sole(inputs));
+        return new DingoRoot(getCluster(), traitSet, sole(inputs), selection);
     }
 
     @Override

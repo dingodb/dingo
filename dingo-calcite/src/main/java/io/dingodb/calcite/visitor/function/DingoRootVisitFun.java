@@ -21,6 +21,7 @@ import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
@@ -28,6 +29,7 @@ import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.RootOperator;
+import org.apache.calcite.rel.type.RelDataType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
@@ -45,7 +47,12 @@ public class DingoRootVisitFun {
             throw new IllegalStateException("There must be one input to job root.");
         }
         Output input = sole(inputs);
-        Operator operator = new RootOperator(DefinitionMapper.mapToDingoType(rel.getRowType()));
+        RelDataType rowType = rel.getRowType();
+        TupleMapping selection = rel.getSelection();
+        if (selection != null && selection.size() == rowType.getFieldCount() && selection.isIdentity()) {
+            selection = null;
+        }
+        Operator operator = new RootOperator(DefinitionMapper.mapToDingoType(rel.getRowType()), selection);
         Task task = input.getTask();
         Id id = idGenerator.get();
         operator.setId(id);
