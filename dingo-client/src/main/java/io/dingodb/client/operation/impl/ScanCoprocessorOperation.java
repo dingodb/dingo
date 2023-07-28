@@ -28,6 +28,7 @@ import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.sdk.common.KeyValue;
+import io.dingodb.sdk.common.codec.CodecUtils;
 import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
@@ -226,22 +227,21 @@ public class ScanCoprocessorOperation implements Operation {
             case COUNT_WITH_NULL:
                 BigDecimal currentDecimal = new BigDecimal(String.valueOf(current));
                 BigDecimal oldDecimal = new BigDecimal(String.valueOf(old));
-                switch (column.getType().toUpperCase()) {
-                    case "INTEGER":
+                switch (CodecUtils.createSchemaForColumn(column).getType()) {
+                    case INTEGER:
                         value = currentDecimal.add(oldDecimal).intValue();
                         break;
-                    case "LONG":
-                    case "BIGINT":
+                    case LONG:
                         value = currentDecimal.add(oldDecimal).longValue();
                         break;
-                    case "DOUBLE":
+                    case DOUBLE:
                         currentDecimal = currentDecimal.add(oldDecimal);
                         if (column.getScale() > 0) {
                             currentDecimal = currentDecimal.setScale(column.getScale(), HALF_UP);
                         }
                         value = currentDecimal.doubleValue();
                         break;
-                    case "FLOAT":
+                    case FLOAT:
                         currentDecimal = currentDecimal.add(oldDecimal);
                         if (column.getScale() > 0) {
                             currentDecimal = currentDecimal.setScale(column.getScale(), HALF_UP);
