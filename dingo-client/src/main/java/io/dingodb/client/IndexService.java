@@ -151,6 +151,7 @@ public class IndexService {
 
     public boolean dropIndex(String schema, String indexName) {
         MetaServiceClient metaService = getSubMetaService(schema);
+        routeTables.remove(schema + "." + indexName);
         return metaService.dropIndex(indexName);
     }
 
