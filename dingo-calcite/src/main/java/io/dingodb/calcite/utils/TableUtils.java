@@ -59,7 +59,7 @@ public final class TableUtils {
                 for (Map.Entry<Integer, RexNode> entry : item.entrySet()) {
                     Expr expr = RexConverter.convert(entry.getValue());
                     try {
-                        tuple[revMapping.get(entry.getKey())] = expr.compileIn(null).eval(null);
+                        tuple[entry.getKey()] = expr.compileIn(null).eval(null);
                     } catch (ExprCompileException e) {
                         throw new RuntimeException(e);
                     }

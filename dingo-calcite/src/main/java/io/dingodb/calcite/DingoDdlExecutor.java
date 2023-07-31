@@ -170,12 +170,17 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         }
 
+        String name = scd.name.getSimple().toUpperCase();
+
         // Obtaining id from method
         if (scd.isAutoIncrement()) {
-            defaultValue = "";
+            if (SqlTypeName.INT_TYPES.contains(typeName)) {
+                defaultValue = "";
+            } else {
+                throw DINGO_RESOURCE.specifierForColumn(name).ex();
+            }
         }
 
-        String name = scd.name.getSimple().toUpperCase();
         if (!dataType.isNullable() && "NULL".equalsIgnoreCase(defaultValue)) {
             throw DINGO_RESOURCE.invalidDefaultValue(name).ex();
         }
