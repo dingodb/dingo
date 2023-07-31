@@ -132,13 +132,17 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
         if (pushDown) {
             TupleMapping outputKeyMapping = keyMapping;
             Coprocessor.CoprocessorBuilder builder = Coprocessor.builder();
+            DingoType filterInputSchema;
             if (selection != null) {
                 builder.selection(selection.stream().boxed().collect(Collectors.toList()));
+                filterInputSchema = schema.select(selection);
                 selection = null;
                 outputKeyMapping = TupleMapping.of(new int[]{});
+            } else {
+                filterInputSchema = schema;
             }
             if (filter != null) {
-                ExprCodeType ect = filter.getCoding(schema, getParasType());
+                ExprCodeType ect = filter.getCoding(filterInputSchema, getParasType());
                 if (ect != null) {
                     builder.expression(ect.getCode());
                     filter = null;

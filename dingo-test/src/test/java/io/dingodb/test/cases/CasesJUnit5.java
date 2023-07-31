@@ -497,8 +497,47 @@ public class CasesJUnit5 implements ArgumentsProvider {
                     "Doris",
                     "Cindy"
                 )
+            ),
+            Case.of(
+                "new test",
+                exec("CREATE TABLE {table} (\n" +
+                    "    id int,\n" +
+                    "    name varchar(64),\n" +
+                    "    age int,\n" +
+                    "    amount DOUBLE,\n" +
+                    "    address varchar(255),\n" +
+                    "    birthday DATE,\n" +
+                    "    create_time TIME,\n" +
+                    "    update_time TIMESTAMP,\n" +
+                    "    is_delete boolean,\n" +
+                    "    PRIMARY KEY (id)\n" +
+                    ") "
+                ),
+                exec("insert into {table} values\n" +
+                    "(1,'zhangsan',18,23.50,'beijing','1998-04-06','08:10:10','2022-04-08 18:05:07', true),\n" +
+                    "(2,'lisi',25,895,' beijing haidian ','1988-02-05','06:15:08','2000-02-29 00:00:00', false),\n" +
+                    "(3,'l3',55,123.123,'wuhan NO.1 Street','2022-03-04','07:03:15','1999-02-28 23:59:59', false),\n" +
+                    "(4,'HAHA',57,9.0762556,'CHANGping', '2020-11-11', '05:59:59', '2021-05-04 12:00:00', True),\n" +
+                    "(5,'awJDs',1,1453.9999,'pingYang1', '2010-10-01', '19:00:00', '2010-10-01 02:02:02', TRUE),\n" +
+                    "(6,'123',544,0,'543', '1987-07-16', '01:02:03', '1952-12-31 12:12:12', true),\n" +
+                    "(7,'yamaha',76,2.30,'beijing changyang', '1949-01-01', '00:30:08', '2022-12-01 01:02:03', False),\n" +
+                    "(8,'zhangsan',18,12.3,'shanghai','2015-09-10', '03:45:10', '2001-11-11 18:05:07', true),\n" +
+                    "(9,'op ',76,109.325,'wuhan', '1995-12-15', '16:35:38', '2008-08-08 08:00:00', true),\n" +
+                    "(10,'lisi',256,1234.456,'nanjing', '2021-03-04', '17:30:15', '1999-02-28 00:59:59', FALSE),\n" +
+                    "(11,'  aB c  dE ',61,99.9999,'beijing chaoyang', '1976-07-07', '06:00:00', '2024-05-04 12:00:00', false),\n" +
+                    "(12,' abcdef',2,2345.000,'123', '2018-05-31', '21:00:00', '2000-01-01 00:00:00', true),\n" +
+                    "(13,'HAHA',57,9.0762556,'CHANGping', '2014-10-13', '01:00:00', '1999-12-31 23:59:59', false),\n" +
+                    "(14,'zhngsna',99,32,'chong qing ', '1949-10-01', '12:30:00', '2022-12-31 23:59:59', true),\n" +
+                    "(15,'1.5',18,0.1235,'http://WWW.baidu.com','2007-08-15', '22:10:10', '2020-02-29 05:53:44', true),\n" +
+                    "(16,' ',82,1999.99,'Huluodao', '1960-11-11', '14:09:49', '2000-02-29 00:00:00', false),\n" +
+                    "(17,'',0,0.01,null, '2022-03-01', '15:20:20', '1953-10-21 16:10:28', true),\n" +
+                    "(18,'tTATtt',181,18.18,' aabcaa ', '2020-11-11', '05:59:59', '2021-05-04 12:00:00', false),\n" +
+                    "(19,'777',77,77.77,'7788', '2020-11-11', '05:59:59', '2021-05-04 12:00:00', false),\n" +
+                    "(20,null,null,null,null, '1987-12-11', '11:11:00', '1997-07-01 00:00:00', null),\n" +
+                    "(21,'Zala',76,2000.01,'JiZhou', '2022-07-07', '00:00:00', '2022-07-07 13:30:03', false)"),
+                exec("select id,name,is_delete from {table} where is_delete in (false)")
             )
         );
-        return stream;//.filter(arg -> arg.get()[0].equals("Get by primary key 1"));
+        return stream;//.filter(arg -> arg.get()[0].equals("new test"));
     }
 }
