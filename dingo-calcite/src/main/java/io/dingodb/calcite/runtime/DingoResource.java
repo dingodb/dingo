@@ -37,6 +37,9 @@ public interface DingoResource {
     @BaseMessage("Invalid default value for ''{0}''")
     ExInst<DingoSqlException> invalidDefaultValue(String a0);
 
+    @BaseMessage("Incorrect column specifier for column ''{0}''")
+    ExInst<DingoSqlException> specifierForColumn(String a0);
+
     @BaseMessage("There is no such grant defined for user ''{0}'' on host ''{1}''")
     ExInst<DingoSqlException> noDbGrantsForRevoke(String a0, String a1);
 
