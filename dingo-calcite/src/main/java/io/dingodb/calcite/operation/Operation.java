@@ -16,9 +16,14 @@
 
 package io.dingodb.calcite.operation;
 
+import io.dingodb.codec.KeyValueCodec;
+import io.dingodb.store.api.StoreInstance;
+
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 
 public interface Operation {
 
@@ -31,11 +36,39 @@ public interface Operation {
             throw new RuntimeException(e);
         } finally {
             try {
-                statement.close();
+                if (statement != null) {
+                    statement.close();
+                }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }
     }
 
+    default void insert(StoreInstance store, KeyValueCodec codec, List<Object[]> rowList) {
+        rowList.stream().forEach(row -> {
+            try {
+                store.insert(codec.encode(row));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    default void insert(StoreInstance store, KeyValueCodec codec, Object[] row) {
+        try {
+            store.insert(codec.encode(row));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    default void deletePrefix(StoreInstance store, KeyValueCodec codec, Object[] key) {
+        try {
+            byte[] prefix = codec.encodeKeyPrefix(key, 2);
+            store.delete(new StoreInstance.Range(prefix, prefix, true, true));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
