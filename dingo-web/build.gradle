@@ -18,6 +18,7 @@ plugins {
     id 'org.springframework.boot' version '2.5.4'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
+    id "com.google.protobuf" version "0.8.18"
 }
 
 jar {
@@ -59,6 +60,12 @@ dependencies {
     implementation project(":dingo-verify")
     implementation project(":dingo-client")
 
+    implementation group:'com.google.protobuf', name:'protobuf-java', version: 'protobuf'.v()
+
+    implementation group: 'io.grpc', name: 'grpc-protobuf', version: 'grpc'.v()
+    implementation group: 'io.grpc', name: 'grpc-stub', version: 'grpc'.v()
+    implementation group: 'io.grpc', name: 'grpc-netty-shaded', version: 'grpc'.v()
+
     implementation group: 'io.dingodb', name: 'dingo-sdk', version: 'dingo-sdk'.v()
 
     compileOnly group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
@@ -70,6 +77,42 @@ dependencies {
 bootJar.dependsOn([
     ':dingo-client:fatJar',
 ])
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.21.7'
+    }
+    generatedFilesBaseDir = "$projectDir/build/generated/sources/protobuf/"
+    plugins {
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.52.1'
+        }
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                java {
+                    option 'lite'
+                }
+            }
+            task.plugins {
+                grpc {
+                    option 'lite'
+                }
+            }
+        }
+    }
+}
+sourceSets {
+    main {
+        proto {
+            srcDir 'src/main/dingo-proto/proto/'
+        }
+        java {
+            srcDirs 'build/generated/sources/protobuf/'
+        }
+    }
+}
 
 test {
     useJUnitPlatform()
