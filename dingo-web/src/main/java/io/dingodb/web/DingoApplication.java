@@ -16,10 +16,15 @@
 
 package io.dingodb.web;
 
+import io.dingodb.web.annotation.GrpcService;
+import io.dingodb.web.bean.GrpcLauncher;
 import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 import springfox.documentation.oas.annotations.EnableOpenApi;
+
+import java.util.Map;
 
 @Configurable
 @EnableOpenApi
@@ -27,6 +32,9 @@ import springfox.documentation.oas.annotations.EnableOpenApi;
 public class DingoApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(DingoApplication.class, args);
+        ConfigurableApplicationContext context = SpringApplication.run(DingoApplication.class, args);
+        Map<String, Object> grpcServiceMap = context.getBeansWithAnnotation(GrpcService.class);
+        GrpcLauncher launcher = context.getBean("grpcLauncher", GrpcLauncher.class);
+        launcher.grpcStart(grpcServiceMap);
     }
 }

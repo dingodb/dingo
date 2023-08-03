@@ -5,4 +5,6 @@ server:
         min-response-size: 1024
     host: 127.0.0.1
     port: 13000
-    coordinatorExchangeSvrList: node1:19181,node2:19181,node3:19181
+    grpc:
+        port: 9999
+    coordinatorExchangeSvrList: node1:22001,node1:22002,node1:22003

@@ -32,6 +32,9 @@ jobs:
         rm -rf ~/.m2/repository/
         rm -rf ~/.gradle/
 
+    - name: Clone Submodule
+      run: git submodule update --init --recursive
+
     - name: Build Dingo Project
       run: |
         ./gradlew build
