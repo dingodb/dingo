@@ -77,6 +77,10 @@ public class MysqlInit {
         initTableByTemplate("information_schema", "KEY_COLUMN_USAGE");
         initTableByTemplate("information_schema", "SCHEMATA");
         initTableByTemplate("information_schema", "TABLES");
+        initTableByTemplate("mysql", "ANALYZE_JOB");
+        initTableByTemplate("mysql", "CM_SKETCH");
+        initTableByTemplate("mysql", "TABLE_STATS");
+        initTableByTemplate("mysql", "TABLE_BUCKETS");
         close();
         // check
         initMetaStore(coordinatorSvr);
@@ -246,43 +250,55 @@ public class MysqlInit {
         String jsonFile;
         switch (tableName) {
             case "USER":
-                jsonFile = "/table-mysql-user.json";
+                jsonFile = "/mysql-user.json";
                 break;
             case "DB":
-                jsonFile = "/table-mysql-db.json";
+                jsonFile = "/mysql-db.json";
                 break;
             case "TABLES_PRIV":
-                jsonFile = "/table-mysql-tables_priv.json";
+                jsonFile = "/mysql-tablesPriv.json";
                 break;
             case "GLOBAL_VARIABLES":
-                jsonFile = "/table-information-global_variables.json";
+                jsonFile = "/information-globalVariables.json";
                 break;
             case "KEY_COLUMN_USAGE":
-                jsonFile = "/table-information-key_column_usage.json";
+                jsonFile = "/information-keyColumnUsage.json";
                 break;
             case "COLUMNS":
-                jsonFile = "/table-information-columns.json";
+                jsonFile = "/information-columns.json";
                 break;
             case "EVENTS":
-                jsonFile = "/table-information-events.json";
+                jsonFile = "/information-events.json";
                 break;
             case "TRIGGERS":
-                jsonFile = "/table-information-triggers.json";
+                jsonFile = "/information-triggers.json";
                 break;
             case "PARTITIONS":
-                jsonFile = "/table-information-partitions.json";
+                jsonFile = "/information-partitions.json";
                 break;
             case "ROUTINES":
-                jsonFile = "/table-information-routines.json";
+                jsonFile = "/information-routines.json";
                 break;
             case "STATISTICS":
-                jsonFile = "/table-information-statistics.json";
+                jsonFile = "/information-statistics.json";
                 break;
             case "SCHEMATA":
-                jsonFile = "/table-information-schemata.json";
+                jsonFile = "/information-schemata.json";
                 break;
             case "TABLES":
-                jsonFile = "/table-information-tables.json";
+                jsonFile = "/information-tables.json";
+                break;
+            case "ANALYZE_JOB":
+                jsonFile = "/mysql-analyzeJob.json";
+                break;
+            case "CM_SKETCH":
+                jsonFile = "/mysql-cmSketch.json";
+                break;
+            case "TABLE_BUCKETS":
+                jsonFile = "/mysql-tableBuckets.json";
+                break;
+            case "TABLE_STATS":
+                jsonFile = "/mysql-tableStats.json";
                 break;
             default:
                 throw new RuntimeException("table not found");

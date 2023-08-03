@@ -14,19 +14,11 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.meta;
+package io.dingodb.calcite.stats;
 
-import com.google.common.collect.ImmutableList;
-import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class DingoRelMetadataProvider extends ChainedRelMetadataProvider {
-    public static DingoRelMetadataProvider INSTANCE = new DingoRelMetadataProvider();
-
-    private DingoRelMetadataProvider() {
-        super(ImmutableList.of(
-            DingoRelMdRowCount.SOURCE,
-            DingoRelMdColumnUniqueness.SOURCE,
-            DingoRelMdSelectivity.SOURCE
-        ));
-    }
+public class StatsCache {
+    public static volatile Map<String, TableStats> statsMap = new ConcurrentHashMap<>();
 }

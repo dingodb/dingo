@@ -1,0 +1,30 @@
+ [
+    {
+      "name": "schema_name",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "table_name",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": 1,
+      "nullable": false
+    },
+    {
+     "name": "column_name",
+     "type": "varchar",
+     "scale": -2147483648,
+     "primary": 2,
+     "nullable": false
+    },
+    {
+      "name": "histogram",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    }
+  ]

@@ -35,6 +35,7 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlAlterUser"
       "io.dingodb.calcite.grammar.ddl.SqlAlterTable"
       "io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution"
+      "io.dingodb.calcite.grammar.ddl.SqlAnalyze"
       "io.dingodb.calcite.grammar.ddl.SqlCreateUser"
       "io.dingodb.calcite.grammar.ddl.SqlCreateIndex"
       "io.dingodb.calcite.grammar.dql.SqlDesc"
@@ -122,6 +123,11 @@ data: {
       "VARIABLES"
       "VECTOR"
       "WARNINGS"
+      "ANALYZE"
+      "BUCKETS"
+      "CMSKETCH"
+      "SAMPLES"
+      "SAMPLERATE"
     ]
 
     # List of non-reserved keywords to add;
@@ -182,6 +188,7 @@ data: {
         "SqlUseSchema"
         "SqlPrepare"
         "SqlExecute"
+        "SqlAnalyze"
     ]
 
     # List of files in @includes directory that have parser method
@@ -193,6 +200,7 @@ data: {
       "parserImpls.ftl"
       "AlterTable.ftl"
       "Show.ftl"
+      "Analyze.ftl"
     ]
 
     includePosixOperators: false

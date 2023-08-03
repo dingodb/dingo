@@ -14,19 +14,22 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.meta;
+package io.dingodb.calcite.stats;
 
-import com.google.common.collect.ImmutableList;
-import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
+public enum StatsTaskState {
+    PENDING("pending"),
+    RUNNING("RUNNING"),
+    SUCCESS("SUCCESS"),
+    FAIL("FAIL")
+    ;
 
-public class DingoRelMetadataProvider extends ChainedRelMetadataProvider {
-    public static DingoRelMetadataProvider INSTANCE = new DingoRelMetadataProvider();
+    StatsTaskState(String state) {
+        this.state = state;
+    }
 
-    private DingoRelMetadataProvider() {
-        super(ImmutableList.of(
-            DingoRelMdRowCount.SOURCE,
-            DingoRelMdColumnUniqueness.SOURCE,
-            DingoRelMdSelectivity.SOURCE
-        ));
+    private String state;
+
+    public String getState() {
+        return state;
     }
 }

@@ -17,6 +17,7 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.DingoParserContext;
+import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
 import io.dingodb.calcite.grammar.dql.SqlDesc;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
 import io.dingodb.calcite.grammar.dql.SqlShowColumns;
@@ -113,6 +114,12 @@ public class SqlToOperationConverter {
         } else if (sqlNode instanceof SqlShowTableStatus) {
             SqlShowTableStatus showTableStatus = (SqlShowTableStatus) sqlNode;
             return Optional.of(new ShowTableStatusOperation(showTableStatus.schema, showTableStatus.sqlLikePattern));
+        } else if (sqlNode instanceof SqlAnalyze) {
+            SqlAnalyze analyze = (SqlAnalyze) sqlNode;
+            if (StringUtils.isEmpty(analyze.getSchemaName())) {
+                analyze.setSchemaName(getSchemaName(context));
+            }
+            return Optional.of(new AnalyzeTableOperation(connection, analyze));
         } else {
             return Optional.empty();
         }

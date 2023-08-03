@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.meta;
+package io.dingodb.calcite.stats;
 
-import com.google.common.collect.ImmutableList;
-import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
+import org.apache.calcite.sql.SqlKind;
 
-public class DingoRelMetadataProvider extends ChainedRelMetadataProvider {
-    public static DingoRelMetadataProvider INSTANCE = new DingoRelMetadataProvider();
+public interface CalculateStatistic<T> {
+    public double estimateSelectivity(SqlKind op, Object valObj);
 
-    private DingoRelMetadataProvider() {
-        super(ImmutableList.of(
-            DingoRelMdRowCount.SOURCE,
-            DingoRelMdColumnUniqueness.SOURCE,
-            DingoRelMdSelectivity.SOURCE
-        ));
-    }
+    public String serialize();
+
+    public T deserialize(String str);
 }

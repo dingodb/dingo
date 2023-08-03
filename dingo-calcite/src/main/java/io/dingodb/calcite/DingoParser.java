@@ -17,6 +17,7 @@
 package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.dml.SqlExecute;
 import io.dingodb.calcite.grammar.dml.SqlPrepare;
@@ -205,7 +206,12 @@ public class DingoParser {
             return true;
         } else if (sqlNode instanceof SqlPrepare) {
             return true;
-        } else return sqlNode instanceof SqlExecute;
+        } else if (sqlNode instanceof SqlExecute) {
+            return true;
+        } else if (sqlNode instanceof SqlAnalyze) {
+            return true;
+        }
+        return false;
     }
 
     public Operation convertToOperation(SqlNode sqlNode, Connection connection, DingoParserContext context) {

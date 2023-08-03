@@ -4201,6 +4201,7 @@ SqlSetOption SqlSetOption(Span s, String scope) :
         [ <SESSION> { scope = "SESSION"; } ]
         [ <EXECUTOR> { scope = "EXECUTOR"; } ]
         [ <AT_SPLIT> { scope = "USER"; } ]
+        [ <AT_SPLIT_2> { scope = "GLOBAL"; } ]
         name = CompoundIdentifier()
         (
          <UTF8> {
