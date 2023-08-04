@@ -17,16 +17,7 @@
 package io.dingodb.test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.dingodb.calcite.DingoRootSchema;
-import io.dingodb.common.CommonId;
-import io.dingodb.common.auth.DingoRole;
-import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.environment.ExecutionEnvironment;
-import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.driver.DingoDriver;
-import io.dingodb.exec.Services;
 import io.dingodb.meta.local.LocalMetaService;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.utils.CsvUtils;
@@ -41,70 +32,30 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Objects;
-import java.util.Properties;
-import java.util.TreeMap;
 import java.util.UUID;
 import javax.annotation.Nonnull;
 
-import static io.dingodb.common.CommonId.CommonType.DISTRIBUTION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@Deprecated
 @Slf4j
 public class SqlHelper {
     @Getter
     private final Connection connection;
 
     public SqlHelper() throws Exception {
-        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-        env.setRole(DingoRole.JDBC);
-        env.setInfo("user", "root");
-        env.setInfo("password", "");
-        // Configure for local test.
-        if (DingoConfiguration.instance() == null) {
-            DingoConfiguration.parse(
-                Objects.requireNonNull(SqlHelper.class.getResource("/config.yaml")).getPath()
-            );
-        }
-
-        Services.initNetService();
-        Services.NET.listenPort(FakeLocation.PORT);
-
-        TreeMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> defaultDistribution = new TreeMap<>();
-        byte[] startKey = ByteArrayUtils.EMPTY_BYTES;
-        byte[] endKey = ByteArrayUtils.MAX;
-
-        defaultDistribution.put(
-            new ByteArrayUtils.ComparableByteArray(startKey),
-            new RangeDistribution(new CommonId(DISTRIBUTION, 1, 1), startKey, endKey
-        ));
-        LocalMetaService metaService = LocalMetaService.ROOT;
-        metaService.createSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME);
-        metaService.setRangeDistributions(defaultDistribution);
-        LocalMetaService.setLocation(new FakeLocation(0));
-
-        connection = getLocalConnection();
-
+        ConnectionFactory.initLocalEnvironment();
+        connection = ConnectionFactory.getConnection();
     }
 
     public SqlHelper(Connection connection) {
         this.connection = connection;
-    }
-
-    public static Connection getLocalConnection() throws ClassNotFoundException, SQLException, IOException {
-        Class.forName("io.dingodb.driver.DingoDriver");
-        Properties properties = new Properties();
-        properties.load(SqlHelper.class.getResourceAsStream("/test.properties"));
-        return DriverManager.getConnection(
-            DingoDriver.CONNECT_STRING_PREFIX,
-            properties
-        );
     }
 
     @Nonnull

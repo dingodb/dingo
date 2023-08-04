@@ -1,0 +1,13 @@
+---
+tables:
+  i4k_l0:
+    create: { file: create.sql }
+cases:
+  - name: Insert int to bool
+    use:
+      table: i4k_l0
+    steps:
+      - file: data_of_int.sql
+        count: 2
+      - file: select_true.sql
+        result: data_of_true.csv

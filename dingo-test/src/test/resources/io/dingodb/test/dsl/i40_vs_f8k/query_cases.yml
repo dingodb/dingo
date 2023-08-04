@@ -1,0 +1,12 @@
+---
+tables:
+  i40_vs_f8k:
+    create: { file: create.sql }
+    init: { file: data.sql, count: 3 }
+cases:
+  - name: Double as primary key
+    use:
+      table: i40_vs_f8k
+    steps:
+      - sql: select * from {table}
+        result: data.csv

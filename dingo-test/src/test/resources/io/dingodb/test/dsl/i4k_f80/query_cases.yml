@@ -1,0 +1,12 @@
+---
+tables:
+  i4k_f80:
+    create: { file: create.sql }
+    init: { file: data_with_null.sql, count: 2 }
+cases:
+  - name: With null
+    use:
+      table: i4k_f80
+    steps:
+      - sql: select * from {table}
+        result: data_with_null.csv
