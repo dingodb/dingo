@@ -14,21 +14,10 @@
  * limitations under the License.
  */
 
-buildscript {
-    repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        classpath "ca.coglinc:javacc-gradle-plugin:2.4.0"
-    }
-}
-
 plugins {
     id 'java-conventions'
     id 'java-library'
-    id "ca.coglinc.javacc" version "2.4.0"
+    id "org.javacc.javacc" version "3.0.0"
 }
 
 configurations {
@@ -55,8 +44,6 @@ dependencies {
     fmppTask "com.googlecode.fmpp-maven-plugin:fmpp-maven-plugin:1.0"
     fmppTask "org.freemarker:freemarker:2.3.31"
 }
-
-apply plugin: "ca.coglinc.javacc"
 
 sourceSets {
     main {
