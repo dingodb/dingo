@@ -25,6 +25,7 @@ import io.dingodb.test.dsl.builder.checker.SqlCsvFileNameResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlCsvFileResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlCsvStringResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlObjectResultChecker;
+import io.dingodb.test.dsl.builder.checker.SqlResultDumper;
 import io.dingodb.test.dsl.builder.checker.SqlUpdateCountChecker;
 import io.dingodb.test.utils.CsvUtils;
 import lombok.AccessLevel;
@@ -106,5 +107,10 @@ public class SqlCheckerConverter implements SqlCheckerVisitor<Check> {
     @Override
     public Check visit(@NonNull SqlUpdateCountChecker sqlChecker) {
         return new UpdateCountCheck(sqlChecker.getUpdateCount());
+    }
+
+    @Override
+    public Check visit(@NonNull SqlResultDumper sqlChecker) {
+        return new DumpResult();
     }
 }

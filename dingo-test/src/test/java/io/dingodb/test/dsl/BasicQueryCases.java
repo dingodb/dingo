@@ -16,6 +16,7 @@
 
 package io.dingodb.test.dsl;
 
+import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoRootSchema;
 import io.dingodb.test.dsl.builder.SqlTestCaseJavaBuilder;
 
@@ -44,10 +45,14 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .init(file("i4k_vs0_vs0/data_with_null.sql"), 1);
 
         table(
+            "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0",
+            file("i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0/create.sql")
+        ).init(file("i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0/data.sql"), 21);
+
+        table(
             "i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0",
             file("i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0/create.sql")
-        )
-            .init(file("i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0/data.sql"), 10);
+        ).init(file("i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0/data.sql"), 10);
 
         test("Select all")
             .use("table", "i4k_vs_f80")
@@ -119,6 +124,44 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                     "INT,STRING,INT,LONG,DOUBLE,DOUBLE,STRING,DATE,STRING,TIMESTAMP,STRING,BOOL",
                     "1,zhangsan,18,99,0.0,23.5,beijing,1998-04-06,08:10:10,2022-04-08 18:05:07,null,true"
                 )
+            );
+
+        test("Select filtered by `or` of columns")
+            .use("table", "i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0")
+            .step(
+                "select id from {table} where age=55 or gmt=13989023458",
+                csv(
+                    "id",
+                    "INT",
+                    "2",
+                    "3"
+                )
+            );
+
+        test("Select filtered by DOUBLE column")
+            .use("table", "i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0")
+            .step(
+                "select id from {table} where price=0.0",
+                csv(
+                    "id",
+                    "INT",
+                    "1",
+                    "10"
+                )
+            );
+
+        test("Select filtered by DOUBLE column 1")
+            .use("table", "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0")
+            .step(
+                "select amount from {table} where amount>50",
+                csv(file("i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0/select_by_amount.csv"))
+            );
+
+        test("Select filtered by abs(DOUBLE column)")
+            .use("table", "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0")
+            .step(
+                "select amount from {table} where abs(amount)>50",
+                csv(file("i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0/select_by_amount.csv"))
             );
 
         test("Select filtered by `or` of primary key")
@@ -357,45 +400,39 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                 )
             );
 
-        test("new test")
+        test("Select with `in list` of BOOLEAN")
+            .use("table", "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0")
             .step(
-                "CREATE TABLE {table} (\n" +
-                    "    id int,\n" +
-                    "    name varchar(64),\n" +
-                    "    age int,\n" +
-                    "    amount DOUBLE,\n" +
-                    "    address varchar(255),\n" +
-                    "    birthday DATE,\n" +
-                    "    create_time TIME,\n" +
-                    "    update_time TIMESTAMP,\n" +
-                    "    is_delete boolean,\n" +
-                    "    PRIMARY KEY (id)\n" +
-                    ") "
-            )
+                "select id,name,is_delete from {table} where is_delete in (false)",
+                is(
+                    new String[]{"id", "name", "is_delete"},
+                    ImmutableList.of(
+                        new Object[]{2, "lisi", false},
+                        new Object[]{3, "l3", false},
+                        new Object[]{7, "yamaha", false},
+                        new Object[]{10, "lisi", false},
+                        new Object[]{11, "  aB c  dE ", false},
+                        new Object[]{13, "HAHA", false},
+                        new Object[]{16, " ", false},
+                        new Object[]{18, "tTATtt", false},
+                        new Object[]{19, "777", false},
+                        new Object[]{21, "Zala", false}
+                    )
+                ));
+
+        test("Select with `between`")
+            .use("table", "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0")
             .step(
-                "insert into {table} values\n" +
-                    "(1,'zhangsan',18,23.50,'beijing','1998-04-06','08:10:10','2022-04-08 18:05:07', true),\n" +
-                    "(2,'lisi',25,895,' beijing haidian ','1988-02-05','06:15:08','2000-02-29 00:00:00', false),\n" +
-                    "(3,'l3',55,123.123,'wuhan NO.1 Street','2022-03-04','07:03:15','1999-02-28 23:59:59', false),\n" +
-                    "(4,'HAHA',57,9.0762556,'CHANGping', '2020-11-11', '05:59:59', '2021-05-04 12:00:00', True),\n" +
-                    "(5,'awJDs',1,1453.9999,'pingYang1', '2010-10-01', '19:00:00', '2010-10-01 02:02:02', TRUE),\n" +
-                    "(6,'123',544,0,'543', '1987-07-16', '01:02:03', '1952-12-31 12:12:12', true),\n" +
-                    "(7,'yamaha',76,2.30,'beijing changyang', '1949-01-01', '00:30:08', '2022-12-01 01:02:03', False),\n" +
-                    "(8,'zhangsan',18,12.3,'shanghai','2015-09-10', '03:45:10', '2001-11-11 18:05:07', true),\n" +
-                    "(9,'op ',76,109.325,'wuhan', '1995-12-15', '16:35:38', '2008-08-08 08:00:00', true),\n" +
-                    "(10,'lisi',256,1234.456,'nanjing', '2021-03-04', '17:30:15', '1999-02-28 00:59:59', FALSE),\n" +
-                    "(11,'  aB c  dE ',61,99.9999,'beijing chaoyang', '1976-07-07', '06:00:00', '2024-05-04 12:00:00', false),\n" +
-                    "(12,' abcdef',2,2345.000,'123', '2018-05-31', '21:00:00', '2000-01-01 00:00:00', true),\n" +
-                    "(13,'HAHA',57,9.0762556,'CHANGping', '2014-10-13', '01:00:00', '1999-12-31 23:59:59', false),\n" +
-                    "(14,'zhngsna',99,32,'chong qing ', '1949-10-01', '12:30:00', '2022-12-31 23:59:59', true),\n" +
-                    "(15,'1.5',18,0.1235,'http://WWW.baidu.com','2007-08-15', '22:10:10', '2020-02-29 05:53:44', true),\n" +
-                    "(16,' ',82,1999.99,'Huluodao', '1960-11-11', '14:09:49', '2000-02-29 00:00:00', false),\n" +
-                    "(17,'',0,0.01,null, '2022-03-01', '15:20:20', '1953-10-21 16:10:28', true),\n" +
-                    "(18,'tTATtt',181,18.18,' aabcaa ', '2020-11-11', '05:59:59', '2021-05-04 12:00:00', false),\n" +
-                    "(19,'777',77,77.77,'7788', '2020-11-11', '05:59:59', '2021-05-04 12:00:00', false),\n" +
-                    "(20,null,null,null,null, '1987-12-11', '11:11:00', '1997-07-01 00:00:00', null),\n" +
-                    "(21,'Zala',76,2000.01,'JiZhou', '2022-07-07', '00:00:00', '2022-07-07 13:30:03', false)"
-            )
-            .step("select id,name,is_delete from {table} where is_delete in (false)");
+                "select * from {table} where id between 3 and 7",
+                csv(
+                    "id, name, age, amount, address, birthday, create_time, update_time, is_delete",
+                    "INT, STRING, INT, DOUBLE, STRING, DATE, STRING, TIMESTAMP, BOOL",
+                    "3, l3, 55, 123.123, wuhan NO.1 Street, 2022-03-04, 07:03:15, 1999-02-28 23:59:59, false",
+                    "4, HAHA, 57, 9.0762556, CHANGping, 2020-11-11, 05:59:59, 2021-05-04 12:00:00, true",
+                    "5, awJDs, 1, 1453.9999, pingYang1, 2010-10-01, 19:00:00, 2010-10-01 02:02:02, true",
+                    "6, 123, 544, 0.0, 543, 1987-07-16, 01:02:03, 1952-12-31 12:12:12, true",
+                    "7, yamaha, 76, 2.3, beijing changyang, 1949-01-01, 00:30:08, 2022-12-01 01:02:03, false"
+                )
+            );
     }
 }

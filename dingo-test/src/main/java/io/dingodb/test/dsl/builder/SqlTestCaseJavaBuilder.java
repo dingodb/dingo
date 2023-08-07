@@ -20,6 +20,7 @@ import io.dingodb.test.dsl.builder.checker.CheckRunningContext;
 import io.dingodb.test.dsl.builder.checker.SqlCsvFileResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlCsvStringResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlObjectResultChecker;
+import io.dingodb.test.dsl.builder.checker.SqlResultDumper;
 import io.dingodb.test.dsl.builder.checker.SqlUpdateCountChecker;
 import io.dingodb.test.dsl.builder.step.SqlFileStep;
 import io.dingodb.test.dsl.builder.step.SqlStringStep;
@@ -59,6 +60,10 @@ public abstract class SqlTestCaseJavaBuilder extends SqlTestCaseBuilder {
 
     public static @NonNull SqlUpdateCountChecker count(int updateCount) {
         return new SqlUpdateCountChecker(updateCount);
+    }
+
+    public static @NonNull SqlResultDumper dump() {
+        return new SqlResultDumper();
     }
 
     public static @NonNull CheckRunningContext check(

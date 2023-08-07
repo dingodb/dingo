@@ -44,10 +44,10 @@ public abstract class FilterProjectSourceOperator extends IteratorSourceOperator
     @Override
     protected @NonNull Iterator<Object[]> createIterator() {
         Iterator<Object[]> iterator = createSourceIterator();
-        if (selection != null) {
+        if (selection!=null) {
             iterator = Iterators.transform(iterator, selection::revMap);
         }
-        if (filter != null) {
+        if (filter!=null) {
             iterator = Iterators.filter(
                 iterator,
                 tuple -> RtLogicalOp.test(filter.eval(tuple))
@@ -61,15 +61,19 @@ public abstract class FilterProjectSourceOperator extends IteratorSourceOperator
     @Override
     public void init() {
         super.init();
-        if (filter != null) {
-            filter.compileIn(schema, getParasType());
+        if (filter!=null) {
+            if (selection!=null) {
+                filter.compileIn(schema.select(selection), getParasType());
+            } else {
+                filter.compileIn(schema, getParasType());
+            }
         }
     }
 
     @Override
     public void setParas(Object[] paras) {
         super.setParas(paras);
-        if (filter != null) {
+        if (filter!=null) {
             filter.setParas(paras);
         }
     }
