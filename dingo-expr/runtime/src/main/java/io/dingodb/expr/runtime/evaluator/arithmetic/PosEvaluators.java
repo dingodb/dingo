@@ -17,7 +17,7 @@
 package io.dingodb.expr.runtime.evaluator.arithmetic;
 
 import io.dingodb.expr.annotations.Evaluators;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
 

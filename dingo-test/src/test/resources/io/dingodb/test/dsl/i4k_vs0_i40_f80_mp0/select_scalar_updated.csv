@@ -1,0 +1,3 @@
+id, name, age, amount, sex, address, phone
+INT, STRING, INT, DOUBLE, STRING, STRING, STRING
+1, bbb, 20, 23.45, female, bj, 13982939293

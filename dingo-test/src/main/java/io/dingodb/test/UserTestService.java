@@ -22,7 +22,6 @@ import io.dingodb.common.privilege.PrivilegeDefinition;
 import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.meta.MetaService;
-import io.dingodb.net.Channel;
 import io.dingodb.verify.service.UserService;
 
 public class UserTestService implements UserService {
@@ -64,7 +63,7 @@ public class UserTestService implements UserService {
         UserDefinition userDefinition = UserDefinition.builder().user("root").host("%")
             .password("").plugin("mysql_native_password").build();
         Boolean[] privileges = new Boolean[35];
-        for (int i = 0; i < privileges.length; i ++) {
+        for (int i = 0; i < privileges.length; i++) {
             privileges[i] = true;
         }
         return PrivilegeGather.builder().user("root").host("%").userDef(userDefinition).build();

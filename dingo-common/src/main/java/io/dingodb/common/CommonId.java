@@ -29,7 +29,7 @@ import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteUtils;
 import lombok.EqualsAndHashCode;
-import lombok.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.io.Serializable;

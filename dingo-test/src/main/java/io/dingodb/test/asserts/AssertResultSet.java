@@ -93,9 +93,9 @@ public final class AssertResultSet {
     @SuppressWarnings("UnusedReturnValue")
     public AssertResultSet asInCsv(InputStream csvStream) throws IOException, SQLException {
         Iterator<String[]> it = CsvUtils.readCsv(csvStream);
-        final String[] columnNames = it.hasNext() ? it.next() : null;
-        final DingoType schema = it.hasNext() ? DingoTypeFactory.tuple(it.next()) : null;
-        if (columnNames == null || schema == null) {
+        final String[] columnNames = it.hasNext() ? it.next():null;
+        final DingoType schema = it.hasNext() ? DingoTypeFactory.tuple(it.next()):null;
+        if (columnNames==null || schema==null) {
             throw new IllegalArgumentException(
                 "Result file must be csv and its first two rows are column names and schema definitions."
             );

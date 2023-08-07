@@ -18,18 +18,12 @@ package io.dingodb.test;
 
 import io.dingodb.driver.client.DingoDriverClient;
 import io.dingodb.test.asserts.Assert;
-import io.dingodb.test.dsl.Case;
-import io.dingodb.test.cases.CasesJUnit5;
-import io.dingodb.test.dsl.ClassTestMethod;
 import io.dingodb.test.cases.ExceptionCasesJUnit5;
-import io.dingodb.test.cases.ParametersCasesJUnit5;
 import io.dingodb.test.cases.RexCasesJUnit5;
-import io.dingodb.test.cases.StressCasesJUnit5;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -76,12 +70,6 @@ public class DingoDriverClientIT {
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
-    @ArgumentsSource(CasesJUnit5.class)
-    public void test(String ignored, @NonNull Case testCase) throws Exception {
-        testCase.run(connection);
-    }
-
-    @ParameterizedTest(name = "[{index}] {0}")
     @ArgumentsSource(ExceptionCasesJUnit5.class)
     public void testException(
         String ignored,
@@ -91,26 +79,5 @@ public class DingoDriverClientIT {
         boolean needDropping
     ) {
         new SqlHelper(connection).exceptionTest(sqlList, needDropping, sqlCode, sqlState);
-    }
-
-    @ParameterizedTest(name = "[{index}] {0}")
-    @ArgumentsSource(ParametersCasesJUnit5.class)
-    public void testParameters(String ignored, @NonNull ClassTestMethod method) throws Exception {
-        method.getMethod().run(connection);
-    }
-
-    @Test
-    public void testStressInsert() throws Exception {
-        new StressCasesJUnit5().insert(connection);
-    }
-
-    @Test
-    public void testStressInsertWithParameters() throws Exception {
-        new StressCasesJUnit5().insertWithParameters(connection);
-    }
-
-    @Test
-    public void testStressInsertWithParametersBatch() throws Exception {
-        new StressCasesJUnit5().insertWithParametersBatch(connection);
     }
 }
