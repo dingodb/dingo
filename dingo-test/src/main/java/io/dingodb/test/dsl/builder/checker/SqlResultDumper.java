@@ -17,22 +17,10 @@
 package io.dingodb.test.dsl.builder.checker;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
-public interface SqlCheckerVisitor<T> {
-    T visit(@NonNull SqlObjectResultChecker sqlChecker);
-
-    T visit(@NonNull SqlCsvStringResultChecker sqlChecker);
-
-    T visit(@NonNull SqlCsvFileResultChecker sqlChecker);
-
-    T visit(@NonNull SqlCsvFileNameResultChecker sqlChecker);
-
-    T visit(@NonNull SqlUpdateCountChecker sqlChecker);
-
-    T visit(@NonNull SqlResultDumper sqlChecker);
-
-    default T visit(@Nullable SqlChecker sqlChecker) {
-        return sqlChecker!=null ? sqlChecker.accept(this):null;
+public class SqlResultDumper extends SqlResultChecker {
+    @Override
+    public <T> T accept(@NonNull SqlCheckerVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

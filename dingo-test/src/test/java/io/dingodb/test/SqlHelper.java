@@ -107,10 +107,6 @@ public class SqlHelper {
         return new RandomTable(this);
     }
 
-    public RandomTable randomTable(int index) {
-        return new RandomTable(this, index);
-    }
-
     public DatabaseMetaData metaData() throws SQLException {
         return connection.getMetaData();
     }

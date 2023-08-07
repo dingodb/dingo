@@ -14,25 +14,20 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.dsl.builder.checker;
+package io.dingodb.test.dsl.run.check;
 
+import io.dingodb.test.utils.ResultSetUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
-public interface SqlCheckerVisitor<T> {
-    T visit(@NonNull SqlObjectResultChecker sqlChecker);
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
-    T visit(@NonNull SqlCsvStringResultChecker sqlChecker);
-
-    T visit(@NonNull SqlCsvFileResultChecker sqlChecker);
-
-    T visit(@NonNull SqlCsvFileNameResultChecker sqlChecker);
-
-    T visit(@NonNull SqlUpdateCountChecker sqlChecker);
-
-    T visit(@NonNull SqlResultDumper sqlChecker);
-
-    default T visit(@Nullable SqlChecker sqlChecker) {
-        return sqlChecker!=null ? sqlChecker.accept(this):null;
+public class DumpResult extends ResultCheck {
+    @Override
+    public void checkResultSet(@NonNull ResultSet resultSet, String info) throws SQLException {
+        while (resultSet.next()) {
+            ResultSetUtils.Row row = ResultSetUtils.getRow(resultSet);
+            System.out.println(row);
+        }
     }
 }
