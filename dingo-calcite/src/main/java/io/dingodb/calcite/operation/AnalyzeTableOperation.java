@@ -17,21 +17,19 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
-
-import io.dingodb.calcite.stats.CollectStatsTask;
 import io.dingodb.calcite.stats.CountMinSketch;
 import io.dingodb.calcite.stats.Histogram;
 import io.dingodb.calcite.stats.StatsCache;
 import io.dingodb.calcite.stats.StatsNormal;
+import io.dingodb.calcite.stats.StatsOperator;
 import io.dingodb.calcite.stats.TableStats;
+import io.dingodb.calcite.stats.task.CollectStatsTask;
 import io.dingodb.codec.CodecService;
-import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.AggregationOperator;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.partition.RangeDistribution;
-
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
@@ -45,7 +43,6 @@ import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
-import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.aggregate.Agg;
 import io.dingodb.exec.aggregate.MaxAgg;
@@ -54,8 +51,6 @@ import io.dingodb.exec.table.Part;
 import io.dingodb.exec.table.PartInKvStore;
 import io.dingodb.exec.utils.SchemaWrapperUtils;
 import io.dingodb.meta.MetaService;
-import io.dingodb.store.api.StoreInstance;
-import io.dingodb.store.api.StoreService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
@@ -63,8 +58,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -73,25 +66,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Slf4j
-public class AnalyzeTableOperation implements DdlOperation {
-    static StoreService storeService = StoreService.getDefault();
-    static MetaService metaService = MetaService.root().getSubMetaService("mysql");
-
-    static CommonId bucketsTblId = metaService.getTableId("table_buckets");
-    static CommonId statsTblId = metaService.getTableId("table_stats");
-    static CommonId cmSketchTblId = metaService.getTableId("cm_sketch");
-
-    static final TableDefinition bucketsTd = metaService.getTableDefinition(bucketsTblId);
-    static final TableDefinition statsTd = metaService.getTableDefinition(statsTblId);
-    static final TableDefinition cmSketchTd = metaService.getTableDefinition(cmSketchTblId);
-
-    static final KeyValueCodec bucketsCodec = CodecService.getDefault().createKeyValueCodec(bucketsTblId, bucketsTd);
-    static final KeyValueCodec statsCodec = CodecService.getDefault().createKeyValueCodec(statsTblId, statsTd);
-    static final KeyValueCodec cmSketchCodec = CodecService.getDefault().createKeyValueCodec(cmSketchTblId, cmSketchTd);
-
-    static final StoreInstance bucketsStore = storeService.getInstance(bucketsTblId, getRegionId(bucketsTblId));
-    static final StoreInstance statsStore = storeService.getInstance(statsTblId, getRegionId(statsTblId));
-    static final StoreInstance cmSketchStore = storeService.getInstance(cmSketchTblId, getRegionId(cmSketchTblId));
+public class AnalyzeTableOperation extends StatsOperator implements DdlOperation {
 
     Connection connection;
     String tableName;
@@ -176,14 +151,11 @@ public class AnalyzeTableOperation implements DdlOperation {
 
             // save stats to store
             addHistogram(statsList.get(0).getHistogramList());
-            log.info("stats histograms done");
             addCountMinSketch(statsList.get(0).getCountMinSketchList());
-            log.info("stats countMinSketch done");
             addStatsNormal(statsList.get(0).getStatsNormalList());
-            log.info("stats normal done");
             // update analyze job status
             cache(statsList.get(0));
-            log.info("stats countMinSketch done");
+            log.info("stats collect done");
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
@@ -266,35 +238,27 @@ public class AnalyzeTableOperation implements DdlOperation {
     }
 
     private void addCountMinSketch(List<CountMinSketch> countMinSketches) {
-        deletePrefix(cmSketchStore, cmSketchCodec, new Object[]{schemaName, tableName, null, null});
+        deletePrefix(cmSketchStore, cmSketchCodec, new Object[]{schemaName, tableName, null, null, null, null});
         List<Object[]> paramList = countMinSketches.stream().map(countMinSketch -> {
             String cmSketch = countMinSketch.serialize();
             return new Object[] {countMinSketch.getSchemaName(), countMinSketch.getTableName(),
-                countMinSketch.getColumnName(), cmSketch
+                countMinSketch.getColumnName(), cmSketch, countMinSketch.getNullCount(), countMinSketch.getTotalCount()
             };
         }).collect(Collectors.toList());
         insert(cmSketchStore, cmSketchCodec, paramList);
     }
 
     private void addStatsNormal(List<StatsNormal> statsNormals) {
-        deletePrefix(statsStore, statsCodec, new Object[]{schemaName, tableName, null, null, null, null});
+        deletePrefix(statsStore, statsCodec, new Object[]{schemaName, tableName, null, null, null, null, null});
         List<Object[]> paramList = statsNormals.stream().map(statsNormal ->
             new Object[] {schemaName, tableName, statsNormal.getColumnName(), statsNormal.getNdv(),
-                statsNormal.getNumNull(), statsNormal.getAvgColSize()}
+                statsNormal.getNumNull(), statsNormal.getAvgColSize(), statsNormal.getTotalCount()}
         ).collect(Collectors.toList());
         insert(statsStore, statsCodec, paramList);
     }
 
     private static void cache(TableStats tableStats) {
         StatsCache.statsMap.put(tableStats.getIdentifier(), tableStats);
-    }
-
-    private static CommonId getRegionId(CommonId tableId) {
-        return Optional.ofNullable(metaService.getRangeDistribution(tableId))
-            .map(NavigableMap::firstEntry)
-            .map(Map.Entry::getValue)
-            .map(RangeDistribution::getId)
-            .orElseThrow("Cannot get region for " + tableId);
     }
 
     private void buildHistogram(List<Histogram> histogramList,
@@ -341,10 +305,10 @@ public class AnalyzeTableOperation implements DdlOperation {
             for (Iterator<Object[]> iterator : iteratorList) {
                 if (iterator.hasNext()) {
                     Object[] tuples = iterator.next();
-                     for (int i = 0; i < histogramList.size(); i ++) {
-                         histogramList.get(i).setRegionMax(tuples[2 * i]);
-                         histogramList.get(i).setRegionMin(tuples[2 * i + 1]);
-                     }
+                    for (int i = 0; i < histogramList.size(); i ++) {
+                        histogramList.get(i).setRegionMax(tuples[2 * i]);
+                        histogramList.get(i).setRegionMin(tuples[2 * i + 1]);
+                    }
                 }
             }
             histogramList.forEach(histogram -> histogram.init(bucketCount));

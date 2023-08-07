@@ -16,11 +16,13 @@
 
 package io.dingodb.calcite.stats;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dingodb.common.type.DingoType;
+import lombok.NoArgsConstructor;
 import org.apache.calcite.sql.SqlKind;
 
 import java.math.BigDecimal;
@@ -29,17 +31,20 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
 
-@JsonPropertyOrder({"max", "min", "width", "lstWidth", "buckets", "numTuples"})
+@NoArgsConstructor
+@JsonPropertyOrder({"max", "min", "width", "lstWidth", "buckets", "totalCount"})
 public class Histogram implements Cloneable, CalculateStatistic {
-    private final String schemaName;
+    private String schemaName;
 
-    private final String tableName;
+    private String tableName;
 
-    private final String columnName;
+    private String columnName;
 
-    private final DingoType dingoType;
 
-    private final int index;
+    @JsonIgnore
+    private DingoType dingoType;
+
+    private int index;
 
     /**
      * max value in the histogram.
@@ -74,8 +79,11 @@ public class Histogram implements Cloneable, CalculateStatistic {
     /**
      * sum of counts of all baskets.
      */
-    @JsonProperty("numTuples")
-    private long numTuples;
+    @JsonProperty("totalCount")
+    private long totalCount;
+
+    @JsonProperty("nullCount")
+    private long nullCount;
 
     public Histogram(String schemaName,
                         String tableName,
@@ -122,13 +130,14 @@ public class Histogram implements Cloneable, CalculateStatistic {
         // set everything to 0, for safety
         Arrays.fill(this.buckets, 0);
 
-        // set numTuples to 0
-        numTuples = 0;
+        // set totalCount to 0
+        totalCount = 0;
     }
 
     public void addValue(Object val) {
+        totalCount++;
         if (val == null) {
-            addLongValue(null);
+            nullCount ++;
             return;
         }
         Long value = getLongVal(val);
@@ -157,20 +166,17 @@ public class Histogram implements Cloneable, CalculateStatistic {
         return value;
     }
 
-    public void merge(Histogram intHistogram) {
-        this.numTuples += intHistogram.numTuples;
+    public void merge(Histogram histogram) {
+        this.totalCount += histogram.totalCount;
+        this.nullCount += histogram.nullCount;
         for (int i = 0; i < buckets.length; i ++) {
-            buckets[i] += intHistogram.buckets[i];
+            buckets[i] += histogram.buckets[i];
         }
     }
 
     private void addLongValue(Long val) {
-        numTuples++;
-        if (val == null) {
-            return;
-        }
         if (val < min || val > max) {
-            System.out.println("---------------");
+            return;
         }
 
         if ((val - min) / width < buckets.length - 1) {
@@ -185,129 +191,29 @@ public class Histogram implements Cloneable, CalculateStatistic {
         Long val = getLongVal(valObj);
         switch (op) {
             case EQUALS:
-                if (val < min || val > max) {
-                    return 0;
-                }
-
-                int b = (int) Math.min((val - min) / width, buckets.length - 1);
-
-                if (b < buckets.length - 1) {
-                    return (buckets[b] / (double) width) / numTuples;
-                } else {
-                    return (buckets[b] / (double) lstWidth) / numTuples;
-                }
             case LIKE:
-                if (val < min || val > max) {
-                    return 0;
-                }
-
-                b = (int) Math.min((val - min) / width, buckets.length - 1);
-
-                if (b < buckets.length - 1) {
-                    return (buckets[b] / (double) width) / numTuples;
-                } else {
-                    return (buckets[b] / (double) lstWidth) / numTuples;
-                }
+                return estimateSelectivityEquals(val);
             case NOT_EQUALS:
-                if (val < min || val > max) {
-                    return 1;
-                }
-
-                b = (int) Math.min((val - min) / width, buckets.length - 1);
-
-                if (b < buckets.length - 1) {
-                    return 1 - (buckets[b] / (double) width) / numTuples;
-                } else {
-                    return 1 - (buckets[b] / (double) lstWidth) / numTuples;
-                }
+                return 1 - estimateSelectivityEquals(val);
             case GREATER_THAN:
-                if (val < min) {
-                    return 1;
-                } else if (val >= max) {
-                    return 0;
-                }
-
-                b = (int) Math.min((val - min) / width, buckets.length - 1);
-
-                double bf = buckets[b] / (double) numTuples;
-                if (b < buckets.length - 1) {
-                    double rv = ((min + (b + 1) * width - 1 - val) / (double) width) * bf;
-                    for (int i = b + 1; i < buckets.length; i++) {
-                        rv += buckets[i] / (double) numTuples;
-                    }
-                    return rv;
-                } else {
-                    return ((max - val) / (double) lstWidth) * bf;
-                }
+                return estimateSelectivityGreaterThan(val);
             case LESS_THAN_OR_EQUAL:
-                if (val < min) {
-                    return 0;
-                } else if (val >= max) {
-                    return 1;
-                }
-
-                b = (int) Math.min((val - min) / width, buckets.length - 1);
-
-                bf = buckets[b] / (double) numTuples;
-                if (b < buckets.length - 1) {
-                    bf = buckets[b] / (double) numTuples;
-                    double rv = ((min + (b + 1) * width - 1 - val) / (double) width) * bf;
-                    for (int i = b + 1; i < buckets.length; i++) {
-                        rv += buckets[i] / (double) numTuples;
-                    }
-                    return 1 - rv;
-                } else {
-                    return 1 - ((max - val) / (double) lstWidth) * bf;
-                }
+                return estimateSelectivityLessThan(val) + estimateSelectivityEquals(val);
             case LESS_THAN:
-                if (val <= min) {
-                    return 0;
-                } else if (val > max) {
-                    return 1;
-                }
-
-                b = (int) Math.min((val - min) / width, buckets.length - 1);
-
-                bf = buckets[b] / (double) numTuples;
-                if (b < buckets.length - 1) {
-                    double rv = (((min + (b + 1) * width) - val - 1) / (double) width) * bf;
-                    for (int i = b - 1; i >= 0; i--) {
-                        rv += buckets[i] / (double) numTuples;
-                    }
-                    return rv;
-                } else {
-                    double rv = ((max - val) / (double) lstWidth) * bf;
-                    for (int i = b - 1; i >= 0; i--) {
-                        rv += buckets[i] / (double) numTuples;
-                    }
-                    return rv;
-                }
+                return estimateSelectivityLessThan(val);
             case GREATER_THAN_OR_EQUAL:
-                if (val <= min) {
-                    return 1;
-                } else if (val > max) {
-                    return 0;
-                }
-
-                b = (int) Math.min((val - min) / width, buckets.length - 1);
-
-                bf = buckets[b] / (double) numTuples;
-                if (b < buckets.length - 1) {
-                    double rv = (((min + (b + 1) * width) - val) / (double) width) * bf;
-                    for (int i = b + 1; i < buckets.length; i++) {
-                        rv += buckets[i] / (double) numTuples;
-                    }
-                    return rv;
-                } else {
-                    return ((max - val + 1) / (double) lstWidth) * bf;
-                }
+                return estimateSelectivityGreaterThan(val) + estimateSelectivityEquals(val);
+            case IS_NOT_NULL:
+                return 1 - estimateSelectivityIsNull();
+            case IS_NULL:
+                return estimateSelectivityIsNull();
             default:
-                throw new IllegalArgumentException("op not supported");
+                return 0.25;
         }
     }
 
     @Override
-    protected Histogram clone() {
+    public Histogram clone() {
         Histogram o = null;
         try {
             o = (Histogram) super.clone();
@@ -328,14 +234,77 @@ public class Histogram implements Cloneable, CalculateStatistic {
         return histogramDetail;
     }
 
-    @Override
-    public Histogram deserialize(String str) {
+    public static Histogram deserialize(String str) {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             return objectMapper.readValue(str, Histogram.class);
         } catch (JsonProcessingException e) {
             return null;
         }
+    }
+
+    private double estimateSelectivityEquals(long val) {
+        if (val < min || val > max) {
+            return 0;
+        }
+
+        int b = (int) Math.min((val - min) / width, buckets.length - 1);
+
+        if (b < buckets.length - 1) {
+            return (buckets[b] / (double) width) / totalCount;
+        } else {
+            return (buckets[b] / (double) lstWidth) / totalCount;
+        }
+    }
+
+    private double estimateSelectivityGreaterThan(long val) {
+        if (val < min) {
+            return 1;
+        } else if (val >= max) {
+            return 0;
+        }
+
+        int b = (int) Math.min((val - min) / width, buckets.length - 1);
+
+        double bf = buckets[b] / (double) totalCount;
+        if (b < buckets.length - 1) {
+            double rv = ((min + (b + 1) * width - 1 - val) / (double) width) * bf;
+            for (int i = b + 1; i < buckets.length; i++) {
+                rv += buckets[i] / (double) totalCount;
+            }
+            return rv;
+        } else {
+            return ((max - val) / (double) lstWidth) * bf;
+        }
+    }
+
+    private double estimateSelectivityLessThan(long val) {
+        if (val <= min) {
+            return 0;
+        } else if (val > max) {
+            return 1;
+        }
+
+        int b = (int) Math.min((val - min) / width, buckets.length - 1);
+
+        double bf = buckets[b] / (double) totalCount;
+        if (b < buckets.length - 1) {
+            double rv = (((min + (b + 1) * width) - val - 1) / (double) width) * bf;
+            for (int i = b - 1; i >= 0; i--) {
+                rv += buckets[i] / (double) totalCount;
+            }
+            return rv;
+        } else {
+            double rv = ((max - val) / (double) lstWidth) * bf;
+            for (int i = b - 1; i >= 0; i--) {
+                rv += buckets[i] / (double) totalCount;
+            }
+            return rv;
+        }
+    }
+
+    public double estimateSelectivityIsNull() {
+        return nullCount / (double)totalCount;
     }
 
 

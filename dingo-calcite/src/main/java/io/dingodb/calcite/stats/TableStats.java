@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.stats;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class TableStats {
@@ -51,6 +52,14 @@ public class TableStats {
             this.schemaName = histogramList.get(0).getSchemaName();
             this.tableName = histogramList.get(0).getTableName();
         }
+    }
+
+    public TableStats(String schemaName, String tableName){
+        this.histogramList = new ArrayList<>();
+        this.countMinSketchList = new ArrayList<>();
+        this.statsNormalList = new ArrayList<>();
+        this.schemaName = schemaName;
+        this.tableName = tableName;
     }
 
     public void setNdv() {

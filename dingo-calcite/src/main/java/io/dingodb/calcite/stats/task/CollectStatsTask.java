@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.stats;
+package io.dingodb.calcite.stats.task;
 
+import io.dingodb.calcite.stats.CountMinSketch;
+import io.dingodb.calcite.stats.Histogram;
+import io.dingodb.calcite.stats.StatsNormal;
+import io.dingodb.calcite.stats.TableStats;
 import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;

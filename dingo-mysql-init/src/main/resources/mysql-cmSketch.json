@@ -26,5 +26,23 @@
       "scale": -2147483648,
       "primary": -1,
       "nullable": false
-    }
-  ]
+    },
+   {
+     "name": "null_count",
+     "type": "bigint",
+     "scale": -2147483648,
+     "precision": -1,
+     "default": 0,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "total_count",
+     "type": "bigint",
+     "scale": -2147483648,
+     "precision": -1,
+     "default": 0,
+     "primary": -1,
+     "nullable": true
+   }
+ ]
