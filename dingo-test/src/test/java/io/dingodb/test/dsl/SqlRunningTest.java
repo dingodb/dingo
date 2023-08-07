@@ -51,18 +51,23 @@ public class SqlRunningTest extends SqlTestRunner {
     }
 
     @TestFactory
-    public Stream<DynamicTest> testI40VsF8k() {
+    public Stream<DynamicTest> testI40VsF8kQuery() {
         return getTests(SqlTestCaseYamlBuilder.of("i40_vs_f8k/query_cases.yml"));
     }
 
     @TestFactory
-    public Stream<DynamicTest> testI4kF80() {
+    public Stream<DynamicTest> testI4kF80Query() {
         return getTests(SqlTestCaseYamlBuilder.of("i4k_f80/query_cases.yml"));
     }
 
     @TestFactory
-    public Stream<DynamicTest> testI4kL0() {
-        return getTests(SqlTestCaseYamlBuilder.of("i4k_l0/query_cases.yml"));
+    public Stream<DynamicTest> testI4kL0Dml() {
+        return getTests(SqlTestCaseYamlBuilder.of("i4k_l0/dml_cases.yml"));
+    }
+
+    @TestFactory
+    public Stream<DynamicTest> testI4kVsL0Query() {
+        return getTests(SqlTestCaseYamlBuilder.of("i4k_vs_l0/query_cases.yml"));
     }
 
     @TestFactory

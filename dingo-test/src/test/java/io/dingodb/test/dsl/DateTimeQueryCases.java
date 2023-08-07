@@ -40,6 +40,11 @@ public class DateTimeQueryCases extends SqlTestCaseJavaBuilder {
         table("i4k_i40_vs0_f40_dt0_ts0", file("i4k_i40_vs0_f40_dt0_ts0/create.sql"))
             .init(file("i4k_i40_vs0_f40_dt0_ts0/data.sql"), 3);
 
+        table(
+            "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0",
+            file("i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0/create.sql")
+        ).init(file("i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0/data.sql"), 21);
+
         test("Date")
             .use("table", "i4k_vs_dt0")
             .step(
@@ -103,6 +108,72 @@ public class DateTimeQueryCases extends SqlTestCaseJavaBuilder {
                 csv(
                     "ID,CARD_NO,NAME,ACCOUNT,TIME_DATE,TIME_DATETIME",
                     "INT,INT,STRING,FLOAT,DATE,TIMESTAMP"
+                )
+            );
+
+        test("Aggregation min of DATE")
+            .use("table", "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0")
+            .step(
+                "select min(birthday) from {table}",
+                csv(
+                    "expr$0",
+                    "STRING",
+                    "1949-01-01"
+                )
+            );
+
+        test("Aggregation max of DATE")
+            .use("table", "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0")
+            .step(
+                "select max(birthday) from {table}",
+                csv(
+                    "expr$0",
+                    "STRING",
+                    "2022-07-07"
+                )
+            );
+
+        test("Aggregation min of TIME")
+            .use("table", "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0")
+            .step(
+                "select min(create_time) from {table}",
+                csv(
+                    "expr$0",
+                    "STRING",
+                    "00:00:00"
+                )
+            );
+
+        test("Aggregation max of TIME")
+            .use("table", "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0")
+            .step(
+                "select max(create_time) from {table}",
+                csv(
+                    "expr$0",
+                    "STRING",
+                    "22:10:10"
+                )
+            );
+
+        test("Aggregation min of TIMESTAMP")
+            .use("table", "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0")
+            .step(
+                "select min(update_time) from {table}",
+                csv(
+                    "expr$0",
+                    "TIMESTAMP",
+                    "1952-12-31 12:12:12"
+                )
+            );
+
+        test("Aggregation max of TIMESTAMP")
+            .use("table", "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0")
+            .step(
+                "select max(update_time) from {table}",
+                csv(
+                    "expr$0",
+                    "TIMESTAMP",
+                    "2024-05-04 12:00:00"
                 )
             );
     }
