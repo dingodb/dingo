@@ -1,0 +1,33 @@
+---
+tables:
+  i4k_vs_l0:
+    create: { file: create.sql }
+    init: { file: data.sql }
+cases:
+  - name: Select filtered by primary key
+    use:
+      table: i4k_vs_l0
+    steps:
+      - sql: select id, name, sex from {table} where id = 1
+        result:
+          - id, name, sex
+          - INT, STRING, BOOL
+          - 1, Jimmy, true
+  - name: Select filtered by BOOL
+    use:
+      table: i4k_vs_l0
+    steps:
+      - sql: SELECT * from {table} where sex = true
+        result:
+          - id, name, sex
+          - INT, STRING, BOOL
+          - 1, Jimmy, true
+  - name: Select filtered by BOOL 1
+    use:
+      table: i4k_vs_l0
+    steps:
+      - sql: SELECT * from {table} where sex <> true
+        result:
+          - id, name, sex
+          - INT, STRING, BOOL
+          - 2, Alex, false

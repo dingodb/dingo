@@ -308,6 +308,16 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                 )
             );
 
+        test("Count")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select count(*) from {table}",
+                is(
+                    new String[]{"expr$0"},
+                    ImmutableList.of(new Object[]{9L})
+                )
+            );
+
         test("Count of empty table")
             .use("table", "i4k_vs_f80(empty)")
             .step(
@@ -316,6 +326,36 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                     "EXPR$0",
                     "LONG",
                     "0"
+                )
+            );
+
+        test("Count grouped by STRING")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select name, count(*) from {table} group by name",
+                csv(
+                    "name, expr$1",
+                    "STRING, LONG",
+                    "Alice, 3",
+                    "Betty, 2",
+                    "Cindy, 2",
+                    "Doris, 1",
+                    "Emily, 1"
+                )
+            );
+
+        test("Count grouped by STRING 1")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select count(*) from {table} group by name",
+                csv(
+                    "expr$0",
+                    "LONG",
+                    "3",
+                    "2",
+                    "2",
+                    "1",
+                    "1"
                 )
             );
 
@@ -329,6 +369,95 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                     "true, 3",
                     "false, 3",
                     "null, 2"
+                )
+            );
+
+        test("Select distinct")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select distinct name from {table}",
+                csv(
+                    "name",
+                    "STRING",
+                    "Alice",
+                    "Betty",
+                    "Cindy",
+                    "Doris",
+                    "Emily"
+                )
+            );
+
+        test("Select count distinct")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select count(distinct name) from {table}",
+                csv(
+                    "expr$0",
+                    "LONG",
+                    "5"
+                )
+            );
+
+        test("Select distinct grouped by STRING")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select name, count(distinct id) from {table} group by name",
+                csv(
+                    "name, expr$1",
+                    "STRING, LONG",
+                    "Alice, 3",
+                    "Betty, 2",
+                    "Cindy, 2",
+                    "Doris, 1",
+                    "Emily, 1"
+                )
+            );
+
+        test("Count distinct of multiple columns")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select count(distinct id), count(distinct name) from {table}",
+                csv(
+                    "expr$0, expr$1",
+                    "LONG, LONG",
+                    "9, 5"
+                )
+            );
+
+        test("Count distinct of multiple columns grouped by STRING")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select name, count(distinct id), count(distinct name) from {table} group by name",
+                csv(
+                    "name, expr$1, expr$2",
+                    "STRING, LONG, LONG",
+                    "Alice, 3, 1",
+                    "Betty, 2, 1",
+                    "Cindy, 2, 1",
+                    "Doris, 1, 1",
+                    "Emily, 1, 1"
+                )
+            );
+
+        test("Aggregation of multiple columns with distinct")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select count(distinct name), max(id) from {table}",
+                csv(
+                    "expr$0, expr$1",
+                    "LONG, INTEGER",
+                    "5, 9"
+                )
+            );
+
+        test("Aggregation sum")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select sum(amount) as all_sum from {table}",
+                csv(
+                    "all_sum",
+                    "DOUBLE",
+                    "49.5"
                 )
             );
 
@@ -347,6 +476,80 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                     "SUM, AVG",
                     "INT, DOUBLE",
                     "NULL, NULL"
+                )
+            );
+
+        test("Aggregation min")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select min(amount) as min_amount from {table}",
+                csv(
+                    "min_amount",
+                    "DOUBLE",
+                    "3.5"
+                )
+            );
+
+        test("Aggregation max")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select max(amount) as max_amount from {table}",
+                csv(
+                    "max_amount",
+                    "DOUBLE",
+                    "7.5"
+                )
+            );
+
+        test("Aggregation avg")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select avg(amount) as avg_amount from {table}",
+                csv(
+                    "avg_amount",
+                    "DOUBLE",
+                    "5.5"
+                )
+            );
+
+        test("Aggregation avg grouped by STRING")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select name, avg(amount) as avg_amount from {table} group by name",
+                csv(
+                    "name, avg_amount",
+                    "STRING, DOUBLE",
+                    "Alice, 5.5",
+                    "Betty, 5.25",
+                    "Cindy, 6.0",
+                    "Doris, 5.0",
+                    "Emily, 5.5"
+                )
+            );
+
+        test("Aggregation avg of multiple columns")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select name, avg(id) as avg_id, avg(amount) as avg_amount from {table} group by name",
+                csv(
+                    "name, avg_id, avg_amount",
+                    "STRING, INTEGER, DOUBLE",
+                    "Alice, 5, 5.5",
+                    "Betty, 4, 5.25",
+                    "Cindy, 6, 6.0",
+                    "Doris, 4, 5.0",
+                    "Emily, 5, 5.5"
+                )
+            );
+
+        test("Aggregation of multiple type")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select sum(amount), avg(amount), count(amount) from {table}",
+                csv(
+                    "expr$0, expr$1, expr$2",
+                    "DOUBLE, DOUBLE, LONG",
+                    "49.5, 5.5, 9"
                 )
             );
 
