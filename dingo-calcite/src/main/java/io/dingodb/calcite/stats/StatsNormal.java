@@ -42,9 +42,9 @@ public class StatsNormal implements Cloneable {
     private Long ndv;
     private Long numNull = 0L;
 
-    private final Long totalCount;
+    private Long totalCount;
 
-    private final DingoType type;
+    private DingoType type;
     private long totalColSize = 0L;
     private long avgColSize;
     HashSet hashSet = null;
@@ -65,6 +65,13 @@ public class StatsNormal implements Cloneable {
         }
     }
 
+    public StatsNormal(String columnName, Long ndv, Long numNull, long avgColSize, long totalCount) {
+        this.columnName = columnName;
+        this.ndv = ndv;
+        this.numNull = numNull;
+        this.avgColSize = avgColSize;
+        this.totalCount = totalCount;
+    }
 
     public void addStringVal(String val) {
         hll.addRaw(hash.newHasher().putString(val, Charset.defaultCharset()).hash().asLong());
@@ -193,5 +200,9 @@ public class StatsNormal implements Cloneable {
 
     public long getAvgColSize() {
         return avgColSize;
+    }
+
+    public Long getTotalCount() {
+        return totalCount;
     }
 }

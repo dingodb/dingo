@@ -30,9 +30,10 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
 
     private String columnName;
 
-    private int index;
-
     private long totalCount;
+    private long nullCount;
+
+    private int index;
 
     private static final float DEFAULT_DELTA = 0.01f;
     private static final float DEFAULT_EPSILON = 0.01f;
@@ -51,21 +52,15 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
         this.tableName = tableName;
         this.columnName = columnName;
         this.totalCount = totalCount;
-        this.index = index;
         this.width = width;
         this.depth = depth;
+        this.index = index;
         this.multiset = new int[depth][width];
     }
 
     public CountMinSketch(float delta, float epsilon) {
         this.width = (int) Math.ceil(Math.exp(1.0) / epsilon);
         this.depth = (int) Math.ceil(Math.log(1.0 / delta));
-        this.multiset = new int[depth][width];
-    }
-
-    public CountMinSketch(int width, int depth) {
-        this.width = width;
-        this.depth = depth;
         this.multiset = new int[depth][width];
     }
 
@@ -107,6 +102,10 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
     }
 
     public void setString(String val) {
+        if (val == null) {
+            nullCount ++;
+            return;
+        }
         set(val.getBytes());
     }
 
@@ -114,20 +113,36 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
         set(new byte[]{val});
     }
 
-    public void setInt(int val) {
+    public void setInt(Integer val) {
+        if (val == null) {
+            nullCount++;
+            return;
+        }
         set(intToByteArrayLE(val));
     }
 
 
-    public void setLong(long val) {
+    public void setLong(Long val) {
+        if (val == null) {
+            nullCount++;
+            return;
+        }
         set(longToByteArrayLE(val));
     }
 
-    public void setFloat(float val) {
+    public void setFloat(Float val) {
+        if (val == null) {
+            nullCount++;
+            return;
+        }
         setInt(Float.floatToIntBits(val));
     }
 
-    public void setDouble(double val) {
+    public void setDouble(Double val) {
+        if (val == null) {
+            nullCount++;
+            return;
+        }
         setLong(Double.doubleToLongBits(val));
     }
 
@@ -191,9 +206,28 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
     }
 
     public double estimateSelectivity(SqlKind op, Object valObj) {
-        String valStr  = valObj.toString();
+        switch (op) {
+            case EQUALS:
+                return getSelectivityEquals(valObj);
+            case NOT_EQUALS:
+                return 1 - getSelectivityEquals(valObj);
+            case IS_NULL:
+                return getSelectivityIsNull();
+            case IS_NOT_NULL:
+                return 1 - getSelectivityIsNull();
+            default:
+                return 0.25;
+        }
+    }
+
+    private double getSelectivityEquals(Object val) {
+        String valStr = val.toString();
         double estimatedCount = getEstimatedCountString(valStr);
         return estimatedCount / totalCount;
+    }
+
+    private double getSelectivityIsNull() {
+        return nullCount / (double) totalCount;
     }
 
     public void merge(CountMinSketch that) {
@@ -210,7 +244,7 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
             throw new RuntimeException("Merge failed! Depth of count min sketch do not match!"
                 + "this.depth: " + this.getDepth() + " that.depth: " + that.getDepth());
         }
-
+        this.nullCount += that.nullCount;
         for (int i = 0; i < depth; i++) {
             for (int j = 0; j < width; j++) {
                 this.multiset[i][j] += that.multiset[i][j];
@@ -234,7 +268,7 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
         return base64Variant.encode(tmp);
     }
 
-    public CountMinSketch deserialize(String cmSketchStr) {
+    public static CountMinSketch deserialize(String cmSketchStr) {
         byte[] serialized = Base64Variants.getDefaultVariant().decode(cmSketchStr);
         ByteBuffer bb = ByteBuffer.allocate(serialized.length);
         bb.put(serialized);
@@ -260,10 +294,6 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
         return o;
     }
 
-    public String getColumnName() {
-        return columnName;
-    }
-
     public String getSchemaName() {
         return schemaName;
     }
@@ -272,7 +302,39 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
         return tableName;
     }
 
+    public String getColumnName() {
+        return columnName;
+    }
+
+    public void setColumnName(String columnName) {
+        this.columnName = columnName;
+    }
+
+    public void setSchemaName(String schemaName) {
+        this.schemaName = schemaName;
+    }
+
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
+
+    public void setTotalCount(long totalCount) {
+        this.totalCount = totalCount;
+    }
+
+    public void setNullCount(long nullCount) {
+        this.nullCount = nullCount;
+    }
+
     public int getIndex() {
         return index;
+    }
+
+    public long getTotalCount() {
+        return totalCount;
+    }
+
+    public long getNullCount() {
+        return nullCount;
     }
 }

@@ -23,5 +23,4 @@ public interface CalculateStatistic<T> {
 
     public String serialize();
 
-    public T deserialize(String str);
 }

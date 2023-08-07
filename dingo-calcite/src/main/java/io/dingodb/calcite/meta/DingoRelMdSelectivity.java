@@ -38,6 +38,8 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.List;
+
 public class DingoRelMdSelectivity extends RelMdSelectivity {
     public static final RelMetadataProvider SOURCE =
         ReflectiveRelMetadataProvider.reflectiveSource(
@@ -60,6 +62,14 @@ public class DingoRelMdSelectivity extends RelMdSelectivity {
                     if (statistic != null) {
                         artificialSel *= statistic.estimateSelectivity(pred.getKind(),
                             extractVal(rexCall));
+                        useStats = true;
+                    }
+                } else if (complexMatch((RexCall) pred)) {
+                    if (pred.getKind() == SqlKind.OR) {
+                        artificialSel *= getSelectivityByOr(pred, tableScan);
+                        useStats = true;
+                    } else if (pred.getKind() == SqlKind.NOT) {
+                        artificialSel *= getSelectivityByNotOr(pred, tableScan);
                         useStats = true;
                     }
                 }
@@ -91,8 +101,8 @@ public class DingoRelMdSelectivity extends RelMdSelectivity {
 
     private static boolean predicateMatch(RexCall pred) {
         ImmutableList operands = pred.operands;
-        return operands.size() == 2 &&
-            (operands.get(0) instanceof RexInputRef && operands.get(1) instanceof RexLiteral);
+        return operands.size() == 2
+            && (operands.get(0) instanceof RexInputRef && operands.get(1) instanceof RexLiteral);
     }
 
     private Pair<String, ColumnDefinition> extractCol(LogicalDingoTableScan tableScan, RexCall pred) {
@@ -123,6 +133,55 @@ public class DingoRelMdSelectivity extends RelMdSelectivity {
             }
         }
         return null;
+    }
+
+    public boolean complexMatch(RexCall pred) {
+        // where amount = 1.3 or amount=3.3
+        // where name in ('1','2','3','4')
+        // all operands is RexCall and operatorKind = or
+
+        // where name not in ('1','2','3','4')
+        // operatorKind = not and have one operand(kind = or)
+        if (pred.getKind() == SqlKind.OR) {
+            return pred.getOperands().stream().allMatch(rexNode -> rexNode instanceof RexCall);
+        } else if (pred.getKind() == SqlKind.NOT && pred.getOperands().size() == 1
+            && pred.getOperands().get(0) instanceof RexCall
+            && pred.getOperands().get(0).getKind() == SqlKind.OR) {
+            RexNode rexNode = pred.getOperands().get(0);
+            if (rexNode instanceof RexCall) {
+                return  ((RexCall) rexNode).getOperands().stream().allMatch(rexNode1 -> rexNode1 instanceof RexCall);
+            }
+        }
+        return false;
+    }
+
+    public double getSelectivityByNotOr(RexNode rexNode, LogicalDingoTableScan tableScan) {
+        RexCall pred = (RexCall) rexNode;
+        return 1 - getSelectivityByOr(pred.getOperands().get(0), tableScan);
+    }
+
+    public double getSelectivityByOr(RexNode rexNode, LogicalDingoTableScan tableScan) {
+        double sel = 1.0;
+        double artificialSel = 0.0;
+        List<RexNode> rexNodeList = RelOptUtil.disjunctions(rexNode);
+        int predicateMatch = 0;
+        for (RexNode pred : rexNodeList) {
+            if (pred instanceof RexCall) {
+                RexCall rexCall = (RexCall) pred;
+                if (predicateMatch((RexCall) pred)) {
+                    CalculateStatistic statistic = extractColStats(extractCol(tableScan, rexCall));
+                    if (statistic != null) {
+                        artificialSel += statistic.estimateSelectivity(pred.getKind(),
+                            extractVal(rexCall));
+                        predicateMatch ++;
+                    }
+                }
+            }
+        }
+        if (predicateMatch < rexNodeList.size()) {
+            artificialSel = defaultSelectivity(rexNode);
+        }
+        return sel * artificialSel;
     }
 
 
