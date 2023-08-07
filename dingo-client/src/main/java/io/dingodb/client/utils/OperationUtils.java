@@ -23,7 +23,11 @@ import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
 
 import java.util.List;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+
+import static io.dingodb.common.util.Parameters.cleanNull;
 
 public final class OperationUtils {
 
@@ -85,6 +89,13 @@ public final class OperationUtils {
 
     public static void checkParameters(Table table, Object[] record) {
         checkParameters(table.getColumns(), record);
+    }
+
+    public static Throwable getCause(Throwable err) {
+        if (err instanceof CompletionException || err instanceof ExecutionException) {
+            return cleanNull(err.getCause(), err);
+        }
+        return err;
     }
 
 }

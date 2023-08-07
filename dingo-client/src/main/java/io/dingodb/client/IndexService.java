@@ -19,6 +19,7 @@ package io.dingodb.client;
 import io.dingodb.client.common.IndexInfo;
 import io.dingodb.client.common.KeyValueCodec;
 import io.dingodb.client.operation.impl.Operation;
+import io.dingodb.client.utils.OperationUtils;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.scalar.LongType;
@@ -48,6 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 import static io.dingodb.sdk.common.utils.EntityConversion.mapping;
+import static io.dingodb.sdk.common.utils.Parameters.cleanNull;
 
 @Slf4j
 public class IndexService {
@@ -117,14 +119,15 @@ public class IndexService {
             .thenApply(r -> Optional.<Throwable>empty())
             .exceptionally(Optional::of)
             .thenAccept(e -> {
-                e.filter(DingoClientException.InvalidRouteTableException.class::isInstance).map(err -> {
-                    IndexInfo newIndexInfo = getRouteTable(indexInfo.schemaName, indexInfo.indexName, true);
-                    Operation.Fork newFork = operation.fork(context, newIndexInfo);
-                    if (newFork == null) {
-                        return exec(newIndexInfo, operation, newFork, 0, vectorContext).orNull();
-                    }
-                    return exec(newIndexInfo, operation, newFork, retry - 1, vectorContext).orNull();
-                }).ifPresent(error::ifAbsentSet);
+                e.map(OperationUtils::getCause)
+                    .filter(DingoClientException.InvalidRouteTableException.class::isInstance).map(err -> {
+                        IndexInfo newIndexInfo = getRouteTable(indexInfo.schemaName, indexInfo.indexName, true);
+                        Operation.Fork newFork = operation.fork(context, newIndexInfo);
+                        if (newFork == null) {
+                            return exec(newIndexInfo, operation, newFork, 0, vectorContext).orNull();
+                        }
+                        return exec(newIndexInfo, operation, newFork, retry - 1, vectorContext).orNull();
+                    }).ifPresent(error::ifAbsentSet);
                 countDownLatch.countDown();
             }));
 
@@ -172,7 +175,7 @@ public class IndexService {
     private IndexInfo getRouteTable(String schemaName, String indexName, boolean forceRefresh) {
         return routeTables.compute(
             schemaName + "." + indexName,
-            (k, v) -> Parameters.cleanNull(forceRefresh ? null : v, () -> refreshRouteTable(schemaName, indexName))
+            (k, v) -> cleanNull(forceRefresh ? null : v, () -> refreshRouteTable(schemaName, indexName))
         );
     }
 

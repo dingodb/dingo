@@ -19,6 +19,7 @@ package io.dingodb.client;
 import io.dingodb.client.common.KeyValueCodec;
 import io.dingodb.client.common.TableInfo;
 import io.dingodb.client.operation.impl.Operation;
+import io.dingodb.client.utils.OperationUtils;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
@@ -39,7 +40,11 @@ import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.sdk.service.store.StoreServiceClient;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -110,14 +115,16 @@ public class OperationService {
             .thenApply(r -> Optional.<Throwable>empty())
             .exceptionally(Optional::of)
             .thenAccept(e -> {
-                e.filter(DingoClientException.InvalidRouteTableException.class::isInstance).map(err -> {
-                    TableInfo newTableInfo = getRouteTable(tableInfo.schemaName, tableInfo.tableName, true);
-                    Operation.Fork newFork = operation.fork(context, newTableInfo);
-                    if (newFork == null) {
-                        return exec(operation, newTableInfo, newFork, 0).orNull();
-                    }
-                    return exec(operation, newTableInfo, newFork, retry - 1).orNull();
-                }).ifPresent(error::ifAbsentSet);
+                e.map(OperationUtils::getCause)
+                    .filter(DingoClientException.InvalidRouteTableException.class::isInstance)
+                    .map(err -> {
+                        TableInfo newTableInfo = getRouteTable(tableInfo.schemaName, tableInfo.tableName, true);
+                        Operation.Fork newFork = operation.fork(context, newTableInfo);
+                        if (newFork == null) {
+                            return exec(operation, newTableInfo, newFork, 0).orNull();
+                        }
+                        return exec(operation, newTableInfo, newFork, retry - 1).orNull();
+                    }).ifPresent(error::ifAbsentSet);
                 countDownLatch.countDown();
             }));
         try {
