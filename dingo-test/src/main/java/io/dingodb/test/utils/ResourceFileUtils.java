@@ -26,7 +26,7 @@ public final class ResourceFileUtils {
 
     public static @NonNull InputStream getResourceFile(String fileName, @NonNull Class<?> clazz) {
         InputStream is = clazz.getResourceAsStream(fileName);
-        if (is!=null) {
+        if (is != null) {
             return is;
         }
         throw new RuntimeException("Cannot access file \"" + fileName

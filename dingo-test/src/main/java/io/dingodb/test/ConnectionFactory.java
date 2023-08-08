@@ -48,7 +48,7 @@ public final class ConnectionFactory {
         env.setInfo("password", "");
 
         // Configure for local test.
-        if (DingoConfiguration.instance()==null) {
+        if (DingoConfiguration.instance() == null) {
             DingoConfiguration.parse(
                 Objects.requireNonNull(ConnectionFactory.class.getResource("/config.yaml")).getPath()
             );

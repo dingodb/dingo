@@ -32,7 +32,7 @@ public interface StepVisitor<T> {
     T visit(@NonNull SqlFileNameStep step);
 
     default T visit(@Nullable Step step) {
-        return step!=null ? step.accept(this):null;
+        return step != null ? step.accept(this) : null;
     }
 
     default List<T> visitEach(@NonNull List<? extends Step> steps) {

@@ -47,7 +47,7 @@ public class ExecSql implements Exec {
                 sql = s;
             }
         }
-        if (check!=null) {
+        if (check != null) {
             assertThat(b).isNotNull();
             check.check(new CheckContext(statement, b, sql));
         }

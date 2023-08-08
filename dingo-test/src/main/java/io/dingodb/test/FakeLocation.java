@@ -32,7 +32,7 @@ public class FakeLocation extends Location {
     @Override
     public boolean equals(Object other) {
         if (other instanceof FakeLocation) {
-            return this.id==((FakeLocation) other).id;
+            return this.id == ((FakeLocation) other).id;
         }
         return false;
     }

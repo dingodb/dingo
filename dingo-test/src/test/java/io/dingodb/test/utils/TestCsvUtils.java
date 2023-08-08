@@ -40,39 +40,6 @@ public class TestCsvUtils {
     }
 
     @Test
-    public void testReadCsv() throws IOException {
-        Iterator<Object[]> it = CsvUtils.readCsv(
-            schema,
-            getClass().getResourceAsStream("/table-test-data.csv")
-        );
-        int id = 1;
-        while (it.hasNext()) {
-            Object[] values = it.next();
-            assertThat(values[0]).isInstanceOf(Integer.class);
-            assertThat(values[0]).isEqualTo(id);
-            ++id;
-            assertThat(values[1]).isInstanceOf(String.class);
-            assertThat(values[2]).isInstanceOf(Double.class);
-        }
-    }
-
-    @Test
-    public void testReadCsvWithSchema() throws IOException {
-        Iterator<Object[]> it = CsvUtils.readCsvWithSchema(
-            getClass().getResourceAsStream("/table-test-data-with-schema.csv")
-        );
-        int id = 1;
-        while (it.hasNext()) {
-            Object[] values = it.next();
-            assertThat(values[0]).isInstanceOf(Integer.class);
-            assertThat(values[0]).isEqualTo(id);
-            ++id;
-            assertThat(values[1]).isInstanceOf(String.class);
-            assertThat(values[2]).isInstanceOf(Double.class);
-        }
-    }
-
-    @Test
     public void testReadCsvLine() throws JsonProcessingException {
         List<Object[]> values = CsvUtils.readCsv(schema, "1, Alice, 1.0\n2, Betty, 2.0");
         Object[] tuple = values.get(0);

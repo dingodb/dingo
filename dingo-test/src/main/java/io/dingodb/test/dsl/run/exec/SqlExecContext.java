@@ -82,7 +82,7 @@ public class SqlExecContext {
     }
 
     public Statement getStatement() throws SQLException {
-        if (statement!=null && !statement.isClosed()) {
+        if (statement != null && !statement.isClosed()) {
             return statement;
         }
         statement = connection.createStatement();
@@ -90,7 +90,7 @@ public class SqlExecContext {
     }
 
     public void closeStatement() throws SQLException {
-        if (statement!=null && !statement.isClosed()) {
+        if (statement != null && !statement.isClosed()) {
             statement.close();
         }
     }

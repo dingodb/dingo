@@ -54,10 +54,13 @@ public final class SqlTest {
     public void run(@NonNull SqlRunningContext context) throws Exception {
         assumeTrue(enabled);
         SqlExecContext execContext = context.prepareExecContext(preparedTableMapping);
-        for (Exec exec : steps) {
-            exec.run(execContext);
+        try {
+            for (Exec exec : steps) {
+                exec.run(execContext);
+            }
+        } finally {
+            modifiedTableIds.forEach(context::setModified);
+            execContext.cleanUp(preparedTableMapping);
         }
-        execContext.cleanUp(preparedTableMapping);
-        modifiedTableIds.forEach(context::setModified);
     }
 }

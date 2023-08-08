@@ -1,0 +1,29 @@
+tables:
+  students:
+    create: { file: ../i4k_vs0_i40/create_1.sql }
+    init: { file: ../i4k_vs0_i40/data_1.sql, count: 3 }
+  classes:
+    create: { file: ../i4k_vs/create.sql }
+    init: { file: ../i4k_vs/data.sql, count: 3 }
+cases:
+  - name: Full join with filter
+    use:
+      table0: students
+      table1: classes
+    steps:
+      - file: full_join_filter.sql
+        result: full_join_filter.csv
+  - name: Left join with filter
+    use:
+      table0: students
+      table1: classes
+    steps:
+      - file: left_join_filter.sql
+        result: full_join_filter.csv
+  - name: Right join with filter
+    use:
+      table0: students
+      table1: classes
+    steps:
+      - file: right_join_filter.sql
+        result: full_join_filter.csv

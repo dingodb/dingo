@@ -1,0 +1,19 @@
+id, title, artistName, artistCategory
+INTEGER, STRING, STRING, STRING
+1, My Heart Will Go On, Celine Dion, Female
+2, The Power Of Love, Celine Dion, Female
+3, Saving All My Love For You, Whitney Houston, Female
+4, I'm Your Baby Tonight, Whitney Houston, Female
+5, Miracle, Whitney Houston, Female
+6, Swear It Again, Westlife, Band
+7, Crazy For You, Madonna, Female
+8, I Want It That Way, BackStreet Boys, Band
+9, As Long As You Love Me, BackStreet Boys, Band
+10, This Place Hotel, Michael Jackson, Male
+11, Rolling In The Deep, Adele Adkins, Female
+12, Right Here Waiting, Richard Marx, Male
+13, What The Hell, Avril Lavigne, Female
+14, Goodbye, Avril Lavigne, Female
+15, Remember When, Avril Lavigne, Female
+16, Trip To Your Heart, Britney Spears, Female
+17, Trouble For Me, Britney Spears, Female

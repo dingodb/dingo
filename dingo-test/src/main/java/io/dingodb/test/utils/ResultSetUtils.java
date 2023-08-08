@@ -65,7 +65,7 @@ public final class ResultSetUtils {
             } else {
                 return false;
             }
-            if (tuple.length!=values.length) {
+            if (tuple.length != values.length) {
                 return false;
             }
             for (int i = 0; i < tuple.length; ++i) {

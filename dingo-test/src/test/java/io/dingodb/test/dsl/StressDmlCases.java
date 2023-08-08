@@ -84,7 +84,7 @@ public final class StressDmlCases extends SqlTestCaseJavaBuilder {
                         statement.setString(2, UUID.randomUUID().toString());
                         statement.setDouble(3, random.nextDouble());
                         statement.addBatch();
-                        if (id % 100==0) {
+                        if (id % 100 == 0) {
                             int[] updateCounts = statement.executeBatch();
                             log.info("execute batch {}, id = {}", sql, id);
                             assertThat(updateCounts).containsOnly(1);

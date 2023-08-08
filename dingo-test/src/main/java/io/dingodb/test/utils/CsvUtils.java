@@ -17,9 +17,7 @@
 package io.dingodb.test.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.collect.Iterators;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.expr.json.runtime.Parser;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -40,30 +38,9 @@ public final class CsvUtils {
         return PARSER.readValues(is, String[].class);
     }
 
-    public static @NonNull Iterator<Object[]> readCsv(DingoType schema, InputStream is) throws IOException {
-        return Iterators.transform(readCsv(is), i -> (Object[]) schema.parse(i));
-    }
-
     public static @NonNull List<Object[]> readCsv(DingoType schema, String lines) throws JsonProcessingException {
         return Arrays.stream(PARSER.parse(lines, String[][].class))
             .map(i -> (Object[]) schema.parse(i))
             .collect(Collectors.toList());
-    }
-
-    /**
-     * Read a csv stream into tuples. The first line is the tuple schema definition.
-     *
-     * @param is the csv stream
-     * @return iterator of tuples
-     * @throws IOException when errors occurred in reading the stream
-     */
-    public static @NonNull Iterator<Object[]> readCsvWithSchema(InputStream is) throws IOException {
-        final Iterator<String[]> it = PARSER.readValues(is, String[].class);
-        if (it.hasNext()) {
-            String[] types = it.next();
-            DingoType schema = DingoTypeFactory.tuple(types);
-            return Iterators.transform(it, i -> (Object[]) schema.parse(i));
-        }
-        return Iterators.transform(it, s -> s);
     }
 }

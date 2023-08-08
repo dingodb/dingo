@@ -33,6 +33,6 @@ public interface SqlCheckerVisitor<T> {
     T visit(@NonNull SqlResultDumper sqlChecker);
 
     default T visit(@Nullable SqlChecker sqlChecker) {
-        return sqlChecker!=null ? sqlChecker.accept(this):null;
+        return sqlChecker != null ? sqlChecker.accept(this) : null;
     }
 }

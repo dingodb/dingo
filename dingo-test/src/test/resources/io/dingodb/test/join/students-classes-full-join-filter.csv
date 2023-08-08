@@ -1,3 +1,0 @@
-sid,name,class_id,cid,cname
-INTEGER,STRING,INTEGER,INTEGER,STRING
-1,zhangsan,100,100,class-1

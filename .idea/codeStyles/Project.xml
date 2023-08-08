@@ -1,5 +1,10 @@
 <component name="ProjectCodeStyleConfiguration">
   <code_scheme name="Project" version="173">
+    <CsvCodeStyleSettings>
+      <option name="SPACE_AFTER_SEPARATOR" value="true" />
+      <option name="TRIM_LEADING_WHITE_SPACES" value="true" />
+      <option name="TRIM_TRAILING_WHITE_SPACES" value="true" />
+    </CsvCodeStyleSettings>
     <JavaCodeStyleSettings>
       <option name="CLASS_COUNT_TO_USE_IMPORT_ON_DEMAND" value="99" />
       <option name="NAMES_COUNT_TO_USE_IMPORT_ON_DEMAND" value="99" />
@@ -15,5 +20,16 @@
       </option>
       <option name="JD_INDENT_ON_CONTINUATION" value="true" />
     </JavaCodeStyleSettings>
+    <codeStyleSettings language="JAVA">
+      <indentOptions>
+        <option name="CONTINUATION_INDENT_SIZE" value="4" />
+      </indentOptions>
+    </codeStyleSettings>
+    <codeStyleSettings language="csv">
+      <option name="WRAP_ON_TYPING" value="-1" />
+      <indentOptions>
+        <option name="USE_TAB_CHARACTER" value="false" />
+      </indentOptions>
+    </codeStyleSettings>
   </code_scheme>
 </component>

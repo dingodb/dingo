@@ -1,0 +1,64 @@
+tables:
+  artists:
+    create: { file: ../i4k_vs_2/create.sql }
+    init: { file: ../i4k_vs_2/data.sql, count: 12 }
+  songs:
+    create: { file: ../i4k_vs_i4/create.sql }
+    init: { file: ../i4k_vs_i4/data.sql, count: 20 }
+cases:
+  - name: Inner join
+    use:
+      table0: songs
+      table1: artists
+    steps:
+      - file: inner_join.sql
+        result: inner_join.csv
+  - name: Inner join with filter
+    use:
+      table0: songs
+      table1: artists
+    steps:
+      - file: inner_join_filter.sql
+        result: inner_join_filter.csv
+  - name: Left join
+    use:
+      table0: songs
+      table1: artists
+    steps:
+      - file: left_join.sql
+        result: left_join.csv
+  - name: Left join with filter
+    use:
+      table0: songs
+      table1: artists
+    steps:
+      - file: left_join_filter.sql
+        result: inner_join.csv
+  - name: Right join
+    use:
+      table0: songs
+      table1: artists
+    steps:
+      - file: right_join.sql
+        result: right_join.csv
+  - name: Full join
+    use:
+      table0: songs
+      table1: artists
+    steps:
+      - file: full_join.sql
+        result: full_join.csv
+  - name: Cartesian join
+    use:
+      table0: songs
+      table1: artists
+    steps:
+      - file: cartesian_join.sql
+        result: cartesian_join.csv
+  - name: Inner join with non-eq filter
+    use:
+      table0: songs
+      table1: artists
+    steps:
+      - file: inner_join_non_eq.sql
+        result: inner_join_non_eq.csv

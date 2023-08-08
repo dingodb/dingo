@@ -1,0 +1,242 @@
+id, title, artistId, artistName
+INTEGER, STRING, INTEGER, STRING
+1, My Heart Will Go On, 1, Celine Dion
+1, My Heart Will Go On, 2, Whitney Houston
+1, My Heart Will Go On, 3, Westlife
+1, My Heart Will Go On, 4, Madonna
+1, My Heart Will Go On, 5, BackStreet Boys
+1, My Heart Will Go On, 6, Michael Jackson
+1, My Heart Will Go On, 7, Adele Adkins
+1, My Heart Will Go On, 8, Richard Marx
+1, My Heart Will Go On, 9, Avril Lavigne
+1, My Heart Will Go On, 10, Britney Spears
+1, My Heart Will Go On, 100, Carpenters
+1, My Heart Will Go On, 101, Taylor Swift
+2, The Power Of Love, 1, Celine Dion
+2, The Power Of Love, 2, Whitney Houston
+2, The Power Of Love, 3, Westlife
+2, The Power Of Love, 4, Madonna
+2, The Power Of Love, 5, BackStreet Boys
+2, The Power Of Love, 6, Michael Jackson
+2, The Power Of Love, 7, Adele Adkins
+2, The Power Of Love, 8, Richard Marx
+2, The Power Of Love, 9, Avril Lavigne
+2, The Power Of Love, 10, Britney Spears
+2, The Power Of Love, 100, Carpenters
+2, The Power Of Love, 101, Taylor Swift
+3, Saving All My Love For You, 1, Celine Dion
+3, Saving All My Love For You, 2, Whitney Houston
+3, Saving All My Love For You, 3, Westlife
+3, Saving All My Love For You, 4, Madonna
+3, Saving All My Love For You, 5, BackStreet Boys
+3, Saving All My Love For You, 6, Michael Jackson
+3, Saving All My Love For You, 7, Adele Adkins
+3, Saving All My Love For You, 8, Richard Marx
+3, Saving All My Love For You, 9, Avril Lavigne
+3, Saving All My Love For You, 10, Britney Spears
+3, Saving All My Love For You, 100, Carpenters
+3, Saving All My Love For You, 101, Taylor Swift
+4, I'm Your Baby Tonight, 1, Celine Dion
+4, I'm Your Baby Tonight, 2, Whitney Houston
+4, I'm Your Baby Tonight, 3, Westlife
+4, I'm Your Baby Tonight, 4, Madonna
+4, I'm Your Baby Tonight, 5, BackStreet Boys
+4, I'm Your Baby Tonight, 6, Michael Jackson
+4, I'm Your Baby Tonight, 7, Adele Adkins
+4, I'm Your Baby Tonight, 8, Richard Marx
+4, I'm Your Baby Tonight, 9, Avril Lavigne
+4, I'm Your Baby Tonight, 10, Britney Spears
+4, I'm Your Baby Tonight, 100, Carpenters
+4, I'm Your Baby Tonight, 101, Taylor Swift
+5, Miracle, 1, Celine Dion
+5, Miracle, 2, Whitney Houston
+5, Miracle, 3, Westlife
+5, Miracle, 4, Madonna
+5, Miracle, 5, BackStreet Boys
+5, Miracle, 6, Michael Jackson
+5, Miracle, 7, Adele Adkins
+5, Miracle, 8, Richard Marx
+5, Miracle, 9, Avril Lavigne
+5, Miracle, 10, Britney Spears
+5, Miracle, 100, Carpenters
+5, Miracle, 101, Taylor Swift
+6, Swear It Again, 1, Celine Dion
+6, Swear It Again, 2, Whitney Houston
+6, Swear It Again, 3, Westlife
+6, Swear It Again, 4, Madonna
+6, Swear It Again, 5, BackStreet Boys
+6, Swear It Again, 6, Michael Jackson
+6, Swear It Again, 7, Adele Adkins
+6, Swear It Again, 8, Richard Marx
+6, Swear It Again, 9, Avril Lavigne
+6, Swear It Again, 10, Britney Spears
+6, Swear It Again, 100, Carpenters
+6, Swear It Again, 101, Taylor Swift
+7, Crazy For You, 1, Celine Dion
+7, Crazy For You, 2, Whitney Houston
+7, Crazy For You, 3, Westlife
+7, Crazy For You, 4, Madonna
+7, Crazy For You, 5, BackStreet Boys
+7, Crazy For You, 6, Michael Jackson
+7, Crazy For You, 7, Adele Adkins
+7, Crazy For You, 8, Richard Marx
+7, Crazy For You, 9, Avril Lavigne
+7, Crazy For You, 10, Britney Spears
+7, Crazy For You, 100, Carpenters
+7, Crazy For You, 101, Taylor Swift
+8, I Want It That Way, 1, Celine Dion
+8, I Want It That Way, 2, Whitney Houston
+8, I Want It That Way, 3, Westlife
+8, I Want It That Way, 4, Madonna
+8, I Want It That Way, 5, BackStreet Boys
+8, I Want It That Way, 6, Michael Jackson
+8, I Want It That Way, 7, Adele Adkins
+8, I Want It That Way, 8, Richard Marx
+8, I Want It That Way, 9, Avril Lavigne
+8, I Want It That Way, 10, Britney Spears
+8, I Want It That Way, 100, Carpenters
+8, I Want It That Way, 101, Taylor Swift
+9, As Long As You Love Me, 1, Celine Dion
+9, As Long As You Love Me, 2, Whitney Houston
+9, As Long As You Love Me, 3, Westlife
+9, As Long As You Love Me, 4, Madonna
+9, As Long As You Love Me, 5, BackStreet Boys
+9, As Long As You Love Me, 6, Michael Jackson
+9, As Long As You Love Me, 7, Adele Adkins
+9, As Long As You Love Me, 8, Richard Marx
+9, As Long As You Love Me, 9, Avril Lavigne
+9, As Long As You Love Me, 10, Britney Spears
+9, As Long As You Love Me, 100, Carpenters
+9, As Long As You Love Me, 101, Taylor Swift
+10, This Place Hotel, 1, Celine Dion
+10, This Place Hotel, 2, Whitney Houston
+10, This Place Hotel, 3, Westlife
+10, This Place Hotel, 4, Madonna
+10, This Place Hotel, 5, BackStreet Boys
+10, This Place Hotel, 6, Michael Jackson
+10, This Place Hotel, 7, Adele Adkins
+10, This Place Hotel, 8, Richard Marx
+10, This Place Hotel, 9, Avril Lavigne
+10, This Place Hotel, 10, Britney Spears
+10, This Place Hotel, 100, Carpenters
+10, This Place Hotel, 101, Taylor Swift
+11, Rolling In The Deep, 1, Celine Dion
+11, Rolling In The Deep, 2, Whitney Houston
+11, Rolling In The Deep, 3, Westlife
+11, Rolling In The Deep, 4, Madonna
+11, Rolling In The Deep, 5, BackStreet Boys
+11, Rolling In The Deep, 6, Michael Jackson
+11, Rolling In The Deep, 7, Adele Adkins
+11, Rolling In The Deep, 8, Richard Marx
+11, Rolling In The Deep, 9, Avril Lavigne
+11, Rolling In The Deep, 10, Britney Spears
+11, Rolling In The Deep, 100, Carpenters
+11, Rolling In The Deep, 101, Taylor Swift
+12, Right Here Waiting, 1, Celine Dion
+12, Right Here Waiting, 2, Whitney Houston
+12, Right Here Waiting, 3, Westlife
+12, Right Here Waiting, 4, Madonna
+12, Right Here Waiting, 5, BackStreet Boys
+12, Right Here Waiting, 6, Michael Jackson
+12, Right Here Waiting, 7, Adele Adkins
+12, Right Here Waiting, 8, Richard Marx
+12, Right Here Waiting, 9, Avril Lavigne
+12, Right Here Waiting, 10, Britney Spears
+12, Right Here Waiting, 100, Carpenters
+12, Right Here Waiting, 101, Taylor Swift
+13, What The Hell, 1, Celine Dion
+13, What The Hell, 2, Whitney Houston
+13, What The Hell, 3, Westlife
+13, What The Hell, 4, Madonna
+13, What The Hell, 5, BackStreet Boys
+13, What The Hell, 6, Michael Jackson
+13, What The Hell, 7, Adele Adkins
+13, What The Hell, 8, Richard Marx
+13, What The Hell, 9, Avril Lavigne
+13, What The Hell, 10, Britney Spears
+13, What The Hell, 100, Carpenters
+13, What The Hell, 101, Taylor Swift
+14, Goodbye, 1, Celine Dion
+14, Goodbye, 2, Whitney Houston
+14, Goodbye, 3, Westlife
+14, Goodbye, 4, Madonna
+14, Goodbye, 5, BackStreet Boys
+14, Goodbye, 6, Michael Jackson
+14, Goodbye, 7, Adele Adkins
+14, Goodbye, 8, Richard Marx
+14, Goodbye, 9, Avril Lavigne
+14, Goodbye, 10, Britney Spears
+14, Goodbye, 100, Carpenters
+14, Goodbye, 101, Taylor Swift
+15, Remember When, 1, Celine Dion
+15, Remember When, 2, Whitney Houston
+15, Remember When, 3, Westlife
+15, Remember When, 4, Madonna
+15, Remember When, 5, BackStreet Boys
+15, Remember When, 6, Michael Jackson
+15, Remember When, 7, Adele Adkins
+15, Remember When, 8, Richard Marx
+15, Remember When, 9, Avril Lavigne
+15, Remember When, 10, Britney Spears
+15, Remember When, 100, Carpenters
+15, Remember When, 101, Taylor Swift
+16, Trip To Your Heart, 1, Celine Dion
+16, Trip To Your Heart, 2, Whitney Houston
+16, Trip To Your Heart, 3, Westlife
+16, Trip To Your Heart, 4, Madonna
+16, Trip To Your Heart, 5, BackStreet Boys
+16, Trip To Your Heart, 6, Michael Jackson
+16, Trip To Your Heart, 7, Adele Adkins
+16, Trip To Your Heart, 8, Richard Marx
+16, Trip To Your Heart, 9, Avril Lavigne
+16, Trip To Your Heart, 10, Britney Spears
+16, Trip To Your Heart, 100, Carpenters
+16, Trip To Your Heart, 101, Taylor Swift
+17, Trouble For Me, 1, Celine Dion
+17, Trouble For Me, 2, Whitney Houston
+17, Trouble For Me, 3, Westlife
+17, Trouble For Me, 4, Madonna
+17, Trouble For Me, 5, BackStreet Boys
+17, Trouble For Me, 6, Michael Jackson
+17, Trouble For Me, 7, Adele Adkins
+17, Trouble For Me, 8, Richard Marx
+17, Trouble For Me, 9, Avril Lavigne
+17, Trouble For Me, 10, Britney Spears
+17, Trouble For Me, 100, Carpenters
+17, Trouble For Me, 101, Taylor Swift
+18, Take Me To Your Heart, 1, Celine Dion
+18, Take Me To Your Heart, 2, Whitney Houston
+18, Take Me To Your Heart, 3, Westlife
+18, Take Me To Your Heart, 4, Madonna
+18, Take Me To Your Heart, 5, BackStreet Boys
+18, Take Me To Your Heart, 6, Michael Jackson
+18, Take Me To Your Heart, 7, Adele Adkins
+18, Take Me To Your Heart, 8, Richard Marx
+18, Take Me To Your Heart, 9, Avril Lavigne
+18, Take Me To Your Heart, 10, Britney Spears
+18, Take Me To Your Heart, 100, Carpenters
+18, Take Me To Your Heart, 101, Taylor Swift
+19, I Still Believe, 1, Celine Dion
+19, I Still Believe, 2, Whitney Houston
+19, I Still Believe, 3, Westlife
+19, I Still Believe, 4, Madonna
+19, I Still Believe, 5, BackStreet Boys
+19, I Still Believe, 6, Michael Jackson
+19, I Still Believe, 7, Adele Adkins
+19, I Still Believe, 8, Richard Marx
+19, I Still Believe, 9, Avril Lavigne
+19, I Still Believe, 10, Britney Spears
+19, I Still Believe, 100, Carpenters
+19, I Still Believe, 101, Taylor Swift
+20, Obsessed, 1, Celine Dion
+20, Obsessed, 2, Whitney Houston
+20, Obsessed, 3, Westlife
+20, Obsessed, 4, Madonna
+20, Obsessed, 5, BackStreet Boys
+20, Obsessed, 6, Michael Jackson
+20, Obsessed, 7, Adele Adkins
+20, Obsessed, 8, Richard Marx
+20, Obsessed, 9, Avril Lavigne
+20, Obsessed, 10, Britney Spears
+20, Obsessed, 100, Carpenters
+20, Obsessed, 101, Taylor Swift
