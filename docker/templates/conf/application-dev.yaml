@@ -5,4 +5,6 @@ server:
         min-response-size: 1024
     host: HOSTNAME
     port: 13000
+    grpc:
+        port: 9999
     coordinatorExchangeSvrList: COORDINATORS
