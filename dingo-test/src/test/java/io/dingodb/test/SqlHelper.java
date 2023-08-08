@@ -156,15 +156,6 @@ public class SqlHelper {
         queryTest(sql, columns, CsvUtils.readCsv(schema, data));
     }
 
-    public void queryTest(String sql, InputStream resultFile) throws IOException, SQLException {
-        try (Statement statement = connection.createStatement()) {
-            try (ResultSet resultSet = statement.executeQuery(sql)) {
-                Assert.resultSet(resultSet)
-                    .asInCsv(resultFile);
-            }
-        }
-    }
-
     public void queryTestInOrder(
         String sql,
         String[] columns,
@@ -239,21 +230,5 @@ public class SqlHelper {
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate("drop table " + tableName);
         }
-    }
-
-    public void doQueryTest(
-        @Nonnull Class<?> testClass,
-        String sqlFileName,
-        String resultFileName
-    ) throws SQLException, IOException {
-        String sql = IOUtils.toString(
-            Objects.requireNonNull(testClass.getResourceAsStream(sqlFileName + ".sql")),
-            StandardCharsets.UTF_8
-        );
-        queryTest(sql, testClass.getResourceAsStream(resultFileName + ".csv"));
-    }
-
-    public void doQueryTest(Class<?> testClass, String fileName) throws SQLException, IOException {
-        doQueryTest(testClass, fileName, fileName);
     }
 }

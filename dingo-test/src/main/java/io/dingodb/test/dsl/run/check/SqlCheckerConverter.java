@@ -47,7 +47,7 @@ public class SqlCheckerConverter implements SqlCheckerVisitor<Check> {
     private final String basePath;
 
     public static SqlCheckerConverter of(Class<?> callerClass, String basePath) {
-        if (callerClass==null) {
+        if (callerClass == null) {
             return INSTANCE;
         }
         return new SqlCheckerConverter(callerClass, basePath);
@@ -56,9 +56,9 @@ public class SqlCheckerConverter implements SqlCheckerVisitor<Check> {
     private static @NonNull Check createFromFile(InputStream csvFile) {
         try {
             Iterator<String[]> it = CsvUtils.readCsv(csvFile);
-            final String[] columnLabels = it.hasNext() ? it.next():null;
-            final DingoType schema = it.hasNext() ? DingoTypeFactory.tuple(it.next()):null;
-            if (columnLabels==null || schema==null) {
+            final String[] columnLabels = it.hasNext() ? it.next() : null;
+            final DingoType schema = it.hasNext() ? DingoTypeFactory.tuple(it.next()) : null;
+            if (columnLabels == null || schema == null) {
                 throw new IllegalArgumentException(
                     "Result file must be csv and its first two rows are column names and schema definitions."
                 );
@@ -70,7 +70,6 @@ public class SqlCheckerConverter implements SqlCheckerVisitor<Check> {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     @Override

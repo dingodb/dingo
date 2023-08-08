@@ -62,6 +62,7 @@ public abstract class SqlTestCaseJavaBuilder extends SqlTestCaseBuilder {
         return new SqlUpdateCountChecker(updateCount);
     }
 
+    @SuppressWarnings("unused")
     public static @NonNull SqlResultDumper dump() {
         return new SqlResultDumper();
     }

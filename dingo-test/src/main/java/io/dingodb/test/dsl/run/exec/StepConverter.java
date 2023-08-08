@@ -45,7 +45,7 @@ public class StepConverter implements StepVisitor<Exec> {
     private final SqlCheckerConverter checkerConverter;
 
     public static StepConverter of(Class<?> callerClass, String basePath) {
-        if (callerClass==null) {
+        if (callerClass == null) {
             return INSTANCE;
         }
         return new StepConverter(callerClass, basePath, SqlCheckerConverter.of(callerClass, basePath));

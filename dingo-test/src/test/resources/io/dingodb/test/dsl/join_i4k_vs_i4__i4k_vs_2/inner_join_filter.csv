@@ -1,0 +1,5 @@
+id, title, artistName, artistCategory
+INTEGER, STRING, STRING, STRING
+6, Swear It Again, Westlife, Band
+8, I Want It That Way, BackStreet Boys, Band
+9, As Long As You Love Me, BackStreet Boys, Band

@@ -50,7 +50,7 @@ public final class SqlRunningContext {
         try (Statement statement = connection.createStatement()) {
             for (Map.Entry<String, TableInfo> entry : tables.entrySet()) {
                 String tableName = entry.getValue().getTableName();
-                if (tableName!=null) {
+                if (tableName != null) {
                     statement.execute("drop table " + tableName);
                 }
             }
@@ -66,11 +66,24 @@ public final class SqlRunningContext {
      */
     public synchronized String prepareTable(String tableId) throws SQLException {
         TableInfo tableInfo = tables.get(tableId);
+        if (tableInfo == null) {
+            throw new RuntimeException(
+                "Table \"" + tableId + "\"not found, forget to init tables or use wrong table id?"
+            );
+        }
         boolean isNewCreated = false;
-        if (tableInfo.getTableName()==null) {
+        if (tableInfo.getTableName() == null) {
             SqlExecContext execContext = new SqlExecContext(connection);
             tableInfo.getCreate().run(execContext);
-            tableInfo.setTableName(execContext.getTableName(TableUtils.DEFAULT_TABLE_PLACEHOLDER_NAME));
+            String tableName = execContext.getTableName(TableUtils.DEFAULT_TABLE_PLACEHOLDER_NAME);
+            if (tableName == null) {
+                throw new RuntimeException(
+                    "Cannot get created table name, placeholder {"
+                        + TableUtils.DEFAULT_TABLE_PLACEHOLDER_NAME
+                        + "} must be used."
+                );
+            }
+            tableInfo.setTableName(tableName);
             isNewCreated = true;
         }
         if (!tableInfo.isPopulated()) {
@@ -80,7 +93,7 @@ public final class SqlRunningContext {
                 new ExecSql("truncate {" + TableUtils.DEFAULT_TABLE_PLACEHOLDER_NAME + "}").run(execContext);
             }
             Exec exec = tableInfo.getInit();
-            if (exec!=null) {
+            if (exec != null) {
                 tableInfo.getInit().run(execContext);
             }
             tableInfo.setPopulated(true);

@@ -129,7 +129,11 @@ public class SqlBuildingContext {
         }
 
         public TestCaseContext data(SqlChecker checker) {
-            return step("select * from {" + TableUtils.DEFAULT_TABLE_PLACEHOLDER_NAME + "}", checker);
+            return data(TableUtils.DEFAULT_TABLE_PLACEHOLDER_NAME, checker);
+        }
+
+        public TestCaseContext data(String tablePalaceHolderName, SqlChecker checker) {
+            return step("select * from {" + tablePalaceHolderName + "}", checker);
         }
 
         public TestCaseContext custom(Exec exec) {

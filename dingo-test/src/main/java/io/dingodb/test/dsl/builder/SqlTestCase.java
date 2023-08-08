@@ -70,7 +70,7 @@ public final class SqlTestCase {
         this.steps = steps;
         this.enabled = !skipped;
         this.only = only;
-        this.tableMapping = tableMapping!=null ? tableMapping:new HashMap<>(1);
-        this.modifiedTableIds = modifiedTableIds!=null ? modifiedTableIds:new ArrayList<>(1);
+        this.tableMapping = tableMapping != null ? tableMapping : new HashMap<>(1);
+        this.modifiedTableIds = modifiedTableIds != null ? modifiedTableIds : new ArrayList<>(1);
     }
 }

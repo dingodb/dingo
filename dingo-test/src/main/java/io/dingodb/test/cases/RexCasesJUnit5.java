@@ -41,7 +41,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 public final class RexCasesJUnit5 implements ArgumentsProvider {
     private static @NonNull Arguments unixTimestampCase(@Nonnull String timestampStr) {
         Timestamp timestamp = DateTimeUtils.parseTimestamp(timestampStr);
-        assert timestamp!=null;
+        assert timestamp != null;
         return arguments(
             "unix_timestamp('" + timestampStr + "')",
             "unix_timestamp(TIMESTAMP('" + timestampStr.replace("/", "\\/") + "'))",
@@ -51,7 +51,7 @@ public final class RexCasesJUnit5 implements ArgumentsProvider {
 
     private static @NonNull Arguments unixTimestampLiteralCase(@Nonnull String timestampStr) {
         Timestamp timestamp = DateTimeUtils.parseTimestamp(timestampStr);
-        assert timestamp!=null;
+        assert timestamp != null;
         long millis = timestamp.getTime();
         millis = millis + TimeZone.getDefault().getOffset(millis);
         return arguments(
@@ -63,7 +63,7 @@ public final class RexCasesJUnit5 implements ArgumentsProvider {
 
     private static @NonNull Arguments fromUnixTimeCase(@Nonnull String timestampStr) {
         Timestamp timestamp = DateTimeUtils.parseTimestamp(timestampStr);
-        assert timestamp!=null;
+        assert timestamp != null;
         return arguments(
             "from_unixtime(" + timestamp.getTime() / 1000L + ")",
             "from_unixtime(" + timestamp.getTime() / 1000L + ")",

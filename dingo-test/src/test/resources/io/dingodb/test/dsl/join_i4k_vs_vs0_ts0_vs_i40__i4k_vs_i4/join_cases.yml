@@ -1,0 +1,22 @@
+tables:
+  beauties:
+    create: { file: ../i4k_vs_vs0_ts0_vs_i40/create.sql }
+    init: { file: ../i4k_vs_vs0_ts0_vs_i40/data.sql, count: 12 }
+  boys:
+    create: { file: ../i4k_vs_i4/create_1.sql }
+    init: { file: ../i4k_vs_i4/data_1.sql, count: 6 }
+cases:
+  - name: Right join with filter
+    use:
+      table0: beauties
+      table1: boys
+    steps:
+      - file: right_join_filter.sql
+        result: right_join_filter.csv
+  - name: Right join with filter `not in` list
+    use:
+      table0: beauties
+      table1: boys
+    steps:
+      - file: right_join_filter_not_in.sql
+        result: right_join_filter_not_in.csv

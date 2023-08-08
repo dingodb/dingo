@@ -40,7 +40,7 @@ public final class AssertOperator extends Assert<Operator, AssertOperator> {
     public AssertOperator soleOutput() {
         isA(SoleOutOperator.class);
         Input input = instance.getSoleOutput().getLink();
-        return operator(input!=null ? instance.getTask().getOperator(input.getOperatorId()):null);
+        return operator(input != null ? instance.getTask().getOperator(input.getOperatorId()) : null);
     }
 
     public AssertOperator isPartRangeScan(CommonId tableId, CommonId partId) {

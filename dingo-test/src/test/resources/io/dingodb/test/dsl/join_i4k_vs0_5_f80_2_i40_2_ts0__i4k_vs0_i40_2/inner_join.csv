@@ -1,0 +1,109 @@
+employee_id, first_name, last_name, hire_date, job_id, job_title
+INTEGER, STRING, STRING, TIMESTAMP, STRING, STRING
+100, Steven, K_ing, 1992-04-03 00:00:00, AD_PRES, President
+101, Neena, Kochhar, 1992-04-03 00:00:00, AD_VP, Administration Vice President
+102, Lex, De Haan, 1992-04-03 00:00:00, AD_VP, Administration Vice President
+103, Alexander, Hunold, 1992-04-03 00:00:00, IT_PROG, Programmer
+104, Bruce, Ernst, 1992-04-03 00:00:00, IT_PROG, Programmer
+105, David, Austin, 1998-03-03 00:00:00, IT_PROG, Programmer
+106, Valli, Pataballa, 1998-03-03 00:00:00, IT_PROG, Programmer
+107, Diana, Lorentz, 1998-03-03 00:00:00, IT_PROG, Programmer
+108, Nancy, Greenberg, 1998-03-03 00:00:00, FI_MGR, Finance Manager
+109, Daniel, Faviet, 1998-03-03 00:00:00, FI_ACCOUNT, Accountant
+110, John, Chen, 2000-09-09 00:00:00, FI_ACCOUNT, Accountant
+111, Ismael, Sciarra, 2000-09-09 00:00:00, FI_ACCOUNT, Accountant
+112, Jose Manuel, Urman, 2000-09-09 00:00:00, FI_ACCOUNT, Accountant
+113, Luis, Popp, 2000-09-09 00:00:00, FI_ACCOUNT, Accountant
+114, Den, Raphaely, 2000-09-09 00:00:00, PU_MAN, Purchasing Manager
+115, Alexander, Khoo, 2000-09-09 00:00:00, PU_CLERK, Purchasing Clerk
+116, Shelli, Baida, 2000-09-09 00:00:00, PU_CLERK, Purchasing Clerk
+117, Sigal, Tobias, 2000-09-09 00:00:00, PU_CLERK, Purchasing Clerk
+118, Guy, Himuro, 2000-09-09 00:00:00, PU_CLERK, Purchasing Clerk
+119, Karen, Colmenares, 2000-09-09 00:00:00, PU_CLERK, Purchasing Clerk
+120, Matthew, Weiss, 2004-02-06 00:00:00, ST_MAN, Stock Manager
+121, Adam, Fripp, 2004-02-06 00:00:00, ST_MAN, Stock Manager
+122, Payam, Kaufling, 2004-02-06 00:00:00, ST_MAN, Stock Manager
+123, Shanta, Vollman, 2004-02-06 00:00:00, ST_MAN, Stock Manager
+124, Kevin, Mourgos, 2004-02-06 00:00:00, ST_MAN, Stock Manager
+125, Julia, Nayer, 2004-02-06 00:00:00, ST_CLERK, Stock Clerk
+126, Irene, Mikkilineni, 2004-02-06 00:00:00, ST_CLERK, Stock Clerk
+127, James, Landry, 2004-02-06 00:00:00, ST_CLERK, Stock Clerk
+128, Steven, Markle, 2004-02-06 00:00:00, ST_CLERK, Stock Clerk
+129, Laura, Bissot, 2004-02-06 00:00:00, ST_CLERK, Stock Clerk
+130, Mozhe, Atkinson, 2004-02-06 00:00:00, ST_CLERK, Stock Clerk
+131, James, Marlow, 2004-02-06 00:00:00, ST_CLERK, Stock Clerk
+132, TJ, Olson, 2004-02-06 00:00:00, ST_CLERK, Stock Clerk
+133, Jason, Mallin, 2004-02-06 00:00:00, ST_CLERK, Stock Clerk
+134, Michael, Rogers, 2002-12-23 00:00:00, ST_CLERK, Stock Clerk
+135, Ki, Gee, 2002-12-23 00:00:00, ST_CLERK, Stock Clerk
+136, Hazel, Philtanker, 2002-12-23 00:00:00, ST_CLERK, Stock Clerk
+137, Renske, Ladwig, 2002-12-23 00:00:00, ST_CLERK, Stock Clerk
+138, Stephen, Stiles, 2002-12-23 00:00:00, ST_CLERK, Stock Clerk
+139, John, Seo, 2002-12-23 00:00:00, ST_CLERK, Stock Clerk
+140, Joshua, Patel, 2002-12-23 00:00:00, ST_CLERK, Stock Clerk
+141, Trenna, Rajs, 2002-12-23 00:00:00, ST_CLERK, Stock Clerk
+142, Curtis, Davies, 2002-12-23 00:00:00, ST_CLERK, Stock Clerk
+143, Randall, Matos, 2002-12-23 00:00:00, ST_CLERK, Stock Clerk
+144, Peter, Vargas, 2002-12-23 00:00:00, ST_CLERK, Stock Clerk
+145, John, Russell, 2002-12-23 00:00:00, SA_MAN, Sales Manager
+146, Karen, Partners, 2002-12-23 00:00:00, SA_MAN, Sales Manager
+147, Alberto, Errazuriz, 2002-12-23 00:00:00, SA_MAN, Sales Manager
+148, Gerald, Cambrault, 2002-12-23 00:00:00, SA_MAN, Sales Manager
+149, Eleni, Zlotkey, 2002-12-23 00:00:00, SA_MAN, Sales Manager
+150, Peter, Tucker, 2014-03-05 00:00:00, SA_REP, Sales Representative
+151, David, Bernstein, 2014-03-05 00:00:00, SA_REP, Sales Representative
+152, Peter, Hall, 2014-03-05 00:00:00, SA_REP, Sales Representative
+153, Christopher, Olsen, 2014-03-05 00:00:00, SA_REP, Sales Representative
+154, Nanette, Cambrault, 2014-03-05 00:00:00, SA_REP, Sales Representative
+155, Oliver, Tuvault, 2014-03-05 00:00:00, SA_REP, Sales Representative
+156, Janette, K_ing, 2014-03-05 00:00:00, SA_REP, Sales Representative
+157, Patrick, Sully, 2014-03-05 00:00:00, SA_REP, Sales Representative
+158, Allan, McEwen, 2014-03-05 00:00:00, SA_REP, Sales Representative
+159, Lindsey, Smith, 2014-03-05 00:00:00, SA_REP, Sales Representative
+160, Louise, Doran, 2014-03-05 00:00:00, SA_REP, Sales Representative
+161, Sarath, Sewall, 2014-03-05 00:00:00, SA_REP, Sales Representative
+162, Clara, Vishney, 2014-03-05 00:00:00, SA_REP, Sales Representative
+163, Danielle, Greene, 2014-03-05 00:00:00, SA_REP, Sales Representative
+164, Mattea, Marvins, 2014-03-05 00:00:00, SA_REP, Sales Representative
+165, David, Lee, 2014-03-05 00:00:00, SA_REP, Sales Representative
+166, Sundar, Ande, 2014-03-05 00:00:00, SA_REP, Sales Representative
+167, Amit, Banda, 2014-03-05 00:00:00, SA_REP, Sales Representative
+168, Lisa, Ozer, 2014-03-05 00:00:00, SA_REP, Sales Representative
+169, Harrison, Bloom, 2014-03-05 00:00:00, SA_REP, Sales Representative
+170, Tayler, Fox, 2014-03-05 00:00:00, SA_REP, Sales Representative
+171, William, Smith, 2014-03-05 00:00:00, SA_REP, Sales Representative
+172, Elizabeth, Bates, 2014-03-05 00:00:00, SA_REP, Sales Representative
+173, Sundita, Kumar, 2014-03-05 00:00:00, SA_REP, Sales Representative
+174, Ellen, Abel, 2014-03-05 00:00:00, SA_REP, Sales Representative
+175, Alyssa, Hutton, 2014-03-05 00:00:00, SA_REP, Sales Representative
+176, Jonathon, Taylor, 2014-03-05 00:00:00, SA_REP, Sales Representative
+177, Jack, Livingston, 2014-03-05 00:00:00, SA_REP, Sales Representative
+178, Kimberely, Grant, 2014-03-05 00:00:00, SA_REP, Sales Representative
+179, Charles, Johnson, 2014-03-05 00:00:00, SA_REP, Sales Representative
+180, Winston, Taylor, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+181, Jean, Fleaur, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+182, Martha, Sullivan, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+183, Girard, Geoni, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+184, Nandita, Sarchand, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+185, Alexis, Bull, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+186, Julia, Dellinger, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+187, Anthony, Cabrio, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+188, Kelly, Chung, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+189, Jennifer, Dilly, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+190, Timothy, Gates, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+191, Randall, Perkins, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+192, Sarah, Bell, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+193, Britney, Everett, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+194, Samuel, McCain, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+195, Vance, Jones, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+196, Alana, Walsh, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+197, Kevin, Feeney, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+198, Donald, OConnell, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+199, Douglas, Grant, 2014-03-05 00:00:00, SH_CLERK, Shipping Clerk
+200, Jennifer, Whalen, 2016-03-03 00:00:00, AD_ASST, Administration Assistant
+201, Michael, Hartstein, 2016-03-03 00:00:00, MK_MAN, Marketing Manager
+202, Pat, Fay, 2016-03-03 00:00:00, MK_REP, Marketing Representative
+203, Susan, Mavris, 2016-03-03 00:00:00, HR_REP, Human Resources Representative
+204, Hermann, Baer, 2016-03-03 00:00:00, PR_REP, Public Relations Representative
+205, Shelley, Higgins, 2016-03-03 00:00:00, AC_MGR, Accounting Manager
+206, William, Gietz, 2016-03-03 00:00:00, AC_ACCOUNT, Public Accountant
