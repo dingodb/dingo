@@ -42,8 +42,13 @@ public class RefreshStatsTask extends StatsOperator implements Runnable {
         Map<String, TableStats> statsMap = new ConcurrentHashMap<>();
         List<RangeDistribution> rangeDistributions = new ArrayList<>(metaService
             .getRangeDistribution(bucketsTblId).values());
-        List<Object[]> values = scan(bucketsStore, bucketsCodec, rangeDistributions.get(0).getStartKey(),
-            rangeDistributions.get(0).getEndKey());
+        List<Object[]> values;
+        try {
+            values = scan(bucketsStore, bucketsCodec, rangeDistributions.get(0).getStartKey(),
+                rangeDistributions.get(0).getEndKey());
+        } catch (Exception e) {
+            values = new ArrayList<>();
+        }
         values.forEach(e -> {
             String histogramStr = (String) e[3];
             Histogram histogram = Histogram.deserialize(histogramStr);
@@ -62,8 +67,12 @@ public class RefreshStatsTask extends StatsOperator implements Runnable {
 
         rangeDistributions = new ArrayList<>(metaService
             .getRangeDistribution(cmSketchTblId).values());
-        values = scan(cmSketchStore, cmSketchCodec, rangeDistributions.get(0).getStartKey(),
-            rangeDistributions.get(0).getEndKey());
+        try {
+            values = scan(cmSketchStore, cmSketchCodec, rangeDistributions.get(0).getStartKey(),
+                rangeDistributions.get(0).getEndKey());
+        } catch (Exception e) {
+            values = new ArrayList<>();
+        }
         values.forEach(e -> {
             String cmSKetchStr = (String) e[3];
             CountMinSketch countMinSketch = CountMinSketch.deserialize(cmSKetchStr);
@@ -72,6 +81,7 @@ public class RefreshStatsTask extends StatsOperator implements Runnable {
             countMinSketch.setTableName((String) e[1]);
             countMinSketch.setNullCount((Long) e[4]);
             countMinSketch.setTotalCount((Long) e[5]);
+            countMinSketch.setIndex((Integer) e[6]);
             String cmSketchKey = (e[0] + "." + e[1]).toUpperCase();
             TableStats tableStats = statsMap.computeIfPresent(cmSketchKey,
                 (k, v) -> {
@@ -86,8 +96,12 @@ public class RefreshStatsTask extends StatsOperator implements Runnable {
         });
 
         rangeDistributions = new ArrayList<>(metaService.getRangeDistribution(statsTblId).values());
-        values = scan(statsStore, statsCodec, rangeDistributions.get(0).getStartKey(),
-            rangeDistributions.get(0).getEndKey());
+        try {
+            values = scan(statsStore, statsCodec, rangeDistributions.get(0).getStartKey(),
+                rangeDistributions.get(0).getEndKey());
+        } catch (Exception e) {
+            values = new ArrayList<>();
+        }
         values.forEach(e -> {
             String statsNormalKey = (e[0] + "." + e[1]).toUpperCase();
             StatsNormal statsNormal = new StatsNormal((String) e[2], (Long) e[3], (Long) e[4],

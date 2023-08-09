@@ -27,6 +27,7 @@ import io.dingodb.calcite.grammar.dql.SqlShow;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
 import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.SqlToOperationConverter;
+import io.dingodb.calcite.rel.DingoCost;
 import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rule.DingoRules;
 import io.dingodb.calcite.traits.DingoConvention;
@@ -102,7 +103,7 @@ public class DingoParser {
         this.context = context;
 
         // Create Planner.
-        planner = new VolcanoPlanner(context);
+        planner = new VolcanoPlanner(DingoCost.FACTORY, context);
         // Set to `true` to use `TopDownRuleDriver`, or `IterativeRuleDriver` is used.
         // It seems that `TopDownRuleDriver` is faster than `IterativeRuleDriver`.
         planner.setTopDownOpt(context.getConfig().topDownOpt());
@@ -189,7 +190,7 @@ public class DingoParser {
         }
     }
 
-    protected boolean compatibleMysql(SqlNode sqlNode) {
+    protected static boolean compatibleMysql(SqlNode sqlNode) {
         if (sqlNode instanceof SqlShow || sqlNode instanceof SqlDesc || sqlNode instanceof SqlNextAutoIncrement) {
             return true;
         } else if (sqlNode instanceof SqlSelect) {

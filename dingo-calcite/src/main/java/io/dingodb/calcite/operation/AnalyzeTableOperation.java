@@ -76,7 +76,7 @@ public class AnalyzeTableOperation extends StatsOperator implements DdlOperation
 
     private int cmSketchHeight;
     private int cmSketchWidth;
-    private int bucketCount;
+    private Integer bucketCount;
     private long samples;
     private float sampleRate;
 
@@ -96,7 +96,7 @@ public class AnalyzeTableOperation extends StatsOperator implements DdlOperation
             this.cmSketchHeight = 5;
         }
         this.bucketCount = sqlAnalyze.getBuckets();
-        if (bucketCount == 0) {
+        if (bucketCount == null || bucketCount == 0) {
             bucketCount = 254;
         }
         this.samples = sqlAnalyze.getSamples();
@@ -106,6 +106,10 @@ public class AnalyzeTableOperation extends StatsOperator implements DdlOperation
     @Override
     public void execute() {
         try {
+            // if total count is 0 then stop program
+            if (totalCount == 0) {
+                return;
+            }
             // get table info
             MetaService metaService = MetaService.root();
             metaService = metaService.getSubMetaService(schemaName);
@@ -238,11 +242,12 @@ public class AnalyzeTableOperation extends StatsOperator implements DdlOperation
     }
 
     private void addCountMinSketch(List<CountMinSketch> countMinSketches) {
-        deletePrefix(cmSketchStore, cmSketchCodec, new Object[]{schemaName, tableName, null, null, null, null});
+        deletePrefix(cmSketchStore, cmSketchCodec, new Object[]{schemaName, tableName, null, null, null, null, null});
         List<Object[]> paramList = countMinSketches.stream().map(countMinSketch -> {
             String cmSketch = countMinSketch.serialize();
             return new Object[] {countMinSketch.getSchemaName(), countMinSketch.getTableName(),
-                countMinSketch.getColumnName(), cmSketch, countMinSketch.getNullCount(), countMinSketch.getTotalCount()
+                countMinSketch.getColumnName(), cmSketch, countMinSketch.getNullCount(),
+                countMinSketch.getTotalCount(), countMinSketch.getIndex()
             };
         }).collect(Collectors.toList());
         insert(cmSketchStore, cmSketchCodec, paramList);

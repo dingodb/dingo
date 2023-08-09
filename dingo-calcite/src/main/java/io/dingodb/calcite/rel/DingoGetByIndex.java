@@ -41,6 +41,12 @@ public class DingoGetByIndex extends LogicalDingoTableScan implements DingoRel {
     @Getter
     private final String indexName;
 
+    @Getter
+    private final boolean isUnique;
+
+    @Getter
+    private final String[] columns;
+
     public DingoGetByIndex(
         RelOptCluster cluster,
         RelTraitSet traitSet,
@@ -49,16 +55,24 @@ public class DingoGetByIndex extends LogicalDingoTableScan implements DingoRel {
         RexNode filter,
         @Nullable TupleMapping selection,
         String indexName,
-        Collection<Map<Integer, RexNode>> points
+        boolean isUnique,
+        Collection<Map<Integer, RexNode>> points,
+        String[] columns
     ) {
         super(cluster, traitSet, hints, table, filter, selection);
         this.indexName = indexName;
         this.points = points;
+        this.columns = columns;
+        this.isUnique = isUnique;
     }
 
     @Override
     public double estimateRowCount(RelMetadataQuery mq) {
-        return points.size();
+        if (isUnique) {
+            return points.size();
+        } else {
+            return super.estimateRowCount(mq);
+        }
     }
 
     @Override
