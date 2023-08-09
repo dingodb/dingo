@@ -33,6 +33,7 @@ import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
@@ -151,7 +152,7 @@ public final class DingoDriverParser extends DingoParser {
             true,
             false,
             false,
-            avaticaType.columnClassName()
+            avaticaType.id == SqlType.FLOAT.id ? "java.lang.Float" : avaticaType.columnClassName()
         );
     }
 

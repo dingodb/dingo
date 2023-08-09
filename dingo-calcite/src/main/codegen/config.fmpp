@@ -74,6 +74,7 @@ data: {
       "org.apache.calcite.sql.SqlTimeLiteral"
       "org.apache.calcite.sql.SqlTimestampLiteral"
       "org.apache.calcite.sql.ddl.SqlDdlNodes"
+      "org.apache.calcite.sql.ddl.SqlFloatTypeNameSpec"
       "org.apache.calcite.sql2rel.SqlLikeBinaryOperator"
       "org.apache.calcite.sql2rel.SqlFunctionScanOperator"
       "org.apache.calcite.util.NlsString"
@@ -189,6 +190,10 @@ data: {
         "SqlPrepare"
         "SqlExecute"
         "SqlAnalyze"
+    ]
+
+    sqlTypeNameMethods: [
+        "SqlFloatTypeName"
     ]
 
     # List of files in @includes directory that have parser method

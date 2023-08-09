@@ -145,8 +145,7 @@ public final class DataParser extends Parser {
                 tuple[rtSchema.getIndex()] = jsonNode.asLong();
                 return;
             case TypeCode.FLOAT:
-                //TODO:
-                tuple[rtSchema.getIndex()] = jsonNode.asDouble();
+                tuple[rtSchema.getIndex()] = jsonNode.floatValue();
                 return;
             case TypeCode.DOUBLE:
                 tuple[rtSchema.getIndex()] = jsonNode.asDouble();

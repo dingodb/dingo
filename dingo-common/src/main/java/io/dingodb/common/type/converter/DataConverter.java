@@ -101,14 +101,11 @@ public interface DataConverter {
         return (Long) value;
     }
 
-    default Double convertFloatFrom(@NonNull Object value) {
-        return convertDoubleFrom(value);
+    default Float convertFloatFrom(@NonNull Object value) {
+        return (Float) value;
     }
 
     default Double convertDoubleFrom(@NonNull Object value) {
-        if (value instanceof Float) {
-            return ((Float) value).doubleValue();
-        }
         return (Double) value;
     }
 

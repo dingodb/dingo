@@ -5610,6 +5610,10 @@ SqlTypeNameSpec SqlTypeName(Span s) :
 }
 {
     (
+    <#list (parser.sqlTypeNameMethods!) as method>
+        sqlTypeNameSpec = ${method}(s)
+    |
+    </#list>
         sqlTypeNameSpec = SqlTypeName1(s)
     |
         sqlTypeNameSpec = SqlTypeName2(s)
