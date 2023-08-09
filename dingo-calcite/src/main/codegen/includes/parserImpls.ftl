@@ -1007,3 +1007,25 @@ SqlNode SqlTruncate() :
         return new SqlTruncate(getPos(), id);
     }
 }
+
+SqlTypeNameSpec SqlFloatTypeName(Span s) :
+{
+    final SqlTypeNameSpec sqlTypeNameSpec;
+}
+{
+    <FLOAT>
+    {
+        s.add(this);
+        SqlTypeName sqlTypeName = SqlTypeName.FLOAT;
+        int precision = -1;
+    }
+        [
+            <LPAREN>
+                precision = UnsignedIntLiteral()
+            <RPAREN>
+        ]
+    {
+        sqlTypeNameSpec = new SqlFloatTypeNameSpec(sqlTypeName, precision, s.end(this));
+        return sqlTypeNameSpec;
+    }
+}

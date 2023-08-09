@@ -36,8 +36,8 @@ public class ValueConverter implements DataConverter {
     }
 
     @Override
-    public Double convertFloatFrom(@NonNull Object value) {
-        return ((Number) value).doubleValue();
+    public Float convertFloatFrom(@NonNull Object value) {
+        return ((Number) value).floatValue();
     }
 
     @Override

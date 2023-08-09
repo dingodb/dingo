@@ -79,8 +79,8 @@ public class JsonConverter implements DataConverter {
     }
 
     @Override
-    public Double convertFloatFrom(@NonNull Object value) {
-        return ((JsonNode) value).doubleValue();
+    public Float convertFloatFrom(@NonNull Object value) {
+        return ((JsonNode) value).floatValue();
     }
 
     @Override

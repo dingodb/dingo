@@ -68,7 +68,7 @@ public class AvroSchemaConverter implements SchemaConverter<Schema> {
 
     @Override
     public @NonNull Schema createSchema(@NonNull FloatType type) {
-        return ofNullable(Schema.create(Schema.Type.DOUBLE), type.isNullable());
+        return ofNullable(Schema.create(Schema.Type.FLOAT), type.isNullable());
     }
 
     @Override

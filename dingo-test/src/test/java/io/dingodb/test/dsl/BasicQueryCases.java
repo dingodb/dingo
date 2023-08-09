@@ -121,7 +121,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                 "select * from {table} where id = 1",
                 csv(
                     "id,name,age,gmt,price,amount,address,birthday,create_time,update_time,zip_code,is_delete",
-                    "INT,STRING,INT,LONG,DOUBLE,DOUBLE,STRING,DATE,STRING,TIMESTAMP,STRING,BOOL",
+                    "INT,STRING,INT,LONG,FLOAT,DOUBLE,STRING,DATE,STRING,TIMESTAMP,STRING,BOOL",
                     "1,zhangsan,18,99,0.0,23.5,beijing,1998-04-06,08:10:10,2022-04-08 18:05:07,null,true"
                 )
             );

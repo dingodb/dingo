@@ -23,14 +23,14 @@ import io.dingodb.common.type.SchemaConverter;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.serial.schema.DingoSchema;
-import io.dingodb.serial.schema.DoubleSchema;
+import io.dingodb.serial.schema.FloatSchema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 @JsonTypeName("float")
 public class FloatType extends AbstractScalarType {
     @JsonCreator
     public FloatType(@JsonProperty("nullable") boolean nullable) {
-        super(TypeCode.DOUBLE, nullable);
+        super(TypeCode.FLOAT, nullable);
     }
 
     @Override
@@ -40,7 +40,7 @@ public class FloatType extends AbstractScalarType {
 
     @Override
     public DingoSchema toDingoSchema(int index) {
-        return new DoubleSchema(index);
+        return new FloatSchema(index);
     }
 
     @Override

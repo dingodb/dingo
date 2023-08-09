@@ -20,14 +20,21 @@ import io.dingodb.exec.base.JobIterator;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.AvaticaConnection;
+import org.apache.calcite.avatica.util.AbstractCursor;
+import org.apache.calcite.avatica.util.DingoAccessor;
 import org.apache.calcite.avatica.AvaticaResultSet;
 import org.apache.calcite.avatica.AvaticaStatement;
+import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.QueryState;
+import org.apache.calcite.avatica.util.Cursor;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.Iterator;
+import java.util.List;
 import java.util.TimeZone;
 
 @Slf4j
@@ -57,4 +64,46 @@ public class DingoResultSet extends AvaticaResultSet {
     public Meta.Signature getSignature() {
         return signature;
     }
+
+    @Override
+    public Object getObject(int columnIndex) throws SQLException {
+        try {
+            Object object;
+            switch (columnMetaDataList.get(columnIndex - 1).type.id) {
+                case Types.FLOAT:
+                    object = accessorList.get(columnIndex - 1).getObject();
+                    break;
+                default:
+                    object = super.getObject(columnIndex);
+                    break;
+            }
+            return object;
+        } catch (IndexOutOfBoundsException e) {
+            throw AvaticaConnection.HELPER.createException(
+                "invalid column ordinal: " + columnIndex);
+        }
+    }
+
+    @Override
+    protected AvaticaResultSet execute() throws SQLException {
+        super.execute();
+        for (int i = 0; i < this.columnMetaDataList.size(); i++) {
+            if (columnMetaDataList.get(i).type.id == Types.FLOAT) {
+                this.accessorList.set(i, new DingoAccessor.FloatAccessor((AbstractCursor) cursor, i));
+            }
+        }
+        return this;
+    }
+
+    @Override
+    public AvaticaResultSet execute2(Cursor cursor, List<ColumnMetaData> columnMetaDataList) {
+        super.execute2(cursor, columnMetaDataList);
+        for (int i = 0; i < this.columnMetaDataList.size(); i++) {
+            if (columnMetaDataList.get(i).type.id == Types.FLOAT) {
+                this.accessorList.set(i, new DingoAccessor.FloatAccessor((AbstractCursor) cursor, i));
+            }
+        }
+        return this;
+    }
+
 }
