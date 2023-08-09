@@ -28,6 +28,7 @@ import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.dingodb.client.utils.OperationUtils.mapKey;
 
@@ -107,7 +108,9 @@ public class DeleteOperation implements Operation {
         List<Boolean> result = context.getStoreService().kvBatchDelete(
                 context.getTableId(),
                 context.getRegionId(),
-                keySet
+                keySet.stream()
+                    .map(k -> context.getCodec().resetPrefix(k, context.getRegionId().parentId()))
+                    .collect(Collectors.toList())
         );
         parameters.forEach((k, v) -> context.<Boolean[]>result()[v] = result.get(keySet.indexOf(k)));
     }

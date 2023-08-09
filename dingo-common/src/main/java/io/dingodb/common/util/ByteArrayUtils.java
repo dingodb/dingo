@@ -100,13 +100,18 @@ public class ByteArrayUtils {
 
     public static final byte[] MIN = EMPTY_BYTES;
     public static final byte[] MAX = new byte[] {(byte) 0xFF };
+    public static final int SKIP_LONG_POS = 8;
 
     public static int compare(byte[] bytes1, byte[] bytes2, boolean ignoreLen) {
+        return compare(bytes1, bytes2, ignoreLen, 0);
+    }
+
+    public static int compare(byte[] bytes1, byte[] bytes2, boolean ignoreLen, int pos) {
         if (bytes1 == bytes2) {
             return 0;
         }
         int n = Math.min(bytes1.length, bytes2.length);
-        for (int i = 0; i < n; i++) {
+        for (int i = pos; i < n; i++) {
             if (bytes1[i] == bytes2[i]) {
                 continue;
             }
@@ -119,7 +124,15 @@ public class ByteArrayUtils {
         return compare(bytes1, bytes2, false);
     }
 
+    public static int compare(byte[] bytes1, byte[] bytes2, int pos) {
+        return compare(bytes1, bytes2, false, pos);
+    }
+
     public static int compareWithoutLen(byte[] bytes1, byte[] bytes2) {
+        return compareWithoutLen(bytes1, bytes2, 0);
+    }
+
+    public static int compareWithoutLen(byte[] bytes1, byte[] bytes2, int pos) {
         return compare(bytes1, bytes2, true);
     }
 
@@ -132,7 +145,11 @@ public class ByteArrayUtils {
     }
 
     public static boolean greatThan(byte[] bytes1, byte[] bytes2) {
-        return compare(bytes1, bytes2) > 0;
+        return greatThan(bytes1, bytes2, 0);
+    }
+
+    public static boolean greatThan(byte[] bytes1, byte[] bytes2, int pos) {
+        return compare(bytes1, bytes2, false, pos) > 0;
     }
 
     public static boolean lessThanOrEqual(byte[] bytes1, byte[] bytes2) {

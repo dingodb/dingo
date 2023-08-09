@@ -374,7 +374,7 @@ public class MysqlInit {
 
     public static Integer check() {
         MetaServiceClient mysqlMetaClient = rootMeta.getSubMetaService("mysql");
-        Map<String, Table> tableDefinitionMap  = mysqlMetaClient.getTableDefinitions();
+        Map<String, Table> tableDefinitionMap  = mysqlMetaClient.getTableDefinitionsBySchema();
         boolean mysqlCheck = tableDefinitionMap.get(USER) != null && tableDefinitionMap.get(DB) != null
                 && tableDefinitionMap.get(TABLES_PRIV) != null;
         if (mysqlCheck) {
@@ -403,7 +403,7 @@ public class MysqlInit {
         }
 
         MetaServiceClient informationMetaClient = rootMeta.getSubMetaService("information_schema");
-        boolean informationSchemaCheck = informationMetaClient.getTableDefinitions().get("GLOBAL_VARIABLES") != null;
+        boolean informationSchemaCheck = informationMetaClient.getTableDefinitionsBySchema().get("GLOBAL_VARIABLES") != null;
         boolean check = mysqlCheck && informationSchemaCheck;
         return check ? 0 : 1;
     }

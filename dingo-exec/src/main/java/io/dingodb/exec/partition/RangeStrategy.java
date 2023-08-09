@@ -85,7 +85,7 @@ public class RangeStrategy extends PartitionStrategy<CommonId, byte[]> {
             withEnd = ranges.lastEntry().getValue().isWithEnd();
         }
         RangeDistribution range = new RangeDistribution(null, startKey, endKey, withStart, withEnd);
-        return RangeUtils.getSubRangeDistribution(ranges.values(), range);
+        return RangeUtils.getSubRangeDistribution(ranges.values(), range, 0);
     }
 
     @Override

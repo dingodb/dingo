@@ -96,4 +96,9 @@ public class KeyValueCodec implements io.dingodb.sdk.common.codec.KeyValueCodec 
     public byte[] encodeMaxKeyPrefix() {
         return keyValueCodec.encodeMaxKeyPrefix();
     }
+
+    @Override
+    public byte[] resetPrefix(byte[] key, long prefix) {
+        return keyValueCodec.resetPrefix(key, prefix);
+    }
 }

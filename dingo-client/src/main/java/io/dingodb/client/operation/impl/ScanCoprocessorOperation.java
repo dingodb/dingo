@@ -28,6 +28,7 @@ import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.sdk.common.KeyValue;
+import io.dingodb.sdk.common.Range;
 import io.dingodb.sdk.common.codec.CodecUtils;
 import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
 import io.dingodb.sdk.common.table.Column;
@@ -145,10 +146,11 @@ public class ScanCoprocessorOperation implements Operation {
         OpRangeCoprocessor rangeCoprocessor = context.parameters();
         Coprocessor coprocessor = rangeCoprocessor.coprocessor;
 
+        Range range = rangeCoprocessor.range;
         Iterator<KeyValue> scanResult = context.getStoreService().scan(
             context.getTableId(),
             context.getRegionId(),
-            rangeCoprocessor.range,
+            new Range(context.getCodec().resetPrefix(range.getStartKey(), context.getRegionId().parentId()), range.getEndKey()),
             rangeCoprocessor.withStart,
             rangeCoprocessor.withEnd,
             coprocessor
@@ -159,7 +161,7 @@ public class ScanCoprocessorOperation implements Operation {
             DingoKeyValueCodec.of(context.getTableId().entityId(), columnDefinitions), columnDefinitions
         );
         context.<Iterator<KeyValue>[]>result()[context.getSeq()] = new CoprocessorIterator(
-            columnDefinitions, codec, scanResult
+            columnDefinitions, codec, scanResult, context.getTableId().entityId()
         );
     }
 

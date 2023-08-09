@@ -31,6 +31,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.dingodb.client.utils.OperationUtils.checkParameters;
+import static io.dingodb.common.util.ByteArrayUtils.SKIP_LONG_POS;
 
 public class PutIfAbsentOperation implements Operation {
 
@@ -79,7 +80,7 @@ public class PutIfAbsentOperation implements Operation {
 
                 byte[] key = keyValue.getKey();
                 if (standard) {
-                    ComparableByteArray checkKey = new ComparableByteArray(key);
+                    ComparableByteArray checkKey = new ComparableByteArray(key, SKIP_LONG_POS);
                     if (checkList.contains(checkKey)) {
                         throw new IllegalArgumentException(
                             "Has duplicate key on [" + i + "] and [" + checkList.indexOf(checkKey) + "]"
@@ -126,7 +127,11 @@ public class PutIfAbsentOperation implements Operation {
         List<Boolean> result = context.getStoreService().kvBatchPutIfAbsent(
             context.getTableId(),
             context.getRegionId(),
-            keyValues
+            keyValues.stream()
+                .map(kv -> new KeyValue(
+                    context.getCodec().resetPrefix(kv.getKey(), context.getRegionId().parentId()),
+                    kv.getValue()))
+                .collect(Collectors.toList())
         );
         for (int i = 0; i < keyValues.size(); i++) {
             context.<Boolean[]>result()[parameters.get(keyValues.get(i))] = result.get(i);

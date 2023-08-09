@@ -32,11 +32,13 @@ public class RecordIterator implements Iterator<Record> {
     private final List<Column> columns;
     private final KeyValueCodec codec;
     private final Iterator<KeyValue> kvIterator;
+    private final long id;
 
-    public RecordIterator(List<Column> columns, KeyValueCodec codec, Iterator<KeyValue> kvIterator) {
+    public RecordIterator(List<Column> columns, KeyValueCodec codec, Iterator<KeyValue> kvIterator, long id) {
         this.columns = columns;
         this.codec = codec;
         this.kvIterator = kvIterator;
+        this.id = id;
     }
 
     @Override
@@ -47,7 +49,8 @@ public class RecordIterator implements Iterator<Record> {
     @Override
     public Record next() {
         try {
-            return new Record(columns, codec.decode(kvIterator.next()));
+            KeyValue keyValue = kvIterator.next();
+            return new Record(columns, codec.decode(new KeyValue(codec.resetPrefix(keyValue.getKey(), id), keyValue.getValue())));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

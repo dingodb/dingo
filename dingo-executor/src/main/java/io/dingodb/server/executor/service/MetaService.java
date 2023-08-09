@@ -122,7 +122,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public Map<String, TableDefinition> getTableDefinitions() {
-        return metaServiceClient.getTableDefinitions().values().stream()
+        return metaServiceClient.getTableDefinitionsBySchema().values().stream()
             .collect(Collectors.toMap(Table::getName, Mapping::mapping));
     }
 

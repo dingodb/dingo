@@ -25,30 +25,41 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static io.dingodb.common.util.ByteArrayUtils.SKIP_LONG_POS;
 import static io.dingodb.common.util.ByteArrayUtils.compareWithoutLen;
 import static io.dingodb.common.util.ByteArrayUtils.greatThan;
 
 public class RangeUtils {
 
     public static Comparator<RangeDistribution> rangeComparator() {
-        return (r1, r2) -> ByteArrayUtils.compare(r1.getStartKey(), r2.getStartKey());
+        return (r1, r2) -> ByteArrayUtils.compare(r1.getStartKey(), r2.getStartKey(), SKIP_LONG_POS);
+    }
+
+    public static Comparator<RangeDistribution> rangeComparator(int pos) {
+        return (r1, r2) -> ByteArrayUtils.compare(r1.getStartKey(), r2.getStartKey(), pos);
     }
 
     public static NavigableSet<RangeDistribution> getSubRangeDistribution(
         Collection<RangeDistribution> src, RangeDistribution range
     ) {
-        NavigableSet<RangeDistribution> rangeSet = new TreeSet<>(rangeComparator());
+        return getSubRangeDistribution(src, range, SKIP_LONG_POS);
+    }
+
+    public static NavigableSet<RangeDistribution> getSubRangeDistribution(
+        Collection<RangeDistribution> src, RangeDistribution range, int pos
+    ) {
+        NavigableSet<RangeDistribution> rangeSet = new TreeSet<>(rangeComparator(pos));
         rangeSet.addAll(src);
         byte[] rangeStart = range.getStartKey();
         byte[] rangeEnd = range.getEndKey();
-        NavigableSet<RangeDistribution> subRanges = new TreeSet<>(rangeComparator());
-        Predicate<byte[]> filter = __ -> checkEndIn(rangeEnd, __, range.isWithEnd());
+        NavigableSet<RangeDistribution> subRanges = new TreeSet<>(rangeComparator(pos));
+        Predicate<byte[]> filter = __ -> checkEndIn(rangeEnd, __, range.isWithEnd(), pos);
         Function<RangeDistribution, byte[]> keyGetter = RangeDistribution::getStartKey;
 
         for (RangeDistribution rd : rangeSet.descendingSet()) {
             if (filter.test(keyGetter.apply(rd))) {
                 if (subRanges.isEmpty()) {
-                    filter = __ -> checkStartIn(rangeStart, __, range.isWithStart());
+                    filter = __ -> checkStartIn(rangeStart, __, range.isWithStart(), pos);
                     keyGetter = RangeDistribution::getEndKey;
                 }
                 subRanges.add(new RangeDistribution(
@@ -68,13 +79,13 @@ public class RangeUtils {
         return subRanges;
     }
 
-    private static boolean checkStartIn(byte[] rangeStart, byte[] regionEnd, boolean withStart) {
-        return compareWithoutLen(rangeStart, regionEnd) < 0
-            || (withStart && rangeStart.length != regionEnd.length && compareWithoutLen(rangeStart, regionEnd) == 0);
+    private static boolean checkStartIn(byte[] rangeStart, byte[] regionEnd, boolean withStart, int pos) {
+        return compareWithoutLen(rangeStart, regionEnd, pos) < 0
+            || (withStart && rangeStart.length != regionEnd.length && compareWithoutLen(rangeStart, regionEnd, pos) == 0);
     }
 
-    private static boolean checkEndIn(byte[] rangeEnd, byte[] regionStart, boolean withEnd) {
-        return greatThan(rangeEnd, regionStart) || (compareWithoutLen(rangeEnd, regionStart) == 0 && withEnd);
+    private static boolean checkEndIn(byte[] rangeEnd, byte[] regionStart, boolean withEnd, int pos) {
+        return greatThan(rangeEnd, regionStart, pos) || (compareWithoutLen(rangeEnd, regionStart, pos) == 0 && withEnd);
     }
 
 }

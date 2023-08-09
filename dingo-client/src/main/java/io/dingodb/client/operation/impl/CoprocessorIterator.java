@@ -31,11 +31,13 @@ public class CoprocessorIterator implements Iterator<KeyValue> {
     private final List<Column> columns;
     private final KeyValueCodec codec;
     private final Iterator<KeyValue> kvIterator;
+    private final long id;
 
-    public CoprocessorIterator(List<Column> columns, KeyValueCodec codec, Iterator<KeyValue> kvIterator) {
+    public CoprocessorIterator(List<Column> columns, KeyValueCodec codec, Iterator<KeyValue> kvIterator, long id) {
         this.columns = columns;
         this.codec = codec;
         this.kvIterator = kvIterator;
+        this.id = id;
     }
 
     @Override
@@ -45,6 +47,7 @@ public class CoprocessorIterator implements Iterator<KeyValue> {
 
     @Override
     public KeyValue next() {
-        return kvIterator.next();
+        KeyValue keyValue = kvIterator.next();
+        return new KeyValue(codec.resetPrefix(keyValue.getKey(), id), keyValue.getValue());
     }
 }
