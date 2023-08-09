@@ -31,6 +31,7 @@ import io.dingodb.sdk.common.utils.ByteArrayUtils;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.dingodb.client.utils.OperationUtils.mapKey;
 
@@ -107,20 +108,27 @@ public class GetOperation implements Operation {
             Map<byte[], Integer> parameters = context.parameters();
             ArrayList<byte[]> keys = new ArrayList<>(parameters.keySet());
             Map<byte[], KeyValue> result = new TreeMap<>(ByteArrayUtils::compare);
+            DingoCommonId regionId = context.getRegionId();
             context.getStoreService().kvBatchGet(
                 context.getTableId(),
-                context.getRegionId(),
-                keys
+                regionId,
+                keys.stream()
+                    .map(k -> context.getCodec().resetPrefix(k, regionId.parentId()))
+                    .collect(Collectors.toList())
             ).forEach(kv -> result.put(kv.getKey(), kv));
             for (int i = 0; i < keys.size(); i++) {
                 if (result.get(keys.get(i)) == null) {
                     continue;
                 }
                 Object[] values;
+                KeyValue keyValue = result.get(keys.get(i));
+                keyValue = new KeyValue(
+                    context.getCodec().resetPrefix(keyValue.getKey(), context.getTableId().entityId()),
+                    keyValue.getValue());
                 if (standard) {
-                    values = context.getCodec().decode(result.get(keys.get(i)));
+                    values = context.getCodec().decode(keyValue);
                 } else {
-                    values = context.getCodec().getKeyValueCodec().decode(result.get(keys.get(i)));
+                    values = context.getCodec().getKeyValueCodec().decode(keyValue);
                 }
                 context.<Record[]>result()[parameters.get(keys.get(i))] = new Record(
                     context.getTable().getColumns(), values

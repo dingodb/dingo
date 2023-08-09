@@ -23,6 +23,7 @@ import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.index.HnswParam;
 import io.dingodb.sdk.common.index.Index;
+import io.dingodb.sdk.common.index.IndexMetrics;
 import io.dingodb.sdk.common.index.IndexParameter;
 import io.dingodb.sdk.common.index.VectorIndexParameter;
 import io.dingodb.web.mapper.EntityMapper;
@@ -56,6 +57,9 @@ public class IndexController {
     @ApiOperation("Create index")
     @PostMapping("/api/{schema}")
     public ResponseEntity<Boolean> crateIndex(@PathVariable String schema, @RequestBody IndexDefinition definition) {
+        if (!definition.getIsAutoIncrement()) {
+            definition.setAutoIncrement(0L);
+        }
         return ResponseEntity.ok(dingoClient.createIndex(schema, definition.getName(), definition));
     }
 
@@ -104,6 +108,12 @@ public class IndexController {
     @GetMapping("/api/{schema}/{index}")
     public ResponseEntity<Index> get(@PathVariable String schema, @PathVariable String index) {
         return ResponseEntity.ok(dingoClient.getIndex(schema, index));
+    }
+
+    @ApiOperation("Get index metrics")
+    @GetMapping("/api/{schema}/{index}/metrics")
+    public ResponseEntity<IndexMetrics> getIndexMetrics(@PathVariable String schema, @PathVariable String index) {
+        return ResponseEntity.ok(dingoClient.getIndexMetrics(schema, index));
     }
 
     @ApiOperation("Get index names")

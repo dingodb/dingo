@@ -28,6 +28,7 @@ import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
 import io.dingodb.sdk.common.index.Index;
+import io.dingodb.sdk.common.index.IndexMetrics;
 import io.dingodb.sdk.common.serial.schema.DingoSchema;
 import io.dingodb.sdk.common.serial.schema.LongSchema;
 import io.dingodb.sdk.common.table.RangeDistribution;
@@ -166,6 +167,11 @@ public class IndexService {
     public List<Index> getIndexes(String schema) {
         MetaServiceClient metaService = getSubMetaService(schema);
         return new ArrayList<>(metaService.getIndexes(mapping(metaService.id())).values());
+    }
+
+    public IndexMetrics getIndexMetrics(String schema, String index) {
+        MetaServiceClient metaService = getSubMetaService(schema);
+        return metaService.getIndexMetrics(index);
     }
 
     private MetaServiceClient getSubMetaService(String schemaName) {

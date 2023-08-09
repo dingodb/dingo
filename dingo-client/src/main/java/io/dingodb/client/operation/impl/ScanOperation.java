@@ -20,6 +20,7 @@ import io.dingodb.client.OperationContext;
 import io.dingodb.client.common.Record;
 import io.dingodb.client.common.TableInfo;
 import io.dingodb.sdk.common.KeyValue;
+import io.dingodb.sdk.common.Range;
 import io.dingodb.sdk.common.codec.KeyValueCodec;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.LinkedIterator;
@@ -78,13 +79,19 @@ public class ScanOperation implements Operation {
     public void exec(OperationContext context) {
         OpRange scan = context.parameters();
 
-        Iterator<KeyValue> scanResult = context.getStoreService()
-            .scan(context.getTableId(), context.getRegionId(), scan.range, scan.withStart, scan.withEnd);
+        Range range = scan.range;
+        Iterator<KeyValue> scanResult = context.getStoreService().scan(
+            context.getTableId(),
+            context.getRegionId(),
+            new Range(context.getCodec().resetPrefix(range.getStartKey(), context.getRegionId().parentId()), range.getEndKey()),
+            scan.withStart,
+            scan.withEnd);
 
         context.<Iterator<Record>[]>result()[context.getSeq()] = new RecordIterator(
             context.getTable().getColumns(),
             standard ? context.getCodec() : context.getCodec().getKeyValueCodec(),
-            scanResult
+            scanResult,
+            context.getTableId().entityId()
         );
     }
 

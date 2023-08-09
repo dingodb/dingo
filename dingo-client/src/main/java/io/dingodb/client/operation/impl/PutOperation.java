@@ -124,7 +124,12 @@ public class PutOperation implements Operation {
         boolean result = context.getStoreService().kvBatchPut(
             context.getTableId(),
             context.getRegionId(),
-            new ArrayList<>(context.<Map<KeyValue, Integer>>parameters().keySet())
+            new ArrayList<>(context.<Map<KeyValue, Integer>>parameters().keySet()
+                .stream()
+                .map(kv -> new KeyValue(
+                    context.getCodec().resetPrefix(kv.getKey(), context.getRegionId().parentId()),
+                    kv.getValue()))
+                .collect(Collectors.toList()))
         );
         context.<Map<KeyValue, Integer>>parameters().values().forEach(i -> context.<Boolean[]>result()[i] = result);
     }

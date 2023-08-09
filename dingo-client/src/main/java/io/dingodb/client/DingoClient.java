@@ -26,6 +26,7 @@ import io.dingodb.client.operation.impl.*;
 import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.index.Index;
+import io.dingodb.sdk.common.index.IndexMetrics;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.Parameters;
@@ -82,6 +83,10 @@ public class DingoClient {
         return operationService.createTable(schema, table.getName(), table);
     }
 
+    public boolean createTables(String schema, Table table, List<Table> indexes) {
+        return operationService.createTables(schema, table, indexes);
+    }
+
     public boolean dropTable(String tableName) {
         return dropTable(schema, tableName);
     }
@@ -99,6 +104,10 @@ public class DingoClient {
             throw new DingoClientException("Invalid table name: " + tableName);
         }
         return operationService.getTableDefinition(schema, tableName);
+    }
+
+    public List<Table> getTables(String schema, String tableName) {
+        return operationService.getTables(schema, tableName);
     }
 
     public Any exec(String tableName, Operation operation, Any parameter) {
@@ -276,6 +285,10 @@ public class DingoClient {
 
     public List<Index> getIndexes(String schema) {
         return indexService.getIndexes(schema);
+    }
+
+    public IndexMetrics getIndexMetrics(String schema, String index) {
+        return indexService.getIndexMetrics(schema, index);
     }
 
     public List<VectorWithId> vectorAdd(String indexName, List<VectorWithId> vectors) {

@@ -20,6 +20,8 @@ import io.dingodb.client.OperationContext;
 import io.dingodb.client.common.Key;
 import io.dingodb.client.common.TableInfo;
 import io.dingodb.client.common.Value;
+import io.dingodb.sdk.common.DingoCommonId;
+import io.dingodb.sdk.common.Range;
 import io.dingodb.sdk.common.RangeWithOptions;
 import io.dingodb.sdk.common.codec.KeyValueCodec;
 import io.dingodb.sdk.common.utils.Any;
@@ -81,9 +83,16 @@ public class DeleteRangeOperation implements Operation {
     public void exec(OperationContext context) {
         OpRange range = context.parameters();
         long count;
+        io.dingodb.client.common.KeyValueCodec codec = context.getCodec();
         try {
-            count = context.getStoreService()
-                .kvDeleteRange(context.getTableId(), context.getRegionId(), new RangeWithOptions(range.range, range.withStart, range.withEnd));
+            DingoCommonId regionId = context.getRegionId();
+            Range r = new Range(
+                codec.resetPrefix(range.range.getStartKey(), regionId.parentId()),
+                codec.resetPrefix(range.range.getEndKey(), regionId.parentId()));
+            count = context.getStoreService().kvDeleteRange(
+                context.getTableId(),
+                regionId,
+                new RangeWithOptions(range.range, range.withStart, range.withEnd));
         } catch (Exception e) {
             count = -1;
         }
@@ -91,8 +100,8 @@ public class DeleteRangeOperation implements Operation {
             context.<DeleteRangeResult.DeleteResult[]>result()[context.getSeq()] = new DeleteRangeResult.DeleteResult(
                 count,
                 new OpKeyRange(
-                    new Key(Arrays.stream(context.getCodec().decodeKeyPrefix(range.getStartKey())).map(Value::get).collect(Collectors.toList())),
-                    new Key(Arrays.stream(context.getCodec().decodeKeyPrefix(range.getEndKey())).map(Value::get).collect(Collectors.toList())),
+                    new Key(Arrays.stream(codec.decodeKeyPrefix(codec.resetPrefix(range.getStartKey(), context.getTableId().entityId()))).map(Value::get).collect(Collectors.toList())),
+                    new Key(Arrays.stream(codec.decodeKeyPrefix(codec.resetPrefix(range.getEndKey(), context.getTableId().entityId()))).map(Value::get).collect(Collectors.toList())),
                     range.withStart, range.withEnd));
         } catch (IOException e) {
             throw new RuntimeException(e);

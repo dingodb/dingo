@@ -17,6 +17,7 @@
 package io.dingodb.server.executor.common;
 
 import io.dingodb.common.util.Optional;
+import io.dingodb.sdk.common.index.IndexParameter;
 import io.dingodb.sdk.common.partition.Partition;
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
@@ -87,5 +88,11 @@ public class TableDefinition implements Table {
     @Override
     public int getReplica() {
         return tableDefinition.getReplica();
+    }
+
+    @Override
+    public IndexParameter getIndexParameter() {
+        // TODO
+        return null;
     }
 }

@@ -34,6 +34,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.dingodb.client.utils.OperationUtils.checkParameters;
+import static io.dingodb.common.util.ByteArrayUtils.SKIP_LONG_POS;
 
 public class CompareAndSetOperation implements Operation {
 
@@ -91,7 +92,7 @@ public class CompareAndSetOperation implements Operation {
 
                 KeyValue keyValue = tableInfo.codec.encode(values);
 
-                ComparableByteArray key = new ComparableByteArray(keyValue.getKey());
+                ComparableByteArray key = new ComparableByteArray(keyValue.getKey(), SKIP_LONG_POS);
 
                 if (standard) {
                     if (checkList.contains(key)) {
@@ -156,7 +157,12 @@ public class CompareAndSetOperation implements Operation {
         List<Boolean> result = context.getStoreService().kvBatchCompareAndSet(
             context.getTableId(),
             context.getRegionId(),
-            keyValueWithExpects,
+            keyValueWithExpects.stream()
+                .map(kvExp -> new KeyValueWithExpect(
+                    context.getCodec().resetPrefix(kvExp.getKey(), context.getRegionId().parentId()),
+                    kvExp.getValue(),
+                    kvExp.getExpect()))
+                .collect(Collectors.toList()),
             false
         );
         for (int i = 0; i < keyValueWithExpects.size(); i++) {

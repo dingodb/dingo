@@ -29,6 +29,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,6 +49,7 @@ public class IndexDefinition implements Index {
     private Integer replica;
     private IndexParameter indexParameter;
     private Boolean isAutoIncrement;
+    @Setter
     private Long autoIncrement;
 
     public Partition getIndexPartition() {

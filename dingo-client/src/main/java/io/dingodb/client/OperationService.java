@@ -38,6 +38,7 @@ import io.dingodb.sdk.common.utils.Parameters;
 import io.dingodb.sdk.service.connector.MetaServiceConnector;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.sdk.service.store.StoreServiceClient;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -160,6 +161,12 @@ public class OperationService {
         return metaService.createTable(name, table);
     }
 
+    public synchronized boolean createTables(String schema, @NonNull Table table, List<Table> indexes) {
+        MetaServiceClient metaService = getSubMetaService(schema);
+        Optional.ifPresent(table.getPartition(), __ -> checkAndConvertRangePartition(table));
+        return metaService.createTables(table, indexes);
+    }
+
     private void checkAndConvertRangePartition(Table table) {
         List<Column> columns = table.getColumns();
         List<String> keyNames = new ArrayList<>();
@@ -185,6 +192,11 @@ public class OperationService {
 
     public Table getTableDefinition(String schemaName, String tableName) {
         return Parameters.nonNull(getRouteTable(schemaName, tableName, true), "Table not found.").definition;
+    }
+
+    public List<Table> getTables(String schemaName, String tableName) {
+        MetaServiceClient metaService = getSubMetaService(schemaName);
+        return metaService.getTables(tableName);
     }
 
     private MetaServiceClient getSubMetaService(String schemaName) {
