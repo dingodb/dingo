@@ -133,7 +133,7 @@ public class ByteArrayUtils {
     }
 
     public static int compareWithoutLen(byte[] bytes1, byte[] bytes2, int pos) {
-        return compare(bytes1, bytes2, true);
+        return compare(bytes1, bytes2, true, pos);
     }
 
     public static boolean equal(byte[] bytes1, byte[] bytes2) {

@@ -36,6 +36,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static io.dingodb.client.utils.OperationUtils.mapKeyPrefix;
+import static io.dingodb.common.util.ByteArrayUtils.SKIP_LONG_POS;
 import static io.dingodb.sdk.common.utils.Any.wrap;
 import static io.dingodb.sdk.common.utils.ByteArrayUtils.lessThanOrEqual;
 
@@ -62,7 +63,7 @@ public class RangeUtils {
     }
 
     public static Comparator<Operation.Task> getComparator() {
-        return (e1, e2) -> ByteArrayUtils.compare(e1.<OpRange>parameters().getStartKey(), e2.<OpRange>parameters().getStartKey());
+        return (e1, e2) -> ByteArrayUtils.compare(e1.<OpRange>parameters().getStartKey(), e2.<OpRange>parameters().getStartKey(), SKIP_LONG_POS);
     }
 
     public static NavigableSet<Operation.Task> getSubTasks(TableInfo tableInfo, OpRange range) {
@@ -76,15 +77,20 @@ public class RangeUtils {
         RangeDistribution rangeDistribution = new RangeDistribution(
             mapping(tableInfo.tableId), range.getStartKey(), range.getEndKey(), range.withStart, range.withEnd);
 
+        NavigableSet<RangeDistribution> distribution = io.dingodb.common.util.RangeUtils.getSubRangeDistribution(src, rangeDistribution);
+        if (distribution.size() > 0) {
+            RangeDistribution last = distribution.last();
+            last.setEndKey(tableInfo.codec.resetPrefix(last.getEndKey(), last.getId().domain));
+        }
         if (coprocessor == null) {
-            return io.dingodb.common.util.RangeUtils.getSubRangeDistribution(src, rangeDistribution).stream()
+            return distribution.stream()
                 .map(rd -> new Operation.Task(
                     mapping(rd.id()),
                     wrap(new OpRange(rd.getStartKey(), rd.getEndKey(), rd.isWithStart(), rd.isWithEnd()))
                 ))
                 .collect(Collectors.toCollection(() -> new TreeSet<>(getComparator())));
         } else {
-            return io.dingodb.common.util.RangeUtils.getSubRangeDistribution(src, rangeDistribution).stream()
+            return distribution.stream()
                 .map(rd -> new Operation.Task(
                     mapping(rd.id()),
                     wrap(new OpRangeCoprocessor(rd.getStartKey(), rd.getEndKey(), rd.isWithStart(), rd.isWithEnd(), coprocessor))

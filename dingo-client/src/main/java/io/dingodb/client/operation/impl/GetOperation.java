@@ -115,16 +115,16 @@ public class GetOperation implements Operation {
                 keys.stream()
                     .map(k -> context.getCodec().resetPrefix(k, regionId.parentId()))
                     .collect(Collectors.toList())
-            ).forEach(kv -> result.put(kv.getKey(), kv));
+            ).forEach(kv -> {
+                byte[] bytes = context.getCodec().resetPrefix(kv.getKey(), context.getTableId().entityId());
+                result.put(bytes, new KeyValue(bytes, kv.getValue()));
+            });
             for (int i = 0; i < keys.size(); i++) {
-                if (result.get(keys.get(i)) == null) {
+                KeyValue keyValue = result.get(keys.get(i));
+                if (keyValue == null) {
                     continue;
                 }
                 Object[] values;
-                KeyValue keyValue = result.get(keys.get(i));
-                keyValue = new KeyValue(
-                    context.getCodec().resetPrefix(keyValue.getKey(), context.getTableId().entityId()),
-                    keyValue.getValue());
                 if (standard) {
                     values = context.getCodec().decode(keyValue);
                 } else {
