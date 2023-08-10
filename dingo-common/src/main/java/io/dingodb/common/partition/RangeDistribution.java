@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -28,6 +29,7 @@ import lombok.ToString;
 
 @Getter
 @Setter
+@Builder
 @ToString
 @EqualsAndHashCode
 public class RangeDistribution implements Distribution {
@@ -45,33 +47,35 @@ public class RangeDistribution implements Distribution {
     @JsonProperty("endKey")
     private byte[] endKey;
 
+    @JsonProperty("start")
+    private Object[] start;
+
+    @JsonProperty("end")
+    private Object[] end;
+
+    @Builder.Default
     @JsonProperty("withStart")
     private boolean withStart = true;
 
+    @Builder.Default
     @JsonProperty("withEnd")
     private boolean withEnd = false;
-
-    public RangeDistribution(@JsonProperty("id") CommonId id) {
-        this.id = id;
-    }
-
-    public RangeDistribution(CommonId id, byte[] startKey, byte[] endKey) {
-        this.id = id;
-        this.startKey = startKey;
-        this.endKey = endKey;
-    }
 
     @JsonCreator
     public RangeDistribution(
         @JsonProperty("id") CommonId id,
         @JsonProperty("startKey") byte[] startKey,
         @JsonProperty("endKey") byte[] endKey,
+        @JsonProperty("start") Object[] start,
+        @JsonProperty("end") Object[] end,
         @JsonProperty("withStart") boolean withStart,
         @JsonProperty("withEnd") boolean withEnd
     ) {
         this.id = id;
         this.startKey = startKey;
         this.endKey = endKey;
+        this.start = start;
+        this.end = end;
         this.withStart = withStart;
         this.withEnd = withEnd;
     }

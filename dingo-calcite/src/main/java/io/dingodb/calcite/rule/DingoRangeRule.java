@@ -83,7 +83,12 @@ public interface DingoRangeRule {
                     return null;
             }
         }
-        return new RangeDistribution(null, start, end, withStart, withEnd);
+        return RangeDistribution.builder()
+            .startKey(start)
+            .endKey(end)
+            .withStart(withStart)
+            .withEnd(withEnd)
+            .build();
     }
 
     default byte[] calcConditionValue(RuleUtils.ConditionInfo info, KeyValueCodec codec, int pkIndex, int columnCount) {

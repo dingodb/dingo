@@ -16,6 +16,7 @@
 
 package io.dingodb.store.api;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.store.KeyValue;
 import lombok.AllArgsConstructor;
@@ -31,6 +32,10 @@ public interface StoreInstance {
         public final byte[] end;
         public final boolean withStart;
         public final boolean withEnd;
+    }
+
+    default CommonId id() {
+        throw new UnsupportedOperationException();
     }
 
     default boolean insert(KeyValue row) {

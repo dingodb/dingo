@@ -22,6 +22,7 @@ import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +46,7 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> i
         final DingoTableModify rel1 = call.rel(0);
         final DingoTableScan rel = call.rel(1);
         TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(TableUtils.getTableId(rel.getTable()), td);
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(CommonId.EMPTY_TABLE, td);
 
         RangeDistribution range = createRangeByFilter(td, codec, rel.getFilter());
         if (range != null) {

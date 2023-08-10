@@ -29,7 +29,6 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
@@ -48,7 +47,6 @@ import io.dingodb.exec.partition.RangeStrategy;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NavigableMap;

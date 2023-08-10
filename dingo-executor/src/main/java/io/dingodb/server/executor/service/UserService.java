@@ -17,7 +17,6 @@
 package io.dingodb.server.executor.service;
 
 import com.google.auto.service.AutoService;
-import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
@@ -81,13 +80,16 @@ public class UserService implements io.dingodb.verify.service.UserService {
     private final TableDefinition dbPrivTd = metaService.getTableDefinition(dbPrivilegeTable);
     private final TableDefinition tablePrivTd = metaService.getTableDefinition(tablePrivilegeTable);
 
-    private final KeyValueCodec userCodec = CodecService.INSTANCE.createKeyValueCodec(userTblId, userTd);
-    private final KeyValueCodec dbPrivCodec = CodecService.INSTANCE.createKeyValueCodec(dbPrivTblId, dbPrivTd);
-    private final KeyValueCodec tablePrivCodec = CodecService.INSTANCE.createKeyValueCodec(tablePrivTblId, tablePrivTd);
-
     private final StoreInstance userStore = storeService.getInstance(userTblId, getRegionId(userTblId));
     private final StoreInstance dbPrivStore = storeService.getInstance(dbPrivTblId, getRegionId(dbPrivTblId));
     private final StoreInstance tablePrivStore = storeService.getInstance(tablePrivTblId, getRegionId(tablePrivTblId));
+
+    private final KeyValueCodec userCodec =
+        CodecService.INSTANCE.createKeyValueCodec(getPartId(userTblId, userStore.id()), userTd);
+    private final KeyValueCodec dbPrivCodec =
+        CodecService.INSTANCE.createKeyValueCodec(getPartId(dbPrivTblId, dbPrivStore.id()), dbPrivTd);
+    private final KeyValueCodec tablePrivCodec =
+        CodecService.INSTANCE.createKeyValueCodec(getPartId(tablePrivTblId, tablePrivStore.id()), tablePrivTd);
 
     @Override
     public boolean existsUser(UserDefinition userDefinition) {
@@ -567,6 +569,10 @@ public class UserService implements io.dingodb.verify.service.UserService {
             .map(Map.Entry::getValue)
             .map(RangeDistribution::getId)
             .orElseThrow("Cannot get region for " + tableId);
+    }
+
+    private CommonId getPartId(CommonId tableId, CommonId regionId) {
+        return new CommonId(CommonId.CommonType.PARTITION, tableId.seq, regionId.domain);
     }
 
     private static void insert(StoreInstance store, KeyValueCodec codec, Object[] row) {

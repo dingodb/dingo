@@ -21,7 +21,6 @@ import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.partition.RangeTupleDistribution;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
@@ -154,17 +153,6 @@ public interface MetaService {
      * @return table range distributions
      */
     default NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
-        // todo
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Get range distributions by table id.
-     *
-     * @param id table id
-     * @return table range distributions
-     */
-    default NavigableMap<ComparableByteArray, RangeTupleDistribution> getRangeTupleDistribution(CommonId id) {
         // todo
         throw new UnsupportedOperationException();
     }

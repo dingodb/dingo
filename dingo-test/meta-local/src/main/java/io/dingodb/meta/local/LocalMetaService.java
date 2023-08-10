@@ -182,7 +182,11 @@ public class LocalMetaService implements MetaService {
             }
             v.put(
                 new ComparableByteArray(start),
-                new RangeDistribution(new CommonId(DISTRIBUTION, id.seq, v.size() + 1) , start, end)
+                RangeDistribution.builder()
+                    .id(new CommonId(DISTRIBUTION, id.seq, v.size() + 1))
+                    .startKey(start)
+                    .endKey(end)
+                    .build()
             );
             return v;
         });

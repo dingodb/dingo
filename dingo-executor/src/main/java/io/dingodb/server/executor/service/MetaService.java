@@ -17,6 +17,8 @@
 package io.dingodb.server.executor.service;
 
 import com.google.auto.service.AutoService;
+import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
@@ -149,7 +151,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
         NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
-        metaServiceClient.getRangeDistribution(mapping(id)).forEach((k, v) -> result.put(mapping(k), mapping(v)));
+        TableDefinition tableDefinition = getTableDefinition(id);
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(CommonId.EMPTY_TABLE, tableDefinition);
+        metaServiceClient.getRangeDistribution(mapping(id)).values().stream()
+            .map(__ -> mapping(__, codec))
+            .forEach(__ -> result.put(new ComparableByteArray(__.getStartKey()), __));
         return result;
     }
 

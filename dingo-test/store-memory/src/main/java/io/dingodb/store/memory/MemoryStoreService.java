@@ -20,7 +20,6 @@ import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.store.Part;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreService;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -36,16 +35,7 @@ public class MemoryStoreService implements StoreService {
 
     @Override
     public StoreInstance getInstance(@NonNull CommonId tableId, CommonId regionId) {
-        MemoryStoreInstance instance = store.get(tableId);
-        if (instance == null) {
-            instance = new MemoryStoreInstance();
-            // instance.assignPart(createPart(tableId, ByteArrayUtils.EMPTY_BYTES, ByteArrayUtils.MAX_BYTES));
-            // instance.assignPart(createPart(id, PrimitiveCodec.encodeVarInt(3), PrimitiveCodec.encodeVarInt(6)));
-            // instance.assignPart(createPart(id, PrimitiveCodec.encodeVarInt(6), ByteArrayUtils.MAX_BYTES));
-            store.put(tableId, instance);
-            instance.initCodec(tableId);
-        }
-        return instance;
+        return store.computeIfAbsent(tableId, __ -> new MemoryStoreInstance(tableId));
     }
 
     @Override

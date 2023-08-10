@@ -109,4 +109,9 @@ public class DingoKeyValueCodec implements KeyValueCodec {
     public Object[] decodeKeyPrefix(byte[] keyPrefix) throws IOException {
         return new Object[0];
     }
+
+    @Override
+    public byte[] resetKeyPrefix(byte[] key, long prefix) {
+        return key;
+    }
 }

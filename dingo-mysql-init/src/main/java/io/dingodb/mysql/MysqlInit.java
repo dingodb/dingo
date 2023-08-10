@@ -29,8 +29,7 @@ import io.dingodb.sdk.common.table.RangeDistribution;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.table.TableDefinition;
 import io.dingodb.sdk.common.utils.ByteArrayUtils;
-import io.dingodb.sdk.service.connector.MetaServiceConnector;
-import io.dingodb.sdk.service.connector.ServiceConnector;
+import io.dingodb.sdk.common.utils.NoBreakFunctions;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.sdk.service.store.StoreServiceClient;
 
@@ -110,6 +109,7 @@ public class MysqlInit {
             return;
         }
         DingoCommonId regionId = rangeDistribution.firstEntry().getValue().getId();
+        keyValue.setKey(codec.resetPrefix(keyValue.getKey(), regionId.parentId()));
         storeServiceClient.kvPut(tableId, regionId, keyValue);
         System.out.println("init user success");
     }
@@ -155,20 +155,19 @@ public class MysqlInit {
 
         KeyValueCodec codec = DingoKeyValueCodec.of(tableId.entityId(), tableDefinition);
         List<Object[]> values = initGlobalVariables();
-        List<KeyValue> keyValueList = values.stream().map(value -> {
-            try {
-                return codec.encode(value);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }).collect(Collectors.toList());
+
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
-                = informationMetaClient.getRangeDistribution(tableId);
+            = informationMetaClient.getRangeDistribution(tableId);
         if (rangeDistribution == null) {
             return;
         }
-
         DingoCommonId regionId = rangeDistribution.firstEntry().getValue().getId();
+
+        List<KeyValue> keyValueList = values.stream()
+            .map(NoBreakFunctions.wrap(codec::encode, NoBreakFunctions.throwException()))
+            .peek(__ -> __.setKey(codec.resetPrefix(__.getKey(), regionId.parentId())))
+            .collect(Collectors.toList());
+
         storeServiceClient.kvBatchPut(tableId, regionId, keyValueList);
         System.out.println("init global variables success");
     }
@@ -392,6 +391,7 @@ public class MysqlInit {
                     return 1;
                 }
                 DingoCommonId regionId = rangeDistribution.firstEntry().getValue().getId();
+                key = codec.resetPrefix(key, regionId.parentId());
                 byte[] res = storeServiceClient.kvGet(tableId, regionId, key);
                 if (res == null || res.length == 0) {
                     return 1;
