@@ -88,11 +88,11 @@ public class DeleteRangeOperation implements Operation {
             DingoCommonId regionId = context.getRegionId();
             Range r = new Range(
                 codec.resetPrefix(range.range.getStartKey(), regionId.parentId()),
-                codec.resetPrefix(range.range.getEndKey(), regionId.parentId()));
+                range.range.getEndKey());
             count = context.getStoreService().kvDeleteRange(
                 context.getTableId(),
                 regionId,
-                new RangeWithOptions(range.range, range.withStart, range.withEnd));
+                new RangeWithOptions(r, range.withStart, range.withEnd));
         } catch (Exception e) {
             count = -1;
         }

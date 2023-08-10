@@ -27,6 +27,7 @@ import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 public class KeyValueCodec implements io.dingodb.sdk.common.codec.KeyValueCodec {
@@ -99,6 +100,7 @@ public class KeyValueCodec implements io.dingodb.sdk.common.codec.KeyValueCodec 
 
     @Override
     public byte[] resetPrefix(byte[] key, long prefix) {
+        key = Arrays.copyOf(key, key.length);
         return keyValueCodec.resetPrefix(key, prefix);
     }
 }

@@ -60,8 +60,9 @@ public class RangeUtils {
             if (filter.test(keyGetter.apply(rd))) {
                 if (subRanges.isEmpty()) {
                     filter = __ -> checkStartIn(rangeStart, __, range.isWithStart(), pos);
-                    keyGetter = RangeDistribution::getEndKey;
+                    // keyGetter = RangeDistribution::getEndKey;
                 }
+                keyGetter = __ -> rd.getStartKey();
                 subRanges.add(new RangeDistribution(
                     rd.getId(), rd.getStartKey(), rd.getEndKey(), rd.isWithStart(), rd.isWithEnd()
                 ));
@@ -72,8 +73,12 @@ public class RangeUtils {
             subRanges.first().setStartKey(rangeStart);
             subRanges.first().setWithStart(range.isWithStart());
 
-            subRanges.last().setEndKey(rangeEnd);
-            subRanges.last().setWithEnd(range.isWithEnd());
+            if (subRanges.last().getEndKey().length == rangeEnd.length) {
+                subRanges.last().setWithEnd(true);
+            } else {
+                subRanges.last().setEndKey(rangeEnd);
+                subRanges.last().setWithEnd(range.isWithEnd());
+            }
         }
 
         return subRanges;
