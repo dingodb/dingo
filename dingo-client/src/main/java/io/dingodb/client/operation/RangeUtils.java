@@ -17,7 +17,11 @@
 package io.dingodb.client.operation;
 
 import io.dingodb.client.common.TableInfo;
-import io.dingodb.client.operation.impl.*;
+import io.dingodb.client.operation.impl.KeyRangeCoprocessor;
+import io.dingodb.client.operation.impl.OpKeyRange;
+import io.dingodb.client.operation.impl.OpRange;
+import io.dingodb.client.operation.impl.OpRangeCoprocessor;
+import io.dingodb.client.operation.impl.Operation;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.ColumnDefinition;
@@ -74,8 +78,13 @@ public class RangeUtils {
         Collection<RangeDistribution> src = tableInfo.rangeDistribution.values().stream()
             .map(RangeUtils::mapping)
             .collect(Collectors.toSet());
-        RangeDistribution rangeDistribution = new RangeDistribution(
-            mapping(tableInfo.tableId), range.getStartKey(), range.getEndKey(), range.withStart, range.withEnd);
+        RangeDistribution rangeDistribution = RangeDistribution.builder()
+            .id(mapping(tableInfo.tableId))
+            .startKey(range.getStartKey())
+            .endKey(range.getEndKey())
+            .withStart(range.withStart)
+            .withEnd(range.withEnd)
+            .build();
 
         NavigableSet<RangeDistribution> distribution = io.dingodb.common.util.RangeUtils.getSubRangeDistribution(src, rangeDistribution);
         if (distribution.size() > 0) {
@@ -111,11 +120,11 @@ public class RangeUtils {
     }
 
     public static RangeDistribution mapping(io.dingodb.sdk.common.table.RangeDistribution rangeDistribution) {
-        return new RangeDistribution(
-            mapping(rangeDistribution.getId()),
-            rangeDistribution.getRange().getStartKey(),
-            rangeDistribution.getRange().getEndKey()
-        );
+        return RangeDistribution.builder()
+            .id(mapping(rangeDistribution.getId()))
+            .startKey(rangeDistribution.getRange().getStartKey())
+            .endKey(rangeDistribution.getRange().getEndKey())
+            .build();
     }
 
     public static Coprocessor.AggregationOperator mapping(KeyRangeCoprocessor.Aggregation aggregation, Table table) {

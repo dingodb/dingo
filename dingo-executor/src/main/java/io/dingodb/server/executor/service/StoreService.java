@@ -71,25 +71,35 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
     static class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
         private final StoreServiceClient storeService;
-        private final DingoCommonId tableId;
-        private final DingoCommonId regionId;
+        private final DingoCommonId storeTableId;
+        private final DingoCommonId storeRegionId;
+
+        private final CommonId tableId;
+        private final CommonId regionId;
 
         public StoreInstance(StoreServiceClient storeService, CommonId tableId, CommonId regionId) {
             this.storeService = storeService;
-            this.tableId = mapping(tableId);
-            this.regionId = mapping(regionId);
+            this.storeTableId = mapping(tableId);
+            this.storeRegionId = mapping(regionId);
+            this.tableId = tableId;
+            this.regionId = regionId;
+        }
+
+        @Override
+        public CommonId id() {
+            return regionId;
         }
 
         @Override
         public boolean insert(KeyValue row) {
-            return storeService.kvPutIfAbsent(tableId, regionId, mapping(row));
+            return storeService.kvPutIfAbsent(storeTableId, storeRegionId, mapping(row));
         }
 
         @Override
         public boolean update(KeyValue row, KeyValue old) {
             if (ByteArrayUtils.equal(row.getKey(), old.getKey())) {
                 return storeService.kvCompareAndSet(
-                    tableId, regionId, new KeyValueWithExpect(row.getKey(), row.getValue(), old.getValue())
+                    storeTableId, storeRegionId, new KeyValueWithExpect(row.getKey(), row.getValue(), old.getValue())
                 );
             }
             throw new IllegalArgumentException();
@@ -97,29 +107,29 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
         @Override
         public boolean delete(byte[] key) {
-            return storeService.kvBatchDelete(tableId, regionId, Collections.singletonList(key)).get(0);
+            return storeService.kvBatchDelete(storeTableId, storeRegionId, Collections.singletonList(key)).get(0);
         }
 
         @Override
         public long delete(Range range) {
-            return storeService.kvDeleteRange(tableId, regionId, mapping(range));
+            return storeService.kvDeleteRange(storeTableId, storeRegionId, mapping(range));
         }
 
         @Override
         public KeyValue get(byte[] key) {
-            return new KeyValue(key, storeService.kvGet(tableId, regionId, key));
+            return new KeyValue(key, storeService.kvGet(storeTableId, storeRegionId, key));
         }
 
         @Override
         public List<KeyValue> get(List<byte[]> keys) {
-            return storeService.kvBatchGet(tableId, regionId, keys).stream()
+            return storeService.kvBatchGet(storeTableId, storeRegionId, keys).stream()
                 .map(Mapping::mapping).collect(Collectors.toList());
         }
 
         @Override
         public Iterator<KeyValue> scan(Range range) {
             return Iterators.transform(
-                storeService.scan(tableId, regionId, mapping(range).getRange(), range.withStart, range.withEnd),
+                storeService.scan(storeTableId, storeRegionId, mapping(range).getRange(), range.withStart, range.withEnd),
                 Mapping::mapping
             );
         }
@@ -127,7 +137,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         @Override
         public Iterator<KeyValue> scan(Range range, Coprocessor coprocessor) {
             return Iterators.transform(
-                storeService.scan(tableId, regionId, mapping(range).getRange(), range.withStart, range.withEnd, new io.dingodb.server.executor.common.Coprocessor(coprocessor)),
+                storeService.scan(storeTableId, storeRegionId, mapping(range).getRange(), range.withStart, range.withEnd, new io.dingodb.server.executor.common.Coprocessor(coprocessor)),
                 Mapping::mapping
             );
         }

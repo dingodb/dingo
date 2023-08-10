@@ -78,13 +78,18 @@ public class RangeStrategy extends PartitionStrategy<CommonId, byte[]> {
     ) {
         if (startKey == null) {
             startKey = ranges.firstEntry().getValue().getStartKey();
-            withStart = ranges.firstEntry().getValue().isWithStart();
+            withStart = true;
         }
         if (endKey == null) {
             endKey = ranges.lastEntry().getValue().getEndKey();
-            withEnd = ranges.lastEntry().getValue().isWithEnd();
+            withEnd = true;
         }
-        RangeDistribution range = new RangeDistribution(null, startKey, endKey, withStart, withEnd);
+        RangeDistribution range = RangeDistribution.builder()
+            .startKey(startKey)
+            .endKey(endKey)
+            .withStart(withStart)
+            .withEnd(withEnd)
+            .build();
         return RangeUtils.getSubRangeDistribution(ranges.values(), range, 0);
     }
 

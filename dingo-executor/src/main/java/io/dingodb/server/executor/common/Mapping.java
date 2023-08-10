@@ -20,7 +20,6 @@ import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.partition.RangeTupleDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -109,25 +108,20 @@ public final class Mapping {
             partition.getDetails().stream().map(Mapping::mapping).collect(Collectors.toList()));
     }
 
-    public static RangeDistribution mapping(io.dingodb.sdk.common.table.RangeDistribution rangeDistribution) {
-        return new RangeDistribution(
-            mapping(rangeDistribution.getId()),
-            rangeDistribution.getRange().getStartKey(),
-            rangeDistribution.getRange().getEndKey()
-        );
-    }
-
-    public static RangeTupleDistribution mapping(
+    public static RangeDistribution mapping(
         io.dingodb.sdk.common.table.RangeDistribution rangeDistribution,
         KeyValueCodec codec
     ) {
         try {
-            return new RangeTupleDistribution(
-                mapping(rangeDistribution.getId()),
-                rangeDistribution.getRange().getStartKey(),
-                codec.decodeKey(rangeDistribution.getRange().getStartKey()),
-                codec.decodeKey(rangeDistribution.getRange().getEndKey())
-            );
+            byte[] startKey = codec.resetKeyPrefix(rangeDistribution.getRange().getStartKey(), 0);
+            byte[] endKey = codec.resetKeyPrefix(rangeDistribution.getRange().getEndKey(), 0);
+            return RangeDistribution.builder()
+                .id(mapping(rangeDistribution.getId()))
+                .startKey(startKey)
+                .endKey(endKey)
+                .start(codec.decodeKeyPrefix(startKey))
+                .end(codec.decodeKeyPrefix(endKey))
+                .build();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

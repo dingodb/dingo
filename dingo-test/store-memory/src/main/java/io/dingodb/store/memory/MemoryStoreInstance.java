@@ -41,13 +41,20 @@ import java.util.concurrent.ConcurrentSkipListMap;
 public class MemoryStoreInstance implements StoreInstance {
     private final NavigableMap<byte[], byte[]> db = new ConcurrentSkipListMap<>(ByteArrayUtils::compare);
 
+    private CommonId id;
     private DingoKeyValueCodec codec;
 
-    public void initCodec(CommonId tableId) {
+    public MemoryStoreInstance(CommonId id) {
+        this.id = id;
         TableDefinition tableDefinition = MetaService.root()
             .getSubMetaService(MetaService.DINGO_NAME)
-            .getTableDefinition(tableId);
+            .getTableDefinition(id);
         codec = new DingoKeyValueCodec(tableDefinition.getDingoType(), tableDefinition.getKeyMapping());
+    }
+
+    @Override
+    public CommonId id() {
+        return id;
     }
 
     @Override

@@ -45,6 +45,8 @@ public final class PartInKvStore implements Part {
     public @NonNull Iterator<Object[]> scan(byte[] start, byte[] end, boolean withStart, boolean withEnd) {
         final long startTime = System.currentTimeMillis();
         try {
+            start = codec.resetKeyPrefix(start, store.id().domain);
+            end = codec.resetKeyPrefix(end, store.id().domain);
             return Iterators.transform(store.scan(new StoreInstance.Range(start, end, withStart, withEnd)),
                 wrap(codec::decode)::apply
             );
@@ -63,6 +65,8 @@ public final class PartInKvStore implements Part {
         boolean withEnd,
         Coprocessor coprocessor
     ) {
+        start = codec.resetKeyPrefix(start, store.id().domain);
+        end = codec.resetKeyPrefix(end, store.id().domain);
         return Iterators.transform(store.scan(new StoreInstance.Range(start, end, withStart, withEnd), coprocessor),
             wrap(codec::decode)::apply
         );
@@ -72,6 +76,8 @@ public final class PartInKvStore implements Part {
     public long delete(byte[] start, byte[] end, boolean withStart, boolean withEnd) {
         final long startTime = System.currentTimeMillis();
         try {
+            start = codec.resetKeyPrefix(start, store.id().domain);
+            end = codec.resetKeyPrefix(end, store.id().domain);
             return store.delete(new StoreInstance.Range(start, end, withStart, withEnd));
         } finally {
             if (log.isDebugEnabled()) {
@@ -93,7 +99,7 @@ public final class PartInKvStore implements Part {
     public boolean insert(@NonNull KeyValue keyValue) {
         final long startTime = System.currentTimeMillis();
         try {
-            return store.insert(keyValue);
+            return store.insert(codec.resetKeyPrefix(keyValue, store.id().domain));
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
@@ -112,13 +118,15 @@ public final class PartInKvStore implements Part {
 
     @Override
     public boolean update(@NonNull KeyValue keyValue) {
-        final long startTime = System.currentTimeMillis();
+        return update(keyValue, new KeyValue(keyValue.getKey(), null));
+    }
+
+    @Override
+    public boolean update(@NonNull Object[] newTuple, @NonNull Object[] oldTuple) {
         try {
-            return store.update(keyValue, new KeyValue(keyValue.getKey(), null));
-        } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
+            return update(codec.encode(newTuple), codec.encode(oldTuple));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -129,17 +137,8 @@ public final class PartInKvStore implements Part {
             return store.update(newKeyValue, oldKeyValue);
         } finally {
             if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
+                log.debug("PartInKvStore update cost: {}ms.", System.currentTimeMillis() - startTime);
             }
-        }
-    }
-
-    @Override
-    public boolean update(@NonNull Object[] newTuple, @NonNull Object[] oldTuple) {
-        try {
-            return update(codec.encode(newTuple), codec.encode(oldTuple));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -156,7 +155,7 @@ public final class PartInKvStore implements Part {
     public boolean remove(byte @NonNull [] key) {
         final long startTime = System.currentTimeMillis();
         try {
-            return store.delete(key);
+            return store.delete(codec.resetKeyPrefix(key, store.id().domain));
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
@@ -168,6 +167,8 @@ public final class PartInKvStore implements Part {
     public long count(byte[] start, byte[] end, boolean withStart, boolean withEnd) {
         final long startTime = System.currentTimeMillis();
         try {
+            start = codec.resetKeyPrefix(start, store.id().domain);
+            end = codec.resetKeyPrefix(end, store.id().domain);
             return store.count(new StoreInstance.Range(start, end, withStart, withEnd));
         } finally {
             if (log.isDebugEnabled()) {
@@ -189,7 +190,7 @@ public final class PartInKvStore implements Part {
     public Object @Nullable [] get(byte @NonNull [] key) {
         final long startTime = System.currentTimeMillis();
         try {
-            return Optional.mapOrNull(store.get(key), wrap(codec::decode));
+            return Optional.mapOrNull(store.get(codec.resetKeyPrefix(key, store.id().domain)), wrap(codec::decode));
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);

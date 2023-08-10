@@ -101,6 +101,11 @@ public final class CodecService implements io.dingodb.codec.CodecService {
         public Object[] decodeKeyPrefix(byte[] keyPrefix) throws IOException {
             return (Object[]) type.convertFrom(delegate.decodeKeyPrefix(keyPrefix), DingoConverter.INSTANCE);
         }
+
+        @Override
+        public byte[] resetKeyPrefix(byte[] key, long prefix) {
+            return delegate.resetPrefix(key, prefix);
+        }
     }
 
     @Override

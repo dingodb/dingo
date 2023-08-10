@@ -26,7 +26,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -100,10 +99,20 @@ public final class Record {
 
     public Object[] getDingoColumnValuesInOrder() {
         for (int i = 0; i < columns.length; i++) {
-            if ((columns[i].getType().equalsIgnoreCase("DOUBLE")
-                || columns[i].getType().equalsIgnoreCase("FLOAT")) && values[i].getObject() != null) {
-                this.values[i] = Value.get(new BigDecimal(
-                    String.valueOf(this.values[i].getObject())).setScale(columns[i].getScale(), HALF_UP).doubleValue());
+            if (values[i].getObject() == null) {
+                continue;
+            }
+            switch (columns[i].getType().toUpperCase()) {
+                case "DOUBLE":
+                    this.values[i] = Value.get(new BigDecimal(
+                        String.valueOf(this.values[i].getObject())).setScale(columns[i].getScale(), HALF_UP).doubleValue());
+                    break;
+                case "FLOAT":
+                    this.values[i] = Value.get(new BigDecimal(
+                        String.valueOf(this.values[i].getObject())).setScale(columns[i].getScale(), HALF_UP).floatValue());
+                    break;
+                default:
+                    continue;
             }
         }
         return Stream.of(values).map(Value::getObject).toArray(Object[]::new);

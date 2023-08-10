@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.KeyDeserializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.ByteUtils;
 import lombok.EqualsAndHashCode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -49,10 +48,14 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     public static final int DOMAIN_IDX = TYPE_IDX + TYPE_LEN;
     public static final int SEQ_IDX = DOMAIN_IDX + DOMAIN_LEN;
 
+    public static final CommonId EMPTY_TABLE = new CommonId(CommonType.TABLE, 0, 0);
+    public static final CommonId EMPTY_DISTRIBUTE = new CommonId(CommonType.DISTRIBUTION, 0, 0);
+
     public enum CommonType {
         TABLE(0),
         SCHEMA(1),
         DISTRIBUTION(2),
+        PARTITION(3),
         OP(100);
 
         public final int code;
@@ -70,6 +73,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
                 case 0: return TABLE;
                 case 1: return SCHEMA;
                 case 2: return DISTRIBUTION;
+                case 3: return PARTITION;
                 case 100: return OP;
                 default:
                     throw new IllegalStateException("Unexpected value: " + code);

@@ -60,12 +60,17 @@ public class RangeUtils {
             if (filter.test(keyGetter.apply(rd))) {
                 if (subRanges.isEmpty()) {
                     filter = __ -> checkStartIn(rangeStart, __, range.isWithStart(), pos);
-                    // keyGetter = RangeDistribution::getEndKey;
                 }
                 keyGetter = __ -> rd.getStartKey();
-                subRanges.add(new RangeDistribution(
-                    rd.getId(), rd.getStartKey(), rd.getEndKey(), rd.isWithStart(), rd.isWithEnd()
-                ));
+                subRanges.add(
+                    RangeDistribution.builder()
+                        .id(rd.getId())
+                        .startKey(rd.getStartKey())
+                        .endKey(rd.getEndKey())
+                        .withStart(rd.isWithStart())
+                        .withEnd(rd.isWithEnd())
+                        .build()
+                );
             }
         }
 

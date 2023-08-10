@@ -63,8 +63,12 @@ public final class ConnectionFactory {
 
         defaultDistribution.put(
             new ByteArrayUtils.ComparableByteArray(startKey),
-            new RangeDistribution(new CommonId(DISTRIBUTION, 1, 1), startKey, endKey
-            ));
+            RangeDistribution.builder()
+                .id(new CommonId(DISTRIBUTION, 1, 1))
+                .startKey(startKey)
+                .endKey(endKey)
+                .build()
+        );
         LocalMetaService metaService = LocalMetaService.ROOT;
         metaService.createSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME);
         metaService.setRangeDistributions(defaultDistribution);

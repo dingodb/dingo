@@ -22,6 +22,7 @@ import io.dingodb.client.common.VectorWithId;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.table.RangeDistribution;
 import io.dingodb.sdk.common.utils.Any;
+import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.common.vector.VectorScanQuery;
 import lombok.AllArgsConstructor;
 
@@ -76,25 +77,34 @@ public class VectorScanQueryOperation implements Operation {
             .map(w -> new VectorWithId(w.getId(), w.getVector(), w.getScalarData()))
             .collect(Collectors.toList());
 
-        context.<VectorWithIdArray[]>result()[parameters.get(context.getRegionId()).k] = new VectorWithIdArray(result);
+        context.<VectorWithIdArray[]>result()[parameters.get(context.getRegionId()).k] = new VectorWithIdArray(result, scanQuery.getIsReverseScan());
     }
 
     @AllArgsConstructor
     private static class VectorWithIdArray {
         public List<VectorWithId> vectorWithIds;
+        public Boolean isReverseScan;
 
         public void addAll(List<VectorWithId> other) {
             vectorWithIds.addAll(other);
         }
 
         public List<VectorWithId> getVectorWithIds() {
-            return vectorWithIds.stream().filter(v -> v.getId() != 0).collect(Collectors.toList());
+            return vectorWithIds.stream()
+                .filter(v -> v.getId() != 0)
+                .sorted((v1, v2) ->
+                    isReverseScan ? Long.compare(v2.getId(), v1.getId()) : Long.compare(v1.getId(), v2.getId()))
+                .collect(Collectors.toList());
         }
     }
 
     @Override
     public <R> R reduce(Fork fork) {
-        VectorWithIdArray withIdArray = new VectorWithIdArray(new ArrayList<>());
+        Boolean isReverseScan = Optional.mapOrGet(
+            fork.getSubTasks(),
+            __ -> __.first().<VectorTuple<VectorScanQuery>>parameters().v.getIsReverseScan(),
+            () -> false);
+        VectorWithIdArray withIdArray = new VectorWithIdArray(new ArrayList<>(), isReverseScan);
         Arrays.stream(fork.<VectorWithIdArray[]>result()).forEach(v -> withIdArray.addAll(v.vectorWithIds));
         return (R) withIdArray.getVectorWithIds();
     }

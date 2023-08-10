@@ -17,7 +17,6 @@
 package io.dingodb.calcite.utils;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.partition.Distribution;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils;
 import lombok.RequiredArgsConstructor;
