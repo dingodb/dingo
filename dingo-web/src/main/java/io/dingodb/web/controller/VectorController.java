@@ -64,7 +64,7 @@ public class VectorController {
         List<io.dingodb.client.common.VectorWithId> result = dingoClient.vectorAdd(schema, index, vectors.stream()
             .map(mapper::mapping)
             .collect(Collectors.toList()));
-        return ResponseEntity.ok(result.stream().filter(Objects::nonNull).map(mapper::mapping).collect(Collectors.toList()));
+        return ResponseEntity.ok(result.stream().map(mapper::mapping).collect(Collectors.toList()));
     }
 
     @ApiOperation("Vector delete")

@@ -90,23 +90,20 @@ public final class StackTraces {
     }
 
     public static String stackTrace() {
-        return stackTrace(Integer.MAX_VALUE);
+        return stackTrace(CURRENT_STACK + 1, Integer.MAX_VALUE - CURRENT_STACK - 1);
     }
 
-    public static String stackTrace(int deep) {
-        StringJoiner joiner = new StringJoiner("\n");
-        for (StackTraceElement s : Thread.currentThread().getStackTrace()) {
-            joiner.add(s.toString());
-            if (deep-- < 0) {
-                break;
-            }
+    public static String stackTrace(int stack, int deep) {
+        return formatStackTrace(Thread.currentThread().getStackTrace(), stack, deep);
+    }
+
+    public static String formatStackTrace(StackTraceElement[] stackTrace, int stack, int deep) {
+        StringJoiner joiner = new StringJoiner("\n    =======> ", "[\n    |||||||| ", "\n]");
+        deep = (deep += stack) < 0 ? stackTrace.length - 1 : Math.min(deep, stackTrace.length - 1);
+        for (int i = deep; i > stack; i--) {
+            joiner.add(stackTrace[i].toString());
         }
         return joiner.toString();
-    }
-
-    public static void pause() {
-        Scanner scanner = new Scanner(System.in);
-        scanner.next();
     }
 
 }

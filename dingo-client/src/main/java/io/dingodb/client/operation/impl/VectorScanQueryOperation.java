@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -102,7 +103,11 @@ public class VectorScanQueryOperation implements Operation {
     public <R> R reduce(Fork fork) {
         Boolean isReverseScan = Optional.mapOrGet(
             fork.getSubTasks(),
-            __ -> __.first().<VectorTuple<VectorScanQuery>>parameters().v.getIsReverseScan(),
+            __ -> __.first().<Map<DingoCommonId, VectorTuple<VectorScanQuery>>>parameters()
+                .values()
+                .stream()
+                .findFirst()
+                .get().v.getIsReverseScan(),
             () -> false);
         VectorWithIdArray withIdArray = new VectorWithIdArray(new ArrayList<>(), isReverseScan);
         Arrays.stream(fork.<VectorWithIdArray[]>result()).forEach(v -> withIdArray.addAll(v.vectorWithIds));

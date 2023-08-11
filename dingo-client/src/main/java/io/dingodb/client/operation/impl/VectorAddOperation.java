@@ -77,7 +77,7 @@ public class VectorAddOperation implements Operation {
             }
         }
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
-        return new Fork(new VectorWithId[vectors.size()], subTasks, false);
+        return new Fork(new VectorWithId[vectors.size()], subTasks, true);
     }
 
     @Override
@@ -99,7 +99,7 @@ public class VectorAddOperation implements Operation {
         }
 
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
-        return new Fork(context.result(), subTasks, false);
+        return new Fork(context.result(), subTasks, true);
     }
 
     @Override
