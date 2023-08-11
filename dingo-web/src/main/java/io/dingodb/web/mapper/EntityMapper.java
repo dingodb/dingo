@@ -76,6 +76,9 @@ public interface EntityMapper {
     }
 
     default VectorWithId mapping(io.dingodb.client.common.VectorWithId withId) {
+        if (withId == null) {
+            return null;
+        }
         return new VectorWithId(withId.getId(), withId.getVector(), withId.getScalarData());
     }
 

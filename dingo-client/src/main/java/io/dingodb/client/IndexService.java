@@ -46,8 +46,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 
 import static io.dingodb.sdk.common.utils.EntityConversion.mapping;
 import static io.dingodb.sdk.common.utils.Parameters.cleanNull;
@@ -121,13 +123,17 @@ public class IndexService {
             .exceptionally(Optional::of)
             .thenAccept(e -> {
                 e.map(OperationUtils::getCause)
-                    .filter(DingoClientException.InvalidRouteTableException.class::isInstance).map(err -> {
-                        IndexInfo newIndexInfo = getRouteTable(indexInfo.schemaName, indexInfo.indexName, true);
-                        Operation.Fork newFork = operation.fork(context, newIndexInfo);
-                        if (newFork == null) {
-                            return exec(newIndexInfo, operation, newFork, 0, vectorContext).orNull();
+                    .map(err -> {
+                        if (err instanceof DingoClientException.InvalidRouteTableException) {
+                            IndexInfo newIndexInfo = getRouteTable(indexInfo.schemaName, indexInfo.indexName, true);
+                            Operation.Fork newFork = operation.fork(context, newIndexInfo);
+                            if (newFork == null) {
+                                return exec(newIndexInfo, operation, newFork, 0, vectorContext).orNull();
+                            }
+                            return exec(newIndexInfo, operation, newFork, retry - 1, vectorContext).orNull();
+                        } else {
+                            return err;
                         }
-                        return exec(newIndexInfo, operation, newFork, retry - 1, vectorContext).orNull();
                     }).ifPresent(error::ifAbsentSet);
                 countDownLatch.countDown();
             }));

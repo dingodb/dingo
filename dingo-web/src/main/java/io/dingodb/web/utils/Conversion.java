@@ -28,10 +28,13 @@ import io.dingodb.proxy.meta.ProxyMeta;
 import io.dingodb.sdk.common.index.DiskAnnParam;
 import io.dingodb.sdk.common.index.FlatParam;
 import io.dingodb.sdk.common.index.HnswParam;
+import io.dingodb.sdk.common.index.Index;
 import io.dingodb.sdk.common.index.IndexParameter;
 import io.dingodb.sdk.common.index.IvfFlatParam;
 import io.dingodb.sdk.common.index.IvfPqParam;
+import io.dingodb.sdk.common.index.ScalarIndexParameter;
 import io.dingodb.sdk.common.index.VectorIndexParameter;
+import io.dingodb.sdk.common.partition.Partition;
 import io.dingodb.sdk.common.vector.ScalarField;
 import io.dingodb.sdk.common.vector.ScalarValue;
 import io.dingodb.sdk.common.vector.Search;
@@ -42,6 +45,7 @@ import io.dingodb.sdk.common.vector.SearchIvfFlatParam;
 import io.dingodb.sdk.common.vector.SearchIvfPqParam;
 import io.dingodb.sdk.common.vector.Vector;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -59,6 +63,18 @@ public class Conversion {
             );
     }
 
+    public static ProxyMeta.IndexDefinition mapping(Index index) {
+        return ProxyMeta.IndexDefinition.newBuilder()
+            .setName(index.getName())
+            .setVersion(index.getVersion())
+            .setIndexPartition(mapping(index.getIndexPartition()))
+            .setReplica(index.getReplica())
+            .setIndexParameter(mapping(index.getIndexParameter()))
+            .setWithAutoIncrement(index.getIsAutoIncrement())
+            .setAutoIncrement(index.getAutoIncrement())
+            .build();
+    }
+
     public static PartitionDefinition mapping(ProxyMeta.PartitionRule partitionRule) {
         return new PartitionDefinition(
             partitionRule.getFuncName(),
@@ -67,6 +83,22 @@ public class Conversion {
                 .map(d -> new PartitionDetailDefinition(d.getPartName(), d.getOperator(), d.getOperandList().toArray()))
                 .collect(Collectors.toList())
             );
+    }
+
+    public static ProxyMeta.PartitionRule mapping(Partition partition) {
+        return ProxyMeta.PartitionRule.newBuilder()
+            .setFuncName(partition.getFuncName())
+            .addAllColumns(partition.getCols())
+            .addAllDetails(partition.getDetails().stream()
+                .map(d -> ProxyMeta.PartitionDetailDefinition.newBuilder()
+                    .setPartName(d.getPartName())
+                    .setOperator(d.getOperator())
+                    .addAllOperand(Arrays.stream(d.getOperand())
+                        .map(String::valueOf)
+                        .collect(Collectors.toList()))
+                    .build())
+                .collect(Collectors.toList()))
+            .build();
     }
 
     public static IndexParameter mapping(ProxyCommon.IndexParameter parameter) {
@@ -135,6 +167,69 @@ public class Conversion {
         }
         return new IndexParameter(
             IndexParameter.IndexType.valueOf(parameter.getIndexType().name()), vectorParameter);
+    }
+
+    public static ProxyCommon.IndexParameter mapping(IndexParameter parameter) {
+        ProxyCommon.IndexParameter.Builder builder = ProxyCommon.IndexParameter.newBuilder()
+            .setIndexType(ProxyCommon.IndexType.valueOf(parameter.getIndexType().name()));
+        if (parameter.getVectorIndexParameter() != null) {
+            VectorIndexParameter vectorParameter = parameter.getVectorIndexParameter();
+            ProxyCommon.VectorIndexParameter.Builder vectorBuilder = ProxyCommon.VectorIndexParameter.newBuilder()
+                .setVectorIndexType(ProxyCommon.VectorIndexType.valueOf(vectorParameter.getVectorIndexType().name()));
+            switch (vectorParameter.getVectorIndexType()) {
+                case VECTOR_INDEX_TYPE_FLAT:
+                    FlatParam flatParam = vectorParameter.getFlatParam();
+                    vectorBuilder.setFlatParameter(ProxyCommon.CreateFlatParam.newBuilder()
+                        .setDimension(flatParam.getDimension())
+                        .setMetricType(ProxyCommon.MetricType.valueOf(flatParam.getMetricType().name()))
+                        .build());
+                    break;
+                case VECTOR_INDEX_TYPE_IVF_FLAT:
+                    IvfFlatParam ivfFlatParam = vectorParameter.getIvfFlatParam();
+                    vectorBuilder.setIvfFlatParameter(ProxyCommon.CreateIvfFlatParam.newBuilder()
+                        .setDimension(ivfFlatParam.getDimension())
+                        .setMetricType(ProxyCommon.MetricType.valueOf(ivfFlatParam.getMetricType().name()))
+                        .setNcentroids(ivfFlatParam.getNcentroids())
+                        .build());
+                    break;
+                case VECTOR_INDEX_TYPE_IVF_PQ:
+                    IvfPqParam ivfPqParam = vectorParameter.getIvfPqParam();
+                    vectorBuilder.setIvfPqParameter(ProxyCommon.CreateIvfPqParam.newBuilder()
+                        .setDimension(ivfPqParam.getDimension())
+                        .setMetricType(ProxyCommon.MetricType.valueOf(ivfPqParam.getMetricType().name()))
+                        .setNcentroids(ivfPqParam.getNcentroids())
+                        .setNsubvector(ivfPqParam.getNsubvector())
+                        .setBucketInitSize(ivfPqParam.getBucketInitSize())
+                        .build());
+                    break;
+                case VECTOR_INDEX_TYPE_HNSW:
+                    HnswParam hnswParam = vectorParameter.getHnswParam();
+                    vectorBuilder.setHnswParameter(ProxyCommon.CreateHnswParam.newBuilder()
+                        .setDimension(hnswParam.getDimension())
+                        .setMetricType(ProxyCommon.MetricType.valueOf(hnswParam.getMetricType().name()))
+                        .setEfConstruction(hnswParam.getEfConstruction())
+                        .setMaxElements(hnswParam.getMaxElements())
+                        .setNlinks(hnswParam.getNlinks())
+                        .build());
+                    break;
+                case VECTOR_INDEX_TYPE_DISKANN:
+                    DiskAnnParam diskAnnParam = vectorParameter.getDiskAnnParam();
+                    vectorBuilder.setDiskannParameter(ProxyCommon.CreateDiskAnnParam.newBuilder()
+                        .setDimension(diskAnnParam.getDimension())
+                        .setMetricType(ProxyCommon.MetricType.valueOf(diskAnnParam.getMetricType().name()))
+                        .build());
+                    break;
+            }
+            builder.setVectorIndexParameter(vectorBuilder.build());
+        } else {
+            ScalarIndexParameter scalarParameter = parameter.getScalarIndexParameter();
+            ProxyCommon.ScalarIndexParameter scalarIndexParameter = ProxyCommon.ScalarIndexParameter.newBuilder()
+                .setScalarIndexType(ProxyCommon.ScalarIndexType.valueOf(scalarParameter.getScalarIndexType().name()))
+                .build();
+
+            builder.setScalarIndexParameter(scalarIndexParameter);
+        }
+        return builder.build();
     }
 
     public static VectorSearchParameter mapping(ProxyCommon.VectorSearchParameter parameter) {

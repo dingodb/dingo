@@ -17,7 +17,7 @@
 package io.dingodb.client.common;
 
 import io.dingodb.common.partition.PartitionDefinition;
-import io.dingodb.common.type.converter.DataConverter;
+import io.dingodb.common.type.converter.StrParseConverter;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.index.Index;
@@ -60,7 +60,7 @@ public class IndexDefinition implements Index {
                     new PartitionDetailDefinition(
                         d.getPartName(),
                         d.getOperator(),
-                        Arrays.stream(d.getOperand()).map(o -> LONG_TYPE.convertFrom(o, DataConverter.DEFAULT)).toArray()))
+                        Arrays.stream(d.getOperand()).map(o -> LONG_TYPE.convertFrom(o, StrParseConverter.INSTANCE)).toArray()))
                 .collect(Collectors.toList()), ArrayList::new)
         );
     }
