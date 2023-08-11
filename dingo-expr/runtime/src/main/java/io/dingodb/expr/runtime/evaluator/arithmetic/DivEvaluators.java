@@ -26,6 +26,7 @@ import java.math.RoundingMode;
     induceSequence = {
         BigDecimal.class,
         double.class,
+        float.class,
         long.class,
         int.class
     }
@@ -39,6 +40,10 @@ final class DivEvaluators {
     }
 
     static long div(long value0, long value1) {
+        return value0 / value1;
+    }
+
+    static float div(float value0, float value1) {
         return value0 / value1;
     }
 
