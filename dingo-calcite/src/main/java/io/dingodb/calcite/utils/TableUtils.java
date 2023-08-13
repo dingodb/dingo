@@ -76,8 +76,8 @@ public final class TableUtils {
         return getTuplesForMapping(items, td, td.getKeyMapping());
     }
 
-    public static KeyValueCodec getKeyValueCodecForTable(CommonId tableId, TableDefinition td) {
-        return CodecService.getDefault().createKeyValueCodec(tableId, td);
+    public static KeyValueCodec getKeyValueCodecForTable(TableDefinition td) {
+        return CodecService.getDefault().createKeyValueCodec(td);
     }
 
 }

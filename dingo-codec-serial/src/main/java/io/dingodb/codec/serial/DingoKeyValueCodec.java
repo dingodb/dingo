@@ -110,8 +110,4 @@ public class DingoKeyValueCodec implements KeyValueCodec {
         return new Object[0];
     }
 
-    @Override
-    public byte[] resetKeyPrefix(byte[] key, long prefix) {
-        return key;
-    }
 }

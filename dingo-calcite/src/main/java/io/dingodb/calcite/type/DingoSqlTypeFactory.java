@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.type;
 
+import org.apache.calcite.DingoSqlFloatType;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.type.BasicSqlType;
@@ -91,6 +92,9 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
             DingoMultisetType dmt = (DingoMultisetType) type;
             RelDataType elementType = copyType(dmt.getComponentType());
             return new DingoMultisetType(elementType, nullable);
+        }
+        if (type instanceof DingoSqlFloatType) {
+            return new DingoSqlFloatType(type.getSqlTypeName(), type.getPrecision(), nullable);
         }
         // This will copy any multiset type as `MultisetSqlType`.
         return super.createTypeWithNullability(type, nullable);

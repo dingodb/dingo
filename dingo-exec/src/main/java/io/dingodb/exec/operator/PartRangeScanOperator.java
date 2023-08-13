@@ -174,13 +174,13 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
             coprocessor = builder.build();
             part = new PartInKvStore(
                 Services.KV_STORE.getInstance(tableId, partId),
-                CodecService.getDefault().createKeyValueCodec(tableId, outputSchema, outputKeyMapping)
+                CodecService.getDefault().createKeyValueCodec(outputSchema, outputKeyMapping)
             );
             return;
         }
         part = new PartInKvStore(
             Services.KV_STORE.getInstance(tableId, partId),
-            CodecService.getDefault().createKeyValueCodec(tableId, schema, keyMapping)
+            CodecService.getDefault().createKeyValueCodec(schema, keyMapping)
         );
     }
 }

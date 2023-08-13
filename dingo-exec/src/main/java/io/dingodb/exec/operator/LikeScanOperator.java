@@ -65,7 +65,7 @@ public final class LikeScanOperator extends PartIteratorSourceOperator {
         super.init();
         part = new PartInKvStore(
             Services.KV_STORE.getInstance(tableId, partId),
-            CodecService.getDefault().createKeyValueCodec(tableId, schema, keyMapping)
+            CodecService.getDefault().createKeyValueCodec(schema, keyMapping)
         );
     }
 }

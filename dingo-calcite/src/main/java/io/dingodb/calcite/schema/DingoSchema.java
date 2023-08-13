@@ -14,45 +14,34 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite;
+package io.dingodb.calcite.schema;
 
-import io.dingodb.common.CommonId;
+import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.schema.impl.AbstractSchema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-@Slf4j
-public abstract class MutableSchema extends AbstractSchema {
-    @Getter
-    protected final MetaService metaService;
+public class DingoSchema extends AbstractSchema {
 
-    protected MutableSchema(MetaService metaService) {
-        this.metaService = metaService;
-    }
-
-    public CommonId id() {
-        return metaService.id();
-    }
-
-    public String name() {
-        return metaService.name();
+    DingoSchema(MetaService metaService, DingoParserContext context, List<String> parent) {
+        super(metaService, context, parent);
     }
 
     public void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
         metaService.createTable(tableName, tableDefinition);
+        addTableCache(tableName, tableDefinition);
     }
 
     public boolean dropTable(@NonNull String tableName) {
-        return metaService.dropTable(tableName);
+        metaService.dropTable(tableName);
+        tableCache.remove(tableName);
+        return true;
     }
 
     public void createIndex(@NonNull String tableName, @NonNull List<Index> indexList) {
@@ -74,14 +63,5 @@ public abstract class MutableSchema extends AbstractSchema {
 
     public void addDistribution(String tableName, PartitionDetailDefinition partitionDetail) {
         metaService.addDistribution(tableName, partitionDetail);
-    }
-
-    public CommonId getTableId(String tableName) {
-        return metaService.getTableId(tableName);
-    }
-
-    @Override
-    public boolean isMutable() {
-        return true;
     }
 }

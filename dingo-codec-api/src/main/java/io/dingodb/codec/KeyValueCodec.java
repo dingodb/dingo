@@ -34,11 +34,5 @@ public interface KeyValueCodec {
 
     Object[] decodeKeyPrefix(byte[] keyPrefix) throws IOException;
 
-    byte[] resetKeyPrefix(byte[] key, long prefix);
-
-    default KeyValue resetKeyPrefix(KeyValue keyValue, long prefix) {
-        return new KeyValue(resetKeyPrefix(keyValue.getKey(), prefix), keyValue.getValue());
-    }
-
     Object[] mapKeyAndDecodeValue(Object[] keys, byte[] bytes) throws IOException;
 }

@@ -34,6 +34,8 @@ import io.dingodb.server.executor.Configuration;
 import io.dingodb.server.executor.common.Mapping;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -124,6 +126,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public Map<String, TableDefinition> getTableDefinitions() {
+        if (id().seq == 0) {
+            return Collections.emptyMap();
+        }
         return metaServiceClient.getTableDefinitionsBySchema().values().stream()
             .collect(Collectors.toMap(Table::getName, Mapping::mapping));
     }
@@ -152,7 +157,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     public NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
         NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
         TableDefinition tableDefinition = getTableDefinition(id);
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(CommonId.EMPTY_TABLE, tableDefinition);
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
         metaServiceClient.getRangeDistribution(mapping(id)).values().stream()
             .map(__ -> mapping(__, codec))
             .forEach(__ -> result.put(new ComparableByteArray(__.getStartKey()), __));

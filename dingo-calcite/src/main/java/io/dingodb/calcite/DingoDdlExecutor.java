@@ -33,6 +33,7 @@ import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
+import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
@@ -201,13 +202,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .build();
     }
 
-    private static @NonNull Pair<MutableSchema, String> getSchemaAndTableName(
+    private static @NonNull Pair<DingoSchema, String> getSchemaAndTableName(
         @NonNull SqlIdentifier id, CalcitePrepare.@NonNull Context context
     ) {
         CalciteSchema rootSchema = context.getMutableRootSchema();
         assert rootSchema != null : "No root schema.";
         final List<String> defaultSchemaPath = context.getDefaultSchemaPath();
         assert defaultSchemaPath.size() == 1 : "Assume that the schema path has only one level.";
+        // todo: current version, ignore name case
         CalciteSchema defaultSchema = rootSchema.getSubSchema(defaultSchemaPath.get(0), false);
         if (defaultSchema == null) {
             defaultSchema = rootSchema;
@@ -219,6 +221,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             schema = defaultSchema.schema;
             tableName = names.get(0);
         } else {
+            // todo: current version, ignore name case
             CalciteSchema subSchema = rootSchema.getSubSchema(names.get(0), false);
             if (subSchema != null) {
                 schema = subSchema.schema;
@@ -228,17 +231,18 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 tableName = String.join(".", names);
             }
         }
-        if (!(schema instanceof MutableSchema)) {
-            throw new AssertionError("Schema must be mutable.");
+
+        if (!(schema instanceof DingoSchema)) {
+            throw new AssertionError("The schema not found or not belong to dingo.");
         }
-        return Pair.of((MutableSchema) schema, tableName.toUpperCase());
+        return Pair.of((DingoSchema) schema, tableName.toUpperCase());
     }
 
     @SuppressWarnings({"unused"})
     public void execute(SqlCreateTable createT, CalcitePrepare.Context context) {
         DingoSqlCreateTable create = (DingoSqlCreateTable) createT;
         log.info("DDL execute: {}", create);
-        final Pair<MutableSchema, String> schemaTableName
+        final Pair<DingoSchema, String> schemaTableName
             = getSchemaAndTableName(create.name, context);
         SqlNodeList columnList = create.columnList;
         if (columnList == null) {
@@ -279,7 +283,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 + realColCnt + ", distinct: " + distinctColCnt);
         }
 
-        final MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
 
         // Check table exist
         if (schema.getTable(tableName) != null) {
@@ -321,9 +325,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     @SuppressWarnings({"unused", "MethodMayBeStatic"})
     public void execute(SqlDropTable drop, CalcitePrepare.Context context) {
         log.info("DDL execute: {}", drop);
-        final Pair<MutableSchema, String> schemaTableName
+        final Pair<DingoSchema, String> schemaTableName
             = getSchemaAndTableName(drop.name, context);
-        final MutableSchema schema = schemaTableName.left;
+        final DingoSchema schema = schemaTableName.left;
         final String tableName = schemaTableName.right;
         final boolean existed;
         assert schema != null;
@@ -336,7 +340,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             );
         }
 
-        env.getTableIdMap().computeIfPresent(schema.metaService.id(), (k, v) -> {
+        env.getTableIdMap().computeIfPresent(schema.id(), (k, v) -> {
             v.remove(tableName);
             return v;
         });
@@ -344,9 +348,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void execute(@NonNull SqlTruncate truncate, CalcitePrepare.Context context) {
         SqlIdentifier name = (SqlIdentifier) truncate.getOperandList().get(0);
-        final Pair<MutableSchema, String> schemaTableName
+        final Pair<DingoSchema, String> schemaTableName
             = getSchemaAndTableName(name, context);
-        final MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
         TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName.toUpperCase());
         if (tableDefinition == null) {
@@ -368,10 +372,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         log.info("DDL execute: {}", sqlGrant);
         if (!"*".equals(sqlGrant.table)) {
             SqlIdentifier name = sqlGrant.tableIdentifier;
-            final Pair<MutableSchema, String> schemaTableName
+            final Pair<DingoSchema, String> schemaTableName
                 = getSchemaAndTableName(name, context);
             final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
-            final MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+            final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
             if (schema.getTable(tableName) == null) {
                 throw new RuntimeException("table doesn't exist");
             }
@@ -444,10 +448,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void execute(@NonNull SqlAlterTableDistribution sqlAlterTableDistribution, CalcitePrepare.Context context) {
         log.info("DDL execute: {}", sqlAlterTableDistribution);
-        final Pair<MutableSchema, String> schemaTableName
+        final Pair<DingoSchema, String> schemaTableName
             = getSchemaAndTableName(sqlAlterTableDistribution.table, context);
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
-        MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
         PartitionDetailDefinition detail = sqlAlterTableDistribution.getPartitionDefinition();
         DefinitionUtils.checkAndConvertRangePartitionDetail(tableDefinition, detail);
@@ -455,30 +459,30 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(@NonNull SqlAlterAddIndex sqlAlterAddIndex, CalcitePrepare.Context context) {
-        final Pair<MutableSchema, String> schemaTableName
+        final Pair<DingoSchema, String> schemaTableName
             = getSchemaAndTableName(sqlAlterAddIndex.table, context);
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
-        final MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         Index index = new Index(sqlAlterAddIndex.index, sqlAlterAddIndex.getColumnNames(), sqlAlterAddIndex.isUnique);
         validateIndex(schema, tableName, index);
         schema.createIndex(tableName, Collections.singletonList(index));
     }
 
     public void execute(@NonNull SqlCreateIndex sqlCreateIndex, CalcitePrepare.Context context) {
-        final Pair<MutableSchema, String> schemaTableName
+        final Pair<DingoSchema, String> schemaTableName
             = getSchemaAndTableName(sqlCreateIndex.table, context);
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
-        final MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         Index index = new Index(sqlCreateIndex.index, sqlCreateIndex.getColumnNames(), sqlCreateIndex.isUnique);
         validateIndex(schema, tableName, index);
         schema.createIndex(tableName, Arrays.asList(index));
     }
 
     public void execute(@NonNull SqlDropIndex sqlDropIndex, CalcitePrepare.Context context) {
-        final Pair<MutableSchema, String> schemaTableName
+        final Pair<DingoSchema, String> schemaTableName
             = getSchemaAndTableName(sqlDropIndex.table, context);
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
-        final MutableSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         validateDropIndex(schema, tableName, sqlDropIndex.index);
         schema.dropIndex(tableName, sqlDropIndex.index);
     }
@@ -515,7 +519,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         log.info("use schema");
     }
 
-    public void validateDropIndex(MutableSchema schema, String tableName, String indexName) {
+    public void validateDropIndex(DingoSchema schema, String tableName, String indexName) {
         if (schema.getTable(tableName) == null) {
             throw new IllegalArgumentException("table " + tableName + " does not exist ");
         }
@@ -532,7 +536,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
     }
 
-    public void validateIndex(MutableSchema schema, String tableName, Index newIndex) {
+    public void validateIndex(DingoSchema schema, String tableName, Index newIndex) {
         if (schema.getTable(tableName) == null) {
             throw new IllegalArgumentException("table " + tableName + " does not exist ");
         }
@@ -570,7 +574,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 .build();
             privilegeType = PrivilegeType.USER;
         } else if ("*".equals(tableName)) {
-            if (context.getRootSchema().getSubSchema(schemaName, true) == null) {
+            // todo: current version, ignore name case
+            if (context.getRootSchema().getSubSchema(schemaName, false) == null) {
                 throw new RuntimeException("schema " + schemaName + " does not exist");
             }
             privilegeDefinition = SchemaPrivDefinition.builder()
@@ -578,7 +583,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 .build();
             privilegeType = PrivilegeType.SCHEMA;
         } else {
-            CalciteSchema schema = context.getRootSchema().getSubSchema(schemaName, true);
+            // todo: current version, ignore name case
+            CalciteSchema schema = context.getRootSchema().getSubSchema(schemaName, false);
             if (schema == null) {
                 throw new RuntimeException("schema " + schemaName + " does not exist");
             }

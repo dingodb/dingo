@@ -73,7 +73,7 @@ public final class PartitionOperator extends FanOutOperator {
         this.tableId = tableId;
         this.strategy = strategy;
         this.tableDefinition = tableDefinition;
-        this.codec = CodecService.getDefault().createKeyValueCodec(tableId, tableDefinition);
+        this.codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
     }
 
     @Override

@@ -46,7 +46,7 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> i
         final DingoTableModify rel1 = call.rel(0);
         final DingoTableScan rel = call.rel(1);
         TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(CommonId.EMPTY_TABLE, td);
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td);
 
         RangeDistribution range = createRangeByFilter(td, codec, rel.getFilter());
         if (range != null) {

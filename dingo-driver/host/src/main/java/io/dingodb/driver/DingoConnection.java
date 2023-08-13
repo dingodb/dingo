@@ -18,10 +18,9 @@ package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
-import io.dingodb.calcite.DingoRootSchema;
+import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.common.mysql.client.SessionVariableChange;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
-import io.dingodb.common.mysql.scope.ScopeVariables;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.DataContext;

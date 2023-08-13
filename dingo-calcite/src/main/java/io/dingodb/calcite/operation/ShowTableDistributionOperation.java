@@ -17,22 +17,19 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.utils.MetaServiceUtils;
-import io.dingodb.codec.CodecService;
-import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.ByteUtils;
 import io.dingodb.meta.MetaService;
 import lombok.Setter;
 import org.apache.calcite.sql.SqlNode;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.stream.Collectors;
 
 public class ShowTableDistributionOperation implements QueryOperation {
 
@@ -76,79 +73,62 @@ public class ShowTableDistributionOperation implements QueryOperation {
         }
 
         TableDefinition tableDefinition = metaService.getTableDefinition(tableId);
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableId, tableDefinition);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
             = metaService.getRangeDistribution(tableId);
         List<List<String>> regionList = new ArrayList<>();
 
-        Iterator<RangeDistribution> iterator = rangeDistribution.values().iterator();
-        while (iterator.hasNext()) {
-            RangeDistribution range = iterator.next();
+        List<Integer> keyColumnIndices = tableDefinition.getKeyColumnIndices();
+        List<RangeDistribution> ranges = rangeDistribution.values().stream().collect(Collectors.toList());
+        for (int i = 0; i < ranges.size(); i++) {
+            RangeDistribution range = ranges.get(i);
             List<String> rangeValues = new ArrayList<>();
 
             rangeValues.add(range.getId().toString());
             rangeValues.add("Range");
 
-            // Value like [ Key(1, a), key(2, a) )
-            StringBuilder builder = new StringBuilder("[ ");
-            try {
-                List<Integer> keyColumnIndices = tableDefinition.getKeyColumnIndices();
-                // Concatenate start key
-                Object[] objects = codec.decodeKeyPrefix(range.getStartKey());
-                for (int i = 0; ; i++) {
-                    Object object;
-                    if (i >= keyColumnIndices.size() || (object = objects[keyColumnIndices.get(i)]) == null) {
-                        if (i == 0) {
-                            builder.append("Infinity");
-                        } else {
-                            builder.append(")");
-                        }
-                        break;
-                    }
+            String key = buildKeyStr(keyColumnIndices, range.getStart());
+            rangeValues.add(key);
 
-                    if (i == 0) {
-                        builder.append("Key(");
-                    } else {
-                        builder.append(", ");
-                    }
-                    builder.append(object.toString());
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            if (i + 1 < ranges.size()) {
+                key = buildKeyStr(keyColumnIndices, ranges.get(i + 1).getStart());
+            } else {
+                key = buildKeyStr(keyColumnIndices, null);
             }
-            builder.append(", ");
-            try {
-                List<Integer> keyColumnIndices = tableDefinition.getKeyColumnIndices();
-                // Concatenate end key
-                Object[] objects = iterator.hasNext() ? codec.decodeKeyPrefix(range.getEndKey()) : new Object[tableDefinition.getColumnsCount()];
-                for (int i = 0; ; i++) {
-                    Object object;
-                    if (i >= keyColumnIndices.size() || (object = objects[keyColumnIndices.get(i)]) == null) {
-                        if (i == 0) {
-                            builder.append("Infinity");
-                        } else {
-                            builder.append(")");
-                        }
-                        break;
-                    }
-
-                    if (i == 0) {
-                        builder.append("Key(");
-                    } else {
-                        builder.append(", ");
-                    }
-                    builder.append(object.toString());
-                }
-
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            builder.append(" )");
-            rangeValues.add(builder.toString());
+            rangeValues.add(key);
 
             regionList.add(rangeValues);
         }
 
+        regionList.forEach(row -> {
+            row.set(row.size() - 2, String.format("[ %s, %s )", row.get(row.size() - 2), row.get(row.size() - 1)));
+            row.remove(row.size() - 1);
+        });
         return regionList;
+    }
+
+    private String buildKeyStr(List<Integer> keyColumnIndices, Object[] start) {
+        if (start == null) {
+            return "Infinity";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; ; i++) {
+            Object object;
+            if (i >= keyColumnIndices.size() || (object = start[keyColumnIndices.get(i)]) == null) {
+                if (i == 0) {
+                    builder.append("Infinity");
+                } else {
+                    builder.append(")");
+                }
+                break;
+            }
+
+            if (i == 0) {
+                builder.append("Key(");
+            } else {
+                builder.append(", ");
+            }
+            builder.append(object);
+        }
+        return builder.toString();
     }
 }

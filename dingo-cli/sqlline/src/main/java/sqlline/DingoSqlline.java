@@ -16,10 +16,9 @@
 
 package sqlline;
 
-import io.dingodb.calcite.DingoRootSchema;
+import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.environment.ExecutionEnvironment;
-import io.dingodb.driver.DingoDriver;
 import io.dingodb.driver.client.DingoDriverClient;
 import lombok.experimental.Delegate;
 

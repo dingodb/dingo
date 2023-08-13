@@ -86,9 +86,8 @@ public class DingoCatalogReader implements Prepare.CatalogReader{
 
     public DingoCatalogReader(CalciteSchema rootSchema,
                               List<List<String>> array, RelDataTypeFactory typeFactory, CalciteConnectionConfig config) {
-        this(rootSchema, SqlNameMatchers.withCaseSensitive(config != null && config.caseSensitive()),
-            array,
-            typeFactory, config);
+        // todo: current version, ignore name case
+        this(rootSchema, SqlNameMatchers.withCaseSensitive(false), array, typeFactory, config);
     }
 
     protected DingoCatalogReader(CalciteSchema rootSchema,

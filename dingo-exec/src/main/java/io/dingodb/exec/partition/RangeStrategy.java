@@ -90,7 +90,13 @@ public class RangeStrategy extends PartitionStrategy<CommonId, byte[]> {
             .withStart(withStart)
             .withEnd(withEnd)
             .build();
-        return RangeUtils.getSubRangeDistribution(ranges.values(), range, 0);
+        NavigableSet<RangeDistribution> ranges = RangeUtils.getSubRangeDistribution(this.ranges.values(), range, 0);
+        Iterator<RangeDistribution> iterator = ranges.descendingIterator();
+        iterator.next();
+        while (iterator.hasNext()) {
+            iterator.next().setWithEnd(true);
+        }
+        return ranges;
     }
 
     @Override

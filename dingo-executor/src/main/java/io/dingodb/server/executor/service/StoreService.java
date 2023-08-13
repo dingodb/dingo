@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.dingodb.server.executor.common.Mapping.mapping;
+import static java.util.Collections.singletonList;
 
 @Slf4j
 public final class StoreService implements io.dingodb.store.api.StoreService {
@@ -75,6 +76,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         private final DingoCommonId storeRegionId;
 
         private final CommonId tableId;
+        private final CommonId partitionId;
         private final CommonId regionId;
 
         public StoreInstance(StoreServiceClient storeService, CommonId tableId, CommonId regionId) {
@@ -83,6 +85,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             this.storeRegionId = mapping(regionId);
             this.tableId = tableId;
             this.regionId = regionId;
+            this.partitionId = new CommonId(CommonId.CommonType.PARTITION, tableId.seq, regionId.domain);
         }
 
         @Override
@@ -90,13 +93,23 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             return regionId;
         }
 
+        private byte[] setId(byte[] key) {
+            return CodecService.INSTANCE.setId(key, partitionId);
+        }
+
+        private KeyValue setId(KeyValue keyValue) {
+            return CodecService.INSTANCE.setId(keyValue, partitionId);
+        }
+
         @Override
         public boolean insert(KeyValue row) {
-            return storeService.kvPutIfAbsent(storeTableId, storeRegionId, mapping(row));
+            return storeService.kvPutIfAbsent(storeTableId, storeRegionId, mapping(setId(row)));
         }
 
         @Override
         public boolean update(KeyValue row, KeyValue old) {
+            row = setId(row);
+            old = setId(old);
             if (ByteArrayUtils.equal(row.getKey(), old.getKey())) {
                 return storeService.kvCompareAndSet(
                     storeTableId, storeRegionId, new KeyValueWithExpect(row.getKey(), row.getValue(), old.getValue())
@@ -107,27 +120,31 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
         @Override
         public boolean delete(byte[] key) {
-            return storeService.kvBatchDelete(storeTableId, storeRegionId, Collections.singletonList(key)).get(0);
+            return storeService.kvBatchDelete(storeTableId, storeRegionId, singletonList(setId(key))).get(0);
         }
 
         @Override
         public long delete(Range range) {
+            range = new Range(setId(range.start), setId(range.end), range.withStart, range.withEnd);
             return storeService.kvDeleteRange(storeTableId, storeRegionId, mapping(range));
         }
 
         @Override
         public KeyValue get(byte[] key) {
-            return new KeyValue(key, storeService.kvGet(storeTableId, storeRegionId, key));
+            return new KeyValue(key, storeService.kvGet(storeTableId, storeRegionId, setId(key)));
         }
 
         @Override
         public List<KeyValue> get(List<byte[]> keys) {
-            return storeService.kvBatchGet(storeTableId, storeRegionId, keys).stream()
+            return storeService.kvBatchGet(
+                    storeTableId, storeRegionId, keys.stream().map(this::setId).collect(Collectors.toList())
+                ).stream()
                 .map(Mapping::mapping).collect(Collectors.toList());
         }
 
         @Override
         public Iterator<KeyValue> scan(Range range) {
+            range = new Range(setId(range.start), setId(range.end), range.withStart, range.withEnd);
             return Iterators.transform(
                 storeService.scan(storeTableId, storeRegionId, mapping(range).getRange(), range.withStart, range.withEnd),
                 Mapping::mapping
@@ -136,6 +153,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
         @Override
         public Iterator<KeyValue> scan(Range range, Coprocessor coprocessor) {
+            range = new Range(setId(range.start), setId(range.end), range.withStart, range.withEnd);
             return Iterators.transform(
                 storeService.scan(storeTableId, storeRegionId, mapping(range).getRange(), range.withStart, range.withEnd, new io.dingodb.server.executor.common.Coprocessor(coprocessor)),
                 Mapping::mapping
@@ -145,6 +163,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         @Override
         public long count(Range range) {
             // todo operator push down
+            range = new Range(setId(range.start), setId(range.end), range.withStart, range.withEnd);
             Iterator<KeyValue> iterator = scan(range);
             long count = 0;
             while (iterator.hasNext()) {

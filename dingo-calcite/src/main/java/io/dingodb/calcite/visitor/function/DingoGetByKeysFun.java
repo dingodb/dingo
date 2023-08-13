@@ -58,7 +58,7 @@ public final class DingoGetByKeysFun {
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
         final PartitionStrategy<CommonId, byte[]> ps = new RangeStrategy(td, distributions);
         final List<Output> outputs = new LinkedList<>();
-        KeyValueCodec codec = TableUtils.getKeyValueCodecForTable(tableInfo.getId(), td);
+        KeyValueCodec codec = TableUtils.getKeyValueCodecForTable(td);
         List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(rel.getPoints(), td);
         if (keyTuples.isEmpty()) {
             EmptySourceOperator operator = new EmptySourceOperator();

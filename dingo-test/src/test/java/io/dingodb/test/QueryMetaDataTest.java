@@ -16,7 +16,7 @@
 
 package io.dingodb.test;
 
-import io.dingodb.calcite.DingoRootSchema;
+import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.meta.MetaService;
 import io.dingodb.test.asserts.Assert;
 import lombok.extern.slf4j.Slf4j;
