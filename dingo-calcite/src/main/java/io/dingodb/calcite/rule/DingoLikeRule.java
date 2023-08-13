@@ -23,6 +23,7 @@ import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -108,7 +109,7 @@ public class DingoLikeRule extends RelRule<DingoLikeRule.Config> {
             return;
         }
 
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(TableUtils.getTableId(rel.getTable()), td);
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td);
         Object[] tuple = new Object[td.getColumnsCount()];
 
         byte[] prefixBytes;

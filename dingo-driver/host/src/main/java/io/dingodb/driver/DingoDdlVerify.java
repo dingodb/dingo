@@ -187,7 +187,8 @@ public class DingoDdlVerify {
         if (schemaName != null) {
             schemaName = schemaName.toUpperCase();
         }
-        CalciteSchema schema = connection.getContext().getRootSchema().getSubSchema(schemaName, true);
+        // todo: current version, ignore name case
+        CalciteSchema schema = connection.getContext().getRootSchema().getSubSchema(schemaName, false);
         if (schema == null) {
             throw new RuntimeException("Schema not found: " + schemaName);
         }

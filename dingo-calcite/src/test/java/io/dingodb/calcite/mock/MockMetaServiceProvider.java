@@ -16,7 +16,7 @@
 
 package io.dingodb.calcite.mock;
 
-import io.dingodb.calcite.DingoRootSchema;
+import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.table.TableDefinition;

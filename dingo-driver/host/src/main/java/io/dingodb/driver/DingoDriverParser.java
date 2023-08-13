@@ -18,7 +18,6 @@ package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParser;
-import io.dingodb.calcite.DingoSchema;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.operation.DdlOperation;
 import io.dingodb.calcite.operation.Operation;
@@ -26,15 +25,16 @@ import io.dingodb.calcite.operation.QueryOperation;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
+import io.dingodb.meta.MetaService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.SqlType;
-import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -269,12 +269,7 @@ public final class DingoDriverParser extends DingoParser {
 
         final RelRoot relRoot = convert(sqlNode, false);
         final RelNode relNode = optimize(relRoot.rel);
-        CalciteSchema rootSchema = connection.getRootSchema();
-        CalciteSchema defaultSchema = rootSchema.getSubSchema(connection.getDefaultSchemaPath().get(0), true);
-        if (defaultSchema == null) {
-            throw new RuntimeException("No default schema is found.");
-        }
-        Location currentLocation = ((DingoSchema) defaultSchema.schema).getMetaService().currentLocation();
+        Location currentLocation = MetaService.root().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
         Job job = jobManager.createJob(jobIdPrefix, DefinitionMapper.mapToDingoType(parasType));
         DingoJobVisitor.renderJob(job, relNode, currentLocation, true);

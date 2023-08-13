@@ -25,7 +25,11 @@ public class DingoSqlFloatType extends AbstractSqlType {
     private final int precision;
 
     public DingoSqlFloatType(SqlTypeName typeName, int precision) {
-        super(typeName, false, null);
+        this(typeName, precision, false);
+    }
+
+    public DingoSqlFloatType(SqlTypeName typeName, int precision, boolean nullable) {
+        super(typeName, nullable, null);
         this.precision = precision;
     }
 

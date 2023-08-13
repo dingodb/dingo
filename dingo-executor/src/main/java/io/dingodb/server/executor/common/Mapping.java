@@ -113,8 +113,8 @@ public final class Mapping {
         KeyValueCodec codec
     ) {
         try {
-            byte[] startKey = codec.resetKeyPrefix(rangeDistribution.getRange().getStartKey(), 0);
-            byte[] endKey = codec.resetKeyPrefix(rangeDistribution.getRange().getEndKey(), 0);
+            byte[] startKey = rangeDistribution.getRange().getStartKey();
+            byte[] endKey = rangeDistribution.getRange().getEndKey();
             return RangeDistribution.builder()
                 .id(mapping(rangeDistribution.getId()))
                 .startKey(startKey)

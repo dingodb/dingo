@@ -28,6 +28,7 @@ import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.expr.core.TypeCode;
 import io.dingodb.sdk.common.codec.CodecUtils;
 import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
+import io.dingodb.sdk.common.serial.BufImpl;
 import io.dingodb.sdk.common.serial.schema.DingoSchema;
 import io.dingodb.server.executor.common.Mapping;
 import lombok.AllArgsConstructor;
@@ -64,12 +65,15 @@ public final class CodecService implements io.dingodb.codec.CodecService {
 
     @AllArgsConstructor
     static class KeyValueCodec implements io.dingodb.codec.KeyValueCodec {
-        private final DingoKeyValueCodec delegate;
-        private final DingoType type;
+        public final CommonId id;
+        public final DingoKeyValueCodec delegate;
+        public final DingoType type;
 
         @Override
         public Object[] decode(KeyValue keyValue) throws IOException {
-            return (Object[]) type.convertFrom(delegate.decode(mapping(keyValue)), DingoConverter.INSTANCE);
+            return (Object[]) type.convertFrom(
+                delegate.decode(mapping(CodecService.INSTANCE.setId(keyValue, id))), DingoConverter.INSTANCE
+            );
         }
 
         @Override
@@ -99,19 +103,24 @@ public final class CodecService implements io.dingodb.codec.CodecService {
 
         @Override
         public Object[] decodeKeyPrefix(byte[] keyPrefix) throws IOException {
-            return (Object[]) type.convertFrom(delegate.decodeKeyPrefix(keyPrefix), DingoConverter.INSTANCE);
+            return (Object[]) type.convertFrom(
+                delegate.decodeKeyPrefix(CodecService.INSTANCE.setId(keyPrefix, id)), DingoConverter.INSTANCE
+            );
         }
 
-        @Override
-        public byte[] resetKeyPrefix(byte[] key, long prefix) {
-            return delegate.resetPrefix(key, prefix);
-        }
+    }
+
+    @Override
+    public byte[] setId(byte[] key, CommonId id) {
+        new BufImpl(key).writeLong(id.seq);
+        return key;
     }
 
     @Override
     public KeyValueCodec createKeyValueCodec(CommonId id, List<io.dingodb.common.table.ColumnDefinition> columns
     ) {
         return new KeyValueCodec(
+            id,
             DingoKeyValueCodec.of(id.seq, columns.stream().map(Mapping::mapping).collect(Collectors.toList())),
             tuple(columns.stream().map(io.dingodb.common.table.ColumnDefinition::getType).toArray(DingoType[]::new))
         );
@@ -119,7 +128,7 @@ public final class CodecService implements io.dingodb.codec.CodecService {
 
     @Override
     public KeyValueCodec createKeyValueCodec(CommonId id, DingoType type, TupleMapping keyMapping) {
-        return new KeyValueCodec(new DingoKeyValueCodec(id.seq, createSchemasForType(type, keyMapping)), type);
+        return new KeyValueCodec(id, new DingoKeyValueCodec(id.seq, createSchemasForType(type, keyMapping)), type);
     }
 
     private static List<DingoSchema> createSchemasForType(DingoType type, TupleMapping keyMapping) {

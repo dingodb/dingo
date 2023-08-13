@@ -45,7 +45,7 @@ public class DingoRangeScanRule extends RelRule<DingoRangeScanRule.Config> imple
     public void onMatch(@NonNull RelOptRuleCall call) {
         final DingoTableScan rel = call.rel(0);
         TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(CommonId.EMPTY_TABLE, td);
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td);
         RangeDistribution range = createRangeByFilter(td, codec, rel.getFilter());
         if (range != null) {
             call.transformTo(new DingoPartRangeScan(

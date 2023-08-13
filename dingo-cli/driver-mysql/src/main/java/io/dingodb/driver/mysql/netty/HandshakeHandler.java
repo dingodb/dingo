@@ -16,9 +16,8 @@
 
 package io.dingodb.driver.mysql.netty;
 
-import io.dingodb.calcite.DingoRootSchema;
+import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.common.environment.ExecutionEnvironment;
-import io.dingodb.common.mysql.MysqlByteUtil;
 import io.dingodb.common.mysql.MysqlMessage;
 import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.Versions;
@@ -49,14 +48,11 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
-import java.util.Calendar;
 import java.util.Properties;
 import java.util.Random;
 import java.util.TimeZone;
@@ -206,8 +202,9 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         loadGlobalVariables(dingoConnection);
                         if (StringUtils.isNotBlank(authPacket.database)) {
                             String usedSchema = authPacket.database.toUpperCase();
+                            // todo: current version, ignore name case
                             CalciteSchema schema = dingoConnection.getContext().getRootSchema()
-                                .getSubSchema(usedSchema, true);
+                                .getSubSchema(usedSchema, false);
                             if (schema != null) {
                                 dingoConnection.getContext().setUsedSchema(schema);
                             }

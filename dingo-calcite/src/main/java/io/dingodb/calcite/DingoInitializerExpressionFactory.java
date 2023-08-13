@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite;
 
+import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.common.table.ColumnDefinition;
 import lombok.extern.slf4j.Slf4j;

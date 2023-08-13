@@ -63,7 +63,7 @@ public abstract class PartModifyOperator extends SoleOutOperator {
     protected Part getPart() {
         return new PartInKvStore(
             Services.KV_STORE.getInstance(tableId, partId),
-            CodecService.getDefault().createKeyValueCodec(tableId, schema, keyMapping)
+            CodecService.getDefault().createKeyValueCodec(schema, keyMapping)
         );
     }
 

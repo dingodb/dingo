@@ -16,7 +16,7 @@
 
 package io.dingodb.test;
 
-import io.dingodb.calcite.DingoRootSchema;
+import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.privilege.PrivilegeDefinition;
 import io.dingodb.common.privilege.PrivilegeGather;

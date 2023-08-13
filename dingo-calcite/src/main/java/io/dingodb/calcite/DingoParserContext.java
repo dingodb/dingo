@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import com.google.common.collect.Multimap;
 import io.dingodb.calcite.grammar.SqlUserDefinedOperators;
+import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import lombok.Getter;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -81,7 +82,7 @@ public final class DingoParserContext implements Context {
 
         rootSchema = CalciteSchema.createRootSchema(
             false,
-            false,
+            true,
             DingoRootSchema.ROOT_SCHEMA_NAME,
             new DingoRootSchema(this)
         );
@@ -122,6 +123,12 @@ public final class DingoParserContext implements Context {
         this.options = options;
 
         usedSchema = getDefaultSchema();
+    }
+
+    protected void resetSchemaCache() {
+        // Not a good way, need to find a better way to clear the root mode cache?
+        rootSchema.setCache(false);
+        rootSchema.setCache(true);
     }
 
     private static void eliminateUserOperator(SqlStdOperatorTable tableInstance) {
@@ -169,16 +176,14 @@ public final class DingoParserContext implements Context {
     }
 
     public CalciteSchema getDefaultSchema() {
-        return rootSchema.getSubSchema(defaultSchemaName, true);
+        // todo: current version, ignore name case
+        return rootSchema.getSubSchema(defaultSchemaName, false);
     }
 
     public CalciteSchema getSchemaByNames(@NonNull List<String> names) {
         // ignore 0 root schema
-        CalciteSchema schema = rootSchema;
-        for (int i = 1; i < names.size() - 1; i++) {
-            schema = rootSchema.getSubSchema(names.get(i), false);
-        }
-        return schema;
+        // todo: current version, ignore name case
+        return rootSchema.getSubSchema(names.get(1), false);
     }
 
     @Override

@@ -17,7 +17,7 @@
 package io.dingodb.test.dsl;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.DingoRootSchema;
+import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.test.dsl.builder.SqlTestCaseJavaBuilder;
 
 public class BasicQueryCases extends SqlTestCaseJavaBuilder {

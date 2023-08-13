@@ -68,7 +68,7 @@ public abstract class StatsOperator {
     public void insert(StoreInstance store, KeyValueCodec codec, List<Object[]> rowList) {
         rowList.stream().forEach(row -> {
             try {
-                store.insert(codec.resetKeyPrefix(codec.encode(row), store.id().domain));
+                store.insert(codec.encode(row));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -77,7 +77,7 @@ public abstract class StatsOperator {
 
     public void insert(StoreInstance store, KeyValueCodec codec, Object[] row) {
         try {
-            store.insert(codec.resetKeyPrefix(codec.encode(row), store.id().domain));
+            store.insert(codec.encode(row));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

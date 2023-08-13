@@ -83,7 +83,8 @@ public final class MessageProcess {
                         ErrorCode.ER_ACCESS_DB_DENIED_ERROR, error);
                     return;
                 }
-                CalciteSchema schema = connection.getContext().getRootSchema().getSubSchema(usedSchema, true);
+                // todo: current version, ignore name case
+                CalciteSchema schema = connection.getContext().getRootSchema().getSubSchema(usedSchema, false);
                 if (schema != null) {
                     connection.getContext().setUsedSchema(schema);
                     OKPacket okPacket = MysqlPacketFactory.getInstance().getOkPacket(0, packetId,

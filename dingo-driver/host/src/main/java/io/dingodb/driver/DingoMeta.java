@@ -20,9 +20,8 @@ import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Longs;
 import io.dingodb.calcite.DingoParserContext;
-import io.dingodb.calcite.DingoSchema;
 import io.dingodb.calcite.DingoTable;
-import io.dingodb.calcite.MutableSchema;
+import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.table.ColumnDefinition;
@@ -604,6 +603,7 @@ public class DingoMeta extends MetaImpl {
         final DingoConnection dingoConnection = (DingoConnection) connection;
         final DingoParserContext context = dingoConnection.getContext();
         final CalciteSchema rootSchema = context.getRootSchema();
+        // todo: current version, ignore name case
         final CalciteSchema schema = rootSchema.getSubSchema(schemaName, false);
         final CalciteSchema.TableEntry table = schema.getTable(tableName, false);
         final TableDefinition tableDefinition = ((DingoTable) table.getTable()).getTableDefinition();
@@ -639,11 +639,12 @@ public class DingoMeta extends MetaImpl {
         final CalciteSchema rootSchema = context.getRootSchema();
         List<IndexScan> indexScanList = new ArrayList();
         if (schemaName != null) {
+            // todo: current version, ignore name case
             final CalciteSchema calciteSchema = rootSchema.getSubSchema(schemaName, false);
             if (calciteSchema == null) {
                 throw ExceptionUtils.toRuntime(new IllegalArgumentException("schema does not exist"));
             }
-            MutableSchema schema  = (MutableSchema) calciteSchema.schema;
+            DingoSchema schema  = (DingoSchema) calciteSchema.schema;
             if (schema != null && schema.getTable(tableName) != null) {
                 Collection<Index> indices = schema.getIndex(tableName);
 

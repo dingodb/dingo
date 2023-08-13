@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.table.TableDefinition;
@@ -54,7 +55,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
 
     private final TableStatistic tableStatistic;
 
-    protected DingoTable(
+    public DingoTable(
         CommonId tableId,
         DingoParserContext context,
         List<String> names,
