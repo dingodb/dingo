@@ -19,6 +19,8 @@ package io.dingodb.web.handler;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.web.utils.Message;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import static io.dingodb.common.util.StackTraces.CURRENT_STACK;
@@ -28,6 +30,8 @@ import static io.dingodb.common.util.StackTraces.formatStackTrace;
 public class ExceptionHandle {
 
     @ExceptionHandler(value = Exception.class)
+    @ResponseStatus
+    @ResponseBody
     public Message handler(Exception e) {
         String stackTrace = formatStackTrace(e.getStackTrace(), CURRENT_STACK + 1, Integer.MAX_VALUE - CURRENT_STACK - 1);
         int code = -1;

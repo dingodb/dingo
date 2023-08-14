@@ -19,6 +19,7 @@ package io.dingodb.web.utils;
 import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
 import io.dingodb.client.common.IndexDefinition;
+import io.dingodb.client.common.VectorCoprocessor;
 import io.dingodb.client.common.VectorSearchParameter;
 import io.dingodb.client.common.VectorWithId;
 import io.dingodb.common.partition.PartitionDefinition;
@@ -35,6 +36,7 @@ import io.dingodb.sdk.common.index.IvfPqParam;
 import io.dingodb.sdk.common.index.ScalarIndexParameter;
 import io.dingodb.sdk.common.index.VectorIndexParameter;
 import io.dingodb.sdk.common.partition.Partition;
+import io.dingodb.sdk.common.table.ColumnDefinition;
 import io.dingodb.sdk.common.vector.ScalarField;
 import io.dingodb.sdk.common.vector.ScalarValue;
 import io.dingodb.sdk.common.vector.Search;
@@ -44,6 +46,7 @@ import io.dingodb.sdk.common.vector.SearchHnswParam;
 import io.dingodb.sdk.common.vector.SearchIvfFlatParam;
 import io.dingodb.sdk.common.vector.SearchIvfPqParam;
 import io.dingodb.sdk.common.vector.Vector;
+import io.dingodb.sdk.service.store.Coprocessor;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -257,7 +260,33 @@ public class Conversion {
             parameter.getWithScalarData(),
             parameter.getSelectedKeysList(),
             search,
-            parameter.getUseScalarFilter());
+            parameter.getUseScalarFilter(),
+            io.dingodb.sdk.common.vector.VectorSearchParameter.VectorFilter.valueOf(parameter.getVectorFilter().name()),
+            io.dingodb.sdk.common.vector.VectorSearchParameter.VectorFilterType.valueOf(parameter.getVectorFilterType().name()),
+            mapping(parameter.getVectorCoprocessor()),
+            parameter.getVectorIdsList());
+    }
+
+    public static VectorCoprocessor mapping(ProxyCommon.VectorCoprocessor coprocessor) {
+        return VectorCoprocessor.builder()
+            .schemaVersion(coprocessor.getSchemaVersion())
+            .originalSchema(VectorCoprocessor.VectorSchemaWrapper.builder()
+                .schemas(coprocessor.getOriginalSchema().getSchemaList().stream().map(Conversion::mapping).collect(Collectors.toList()))
+                .commonId(coprocessor.getOriginalSchema().getCommonId())
+                .build())
+            .selection(coprocessor.getSelectionColumnsList())
+            .expression(coprocessor.getExpression().toByteArray())
+            .build();
+    }
+
+    public static ColumnDefinition mapping(ProxyCommon.ColumnDefinition definition) {
+        return ColumnDefinition.builder()
+            .name(definition.getName())
+            .type(definition.getSqlType())
+            .elementType(definition.getElementType())
+            .primary(definition.getIndexOfKey())
+            .nullable(definition.getNullable())
+            .build();
     }
 
     public static VectorWithId mapping(ProxyCommon.VectorWithId withId) {
@@ -307,14 +336,17 @@ public class Conversion {
     }
 
     public static ProxyCommon.VectorWithId mapping(VectorWithId withId) {
-        ProxyCommon.VectorWithId.Builder builder = ProxyCommon.VectorWithId.newBuilder()
-            .setId(withId.getId());
+        ProxyCommon.VectorWithId.Builder builder = ProxyCommon.VectorWithId.newBuilder();
+        if (withId == null) {
+            return builder.build();
+        }
         if (withId.getVector() != null) {
             builder.setVector(mapping(withId.getVector()));
         }
         if (withId.getScalarData() != null) {
             builder.setScalarData(mapping(withId.getScalarData()));
         }
+        builder.setId(withId.getId());
         return builder.build();
     }
 

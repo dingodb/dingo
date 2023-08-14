@@ -93,7 +93,11 @@ public class VectorSearchOperation implements Operation {
                 vectorSearch.getParameter().isWithScalarData(),
                 vectorSearch.getParameter().getSelectedKeys(),
                 vectorSearch.getParameter().getSearch(),
-                vectorSearch.getParameter().isUseScalarFilter())
+                false,
+                vectorSearch.getParameter().getVectorFilter(),
+                vectorSearch.getParameter().getVectorFilterType(),
+                vectorSearch.getParameter().getCoprocessor(),
+                vectorSearch.getParameter().getVectorIds())
         );
         for (int i = 0; i < results.size(); i++) {
             VectorWithDistanceResult result = results.get(i);
