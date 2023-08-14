@@ -28,6 +28,7 @@ import java.sql.Timestamp;
     induceSequence = {
         BigDecimal.class,
         double.class,
+        float.class,
         long.class,
         int.class,
         boolean.class
@@ -42,6 +43,10 @@ final class MinEvaluators {
     }
 
     static long min(long value0, long value1) {
+        return Math.min(value0, value1);
+    }
+
+    static float min(float value0, float value1) {
         return Math.min(value0, value1);
     }
 

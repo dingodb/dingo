@@ -28,6 +28,7 @@ import java.sql.Timestamp;
     induceSequence = {
         BigDecimal.class,
         double.class,
+        float.class,
         long.class,
         int.class
     }
@@ -41,6 +42,10 @@ final class MaxEvaluators {
     }
 
     static long max(long value0, long value1) {
+        return Math.max(value0, value1);
+    }
+
+    static float max(float value0, float value1) {
         return Math.max(value0, value1);
     }
 
