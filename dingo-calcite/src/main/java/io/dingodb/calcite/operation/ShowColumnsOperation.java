@@ -17,7 +17,6 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.grammar.dql.SqlShowColumns;
-import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.SqlLikeUtils;
