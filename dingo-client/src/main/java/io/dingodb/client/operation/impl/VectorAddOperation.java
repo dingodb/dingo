@@ -53,7 +53,7 @@ public class VectorAddOperation implements Operation {
 
         long count = vectors.stream().map(VectorWithId::getId).distinct().count();
         if (!index.getIsAutoIncrement() && vectors.size() != count) {
-            throw new DingoClientException("Vectors cannot be added repeatedly");
+            throw new DingoClientException(-1, "Vectors cannot be added repeatedly");
         }
 
         for (int i = 0; i < vectors.size(); i++) {

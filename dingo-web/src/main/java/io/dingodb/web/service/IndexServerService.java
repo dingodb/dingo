@@ -16,6 +16,7 @@
 
 package io.dingodb.web.service;
 
+import com.google.common.collect.Maps;
 import io.dingodb.client.DingoClient;
 import io.dingodb.client.common.VectorDistanceArray;
 import io.dingodb.client.common.VectorSearch;
@@ -125,7 +126,12 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
             req.getWithoutVectorData(),
             req.getWithScalarData(),
             req.getSelectedKeysList(),
-            req.getWithTableData());
+            req.getWithTableData(),
+            req.getUseScalarFilter(),
+            req.getScalarForFilter().getScalarDataMap().entrySet().stream().collect(
+                Maps::newHashMap,
+                (map, entry) -> map.put(entry.getKey(), mapping(entry.getValue())),
+                Map::putAll));
         List<VectorWithId> withIds = dingoClient.vectorScanQuery(req.getSchemaName(), req.getIndexName(), vectorScanQuery);
         ProxyIndex.VectorScanQueryResponse response = ProxyIndex.VectorScanQueryResponse.newBuilder()
             .addAllVectors(withIds.stream().map(Conversion::mapping).collect(Collectors.toList()))
