@@ -125,7 +125,6 @@ public class VectorController {
         @RequestBody VectorScanQuery vectorScanQuery) {
         return ResponseEntity.ok(dingoClient.vectorScanQuery(schema, index, vectorScanQuery)
             .stream()
-            .filter(Objects::nonNull)
             .map(mapper::mapping)
             .collect(Collectors.toList()));
     }

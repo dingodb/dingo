@@ -36,7 +36,6 @@ import io.dingodb.sdk.common.index.IvfPqParam;
 import io.dingodb.sdk.common.index.ScalarIndexParameter;
 import io.dingodb.sdk.common.index.VectorIndexParameter;
 import io.dingodb.sdk.common.partition.Partition;
-import io.dingodb.sdk.common.table.ColumnDefinition;
 import io.dingodb.sdk.common.vector.ScalarField;
 import io.dingodb.sdk.common.vector.ScalarValue;
 import io.dingodb.sdk.common.vector.Search;
@@ -46,7 +45,6 @@ import io.dingodb.sdk.common.vector.SearchHnswParam;
 import io.dingodb.sdk.common.vector.SearchIvfFlatParam;
 import io.dingodb.sdk.common.vector.SearchIvfPqParam;
 import io.dingodb.sdk.common.vector.Vector;
-import io.dingodb.sdk.service.store.Coprocessor;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -279,8 +277,8 @@ public class Conversion {
             .build();
     }
 
-    public static ColumnDefinition mapping(ProxyCommon.ColumnDefinition definition) {
-        return ColumnDefinition.builder()
+    public static VectorCoprocessor.ColumnDefinition mapping(ProxyCommon.ColumnDefinition definition) {
+        return VectorCoprocessor.ColumnDefinition.builder()
             .name(definition.getName())
             .type(definition.getSqlType())
             .elementType(definition.getElementType())
