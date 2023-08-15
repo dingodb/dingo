@@ -18,12 +18,12 @@ package io.dingodb.client.common;
 
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.sdk.common.table.Column;
-import io.dingodb.sdk.common.table.ColumnDefinition;
 import io.dingodb.sdk.service.store.Coprocessor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.Collections;
 import java.util.List;
@@ -49,6 +49,7 @@ public class VectorCoprocessor implements Coprocessor {
 
     @Getter
     @Builder
+    @NoArgsConstructor
     @AllArgsConstructor
     public static class VectorSchemaWrapper implements SchemaWrapper {
 
@@ -56,11 +57,33 @@ public class VectorCoprocessor implements Coprocessor {
         private List<ColumnDefinition> schemas = Collections.emptyList();
         private long commonId;
 
-        public VectorSchemaWrapper() {
-        }
-
         public List<Column> getSchemas() {
             return Collections.unmodifiableList(schemas);
         }
+    }
+
+    @Getter
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ColumnDefinition implements Column {
+
+        public static final int DEFAULT_PRECISION = -1;
+        public static final int DEFAULT_SCALE = Integer.MIN_VALUE;
+
+        private String name;
+        private String type;
+        private String elementType;
+        @Builder.Default
+        private int precision = DEFAULT_PRECISION;
+        @Builder.Default
+        private int scale = DEFAULT_SCALE;
+        @Builder.Default
+        private boolean nullable = true;
+        @Builder.Default
+        private int primary = -1;
+        private String defaultValue;
+        private boolean isAutoIncrement;
+
     }
 }
