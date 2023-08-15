@@ -44,5 +44,13 @@
      "default": 0,
      "primary": -1,
      "nullable": true
+   },
+   {
+     "name": "index",
+     "type": "integer",
+     "default": 0,
+     "precision": -1,
+     "primary": -1,
+     "nullable": true
    }
  ]

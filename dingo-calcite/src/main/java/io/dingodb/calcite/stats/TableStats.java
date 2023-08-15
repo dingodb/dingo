@@ -54,7 +54,7 @@ public class TableStats {
         }
     }
 
-    public TableStats(String schemaName, String tableName){
+    public TableStats(String schemaName, String tableName) {
         this.histogramList = new ArrayList<>();
         this.countMinSketchList = new ArrayList<>();
         this.statsNormalList = new ArrayList<>();

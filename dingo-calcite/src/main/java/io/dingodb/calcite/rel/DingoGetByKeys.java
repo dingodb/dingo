@@ -44,7 +44,7 @@ public final class DingoGetByKeys extends DingoGetByIndex {
         @Nullable TupleMapping selection,
         Collection<Map<Integer, RexNode>> points
     ) {
-        super(cluster, traitSet, hints, table, filter, selection, null, points);
+        super(cluster, traitSet, hints, table, filter, selection, null, true, points, null);
     }
 
     @Override

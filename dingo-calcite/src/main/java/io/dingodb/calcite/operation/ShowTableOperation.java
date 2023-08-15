@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ShowTableOperation implements QueryOperation{
+public class ShowTableOperation implements QueryOperation {
     private String schemaName;
     Connection connection;
 

@@ -75,6 +75,7 @@ public final class PrivilegeDict {
 
     public static final Map<String, Integer> userPrivilegeIndex = new HashMap<>();
     public static final Map<String, Integer> dbPrivilegeIndex = new HashMap<>();
+
     static {
         userPrivilegeIndex.put(DingoSqlAccessEnum.SELECT.getAccessType(), 2);
         userPrivilegeIndex.put(DingoSqlAccessEnum.INSERT.getAccessType(), 3);

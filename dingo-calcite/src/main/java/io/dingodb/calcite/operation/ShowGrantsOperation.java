@@ -18,7 +18,13 @@ package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
-import io.dingodb.common.privilege.*;
+import io.dingodb.common.privilege.PrivilegeDict;
+import io.dingodb.common.privilege.PrivilegeGather;
+import io.dingodb.common.privilege.PrivilegeList;
+import io.dingodb.common.privilege.PrivilegeType;
+import io.dingodb.common.privilege.SchemaPrivDefinition;
+import io.dingodb.common.privilege.TablePrivDefinition;
+import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.verify.service.UserService;
 import io.dingodb.verify.service.UserServiceProvider;
 import lombok.Setter;

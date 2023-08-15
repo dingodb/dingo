@@ -30,11 +30,11 @@ public class SqlShowCreateUser extends SqlShow {
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator("SHOW CREATE USER", SqlKind.SELECT);
 
-     /**
+    /**
      * Creates a sqlDql.
      *
      * @param pos      pos
-     */
+     * */
     public SqlShowCreateUser(SqlParserPos pos, String userName, String host) {
         super(OPERATOR, pos);
         this.userName = userName;

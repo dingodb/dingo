@@ -73,7 +73,8 @@ public class CollectStatsTask implements Callable {
             .collect(Collectors.toList());
         columnHistogramList = columnHistograms.stream().map(Histogram::clone)
             .collect(Collectors.toList());
-        statsNormalMap = statsNormals.stream().collect(Collectors.toMap(StatsNormal::getColumnName, StatsNormal::clone));
+        statsNormalMap = statsNormals.stream()
+            .collect(Collectors.toMap(StatsNormal::getColumnName, StatsNormal::clone));
     }
 
     @Override

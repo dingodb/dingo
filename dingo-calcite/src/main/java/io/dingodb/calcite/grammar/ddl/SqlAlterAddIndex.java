@@ -37,7 +37,8 @@ public class SqlAlterAddIndex extends SqlAlterTable {
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("CREATE INDEX", SqlKind.OTHER_DDL);
 
-    public SqlAlterAddIndex(SqlParserPos pos, SqlIdentifier sqlIdentifier, String index, List<SqlIdentifier> columns, Boolean isUnique) {
+    public SqlAlterAddIndex(SqlParserPos pos, SqlIdentifier sqlIdentifier, String index,
+                            List<SqlIdentifier> columns, Boolean isUnique) {
         super(pos, sqlIdentifier, OPERATOR);
         this.index = index;
         this.columns = columns;

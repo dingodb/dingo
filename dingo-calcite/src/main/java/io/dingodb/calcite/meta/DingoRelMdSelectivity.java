@@ -18,6 +18,7 @@ package io.dingodb.calcite.meta;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoTable;
+import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.stats.CalculateStatistic;
 import io.dingodb.calcite.stats.StatsCache;
@@ -25,6 +26,7 @@ import io.dingodb.calcite.stats.TableStats;
 import io.dingodb.common.table.ColumnDefinition;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.prepare.RelOptTableImpl;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMdSelectivity;
 import org.apache.calcite.rel.metadata.RelMdUtil;
@@ -82,7 +84,7 @@ public class DingoRelMdSelectivity extends RelMdSelectivity {
     }
 
 
-    private double defaultSelectivity(RexNode pred) {
+    private static double defaultSelectivity(RexNode pred) {
         if (pred.getKind() == SqlKind.IS_NOT_NULL) {
             return  0.9;
         } else if (
@@ -99,13 +101,29 @@ public class DingoRelMdSelectivity extends RelMdSelectivity {
         }
     }
 
+    public static double estimateSelectivity(DingoGetByIndex tableScan, Integer index, RexNode rexNode) {
+        CalculateStatistic calculateStatistic = extractColStats(extractCol(tableScan, index));
+        if (calculateStatistic != null && rexNode instanceof RexLiteral) {
+            return calculateStatistic.estimateSelectivity(SqlKind.EQUALS, ((RexLiteral) rexNode).getValue());
+        } else {
+            return 0.001;
+        }
+    }
+
     private static boolean predicateMatch(RexCall pred) {
         ImmutableList operands = pred.operands;
         return operands.size() == 2
             && (operands.get(0) instanceof RexInputRef && operands.get(1) instanceof RexLiteral);
     }
 
-    private Pair<String, ColumnDefinition> extractCol(LogicalDingoTableScan tableScan, RexCall pred) {
+    private static Pair<String, ColumnDefinition> extractCol(TableScan tableScan, Integer index) {
+        DingoTable dingoTable = (DingoTable) ((RelOptTableImpl) tableScan.getTable()).table();
+        String schemaName = dingoTable.getSchema().name();
+        String tableName = schemaName + "." + dingoTable.getTableDefinition().getName();
+        return Pair.of(tableName, dingoTable.getTableDefinition().getColumn(index));
+    }
+
+    private static Pair<String, ColumnDefinition> extractCol(TableScan tableScan, RexCall pred) {
         RexInputRef rexInputRef = (RexInputRef) pred.getOperands().get(0);
         DingoTable dingoTable = (DingoTable) ((RelOptTableImpl) tableScan.getTable()).table();
         String schemaName = dingoTable.getSchema().name();
@@ -113,12 +131,12 @@ public class DingoRelMdSelectivity extends RelMdSelectivity {
         return Pair.of(tableName, dingoTable.getTableDefinition().getColumn(rexInputRef.getIndex()));
     }
 
-    private Object extractVal(RexCall pred) {
+    private static Object extractVal(RexCall pred) {
         RexLiteral rexLiteral = (RexLiteral) pred.getOperands().get(1);
         return rexLiteral.getValue();
     }
 
-    private CalculateStatistic extractColStats(Pair<String, ColumnDefinition> statsIdentifier) {
+    private static CalculateStatistic extractColStats(Pair<String, ColumnDefinition> statsIdentifier) {
         if (StatsCache.statsMap.containsKey(statsIdentifier.getLeft())) {
             TableStats stats = StatsCache.statsMap.get(statsIdentifier.getLeft());
             for (int i = 0; i < stats.getHistogramList().size(); i ++) {
@@ -135,7 +153,7 @@ public class DingoRelMdSelectivity extends RelMdSelectivity {
         return null;
     }
 
-    public boolean complexMatch(RexCall pred) {
+    public static boolean complexMatch(RexCall pred) {
         // where amount = 1.3 or amount=3.3
         // where name in ('1','2','3','4')
         // all operands is RexCall and operatorKind = or
@@ -155,12 +173,12 @@ public class DingoRelMdSelectivity extends RelMdSelectivity {
         return false;
     }
 
-    public double getSelectivityByNotOr(RexNode rexNode, LogicalDingoTableScan tableScan) {
+    public static double getSelectivityByNotOr(RexNode rexNode, LogicalDingoTableScan tableScan) {
         RexCall pred = (RexCall) rexNode;
         return 1 - getSelectivityByOr(pred.getOperands().get(0), tableScan);
     }
 
-    public double getSelectivityByOr(RexNode rexNode, LogicalDingoTableScan tableScan) {
+    public static double getSelectivityByOr(RexNode rexNode, LogicalDingoTableScan tableScan) {
         double sel = 1.0;
         double artificialSel = 0.0;
         List<RexNode> rexNodeList = RelOptUtil.disjunctions(rexNode);

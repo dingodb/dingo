@@ -184,17 +184,17 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     }
 
     @Override
-    public String getClientInfo(String name) throws SQLException {
+    public String getClientInfo(String name) {
         return sessionVariables.getProperty(name);
     }
 
     @Override
-    public Properties getClientInfo() throws SQLException {
+    public Properties getClientInfo() {
         return sessionVariables;
     }
 
     @Override
-    public void setClientInfo(Properties properties) throws SQLClientInfoException {
+    public void setClientInfo(Properties properties) {
         sessionVariables.putAll(properties);
     }
 

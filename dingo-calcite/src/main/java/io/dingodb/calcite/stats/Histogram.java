@@ -22,7 +22,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dingodb.common.type.DingoType;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.apache.calcite.sql.SqlKind;
 
 import java.math.BigDecimal;
@@ -34,16 +36,26 @@ import java.util.Arrays;
 @NoArgsConstructor
 @JsonPropertyOrder({"max", "min", "width", "lstWidth", "buckets", "totalCount"})
 public class Histogram implements Cloneable, CalculateStatistic {
+
+    @Getter
+    @Setter
     private String schemaName;
 
+    @Getter
+    @Setter
     private String tableName;
 
+    @Getter
+    @Setter
     private String columnName;
 
-
+    @Getter
+    @Setter
     @JsonIgnore
     private DingoType dingoType;
 
+    @Getter
+    @Setter
     private int index;
 
     /**
@@ -307,24 +319,4 @@ public class Histogram implements Cloneable, CalculateStatistic {
         return nullCount / (double)totalCount;
     }
 
-
-    public String getColumnName() {
-        return columnName;
-    }
-
-    public String getSchemaName() {
-        return schemaName;
-    }
-
-    public String getTableName() {
-        return tableName;
-    }
-
-    public DingoType getDingoType() {
-        return dingoType;
-    }
-
-    public int getIndex() {
-        return index;
-    }
 }

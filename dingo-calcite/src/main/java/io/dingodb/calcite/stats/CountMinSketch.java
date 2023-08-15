@@ -18,21 +18,35 @@ package io.dingodb.calcite.stats;
 
 import com.fasterxml.jackson.core.Base64Variant;
 import com.fasterxml.jackson.core.Base64Variants;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.sql.SqlKind;
 
 import java.nio.ByteBuffer;
 
 public class CountMinSketch implements Cloneable, CalculateStatistic {
 
+    @Getter
+    @Setter
     private String schemaName;
 
+    @Getter
+    @Setter
     private String tableName;
 
+    @Getter
+    @Setter
     private String columnName;
 
+    @Getter
+    @Setter
     private long totalCount;
+    @Getter
+    @Setter
     private long nullCount;
 
+    @Getter
+    @Setter
     private int index;
 
     private static final float DEFAULT_DELTA = 0.01f;
@@ -292,49 +306,5 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
             e.printStackTrace();
         }
         return o;
-    }
-
-    public String getSchemaName() {
-        return schemaName;
-    }
-
-    public String getTableName() {
-        return tableName;
-    }
-
-    public String getColumnName() {
-        return columnName;
-    }
-
-    public void setColumnName(String columnName) {
-        this.columnName = columnName;
-    }
-
-    public void setSchemaName(String schemaName) {
-        this.schemaName = schemaName;
-    }
-
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
-    }
-
-    public void setTotalCount(long totalCount) {
-        this.totalCount = totalCount;
-    }
-
-    public void setNullCount(long nullCount) {
-        this.nullCount = nullCount;
-    }
-
-    public int getIndex() {
-        return index;
-    }
-
-    public long getTotalCount() {
-        return totalCount;
-    }
-
-    public long getNullCount() {
-        return nullCount;
     }
 }

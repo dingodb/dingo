@@ -26,7 +26,8 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 
 public class SqlAlterTableDistribution extends SqlAlterTable {
 
-    private static final SqlOperator OPERATOR = new SqlSpecialOperator("ALTER TABLE ADD PARTITION", SqlKind.ALTER_TABLE);
+    private static final SqlOperator OPERATOR = new SqlSpecialOperator("ALTER TABLE ADD PARTITION",
+        SqlKind.ALTER_TABLE);
 
     public static enum Op {
         ADD
