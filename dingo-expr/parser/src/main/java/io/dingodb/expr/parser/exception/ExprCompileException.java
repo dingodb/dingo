@@ -16,7 +16,7 @@
 
 package io.dingodb.expr.parser.exception;
 
-public class ExprCompileException extends Exception {
+public class ExprCompileException extends RuntimeException {
     private static final long serialVersionUID = 2987733189942293175L;
 
     /**

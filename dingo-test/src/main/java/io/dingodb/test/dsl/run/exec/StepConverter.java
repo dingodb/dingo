@@ -66,12 +66,12 @@ public class StepConverter implements StepVisitor<Exec> {
 
     @Override
     public Exec visit(@NonNull SqlStringStep step) {
-        return new ExecSql(step.getSqlString(), checkerConverter.visit(step.getChecker()));
+        return new ExecSql(step.getSqlString(), checkerConverter.safeVisit(step.getChecker()));
     }
 
     @Override
     public Exec visit(@NonNull SqlFileStep step) {
-        return new ExecSql(ReadString(step.getSqlFile()), checkerConverter.visit(step.getChecker()));
+        return new ExecSql(ReadString(step.getSqlFile()), checkerConverter.safeVisit(step.getChecker()));
     }
 
     @Override
@@ -79,6 +79,6 @@ public class StepConverter implements StepVisitor<Exec> {
         return new ExecSql(ReadString(ResourceFileUtils.getResourceFile(
             basePath + "/" + step.getFileName(),
             callerClass
-        )), checkerConverter.visit(step.getChecker()));
+        )), checkerConverter.safeVisit(step.getChecker()));
     }
 }

@@ -179,13 +179,13 @@ public class BasicDmlCases extends SqlTestCaseJavaBuilder {
             .custom(context -> {
                 try (Statement statement = context.getStatement()) {
                     statement.addBatch(
-                        context.transSql("insert into {table} values" +
-                            "(14, 'Alice', 14.0)")
+                        context.transSql("insert into {table} values"
+                            + "(14, 'Alice', 14.0)")
                     );
                     statement.addBatch(
-                        context.transSql("insert into {table} values" +
-                            "(15, 'Betty', 15.0)," +
-                            "(16, 'Cindy', 16.0)")
+                        context.transSql("insert into {table} values"
+                            + "(15, 'Betty', 15.0),"
+                            + "(16, 'Cindy', 16.0)")
                     );
                     int[] count = statement.executeBatch();
                     assertThat(count).isEqualTo(new int[]{1, 2});

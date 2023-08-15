@@ -32,7 +32,6 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.aggregate.AbstractAgg;
 import io.dingodb.exec.aggregate.Agg;
-import io.dingodb.exec.expr.ExprCodeType;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.table.PartInKvStore;
 import io.dingodb.exec.utils.SchemaWrapperUtils;
@@ -142,9 +141,9 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
                 filterInputSchema = schema;
             }
             if (filter != null) {
-                ExprCodeType ect = filter.getCoding(filterInputSchema, getParasType());
-                if (ect != null) {
-                    builder.expression(ect.getCode());
+                byte[] code = filter.getCoding(filterInputSchema, getParasType());
+                if (code != null) {
+                    builder.expression(code);
                     filter = null;
                 }
             }

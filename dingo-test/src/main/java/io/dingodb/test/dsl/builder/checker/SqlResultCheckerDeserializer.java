@@ -42,6 +42,8 @@ public class SqlResultCheckerDeserializer extends StdDeserializer<SqlResultCheck
         JsonNode jsonNode = parser.readValueAsTree();
         if (jsonNode.isTextual()) {
             return new SqlCsvFileNameResultChecker(jsonNode.asText());
+        } else if (jsonNode.isIntegralNumber()) {
+            return new SqlCountResultChecker(jsonNode.asInt());
         } else if (jsonNode.isArray()) {
             ArrayNode arrayNode = (ArrayNode) jsonNode;
             List<String> lines = new LinkedList<>();

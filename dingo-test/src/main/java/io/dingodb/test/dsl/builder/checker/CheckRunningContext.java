@@ -39,7 +39,7 @@ public class CheckRunningContext {
     private final String info;
 
     private void run(SqlChecker checker) throws SQLException {
-        SqlCheckerConverter.of(null, null).visit(checker).check(
+        SqlCheckerConverter.of(null, null).safeVisit(checker).check(
             new CheckContext(statement, executeReturnedValue, info));
     }
 

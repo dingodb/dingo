@@ -22,6 +22,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public interface SqlCheckerVisitor<T> {
     T visit(@NonNull SqlObjectResultChecker sqlChecker);
 
+    T visit(@NonNull SqlCountResultChecker sqlChecker);
+
     T visit(@NonNull SqlCsvStringResultChecker sqlChecker);
 
     T visit(@NonNull SqlCsvFileResultChecker sqlChecker);
@@ -32,7 +34,7 @@ public interface SqlCheckerVisitor<T> {
 
     T visit(@NonNull SqlResultDumper sqlChecker);
 
-    default T visit(@Nullable SqlChecker sqlChecker) {
+    default @Nullable T safeVisit(@Nullable SqlChecker sqlChecker) {
         return sqlChecker != null ? sqlChecker.accept(this) : null;
     }
 }

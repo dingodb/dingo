@@ -22,11 +22,15 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.fun.DingoFunFactory;
 import io.dingodb.exec.type.converter.ExprConverter;
 import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.parser.ExprCompiler;
 import io.dingodb.expr.parser.exception.ExprCompileException;
 import io.dingodb.expr.parser.exception.ExprParseException;
 import io.dingodb.expr.parser.parser.DingoExprCompiler;
+import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.RtExpr;
 import lombok.Getter;
+
+import java.io.ByteArrayOutputStream;
 
 public class SqlExpr {
     private static final DingoExprCompiler compiler = new DingoExprCompiler(
@@ -56,13 +60,16 @@ public class SqlExpr {
         return compiler.parse(exprString);
     }
 
-    public ExprCodeType getCoding(DingoType tupleType, DingoType parasType) {
+    public byte[] getCoding(DingoType tupleType, DingoType parasType) {
         try {
-            ExprCodeVisitor visitor = new ExprCodeVisitor(
-                new SqlExprCompileContext(tupleType, parasType),
-                etx
-            );
-            return getExpr().accept(visitor);
+            CompileContext context = new SqlExprCompileContext(tupleType, parasType);
+            ExprCompiler exprCompiler = new ExprCompiler(context);
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            EvalSerializer serializer = new EvalSerializer(os);
+            if (getExpr().accept(exprCompiler).accept(serializer)) {
+                return os.toByteArray();
+            }
+            return null;
         } catch (ExprParseException e) {
             throw new IllegalStateException(e);
         }
