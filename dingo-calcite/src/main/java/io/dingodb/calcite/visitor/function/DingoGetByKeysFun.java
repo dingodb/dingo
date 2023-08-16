@@ -34,6 +34,7 @@ import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.EmptySourceOperator;
 import io.dingodb.exec.operator.GetByKeysOperator;
+import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
 import io.dingodb.exec.partition.PartitionStrategy;
 import io.dingodb.exec.partition.RangeStrategy;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -56,7 +57,7 @@ public final class DingoGetByKeysFun {
         final TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        final PartitionStrategy<CommonId, byte[]> ps = new RangeStrategy(td, distributions);
+        final PartitionStrategy<CommonId, byte[]> ps = DingoPartitionStrategyFactory.createPartitionStrategy(td, distributions);
         final List<Output> outputs = new LinkedList<>();
         KeyValueCodec codec = TableUtils.getKeyValueCodecForTable(td);
         List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(rel.getPoints(), td);

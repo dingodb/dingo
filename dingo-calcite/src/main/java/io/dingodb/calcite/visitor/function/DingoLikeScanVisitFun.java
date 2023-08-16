@@ -34,6 +34,7 @@ import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.LikeScanOperator;
+import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
 import io.dingodb.exec.partition.PartitionStrategy;
 import io.dingodb.exec.partition.RangeStrategy;
 
@@ -57,7 +58,7 @@ public final class DingoLikeScanVisitFun {
         }
         NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        final PartitionStrategy<CommonId, byte[]> ps = new RangeStrategy(td, distributions);
+        final PartitionStrategy<CommonId, byte[]> ps = DingoPartitionStrategyFactory.createPartitionStrategy(td, distributions);
 
         List<Output> outputs = new ArrayList<>();
 

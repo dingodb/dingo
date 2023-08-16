@@ -32,6 +32,7 @@ import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.PartRangeDeleteOperator;
+import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
 import io.dingodb.exec.partition.PartitionStrategy;
 import io.dingodb.exec.partition.RangeStrategy;
 
@@ -54,7 +55,7 @@ public final class DingoRangeDeleteVisitFun {
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
         NavigableSet<RangeDistribution> distributions;
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
-        PartitionStrategy<CommonId, byte[]> ps = new RangeStrategy(td, ranges);
+        final PartitionStrategy<CommonId, byte[]> ps = DingoPartitionStrategyFactory.createPartitionStrategy(td, ranges);
 
         if (rel.isNotBetween()) {
             distributions = new TreeSet<>(RangeUtils.rangeComparator());
