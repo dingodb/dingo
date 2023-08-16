@@ -30,6 +30,7 @@ import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.RangeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -91,11 +92,11 @@ public class RangeStrategy extends PartitionStrategy<CommonId, byte[]> {
             .withEnd(withEnd)
             .build();
         NavigableSet<RangeDistribution> ranges = RangeUtils.getSubRangeDistribution(this.ranges.values(), range, 0);
-        Iterator<RangeDistribution> iterator = ranges.descendingIterator();
-        iterator.next();
-        while (iterator.hasNext()) {
-            iterator.next().setWithEnd(true);
-        }
+        ranges.descendingSet().stream().skip(1).forEach(rd -> {
+            if (Arrays.equals(rd.getEndKey(), ranges.last().getEndKey())) {
+                rd.setWithEnd(true);
+            }
+        });
         return ranges;
     }
 
