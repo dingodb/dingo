@@ -6,9 +6,6 @@ plugins {
     id "com.github.johnrengelman.shadow"
 }
 
-group 'io.dingodb'
-version '0.6.0-SNAPSHOT'
-
 repositories {
     mavenCentral()
 }
