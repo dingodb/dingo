@@ -79,6 +79,15 @@ public final class AssertResultSet {
         return this;
     }
 
+    public AssertResultSet rowCount(int rowCount) throws SQLException {
+        int count = 0;
+        while (instance.next()) {
+            ++count;
+        }
+        assertThat(count).isEqualTo(rowCount);
+        return this;
+    }
+
     @SuppressWarnings("UnusedReturnValue")
     public AssertResultSet isRecordsInOrder(List<Object[]> target) throws SQLException {
         int count = 0;

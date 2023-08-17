@@ -21,6 +21,7 @@ import com.google.common.collect.Iterators;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.test.dsl.builder.checker.SqlCheckerVisitor;
+import io.dingodb.test.dsl.builder.checker.SqlCountResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlCsvFileNameResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlCsvFileResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlCsvStringResultChecker;
@@ -75,6 +76,11 @@ public class SqlCheckerConverter implements SqlCheckerVisitor<Check> {
     @Override
     public Check visit(@NonNull SqlObjectResultChecker sqlChecker) {
         return new ObjectResultCheck(sqlChecker.getColumnLabels(), sqlChecker.getTuples());
+    }
+
+    @Override
+    public Check visit(@NonNull SqlCountResultChecker sqlChecker) {
+        return new CountResultCheck(sqlChecker.getRowCount());
     }
 
     @Override

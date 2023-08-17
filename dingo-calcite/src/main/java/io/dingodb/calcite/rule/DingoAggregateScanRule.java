@@ -20,7 +20,6 @@ import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.SqlExprUtils;
-import io.dingodb.exec.expr.ExprCodeType;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
@@ -41,10 +40,10 @@ public class DingoAggregateScanRule extends RelRule<RelRule.Config> {
         RelOptCluster cluster = aggregate.getCluster();
         RexNode filter = scan.getFilter();
         if (filter != null) {
-            ExprCodeType ect = SqlExprUtils.toSqlExpr(filter)
+            byte[] code = SqlExprUtils.toSqlExpr(filter)
                 .getCoding(DefinitionMapper.mapToDingoType(scan.getTableType()), null);
             // Do not push-down if the filter can not be pushed down.
-            if (ect == null) {
+            if (code == null) {
                 return;
             }
         }

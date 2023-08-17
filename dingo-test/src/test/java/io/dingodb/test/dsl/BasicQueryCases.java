@@ -44,6 +44,9 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
         table("i4k_vs0_2", file("i4k_vs0_2/create.sql"))
             .init(file("i4k_vs0_2/data_with_null.sql"), 1);
 
+        table("i4k_vs0_i40_f80_vs0", file("i4k_vs0_i40_f80_vs0/create.sql"))
+            .init(file("i4k_vs0_i40_f80_vs0/data.sql"), 9);
+
         table(
             "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0",
             file("i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0/create.sql")
@@ -556,8 +559,8 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
         test("Aggregation of multiple result")
             .use("table", "i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0")
             .step(
-                "select avg(age) aa, min(amount) ma, address from {table}" +
-                    " where id in (1,3,5,7,9,13,35) or name<>'zhangsan' group by address order by ma limit 2",
+                "select avg(age) aa, min(amount) ma, address from {table}"
+                    + " where id in (1,3,5,7,9,13,35) or name<>'zhangsan' group by address order by ma limit 2",
                 csv(
                     "AA, MA, ADDRESS",
                     "INT, DOUBLE, STRING",
@@ -569,8 +572,8 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
         test("Aggregation")
             .use("table", "i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0")
             .step(
-                "select address, sum(amount) sa from {table}" +
-                    " where address between 'C' and 'c' group by address",
+                "select address, sum(amount) sa from {table}"
+                    + " where address between 'C' and 'c' group by address",
                 csv(
                     "address, sa",
                     "STRING, DOUBLE",
@@ -583,12 +586,12 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
         test("Root selection")
             .step("create table {table}(name varchar(32) not null, age int, amount double, primary key(name))")
             .step(
-                "insert into {table} values\n" +
-                    "('Alice', 18, 3.5),\n" +
-                    "('Betty', 22, 4.1),\n" +
-                    "('Cindy', 39, 4.6),\n" +
-                    "('Doris', 25, 5.2),\n" +
-                    "('Emily', 24, 5.8)",
+                "insert into {table} values\n"
+                    + "('Alice', 18, 3.5),\n"
+                    + "('Betty', 22, 4.1),\n"
+                    + "('Cindy', 39, 4.6),\n"
+                    + "('Doris', 25, 5.2),\n"
+                    + "('Emily', 24, 5.8)",
                 count(5)
             ).step(
                 "select name from {table} order by age",
@@ -637,5 +640,19 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                     "7, yamaha, 76, 2.3, beijing changyang, 1949-01-01, 00:30:08, 2022-12-01 01:02:03, false"
                 )
             );
+
+        test("Select with limit 0")
+            .use("table", "i4k_vs0_i40_f80_vs0")
+            .step(
+                "select id, name, age, amount, address from {table} limit 0",
+                csv(
+                    "id, name, age, amount, address",
+                    "INT, STRING, INT, DOUBLE, STRING"
+                )
+            );
+
+        test("Select with limit")
+            .use("table", "i4k_vs0_i40_f80_vs0")
+            .step("select * from {table} limit 3", rows(3));
     }
 }
