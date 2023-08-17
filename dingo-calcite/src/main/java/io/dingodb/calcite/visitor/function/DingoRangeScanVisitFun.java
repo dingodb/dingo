@@ -36,6 +36,7 @@ import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.PartRangeScanOperator;
+import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
 import io.dingodb.exec.partition.PartitionStrategy;
 import io.dingodb.exec.partition.RangeStrategy;
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +66,7 @@ public final class DingoRangeScanVisitFun {
 
         NavigableSet<RangeDistribution> distributions;
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
-        PartitionStrategy<CommonId, byte[]> ps = new RangeStrategy(td, ranges);
+        PartitionStrategy<CommonId, byte[]> ps = DingoPartitionStrategyFactory.createPartitionStrategy(td, ranges);
 
         if (rel.isNotBetween()) {
             distributions = new TreeSet<>(RangeUtils.rangeComparator());

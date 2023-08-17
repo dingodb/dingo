@@ -42,6 +42,7 @@ import io.dingodb.exec.operator.HashOperator;
 import io.dingodb.exec.operator.PartitionOperator;
 import io.dingodb.exec.operator.hash.HashStrategy;
 import io.dingodb.exec.operator.hash.SimpleHashStrategy;
+import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
 import io.dingodb.exec.partition.PartitionStrategy;
 import io.dingodb.exec.partition.RangeStrategy;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -121,7 +122,7 @@ public class DingoStreamingConverterVisitFun {
         final TableInfo tableInfo = MetaServiceUtils.getTableInfo(partition.getTable());
         final TableDefinition td = TableUtils.getTableDefinition(partition.getTable());
         NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
-        final PartitionStrategy<CommonId, byte[]> ps = new RangeStrategy(td, distributions);
+        final PartitionStrategy<CommonId, byte[]> ps = DingoPartitionStrategyFactory.createPartitionStrategy(td, distributions);
         for (Output input : inputs) {
             Task task = input.getTask();
             PartitionOperator operator = new PartitionOperator(tableInfo.getId(), ps, td);

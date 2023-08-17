@@ -35,6 +35,7 @@ import java.util.function.Function;
 )
 @JsonSubTypes({
     @JsonSubTypes.Type(RangeStrategy.class),
+    @JsonSubTypes.Type(HashRangeStrategy.class),
 })
 public abstract class PartitionStrategy<I, K> {
 
