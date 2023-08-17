@@ -16,17 +16,22 @@
 
 package io.dingodb.client.common;
 
+import io.dingodb.common.ConsistentHashing;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.index.Index;
 import io.dingodb.sdk.common.table.RangeDistribution;
 import io.dingodb.sdk.common.utils.ByteArrayUtils;
 import io.dingodb.sdk.service.meta.AutoIncrementService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+import java.util.Map;
 import java.util.NavigableMap;
+import java.util.TreeMap;
 
 import static io.dingodb.common.util.ByteArrayUtils.SKIP_LONG_POS;
 
+@Slf4j
 @AllArgsConstructor
 public class IndexInfo {
 
@@ -41,7 +46,34 @@ public class IndexInfo {
     public final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution;
 
     public DingoCommonId calcRegionId(byte[] key) {
-        // skip the first 8 bytes when comparing byte[] (id)
-        return rangeDistribution.floorEntry(new ByteArrayUtils.ComparableByteArray(key, SKIP_LONG_POS)).getValue().getId();
+        String strategy = index.getIndexPartition().getFuncName().toUpperCase();
+        DingoCommonId commonId = null;
+        switch (strategy) {
+            case "RANGE":
+                // skip the first 8 bytes when comparing byte[] (id)
+                commonId = rangeDistribution.floorEntry(new ByteArrayUtils.ComparableByteArray(key, SKIP_LONG_POS)).getValue().getId();
+                break;
+            case "HASH":
+                ConsistentHashing<Long> hashRing = new ConsistentHashing<>(3);
+                NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> partRanges = new TreeMap<>();
+                for (Map.Entry<ByteArrayUtils.ComparableByteArray, RangeDistribution> entry : rangeDistribution.entrySet()) {
+                    RangeDistribution value = entry.getValue();
+                    log.trace("entityId:" + value.getId().entityId() + ",parentId:" + value.getId().parentId());
+                    hashRing.addNode(value.getId().parentId());
+                }
+                Long selectNode = hashRing.getNode(key);
+                for (Map.Entry<ByteArrayUtils.ComparableByteArray, RangeDistribution> entry : rangeDistribution.entrySet()) {
+                    ByteArrayUtils.ComparableByteArray keyBytes = entry.getKey();
+                    RangeDistribution value = entry.getValue();
+                    if (value.getId().parentId() == selectNode.longValue()) {
+                        partRanges.put(keyBytes, value);
+                    }
+                }
+                commonId = partRanges.floorEntry(new ByteArrayUtils.ComparableByteArray(key, SKIP_LONG_POS)).getValue().getId();
+                break;
+            default:
+                throw new IllegalStateException("Unsupported " + strategy);
+        }
+        return commonId;
     }
 }

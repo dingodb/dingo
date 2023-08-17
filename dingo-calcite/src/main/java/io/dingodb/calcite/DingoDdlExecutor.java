@@ -554,6 +554,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         String strategy = partDefinition.getFuncName().toUpperCase();
         switch (strategy) {
             case "RANGE":
+            case "HASH":
                 DefinitionUtils.checkAndConvertRangePartition(tableDefinition);
                 break;
             default:
