@@ -57,7 +57,7 @@ public class StatsNormal implements Cloneable {
         this.columnName = columnName;
         this.totalCount = totalRowCount;
         this.type = dingoType;
-        if (totalRowCount < 10000) {
+        if (totalRowCount < 100000) {
             hashSet = new HashSet();
         } else {
             hash = Hashing.murmur3_128(12345678);
@@ -136,7 +136,7 @@ public class StatsNormal implements Cloneable {
             hashSet.add(val);
             return;
         }
-        if (type instanceof DoubleType || type instanceof FloatType) {
+        if (type instanceof DoubleType) {
             addDoubleVal((Double)val);
         } else if (type instanceof IntegerType) {
             addIntVal((Integer) val);
@@ -150,6 +150,17 @@ public class StatsNormal implements Cloneable {
             addTimeVal((Time) val);
         } else if (type instanceof TimestampType) {
             addTimestampVal((Timestamp) val);
+        } else if (type instanceof FloatType) {
+            addFloatVal((Float) val);
+        }
+    }
+
+    public void clear() {
+        if (hashSet != null) {
+            hashSet.clear();
+        }
+        if (hll != null) {
+            hll.clear();
         }
     }
 
@@ -176,14 +187,8 @@ public class StatsNormal implements Cloneable {
         }
     }
 
-    public StatsNormal clone() {
-        StatsNormal o = null;
-        try {
-            o = (StatsNormal) super.clone();
-        } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
-        }
-        return o;
+    public StatsNormal copy() {
+        return new StatsNormal(columnName, totalCount, type);
     }
 
     public String getColumnName() {

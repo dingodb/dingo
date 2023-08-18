@@ -21,6 +21,7 @@ import io.dingodb.calcite.grammar.SqlUserDefinedOperators;
 import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
@@ -47,7 +48,7 @@ import java.util.TimeZone;
 
 import static io.dingodb.calcite.DingoParser.PARSER_CONFIG;
 
-
+@Slf4j
 // These are static for every sql parsing.
 public final class DingoParserContext implements Context {
     @Getter
@@ -133,8 +134,10 @@ public final class DingoParserContext implements Context {
 
     private static void eliminateUserOperator(SqlStdOperatorTable tableInstance) {
         try {
-            Field caseSensitiveOperators = ReflectiveSqlOperatorTable.class.getDeclaredField("caseSensitiveOperators");
-            Field caseInsensitiveOperators = ReflectiveSqlOperatorTable.class.getDeclaredField("caseInsensitiveOperators");
+            Field caseSensitiveOperators = ReflectiveSqlOperatorTable
+                .class.getDeclaredField("caseSensitiveOperators");
+            Field caseInsensitiveOperators = ReflectiveSqlOperatorTable
+                .class.getDeclaredField("caseInsensitiveOperators");
             caseSensitiveOperators.setAccessible(true);
             caseInsensitiveOperators.setAccessible(true);
             Multimap caseSensitiveMap = (Multimap) caseSensitiveOperators.get(tableInstance);
@@ -156,6 +159,7 @@ public final class DingoParserContext implements Context {
                 }
             }
         } catch (Exception e1) {
+            log.error(e1.getMessage(), e1);
         }
     }
 
