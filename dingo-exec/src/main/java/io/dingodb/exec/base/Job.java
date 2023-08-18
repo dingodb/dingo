@@ -61,7 +61,7 @@ public interface Job {
         return getTasks().isEmpty();
     }
 
-    default Status getStatus() {
+    default int getStatus() {
         return getRoot().getStatus();
     }
 

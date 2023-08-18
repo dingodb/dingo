@@ -853,8 +853,13 @@ public class EvalSerializer implements EvalVisitor<Boolean> {
             default:
                 return null;
         }
-        CodecUtils.encodeVarInt(os, eval.getIndex());
-        return true;
+        int index = eval.getIndex();
+        if (index >= 0) {
+            CodecUtils.encodeVarInt(os, eval.getIndex());
+            return true;
+        }
+        // TODO: SQL parameters are not supported currently.
+        return false;
     }
 
     @Override

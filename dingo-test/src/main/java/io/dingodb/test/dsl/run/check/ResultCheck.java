@@ -31,6 +31,7 @@ public abstract class ResultCheck implements Check {
 
     @Override
     public void check(@NonNull CheckContext context) throws SQLException {
+        Check.super.check(context);
         assertThat(context.getExecuteReturnedValue()).isTrue();
         try (ResultSet resultSet = context.getStatement().getResultSet()) {
             checkResultSet(resultSet, context.getInfo());

@@ -120,6 +120,11 @@ public class SqlRunningTest extends SqlTestRunner {
         return getTests(SqlTestCaseYamlBuilder.of("i40_vsk/query_cases.yml"));
     }
 
+    @TestFactory
+    public Stream<DynamicTest> testException() {
+        return getTests(new ExceptionCases());
+    }
+
     @Disabled
     @TestFactory
     public Stream<DynamicTest> testStressDml() {

@@ -17,7 +17,7 @@
 package io.dingodb.test.dsl.builder.checker;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
 
 public interface SqlCheckerVisitor<T> {
     T visit(@NonNull SqlObjectResultChecker sqlChecker);
@@ -32,9 +32,11 @@ public interface SqlCheckerVisitor<T> {
 
     T visit(@NonNull SqlUpdateCountChecker sqlChecker);
 
+    T visit(@NonNull SqlExceptionChecker sqlChecker);
+
     T visit(@NonNull SqlResultDumper sqlChecker);
 
-    default @Nullable T safeVisit(@Nullable SqlChecker sqlChecker) {
+    default @PolyNull T safeVisit(@PolyNull SqlChecker sqlChecker) {
         return sqlChecker != null ? sqlChecker.accept(this) : null;
     }
 }

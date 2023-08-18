@@ -246,6 +246,13 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                 )
             );
 
+        test("Select bool")
+            .use("table", "i4k_vs_i40_f80_vs0_l0")
+            .step(
+                "select * from {table}",
+                csv(file("i4k_vs_i40_f80_vs0_l0/data.csv"))
+            );
+
         test("Cast double to int")
             .use("table", "i4k_vs_f80")
             .step("select id, name, cast(amount as int) as amount from {table}",
@@ -654,5 +661,18 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
         test("Select with limit")
             .use("table", "i4k_vs0_i40_f80_vs0")
             .step("select * from {table} limit 3", rows(3));
+
+        test("New")
+            .use("table", "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0")
+            .step(
+                "select"
+                    + " format(avg(amount), 2) aa,"
+                    + " format(sum(amount), 2) sa,"
+                    + " max(create_time) mc,"
+                    + " min(update_time) mu"
+                    + " from {table}"
+                    + " where age not between 0 and 18",
+                dump()
+            );
     }
 }
