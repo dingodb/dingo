@@ -1,0 +1,70 @@
+tables:
+  i4k_vs0:
+    create: { file: create.sql }
+    init: { file: data.sql }
+cases:
+  - name: Like 1
+    use:
+      table: i4k_vs0
+    steps:
+      - sql: select * from {table} where name like '%abc%C%'
+        result:
+          - id, name
+          - INT, STRING
+          - 1, 1abcdec
+          - 2, 2abcdecf
+          - 3, 3abcdcf
+          - 4, 4abcdcef
+  - name: Like 2
+    use:
+      table: i4k_vs0
+    steps:
+      - sql: select * from {table} where name like '_abc_C_'
+        result:
+          - id, name
+          - INT, STRING
+          - 3, 3abcdcf
+  - name: Like 3
+    use:
+      table: i4k_vs0
+    steps:
+      - sql: select * from {table} where name like '[a-zA-Z]C'
+        result:
+          - id, name
+          - INT, STRING
+          - 5, sc
+  - name: Like 4
+    use:
+      table: i4k_vs0
+    steps:
+      - sql: select * from {table} where name like '[^a-z]c'
+        result:
+          - id, name
+          - INT, STRING
+          - 6, 6c
+  - name: Like 5
+    use:
+      table: i4k_vs0
+    steps:
+      - sql: select * from {table} where name like '%a\%b_'
+        result:
+          - id, name
+          - INT, STRING
+          - 7, 7a%bc
+  - name: Like 6
+    use:
+      table: i4k_vs0
+    steps:
+      - sql: select * from {table} where name like '_a\_b%'
+        result:
+          - id, name
+          - INT, STRING
+          - 8, 8a_bcd
+  - name: Like binary
+    use:
+      table: i4k_vs0
+    steps:
+      - sql: select * from {table} where name like binary '%abc%C%'
+        result:
+          - id, name
+          - INT, STRING

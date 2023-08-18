@@ -1,0 +1,53 @@
+tables:
+  i40_vsk:
+    create: { file: create.sql }
+    init: { file: data.sql }
+cases:
+  - name: Like 1
+    use:
+      table: i40_vsk
+    steps:
+      - sql: select * from {table} where name like 'abc%c%'
+        result:
+          - id, name
+          - INT, STRING
+          - 1, abcdec
+          - 2, abcdecf
+          - 3, abcdcf
+          - 4, abcdcef
+  - name: Like 2
+    use:
+      table: i40_vsk
+    steps:
+      - sql: select * from {table} where name like 'abc_C_'
+        result:
+          - id, name
+          - INT, STRING
+          - 3, abcdcf
+  - name: Like 3
+    use:
+      table: i40_vsk
+    steps:
+      - sql: select * from {table} where name like 'a[a-zA-Z]C'
+        result:
+          - id, name
+          - INT, STRING
+          - 5, asc
+  - name: Like 4
+    use:
+      table: i40_vsk
+    steps:
+      - sql: select * from {table} where name like 'a[^a-z]c'
+        result:
+          - id, name
+          - INT, STRING
+          - 6, a6c
+  - name: Like 5
+    use:
+      table: i40_vsk
+    steps:
+      - sql: select * from {table} where id like '1%'
+        result:
+          - id, name
+          - INT, STRING
+          - 1, abcdec

@@ -28,6 +28,7 @@ import io.dingodb.expr.parser.exception.ExprParseException;
 import io.dingodb.expr.parser.parser.DingoExprCompiler;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.RtExpr;
+import io.dingodb.expr.runtime.eval.Eval;
 import lombok.Getter;
 
 import java.io.ByteArrayOutputStream;
@@ -65,9 +66,12 @@ public class SqlExpr {
             CompileContext context = new SqlExprCompileContext(tupleType, parasType);
             ExprCompiler exprCompiler = new ExprCompiler(context);
             ByteArrayOutputStream os = new ByteArrayOutputStream();
-            EvalSerializer serializer = new EvalSerializer(os);
-            if (getExpr().accept(exprCompiler).accept(serializer)) {
-                return os.toByteArray();
+            Eval eval = getExpr().accept(exprCompiler);
+            if (eval != null) {
+                EvalSerializer serializer = new EvalSerializer(os);
+                if (eval.accept(serializer)) {
+                    return os.toByteArray();
+                }
             }
             return null;
         } catch (ExprParseException e) {
