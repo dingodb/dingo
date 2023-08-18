@@ -109,7 +109,9 @@ public class DingoGetByIndexRule extends ConverterRule {
                 scan.getFilter(),
                 scan.getSelection(),
                 selectedIndex.getName(),
-                indexValueMapSet.filterIndices(indices)
+                selectedIndex.isUnique(),
+                indexValueMapSet.filterIndices(indices),
+                selectedIndex.getColumns()
             );
         }
         return null;

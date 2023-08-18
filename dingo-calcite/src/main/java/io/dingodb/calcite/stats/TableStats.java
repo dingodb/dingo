@@ -54,7 +54,7 @@ public class TableStats {
         }
     }
 
-    public TableStats(String schemaName, String tableName){
+    public TableStats(String schemaName, String tableName) {
         this.histogramList = new ArrayList<>();
         this.countMinSketchList = new ArrayList<>();
         this.statsNormalList = new ArrayList<>();
@@ -64,6 +64,10 @@ public class TableStats {
 
     public void setNdv() {
         statsNormalList.forEach(StatsNormal::setNdv);
+    }
+
+    public void clear() {
+        statsNormalList.forEach(StatsNormal::clear);
     }
 
     public static void mergeStats(List<TableStats> tableStatsList) {
@@ -80,9 +84,10 @@ public class TableStats {
         // get first col histogram
         if (tableStatsList.get(0).histogramList.size() > 0) {
             List<Histogram> firstHistogramList = tableStatsList.get(0).histogramList;
-            for (Histogram colHistogram : firstHistogramList) {
+            for (int j = 0; j < firstHistogramList.size(); j ++) {
+                Histogram colHistogram = firstHistogramList.get(j);
                 for (int i = 1; i < tableStatsList.size(); i++) {
-                    Histogram that = tableStatsList.get(i).getHistogramList().get(i);
+                    Histogram that = tableStatsList.get(i).getHistogramList().get(j);
                     colHistogram.merge(that);
                 }
             }
@@ -91,9 +96,10 @@ public class TableStats {
         // get first col cmsketch
         if (tableStatsList.get(0).countMinSketchList.size() > 0) {
             List<CountMinSketch> firstCmSketchList = tableStatsList.get(0).countMinSketchList;
-            for (CountMinSketch countMinSketch : firstCmSketchList) {
+            for (int j = 0; j < firstCmSketchList.size(); j ++) {
+                CountMinSketch countMinSketch = firstCmSketchList.get(j);
                 for (int i = 1; i < tableStatsList.size(); i++) {
-                    CountMinSketch that = tableStatsList.get(i).countMinSketchList.get(i);
+                    CountMinSketch that = tableStatsList.get(i).countMinSketchList.get(j);
                     countMinSketch.merge(that);
                 }
             }
@@ -101,14 +107,17 @@ public class TableStats {
         // merge stats-normal
         if (tableStatsList.get(0).statsNormalList.size() > 0) {
             List<StatsNormal> firstStatsNormalList = tableStatsList.get(0).statsNormalList;
-            for (StatsNormal statsNormal : firstStatsNormalList) {
+            for (int j = 0; j < firstStatsNormalList.size(); j ++) {
+                StatsNormal statsNormal = firstStatsNormalList.get(j);
                 for (int i = 1; i < tableStatsList.size(); i++) {
-                    StatsNormal that = tableStatsList.get(i).statsNormalList.get(i);
+                    StatsNormal that = tableStatsList.get(i).statsNormalList.get(j);
                     statsNormal.merge(that);
                 }
                 statsNormal.calculateAvgColSize();
             }
         }
+
+        tableStatsList.forEach(TableStats::clear);
     }
 
     public String getIdentifier() {

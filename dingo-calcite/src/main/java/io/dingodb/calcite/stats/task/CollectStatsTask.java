@@ -68,12 +68,13 @@ public class CollectStatsTask implements Callable {
             CodecService.getDefault().createKeyValueCodec(tableId, td.getDingoType(), td.getKeyMapping())
         );
         tupleIterator = part.scan(rangeDistribution.getStartKey(), rangeDistribution.getEndKey(),
-            true, false);
-        this.minSketchList = minSketches.stream().map(CountMinSketch::clone)
+            rangeDistribution.isWithStart(), true);
+        this.minSketchList = minSketches.stream().map(CountMinSketch::copy)
             .collect(Collectors.toList());
-        columnHistogramList = columnHistograms.stream().map(Histogram::clone)
+        columnHistogramList = columnHistograms.stream().map(Histogram::copy)
             .collect(Collectors.toList());
-        statsNormalMap = statsNormals.stream().collect(Collectors.toMap(StatsNormal::getColumnName, StatsNormal::clone));
+        statsNormalMap = statsNormals.stream()
+            .collect(Collectors.toMap(StatsNormal::getColumnName, StatsNormal::copy));
     }
 
     @Override

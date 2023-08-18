@@ -57,8 +57,7 @@ public class UserDefinition extends PrivilegeDefinition {
     }
 
     public String getKey() {
-        return user +
-            "#" + host;
+        return user + "#" + host;
     }
 
 }

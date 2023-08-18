@@ -65,37 +65,26 @@ public abstract class StatsOperator {
             .orElseThrow("Cannot get region for " + tableId);
     }
 
-    public void insert(StoreInstance store, KeyValueCodec codec, List<Object[]> rowList) {
+    public void upsert(StoreInstance store, KeyValueCodec codec, List<Object[]> rowList) {
         rowList.stream().forEach(row -> {
             try {
-                store.insert(codec.encode(row));
+                KeyValue old = store.get(codec.encodeKey(row));
+                if (old == null) {
+                    store.insert(codec.encode(row));
+                } else {
+                    store.update(codec.encode(row), old);
+                }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         });
     }
 
-    public void insert(StoreInstance store, KeyValueCodec codec, Object[] row) {
-        try {
-            store.insert(codec.encode(row));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void deletePrefix(StoreInstance store, KeyValueCodec codec, Object[] key) {
-        try {
-            byte[] prefix = codec.encodeKeyPrefix(key, 2);
-            store.delete(new StoreInstance.Range(prefix, prefix, true, true));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public List<Object[]> scan(StoreInstance store, KeyValueCodec codec, byte[] startKey, byte[] endKey) {
+    public List<Object[]> scan(StoreInstance store, KeyValueCodec codec, RangeDistribution rangeDistribution) {
         try {
             Iterator<KeyValue> iterator = store.scan(
-                new StoreInstance.Range(startKey, endKey, true, false)
+                new StoreInstance.Range(rangeDistribution.getStartKey(), rangeDistribution.getEndKey(),
+                    rangeDistribution.isWithStart(), true)
             );
             List<Object[]> list = new ArrayList<>();
             while (iterator.hasNext()) {

@@ -29,8 +29,8 @@ import java.sql.SQLClientInfoException;
 
 public class SetOptionOperation implements DdlOperation {
 
-    String SQL_TEMPLATE = "UPDATE INFORMATION_SCHEMA.GLOBAL_VARIABLES " +
-        "SET VARIABLE_VALUE = 'tmpValue' WHERE VARIABLE_NAME = 'tmpName'";
+    private static final String TEMPLATE = "UPDATE INFORMATION_SCHEMA.GLOBAL_VARIABLES "
+        + "SET VARIABLE_VALUE = 'tmpValue' WHERE VARIABLE_NAME = 'tmpName'";
 
     public Connection connection;
 
@@ -42,7 +42,7 @@ public class SetOptionOperation implements DdlOperation {
 
     public SetOptionOperation(Connection connection, SqlSetOption setOption) {
         this.connection = connection;
-        this.scope = setOption.getScope() == null ? "GLOBAL": setOption.getScope().toUpperCase();
+        this.scope = setOption.getScope() == null ? "GLOBAL" : setOption.getScope().toUpperCase();
         SqlIdentifier sqlIdentifier = setOption.getName();
         if (sqlIdentifier.names.size() == 1) {
             name = sqlIdentifier.names.get(0);
@@ -80,11 +80,9 @@ public class SetOptionOperation implements DdlOperation {
                 if (!ScopeVariables.globalVariables.containsKey(name)) {
                     throw new RuntimeException(String.format(ErrorCode.ER_UNKNOWN_VARIABLES.message, name));
                 }
-                String sql = SQL_TEMPLATE.replace("tmpValue", value.toString()).replace("tmpName", name);
+                String sql = TEMPLATE.replace("tmpValue", value.toString()).replace("tmpName", name);
                 internalExecute(connection, sql);
                 ScopeVariables.globalVariables.put(name, value);
-            } else if ("EXECUTOR".equals(scope)) {
-
             }
         } catch (SQLClientInfoException e) {
             throw new RuntimeException(e);
