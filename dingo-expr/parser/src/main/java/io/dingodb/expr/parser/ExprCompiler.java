@@ -159,6 +159,7 @@ public class ExprCompiler implements ExprVisitor<Eval> {
                     default:
                         break;
                 }
+                break;
             case INDEX:
                 return IndexFactory.of(evalList.get(0), evalList.get(1));
             default:

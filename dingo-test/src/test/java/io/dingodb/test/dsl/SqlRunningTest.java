@@ -110,6 +110,16 @@ public class SqlRunningTest extends SqlTestRunner {
         return getTests(new TransferCases());
     }
 
+    @TestFactory
+    public Stream<DynamicTest> testLike() {
+        return getTests(SqlTestCaseYamlBuilder.of("i4k_vs0/query_cases.yml"));
+    }
+
+    @TestFactory
+    public Stream<DynamicTest> testLike1() {
+        return getTests(SqlTestCaseYamlBuilder.of("i40_vsk/query_cases.yml"));
+    }
+
     @Disabled
     @TestFactory
     public Stream<DynamicTest> testStressDml() {

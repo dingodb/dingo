@@ -1,4 +1,4 @@
-insert into t_like2 values
+insert into {table} values
 (1, 'abcdec'),
 (2, 'abcdecf'),
 (3, 'abcdcf'),
