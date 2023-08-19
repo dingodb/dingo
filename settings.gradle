@@ -71,4 +71,4 @@ include 'dingo-executor'
 include 'dingo-codec-api'
 include 'dingo-codec-serial'
 include 'dingo-mysql-init'
-
+include 'dingo-store-proxy'

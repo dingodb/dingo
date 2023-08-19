@@ -196,7 +196,7 @@ public class OperationService {
 
     public List<Table> getTables(String schemaName, String tableName) {
         MetaServiceClient metaService = getSubMetaService(schemaName);
-        return metaService.getTables(tableName);
+        return (List<Table>) metaService.getTableIndexes(tableName).values();
     }
 
     private MetaServiceClient getSubMetaService(String schemaName) {

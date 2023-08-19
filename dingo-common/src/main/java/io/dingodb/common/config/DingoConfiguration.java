@@ -45,6 +45,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
 @Setter
@@ -63,7 +64,7 @@ public class DingoConfiguration {
     private VariableConfiguration variable;
     private List<String> servicePkgs;
     private Map<String, Object> server;
-    private Map<String, Object> store;
+    private Map<String, Object> store = new ConcurrentHashMap<>();
     private Map<String, Object> net;
     private Map<String, Object> client;
     @JsonIgnore
@@ -92,7 +93,7 @@ public class DingoConfiguration {
     }
 
     public static synchronized void parse(final String configPath) throws Exception {
-        INSTANCE = parse(new FileInputStream(configPath), DingoConfiguration.class);
+        INSTANCE = configPath == null ? new DingoConfiguration() : parse(new FileInputStream(configPath), DingoConfiguration.class);
     }
 
     public static DingoConfiguration instance() {
@@ -211,6 +212,10 @@ public class DingoConfiguration {
         if (netConfiguration == null) {
             netConfiguration = newInstance(cls);
         }
+    }
+
+    public Map<String, Object> getStoreOrigin() {
+        return store;
     }
 
     public <T> T getStore() {

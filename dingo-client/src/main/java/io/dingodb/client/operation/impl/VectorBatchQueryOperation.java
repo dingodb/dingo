@@ -105,7 +105,7 @@ public class VectorBatchQueryOperation implements Operation {
         ).forEach(v -> result.put(v.getId(), v));
         for (Long id : ids) {
             io.dingodb.sdk.common.vector.VectorWithId withId = result.get(id);
-            if (withId == null || withId.getId() == 0) {
+            if (withId == null || withId.getId() <= 0) {
                 continue;
             }
             context.<VectorWithId[]>result()[parameters.get(id)] = new VectorWithId(
