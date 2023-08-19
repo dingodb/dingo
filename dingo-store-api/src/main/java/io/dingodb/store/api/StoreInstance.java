@@ -78,4 +78,11 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
+    default boolean insertWithIndex(Object[] record) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean insertIndex(Object[] record) {
+        throw new UnsupportedOperationException();
+    }
 }

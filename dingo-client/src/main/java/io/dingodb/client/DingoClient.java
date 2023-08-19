@@ -34,6 +34,7 @@ import io.dingodb.sdk.common.vector.VectorIndexMetrics;
 import io.dingodb.sdk.common.vector.VectorScanQuery;
 import io.dingodb.sdk.service.meta.AutoIncrementService;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,6 +48,7 @@ public class DingoClient {
     private final String schema;
 
     private OperationService operationService;
+    private IndexOperationService indexOperationService;
     private IndexService indexService;
 
     public static Integer retryTimes = 20;
@@ -62,6 +64,7 @@ public class DingoClient {
     public DingoClient(String coordinatorSvr, String schema, Integer retryTimes) {
         operationService = new OperationService(coordinatorSvr, retryTimes);
         indexService = new IndexService(coordinatorSvr, new AutoIncrementService(coordinatorSvr), retryTimes);
+        indexOperationService = new IndexOperationService(coordinatorSvr, retryTimes);
         this.schema = schema;
     }
 
@@ -124,6 +127,10 @@ public class DingoClient {
 
     public List<Boolean> upsert(String schema, String tableName, List<Record> records) {
         return operationService.exec(schema, tableName, PutOperation.getInstance(), records);
+    }
+
+    public boolean upsert(String tableName, Object[] record) {
+        return indexOperationService.exec(schema, tableName, PutOperation.getInstance(), record);
     }
 
     public List<Boolean> upsertNotStandard(String tableName, List<Record> records) {
@@ -350,7 +357,8 @@ public class DingoClient {
     }
 
     public List<VectorWithId> vectorScanQuery(String schema, String indexName, VectorScanQuery query) {
-        return indexService.exec(schema, indexName, VectorScanQueryOperation.getInstance(), query, VectorContext.builder().build());
+        List<VectorWithId> result = indexService.exec(schema, indexName, VectorScanQueryOperation.getInstance(), query, VectorContext.builder().build());
+        return query.getMaxScanCount() > result.size() ? result : result.subList(0, Math.toIntExact(query.getMaxScanCount()));
     }
 
     public VectorIndexMetrics getRegionMetrics(String schema, String indexName) {

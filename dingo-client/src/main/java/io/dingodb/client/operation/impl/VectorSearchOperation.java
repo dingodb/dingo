@@ -93,7 +93,6 @@ public class VectorSearchOperation implements Operation {
                 vectorSearch.getParameter().isWithScalarData(),
                 vectorSearch.getParameter().getSelectedKeys(),
                 vectorSearch.getParameter().getSearch(),
-                false,
                 vectorSearch.getParameter().getVectorFilter(),
                 vectorSearch.getParameter().getVectorFilterType(),
                 vectorSearch.getParameter().getCoprocessor(),

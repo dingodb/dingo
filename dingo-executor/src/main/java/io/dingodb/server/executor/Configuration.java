@@ -38,6 +38,7 @@ public class Configuration {
         try {
             DingoConfiguration.instance().setServer(Configuration.class);
             INSTANCE = DingoConfiguration.instance().getServer();
+            DingoConfiguration.instance().getStoreOrigin().put("coordinators", INSTANCE.coordinators);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

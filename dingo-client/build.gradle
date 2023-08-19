@@ -28,6 +28,9 @@ dependencies {
     api group: 'io.dingodb', name: 'dingo-sdk', version: 'dingo-sdk'.v()
 
     api project(":dingo-common")
+    implementation project(":dingo-store-api")
+    implementation project(":dingo-store-proxy")
+
     testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()
     testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: 'slf4j'.v()
 }
@@ -59,7 +62,8 @@ fatJar.dependsOn(
     ':dingo-common:jar',
     ':dingo-expr:dingo-expr-runtime:jar',
     ':dingo-expr:dingo-expr-json-runtime:jar',
-    ':dingo-serial:jar'
+    ':dingo-serial:jar',
+    ':dingo-store-proxy:jar'
 )
 
 tasks.named("build") { x ->

@@ -123,6 +123,7 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
             req.getVectorIdStart(),
             req.getIsReverseScan(),
             req.getMaxScanCount(),
+            0L, // TODO update proto
             req.getWithoutVectorData(),
             req.getWithScalarData(),
             req.getSelectedKeysList(),
