@@ -23,6 +23,7 @@ import io.dingodb.client.operation.impl.OpRange;
 import io.dingodb.client.operation.impl.OpRangeCoprocessor;
 import io.dingodb.client.operation.impl.Operation;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ConsistentHashing;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.sdk.common.DingoCommonId;
@@ -31,6 +32,7 @@ import io.dingodb.sdk.common.codec.KeyValueCodec;
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.ByteArrayUtils;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -50,7 +52,42 @@ import static io.dingodb.common.util.ByteArrayUtils.SKIP_LONG_POS;
 import static io.dingodb.sdk.common.utils.Any.wrap;
 import static io.dingodb.sdk.common.utils.ByteArrayUtils.lessThanOrEqual;
 
+@Slf4j
 public class RangeUtils {
+
+    public static final String RANGE_FUNC_NAME = "RANGE";
+    public static final String HASH_FUNC_NAME = "HASH";
+
+    public static DingoCommonId getDingoCommonId(byte[] key, String strategy, NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.sdk.common.table.RangeDistribution> rangeDistribution) {
+        DingoCommonId commonId;
+        switch (strategy) {
+            case RANGE_FUNC_NAME:
+                // skip the first 8 bytes when comparing byte[] (id)
+                commonId = rangeDistribution.floorEntry(new ByteArrayUtils.ComparableByteArray(key, SKIP_LONG_POS)).getValue().getId();
+                break;
+            case HASH_FUNC_NAME:
+                ConsistentHashing<Long> hashRing = new ConsistentHashing<>(3);
+                NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.sdk.common.table.RangeDistribution> partRanges = new TreeMap<>();
+                for (Map.Entry<ByteArrayUtils.ComparableByteArray, io.dingodb.sdk.common.table.RangeDistribution> entry : rangeDistribution.entrySet()) {
+                    io.dingodb.sdk.common.table.RangeDistribution value = entry.getValue();
+                    log.trace("entityId:" + value.getId().entityId() + ",parentId:" + value.getId().parentId());
+                    hashRing.addNode(value.getId().parentId());
+                }
+                Long selectNode = hashRing.getNode(key);
+                for (Map.Entry<ByteArrayUtils.ComparableByteArray, io.dingodb.sdk.common.table.RangeDistribution> entry : rangeDistribution.entrySet()) {
+                    ByteArrayUtils.ComparableByteArray keyBytes = entry.getKey();
+                    io.dingodb.sdk.common.table.RangeDistribution value = entry.getValue();
+                    if (value.getId().parentId() == selectNode.longValue()) {
+                        partRanges.put(keyBytes, value);
+                    }
+                }
+                commonId = partRanges.floorEntry(new ByteArrayUtils.ComparableByteArray(key, SKIP_LONG_POS)).getValue().getId();
+                break;
+            default:
+                throw new IllegalStateException("Unsupported " + strategy);
+        }
+        return commonId;
+    }
 
     public static boolean validateKeyRange(OpKeyRange keyRange) {
         return (!keyRange.getStart().userKey.isEmpty() || keyRange.withStart)
