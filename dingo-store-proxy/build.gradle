@@ -19,13 +19,6 @@ plugins {
     id 'java-library'
 }
 
-repositories {
-    mavenLocal()
-    maven {
-        url "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-    }
-}
-
 dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()

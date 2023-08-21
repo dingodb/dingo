@@ -5,14 +5,6 @@ plugins {
     id "com.github.johnrengelman.shadow" version "5.0.0"
 }
 
-repositories {
-    mavenLocal()
-    maven {
-        url "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-    }
-}
-
-
 dependencies {
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation project(':dingo-driver:dingo-driver-client')
