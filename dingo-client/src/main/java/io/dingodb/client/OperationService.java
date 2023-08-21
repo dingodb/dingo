@@ -190,11 +190,28 @@ public class OperationService {
         return metaService.dropTable(tableName);
     }
 
+    public boolean dropTables(String schema, List<String> tableNames) {
+        MetaServiceClient metaService = getSubMetaService(schema);
+        tableNames.forEach(t -> routeTables.remove(schema + "." + t));
+        return metaService.dropTables(tableNames);
+    }
+
     public Table getTableDefinition(String schemaName, String tableName) {
         return Parameters.nonNull(getRouteTable(schemaName, tableName, true), "Table not found.").definition;
     }
 
+    /**
+     * @return table + indexes
+     */
     public List<Table> getTables(String schemaName, String tableName) {
+        MetaServiceClient metaService = getSubMetaService(schemaName);
+        return metaService.getTables(tableName);
+    }
+
+    /**
+     * @return indexes
+     */
+    public List<Table> getTableIndexes(String schemaName, String tableName) {
         MetaServiceClient metaService = getSubMetaService(schemaName);
         return (List<Table>) metaService.getTableIndexes(tableName).values();
     }

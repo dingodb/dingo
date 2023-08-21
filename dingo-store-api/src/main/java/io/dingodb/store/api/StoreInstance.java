@@ -85,4 +85,12 @@ public interface StoreInstance {
     default boolean insertIndex(Object[] record) {
         throw new UnsupportedOperationException();
     }
+
+    default boolean deleteWithIndex(Object[] key) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean deleteIndex(Object[] key) {
+        throw new UnsupportedOperationException();
+    }
 }

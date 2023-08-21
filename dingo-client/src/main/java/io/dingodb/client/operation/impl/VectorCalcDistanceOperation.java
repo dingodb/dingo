@@ -18,7 +18,19 @@ package io.dingodb.client.operation.impl;
 
 import io.dingodb.client.OperationContext;
 import io.dingodb.client.common.IndexInfo;
+import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.utils.Any;
+import io.dingodb.sdk.common.vector.VectorCalcDistance;
+import io.dingodb.sdk.common.vector.VectorDistanceRes;
+
+import java.io.IOException;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.TreeSet;
+
+import static io.dingodb.sdk.common.utils.Any.wrap;
 
 public class VectorCalcDistanceOperation implements Operation {
 
@@ -30,17 +42,37 @@ public class VectorCalcDistanceOperation implements Operation {
 
     @Override
     public Fork fork(Any parameters, IndexInfo indexInfo) {
+        VectorCalcDistance calcDistance = parameters.getValue();
+        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
+        Map<DingoCommonId, VectorCalcDistance> subTaskMap = new HashMap<>();
 
-        return Operation.super.fork(parameters, indexInfo);
+        try {
+            byte[] bytes = indexInfo.codec.encodeKey(new Object[]{calcDistance.getVectorId()});
+            subTaskMap.putIfAbsent(
+                indexInfo.calcRegionId(bytes),
+                calcDistance
+            );
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, wrap(v))));
+        return new Fork(new VectorDistanceRes[subTasks.size()], subTasks, false);
     }
 
     @Override
     public void exec(OperationContext context) {
+        VectorCalcDistance parameters = context.parameters();
+        VectorDistanceRes distanceRes = context.getIndexService().vectorCalcDistance(
+            context.getIndexId(),
+            context.getRegionId(),
+            parameters);
 
+        context.<VectorDistanceRes[]>result()[0] = distanceRes;
     }
 
     @Override
-    public <R> R reduce(Fork context) {
-        return null;
+    public <R> R reduce(Fork fork) {
+        return (R) fork.<VectorDistanceRes[]>result()[0];
     }
 }

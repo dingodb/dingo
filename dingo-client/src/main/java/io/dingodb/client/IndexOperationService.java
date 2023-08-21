@@ -18,6 +18,8 @@ package io.dingodb.client;
 
 import io.dingodb.client.common.KeyValueCodec;
 import io.dingodb.client.common.TableInfo;
+import io.dingodb.client.operation.impl.DeleteOperation;
+import io.dingodb.client.operation.impl.GetOperation;
 import io.dingodb.client.operation.impl.Operation;
 import io.dingodb.client.operation.impl.PutOperation;
 import io.dingodb.client.utils.OperationUtils;
@@ -27,6 +29,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
+import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.RangeDistribution;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray;
@@ -39,13 +42,17 @@ import io.dingodb.store.api.StoreService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static io.dingodb.client.operation.RangeUtils.mapping;
+import static io.dingodb.client.utils.OperationUtils.mapKey;
 
 @Slf4j
 public class IndexOperationService {
@@ -83,18 +90,24 @@ public class IndexOperationService {
         Object[] record = (Object[]) parameters;
         DingoCommonId regionId;
         try {
-            regionId = tableInfo.calcRegionId(tableInfo.codec.encode(record).getKey());
+            /*if (operation.getClass() == DeleteOperation.class) {
+                List<Column> columns = tableInfo.definition.getColumns();
+                Object[] dst = new Object[columns.size()];
+                record = mapKey(record, dst, columns, tableInfo.definition.getKeyColumns());
+            }*/
+            regionId = tableInfo.calcRegionId(tableInfo.codec.encodeKey(record));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        StoreInstance storeInstance = StoreService.getDefault().getInstance(mapping(tableInfo.tableId), mapping(regionId));
-        exec(storeInstance, record);
 
-        return storeInstance.insertWithIndex(record);
+        StoreInstance storeInstance = StoreService.getDefault().getInstance(mapping(tableInfo.tableId), mapping(regionId));
+        exec(storeInstance, record, operation);
+
+        return operation.getClass() == PutOperation.class ? storeInstance.insertWithIndex(record) : storeInstance.deleteIndex(record);
     }
 
-    private void exec(StoreInstance storeInstance, Object[] record) {
-        exec(storeInstance, retryTimes, record).ifPresent(e -> {
+    private void exec(StoreInstance storeInstance, Object[] record, Operation operation) {
+        exec(storeInstance, retryTimes, record, operation).ifPresent(e -> {
             throw new DingoClientException(-1, e);
         });
     }
@@ -102,21 +115,24 @@ public class IndexOperationService {
     private Optional<Throwable> exec(
         StoreInstance storeInstance,
         int retry,
-        Object[] record
+        Object[] record,
+        Operation operation
     ) {
         if (retry <= 0) {
             return Optional.of(new DingoClientException(-1, "Exceeded the retry limit for performing " + PutOperation.getInstance().getClass()));
         }
         Optional<Throwable> error = Optional.empty();
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        CompletableFuture.runAsync(() -> storeInstance.insertIndex(record), Executors.executor("exec-operator"))
+        Predicate<Class<? extends Operation>> exec = __ -> exec(storeInstance, record, __);
+        Function<Operation, Class<? extends Operation>> get = Operation::getClass;
+        CompletableFuture.runAsync(() -> exec.test(get.apply(operation)), Executors.executor("exec-operator"))
             .thenApply(r -> Optional.<Throwable>empty())
             .exceptionally(Optional::of)
             .thenAccept(e -> {
                 e.map(OperationUtils::getCause)
                     .map(err -> {
-                        storeInstance.insertIndex(record);
-                        return exec(storeInstance, retry - 1, record).orNull();
+                        exec.test(get.apply(operation));
+                        return exec(storeInstance, retry - 1, record, operation).orNull();
                     }).ifPresent(error::ifAbsentSet);
                 countDownLatch.countDown();
             });
@@ -126,6 +142,16 @@ public class IndexOperationService {
             log.warn("Exec {} interrupted.", PutOperation.getInstance().getClass());
         }
         return error;
+    }
+
+    private static boolean exec(StoreInstance storeInstance, Object[] record, Class<? extends Operation> opClass) {
+        if (opClass == PutOperation.class) {
+            return storeInstance.insertIndex(record);
+        }
+        if (opClass == DeleteOperation.class) {
+            return storeInstance.deleteWithIndex(record);
+        }
+        return false;
     }
 
     private MetaServiceClient getSubMetaService(String schemaName) {

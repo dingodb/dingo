@@ -30,6 +30,8 @@ import io.dingodb.sdk.common.index.IndexMetrics;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.Parameters;
+import io.dingodb.sdk.common.vector.VectorCalcDistance;
+import io.dingodb.sdk.common.vector.VectorDistanceRes;
 import io.dingodb.sdk.common.vector.VectorIndexMetrics;
 import io.dingodb.sdk.common.vector.VectorScanQuery;
 import io.dingodb.sdk.service.meta.AutoIncrementService;
@@ -96,6 +98,10 @@ public class DingoClient {
 
     public boolean dropTable(String schema, String table) {
         return operationService.dropTable(schema, table);
+    }
+
+    public boolean dropTables(String schema, List<String> tables) {
+        return operationService.dropTables(schema, tables);
     }
 
     public Table getTableDefinition(final String tableName) {
@@ -245,10 +251,6 @@ public class DingoClient {
         return operationService.exec(schema, tableName, DeleteOperation.getInstance(), keys);
     }
 
-    public List<Boolean> deleteNotStandard(final String tableName, List<Key> keys) {
-        return operationService.exec(schema, tableName, DeleteOperation.getNotStandardInstance(), keys);
-    }
-
     public DeleteRangeResult delete(String tableName, Key begin, Key end, boolean withBegin, boolean withEnd) {
         return operationService.exec(
             schema,
@@ -256,6 +258,14 @@ public class DingoClient {
             DeleteRangeOperation.getInstance(),
             new OpKeyRange(begin, end, withBegin, withEnd)
         );
+    }
+
+    public boolean delete(String schema, String tableName, Key key) {
+        return indexOperationService.exec(schema, tableName, DeleteOperation.getInstance(), get(tableName, key).getDingoColumnValuesInOrder());
+    }
+
+    public List<Boolean> deleteNotStandard(final String tableName, List<Key> keys) {
+        return operationService.exec(schema, tableName, DeleteOperation.getNotStandardInstance(), keys);
     }
 
     public boolean createIndex(String indexName, Index index) {
@@ -303,7 +313,7 @@ public class DingoClient {
     }
 
     public List<VectorWithId> vectorAdd(String schema, String indexName, List<VectorWithId> vectors) {
-        return indexService.exec(schema, indexName, VectorAddOperation.getInstance(), vectors, VectorContext.builder().build());
+        return indexService.exec(schema, indexName, VectorAddOperation.getInstance(), vectors);
     }
 
     public List<VectorWithId> vectorAdd(String schema, String indexName, List<VectorWithId> vectors,
@@ -317,7 +327,7 @@ public class DingoClient {
     }
 
     public List<VectorDistanceArray> vectorSearch(String schema, String indexName, VectorSearch vectorSearch) {
-        List<VectorDistanceArray> distanceArrays = indexService.exec(schema, indexName, VectorSearchOperation.getInstance(), vectorSearch, VectorContext.builder().build());
+        List<VectorDistanceArray> distanceArrays = indexService.exec(schema, indexName, VectorSearchOperation.getInstance(), vectorSearch);
 
         List<VectorDistanceArray> result = new ArrayList<>();
         for (VectorDistanceArray distanceArray : distanceArrays) {
@@ -352,17 +362,17 @@ public class DingoClient {
      * @return id
      */
     public Long vectorGetBorderId(String schema, String indexName, Boolean isGetMin) {
-        long[] longArr = indexService.exec(schema, indexName, VectorGetIdOperation.getInstance(), isGetMin, VectorContext.builder().build());
+        long[] longArr = indexService.exec(schema, indexName, VectorGetIdOperation.getInstance(), isGetMin);
         return (isGetMin ? Arrays.stream(longArr).min() : Arrays.stream(longArr).max()).getAsLong();
     }
 
     public List<VectorWithId> vectorScanQuery(String schema, String indexName, VectorScanQuery query) {
-        List<VectorWithId> result = indexService.exec(schema, indexName, VectorScanQueryOperation.getInstance(), query, VectorContext.builder().build());
+        List<VectorWithId> result = indexService.exec(schema, indexName, VectorScanQueryOperation.getInstance(), query);
         return query.getMaxScanCount() > result.size() ? result : result.subList(0, Math.toIntExact(query.getMaxScanCount()));
     }
 
     public VectorIndexMetrics getRegionMetrics(String schema, String indexName) {
-        return indexService.exec(schema, indexName, VectorGetRegionMetricsOperation.getInstance(), null, VectorContext.builder().build());
+        return indexService.exec(schema, indexName, VectorGetRegionMetricsOperation.getInstance(), null);
     }
 
     public List<Boolean> vectorDelete(String indexName, List<Long> ids) {
@@ -370,7 +380,15 @@ public class DingoClient {
     }
 
     public List<Boolean> vectorDelete(String schema, String indexName, List<Long> ids) {
-        return indexService.exec(schema, indexName, VectorDeleteOperation.getInstance(), ids, VectorContext.builder().build());
+        return indexService.exec(schema, indexName, VectorDeleteOperation.getInstance(), ids);
+    }
+
+    public VectorDistanceRes vectorCalcDistance(String indexName, VectorCalcDistance vectorCalcDistance) {
+        return vectorCalcDistance(schema, indexName, vectorCalcDistance);
+    }
+
+    public VectorDistanceRes vectorCalcDistance(String schema, String index, VectorCalcDistance vectorCalcDistance) {
+        return indexService.exec(schema, index, VectorCalcDistanceOperation.getInstance(), vectorCalcDistance);
     }
 
     public void close() {

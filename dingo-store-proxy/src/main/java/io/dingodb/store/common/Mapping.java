@@ -16,32 +16,32 @@
 
 package io.dingodb.store.common;
 
-import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.partition.PartitionDefinition;
-import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.Range;
 import io.dingodb.sdk.common.RangeWithOptions;
 import io.dingodb.sdk.common.SDKCommonId;
-import io.dingodb.sdk.common.partition.Partition;
-import io.dingodb.sdk.common.partition.PartitionDetail;
-import io.dingodb.sdk.common.partition.PartitionDetailDefinition;
 import io.dingodb.sdk.common.table.Column;
-import io.dingodb.sdk.common.table.Table;
-import io.dingodb.sdk.common.utils.ByteArrayUtils;
 import io.dingodb.store.api.StoreInstance;
-
-import java.io.IOException;
-import java.util.stream.Collectors;
 
 public final class Mapping {
 
     private Mapping() {
+    }
+
+    public static Column mapping(ColumnDefinition definition) {
+        return io.dingodb.sdk.common.table.ColumnDefinition.builder()
+            .name(definition.getName())
+            .type(definition.getTypeName())
+            .elementType(definition.getElementType())
+            .precision(definition.getPrecision())
+            .scale(definition.getScale())
+            .nullable(definition.isNullable())
+            .primary(definition.getPrimary())
+            .defaultValue(definition.getDefaultValue())
+            .build();
     }
 
     public static DingoCommonId mapping(CommonId commonId) {

@@ -48,7 +48,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -108,6 +107,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         private Table table;
         private DingoKeyValueCodec tableCodec;
         private Map<DingoCommonId, Table> tableDefinitionMap;
+        private Object[] record;
 
         public StoreInstance(CommonId tableId, CommonId regionId) {
             this.storeTableId = mapping(tableId);
@@ -172,6 +172,58 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         }
 
         @Override
+        public boolean deleteWithIndex(Object[] key) {
+            try {
+                byte[] bytes = this.tableCodec.encodeKey(key);
+                return storeService.kvBatchDelete(storeTableId, storeRegionId, singletonList(setId(bytes))).get(0);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public boolean deleteIndex(Object[] record) {
+            for (Map.Entry<DingoCommonId, Table> entry : tableDefinitionMap.entrySet()) {
+                DingoCommonId indexId = entry.getKey();
+                Table index = entry.getValue();
+                Boolean result = false;
+                if (index.getIndexParameter().getIndexType().equals(IndexParameter.IndexType.INDEX_TYPE_VECTOR)) {
+                    Column primaryCol = index.getColumns().get(0);
+                    long id = Long.parseLong(String.valueOf(record[table.getColumnIndex(primaryCol.getName())]));
+
+                    DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(indexId.entityId(), singletonList(schema));
+                    DingoCommonId regionId;
+                    try {
+                        regionId = metaService.getIndexRangeDistribution(
+                            indexId,
+                            new io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray(vectorCodec.encodeKey(new Object[]{id}), POS)).getId();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    result = indexService.vectorDelete(indexId, regionId, singletonList(id)).get(0);
+                } else {
+                    List<DingoSchema> schemas = index.getKeyColumns().stream()
+                        .map(k -> CodecUtils.createSchemaForColumn(k, table.getColumnIndex(k.getName())))
+                        .collect(Collectors.toList());
+                    DingoKeyValueCodec indexCodec = new DingoKeyValueCodec(indexId.entityId(), schemas);
+                    try {
+                        byte[] bytes = indexCodec.encodeKey(record);
+                        DingoCommonId regionId = metaService.getIndexRangeDistribution(
+                            indexId,
+                            new io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray(bytes, POS)).getId();
+                        result = storeService.kvBatchDelete(indexId, regionId, singletonList(indexCodec.resetPrefix(bytes, regionId.parentId()))).get(0);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                if (!result) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
         public boolean update(KeyValue row, KeyValue old) {
             row = setId(row);
             old = setId(old);
@@ -220,7 +272,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         public Iterator<KeyValue> scan(Range range, Coprocessor coprocessor) {
             range = new Range(setId(range.start), setId(range.end), range.withStart, range.withEnd);
             return Iterators.transform(
-                storeService.scan(storeTableId, storeRegionId, mapping(range).getRange(), range.withStart, range.withEnd, new io.dingodb.server.executor.common.Coprocessor(coprocessor)),
+                storeService.scan(storeTableId, storeRegionId, mapping(range).getRange(), range.withStart, range.withEnd, new io.dingodb.store.common.Coprocessor(coprocessor)),
                 Mapping::mapping
             );
         }
@@ -251,9 +303,13 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 throw new RuntimeException(e);
             }
 
-            DingoCommonId regionId = metaService.getIndexRangeDistribution(indexId, new io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray(keyValue.getKey(), POS)).getId();
+            DingoCommonId regionId = metaService.getIndexRangeDistribution(
+                indexId,
+                new io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray(keyValue.getKey(), POS)).getId();
 
-            return storeService.kvPut(indexId, regionId, new io.dingodb.sdk.common.KeyValue(indexCodec.resetPrefix(keyValue.getKey(), regionId.parentId()), keyValue.getValue()));
+            return storeService.kvPut(indexId, regionId, new io.dingodb.sdk.common.KeyValue(
+                indexCodec.resetPrefix(keyValue.getKey(), regionId.parentId()),
+                keyValue.getValue()));
         }
 
         private void vectorAdd(Object[] record, Table table, DingoKeyValueCodec tableCodec, DingoCommonId indexId, Table index) {
@@ -263,10 +319,11 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             long longId = Long.parseLong(String.valueOf(record[table.getColumnIndex(primaryKey.getName())]));
 
             Object convertId = dingoType.convertTo(new Object[]{longId}, DingoConverter.INSTANCE);
-            DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(indexId.entityId(), Collections.singletonList(schema));
+            DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(indexId.entityId(), singletonList(schema));
             DingoCommonId regionId;
             try {
-                regionId = metaService.getIndexRangeDistribution(indexId, new io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray(vectorCodec.encodeKey((Object[]) convertId), POS)).getId();
+                regionId = metaService.getIndexRangeDistribution(indexId, new io.dingodb.sdk.common.utils.ByteArrayUtils
+                    .ComparableByteArray(vectorCodec.encodeKey((Object[]) convertId), POS)).getId();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -288,7 +345,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 throw new RuntimeException(e);
             }
             VectorWithId vectorWithId = new VectorWithId(longId, vector, null, vectorTableData);
-            indexService.vectorAdd(indexId, regionId, Collections.singletonList(vectorWithId), false, false);
+            indexService.vectorAdd(indexId, regionId, singletonList(vectorWithId), false, false);
         }
 
     }

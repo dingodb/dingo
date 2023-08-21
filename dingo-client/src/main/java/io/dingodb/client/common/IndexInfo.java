@@ -27,6 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.NavigableMap;
 
+import static io.dingodb.common.util.ByteArrayUtils.SKIP_LONG_POS;
+
 @Slf4j
 @AllArgsConstructor
 public class IndexInfo {
@@ -42,6 +44,9 @@ public class IndexInfo {
     public final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution;
 
     public DingoCommonId calcRegionId(byte[] key) {
+        if (index.getIndexPartition() == null || index.getIndexPartition().getFuncName().isEmpty()) {
+            return rangeDistribution.floorEntry(new ByteArrayUtils.ComparableByteArray(key, SKIP_LONG_POS)).getValue().getId();
+        }
         String strategy = index.getIndexPartition().getFuncName().toUpperCase();
         return RangeUtils.getDingoCommonId(key, strategy, rangeDistribution);
     }
