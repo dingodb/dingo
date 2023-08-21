@@ -129,15 +129,24 @@ public class RangeUtils {
             .withEnd(range.withEnd)
             .build();
 
-        NavigableSet<RangeDistribution> distributions = new TreeSet<>(io.dingodb.common.util.RangeUtils.rangeComparator());
-        Map<Long, List<RangeDistribution>> groupedMap = src.stream().collect(Collectors.groupingBy(rd -> rd.getId().domain));
-        for (List<RangeDistribution> subList : groupedMap.values()) {
-            NavigableSet<RangeDistribution> distribution = io.dingodb.common.util.RangeUtils.getSubRangeDistribution(subList, rangeDistribution);
-            if (distribution.size() > 0) {
-                RangeDistribution last = distribution.last();
+        NavigableSet<RangeDistribution> distributions;
+        if (tableInfo.definition.getPartition() == null || tableInfo.definition.getPartition().getFuncName().isEmpty()) {
+            distributions = io.dingodb.common.util.RangeUtils.getSubRangeDistribution(src, rangeDistribution);
+            if (distributions.size() > 0) {
+                RangeDistribution last = distributions.last();
                 last.setEndKey(tableInfo.codec.resetPrefix(last.getEndKey(), last.getId().domain));
             }
-            distributions.addAll(distribution);
+        } else {
+            distributions = new TreeSet<>(io.dingodb.common.util.RangeUtils.rangeComparator());
+            Map<Long, List<RangeDistribution>> groupedMap = src.stream().collect(Collectors.groupingBy(rd -> rd.getId().domain));
+            for (List<RangeDistribution> subList : groupedMap.values()) {
+                NavigableSet<RangeDistribution> distribution = io.dingodb.common.util.RangeUtils.getSubRangeDistribution(subList, rangeDistribution);
+                if (distribution.size() > 0) {
+                    RangeDistribution last = distribution.last();
+                    last.setEndKey(tableInfo.codec.resetPrefix(last.getEndKey(), last.getId().domain));
+                }
+                distributions.addAll(distribution);
+            }
         }
 
         if (coprocessor == null) {

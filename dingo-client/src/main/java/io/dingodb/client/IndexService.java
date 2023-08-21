@@ -73,6 +73,10 @@ public class IndexService {
         this.retryTimes = retryTimes;
     }
 
+    public <R> R exec(String schemaName, String indexName, Operation operation, Object parameters) {
+        return exec(schemaName, indexName, operation, parameters, VectorContext.builder().build());
+    }
+
     public <R> R exec(String schemaName, String indexName, Operation operation, Object parameters, VectorContext context) {
         IndexInfo indexInfo = Parameters.nonNull(getRouteTable(schemaName, indexName, false), "Index not found.");
 

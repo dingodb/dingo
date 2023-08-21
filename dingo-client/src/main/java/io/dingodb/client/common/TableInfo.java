@@ -25,6 +25,8 @@ import lombok.AllArgsConstructor;
 
 import java.util.NavigableMap;
 
+import static io.dingodb.common.util.ByteArrayUtils.SKIP_LONG_POS;
+
 @AllArgsConstructor
 public class TableInfo {
 
@@ -37,6 +39,9 @@ public class TableInfo {
     public final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution;
 
     public DingoCommonId calcRegionId(byte[] key) {
+        if (definition.getPartition() == null || definition.getPartition().getFuncName().isEmpty()) {
+            return rangeDistribution.floorEntry(new ByteArrayUtils.ComparableByteArray(key, SKIP_LONG_POS)).getValue().getId();
+        }
         String strategy = definition.getPartition().getFuncName().toUpperCase();
         return RangeUtils.getDingoCommonId(key, strategy, rangeDistribution);
     }
