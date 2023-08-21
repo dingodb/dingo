@@ -662,6 +662,30 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .use("table", "i4k_vs0_i40_f80_vs0")
             .step("select * from {table} limit 3", rows(3));
 
+        test("Grouped aggregation with filter")
+            .use("table", "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0")
+            .step(
+                "select name, age, avg(amount) from {table} "
+                    + "where age not between 0 and 50 group by name, age",
+                is(
+                    new String[]{"name", "age", "expr$2"},
+                    ImmutableList.of(
+                        new Object[]{"tTATtt", 181, 18.18},
+                        new Object[]{"zhngsna", 99, 32.0},
+                        new Object[]{"lisi", 256, 1234.456},
+                        new Object[]{"777", 77, 77.77},
+                        new Object[]{"l3", 55, 123.123},
+                        new Object[]{" ", 82, 1999.99},
+                        new Object[]{"Zala", 76, 2000.01},
+                        new Object[]{"123", 544, 0.0},
+                        new Object[]{"op ", 76, 109.325},
+                        new Object[]{"yamaha", 76, 2.3},
+                        new Object[]{"HAHA", 57, 9.0762556},
+                        new Object[]{"  aB c  dE ", 61, 99.9999}
+                    )
+                )
+            );
+
         test("New")
             .use("table", "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0")
             .step(

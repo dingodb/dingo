@@ -34,7 +34,6 @@ import io.dingodb.server.executor.Configuration;
 import io.dingodb.server.executor.common.Mapping;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;

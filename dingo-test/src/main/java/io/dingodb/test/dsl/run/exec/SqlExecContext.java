@@ -67,7 +67,11 @@ public class SqlExecContext {
         Statement statement = getStatement();
         for (Map.Entry<String, String> entry : tableMapping.entrySet()) {
             if (!preparedTableMapping.containsKey(entry.getKey())) {
-                statement.execute("drop table " + entry.getValue());
+                try {
+                    statement.execute("drop table if exists " + entry.getValue());
+                } catch (Exception ignored) {
+                    // This is not part of testing, so exception is allowed.
+                }
             }
         }
         statement.close();

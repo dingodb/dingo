@@ -39,9 +39,11 @@ public class DingoSchema extends AbstractSchema {
     }
 
     public boolean dropTable(@NonNull String tableName) {
-        metaService.dropTable(tableName);
-        tableCache.remove(tableName);
-        return true;
+        if (metaService.dropTable(tableName)) {
+            tableCache.remove(tableName);
+            return true;
+        }
+        return false;
     }
 
     public void createIndex(@NonNull String tableName, @NonNull List<Index> indexList) {

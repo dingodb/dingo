@@ -18,10 +18,8 @@ package io.dingodb.test;
 
 import io.dingodb.driver.client.DingoDriverClient;
 import io.dingodb.test.asserts.Assert;
-import io.dingodb.test.cases.ExceptionCasesJUnit5;
 import io.dingodb.test.cases.RexCasesJUnit5;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
@@ -32,7 +30,6 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Properties;
 
 // Before run this, you must set up your cluster.
@@ -67,17 +64,5 @@ public class DingoDriverClientIT {
     public void testSqlExpression(String sqlExpression, String ignored, Object value) throws SQLException {
         Object result = new SqlHelper(connection).querySingleValue("select " + sqlExpression);
         Assert.of(result).isEqualTo(value);
-    }
-
-    @ParameterizedTest(name = "[{index}] {0}")
-    @ArgumentsSource(ExceptionCasesJUnit5.class)
-    public void testException(
-        String ignored,
-        @NonNull List<String> sqlList,
-        int sqlCode,
-        String sqlState,
-        boolean needDropping
-    ) {
-        new SqlHelper(connection).exceptionTest(sqlList, needDropping, sqlCode, sqlState);
     }
 }

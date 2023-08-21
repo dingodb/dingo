@@ -113,15 +113,19 @@ public class LocalMetaService implements MetaService {
 
     @Override
     public void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
-        CommonId tableId = new CommonId(TABLE , id.seq, tableSeq.incrementAndGet());
+        CommonId tableId = new CommonId(TABLE, id.seq, tableSeq.incrementAndGet());
         tableDefinitions.put(tableId, tableDefinition);
     }
 
     @Override
     public boolean dropTable(@NonNull String tableName) {
         tableName = tableName.toUpperCase();
-        tableDefinitions.remove(getTableId(tableName));
-        return true;
+        CommonId tableId = getTableId(tableName);
+        if (tableId != null) {
+            tableDefinitions.remove(tableId);
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -176,7 +180,7 @@ public class LocalMetaService implements MetaService {
     }
 
     public void addRangeDistributions(CommonId id, byte[] start, byte[] end) {
-        distributions.compute(id, (k,v) -> {
+        distributions.compute(id, (k, v) -> {
             if (v == null) {
                 v = new TreeMap<>();
             }
