@@ -2,12 +2,11 @@ plugins {
     id 'java'
     id 'java-conventions'
     id 'java-library'
-    id "com.gorylenko.gradle-git-properties"
-    id "com.github.johnrengelman.shadow"
+    id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
 }
 
 group 'io.dingodb'
-version '0.6.0-SNAPSHOT'
+version '0.7.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
