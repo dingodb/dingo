@@ -106,7 +106,8 @@ public class OperationService {
         int retry
     ) {
         if (retry <= 0) {
-            return Optional.of(new DingoClientException(-1, "Exceeded the retry limit for performing " + operation.getClass()));
+            return Optional.of(new DingoClientException(-1, "Exceeded the retry limit for performing "
+                + operation.getClass()));
         }
         List<OperationContext> contexts = generateContext(tableInfo, fork);
         Optional<Throwable> error = Optional.empty();
@@ -201,6 +202,7 @@ public class OperationService {
     }
 
     /**
+     * getTable.
      * @return table + indexes
      */
     public List<Table> getTables(String schemaName, String tableName) {
@@ -208,7 +210,7 @@ public class OperationService {
         return metaService.getTables(tableName);
     }
 
-    /**
+    /** getTableIndex.
      * @return indexes
      */
     public List<Table> getTableIndexes(String schemaName, String tableName) {

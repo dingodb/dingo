@@ -22,7 +22,26 @@ import io.dingodb.client.common.VectorDistanceArray;
 import io.dingodb.client.common.VectorSearch;
 import io.dingodb.client.common.VectorWithDistance;
 import io.dingodb.client.common.VectorWithId;
-import io.dingodb.client.operation.impl.*;
+import io.dingodb.client.operation.impl.CompareAndSetOperation;
+import io.dingodb.client.operation.impl.DeleteOperation;
+import io.dingodb.client.operation.impl.DeleteRangeOperation;
+import io.dingodb.client.operation.impl.DeleteRangeResult;
+import io.dingodb.client.operation.impl.GetOperation;
+import io.dingodb.client.operation.impl.KeyRangeCoprocessor;
+import io.dingodb.client.operation.impl.OpKeyRange;
+import io.dingodb.client.operation.impl.Operation;
+import io.dingodb.client.operation.impl.PutIfAbsentOperation;
+import io.dingodb.client.operation.impl.PutOperation;
+import io.dingodb.client.operation.impl.ScanCoprocessorOperation;
+import io.dingodb.client.operation.impl.ScanOperation;
+import io.dingodb.client.operation.impl.VectorAddOperation;
+import io.dingodb.client.operation.impl.VectorBatchQueryOperation;
+import io.dingodb.client.operation.impl.VectorCalcDistanceOperation;
+import io.dingodb.client.operation.impl.VectorDeleteOperation;
+import io.dingodb.client.operation.impl.VectorGetIdOperation;
+import io.dingodb.client.operation.impl.VectorGetRegionMetricsOperation;
+import io.dingodb.client.operation.impl.VectorScanQueryOperation;
+import io.dingodb.client.operation.impl.VectorSearchOperation;
 import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.index.Index;
@@ -195,12 +214,12 @@ public class DingoClient {
         return operationService.exec(schema, tableName, GetOperation.getInstance(), keys);
     }
 
-    public List<Record> getNotStandard(String tableName, List<Key> keys) {
-        return operationService.exec(schema, tableName, GetOperation.getNotStandardInstance(), keys);
-    }
-
     public Record get(final String tableName, final Key firstKey, List<String> colNames) {
         return Optional.mapOrNull(get(tableName, firstKey), r -> r.extract(colNames));
+    }
+
+    public List<Record> getNotStandard(String tableName, List<Key> keys) {
+        return operationService.exec(schema, tableName, GetOperation.getNotStandardInstance(), keys);
     }
 
     public Iterator<Record> scan(final String tableName, Key begin, Key end, boolean withBegin, boolean withEnd) {
@@ -261,7 +280,10 @@ public class DingoClient {
     }
 
     public boolean delete(String schema, String tableName, Key key) {
-        return indexOperationService.exec(schema, tableName, DeleteOperation.getInstance(), get(tableName, key).getDingoColumnValuesInOrder());
+        return indexOperationService.exec(schema,
+            tableName,
+            DeleteOperation.getInstance(),
+            get(tableName, key).getDingoColumnValuesInOrder());
     }
 
     public List<Boolean> deleteNotStandard(final String tableName, List<Key> keys) {
@@ -327,7 +349,11 @@ public class DingoClient {
     }
 
     public List<VectorDistanceArray> vectorSearch(String schema, String indexName, VectorSearch vectorSearch) {
-        List<VectorDistanceArray> distanceArrays = indexService.exec(schema, indexName, VectorSearchOperation.getInstance(), vectorSearch);
+        List<VectorDistanceArray> distanceArrays = indexService.exec(
+            schema,
+            indexName,
+            VectorSearchOperation.getInstance(),
+            vectorSearch);
 
         List<VectorDistanceArray> result = new ArrayList<>();
         for (VectorDistanceArray distanceArray : distanceArrays) {
@@ -355,7 +381,7 @@ public class DingoClient {
     }
 
     /**
-     *
+     * Get Boundary by schema and index name.
      * @param schema schema name, default is 'dingo'
      * @param indexName index name
      * @param isGetMin if true, get min id, else get max id
@@ -368,7 +394,8 @@ public class DingoClient {
 
     public List<VectorWithId> vectorScanQuery(String schema, String indexName, VectorScanQuery query) {
         List<VectorWithId> result = indexService.exec(schema, indexName, VectorScanQueryOperation.getInstance(), query);
-        return query.getMaxScanCount() > result.size() ? result : result.subList(0, Math.toIntExact(query.getMaxScanCount()));
+        return query.getMaxScanCount() > result.size()
+            ? result : result.subList(0, Math.toIntExact(query.getMaxScanCount()));
     }
 
     public VectorIndexMetrics getRegionMetrics(String schema, String indexName) {

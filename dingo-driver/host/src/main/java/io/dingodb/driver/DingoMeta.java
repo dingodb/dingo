@@ -487,11 +487,11 @@ public class DingoMeta extends MetaImpl {
         return createArrayResultSet(
             Linq4j.asEnumerable(tables)
                 .select(t -> new Object[]{
-                            catalog,
-                            t.schema.name,
-                            t.name,
-                            t.getTable().getJdbcTableType().jdbcName
-                        }),
+                    catalog,
+                    t.schema.name,
+                    t.name,
+                    t.getTable().getJdbcTableType().jdbcName
+                    }),
             new Class[] {String.class, String.class, String.class, String.class},
             "TABLE_CAT",
             "TABLE_SCHEM",
@@ -614,10 +614,10 @@ public class DingoMeta extends MetaImpl {
                     ColumnDefinition c = tableDefinition.getColumn(mapping.get(i));
                     return new Object[] {
                         catalog,
-                            schemaName,
-                            tableName,
-                            c.getName(),
-                            (short) (i + 1)
+                        schemaName,
+                        tableName,
+                        c.getName(),
+                        (short) (i + 1)
                     };
                 })
                 .collect(Collectors.toList())
