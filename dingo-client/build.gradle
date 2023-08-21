@@ -25,7 +25,7 @@ dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
 
-    api group: 'io.dingodb', name: 'dingo-sdk', version: 'dingo-sdk'.v()
+    api group: 'io.dingodb', name: 'dingo-sdk', version: project.version
 
     api project(":dingo-common")
     implementation project(":dingo-store-api")

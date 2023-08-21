@@ -66,7 +66,7 @@ dependencies {
     implementation group: 'io.grpc', name: 'grpc-stub', version: 'grpc'.v()
     implementation group: 'io.grpc', name: 'grpc-netty-shaded', version: 'grpc'.v()
 
-    implementation group: 'io.dingodb', name: 'dingo-sdk', version: 'dingo-sdk'.v()
+    implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
 
     compileOnly group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     compileOnly group: 'org.mapstruct', name: 'mapstruct-processor', version: 'mapstruct'.v()
