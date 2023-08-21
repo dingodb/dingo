@@ -2,8 +2,7 @@ plugins {
     id 'java'
     id 'java-conventions'
     id 'java-library'
-    id "com.gorylenko.gradle-git-properties"
-    id "com.github.johnrengelman.shadow"
+    id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
 }
 
 repositories {
@@ -19,7 +18,6 @@ dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
-    implementation group: 'sqlline', name: 'sqlline', version: 'sqlline'.v()
     implementation group: 'io.netty', name: 'netty-all', version: 'netty'.v()
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
 
@@ -37,25 +35,3 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
 }
-
-
-task fatJar(type: Jar) {
-    classifier 'all'
-    from(
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
-    )
-    with jar
-
-    exclude "META-INF/*.SF"
-    exclude "META-INF/*.DSA"
-    exclude "META-INF/*.RSA"
-}
-
-fatJar.dependsOn([
-    ':dingo-driver:dingo-driver-client:fatJar',
-])
-
-tasks.named("build") { x ->
-    x.finalizedBy("fatJar")
-}
-

@@ -36,11 +36,6 @@ task copyDepends(type: Copy) {
     }
     into layout.projectDirectory.dir("dingo")
 
-    from(project(':dingo-cli:sqlline').layout.buildDirectory) {
-        include('libs/sqlline-*-all.jar')
-    }
-    into layout.projectDirectory.dir("dingo")
-
     from(project(':dingo-web').layout.buildDirectory) {
         include("libs/dingo-web-*.jar")
         exclude("libs/dingo-web-*-plain.jar")
@@ -80,7 +75,6 @@ copyDepends.dependsOn([
     ':dingo-example:fatJar',
     ':dingo-web:build',
     ':dingo-net-netty:fatJar',
-    ':dingo-cli:sqlline:fatJar',
     ':dingo-executor:fatJar',
     ':dingo-mysql-init:fatJar'
 ])
