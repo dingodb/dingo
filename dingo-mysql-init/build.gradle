@@ -2,14 +2,6 @@ plugins {
     id 'java'
 }
 
-repositories {
-    mavenLocal()
-    maven {
-        url "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-    }
-    mavenCentral()
-}
-
 dependencies {
     implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
     implementation group: 'com.alibaba', name: 'fastjson', version: 'fastjson'.v()

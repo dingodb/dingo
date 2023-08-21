@@ -8,13 +8,6 @@ plugins {
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-repositories {
-    mavenLocal()
-    maven {
-        url "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-    }
-}
-
 dependencies {
     compileOnly group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     compileOnly group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
