@@ -21,17 +21,6 @@ plugins {
     id "com.github.johnrengelman.shadow" version "5.0.0"
 }
 
-repositories {
-    mavenLocal()
-    maven {
-        url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
-    }
-    maven {
-        url 'http://packages.confluent.io/maven/'
-    }
-    mavenCentral()
-}
-
 configurations {
     compile.exclude(group: 'log4j', module: 'log4j')
     compile.exclude(group: 'org.slf4j', module: 'slf4j-log4j12')
@@ -47,7 +36,7 @@ dependencies {
     implementation group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1.1'
     implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
-    implementation group: 'io.dingodb', name: 'dingo-sdk', version: 'dingo-sdk'.v()
+    implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
 
     implementation project(":dingo-client")
     implementation project(":dingo-common")

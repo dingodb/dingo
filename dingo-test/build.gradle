@@ -38,6 +38,7 @@ configurations {
     intTestRuntimeOnly.extendsFrom runtimeOnly
 }
 
+
 dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()

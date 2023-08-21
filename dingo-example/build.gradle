@@ -17,7 +17,7 @@ dependencies {
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation project(':dingo-driver:dingo-driver-client')
     implementation project(':dingo-client')
-    implementation group: 'io.dingodb', name: 'dingo-sdk', version: 'dingo-sdk'.v()
+    implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
     runtimeOnly group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     runtimeOnly group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
 }

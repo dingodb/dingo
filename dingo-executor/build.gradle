@@ -38,12 +38,9 @@ dependencies {
 
     implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
-
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
-
     implementation group: 'org.apache.calcite.avatica', name: 'avatica-server', version: 'avatica'.v()
-
-    implementation group: 'io.dingodb', name: 'dingo-sdk', version: 'dingo-sdk'.v()
+    implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
 
     implementation project(":dingo-common")
     implementation project(":dingo-calcite")
