@@ -25,8 +25,6 @@ configurations {
 }
 
 
-
-
 dependencies {
     annotationProcessor group: 'org.immutables', name: 'value', version: 'immutables'.v()
     api group: 'org.apache.calcite', name: 'calcite-core', version: 'calcite'.v()
@@ -43,7 +41,7 @@ dependencies {
     testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()
     testImplementation project(':dingo-test')
     testImplementation project(':dingo-test:dingo-meta-local')
-    testImplementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
+    testImplementation project(':dingo-codec-serial')
     fmppTask "com.googlecode.fmpp-maven-plugin:fmpp-maven-plugin:1.0"
     fmppTask "org.freemarker:freemarker:2.3.31"
 }

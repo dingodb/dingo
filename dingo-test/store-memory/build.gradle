@@ -19,6 +19,7 @@ plugins {
     id 'java-library'
 }
 
+
 dependencies {
     api project(':dingo-store-api')
     api project(':dingo-codec-api')
@@ -30,5 +31,4 @@ dependencies {
 
     implementation project(':dingo-common')
     implementation project(':dingo-codec-serial')
-
 }
