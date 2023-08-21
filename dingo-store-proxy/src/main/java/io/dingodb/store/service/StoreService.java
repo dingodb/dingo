@@ -303,16 +303,17 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 throw new RuntimeException(e);
             }
 
-            DingoCommonId regionId = metaService.getIndexRangeDistribution(
-                indexId,
+            DingoCommonId regionId = metaService.getIndexRangeDistribution(indexId,
                 new io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray(keyValue.getKey(), POS)).getId();
 
             return storeService.kvPut(indexId, regionId, new io.dingodb.sdk.common.KeyValue(
-                indexCodec.resetPrefix(keyValue.getKey(), regionId.parentId()),
-                keyValue.getValue()));
+                indexCodec.resetPrefix(keyValue.getKey(), regionId.parentId()), keyValue.getValue()));
         }
 
-        private void vectorAdd(Object[] record, Table table, DingoKeyValueCodec tableCodec, DingoCommonId indexId, Table index) {
+        private void vectorAdd(Object[] record, Table table,
+                               DingoKeyValueCodec tableCodec,
+                               DingoCommonId indexId,
+                               Table index) {
             Column primaryKey = index.getColumns().get(0);
             schema.setIsKey(true);
 

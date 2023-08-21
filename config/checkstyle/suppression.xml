@@ -26,4 +26,5 @@
     <suppress files=".*\.java" checks="JavadocParagraph"/>
     <suppress files="[\\/]build[\\/].*" checks=".*" />
     <suppress files="[\\/]test[\\/].*" checks=".*" />
+    <suppress checks="PackageName" files="io/dingodb/expr/runtime/eval/.*"/>
 </suppressions>
