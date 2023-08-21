@@ -1,0 +1,10 @@
+id, name, age, amount, address, is_delete
+INT, STRING, INT, DOUBLE, STRING, BOOL
+1, c1, 28, 109.325, beijing, true
+2, c2, 17, 139.2, beijing, false
+3, c3, 22, 34.89, shanghai, false
+4, c4, 33, 3392.88, zhengzhou, true
+5, c5, 39, 342.01, beijing, true
+6, c6, 11, 3.6, zhengzhou, false
+7, c7, 19, 223.18, shanghai, null
+8, c8, 29, 2.1, shanghai, null

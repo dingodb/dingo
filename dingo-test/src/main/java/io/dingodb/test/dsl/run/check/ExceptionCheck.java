@@ -18,23 +18,33 @@ package io.dingodb.test.dsl.run.check;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.SQLException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PUBLIC)
-public final class UpdateCountCheck implements Check {
-    private final int updateCount;
+public final class ExceptionCheck implements Check {
+    private final Class<? extends Exception> clazz;
+    private final String contains;
+    private final Integer sqlCode;
+    private final String sqlState;
 
     @Override
     public void check(@NonNull CheckContext context) throws SQLException {
-        Check.super.check(context);
-        assertThat(context.getExecuteReturnedValue()).isFalse();
-        assertThat(context.getStatement().getUpdateCount()).isEqualTo(updateCount);
-        log.debug("[PASSED] checking for update count: {}", context.getInfo());
+        Exception e = context.getException();
+        assertThat(e).isInstanceOf(clazz);
+        if (contains != null) {
+            assertThat(e.getMessage()).contains(contains);
+        }
+        if (e instanceof SQLException) {
+            if (sqlCode != null) {
+                assertThat(((SQLException) e).getErrorCode()).isEqualTo(sqlCode);
+            }
+            if (sqlState != null) {
+                assertThat(((SQLException) e).getSQLState()).isEqualTo(sqlState);
+            }
+        }
     }
 }

@@ -20,12 +20,15 @@ import io.dingodb.test.dsl.builder.checker.CheckRunningContext;
 import io.dingodb.test.dsl.builder.checker.SqlCountResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlCsvFileResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlCsvStringResultChecker;
+import io.dingodb.test.dsl.builder.checker.SqlExceptionChecker;
 import io.dingodb.test.dsl.builder.checker.SqlObjectResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlResultDumper;
 import io.dingodb.test.dsl.builder.checker.SqlUpdateCountChecker;
 import io.dingodb.test.dsl.builder.step.SqlFileStep;
 import io.dingodb.test.dsl.builder.step.SqlStringStep;
 import io.dingodb.test.utils.ResourceFileUtils;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -67,6 +70,26 @@ public abstract class SqlTestCaseJavaBuilder extends SqlTestCaseBuilder {
         return new SqlCountResultChecker(rowCount);
     }
 
+    public static @NonNull SqlExceptionChecker exception(Class<? extends Exception> exception) {
+        return new SqlExceptionChecker(exception, null, null, null);
+    }
+
+    public static @NonNull SqlExceptionChecker exception(Class<? extends Exception> exception, String contains) {
+        return new SqlExceptionChecker(exception, contains, null, null);
+    }
+
+    public static @NonNull SqlExceptionChecker exception(@NonNull SqlExceptionStub stub) {
+        return new SqlExceptionChecker(SQLException.class, null, stub.sqlCode, stub.sqlState);
+    }
+
+    public static @NonNull SqlExceptionChecker exception(@NonNull SqlExceptionStub stub, String contains) {
+        return new SqlExceptionChecker(SQLException.class, contains, stub.sqlCode, stub.sqlState);
+    }
+
+    public static @NonNull SqlExceptionStub sql(int sqlCode, String sqlState) {
+        return new SqlExceptionStub(sqlCode, sqlState);
+    }
+
     @SuppressWarnings("unused")
     public static @NonNull SqlResultDumper dump() {
         return new SqlResultDumper();
@@ -96,4 +119,10 @@ public abstract class SqlTestCaseJavaBuilder extends SqlTestCaseBuilder {
     }
 
     protected abstract void build();
+
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+    public static class SqlExceptionStub {
+        private final int sqlCode;
+        private final String sqlState;
+    }
 }

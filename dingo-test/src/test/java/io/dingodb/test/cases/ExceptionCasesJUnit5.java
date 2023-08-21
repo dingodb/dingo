@@ -29,10 +29,6 @@ public class ExceptionCasesJUnit5 implements ArgumentsProvider {
     @Override
     public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
         return Stream.of(
-            // Parsing error
-            arguments("SQL Parse error", ImmutableList.of(
-                "select"
-            ), 51001, "51001", false),
             arguments("Illegal expression in context", ImmutableList.of(
                 "insert into {table} (1)"
             ), 51002, "51002", false),

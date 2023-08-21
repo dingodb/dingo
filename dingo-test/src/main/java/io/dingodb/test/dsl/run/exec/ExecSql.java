@@ -41,15 +41,22 @@ public class ExecSql implements Exec {
         Boolean b = null;
         Statement statement = execContext.getStatement();
         String sql = "";
-        for (String s : sqlString.split(";")) {
-            if (!s.trim().isEmpty()) {
-                b = statement.execute(execContext.transSql(s));
-                sql = s;
+        Exception exception = null;
+        try {
+            for (String s : sqlString.split(";")) {
+                if (!s.trim().isEmpty()) {
+                    b = statement.execute(execContext.transSql(s));
+                    sql = s;
+                }
             }
+        } catch (Exception e) {
+            exception = e;
         }
         if (check != null) {
-            assertThat(b).isNotNull();
-            check.check(new CheckContext(statement, b, sql));
+            if (exception == null) {
+                assertThat(b).isNotNull();
+            }
+            check.check(new CheckContext(statement, b, sql, exception));
         }
     }
 }

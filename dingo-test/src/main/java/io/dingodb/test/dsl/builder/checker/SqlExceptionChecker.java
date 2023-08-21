@@ -14,16 +14,26 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.dsl.run.check;
+package io.dingodb.test.dsl.builder.checker;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.sql.SQLException;
+@RequiredArgsConstructor(access = AccessLevel.PUBLIC)
+public class SqlExceptionChecker implements SqlChecker {
+    @Getter
+    private final Class<? extends Exception> clazz;
+    @Getter
+    private final String contains;
+    @Getter
+    private final Integer sqlCode;
+    @Getter
+    private final String sqlState;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public interface Check {
-    default void check(@NonNull CheckContext context) throws SQLException {
-        assertThat(context.getException()).isNull();
+    @Override
+    public <T> T accept(@NonNull SqlCheckerVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

@@ -28,8 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public final class StressDmlCases extends SqlTestCaseJavaBuilder {
-    private static final int RECORD_NUM = 100;
-
     public StressDmlCases() {
         super("Stress");
     }
@@ -44,7 +42,7 @@ public final class StressDmlCases extends SqlTestCaseJavaBuilder {
             .custom(context -> {
                 Random random = new Random();
                 try (Statement statement = context.getStatement()) {
-                    for (int id = 1; id <= RECORD_NUM; ++id) {
+                    for (int id = 1; id <= 100; ++id) {
                         String sql = "insert into {table} values"
                             + "(" + id + ", '" + UUID.randomUUID() + "', " + random.nextDouble() + ")";
                         log.info("Exec {}", sql);
@@ -61,7 +59,7 @@ public final class StressDmlCases extends SqlTestCaseJavaBuilder {
                 Random random = new Random();
                 String sql = "insert into {table} values(?, ?, ?)";
                 try (PreparedStatement statement = context.getConnection().prepareStatement(context.transSql(sql))) {
-                    for (int id = 1; id <= RECORD_NUM; ++id) {
+                    for (int id = 1; id <= 100; ++id) {
                         statement.setInt(1, id);
                         statement.setString(2, UUID.randomUUID().toString());
                         statement.setDouble(3, random.nextDouble());
@@ -79,13 +77,14 @@ public final class StressDmlCases extends SqlTestCaseJavaBuilder {
                 Random random = new Random();
                 String sql = "insert into {table} values(?, ?, ?)";
                 try (PreparedStatement statement = context.getConnection().prepareStatement(context.transSql(sql))) {
-                    for (int id = 1; id <= RECORD_NUM; ++id) {
+                    for (int id = 1; id <= 10000; ++id) {
                         statement.setInt(1, id);
                         statement.setString(2, UUID.randomUUID().toString());
                         statement.setDouble(3, random.nextDouble());
                         statement.addBatch();
-                        if (id % 100 == 0) {
+                        if (id % 1000 == 0) {
                             int[] updateCounts = statement.executeBatch();
+                            statement.executeBatch();
                             log.info("execute batch {}, id = {}", sql, id);
                             assertThat(updateCounts).containsOnly(1);
                             statement.clearBatch();

@@ -19,6 +19,7 @@ package io.dingodb.test.dsl.builder.checker;
 import io.dingodb.test.dsl.run.check.CheckContext;
 import io.dingodb.test.dsl.run.check.SqlCheckerConverter;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 import java.io.InputStream;
@@ -38,9 +39,9 @@ public class CheckRunningContext {
     @Getter
     private final String info;
 
-    private void run(SqlChecker checker) throws SQLException {
+    private void run(@NonNull SqlChecker checker) throws SQLException {
         SqlCheckerConverter.of(null, null).safeVisit(checker).check(
-            new CheckContext(statement, executeReturnedValue, info));
+            new CheckContext(statement, executeReturnedValue, info, null));
     }
 
     public void csv(String... csvLines) throws SQLException {

@@ -74,6 +74,8 @@ public class SqlExpr {
                 }
             }
             return null;
+        } catch (ExprCompileException e) {
+            return null;
         } catch (ExprParseException e) {
             throw new IllegalStateException(e);
         }

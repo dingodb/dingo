@@ -37,7 +37,7 @@ public interface Task {
 
     Map<Id, Operator> getOperators();
 
-    Status getStatus();
+    int getStatus();
 
     default String getHost() {
         return getLocation().getHost();

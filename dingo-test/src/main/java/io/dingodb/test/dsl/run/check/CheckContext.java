@@ -30,4 +30,6 @@ public class CheckContext {
     private final Boolean executeReturnedValue;
     @Getter
     private final String info;
+    @Getter
+    private final Exception exception;
 }

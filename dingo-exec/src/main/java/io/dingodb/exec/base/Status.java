@@ -16,9 +16,12 @@
 
 package io.dingodb.exec.base;
 
-public enum Status {
-    BORN,
-    READY,
-    RUNNING,
-    STOPPED,
+public final class Status {
+    public static int BORN = 0;
+    public static int READY = 1;
+    public static int RUNNING = 2;
+    public static int STOPPED = 3;
+
+    private Status() {
+    }
 }

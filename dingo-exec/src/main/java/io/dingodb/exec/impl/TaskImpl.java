@@ -45,7 +45,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @JsonPropertyOrder({"jobId", "location", "operators", "runList", "parasType"})
@@ -71,7 +71,7 @@ public final class TaskImpl implements Task {
     @JsonProperty("parasType")
     @Getter
     private final DingoType parasType;
-    private final transient AtomicReference<Status> status;
+    private final transient AtomicInteger status;
     private Id rootOperatorId = null;
     private CountDownLatch activeThreads = null;
     @Getter
@@ -90,7 +90,7 @@ public final class TaskImpl implements Task {
         this.parasType = parasType;
         this.operators = new HashMap<>();
         this.runList = new LinkedList<>();
-        this.status = new AtomicReference<>(Status.BORN);
+        this.status = new AtomicInteger(Status.BORN);
     }
 
     @Override
@@ -106,7 +106,7 @@ public final class TaskImpl implements Task {
     }
 
     @Override
-    public Status getStatus() {
+    public int getStatus() {
         return status.get();
     }
 
