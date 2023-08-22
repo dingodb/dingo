@@ -19,6 +19,7 @@ package io.dingodb.exec.utils;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.NullableType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
@@ -36,8 +37,18 @@ public final class SchemaWrapperUtils {
     }
 
     private static ColumnDefinition mapDingoType(@NonNull NullableType type, int primary) {
+        String typeName = TypeCode.nameOf(type.getTypeCode());
+        if (typeName.equals(TypeCode.LIST_NAME)) {
+            return ColumnDefinition.builder()
+                .type(typeName)
+                .elementType(TypeCode.nameOf(((ListType) type).getElementType().getTypeCode()))
+                .primary(primary)
+                .nullable(type.isNullable())
+                .build();
+        }
+
         return ColumnDefinition.builder()
-            .type(TypeCode.nameOf(type.getTypeCode()))
+            .type(typeName)
             .primary(primary)
             .nullable(type.isNullable())
             .build();

@@ -16,7 +16,6 @@
 
 package io.dingodb.server.executor.service;
 
-import com.google.auto.service.AutoService;
 import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
@@ -29,7 +28,6 @@ import io.dingodb.server.executor.common.Mapping;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,7 +39,7 @@ import static java.util.Collections.singletonList;
 public final class StoreService implements io.dingodb.store.api.StoreService {
     public static final StoreService DEFAULT_INSTANCE = new StoreService();
 
-    @AutoService(io.dingodb.store.api.StoreServiceProvider.class)
+//    @AutoService(io.dingodb.store.api.StoreServiceProvider.class)
     public static final class StoreServiceProvider implements io.dingodb.store.api.StoreServiceProvider {
         @Override
         public io.dingodb.store.api.StoreService get() {

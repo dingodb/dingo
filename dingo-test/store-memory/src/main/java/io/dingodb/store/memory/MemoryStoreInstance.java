@@ -132,6 +132,20 @@ public class MemoryStoreInstance implements StoreInstance {
     }
 
     @Override
+    public boolean insertWithIndex(Object[] record) {
+        // TODO:
+        KeyValue keyValue = convertRow(record);
+        db.put(keyValue.getKey(), keyValue.getValue());
+        return true;
+    }
+
+    @Override
+    public boolean insertIndex(Object[] record) {
+        // TODO:
+        return true;
+    }
+
+    @Override
     public boolean update(KeyValue row, KeyValue old) {
         if (Arrays.equals(row.getKey(), old.getKey())) {
             if (Arrays.equals(db.get(row.getKey()), old.getValue())) {

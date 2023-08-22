@@ -53,7 +53,7 @@ public final class Mapping {
     }
 
 
-    public static Table mapping(TableDefinition tableDefinition) {
+    public static io.dingodb.server.executor.common.TableDefinition mapping(TableDefinition tableDefinition) {
         return new io.dingodb.server.executor.common.TableDefinition(tableDefinition);
     }
 

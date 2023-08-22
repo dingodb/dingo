@@ -16,8 +16,9 @@
 
 package io.dingodb.calcite.grammar.ddl;
 
+import io.dingodb.common.partition.PartitionDefinition;
+import lombok.Getter;
 import org.apache.calcite.sql.SqlCall;
-import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -27,6 +28,7 @@ import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.List;
+import java.util.Properties;
 
 public class SqlIndexDeclaration extends SqlCall {
 
@@ -34,14 +36,41 @@ public class SqlIndexDeclaration extends SqlCall {
 
     public SqlNodeList columnList;
 
+    public SqlNodeList withColumnList;
+
+    @Getter
+    Properties properties;
+
+    @Getter
+    PartitionDefinition partDefinition;
+
+    @Getter
+    int replica;
+
+    @Getter
+    String indexType;
+
     private static final SqlSpecialOperator OPERATOR =
         new SqlSpecialOperator("INDEX_DECL", SqlKind.CREATE_INDEX);
 
-    public SqlIndexDeclaration(SqlParserPos pos, String index,
-                               SqlNodeList columnList) {
+    public SqlIndexDeclaration(
+        SqlParserPos pos,
+        String index,
+        SqlNodeList columnList,
+        SqlNodeList withColumnList,
+        Properties properties,
+        PartitionDefinition partDefinition,
+        int replica,
+        String indexType
+    ) {
         super(pos);
         this.index = index;
         this.columnList = columnList;
+        this.withColumnList = withColumnList;
+        this.properties = properties;
+        this.partDefinition = partDefinition;
+        this.replica = replica;
+        this.indexType = indexType;
     }
 
     @Override
@@ -58,6 +87,5 @@ public class SqlIndexDeclaration extends SqlCall {
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword("index");
         writer.keyword(index);
-        columnList.unparse(writer, 1, 1);
     }
 }

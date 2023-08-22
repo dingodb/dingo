@@ -17,19 +17,31 @@
 package io.dingodb.server.executor.common;
 
 import io.dingodb.common.util.Optional;
+import io.dingodb.sdk.common.index.FlatParam;
 import io.dingodb.sdk.common.index.IndexParameter;
+import io.dingodb.sdk.common.index.ScalarIndexParameter;
+import io.dingodb.sdk.common.index.VectorIndexParameter;
 import io.dingodb.sdk.common.partition.Partition;
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Getter
 public class TableDefinition implements Table {
 
     private final io.dingodb.common.table.TableDefinition tableDefinition;
+
+    @Setter
+    private Map<String, String> properties;
+
+    @Setter
+    private String name;
 
     public TableDefinition(io.dingodb.common.table.TableDefinition tableDefinition) {
         this.tableDefinition = tableDefinition;
@@ -37,6 +49,9 @@ public class TableDefinition implements Table {
 
     @Override
     public String getName() {
+        if (name != null) {
+            return name;
+        }
         return tableDefinition.getName();
     }
 
@@ -92,7 +107,44 @@ public class TableDefinition implements Table {
 
     @Override
     public IndexParameter getIndexParameter() {
-        // TODO
-        return null;
+        if (properties == null) {
+            return null;
+        }
+
+        String indexType = properties.get("indexType");
+        if (indexType.equals("scalar")) {
+            return new IndexParameter(
+                IndexParameter.IndexType.INDEX_TYPE_SCALAR,
+                new ScalarIndexParameter(ScalarIndexParameter.ScalarIndexType.SCALAR_INDEX_TYPE_LSM, false)
+            );
+        } else {
+            VectorIndexParameter vectorIndexParameter;
+            int dimension = Optional.mapOrThrow(properties.get("dimension"), Integer::parseInt,
+                tableDefinition.getName() + " vector index dimension is null.");
+            VectorIndexParameter.MetricType metricType = getMetricType(properties.getOrDefault("metricType", "L2"));
+            switch (properties.get("type").toUpperCase()) {
+                case "FLAT":
+                default:
+                    vectorIndexParameter = new VectorIndexParameter(
+                        VectorIndexParameter.VectorIndexType.VECTOR_INDEX_TYPE_FLAT,
+                        new FlatParam(dimension, metricType)
+                    );
+            }
+
+            return new IndexParameter(IndexParameter.IndexType.INDEX_TYPE_VECTOR, vectorIndexParameter);
+
+        }
+    }
+
+    private VectorIndexParameter.MetricType getMetricType(String metricType) {
+        switch (metricType.toUpperCase()) {
+            case "INNER_PRODUCT":
+                return VectorIndexParameter.MetricType.METRIC_TYPE_INNER_PRODUCT;
+            case "COSINE":
+                return VectorIndexParameter.MetricType.METRIC_TYPE_COSINE;
+            case "L2":
+            default:
+                return VectorIndexParameter.MetricType.METRIC_TYPE_L2;
+        }
     }
 }

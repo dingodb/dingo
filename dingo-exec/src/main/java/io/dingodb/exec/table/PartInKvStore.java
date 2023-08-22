@@ -82,11 +82,12 @@ public final class PartInKvStore implements Part {
 
     @Override
     public boolean insert(@NonNull Object[] keyValue) {
-        try {
-            return insert(codec.encode(keyValue));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        boolean insert = store.insertWithIndex(keyValue);
+        if (insert) {
+            return store.insertIndex(keyValue);
         }
+
+        return false;
     }
 
     @Override

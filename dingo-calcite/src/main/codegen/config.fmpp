@@ -108,6 +108,7 @@ data: {
       "INDEX"
       "LOCK"
       "NEXT_AUTO_INCREMENT"
+      "PARAMETERS"
       "PASSWORD"
       "PREPARE"
       "RELOAD"
@@ -194,6 +195,10 @@ data: {
 
     sqlTypeNameMethods: [
         "SqlFloatTypeName"
+    ]
+
+    functionCallMethods: [
+        "TableFunctionCall"
     ]
 
     # List of files in @includes directory that have parser method

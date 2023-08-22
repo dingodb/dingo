@@ -35,11 +35,11 @@ import org.apache.calcite.schema.Table;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import static java.util.Objects.requireNonNull;
 
@@ -53,6 +53,8 @@ public abstract class AbstractSchema implements Schema {
     protected final List<String> names;
 
     protected final Map<String, DingoTable> tableCache = new ConcurrentHashMap<>();
+
+    protected final Set<String> tableNames = new CopyOnWriteArraySet<>();
 
     AbstractSchema(MetaService metaService, DingoParserContext context, List<String> names) {
         this.metaService = metaService;
@@ -68,15 +70,17 @@ public abstract class AbstractSchema implements Schema {
         return metaService.name();
     }
 
-    protected void addTableCache(String name, TableDefinition td) {
+    protected void addTableCache(String name, TableDefinition td, Map<CommonId, TableDefinition> indexTds) {
         if (tableCache.containsKey(name)) {
             return;
         }
         CommonId tableId = metaService.getTableId(name);
-        DingoTable table = new DingoTable(tableId,
+        DingoTable table = new DingoTable(
+            tableId,
             context,
             ImmutableList.<String>builder().addAll(names).add(name).build(),
             td,
+            indexTds,
             metaService.getTableStatistic(name)
         );
         tableCache.put(name, table);
@@ -90,25 +94,23 @@ public abstract class AbstractSchema implements Schema {
     public synchronized Table getTable(String name) {
         name = name.toUpperCase();
         if (tableCache.get(name) == null) {
-            // todo change coordinator get table return null, throw exception currently
-            if (metaService.getTableId(name) == null) {
+            CommonId tableId = metaService.getTableId(name);
+            if (tableId == null) {
                 return null;
             }
-            TableDefinition tableDefinition = metaService.getTableDefinition(name);
 
-            if (tableDefinition != null) {
-                addTableCache(name, tableDefinition);
-            }
+            TableDefinition tableDefinition = metaService.getTableDefinition(name);
+            addTableCache(name, tableDefinition, metaService.getTableIndexDefinitions(name));
         }
         return tableCache.get(name);
     }
 
     @Override
     public synchronized Set<String> getTableNames() {
-        if (tableCache.isEmpty()) {
-            metaService.getTableDefinitions().forEach(this::addTableCache);
+        if (tableNames.isEmpty()) {
+            tableNames.addAll(metaService.getTableDefinitions().keySet());
         }
-        return metaService.getTableDefinitions().keySet();
+        return tableNames;
     }
 
     @Override
