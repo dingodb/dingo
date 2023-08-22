@@ -34,8 +34,8 @@ import io.dingodb.server.executor.Configuration;
 import io.dingodb.server.executor.common.Mapping;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -115,6 +115,19 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
+    public void createTables(@NonNull TableDefinition tableDefinition,
+                             @NonNull List<TableDefinition> indexTableDefinitions) {
+        List<Table> indexTables = indexTableDefinitions.stream().map(Mapping::mapping).collect(Collectors.toList());
+        indexTables.forEach(__ -> {
+            io.dingodb.server.executor.common.TableDefinition table =
+                (io.dingodb.server.executor.common.TableDefinition) __;
+            table.setProperties(__.getProperties());
+            table.setName(tableDefinition.getName() + "." + __.getName());
+        });
+        metaServiceClient.createTables(mapping(tableDefinition), indexTables);
+    }
+
+    @Override
     public boolean dropTable(@NonNull String tableName) {
         return metaServiceClient.dropTable(tableName);
     }
@@ -141,6 +154,23 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public TableDefinition getTableDefinition(@NonNull CommonId id) {
         return Optional.mapOrNull(metaServiceClient.getTableDefinition(mapping(id)), Mapping::mapping);
+    }
+
+    @Override
+    public List<TableDefinition> getTableDefinitions(@NonNull String name) {
+        return metaServiceClient.getTables(name).stream().map(Mapping::mapping).collect(Collectors.toList());
+    }
+
+    @Override
+    public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id) {
+       return metaServiceClient.getTableIndexes(mapping(id)).entrySet().stream()
+           .collect(Collectors.toMap(entry -> mapping(entry.getKey()), entry -> mapping(entry.getValue())));
+    }
+
+    @Override
+    public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull String name) {
+        return metaServiceClient.getTableIndexes(name).entrySet().stream()
+            .collect(Collectors.toMap(entry -> mapping(entry.getKey()), entry -> mapping(entry.getValue())));
     }
 
     public void addDistribution(String tableName, PartitionDetailDefinition partitionDetail) {

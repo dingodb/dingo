@@ -29,6 +29,8 @@ import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.TableStatistic;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -118,6 +120,13 @@ public class LocalMetaService implements MetaService {
     }
 
     @Override
+    public void createTables(@NonNull TableDefinition tableDefinition,
+                             @NonNull List<TableDefinition> indexTableDefinitions) {
+        CommonId tableId = new CommonId(TABLE , id.seq, tableSeq.incrementAndGet());
+        tableDefinitions.put(tableId, tableDefinition);
+    }
+
+    @Override
     public boolean dropTable(@NonNull String tableName) {
         tableName = tableName.toUpperCase();
         tableDefinitions.remove(getTableId(tableName));
@@ -152,6 +161,28 @@ public class LocalMetaService implements MetaService {
 
     public TableDefinition getTableDefinition(@NonNull CommonId id) {
         return tableDefinitions.get(id);
+    }
+
+    @Override
+    public List<TableDefinition> getTableDefinitions(@NonNull String name) {
+        //TODO:
+        return Collections.singletonList(getTableDefinition(name));
+    }
+
+    @Override
+    public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id) {
+        //TODO:
+        Map<CommonId, TableDefinition> map = new HashMap<>();
+        map.put(id, getTableDefinition(id));
+        return map;
+    }
+
+    @Override
+    public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull String name) {
+        //TODO:
+        Map<CommonId, TableDefinition> map = new HashMap<>();
+        map.put(getTableId(name), getTableDefinition(name));
+        return map;
     }
 
     @Override

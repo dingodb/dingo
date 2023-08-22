@@ -19,6 +19,7 @@ package io.dingodb.calcite.grammar;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
 import org.apache.calcite.sql2rel.SqlLikeBinaryOperator;
+import org.apache.calcite.sql2rel.SqlVectorOperator;
 
 public class SqlUserDefinedOperators {
     public static SqlLikeBinaryOperator LIKE_BINARY =
@@ -28,4 +29,6 @@ public class SqlUserDefinedOperators {
         new SqlLikeBinaryOperator("NOT LIKE_BINARY", SqlKind.OTHER_FUNCTION, true, true);
 
     public static SqlFunctionScanOperator SCAN = new SqlFunctionScanOperator("SCAN", SqlKind.COLLECTION_TABLE);
+
+    public static SqlVectorOperator VECTOR = new SqlVectorOperator("VECTOR", SqlKind.COLLECTION_TABLE);
 }

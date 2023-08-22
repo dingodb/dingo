@@ -88,8 +88,16 @@ public class DingoResultSet extends AvaticaResultSet {
     protected AvaticaResultSet execute() throws SQLException {
         super.execute();
         for (int i = 0; i < this.columnMetaDataList.size(); i++) {
-            if (columnMetaDataList.get(i).type.id == Types.FLOAT) {
+            ColumnMetaData columnMetaData = columnMetaDataList.get(i);
+            if (columnMetaData.type.id == Types.FLOAT) {
                 this.accessorList.set(i, new DingoAccessor.FloatAccessor((AbstractCursor) cursor, i));
+            }
+
+            if (columnMetaData.type.id == Types.ARRAY) {
+                ColumnMetaData.ArrayType arrayType = (ColumnMetaData.ArrayType) columnMetaData.type;
+                if (arrayType.getComponent().id == Types.FLOAT) {
+                    this.accessorList.set(i, new DingoAccessor.ArrayAccessor((AbstractCursor) cursor, i));
+                }
             }
         }
         return this;
@@ -99,8 +107,16 @@ public class DingoResultSet extends AvaticaResultSet {
     public AvaticaResultSet execute2(Cursor cursor, List<ColumnMetaData> columnMetaDataList) {
         super.execute2(cursor, columnMetaDataList);
         for (int i = 0; i < this.columnMetaDataList.size(); i++) {
-            if (columnMetaDataList.get(i).type.id == Types.FLOAT) {
+            ColumnMetaData columnMetaData = columnMetaDataList.get(i);
+            if (columnMetaData.type.id == Types.FLOAT) {
                 this.accessorList.set(i, new DingoAccessor.FloatAccessor((AbstractCursor) cursor, i));
+            }
+
+            if (columnMetaData.type.id == Types.ARRAY) {
+                ColumnMetaData.ArrayType arrayType = (ColumnMetaData.ArrayType) columnMetaData.type;
+                if (arrayType.getComponent().id == Types.FLOAT) {
+                    this.accessorList.set(i, new DingoAccessor.ArrayAccessor((AbstractCursor) cursor, i));
+                }
             }
         }
         return this;

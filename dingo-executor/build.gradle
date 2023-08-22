@@ -53,6 +53,7 @@ dependencies {
     implementation project(':dingo-net-api')
     implementation project(":dingo-net-api")
     implementation project(":dingo-store-api")
+    implementation project(':dingo-store-proxy')
 
     implementation project(":dingo-cli:driver-mysql")
 

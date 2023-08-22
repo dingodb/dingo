@@ -100,6 +100,8 @@ public interface MetaService {
      */
     void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition);
 
+    void createTables(@NonNull TableDefinition tableDefinition, @NonNull List<TableDefinition> indexTableDefinitions);
+
     /**
      * Drop table meta and table storage.
      * Notice: check the table name case, because by default, the table names are converted to uppercase
@@ -141,6 +143,12 @@ public interface MetaService {
      * @return table definition or null if not found.
      */
     TableDefinition getTableDefinition(@NonNull CommonId id);
+
+    List<TableDefinition> getTableDefinitions(@NonNull String name);
+
+    Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull String name);
+
+    Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id);
 
     default void addDistribution(String tableName, PartitionDetailDefinition detail) {
         throw new UnsupportedOperationException();

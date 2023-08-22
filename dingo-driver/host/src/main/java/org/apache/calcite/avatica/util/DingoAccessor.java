@@ -214,4 +214,10 @@ public class DingoAccessor implements Cursor.Accessor {
             return getFloat();
         }
     }
+
+    public static class ArrayAccessor extends DingoAccessor {
+        public ArrayAccessor(AbstractCursor cursor, int index) {
+            super(cursor.createGetter(index));
+        }
+    }
 }

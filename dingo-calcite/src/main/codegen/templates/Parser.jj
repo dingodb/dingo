@@ -2206,7 +2206,9 @@ SqlNode TableRef3(ExprContext exprContext, boolean lateral) :
         }
     |
         [ <LATERAL> { lateral = true; } ]
-        tableRef = TableFunctionCall()
+        <#list (parser.functionCallMethods!) as method>
+            tableRef = ${method}()
+        </#list>
         tableRef = addLateral(tableRef, lateral)
     |
         tableRef = ExtendedTableRef()
@@ -2390,46 +2392,6 @@ void AddCompoundIdentifierType(List<SqlNode> list, List<SqlNode> extendList) :
         }
         list.add(name);
     }
-}
-
-SqlNode TableFunctionCall() :
-{
-    final Span s;
-    final SqlNode call;
-    SqlFunctionCategory funcType = SqlFunctionCategory.USER_DEFINED_TABLE_FUNCTION;
-    final List<SqlNode> list = new ArrayList<SqlNode>();
-}
-{
-    (
-        <TABLE> { s = span(); } <LPAREN>
-        [
-            <SPECIFIC>
-        {
-            funcType = SqlFunctionCategory.USER_DEFINED_TABLE_SPECIFIC_FUNCTION;
-        }
-        ]
-        call = NamedRoutineCall(funcType, ExprContext.ACCEPT_CURSOR)
-        <RPAREN>
-        {
-            return SqlStdOperatorTable.COLLECTION_TABLE.createCall(s.end(this), call);
-        }
-    |
-        ( <VECTOR> | <SCAN> ) { s = span(); } <LPAREN>
-        [
-            AddArg0(list, ExprContext.ACCEPT_CURSOR)
-            (
-                <COMMA> {
-                    // a comma-list can't appear where only a query is expected
-                    checkNonQueryExpression(ExprContext.ACCEPT_CURSOR);
-                }
-                AddArg(list, ExprContext.ACCEPT_CURSOR)
-            )*
-        ]
-        <RPAREN>
-        {
-            return SqlUserDefinedOperators.SCAN.createCall(s.end(this), list);
-        }
-    )
 }
 
 /**

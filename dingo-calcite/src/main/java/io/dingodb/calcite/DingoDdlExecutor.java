@@ -84,6 +84,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -104,18 +105,12 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         this.userService = UserServiceProvider.getRoot();
     }
 
-    private static List<Index> getIndex(DingoSqlCreateTable create) {
-        List<Index> indexList = create.columnList.stream()
+    private List<TableDefinition> getIndexDefinitions(DingoSqlCreateTable create, TableDefinition tableDefinition) {
+        List<TableDefinition> indexTableDefinitions = create.columnList.stream()
             .filter(col -> col.getKind() == SqlKind.CREATE_INDEX)
-            .map(col -> fromSqlIndexDeclaration((SqlIndexDeclaration) col))
+            .map(col -> fromSqlIndexDeclaration((SqlIndexDeclaration) col, tableDefinition))
             .collect(Collectors.toCollection(ArrayList::new));
-
-        indexList.addAll(create.columnList.stream()
-            .filter(SqlKeyConstraint.class::isInstance)
-            .map(SqlKeyConstraint.class::cast)
-            .filter(constraint -> constraint.getOperator().getKind() == SqlKind.UNIQUE)
-            .map(DingoDdlExecutor::fromSqlKeyConstraint).collect(Collectors.toList()));
-        return indexList;
+        return indexTableDefinitions;
     }
 
     private static Index fromSqlKeyConstraint(SqlKeyConstraint sqlKeyConstraint) {
@@ -130,16 +125,132 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         return new Index(name.names.get(0).toUpperCase(), columns, true);
     }
 
-    private static @Nullable Index fromSqlIndexDeclaration(
-        @NonNull SqlIndexDeclaration indexDeclaration
+    private @Nullable TableDefinition fromSqlIndexDeclaration(
+        @NonNull SqlIndexDeclaration indexDeclaration,
+        TableDefinition tableDefinition
     ) {
+        TableDefinition indexTableDefinition = tableDefinition.copyWithName(indexDeclaration.index);
+
+        List<ColumnDefinition> tableColumns = tableDefinition.getColumns();
+        List<String> tableColumnNames = tableColumns.stream().map(ColumnDefinition::getName)
+            .collect(Collectors.toList());
+
+        // Primary key list
         String[] columns = indexDeclaration.columnList.getList().stream()
+            .filter(Objects::nonNull)
+            .map(SqlIdentifier.class::cast)
+            .map(SqlIdentifier::getSimple)
+            .map(String::toUpperCase)
+            .toArray(String[]::new);
+
+        Properties properties = indexDeclaration.getProperties();
+        if (properties == null) {
+            properties = new Properties();
+        }
+
+        List<ColumnDefinition> indexColumnDefinitions = new ArrayList<>();
+        if (indexDeclaration.getIndexType().equals("scalar")) {
+            properties.put("indexType", "scalar");
+            for (String columnName : columns) {
+                // Check if the column exists in the original table
+                if (!tableColumnNames.contains(columnName)) {
+                    throw new RuntimeException("Invalid column name: " + columnName);
+                }
+
+                ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
+                    .findFirst().get();
+
+                ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
+                    .name(columnDefinition.getName())
+                    .type(columnDefinition.getTypeName())
+                    .elementType(columnDefinition.getElementType())
+                    .precision(columnDefinition.getPrecision())
+                    .scale(columnDefinition.getScale())
+                    .nullable(columnDefinition.isNullable())
+                    .primary(0)
+                    .build();
+                indexColumnDefinitions.add(indexColumnDefinition);
+            }
+        } else {
+            properties.put("indexType", "vector");
+            int primary = 0;
+            for (int i = 0; i < columns.length; i++) {
+                String columnName = columns[i];
+                if (!tableColumnNames.contains(columnName)) {
+                    throw new RuntimeException("Invalid column name: " + columnName);
+                }
+
+                ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
+                    .findFirst().get();
+
+                if (i == 0) {
+                    if (!columnDefinition.getTypeName().equals("INT") &&
+                        !columnDefinition.getTypeName().equals("BIGINT")) {
+                        throw new RuntimeException("Invalid column type: " + columnName);
+                    }
+                } else {
+                    if (!columnDefinition.getTypeName().equals("ARRAY") ||
+                        !(columnDefinition.getElementType() != null
+                            && columnDefinition.getElementType().equals("FLOAT"))) {
+                        throw new RuntimeException("Invalid column type: " + columnName);
+                    }
+                    primary = -1;
+                }
+
+                ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
+                    .name(columnDefinition.getName())
+                    .type(columnDefinition.getTypeName())
+                    .elementType(columnDefinition.getElementType())
+                    .precision(columnDefinition.getPrecision())
+                    .scale(columnDefinition.getScale())
+                    .nullable(columnDefinition.isNullable())
+                    .primary(primary)
+                    .build();
+                indexColumnDefinitions.add(indexColumnDefinition);
+            }
+        }
+
+        // Not primary key list
+        if (indexDeclaration.withColumnList != null) {
+            String[] otherColumns = indexDeclaration.withColumnList.getList().stream()
                 .filter(Objects::nonNull)
                 .map(SqlIdentifier.class::cast)
                 .map(SqlIdentifier::getSimple)
                 .map(String::toUpperCase)
                 .toArray(String[]::new);
-        return new Index(indexDeclaration.index, columns, false);
+
+            for (String columnName : otherColumns) {
+                // Check if the column exists in the original table
+                if (!tableColumnNames.contains(columnName)) {
+                    throw new RuntimeException("Invalid column name: " + columnName);
+                }
+
+                ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
+                    .findFirst().get();
+
+                ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
+                    .name(columnDefinition.getName())
+                    .type(columnDefinition.getTypeName())
+                    .elementType(columnDefinition.getElementType())
+                    .precision(columnDefinition.getPrecision())
+                    .scale(columnDefinition.getScale())
+                    .nullable(columnDefinition.isNullable())
+                    .primary(-1)
+                    .build();
+                indexColumnDefinitions.add(indexColumnDefinition);
+            }
+        }
+
+        indexTableDefinition.setColumns(indexColumnDefinitions);
+        indexTableDefinition.setPartDefinition(indexDeclaration.getPartDefinition());
+        indexTableDefinition.setReplica(indexDeclaration.getReplica());
+        indexTableDefinition.setProperties(properties);
+
+        Optional.ifPresent(indexDeclaration.getPartDefinition(),
+            __ -> validatePartitionBy(indexTableDefinition.getKeyColumns().stream()
+                .map(ColumnDefinition::getName).collect(Collectors.toList()), indexTableDefinition, __));
+
+        return indexTableDefinition;
     }
 
     private static @Nullable ColumnDefinition fromSqlColumnDeclaration(
@@ -312,15 +423,12 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             create.getReplica(),
             create.getOriginalCreateSql()
         );
-        List<Index> indexList = getIndex(create);
+        List<TableDefinition> indexTableDefinitions = getIndexDefinitions(create, tableDefinition);
 
         // Validate partition strategy
         Optional.ifPresent(create.getPartDefinition(), __ -> validatePartitionBy(pks, tableDefinition, __));
 
-        schema.createTable(tableName, tableDefinition);
-        if (indexList.size() > 0) {
-            schema.createIndex(tableName, indexList);
-        }
+        schema.createTables(tableDefinition, indexTableDefinitions);
     }
 
     @SuppressWarnings({"unused", "MethodMayBeStatic"})

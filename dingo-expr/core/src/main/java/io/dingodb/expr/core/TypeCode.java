@@ -46,7 +46,9 @@ public final class TypeCode {
     public static final int DATE = 101;
     public static final int TIME = 102;
     public static final int TIMESTAMP = 103;
+    public static final String ARRAY_NAME = "ARRAY";
     public static final int ARRAY = 1001;
+    public static final String LIST_NAME = "LIST";
     public static final int LIST = 1002;
     public static final int MAP = 1003;
     public static final int TUPLE = -1;
@@ -83,9 +85,9 @@ public final class TypeCode {
             case TIMESTAMP:
                 return "TIMESTAMP";
             case ARRAY:
-                return "ARRAY";
+                return ARRAY_NAME;
             case LIST:
-                return "LIST";
+                return LIST_NAME;
             case MAP:
                 return "MAP";
             case TUPLE:

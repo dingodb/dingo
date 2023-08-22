@@ -124,10 +124,15 @@ void TableElement(List<SqlNode> list) :
     final SqlNode constraint;
     SqlIdentifier name = null;
     final SqlNodeList columnList;
+    SqlNodeList withColumnList = null;
     final Span s = Span.of();
     final ColumnStrategy strategy;
     final String index;
     Boolean autoIncrement = false;
+    Properties properties = null;
+    PartitionDefinition partitionDefinition = null;
+    int replica = 0;
+    String indexType = "scalar";
 }
 {
     LOOKAHEAD(2) id = SimpleIdentifier()
@@ -177,6 +182,35 @@ void TableElement(List<SqlNode> list) :
             list.add(SqlDdlNodes.check(s.end(this), name, e));
         }
     |
+        <INDEX> { s.add(this); }
+        { index = getNextToken().image; }
+        (
+            <VECTOR>
+            { indexType = "vector"; }
+            columnList = ParenthesizedSimpleIdentifierList()
+        |
+            [<SCALAR>]
+            columnList = ParenthesizedSimpleIdentifierList()
+        )
+        [ <WITH> withColumnList = ParenthesizedSimpleIdentifierList() ]
+        [
+           <PARTITION> <BY>
+           {
+               partitionDefinition = new PartitionDefinition();
+               partitionDefinition.setFuncName(getNextToken().image);
+               partitionDefinition.setCols(readNames());
+               partitionDefinition.setDetails(readPartitionDetails());
+           }
+        ]
+        [
+            <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
+        ]
+        [ <PARAMETERS> properties = readProperties() ]
+        {
+            list.add(new SqlIndexDeclaration(s.end(this), index, columnList, withColumnList, properties,
+            partitionDefinition, replica, indexType));
+        }
+    |
         <UNIQUE> { s.add(this); } name = SimpleIdentifier()
         columnList = ParenthesizedSimpleIdentifierList() {
             list.add(SqlDdlNodes.unique(s.end(columnList), name, columnList));
@@ -185,13 +219,6 @@ void TableElement(List<SqlNode> list) :
         <PRIMARY>  { s.add(this); } <KEY>
         columnList = ParenthesizedSimpleIdentifierList() {
             list.add(SqlDdlNodes.primary(s.end(columnList), name, columnList));
-        }
-    |
-        <INDEX> { s.add(this); }
-        ( <QUOTED_STRING> | <IDENTIFIER> )
-        { index = token.image.toUpperCase(); }
-        columnList = ParenthesizedSimpleIdentifierList() {
-            list.add(new SqlIndexDeclaration(s.end(this), index, columnList));
         }
     )
 }
@@ -1028,4 +1055,60 @@ SqlTypeNameSpec SqlFloatTypeName(Span s) :
         sqlTypeNameSpec = new SqlFloatTypeNameSpec(sqlTypeName, precision, s.end(this));
         return sqlTypeNameSpec;
     }
+}
+
+SqlNode TableFunctionCall() :
+{
+    final Span s;
+    final SqlNode call;
+    SqlFunctionCategory funcType = SqlFunctionCategory.USER_DEFINED_TABLE_FUNCTION;
+    final List<SqlNode> list = new ArrayList<SqlNode>();
+}
+{
+    (
+        <TABLE> { s = span(); } <LPAREN>
+        [
+            <SPECIFIC>
+        {
+            funcType = SqlFunctionCategory.USER_DEFINED_TABLE_SPECIFIC_FUNCTION;
+        }
+        ]
+        call = NamedRoutineCall(funcType, ExprContext.ACCEPT_CURSOR)
+        <RPAREN>
+        {
+            return SqlStdOperatorTable.COLLECTION_TABLE.createCall(s.end(this), call);
+        }
+    |
+        <SCAN> { s = span(); } <LPAREN>
+        [
+            AddArg0(list, ExprContext.ACCEPT_CURSOR)
+            (
+                <COMMA> {
+                    // a comma-list can't appear where only a query is expected
+                    checkNonQueryExpression(ExprContext.ACCEPT_CURSOR);
+                }
+                AddArg(list, ExprContext.ACCEPT_CURSOR)
+            )*
+        ]
+        <RPAREN>
+        {
+            return SqlUserDefinedOperators.SCAN.createCall(s.end(this), list);
+        }
+    |
+        <VECTOR> { s = span(); } <LPAREN>
+        [
+            AddArg0(list, ExprContext.ACCEPT_CURSOR)
+            (
+                <COMMA> {
+                    // a comma-list can't appear where only a query is expected
+                    checkNonQueryExpression(ExprContext.ACCEPT_CURSOR);
+                }
+                AddArg(list, ExprContext.ACCEPT_CURSOR)
+            )*
+        ]
+        <RPAREN>
+        {
+            return SqlUserDefinedOperators.VECTOR.createCall(s.end(this), list);
+        }
+    )
 }

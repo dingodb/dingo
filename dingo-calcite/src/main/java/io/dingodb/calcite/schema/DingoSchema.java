@@ -35,7 +35,14 @@ public class DingoSchema extends AbstractSchema {
 
     public void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
         metaService.createTable(tableName, tableDefinition);
-        addTableCache(tableName, tableDefinition);
+        addTableCache(tableName, tableDefinition, Collections.emptyMap());
+    }
+
+    public void createTables(@NonNull TableDefinition tableDefinition,
+                             @NonNull List<TableDefinition> indexTableDefinitions) {
+        metaService.createTables(tableDefinition, indexTableDefinitions);
+        addTableCache(tableDefinition.getName(), tableDefinition,
+            metaService.getTableIndexDefinitions(tableDefinition.getName()));
     }
 
     public boolean dropTable(@NonNull String tableName) {

@@ -466,4 +466,9 @@ public class TableDefinition {
     public void removeIndex(String name) {
         indexes.remove(name);
     }
+
+    public TableDefinition copyWithName(String name) {
+        TableDefinition tableDefinition = new TableDefinition(name);
+        return tableDefinition;
+    }
 }

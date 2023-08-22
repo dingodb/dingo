@@ -31,11 +31,22 @@ public class DingoSqlFloatType extends AbstractSqlType {
     public DingoSqlFloatType(SqlTypeName typeName, int precision, boolean nullable) {
         super(typeName, nullable, null);
         this.precision = precision;
+        computeDigest();
     }
 
     @Override
     protected void generateTypeString(StringBuilder sb, boolean withDetail) {
+        sb.append(typeName.name());
+        boolean printPrecision = precision != PRECISION_NOT_SPECIFIED;
 
+        if (printPrecision) {
+            sb.append('(');
+            sb.append(getPrecision());
+            sb.append(')');
+        }
+        if (!withDetail) {
+            return;
+        }
     }
 
     @Override

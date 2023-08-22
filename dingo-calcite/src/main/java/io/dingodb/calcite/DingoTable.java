@@ -41,6 +41,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class DingoTable extends AbstractTable implements TranslatableTable {
@@ -52,6 +53,8 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
     private final List<String> names;
     @Getter
     private final TableDefinition tableDefinition;
+    @Getter
+    private final Map<CommonId, TableDefinition> indexTableDefinitions;
 
     private final TableStatistic tableStatistic;
 
@@ -60,6 +63,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
         DingoParserContext context,
         List<String> names,
         TableDefinition tableDefinition,
+        Map<CommonId, TableDefinition> indexTableDefinitions,
         TableStatistic tableStatistic
     ) {
         super();
@@ -67,6 +71,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
         this.context = context;
         this.names = names;
         this.tableDefinition = tableDefinition;
+        this.indexTableDefinitions = indexTableDefinitions;
         this.tableStatistic = tableStatistic;
     }
 
