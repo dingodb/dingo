@@ -63,6 +63,7 @@ fatJar.dependsOn(
     ':dingo-expr:dingo-expr-runtime:jar',
     ':dingo-expr:dingo-expr-json-runtime:jar',
     ':dingo-serial:jar',
+    ':dingo-store-api:jar',
     ':dingo-store-proxy:jar'
 )
 

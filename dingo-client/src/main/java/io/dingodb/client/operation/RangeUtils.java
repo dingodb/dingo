@@ -26,9 +26,11 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.ConsistentHashing;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.SDKCommonId;
 import io.dingodb.sdk.common.codec.KeyValueCodec;
+import io.dingodb.sdk.common.partition.Partition;
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.ByteArrayUtils;
@@ -37,8 +39,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -130,7 +130,7 @@ public class RangeUtils {
             .build();
 
         NavigableSet<RangeDistribution> distributions;
-        if (tableInfo.definition.getPartition() == null || tableInfo.definition.getPartition().getFuncName().isEmpty()) {
+        if (Optional.of(tableInfo.definition.getPartition()).map(Partition::getFuncName).filter(f -> !f.equalsIgnoreCase(HASH_FUNC_NAME)).isPresent()) {
             distributions = io.dingodb.common.util.RangeUtils.getSubRangeDistribution(src, rangeDistribution);
             if (distributions.size() > 0) {
                 RangeDistribution last = distributions.last();
@@ -139,11 +139,11 @@ public class RangeUtils {
         } else {
             distributions = new TreeSet<>(io.dingodb.common.util.RangeUtils.rangeComparator());
             Map<Long, List<RangeDistribution>> groupedMap = src.stream().collect(Collectors.groupingBy(rd -> rd.getId().domain));
-            for (List<RangeDistribution> subList : groupedMap.values()) {
-                NavigableSet<RangeDistribution> distribution = io.dingodb.common.util.RangeUtils.getSubRangeDistribution(subList, rangeDistribution);
+            for (Map.Entry<Long, List<RangeDistribution>> entry : groupedMap.entrySet()) {
+                NavigableSet<RangeDistribution> distribution = io.dingodb.common.util.RangeUtils.getSubRangeDistribution(entry.getValue(), rangeDistribution);
                 if (distribution.size() > 0) {
                     RangeDistribution last = distribution.last();
-                    last.setEndKey(tableInfo.codec.resetPrefix(last.getEndKey(), last.getId().domain));
+                    last.setEndKey(tableInfo.codec.resetPrefix(last.getEndKey(), entry.getKey()));
                 }
                 distributions.addAll(distribution);
             }

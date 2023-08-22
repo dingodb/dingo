@@ -141,7 +141,11 @@ public class ByteArrayUtils {
     }
 
     public static boolean lessThan(byte[] bytes1, byte[] bytes2) {
-        return compare(bytes1, bytes2) < 0;
+        return lessThan(bytes1, bytes2, 0);
+    }
+
+    public static boolean lessThan(byte[] bytes1, byte[] bytes2, int pos) {
+        return compare(bytes1, bytes2, pos) < 0;
     }
 
     public static boolean greatThan(byte[] bytes1, byte[] bytes2) {
