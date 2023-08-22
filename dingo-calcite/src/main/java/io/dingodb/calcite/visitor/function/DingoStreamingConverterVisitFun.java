@@ -141,7 +141,6 @@ public class DingoStreamingConverterVisitFun {
         @NonNull DingoRelPartitionByKeys hash
     ) {
         List<Output> outputs = new LinkedList<>();
-        // TODO: ClusterService.getDefault().getComputingLocations();
         final Collection<Location> locations = ClusterService.getDefault().getComputingLocations();
         final HashStrategy hs = new SimpleHashStrategy();
         for (Output input : inputs) {

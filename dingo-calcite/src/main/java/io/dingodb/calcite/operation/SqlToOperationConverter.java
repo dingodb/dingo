@@ -94,7 +94,9 @@ public class SqlToOperationConverter {
             return Optional.of(new ShowCreateTableOperation(sqlNode, getSchemaName(context)));
         } else if (sqlNode instanceof SqlShowCreateUser) {
             SqlShowCreateUser sqlShowCreateUser = (SqlShowCreateUser) sqlNode;
-            return Optional.of(new ShowCreateUserOperation(sqlNode, sqlShowCreateUser.userName, sqlShowCreateUser.host));
+            return Optional.of(new ShowCreateUserOperation(sqlNode,
+                sqlShowCreateUser.userName,
+                sqlShowCreateUser.host));
         } else if (sqlNode instanceof SqlShowColumns) {
             SqlShowColumns showColumns = (SqlShowColumns) sqlNode;
             if (StringUtils.isEmpty(showColumns.schemaName)) {
