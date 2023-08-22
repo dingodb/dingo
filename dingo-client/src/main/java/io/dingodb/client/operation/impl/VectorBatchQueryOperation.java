@@ -52,6 +52,9 @@ public class VectorBatchQueryOperation implements Operation {
 
         int i = 0;
         for (Long id : ids) {
+            if (id < 0) {
+                id = 0L;
+            }
             try {
                 byte[] key = indexInfo.codec.encodeKey(new Object[]{id});
                 Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
