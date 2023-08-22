@@ -24,10 +24,6 @@ public final class SqlFileNameStep extends SqlStep {
     @Getter
     private final String fileName;
 
-    public SqlFileNameStep(String fileName) {
-        this(fileName, null);
-    }
-
     public SqlFileNameStep(String fileName, SqlChecker checker) {
         super(checker);
         this.fileName = fileName;
