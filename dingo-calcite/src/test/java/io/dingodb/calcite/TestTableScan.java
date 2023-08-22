@@ -17,7 +17,6 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
-import io.dingodb.calcite.rel.DingoPartRangeScan;
 import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.DingoStreamingConverter;
 import io.dingodb.calcite.rel.DingoTableScan;
@@ -221,10 +220,10 @@ public class TestTableScan {
         RelNode relNode = Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoPartRangeScan.class)
+            .soleInput().isA(DingoTableScan.class)
             .getInstance();
-        DingoPartRangeScan scan = (DingoPartRangeScan) relNode;
+        DingoTableScan scan = (DingoTableScan) relNode;
         assertThat((scan).getFilter()).isNotNull();
-        assertThat((scan).getSelection()).isNull();
+        assertThat((scan).getSelection()).isEqualTo(TupleMapping.of(new int[]{0, 1, 2}));
     }
 }

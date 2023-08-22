@@ -25,7 +25,6 @@ import io.dingodb.calcite.rel.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoLikeScan;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.DingoPartRangeDelete;
-import io.dingodb.calcite.rel.DingoPartRangeScan;
 import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.calcite.rel.DingoRoot;
@@ -45,7 +44,7 @@ import io.dingodb.calcite.visitor.function.DingoHashJoinVisitFun;
 import io.dingodb.calcite.visitor.function.DingoLikeScanVisitFun;
 import io.dingodb.calcite.visitor.function.DingoProjectVisitFun;
 import io.dingodb.calcite.visitor.function.DingoRangeDeleteVisitFun;
-import io.dingodb.calcite.visitor.function.DingoRangeScanVisitFun;
+import io.dingodb.calcite.visitor.function.DingoTableScanVisitFun;
 import io.dingodb.calcite.visitor.function.DingoReduceVisitFun;
 import io.dingodb.calcite.visitor.function.DingoRootVisitFun;
 import io.dingodb.calcite.visitor.function.DingoSortVisitFun;
@@ -154,7 +153,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@NonNull DingoTableScan rel) {
         // current version scan must have range
-        return visit(DingoPartRangeScan.of(rel));
+        return DingoTableScanVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
@@ -170,11 +169,6 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@NonNull DingoPartCountDelete rel) {
         return DingoCountDeleteVisitFun.visit(job, idGenerator, currentLocation, this, rel);
-    }
-
-    @Override
-    public Collection<Output> visit(@NonNull DingoPartRangeScan rel) {
-        return DingoRangeScanVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override

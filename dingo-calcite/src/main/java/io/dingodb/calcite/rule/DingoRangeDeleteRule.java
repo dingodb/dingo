@@ -19,10 +19,10 @@ package io.dingodb.calcite.rule;
 import io.dingodb.calcite.rel.DingoPartRangeDelete;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.utils.RangeUtils;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ import org.immutables.value.Value;
 
 @Slf4j
 @Value.Enclosing
-public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> implements DingoRangeRule {
+public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> {
     public DingoRangeDeleteRule(Config config) {
         super(config);
     }
@@ -48,7 +48,7 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> i
         TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td);
 
-        RangeDistribution range = createRangeByFilter(td, codec, rel.getFilter());
+        RangeDistribution range = RangeUtils.createRangeByFilter(td, codec, rel.getFilter(), rel.getSelection());
         if (range != null) {
             call.transformTo(
                 new DingoPartRangeDelete(

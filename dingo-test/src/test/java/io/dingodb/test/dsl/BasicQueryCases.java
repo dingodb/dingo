@@ -696,7 +696,10 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                     + " min(update_time) mu"
                     + " from {table}"
                     + " where age not between 0 and 18",
-                dump()
+                csv("aa, sa, mc, mu",
+                    "STRING, STRING, STRING, TIMESTAMP",
+                    "472.16, 6610.31, 17:30:15, 1952-12-31 12:12:12.0"
+                )
             );
     }
 }

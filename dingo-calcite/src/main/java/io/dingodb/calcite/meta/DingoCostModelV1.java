@@ -20,7 +20,6 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoCost;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByKeys;
-import io.dingodb.calcite.rel.DingoPartRangeScan;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.stats.StatsCache;
@@ -137,12 +136,6 @@ public class DingoCostModelV1 extends DingoCostModel {
         double tableNetCost = getNetCost(rowCount, rowSize);
         double rangeCost = (tableScanCost + tableNetCost) / scanConcurrency;
         return DingoCost.FACTORY.makeCost(rangeCost, 0, 0);
-    }
-
-    @Override
-    public RelOptCost getDingoPartRange(DingoPartRangeScan partRangeScan, RelMetadataQuery mq) {
-        RelOptCost relOptCost = getLogicDingoTableScan(partRangeScan, mq);
-        return relOptCost.multiplyBy(0.5);
     }
 
     private double getScanAvgRowSize(LogicalDingoTableScan tableScan) {

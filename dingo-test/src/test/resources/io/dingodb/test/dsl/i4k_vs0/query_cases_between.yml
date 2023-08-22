@@ -1,0 +1,75 @@
+tables:
+  i4k_vs0:
+    create: { file: create.sql }
+    init: { file: data_1.sql }
+cases:
+  - name: Scan 1
+    use:
+      table: i4k_vs0
+    steps:
+      - sql: select * from {table} where id between 4 and 13
+        result:
+          - id, name
+          - INT, STRING
+          - 4, a
+          - 5, b
+          - 6, c
+          - 7, a
+          - 8, b
+          - 9, c
+          - 10, a
+          - 11, b
+          - 12, c
+          - 13, a
+  - name: Scan 2
+    use:
+      table: i4k_vs0
+    steps:
+      - sql: select * from {table} where id < 13 and id > 4
+        result:
+          - id, name
+          - INT, STRING
+          - 5, b
+          - 6, c
+          - 7, a
+          - 8, b
+          - 9, c
+          - 10, a
+          - 11, b
+          - 12, c
+  - name: Scan 3
+    use:
+      table: i4k_vs0
+    steps:
+      - sql: select * from {table} where name between 'a' and 'c'
+        result:
+          - id, name
+          - INT, STRING
+          - 1, a
+          - 2, b
+          - 3, c
+          - 4, a
+          - 5, b
+          - 6, c
+          - 7, a
+          - 8, b
+          - 9, c
+          - 10, a
+          - 11, b
+          - 12, c
+          - 13, a
+          - 14, b
+          - 15, c
+  - name: Scan 4
+    use:
+      table: i4k_vs0
+    steps:
+      - sql: select * from {table} where id not between 4 and 13
+        result:
+          - id, name
+          - INT, STRING
+          - 1, a
+          - 2, b
+          - 3, c
+          - 14, b
+          - 15, c
