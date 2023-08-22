@@ -47,6 +47,9 @@ public class VectorDeleteOperation implements Operation {
 
         for (int i = 0; i < ids.size(); i++) {
             Long id = ids.get(i);
+            if (id < 0) {
+                id = 0L;
+            }
 
             try {
                 byte[] bytes = indexInfo.codec.encodeKey(new Object[]{id});
