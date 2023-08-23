@@ -17,6 +17,7 @@
 package io.dingodb.server.executor.service;
 
 import com.google.common.collect.Iterators;
+import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.store.KeyValue;
@@ -92,11 +93,11 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         }
 
         private byte[] setId(byte[] key) {
-            return CodecService.INSTANCE.setId(key, partitionId);
+            return CodecService.getDefault().setId(key, partitionId);
         }
 
         private KeyValue setId(KeyValue keyValue) {
-            return CodecService.INSTANCE.setId(keyValue, partitionId);
+            return CodecService.getDefault().setId(keyValue, partitionId);
         }
 
         @Override

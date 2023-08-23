@@ -16,15 +16,25 @@
 
 package io.dingodb.store.common;
 
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.partition.PartitionDefinition;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.Range;
 import io.dingodb.sdk.common.RangeWithOptions;
 import io.dingodb.sdk.common.SDKCommonId;
+import io.dingodb.sdk.common.partition.Partition;
+import io.dingodb.sdk.common.partition.PartitionDetail;
 import io.dingodb.sdk.common.table.Column;
+import io.dingodb.sdk.common.table.Table;
 import io.dingodb.store.api.StoreInstance;
+
+import java.io.IOException;
+import java.util.stream.Collectors;
 
 public final class Mapping {
 
@@ -44,9 +54,81 @@ public final class Mapping {
             .build();
     }
 
+    public static TableDefinition mapping(Table table) {
+        return new TableDefinition(
+            table.getName(),
+            table.getColumns().stream().map(Mapping::mapping).collect(Collectors.toList()),
+            null,
+            table.getVersion(),
+            table.getTtl(),
+            mapping(table.getPartition()),
+            table.getEngine(),
+            null,
+            table.getAutoIncrement(),
+            table.getReplica(),
+            table.getCreateSql());
+    }
+
+    public static PartitionDefinition mapping(Partition partition) {
+        if (partition == null) {
+            return null;
+        }
+        return new PartitionDefinition(
+            partition.getFuncName(),
+            partition.getCols(),
+            partition.getDetails().stream().map(Mapping::mapping).collect(Collectors.toList()));
+    }
+
+    public static io.dingodb.common.partition.PartitionDetailDefinition mapping(PartitionDetail partitionDetail) {
+        return new io.dingodb.common.partition.PartitionDetailDefinition(
+            partitionDetail.getPartName(),
+            partitionDetail.getOperator(),
+            partitionDetail.getOperand());
+    }
+
+
+    public static RangeDistribution mapping(
+        io.dingodb.sdk.common.table.RangeDistribution rangeDistribution,
+        KeyValueCodec codec
+    ) {
+        try {
+            byte[] startKey = rangeDistribution.getRange().getStartKey();
+            byte[] endKey = rangeDistribution.getRange().getEndKey();
+            return RangeDistribution.builder()
+                .id(mapping(rangeDistribution.getId()))
+                .startKey(startKey)
+                .endKey(endKey)
+                .start(codec.decodeKeyPrefix(startKey))
+                .end(codec.decodeKeyPrefix(endKey))
+                .build();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static ColumnDefinition mapping(Column column) {
+        return ColumnDefinition.getInstance(
+            column.getName(),
+            column.getType().equals("STRING") ? "VARCHAR" : column.getType(),
+            column.getElementType(),
+            column.getPrecision(),
+            column.getScale(),
+            column.isNullable(),
+            column.getPrimary(),
+            column.getDefaultValue(),
+            column.isAutoIncrement());
+    }
+
     public static DingoCommonId mapping(CommonId commonId) {
         //return new io.dingodb.server.executor.common.DingoCommonId(commonId);
         return new SDKCommonId(DingoCommonId.Type.values()[commonId.type.code], commonId.domain, commonId.seq);
+    }
+
+    public static CommonId mapping(DingoCommonId commonId) {
+        return new CommonId(
+            CommonId.CommonType.of(commonId.type().ordinal()),
+            (int) commonId.parentId(),
+            (int) commonId.entityId());
     }
 
     public static io.dingodb.sdk.common.KeyValue mapping(KeyValue keyValue) {
