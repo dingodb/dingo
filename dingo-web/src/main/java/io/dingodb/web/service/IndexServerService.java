@@ -24,6 +24,9 @@ import io.dingodb.client.common.VectorWithId;
 import io.dingodb.proxy.common.ProxyCommon;
 import io.dingodb.proxy.index.IndexServiceGrpc;
 import io.dingodb.proxy.index.ProxyIndex;
+import io.dingodb.sdk.common.index.VectorIndexParameter;
+import io.dingodb.sdk.common.vector.VectorCalcDistance;
+import io.dingodb.sdk.common.vector.VectorDistanceRes;
 import io.dingodb.sdk.common.vector.VectorIndexMetrics;
 import io.dingodb.sdk.common.vector.VectorScanQuery;
 import io.dingodb.web.annotation.GrpcService;
@@ -31,6 +34,7 @@ import io.dingodb.web.utils.Conversion;
 import io.grpc.stub.StreamObserver;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -123,7 +127,7 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
             req.getVectorIdStart(),
             req.getIsReverseScan(),
             req.getMaxScanCount(),
-            0L, // TODO update proto
+            req.getVectorIdEnd(),
             req.getWithoutVectorData(),
             req.getWithScalarData(),
             req.getSelectedKeysList(),
@@ -137,6 +141,32 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
         ProxyIndex.VectorScanQueryResponse response = ProxyIndex.VectorScanQueryResponse.newBuilder()
             .addAllVectors(withIds.stream().map(Conversion::mapping).collect(Collectors.toList()))
             .build();
+        resObserver.onNext(response);
+        resObserver.onCompleted();
+    }
+
+    @Override
+    public void vectorCalcDistance(ProxyIndex.VectorCalcDistanceRequest req, StreamObserver<ProxyIndex.VectorCalcDistanceResponse> resObserver) {
+        VectorCalcDistance calcDistance = new VectorCalcDistance(
+            req.getVectorId(),
+            VectorCalcDistance.AlgorithmType.valueOf(req.getAlgorithmType().name()),
+            VectorIndexParameter.MetricType.valueOf(req.getMetricType().name()),
+            req.getOpLeftVectorsList().stream().map(Conversion::mapping).collect(Collectors.toList()),
+            req.getOpRightVectorsList().stream().map(Conversion::mapping).collect(Collectors.toList()),
+            req.getIsReturnNormalize()
+        );
+
+        VectorDistanceRes distanceRes = dingoClient.vectorCalcDistance(req.getSchemaName(), req.getIndexName(), calcDistance);
+        ProxyIndex.VectorCalcDistanceResponse response = ProxyIndex.VectorCalcDistanceResponse.newBuilder()
+            .addAllOpLeftVectors(distanceRes.getLeftVectors().stream().map(Conversion::mapping).collect(Collectors.toList()))
+            .addAllOpRightVectors(distanceRes.getRightVectors().stream().map(Conversion::mapping).collect(Collectors.toList()))
+            .addAllDistances(distanceRes.getDistances().stream()
+                .map(d -> ProxyIndex.VectorDistance.newBuilder()
+                    .addAllInternalDistances(new ArrayList<>(d.getInternalDistances()))
+                    .build())
+                .collect(Collectors.toList()))
+            .build();
+
         resObserver.onNext(response);
         resObserver.onCompleted();
     }
