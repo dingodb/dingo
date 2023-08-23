@@ -1,0 +1,11 @@
+tables:
+  i4k_vs0:
+    create: { file: create.sql }
+    init: { file: data_1.sql, count: 15 }
+cases:
+  - name: Delete 1
+    use:
+      table: i4k_vs0
+    steps:
+      - sql: select * from scan({table})
+        result: data_1.csv

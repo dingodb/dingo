@@ -18,7 +18,6 @@ package io.dingodb.calcite.meta;
 
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByKeys;
-import io.dingodb.calcite.rel.DingoPartRangeScan;
 import io.dingodb.calcite.rel.DingoTableScan;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.rel.metadata.BuiltInMetadata;
@@ -48,10 +47,6 @@ public class DingoRelMdCost implements MetadataHandler<BuiltInMetadata.NonCumula
 
     public RelOptCost getNonCumulativeCost(DingoGetByIndex dingoGetByIndex, RelMetadataQuery mq) {
         return dingoCostModel.getDingoGetByIndex(dingoGetByIndex, mq);
-    }
-
-    public RelOptCost getNonCumulativeCost(DingoPartRangeScan partRangeScan, RelMetadataQuery mq) {
-        return dingoCostModel.getDingoPartRange(partRangeScan, mq);
     }
 
     public RelOptCost getNonCumulativeCost(DingoTableScan dingoTableScan, RelMetadataQuery mq) {

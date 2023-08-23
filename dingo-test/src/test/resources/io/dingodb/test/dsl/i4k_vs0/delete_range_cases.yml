@@ -1,0 +1,29 @@
+tables:
+  i4k_vs0:
+    create: { file: create.sql }
+    init: { file: data_1.sql, count: 15 }
+cases:
+  - name: Delete 1
+    use:
+      table: i4k_vs0
+    modify:
+      - i4k_vs0
+    steps:
+      - sql: delete from {table} where id > 2
+        count: 13
+  - name: Delete 2
+    use:
+      table: i4k_vs0
+    modify:
+      - i4k_vs0
+    steps:
+      - sql: delete from {table} where id > 2 and id < 10
+        count: 7
+  - name: Delete 3
+    use:
+      table: i4k_vs0
+    modify:
+      - i4k_vs0
+    steps:
+      - sql: delete from {table} where id < 10
+        count: 9

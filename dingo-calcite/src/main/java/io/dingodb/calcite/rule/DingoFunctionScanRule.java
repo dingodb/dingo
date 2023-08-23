@@ -27,7 +27,7 @@ import org.immutables.value.Value;
 
 @Slf4j
 @Value.Enclosing
-public class DingoFunctionScanRule extends RelRule<DingoFunctionScanRule.Config> implements DingoRangeRule {
+public class DingoFunctionScanRule extends RelRule<DingoFunctionScanRule.Config> {
     public DingoFunctionScanRule(Config config) {
         super(config);
     }

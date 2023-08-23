@@ -112,7 +112,22 @@ public class SqlRunningTest extends SqlTestRunner {
 
     @TestFactory
     public Stream<DynamicTest> testLike() {
-        return getTests(SqlTestCaseYamlBuilder.of("i4k_vs0/query_cases.yml"));
+        return getTests(SqlTestCaseYamlBuilder.of("i4k_vs0/query_cases_like.yml"));
+    }
+
+    @TestFactory
+    public Stream<DynamicTest> testBetweenAnd() {
+        return getTests(SqlTestCaseYamlBuilder.of("i4k_vs0/query_cases_between.yml"));
+    }
+
+    @TestFactory
+    public Stream<DynamicTest> testDeleteRange() {
+        return getTests(SqlTestCaseYamlBuilder.of("i4k_vs0/delete_range_cases.yml"));
+    }
+
+    @TestFactory
+    public Stream<DynamicTest> testFunctionScan() {
+        return getTests(SqlTestCaseYamlBuilder.of("i4k_vs0/function_scan_cases.yml"));
     }
 
     @TestFactory

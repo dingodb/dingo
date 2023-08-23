@@ -17,11 +17,13 @@
 package io.dingodb.test.dsl;
 
 import io.dingodb.test.dsl.builder.SqlTestCaseJavaBuilder;
+import org.apache.calcite.rel.core.Aggregate;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ExceptionCases extends SqlTestCaseJavaBuilder {
@@ -32,6 +34,8 @@ public class ExceptionCases extends SqlTestCaseJavaBuilder {
     @Override
     protected void build() {
         table("i4k_vs_i40_f80_vs0_l0", file("i4k_vs_i40_f80_vs0_l0/create.sql"));
+        table("i4k_vs0_i40_f80_vs0", file("i4k_vs0_i40_f80_vs0/create.sql"))
+            .init(file("i4k_vs0_i40_f80_vs0/data.sql"));
 
         test("Insert string to bool")
             .use("table", "i4k_vs_i40_f80_vs0_l0")
@@ -115,5 +119,20 @@ public class ExceptionCases extends SqlTestCaseJavaBuilder {
         // Intentionally
         test("By `thrown` function")
             .step("select throw(null)", exception(sql(90002, "90002")));
+
+        // Other
+        test("Type mismatch")
+            .use("table", "i4k_vs0_i40_f80_vs0")
+            .custom(context -> {
+                // Disable assert in `Aggregate` to allow our own check in `DingoAggregate`.
+                // but `gradle test` seems not respect to this and throws AssertionError occasionally.
+                Aggregate.class.getClassLoader().clearAssertionStatus();
+                Aggregate.class.getClassLoader().setClassAssertionStatus(Aggregate.class.getName(), false);
+                assertFalse(Aggregate.class.desiredAssertionStatus());
+            })
+            .step(
+                "select avg(name) from {table}",
+                exception(sql(90001, "90001"))
+            );
     }
 }
