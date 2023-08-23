@@ -86,11 +86,20 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
+    default boolean updateWithIndex(Object[] newRecord, Object[] oldRecord) {
+        throw new UnsupportedOperationException();
+    }
+
     default boolean deleteWithIndex(Object[] key) {
         throw new UnsupportedOperationException();
     }
 
     default boolean deleteIndex(Object[] key) {
+        throw new UnsupportedOperationException();
+    }
+
+    // TODO Temporary way, to be optimized
+    default boolean deleteIndex(Object[] newRecord, Object[] oldRecord) {
         throw new UnsupportedOperationException();
     }
 }

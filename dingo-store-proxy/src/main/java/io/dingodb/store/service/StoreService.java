@@ -24,7 +24,6 @@ import io.dingodb.common.Coprocessor;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.sdk.common.DingoCommonId;
@@ -54,6 +53,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static io.dingodb.sdk.common.utils.ByteArrayUtils.POS;
+import static io.dingodb.sdk.common.utils.ByteArrayUtils.equal;
 import static io.dingodb.store.common.Mapping.mapping;
 import static java.util.Collections.singletonList;
 
@@ -107,7 +107,6 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         private Table table;
         private DingoKeyValueCodec tableCodec;
         private Map<DingoCommonId, Table> tableDefinitionMap;
-        private Object[] record;
 
         public StoreInstance(CommonId tableId, CommonId regionId) {
             this.storeTableId = mapping(tableId);
@@ -172,6 +171,19 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         }
 
         @Override
+        public boolean updateWithIndex(Object[] newRecord, Object[] oldRecord) {
+            KeyValueWithExpect kvExpect;
+            try {
+                io.dingodb.sdk.common.KeyValue oldKv = tableCodec.encode(oldRecord);
+                io.dingodb.sdk.common.KeyValue newKv = tableCodec.encode(newRecord);
+                kvExpect = new KeyValueWithExpect(tableCodec.resetPrefix(oldKv.getKey(), storeRegionId.parentId()), newKv.getValue(), oldKv.getValue());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return storeService.kvCompareAndSet(storeTableId, storeRegionId, kvExpect);
+        }
+
+        @Override
         public boolean deleteWithIndex(Object[] key) {
             try {
                 byte[] bytes = this.tableCodec.encodeKey(key);
@@ -212,6 +224,53 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                             indexId,
                             new io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray(bytes, POS)).getId();
                         result = storeService.kvBatchDelete(indexId, regionId, singletonList(indexCodec.resetPrefix(bytes, regionId.parentId()))).get(0);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                if (!result) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public boolean deleteIndex(Object[] newRecord, Object[] oldRecord) {
+            for (Map.Entry<DingoCommonId, Table> entry : tableDefinitionMap.entrySet()) {
+                DingoCommonId indexId = entry.getKey();
+                Table index = entry.getValue();
+                boolean result = false;
+                if (index.getIndexParameter().getIndexType().equals(IndexParameter.IndexType.INDEX_TYPE_VECTOR)) {
+                    Column primaryKey = index.getColumns().get(0);
+                    schema.setIsKey(true);
+                    DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(indexId.entityId(), singletonList(schema));
+
+                    long newLongId = Long.parseLong(String.valueOf(newRecord[table.getColumnIndex(primaryKey.getName())]));
+                    long oldLongId = Long.parseLong(String.valueOf(oldRecord[table.getColumnIndex(primaryKey.getName())]));
+                    if (newLongId != oldLongId) {
+                        try {
+                            DingoCommonId regionId = metaService.getIndexRangeDistribution(
+                                indexId,
+                                new io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray(vectorCodec.encodeKey(new Object[]{oldLongId}), POS)).getId();
+                            indexService.vectorDelete(indexId, regionId, singletonList(oldLongId));
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                } else {
+                    List<DingoSchema> schemas = new ArrayList<>();
+                    for (Column column : index.getColumns()) {
+                        schemas.add(CodecUtils.createSchemaForColumn(column, table.getColumnIndex(column.getName())));
+                    }
+                    DingoKeyValueCodec indexCodec = new DingoKeyValueCodec(indexId.entityId(), schemas);
+                    try {
+                        io.dingodb.sdk.common.KeyValue newKv = indexCodec.encode(newRecord);
+                        io.dingodb.sdk.common.KeyValue oldKv = indexCodec.encode(oldRecord);
+                        if (!equal(newKv.getKey(), oldKv.getKey())) {
+                            DingoCommonId regionId = metaService.getIndexRangeDistribution(indexId, new io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray(oldKv.getKey(), POS)).getId();
+                            storeService.kvBatchDelete(indexId, regionId, singletonList(indexCodec.resetPrefix(oldKv.getKey(), regionId.parentId())));
+                        }
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -319,12 +378,11 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
             long longId = Long.parseLong(String.valueOf(record[table.getColumnIndex(primaryKey.getName())]));
 
-            Object convertId = dingoType.convertTo(new Object[]{longId}, DingoConverter.INSTANCE);
             DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(indexId.entityId(), singletonList(schema));
             DingoCommonId regionId;
             try {
                 regionId = metaService.getIndexRangeDistribution(indexId, new io.dingodb.sdk.common.utils.ByteArrayUtils
-                    .ComparableByteArray(vectorCodec.encodeKey((Object[]) convertId), POS)).getId();
+                    .ComparableByteArray(vectorCodec.encodeKey(new Object[]{longId}), POS)).getId();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
