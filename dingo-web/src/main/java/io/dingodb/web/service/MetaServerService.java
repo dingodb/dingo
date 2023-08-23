@@ -16,14 +16,17 @@
 
 package io.dingodb.web.service;
 
+import com.google.protobuf.ByteString;
 import io.dingodb.client.DingoClient;
 import io.dingodb.client.common.IndexDefinition;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.util.Optional;
+import io.dingodb.proxy.common.ProxyCommon;
 import io.dingodb.proxy.meta.MetaServiceGrpc;
 import io.dingodb.proxy.meta.ProxyMeta;
 import io.dingodb.sdk.common.index.Index;
+import io.dingodb.sdk.common.index.IndexMetrics;
 import io.dingodb.sdk.common.index.IndexParameter;
 import io.dingodb.sdk.common.index.VectorIndexParameter;
 import io.dingodb.web.annotation.GrpcService;
@@ -128,6 +131,26 @@ public class MetaServerService extends MetaServiceGrpc.MetaServiceImplBase {
         List<Index> indexes = dingoClient.getIndexes(req.getSchemaName());
         ProxyMeta.GetIndexNamesResponse response = ProxyMeta.GetIndexNamesResponse.newBuilder()
             .addAllNames(indexes.stream().map(Index::getName).collect(Collectors.toList()))
+            .build();
+
+        resObserver.onNext(response);
+        resObserver.onCompleted();
+    }
+
+    @Override
+    public void getIndexMetrics(ProxyMeta.GetIndexMetricsRequest req, StreamObserver<ProxyMeta.GetIndexMetricsResponse> resObserver) {
+        IndexMetrics indexMetrics = dingoClient.getIndexMetrics(req.getSchemaName(), req.getIndexName());
+        ProxyMeta.GetIndexMetricsResponse response = ProxyMeta.GetIndexMetricsResponse.newBuilder()
+            .setRowsCount(indexMetrics.getRowsCount())
+            .setMinKey(ByteString.copyFrom(indexMetrics.getMinKey()))
+            .setMaxKey(ByteString.copyFrom(indexMetrics.getMaxKey()))
+            .setPartCount(indexMetrics.getPartCount())
+            .setIndexType(ProxyCommon.VectorIndexType.valueOf(indexMetrics.getIndexType().name()))
+            .setCurrentCount(indexMetrics.getCurrentCount())
+            .setDeletedCount(indexMetrics.getDeletedCount())
+            .setMaxId(indexMetrics.getMaxId())
+            .setMinId(indexMetrics.getMinId())
+            .setMemoryBytes(indexMetrics.getMemoryBytes())
             .build();
 
         resObserver.onNext(response);

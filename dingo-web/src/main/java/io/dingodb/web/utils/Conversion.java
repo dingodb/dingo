@@ -46,6 +46,7 @@ import io.dingodb.sdk.common.vector.SearchIvfFlatParam;
 import io.dingodb.sdk.common.vector.SearchIvfPqParam;
 import io.dingodb.sdk.common.vector.Vector;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -89,7 +90,7 @@ public class Conversion {
     public static ProxyMeta.PartitionRule mapping(Partition partition) {
         return ProxyMeta.PartitionRule.newBuilder()
             .setFuncName(partition.getFuncName())
-            .addAllColumns(partition.getCols())
+            .addAllColumns(new ArrayList<>(partition.getCols()))
             .addAllDetails(partition.getDetails().stream()
                 .map(d -> ProxyMeta.PartitionDetailDefinition.newBuilder()
                     .setPartName(d.getPartName())
@@ -136,7 +137,7 @@ public class Conversion {
                         pqParam.getNcentroids(),
                         pqParam.getNsubvector(),
                         pqParam.getBucketInitSize(),
-                        pqParam.getBucketInitSize() // TODO fix
+                        pqParam.getBucketMaxSize()
                     )
                 );
                 break;
@@ -201,6 +202,7 @@ public class Conversion {
                         .setNcentroids(ivfPqParam.getNcentroids())
                         .setNsubvector(ivfPqParam.getNsubvector())
                         .setBucketInitSize(ivfPqParam.getBucketInitSize())
+                        .setBucketMaxSize(ivfPqParam.getBucketMaxSize())
                         .build());
                     break;
                 case VECTOR_INDEX_TYPE_HNSW:
@@ -367,6 +369,14 @@ public class Conversion {
                 .map(ByteString::copyFrom)
                 .collect(Collectors.toList()))
             .build();
+    }
+
+    public static Vector mapping(ProxyCommon.Vector vector) {
+        return new Vector(
+            vector.getDimension(),
+            Vector.ValueType.valueOf(vector.getValueType().name()),
+            vector.getFloatValuesList(),
+            vector.getBinaryValuesList().stream().map(ByteString::toByteArray).collect(Collectors.toList()));
     }
 
     public static ProxyCommon.ScalarValue mapping(ScalarValue value) {
