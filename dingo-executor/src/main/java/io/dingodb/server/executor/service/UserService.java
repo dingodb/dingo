@@ -17,6 +17,7 @@
 package io.dingodb.server.executor.service;
 
 import com.google.auto.service.AutoService;
+import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
@@ -85,11 +86,11 @@ public class UserService implements io.dingodb.verify.service.UserService {
     private final StoreInstance tablePrivStore = storeService.getInstance(tablePrivTblId, getRegionId(tablePrivTblId));
 
     private final KeyValueCodec userCodec =
-        CodecService.INSTANCE.createKeyValueCodec(getPartId(userTblId, userStore.id()), userTd);
+        CodecService.getDefault().createKeyValueCodec(getPartId(userTblId, userStore.id()), userTd);
     private final KeyValueCodec dbPrivCodec =
-        CodecService.INSTANCE.createKeyValueCodec(getPartId(dbPrivTblId, dbPrivStore.id()), dbPrivTd);
+        CodecService.getDefault().createKeyValueCodec(getPartId(dbPrivTblId, dbPrivStore.id()), dbPrivTd);
     private final KeyValueCodec tablePrivCodec =
-        CodecService.INSTANCE.createKeyValueCodec(getPartId(tablePrivTblId, tablePrivStore.id()), tablePrivTd);
+        CodecService.getDefault().createKeyValueCodec(getPartId(tablePrivTblId, tablePrivStore.id()), tablePrivTd);
 
     @Override
     public boolean existsUser(UserDefinition userDefinition) {

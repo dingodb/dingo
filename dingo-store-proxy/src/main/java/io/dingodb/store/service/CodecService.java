@@ -20,7 +20,9 @@ import com.google.auto.service.AutoService;
 import io.dingodb.codec.CodecServiceProvider;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.type.ArrayType;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.NullableType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
@@ -139,7 +141,18 @@ public final class CodecService implements io.dingodb.codec.CodecService {
             int[] mappings = keyMapping.getMappings();
             int valueIndex = mappings.length;
             for (int i = 0; i < fields.length; i++) {
-                DingoSchema schema = CodecUtils.createSchemaForTypeName(TypeCode.nameOf(fields[i].getTypeCode()));
+                DingoType field = fields[i];
+                String typeName = TypeCode.nameOf(field.getTypeCode());
+                String elementType = "";
+                if (typeName.equals(TypeCode.LIST_NAME)) {
+                    ListType listType = (ListType) field;
+                    elementType = TypeCode.nameOf(listType.getElementType().getTypeCode());
+                } else if (type.equals(TypeCode.ARRAY_NAME)) {
+                    ArrayType arrayType = (ArrayType) field;
+                    elementType = TypeCode.nameOf(arrayType.getElementType().getTypeCode());
+                }
+                DingoSchema schema = CodecUtils.createSchemaForTypeName(typeName, elementType);
+
                 if (keyMapping.contains(i)) {
                     schema.setIsKey(true);
                     schemas[getKeyIndex(mappings, i)] = schema;

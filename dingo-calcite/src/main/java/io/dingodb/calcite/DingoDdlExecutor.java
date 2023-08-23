@@ -82,6 +82,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -136,12 +137,19 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .collect(Collectors.toList());
 
         // Primary key list
-        String[] columns = indexDeclaration.columnList.getList().stream()
+        List<String> columns = indexDeclaration.columnList.getList().stream()
             .filter(Objects::nonNull)
             .map(SqlIdentifier.class::cast)
             .map(SqlIdentifier::getSimple)
             .map(String::toUpperCase)
-            .toArray(String[]::new);
+            .collect(Collectors.toCollection(ArrayList::new));
+
+        tableDefinition.getKeyColumns().stream()
+            .sorted(Comparator.comparingInt(ColumnDefinition::getPrimary))
+            .map(ColumnDefinition::getName)
+            .map(String::toUpperCase)
+            .filter(__ -> !columns.contains(__))
+            .forEach(columns::add);
 
         Properties properties = indexDeclaration.getProperties();
         if (properties == null) {
@@ -151,8 +159,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         List<ColumnDefinition> indexColumnDefinitions = new ArrayList<>();
         if (indexDeclaration.getIndexType().equals("scalar")) {
             properties.put("indexType", "scalar");
-            for (String columnName : columns) {
-                // Check if the column exists in the original table
+            for (int i = 0; i < columns.size(); i++) {
+                String columnName = columns.get(i);
                 if (!tableColumnNames.contains(columnName)) {
                     throw new RuntimeException("Invalid column name: " + columnName);
                 }
@@ -167,15 +175,15 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     .precision(columnDefinition.getPrecision())
                     .scale(columnDefinition.getScale())
                     .nullable(columnDefinition.isNullable())
-                    .primary(0)
+                    .primary(i)
                     .build();
                 indexColumnDefinitions.add(indexColumnDefinition);
             }
         } else {
             properties.put("indexType", "vector");
             int primary = 0;
-            for (int i = 0; i < columns.length; i++) {
-                String columnName = columns[i];
+            for (int i = 0; i < columns.size(); i++) {
+                String columnName = columns.get(i);
                 if (!tableColumnNames.contains(columnName)) {
                     throw new RuntimeException("Invalid column name: " + columnName);
                 }

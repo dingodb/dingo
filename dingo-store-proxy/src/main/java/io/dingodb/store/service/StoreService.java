@@ -19,6 +19,7 @@ package io.dingodb.store.service;
 import com.google.auto.service.AutoService;
 import com.google.common.collect.Iterators;
 import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.config.DingoConfiguration;
@@ -105,7 +106,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         private final DingoType dingoType = new LongType(true);
 
         private Table table;
-        private DingoKeyValueCodec tableCodec;
+        private KeyValueCodec tableCodec;
         private Map<DingoCommonId, Table> tableDefinitionMap;
         private Object[] record;
 
@@ -118,7 +119,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             this.indexService = new IndexServiceClient(metaService);
             this.tableDefinitionMap = metaService.getTableIndexes(this.storeTableId);
             this.table = metaService.getTableDefinition(storeTableId);
-            this.tableCodec = DingoKeyValueCodec.of(storeTableId.entityId(), table);
+            this.tableCodec = CodecService.getDefault().createKeyValueCodec(mapping(table));
         }
 
         @Override
@@ -142,11 +143,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         @Override
         public boolean insertWithIndex(Object[] record) {
             try {
-                io.dingodb.sdk.common.KeyValue keyValue = this.tableCodec.encode(record);
-                return storeService.kvPutIfAbsent(
-                    storeTableId,
-                    storeRegionId,
-                    new io.dingodb.sdk.common.KeyValue(tableCodec.resetPrefix(keyValue.getKey(), storeRegionId.parentId()), keyValue.getValue()));
+                return insert(tableCodec.encode(record));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -311,7 +308,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         }
 
         private void vectorAdd(Object[] record, Table table,
-                               DingoKeyValueCodec tableCodec,
+                               KeyValueCodec tableCodec,
                                DingoCommonId indexId,
                                Table index) {
             Column primaryKey = index.getColumns().get(0);
@@ -340,7 +337,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             }
             VectorTableData vectorTableData;
             try {
-                io.dingodb.sdk.common.KeyValue keyValue = tableCodec.encode(record);
+                KeyValue keyValue = tableCodec.encode(record);
                 vectorTableData = new VectorTableData(keyValue.getKey(), keyValue.getValue());
             } catch (IOException e) {
                 throw new RuntimeException(e);
