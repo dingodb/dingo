@@ -154,8 +154,11 @@ public class DingoClient {
         return operationService.exec(schema, tableName, PutOperation.getInstance(), records);
     }
 
-    public boolean upsert(String tableName, Object[] record) {
-        return indexOperationService.exec(schema, tableName, PutOperation.getInstance(), record);
+    /**
+     * Insert table data and index(scalar + vector) data at the same time
+     */
+    public boolean upsertIndex(String tableName, Object[] record) {
+        return indexOperationService.exec(schema, tableName, PutOperation.getInstance(), new IndexOperationService.Parameter(record));
     }
 
     public List<Boolean> upsertNotStandard(String tableName, List<Record> records) {
@@ -187,6 +190,17 @@ public class DingoClient {
             CompareAndSetOperation.getInstance(),
             new CompareAndSetOperation.Parameter(records, expects)
         );
+    }
+
+    /**
+     * Update table data and index(scalar + vector) data at the same time
+     */
+    public Boolean compareAndSetIndex(String tableName, Object[] record, Object[] expect) {
+        return indexOperationService.exec(
+            schema,
+            tableName,
+            CompareAndSetOperation.getInstance(),
+            new IndexOperationService.Parameter(record, expect));
     }
 
     public List<Boolean> compareAndSetNotStandard(String tableName, List<Record> records, List<Record> expects) {
@@ -279,11 +293,15 @@ public class DingoClient {
         );
     }
 
+    /**
+     * Delete table data and index(scalar + vector) data at the same time
+     */
     public boolean delete(String schema, String tableName, Key key) {
-        return indexOperationService.exec(schema,
+        return indexOperationService.exec(
+            schema,
             tableName,
             DeleteOperation.getInstance(),
-            get(tableName, key).getDingoColumnValuesInOrder());
+            new IndexOperationService.Parameter(get(tableName, key).getDingoColumnValuesInOrder()));
     }
 
     public List<Boolean> deleteNotStandard(final String tableName, List<Key> keys) {
