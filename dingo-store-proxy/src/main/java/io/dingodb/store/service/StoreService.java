@@ -19,12 +19,12 @@ package io.dingodb.store.service;
 import com.google.auto.service.AutoService;
 import com.google.common.collect.Iterators;
 import io.dingodb.codec.CodecService;
-import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.sdk.common.DingoCommonId;
@@ -43,6 +43,7 @@ import io.dingodb.sdk.service.index.IndexServiceClient;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.sdk.service.store.StoreServiceClient;
 import io.dingodb.store.common.Mapping;
+import io.dingodb.store.service.CodecService.KeyValueCodec;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -118,7 +119,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             this.indexService = new IndexServiceClient(metaService);
             this.tableDefinitionMap = metaService.getTableIndexes(this.storeTableId);
             this.table = metaService.getTableDefinition(storeTableId);
-            this.tableCodec = CodecService.getDefault().createKeyValueCodec(mapping(table));
+            this.tableCodec = (KeyValueCodec) CodecService.getDefault().createKeyValueCodec(mapping(table));
         }
 
         @Override
@@ -150,6 +151,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
         @Override
         public boolean insertIndex(Object[] record) {
+            record = (Object[]) tableCodec.type.convertTo(record, DingoConverter.INSTANCE);
             for (Map.Entry<DingoCommonId, Table> entry : tableDefinitionMap.entrySet()) {
                 DingoCommonId indexId = entry.getKey();
                 Table index = entry.getValue();
@@ -171,9 +173,13 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         public boolean updateWithIndex(Object[] newRecord, Object[] oldRecord) {
             KeyValueWithExpect kvExpect;
             try {
-                io.dingodb.sdk.common.KeyValue oldKv = tableCodec.encode(oldRecord);
-                io.dingodb.sdk.common.KeyValue newKv = tableCodec.encode(newRecord);
-                kvExpect = new KeyValueWithExpect(tableCodec.resetPrefix(oldKv.getKey(), storeRegionId.parentId()), newKv.getValue(), oldKv.getValue());
+                KeyValue oldKv = tableCodec.encode(oldRecord);
+                KeyValue newKv = tableCodec.encode(newRecord);
+                kvExpect = new KeyValueWithExpect(
+                    tableCodec.delegate.resetPrefix(oldKv.getKey(), storeRegionId.parentId()),
+                    newKv.getValue(),
+                    oldKv.getValue()
+                );
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -192,6 +198,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
         @Override
         public boolean deleteIndex(Object[] record) {
+            record = (Object[]) tableCodec.type.convertTo(record, DingoConverter.INSTANCE);
             for (Map.Entry<DingoCommonId, Table> entry : tableDefinitionMap.entrySet()) {
                 DingoCommonId indexId = entry.getKey();
                 Table index = entry.getValue();
@@ -234,6 +241,8 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
         @Override
         public boolean deleteIndex(Object[] newRecord, Object[] oldRecord) {
+            newRecord = (Object[]) tableCodec.type.convertTo(newRecord, DingoConverter.INSTANCE);
+            oldRecord = (Object[]) tableCodec.type.convertTo(oldRecord, DingoConverter.INSTANCE);
             for (Map.Entry<DingoCommonId, Table> entry : tableDefinitionMap.entrySet()) {
                 DingoCommonId indexId = entry.getKey();
                 Table index = entry.getValue();
