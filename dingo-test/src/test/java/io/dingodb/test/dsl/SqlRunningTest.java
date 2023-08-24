@@ -16,12 +16,14 @@
 
 package io.dingodb.test.dsl;
 
+import io.dingodb.test.ConnectionFactory;
 import io.dingodb.test.dsl.builder.SqlTestCaseYamlBuilder;
 import io.dingodb.test.dsl.run.SqlTestRunner;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 
+import java.sql.Connection;
 import java.util.stream.Stream;
 
 public class SqlRunningTest extends SqlTestRunner {
@@ -144,5 +146,20 @@ public class SqlRunningTest extends SqlTestRunner {
     @TestFactory
     public Stream<DynamicTest> testStressDml() {
         return getTests(new StressDmlCases());
+    }
+
+    @Override
+    protected void setup() throws Exception {
+        ConnectionFactory.initLocalEnvironment();
+    }
+
+    @Override
+    protected void cleanUp() {
+        ConnectionFactory.cleanUp();
+    }
+
+    @Override
+    protected Connection getConnection() throws Exception {
+        return ConnectionFactory.getConnection();
     }
 }

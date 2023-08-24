@@ -16,7 +16,6 @@
 
 package io.dingodb.test.dsl.run;
 
-import io.dingodb.test.ConnectionFactory;
 import io.dingodb.test.dsl.builder.SqlBuildingContext;
 import io.dingodb.test.dsl.builder.SqlTableInfo;
 import io.dingodb.test.dsl.builder.SqlTestCase;
@@ -36,7 +35,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class SqlTestRunner {
+public abstract class SqlTestRunner {
     private Connection connection;
     private List<SqlRunningContext> runningContexts;
     private String name;
@@ -67,10 +66,18 @@ public class SqlTestRunner {
         );
     }
 
+    protected void setup() throws Exception {
+    }
+
+    protected void cleanUp() {
+    }
+
+    protected abstract Connection getConnection() throws Exception;
+
     @BeforeAll
     public void setupAll() throws Exception {
-        ConnectionFactory.initLocalEnvironment();
-        connection = ConnectionFactory.getConnection();
+        setup();
+        connection = getConnection();
         runningContexts = new LinkedList<>();
     }
 
@@ -80,7 +87,7 @@ public class SqlTestRunner {
             context.cleanUp();
         }
         connection.close();
-        ConnectionFactory.cleanUp();
+        cleanUp();
     }
 
     public Stream<DynamicTest> getTests(@NonNull SqlTestCaseBuilder builder) {
