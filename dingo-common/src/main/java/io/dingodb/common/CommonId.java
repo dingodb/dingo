@@ -52,8 +52,8 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     public static final CommonId EMPTY_DISTRIBUTE = new CommonId(CommonType.DISTRIBUTION, 0, 0);
 
     public enum CommonType {
-        TABLE(0),
-        SCHEMA(1),
+        SCHEMA(0),
+        TABLE(1),
         DISTRIBUTION(2),
         PARTITION(3),
         OP(100);
@@ -70,8 +70,8 @@ public class CommonId implements Comparable<CommonId>, Serializable {
 
         public static CommonType of(int code) {
             switch (code) {
-                case 0: return TABLE;
-                case 1: return SCHEMA;
+                case 0: return SCHEMA;
+                case 1: return TABLE;
                 case 2: return DISTRIBUTION;
                 case 3: return PARTITION;
                 case 100: return OP;

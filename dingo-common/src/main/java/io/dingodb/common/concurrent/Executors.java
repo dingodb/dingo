@@ -18,8 +18,10 @@ package io.dingodb.common.concurrent;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -55,11 +57,17 @@ public final class Executors {
         .group(new ThreadGroup(GLOBAL_SCHEDULE_NAME))
         .buildSchedule();
 
+    private static final Map<Thread, Context> contexts = new ConcurrentHashMap<>();
+
     private Executors() {
     }
 
     public static String threadName() {
         return Thread.currentThread().getName();
+    }
+
+    public static Context context() {
+        return contexts.get(Thread.currentThread());
     }
 
     public static Executor executor(String name) {
@@ -154,6 +162,7 @@ public final class Executors {
 
     private static <V> V call(String name, Callable<V> callable, boolean ignoreFalse) throws Exception {
         Thread thread = Thread.currentThread();
+        contexts.put(thread, new Context());
         try {
             if (log.isTraceEnabled()) {
                 log.trace("Call [{}] start, thread id [{}], set thread name.", name, thread.getId());
@@ -175,11 +184,13 @@ public final class Executors {
             if (log.isTraceEnabled()) {
                 log.trace("Call [{}] finish, thread id [{}], reset thread name.", name, thread.getId());
             }
+            contexts.remove(thread);
         }
     }
 
     private static void run(String name, Runnable runnable, boolean ignoreError) {
         Thread thread = Thread.currentThread();
+        contexts.put(thread, new Context());
         try {
             if (log.isTraceEnabled()) {
                 log.trace("Run [{}] start, thread id [{}], set thread name.", name, thread.getId());
@@ -200,6 +211,7 @@ public final class Executors {
             if (log.isTraceEnabled()) {
                 log.trace("Run [{}] finish, thread id [{}], reset thread name.", name, thread.getId());
             }
+            contexts.put(thread, new Context());
         }
     }
 

@@ -35,6 +35,7 @@ import io.dingodb.server.executor.common.Mapping;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -63,6 +64,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     //
     // Meta service.
     //
+    private static Map<CommonId, Long> tableCommitCountMetrics;
 
     public static CommonId getParentSchemaId(CommonId tableId) {
         return new CommonId(SCHEMA, 0, tableId.domain);
@@ -154,6 +156,31 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public TableDefinition getTableDefinition(@NonNull CommonId id) {
         return Optional.mapOrNull(metaServiceClient.getTableDefinition(mapping(id)), Mapping::mapping);
+    }
+
+    @Override
+    public synchronized Map<CommonId, Long> getTableCommitCount() {
+        if (this == ROOT) {
+            return metaServiceClient.getTableCommitCount().entrySet().stream()
+                .collect(Collectors.toMap(e -> mapping(e.getKey()), Map.Entry::getValue));
+        }
+        throw new UnsupportedOperationException("Only supported root schema.");
+    }
+
+    @Override
+    public synchronized Map<CommonId, Long> getTableCommitIncrement() {
+        if (this == ROOT) {
+            Map<CommonId, Long> result = new HashMap<>();
+            Map<CommonId, Long> newMetrics = metaServiceClient.getTableCommitCount().entrySet().stream()
+                .collect(Collectors.toMap(e -> mapping(e.getKey()), Map.Entry::getValue));
+            if (tableCommitCountMetrics == null) {
+                tableCommitCountMetrics = newMetrics;
+            }
+            newMetrics.forEach((id, i) -> result.put(id, i - tableCommitCountMetrics.getOrDefault(id, 0L)));
+            tableCommitCountMetrics = newMetrics;
+            return result;
+        }
+        throw new UnsupportedOperationException("Only supported root schema.");
     }
 
     @Override
