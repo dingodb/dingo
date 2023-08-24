@@ -13,7 +13,6 @@ dependencies {
     compileOnly group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
     compileOnly group: 'javax.validation', name: 'validation-api', version: 'validation'.v()
     compileOnly group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: 'jackson'.v()
-    compileOnly group: 'com.google.guava', name: 'guava', version: 'guava'.v()
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
@@ -49,14 +48,15 @@ task fatJar(type: Jar) {
     exclude "META-INF/*.SF"
     exclude "META-INF/*.DSA"
     exclude "META-INF/*.RSA"
+    exclude "*.proto"
 }
 
 fatJar.dependsOn(
     ':dingo-common:jar',
     ':dingo-expr:dingo-expr-runtime:jar',
     ':dingo-expr:dingo-expr-json-runtime:jar',
-    ':dingo-serial:jar',
     ':dingo-store-api:jar',
+    ':dingo-serial:jar',
     ':dingo-codec-api:jar',
     ':dingo-store-proxy:jar'
 )
@@ -145,8 +145,8 @@ uploadArchives {
                 name 'dingo-client'
                 packaging 'jar'
                 // optionally artifactId can be defined here
-                description 'A client library to do operation on dingo cluster'
-                url 'http://www.dingodb.datacanvas.com/'
+                description 'DingoDB client to build connection and operation to DingoDB'
+                url 'https://www.dingodb.com/'
 
                 scm {
                     connection 'scm:svn:http://foo.googlecode.com/svn/trunk/'
