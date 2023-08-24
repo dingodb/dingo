@@ -105,11 +105,13 @@ public final class Record {
             switch (columns[i].getType().toUpperCase()) {
                 case "DOUBLE":
                     this.values[i] = Value.get(new BigDecimal(
-                        String.valueOf(this.values[i].getObject())).setScale(columns[i].getScale(), HALF_UP).doubleValue());
+                        String.valueOf(this.values[i].getObject()))
+                        .setScale(columns[i].getScale(), HALF_UP).doubleValue());
                     break;
                 case "FLOAT":
                     this.values[i] = Value.get(new BigDecimal(
-                        String.valueOf(this.values[i].getObject())).setScale(columns[i].getScale(), HALF_UP).floatValue());
+                        String.valueOf(this.values[i].getObject()))
+                        .setScale(columns[i].getScale(), HALF_UP).floatValue());
                     break;
                 default:
                     continue;
