@@ -54,7 +54,9 @@ public class Configuration {
     private String keyring;
     private String resourceTag;
 
-    private Integer mysqlPort;
+    private Integer mysqlPort = 3307;
+
+    private Long autoAnalyzeCommitSize = 0L;
 
     public static String coordinators() {
         return INSTANCE.coordinators;
@@ -74,5 +76,9 @@ public class Configuration {
 
     public static Integer mysqlPort() {
         return INSTANCE.mysqlPort;
+    }
+
+    public static Long autoAnalyzeCommitSize() {
+        return INSTANCE.autoAnalyzeCommitSize;
     }
 }

@@ -151,6 +151,13 @@ public interface MetaService {
     Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id);
 
     default void addDistribution(String tableName, PartitionDetailDefinition detail) {
+    }
+
+    default Map<CommonId, Long> getTableCommitCount() {
+        throw new UnsupportedOperationException();
+    }
+
+    default Map<CommonId, Long> getTableCommitIncrement() {
         throw new UnsupportedOperationException();
     }
 

@@ -14,35 +14,35 @@
  * limitations under the License.
  */
 
-package io.dingodb.codec;
+package io.dingodb.scheduler;
 
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
 import java.util.ServiceLoader;
 
-public interface CodecServiceProvider {
+public interface SchedulerServiceProvider {
 
     @Slf4j
-    class Impl {
+    final class Impl {
         private static final Impl INSTANCE = new Impl();
 
-        private final CodecServiceProvider serviceProvider;
+        private final SchedulerServiceProvider serviceProvider;
 
         private Impl() {
-            Iterator<CodecServiceProvider> iterator = ServiceLoader.load(CodecServiceProvider.class).iterator();
+            Iterator<SchedulerServiceProvider> iterator = ServiceLoader.load(SchedulerServiceProvider.class).iterator();
             this.serviceProvider = iterator.next();
             if (iterator.hasNext()) {
-                log.warn("Load multi codec service provider, use {}.", serviceProvider.getClass().getName());
+                log.warn("Load multi scheduler service provider, use {}.", serviceProvider.getClass().getName());
             }
         }
     }
 
-    static CodecServiceProvider getDefault() {
+    static SchedulerServiceProvider getDefault() {
         return Impl.INSTANCE.serviceProvider;
     }
 
 
-    CodecService get();
+    SchedulerService get();
 
 }

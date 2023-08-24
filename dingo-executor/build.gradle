@@ -32,6 +32,8 @@ dependencies {
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation group: 'org.apache.calcite.avatica', name: 'avatica-server', version: 'avatica'.v()
+    implementation group: 'org.quartz-scheduler', name: 'quartz', version: 'quartz'.v()
+
     implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
 
     implementation project(":dingo-common")
@@ -42,6 +44,7 @@ dependencies {
     implementation project(':dingo-net-api')
     implementation project(":dingo-net-api")
     implementation project(":dingo-store-api")
+    implementation project(":dingo-scheduler-api")
     implementation project(':dingo-store-proxy')
 
     implementation project(":dingo-driver:dingo-mysql-service")
