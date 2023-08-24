@@ -27,17 +27,6 @@ jar {
     }
 }
 
-repositories {
-    mavenLocal()
-    maven {
-        url "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-    }
-    maven {
-        url 'http://maven.aliyun.com/nexus/content/groups/public/'
-    }
-    mavenCentral()
-}
-
 dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()

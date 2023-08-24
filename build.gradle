@@ -29,6 +29,9 @@ allprojects {
             url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
         }
         maven {
+            url 'http://maven.aliyun.com/nexus/content/groups/public/'
+        }
+        maven {
             url 'http://packages.confluent.io/maven/'
         }
         mavenCentral()
