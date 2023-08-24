@@ -45,7 +45,8 @@ public class IndexInfo {
 
     public DingoCommonId calcRegionId(byte[] key) {
         if (index.getIndexPartition() == null || index.getIndexPartition().getFuncName().isEmpty()) {
-            return rangeDistribution.floorEntry(new ByteArrayUtils.ComparableByteArray(key, SKIP_LONG_POS)).getValue().getId();
+            return rangeDistribution.floorEntry(
+                new ByteArrayUtils.ComparableByteArray(key, SKIP_LONG_POS)).getValue().getId();
         }
         String strategy = index.getIndexPartition().getFuncName().toUpperCase();
         return RangeUtils.getDingoCommonId(key, strategy, rangeDistribution);

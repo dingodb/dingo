@@ -21,7 +21,6 @@ import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.sdk.common.KeyValue;
 import io.dingodb.sdk.common.table.Column;
-import io.dingodb.sdk.common.table.ColumnDefinition;
 import io.dingodb.sdk.common.table.Table;
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;

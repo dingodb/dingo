@@ -60,7 +60,8 @@ public class IndexDefinition implements Index {
                     new PartitionDetailDefinition(
                         d.getPartName(),
                         d.getOperator(),
-                        Arrays.stream(d.getOperand()).map(o -> LONG_TYPE.convertFrom(o, StrParseConverter.INSTANCE)).toArray()))
+                        Arrays.stream(d.getOperand()).map(
+                            o -> LONG_TYPE.convertFrom(o, StrParseConverter.INSTANCE)).toArray()))
                 .collect(Collectors.toList()), ArrayList::new)
         );
     }
