@@ -19,8 +19,11 @@ package io.dingodb.test.dsl;
 import io.dingodb.test.dsl.builder.SqlTestCaseJavaBuilder;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.Random;
 import java.util.UUID;
 
@@ -36,6 +39,11 @@ public final class StressDmlCases extends SqlTestCaseJavaBuilder {
     protected void build() {
         table("i4k_vs_f80", file("i4k_vs_f80/create.sql"));
 
+        table(
+            "i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0",
+            file("i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0/create_with_partition.sql")
+        );
+
         test("Insert")
             .use("table", "i4k_vs_f80")
             .modify("i4k_vs_f80")
@@ -45,7 +53,7 @@ public final class StressDmlCases extends SqlTestCaseJavaBuilder {
                     for (int id = 1; id <= 100; ++id) {
                         String sql = "insert into {table} values"
                             + "(" + id + ", '" + UUID.randomUUID() + "', " + random.nextDouble() + ")";
-                        log.info("Exec {}", sql);
+                        log.info("Exec \"{}\"", sql);
                         statement.execute(context.transSql(sql));
                         assertThat(statement.getUpdateCount()).isEqualTo(1);
                     }
@@ -63,7 +71,7 @@ public final class StressDmlCases extends SqlTestCaseJavaBuilder {
                         statement.setInt(1, id);
                         statement.setString(2, UUID.randomUUID().toString());
                         statement.setDouble(3, random.nextDouble());
-                        log.info("Exec {}, id = {}", sql, id);
+                        log.info("Exec \"{}\", id = {}", sql, id);
                         statement.execute();
                         assertThat(statement.getUpdateCount()).isEqualTo(1);
                     }
@@ -77,15 +85,55 @@ public final class StressDmlCases extends SqlTestCaseJavaBuilder {
                 Random random = new Random();
                 String sql = "insert into {table} values(?, ?, ?)";
                 try (PreparedStatement statement = context.getConnection().prepareStatement(context.transSql(sql))) {
-                    for (int id = 1; id <= 10000; ++id) {
+                    for (int id = 1; id <= 50000; ++id) {
                         statement.setInt(1, id);
                         statement.setString(2, UUID.randomUUID().toString());
                         statement.setDouble(3, random.nextDouble());
                         statement.addBatch();
                         if (id % 1000 == 0) {
                             int[] updateCounts = statement.executeBatch();
-                            statement.executeBatch();
-                            log.info("execute batch {}, id = {}", sql, id);
+                            log.info("Execute batch \"{}\", id = {}", sql, id);
+                            assertThat(updateCounts).containsOnly(1);
+                            statement.clearBatch();
+                        }
+                    }
+                }
+            });
+
+        test("Batch insert with more parameters").only()
+            .use("table", "i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0")
+            .modify("i4k_vs_f80")
+            .custom(context -> {
+                Random random = new Random();
+                String sql = "insert into {table} values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                try (PreparedStatement statement = context.getConnection().prepareStatement(context.transSql(sql))) {
+                    for (int id = 1; id <= 50000; ++id) {
+                        statement.setObject(1, id);
+                        String randStr = UUID.randomUUID().toString();
+                        statement.setObject(2, randStr);
+                        int randInt = random.nextInt();
+                        statement.setObject(3, randInt);
+                        long randLong = random.nextLong();
+                        statement.setObject(4, randLong);
+                        float randFloat = random.nextFloat();
+                        statement.setObject(5, randFloat);
+                        double randDouble = random.nextDouble();
+                        statement.setObject(6, randDouble);
+                        String randAddress = UUID.randomUUID().toString();
+                        statement.setObject(7, randAddress);
+                        Date randDate = new Date(0);
+                        statement.setObject(8, randDate);
+                        Time randTime = new Time(0);
+                        statement.setObject(9, randTime);
+                        Timestamp randTimestamp = new Timestamp(0);
+                        statement.setObject(10, randTimestamp);
+                        String randZip = UUID.randomUUID().toString();
+                        statement.setObject(11, randZip);
+                        statement.setObject(12, random.nextBoolean());
+                        statement.addBatch();
+                        if (id % 1000 == 0) {
+                            int[] updateCounts = statement.executeBatch();
+                            log.info("Execute batch \"{}\", id = {}", sql, id);
                             assertThat(updateCounts).containsOnly(1);
                             statement.clearBatch();
                         }

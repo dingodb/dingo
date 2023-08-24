@@ -17,7 +17,6 @@
 package io.dingodb.driver.client;
 
 import io.dingodb.common.Location;
-import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.util.NoBreakFunctions;
 import io.dingodb.driver.DingoServiceImpl;
@@ -45,9 +44,6 @@ import java.util.function.Supplier;
 @Slf4j
 public class DingoDriverClient extends Driver {
     public static final String CONNECT_STRING_PREFIX = "jdbc:dingo:thin:";
-
-    private Properties props;
-
     static final DriverVersion DRIVER_VERSION = new DriverVersion(
         "Dingo JDBC Thin Driver",
         "0.1.0",
@@ -62,6 +58,35 @@ public class DingoDriverClient extends Driver {
 
     static {
         new DingoDriverClient().register();
+    }
+
+    private Properties props;
+
+    protected static String[] parseHostPortPair(String hostPortPair) throws SQLException {
+        String[] splitValues = new String[2];
+        int portIndex = hostPortPair.indexOf(":");
+        if (portIndex != -1) {
+            if (portIndex + 1 >= hostPortPair.length()) {
+                throw new SQLException("Malformed database URL, failed to parse the main URL sections.", "01S00", null);
+            }
+
+            String portAsString = hostPortPair.substring(portIndex + 1);
+            String hostname = hostPortPair.substring(0, portIndex);
+            splitValues[0] = hostname;
+            splitValues[1] = portAsString;
+        } else {
+            splitValues[0] = hostPortPair;
+            splitValues[1] = null;
+        }
+        return splitValues;
+    }
+
+    public static boolean startsWithIgnoreCase(String searchIn, String searchFor) {
+        return startsWithIgnoreCase(searchIn, 0, searchFor);
+    }
+
+    public static boolean startsWithIgnoreCase(String searchIn, int startAt, String searchFor) {
+        return searchIn.regionMatches(true, startAt, searchFor, 0, searchFor.length());
     }
 
     @Override
@@ -110,7 +135,7 @@ public class DingoDriverClient extends Driver {
             String configNames;
             String configVal;
             if (index != -1) {
-                hostStuff = url.substring(index + 1, url.length());
+                hostStuff = url.substring(index + 1);
                 url = url.substring(0, index);
                 StringTokenizer queryParams = new StringTokenizer(hostStuff, "&");
                 while (queryParams.hasMoreTokens()) {
@@ -143,7 +168,7 @@ public class DingoDriverClient extends Driver {
             if (slashIndex != -1) {
                 hostStuff = url.substring(0, slashIndex);
                 if (slashIndex + 1 < url.length()) {
-                    urlProps.put("dbname", url.substring(slashIndex + 1, url.length()));
+                    urlProps.put("dbname", url.substring(slashIndex + 1));
                 }
             } else {
                 hostStuff = url;
@@ -168,33 +193,6 @@ public class DingoDriverClient extends Driver {
             }
             return urlProps;
         }
-    }
-
-    protected static String[] parseHostPortPair(String hostPortPair) throws SQLException {
-        String[] splitValues = new String[2];
-        int portIndex = hostPortPair.indexOf(":");
-        if (portIndex != -1) {
-            if (portIndex + 1 >= hostPortPair.length()) {
-                throw new SQLException("Malformed database URL, failed to parse the main URL sections.", "01S00", null);
-            }
-
-            String portAsString = hostPortPair.substring(portIndex + 1);
-            String hostname = hostPortPair.substring(0, portIndex);
-            splitValues[0] = hostname;
-            splitValues[1] = portAsString;
-        } else {
-            splitValues[0] = hostPortPair;
-            splitValues[1] = null;
-        }
-        return splitValues;
-    }
-
-    public static boolean startsWithIgnoreCase(String searchIn, String searchFor) {
-        return startsWithIgnoreCase(searchIn, 0, searchFor);
-    }
-
-    public static boolean startsWithIgnoreCase(String searchIn, int startAt, String searchFor) {
-        return searchIn.regionMatches(true, startAt, searchFor, 0, searchFor.length());
     }
 
     @Override

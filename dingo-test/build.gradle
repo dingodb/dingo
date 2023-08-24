@@ -48,21 +48,25 @@ dependencies {
     implementation group: 'commons-io', name: 'commons-io', version: 'commons-io'.v()
     implementation group: 'org.apache.calcite.avatica', name: 'avatica-server', version: 'avatica'.v()
     implementation project(':dingo-calcite')
-    implementation project(':dingo-driver:dingo-driver-host')
     implementation project(':dingo-driver:dingo-driver-client')
+    implementation project(':dingo-driver:dingo-driver-host')
     implementation project(':dingo-exec')
     implementation project(':dingo-expr:dingo-expr-test')
     implementation project(':dingo-net-netty')
-    implementation project(':dingo-verify')
     implementation project(':dingo-test:dingo-meta-local')
     implementation project(':dingo-test:dingo-store-memory')
+    implementation project(':dingo-verify')
     intTestAnnotationProcessor 'org.projectlombok:lombok:' + 'lombok'.v()
     intTestCompileOnly 'org.projectlombok:lombok:' + 'lombok'.v()
     intTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:' + 'junit5'.v()
+    intTestRuntimeOnly group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
+    intTestRuntimeOnly group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     testImplementation project(':dingo-calcite')
+    testRuntimeOnly group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
+    testRuntimeOnly group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
 }
 
-task intTest(type: Test) {
+tasks.register('intTest', Test) {
     description = 'Runs integration tests.'
     group = 'verification'
     testClassesDirs = sourceSets.intTest.output.classesDirs

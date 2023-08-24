@@ -25,8 +25,6 @@ apply plugin: 'maven'
 apply plugin: 'signing'
 
 dependencies {
-    runtimeOnly group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
-    runtimeOnly group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     implementation group: 'org.apache.calcite.avatica', name: 'avatica-core', version: 'avatica'.v()
@@ -36,36 +34,44 @@ dependencies {
     implementation project(':dingo-verify')
 }
 
-task javadocJar(type: Jar) {
-    classifier = 'javadoc'
+tasks.register('javadocJar', Jar) {
+    classifier 'javadoc'
     from javadoc
 }
 
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
+tasks.register('sourcesJar', Jar) {
+    classifier 'sources'
     from sourceSets.main.allSource
 }
 
-task fatJar(type: Jar) {
+tasks.register('fatJar', Jar) {
     classifier 'all'
     from(
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
+            configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
     )
     with jar
+
+    // Register dingo driver
+    metaInf {
+        from "src/main/resources/java.sql.Driver"
+        into "services"
+    }
 
     exclude "META-INF/*.SF"
     exclude "META-INF/*.DSA"
     exclude "META-INF/*.RSA"
+    // Remove register of avatica driver
+    exclude "META-INF/services/java.sql.Driver"
 }
 
 fatJar.dependsOn([
-    ':dingo-common:jar',
-    ':dingo-net-api:jar',
-    ':dingo-net-netty:jar',
-    ':dingo-serial:jar',
-    ':dingo-expr:dingo-expr-runtime:jar',
-    ':dingo-expr:dingo-expr-json-runtime:jar',
-    ':dingo-verify:jar'
+        ':dingo-common:jar',
+        ':dingo-net-api:jar',
+        ':dingo-net-netty:jar',
+        ':dingo-serial:jar',
+        ':dingo-expr:dingo-expr-runtime:jar',
+        ':dingo-expr:dingo-expr-json-runtime:jar',
+        ':dingo-verify:jar'
 ])
 
 tasks.named("build") { x ->
@@ -93,7 +99,7 @@ publishing {
         maven(MavenPublication) {
             groupId = 'io.dingodb'
             artifactId = 'dingo-driver-client'
-            artifacts = [ fatJar, sourcesJar, javadocJar ]
+            artifacts = [fatJar, sourcesJar, javadocJar]
         }
     }
 }
