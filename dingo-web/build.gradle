@@ -19,6 +19,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
     id "com.google.protobuf" version "0.8.18"
+    id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
 }
 
 jar {
