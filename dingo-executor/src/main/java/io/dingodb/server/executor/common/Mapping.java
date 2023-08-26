@@ -37,6 +37,8 @@ import io.dingodb.sdk.common.utils.ByteArrayUtils;
 import io.dingodb.store.api.StoreInstance;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 public final class Mapping {
@@ -58,6 +60,12 @@ public final class Mapping {
     }
 
     public static TableDefinition mapping(Table table) {
+        Properties properties = new Properties();
+        Map<String, String> map = table.getProperties();
+        if (map != null) {
+            properties.putAll(map);
+        }
+
         return new TableDefinition(
             table.getName(),
             table.getColumns().stream().map(Mapping::mapping).collect(Collectors.toList()),
@@ -66,7 +74,7 @@ public final class Mapping {
             table.getTtl(),
             mapping(table.getPartition()),
             table.getEngine(),
-            null,
+            properties,
             table.getAutoIncrement(),
             table.getReplica(),
             table.getCreateSql());

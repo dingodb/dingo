@@ -32,12 +32,19 @@ import io.dingodb.sdk.common.KeyValueWithExpect;
 import io.dingodb.sdk.common.codec.CodecUtils;
 import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
 import io.dingodb.sdk.common.index.IndexParameter;
+import io.dingodb.sdk.common.index.VectorIndexParameter;
 import io.dingodb.sdk.common.serial.schema.DingoSchema;
 import io.dingodb.sdk.common.serial.schema.LongSchema;
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
+import io.dingodb.sdk.common.vector.Search;
+import io.dingodb.sdk.common.vector.SearchFlatParam;
+import io.dingodb.sdk.common.vector.SearchHnswParam;
 import io.dingodb.sdk.common.vector.Vector;
+import io.dingodb.sdk.common.vector.VectorSearchParameter;
 import io.dingodb.sdk.common.vector.VectorTableData;
+import io.dingodb.sdk.common.vector.VectorWithDistance;
+import io.dingodb.sdk.common.vector.VectorWithDistanceResult;
 import io.dingodb.sdk.common.vector.VectorWithId;
 import io.dingodb.sdk.service.index.IndexServiceClient;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
@@ -49,6 +56,10 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -340,6 +351,65 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 storeService.scan(storeTableId, storeRegionId, mapping(range).getRange(), range.withStart, range.withEnd, new io.dingodb.store.common.Coprocessor(coprocessor)),
                 Mapping::mapping
             );
+        }
+
+        @Override
+        public List<byte[]> vectorSearch(CommonId indexId, Float[] floatArray, int topN) {
+            List<VectorWithId> vectors = new ArrayList<>();
+            Table indexTable = tableDefinitionMap.get(mapping(indexId));
+            IndexParameter indexParameter = indexTable.getIndexParameter();
+            Map<String, String> properties = indexTable.getProperties();
+
+            Vector vector = new Vector(
+                Integer.valueOf(properties.get("dimension")),
+                Vector.ValueType.FLOAT,
+                Arrays.asList(floatArray),
+                Collections.emptyList());
+            VectorWithId vectorWithId = new VectorWithId(0, vector, null, null);
+            vectors.add(vectorWithId);
+
+            Search search;
+            VectorIndexParameter vectorIndexParameter = indexParameter.getVectorIndexParameter();
+            switch (vectorIndexParameter.getVectorIndexType()) {
+                case VECTOR_INDEX_TYPE_IVF_FLAT:
+                case VECTOR_INDEX_TYPE_NONE:
+                case VECTOR_INDEX_TYPE_IVF_PQ:
+                case VECTOR_INDEX_TYPE_DISKANN:
+                    return null;
+                case VECTOR_INDEX_TYPE_HNSW:
+                    SearchHnswParam searchHnswParam = new SearchHnswParam(10);
+                    search = new Search(searchHnswParam);
+                    break;
+                case VECTOR_INDEX_TYPE_FLAT:
+                default: {
+                    SearchFlatParam searchFlatParam = new SearchFlatParam(10);
+                    search = new Search(searchFlatParam);
+                }
+            }
+
+            VectorSearchParameter vectorSearchParameter = new VectorSearchParameter(
+                topN,
+                true,
+                true,
+                Collections.emptyList(),
+                search,
+                null,
+                null,
+                null,
+                null
+            );
+
+            List<VectorWithDistanceResult> results = indexService.vectorSearch(mapping(indexId), mapping(regionId),
+                vectors, vectorSearchParameter);
+            List<byte[]> keyList = results.stream()
+                .map(VectorWithDistanceResult::getWithDistance)
+                .flatMap(Collection::stream)
+                .map(VectorWithDistance::getWithId)
+                .map(VectorWithId::getTableData)
+                .map(VectorTableData::getKey)
+                .collect(Collectors.toList());
+
+            return keyList;
         }
 
         @Override

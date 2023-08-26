@@ -172,6 +172,14 @@ public interface MetaService {
         throw new UnsupportedOperationException();
     }
 
+    default NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull String name) {
+        throw new UnsupportedOperationException();
+    }
+
+    default NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull CommonId id) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Returns current process location.
      *

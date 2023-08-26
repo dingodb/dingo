@@ -196,7 +196,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                         !columnDefinition.getTypeName().equals("BIGINT")) {
                         throw new RuntimeException("Invalid column type: " + columnName);
                     }
-                } else {
+                } else if(i == 1) {
                     if (!columnDefinition.getTypeName().equals("ARRAY") ||
                         !(columnDefinition.getElementType() != null
                             && columnDefinition.getElementType().equals("FLOAT"))) {

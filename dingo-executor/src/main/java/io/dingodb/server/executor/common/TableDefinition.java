@@ -86,7 +86,10 @@ public class TableDefinition implements Table {
     @Override
     public Map<String, String> getProperties() {
         Map<String, String> map = new HashMap<>();
-        tableDefinition.getProperties().forEach((key, value) -> map.put((String) key, (String) value));
+        if (tableDefinition.getProperties() != null) {
+            tableDefinition.getProperties().forEach((key, value) -> map.put((String) key, (String) value));
+        }
+
         return map;
     }
 
@@ -132,7 +135,6 @@ public class TableDefinition implements Table {
             }
 
             return new IndexParameter(IndexParameter.IndexType.INDEX_TYPE_VECTOR, vectorIndexParameter);
-
         }
     }
 

@@ -195,6 +195,16 @@ public class LocalMetaService implements MetaService {
     }
 
     @Override
+    public NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull CommonId id) {
+        return Parameters.cleanNull(distributions.get(id), defaultDistributions);
+    }
+
+    @Override
+    public NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull String name) {
+        return Parameters.cleanNull(distributions.get(id), defaultDistributions);
+    }
+
+    @Override
     public Location currentLocation() {
         return location;
     }

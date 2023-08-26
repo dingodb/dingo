@@ -22,9 +22,14 @@ import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.TupleType;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
+import io.dingodb.expr.core.TypeCode;
 import io.dingodb.meta.Meta;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.TableStatistic;
@@ -208,6 +213,28 @@ public class MetaService implements io.dingodb.meta.MetaService {
         return getRangeDistribution(tableId).values().stream()
             .filter(d -> d.id().equals(distributionId))
             .findAny().get();
+    }
+
+    @Override
+    public NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull CommonId id) {
+        NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
+        KeyValueCodec codec = CodecService.getDefault()
+            .createKeyValueCodec(DingoTypeFactory.tuple(TypeCode.LONG), TupleMapping.of(new int[0]));
+        metaServiceClient.getIndexRangeDistribution(mapping(id)).values().stream()
+            .map(__ -> mapping(__, codec))
+            .forEach(__ -> result.put(new ComparableByteArray(__.getStartKey()), __));
+        return result;
+    }
+
+    @Override
+    public NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull String name) {
+        NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
+        TableDefinition tableDefinition = getTableDefinition(name);
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
+        metaServiceClient.getIndexRangeDistribution(name).values().stream()
+            .map(__ -> mapping(__, codec))
+            .forEach(__ -> result.put(new ComparableByteArray(__.getStartKey()), __));
+        return result;
     }
 
     @Override
