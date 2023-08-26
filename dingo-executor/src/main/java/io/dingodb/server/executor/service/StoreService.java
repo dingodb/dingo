@@ -26,6 +26,7 @@ import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.KeyValueWithExpect;
 import io.dingodb.sdk.service.store.StoreServiceClient;
 import io.dingodb.server.executor.common.Mapping;
+import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 

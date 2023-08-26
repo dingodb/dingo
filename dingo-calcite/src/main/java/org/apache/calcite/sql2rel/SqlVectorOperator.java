@@ -21,36 +21,71 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.grammar.SqlUserDefinedOperators;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.TranslatableTable;
+import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.sql.SqlTableFunction;
+import org.apache.calcite.sql.fun.SqlArrayValueConstructor;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class SqlVectorOperator extends SqlFunction implements SqlTableFunction {
 
     public static void register(DingoParserContext context) {
         StandardConvertletTable.INSTANCE.registerOp(SqlUserDefinedOperators.VECTOR,
             (cx, call) -> {
-                final TranslatableTable table = ((SqlVectorOperator) call.getOperator()).getTable(context, call.operand(0).toString());
+                final TranslatableTable table = ((SqlVectorOperator) call.getOperator())
+                    .getTable(context, call.operand(0).toString());
                 DingoTable dingoTable = (DingoTable) table;
+
                 final RelDataType rowType = dingoTable.getRowType(cx.getTypeFactory());
                 RexBuilder rexBuilder = new RexBuilder(cx.getTypeFactory());
-                return rexBuilder.makeCall(rowType, call.getOperator(), Arrays.asList(
-                    rexBuilder.makeLiteral(call.operand(0).toString())));
+
+                List<SqlNode> parameters = call.getOperandList();
+                List<RexNode> parameterList = new ArrayList<>();
+                for (int i = 0; i < parameters.size(); i++) {
+                    SqlNode sqlNode = parameters.get(i);
+                    if (sqlNode instanceof SqlIdentifier) {
+                        RexLiteral literal = rexBuilder.makeLiteral(sqlNode.toString());
+                        parameterList.add(literal);
+                    } else if (sqlNode instanceof SqlNumericLiteral) {
+                        RexLiteral literal = rexBuilder.makeLiteral(((SqlNumericLiteral) sqlNode)
+                            .intValue(false), new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.INTEGER));
+                        parameterList.add(literal);
+                    } else if (sqlNode instanceof SqlBasicCall) {
+                        RexNode rexNode = rexBuilder.makeCall(new SqlArrayValueConstructor(),
+                            ((SqlCall) sqlNode).getOperandList().stream()
+                                .map(o ->
+                                    rexBuilder.makeLiteral(((SqlNumericLiteral) o).bigDecimalValue(),
+                                        new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.FLOAT)))
+                                .collect(Collectors.toList()));
+                        parameterList.add(rexNode);
+                    }
+                }
+
+                return rexBuilder.makeCall(rowType, call.getOperator(), parameterList);
             });
     }
 

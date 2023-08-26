@@ -82,9 +82,9 @@ public final class PartInKvStore implements Part {
 
     @Override
     public boolean insert(@NonNull Object[] keyValue) {
-        boolean insert = store.insertWithIndex(keyValue);
+        boolean insert = store.insertIndex(keyValue);
         if (insert) {
-            return store.insertIndex(keyValue);
+            return store.insertWithIndex(keyValue);
         }
 
         return false;

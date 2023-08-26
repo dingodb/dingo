@@ -74,6 +74,10 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
+    default public List<byte[]> vectorSearch(CommonId indexId, Float[] floatArray, int topN) {
+        throw new UnsupportedOperationException();
+    }
+
     default long count(Range range) {
         throw new UnsupportedOperationException();
     }
