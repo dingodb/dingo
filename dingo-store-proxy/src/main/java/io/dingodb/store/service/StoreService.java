@@ -115,7 +115,6 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         private final CommonId partitionId;
         private final CommonId regionId;
         private final DingoSchema<Long> schema = new LongSchema(0);
-        private final DingoType dingoType = new LongType(true);
 
         private Table table;
         private KeyValueCodec tableCodec;

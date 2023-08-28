@@ -38,7 +38,6 @@ import io.dingodb.client.utils.ClassCache;
 import io.dingodb.client.utils.ClassCacheEntry;
 import io.dingodb.client.utils.GenericTypeMapper;
 import io.dingodb.sdk.common.table.Column;
-import io.dingodb.sdk.common.table.ColumnDefinition;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.table.TableDefinition;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +49,7 @@ import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import javax.validation.constraints.NotNull;
 
@@ -427,6 +427,7 @@ public class DingoOpCli implements DingoMapper {
         return delete(key);
     }
 
+    @Deprecated
     @Override
     public <T> void query(@NotNull Class<T> clazz,
                           @NotNull Processor<T> processor,
@@ -476,20 +477,10 @@ public class DingoOpCli implements DingoMapper {
             );
         }
 
-        List<Record> recordList = null;
-        // todo using new dingo client
-        //recordList = dingoClient.query(startKey, endKey, dingoFilter);
+        Iterator<Record> iterator = dingoClient.scan(tableName, startKey, endKey, true, false);
         try {
-            if (recordList == null) {
-                log.warn("Execute query:{} on table:{} get empty record list",
-                    filter.toString(),
-                    tableName
-                );
-                return;
-            }
-
-            for (Record record : recordList) {
-                T object = this.getMappingConverter().convertToObject(clazz, record);
+            while (iterator.hasNext()) {
+                T object = this.getMappingConverter().convertToObject(clazz, iterator.next());
                 if (!processor.process(object)) {
                     break;
                 }
@@ -500,7 +491,7 @@ public class DingoOpCli implements DingoMapper {
         }
     }
 
-
+    @Deprecated
     @Override
     public <T> List<T> query(Class<T> clazz, Filter filter) {
         List<T> result = new ArrayList<>();

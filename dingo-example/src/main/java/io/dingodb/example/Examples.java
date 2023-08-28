@@ -18,7 +18,17 @@ package io.dingodb.example;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import io.dingodb.client.DingoClient;
+import io.dingodb.client.DingoOpCli;
+import io.dingodb.client.common.Key;
+import io.dingodb.client.common.Record;
+import io.dingodb.client.common.Value;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.driver.client.DingoDriverClient;
+import io.dingodb.example.model.Person;
+import io.dingodb.sdk.common.table.ColumnDefinition;
+import io.dingodb.sdk.common.table.Table;
+import io.dingodb.sdk.common.table.TableDefinition;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -26,10 +36,13 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 
 public class Examples {
@@ -116,17 +129,25 @@ public class Examples {
                 ));
                 break;
             case "SDK":
-                //DingoConfiguration.parse(config);
-                //String coordinatorServerList = ClientConfiguration.instance().getCoordinatorExchangeSvrList();
-                //DingoClient dingoClient = new DingoClient(coordinatorServerList, 10);
-                //dingoClient.setIdentity("root", "123123");
-                //runOperation(new SDKRunner(
-                //    table.toUpperCase(),
-                //    dingoClient)
-                //);
+                DingoConfiguration.parse(config);
+                String coordinatorServerList = Configuration.coordinatorExchangeSvrList();
+                DingoClient dingoClient = new DingoClient(coordinatorServerList, 10);
+                runOperation(new SDKRunner(
+                    table.toUpperCase(),
+                    dingoClient)
+                );
                 break;
             case "SCHEMA":
                 System.out.println(TABLE_SCHEMA);
+                break;
+            case "POJO":
+                DingoConfiguration.parse(config);
+                String coordinatorserverlist = Configuration.coordinatorExchangeSvrList();
+                DingoClient dingoClient1 = new DingoClient(coordinatorserverlist, 10);
+                runOperation(new OpCliRunner(
+                    table.toUpperCase(),
+                    dingoClient1)
+                );
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + option);
@@ -169,7 +190,7 @@ public class Examples {
                 long elapsed;
                 switch (queryMode.toUpperCase()) {
                     case "ALL": {
-                        runner.query();
+                        runner.query(sequence, count);
                         break;
                     }
                     case "LOOP": {
@@ -227,6 +248,14 @@ public class Examples {
             RANDOM.nextBoolean()};
     }
 
+    private Object[] generatePersonRecord(int seed) {
+        return new Object[] {
+            seed + 1,
+            "dingo" + seed,
+            10 + seed,
+            1000.0 * seed};
+    }
+
     static interface Runner {
 
         void create() throws Exception;
@@ -235,59 +264,154 @@ public class Examples {
 
         long insert(List<Object[]> records) throws Exception;
 
-        void query() throws Exception;
+        void query(int sequence, int count) throws Exception;
 
         long query(int seed) throws Exception;
 
         void count() throws Exception;
     }
 
-    static class SDKRunner implements Runner {
+    static class OpCliRunner implements Runner {
 
-        //private final DingoClient dingoClient;
-        //private final String tableName;
-        //
-        //SDKRunner(String tableName, DingoClient dingoClient) {
-        //    this.tableName = tableName;
-        //    this.dingoClient = dingoClient;
-        //    boolean isOK = dingoClient.open();
-        //    if (!isOK) {
-        //        throw new RuntimeException("Open connection failed");
-        //    }
-        //}
+        private final String tableName;
+        private final DingoOpCli dingoOpCli;
+
+        public OpCliRunner(String tableName, DingoClient dingoClient) {
+            this.tableName = tableName;
+            this.dingoOpCli = new DingoOpCli.Builder(dingoClient).build();
+        }
 
         @Override
         public void create() throws Exception {
-            throw new UnsupportedOperationException();
+            boolean isOk = dingoOpCli.createTable(Person.class);
+            System.out.println("Create table status: " + isOk);
         }
 
         @Override
         public long insert(Object[] record) throws Exception {
             long start = System.currentTimeMillis();
-            //dingoClient.insert(tableName, record);
+            Person person = new Person();
+            person.setId((Integer) record[0]);
+            person.setName((String) record[1]);
+            person.setAge((Integer) record[2]);
+            person.setSalary((Double) record[3]);
+            dingoOpCli.save(person);
             return System.currentTimeMillis() - start;
         }
 
         @Override
         public long insert(List<Object[]> records) throws Exception {
             long start = System.currentTimeMillis();
-            //dingoClient.insert(tableName, records);
+            List<Person> people = new ArrayList<>();
+            for (Object[] record : records) {
+                Person person = new Person();
+                person.setId((Integer) record[0]);
+                person.setName((String) record[1]);
+                person.setAge((Integer) record[2]);
+                person.setSalary((Double) record[3]);
+                people.add(person);
+            }
+            dingoOpCli.save(people.toArray());
             return System.currentTimeMillis() - start;
         }
 
         @Override
-        public void query() throws Exception {
+        public void query(int sequence, int count) throws Exception {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long query(int seed) throws Exception {
+            long start = System.currentTimeMillis();
+            dingoOpCli.read(Person.class, new Object[]{(seed + 1), ("dingo" + seed)});
+            return System.currentTimeMillis() - start;
+        }
+
+        @Override
+        public void count() throws Exception {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    static class SDKRunner implements Runner {
+
+        private final DingoClient dingoClient;
+        private final String tableName;
+        private Table table;
+
+        SDKRunner(String tableName, DingoClient dingoClient) {
+            this.tableName = tableName;
+            this.dingoClient = dingoClient;
+            boolean isOK = dingoClient.open();
+            if (!isOK) {
+                throw new RuntimeException("Open connection failed");
+            }
+            try {
+                this.table = this.dingoClient.getTableDefinition(tableName);
+            } catch (NullPointerException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public void create() throws Exception {
+            ColumnDefinition c1 = ColumnDefinition.builder()
+                .name("u_id").type("string").primary(1).nullable(false).build();
+            ColumnDefinition c2 = ColumnDefinition.builder().name("u_name").type("string").primary(-1).build();
+            ColumnDefinition c3 = ColumnDefinition.builder().name("u_age").type("integer").primary(-2).build();
+            ColumnDefinition c4 = ColumnDefinition.builder().name("u_income").type("double").primary(-3).build();
+            ColumnDefinition c5 = ColumnDefinition.builder().name("u_gender").type("boolean").primary(-4).build();
+            TableDefinition tableDefinition = TableDefinition.builder()
+                .name(tableName)
+                .columns(Arrays.asList(c1, c2, c3, c4, c5))
+                .replica(3)
+                .engine("ENG_ROCKSDB")
+                .build();
+
+            boolean createTable = dingoClient.createTable(tableDefinition);
+            if (createTable) {
+                this.table = dingoClient.getTableDefinition(tableName);
+            }
+        }
+
+        @Override
+        public long insert(Object[] record) throws Exception {
+            long start = System.currentTimeMillis();
+            dingoClient.upsert(tableName, new Record(table.getColumns(), record));
+            return System.currentTimeMillis() - start;
+        }
+
+        @Override
+        public long insert(List<Object[]> records) throws Exception {
+            long start = System.currentTimeMillis();
+            dingoClient.upsert(
+                tableName,
+                records.stream().map(record -> new Record(table.getColumns(), record)).collect(Collectors.toList()));
+            return System.currentTimeMillis() - start;
+        }
+
+        @Override
+        public void query(int sequence, int count) throws Exception {
+            Key startKey = new Key(Value.get(String.valueOf(sequence)));
+            Key endKey = new Key(Value.get(String.valueOf(count)));
+            Iterator<Record> iterator = dingoClient.scan(tableName, startKey, endKey, true, true);
+            int line = 0;
+            while (iterator.hasNext()) {
+                Record next = iterator.next();
+                System.out.println(Arrays.toString(next.getDingoColumnValuesInOrder()));
+                line++;
+            }
+            System.out.println("Count: " + line);
         }
 
         @Override
         public long query(int index) throws Exception {
             long start = System.currentTimeMillis();
-            //Object[] objects = dingoClient.get(tableName, new Object[] {String.valueOf(index)});
-            //System.out.printf(
-            //    "Query result u_id=%s, u_name=%s, u_age=%s, u_income=%s, u_gender=%s. \n",
-            //    objects[0], objects[1], objects[2], objects[3], objects[4]
-            //);
+            Object[] objects = dingoClient.get(tableName, new Key(Value.get(String.valueOf(index)))).getDingoColumnValuesInOrder();
+            System.out.printf(
+                "Query result u_id=%s, u_name=%s, u_age=%s, u_income=%s, u_gender=%s. \n",
+                objects[0], objects[1], objects[2], objects[3], objects[4]
+            );
             return System.currentTimeMillis() - start;
         }
 
@@ -353,7 +477,7 @@ public class Examples {
         }
 
         @Override
-        public void query() throws Exception {
+        public void query(int sequence, int count) throws Exception {
             String sql = "select * from " + tableName;
             try (Statement statement = connection.createStatement()) {
                 try (ResultSet resultSet = statement.executeQuery(sql)) {
