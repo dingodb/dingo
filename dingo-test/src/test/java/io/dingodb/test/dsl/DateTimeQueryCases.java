@@ -32,6 +32,9 @@ public class DateTimeQueryCases extends SqlTestCaseJavaBuilder {
         table("i4k_tm0_ts0", file("i4k_tm0_ts0/create.sql"))
             .init(file("i4k_tm0_ts0/data.sql"), 3);
 
+        table("i4k_ts0_tm0", file("i4k_ts0_tm0/create.sql"))
+            .init(file("i4k_ts0_tm0/data.sql"), 3);
+
         table("i4k_vs_dt0", file("i4k_vs_dt0/create.sql"))
             .init(file("i4k_vs_dt0/data.sql"), 2);
 
@@ -314,6 +317,18 @@ public class DateTimeQueryCases extends SqlTestCaseJavaBuilder {
                     "expr$0",
                     "TIMESTAMP",
                     "2024-05-04 12:00:00"
+                )
+            );
+
+        test("Precision of timestamp")
+            .use("table", "i4k_ts0_tm0")
+            .data(
+                csv(
+                    "id, create_datetime, update_time",
+                    "INTEGER, TIMESTAMP, STRING",
+                    "1, 2022-06-20 11:49:05.632, 11:50:05",
+                    "2, 2022-06-20 11:51:23.770, 11:52:23",
+                    "3, 2022-06-20 11:52:43.800, 11:53:43"
                 )
             );
     }

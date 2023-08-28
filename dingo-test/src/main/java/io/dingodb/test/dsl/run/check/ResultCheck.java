@@ -27,14 +27,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiredArgsConstructor(access = AccessLevel.PUBLIC)
 public abstract class ResultCheck implements Check {
-    public abstract void checkResultSet(ResultSet resultSet, String info) throws SQLException;
+    public abstract void checkResultSet(
+        @NonNull ResultSet resultSet,
+        @NonNull CheckContext context
+    ) throws SQLException;
 
     @Override
     public void check(@NonNull CheckContext context) throws SQLException {
         Check.super.check(context);
         assertThat(context.getExecuteReturnedValue()).isTrue();
         try (ResultSet resultSet = context.getStatement().getResultSet()) {
-            checkResultSet(resultSet, context.getInfo());
+            checkResultSet(resultSet, context);
         }
     }
 }

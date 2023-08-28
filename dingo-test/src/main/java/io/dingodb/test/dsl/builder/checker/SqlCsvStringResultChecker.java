@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 @RequiredArgsConstructor(access = AccessLevel.PUBLIC)
-public final class SqlCsvStringResultChecker extends SqlResultChecker {
+public final class SqlCsvStringResultChecker extends SqlResultDataChecker {
     @Getter
     private final String[] csvLines;
 

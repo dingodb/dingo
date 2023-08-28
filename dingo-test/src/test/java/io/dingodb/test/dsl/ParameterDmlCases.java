@@ -45,12 +45,12 @@ public class ParameterDmlCases extends SqlTestCaseJavaBuilder {
                     statement.setString(2, "Alice");
                     statement.setDouble(3, 10.0);
                     boolean b = statement.execute();
-                    check(statement, b, sql).count(1);
+                    check(statement, b, sql).test(count(1));
                     statement.setInt(1, 11);
                     statement.setString(2, "Betty");
                     statement.setDouble(3, 11.0);
                     b = statement.execute();
-                    check(statement, b, sql).count(1);
+                    check(statement, b, sql).test(count(1));
                 }
             })
             .data(csv(
@@ -76,7 +76,7 @@ public class ParameterDmlCases extends SqlTestCaseJavaBuilder {
                     statement.setString(8, "Cindy");
                     statement.setDouble(9, 12.0);
                     boolean b = statement.execute();
-                    check(statement, b, sql).count(3);
+                    check(statement, b, sql).test(count(3));
                 }
             })
             .data(csv(
@@ -156,13 +156,13 @@ public class ParameterDmlCases extends SqlTestCaseJavaBuilder {
                     statement.setTime(3, new Time(0));
                     statement.setTimestamp(4, new Timestamp(0));
                     boolean b = statement.execute();
-                    check(statement, b, sql).count(1);
+                    check(statement, b, sql).test(count(1));
                     statement.setInt(1, 2);
                     statement.setDate(2, new Date(86400000));
                     statement.setTime(3, new Time(3600000));
                     statement.setTimestamp(4, new Timestamp(1));
                     b = statement.execute();
-                    check(statement, b, sql).count(1);
+                    check(statement, b, sql).test(count(1));
                 }
             })
             .data(is(

@@ -18,32 +18,45 @@ package io.dingodb.test;
 
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.cases.RexCasesJUnit5;
-import lombok.extern.slf4j.Slf4j;
+import io.dingodb.test.dsl.run.exec.SqlExecContext;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import java.sql.SQLException;
 
-@Slf4j
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class QuerySimpleExpressionTest {
-    private static SqlHelper sqlHelper;
+    private SqlExecContext context;
 
     @BeforeAll
     public static void setupAll() throws Exception {
-        sqlHelper = new SqlHelper();
+        ConnectionFactory.initLocalEnvironment();
     }
 
     @AfterAll
-    public static void cleanUpAll() throws Exception {
-        sqlHelper.cleanUp();
+    public static void cleanUpAll() {
+        ConnectionFactory.cleanUp();
+    }
+
+    @BeforeEach
+    public void setup() throws Exception {
+        context = new SqlExecContext(ConnectionFactory.getConnection());
+    }
+
+    @AfterEach
+    public void cleanUp() throws Exception {
+        context.cleanUp();
     }
 
     @ParameterizedTest
     @ArgumentsSource(RexCasesJUnit5.class)
     public void test(String sql, String ignored, Object value) throws SQLException {
-        Object result = sqlHelper.querySingleValue("select " + sql);
+        Object result = context.querySingleValue("select " + sql);
         Assert.of(result).isEqualTo(value);
     }
 }

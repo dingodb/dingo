@@ -16,34 +16,44 @@
 
 package io.dingodb.test.asserts;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.test.utils.CsvUtils;
 import io.dingodb.test.utils.ResultSetUtils;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.Iterator;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 
+import static java.lang.Math.abs;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public final class AssertResultSet {
     private final ResultSet instance;
+    private ResultSetCheckConfig config;
 
     AssertResultSet(ResultSet obj) {
         instance = obj;
+        config = new ResultSetCheckConfig();
+    }
+
+    private @NonNull Row getRow() throws SQLException {
+        Object[] tuple = ResultSetUtils.getRow(instance);
+        return new Row(tuple);
+    }
+
+    public AssertResultSet config(ResultSetCheckConfig config) {
+        this.config = config;
+        return this;
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -70,15 +80,23 @@ public final class AssertResultSet {
     @SuppressWarnings("UnusedReturnValue")
     public AssertResultSet isRecords(List<Object[]> target) throws SQLException {
         int count = 0;
-        while (instance.next()) {
-            ResultSetUtils.Row row = ResultSetUtils.getRow(instance);
-            assertThat(row).isIn(target);
-            ++count;
+        if (config.isCheckOrder()) {
+            while (instance.next()) {
+                assertThat(getRow()).isEqualTo(new Row(target.get(count)));
+                ++count;
+            }
+        } else {
+            while (instance.next()) {
+                Row row = getRow();
+                assertThat(row).isIn(target);
+                ++count;
+            }
         }
         assertThat(count).isEqualTo(target.size());
         return this;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     public AssertResultSet rowCount(int rowCount) throws SQLException {
         int count = 0;
         while (instance.next()) {
@@ -88,63 +106,63 @@ public final class AssertResultSet {
         return this;
     }
 
-    @SuppressWarnings("UnusedReturnValue")
-    public AssertResultSet isRecordsInOrder(List<Object[]> target) throws SQLException {
-        int count = 0;
-        while (instance.next()) {
-            assertThat(ResultSetUtils.getRow(instance)).isEqualTo(target.get(count));
-            ++count;
-        }
-        assertThat(count).isEqualTo(target.size());
-        return this;
-    }
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+    public class Row {
+        private final Object[] tuple;
 
-    @SuppressWarnings("UnusedReturnValue")
-    public AssertResultSet asInCsv(InputStream csvStream) throws IOException, SQLException {
-        Iterator<String[]> it = CsvUtils.readCsv(csvStream);
-        final String[] columnNames = it.hasNext() ? it.next() : null;
-        final DingoType schema = it.hasNext() ? DingoTypeFactory.tuple(it.next()) : null;
-        if (columnNames == null || schema == null) {
-            throw new IllegalArgumentException(
-                "Result file must be csv and its first two rows are column names and schema definitions."
-            );
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(tuple);
         }
-        List<Object[]> tuples = ImmutableList.copyOf(
-            Iterators.transform(it, i -> (Object[]) schema.parse(i))
-        );
-        columnLabels(columnNames);
-        isRecords(tuples);
-        return this;
-    }
 
-    @SuppressWarnings("UnusedReturnValue")
-    public AssertResultSet isRecordsInOrderWithApproxTime(List<Object[]> target) throws SQLException {
-        ResultSetMetaData metaData = instance.getMetaData();
-        int size = metaData.getColumnCount();
-        int count = 0;
-        while (instance.next()) {
-            Object[] expectedRow = target.get(count);
-            for (int i = 0; i < size; ++i) {
-                Object value = instance.getObject(i + 1);
-                Object expected = expectedRow[i];
-                if (value instanceof Date) {
-                    assertThat(value.toString()).isEqualTo(expected.toString());
-                } else if (value instanceof Time) {
-                    if (expected instanceof String) {
-                        assertThat(value.toString()).isEqualTo(expected);
-                    } else {
-                        assertThat((Time) value).isCloseTo((Time) expected, 5L * 1000L);
+        @Override
+        public boolean equals(Object obj) {
+            Object[] values;
+            if (obj instanceof Row) {
+                values = ((Row) obj).tuple;
+            } else if (obj instanceof Object[]) {
+                values = (Object[]) obj;
+            } else {
+                return false;
+            }
+            if (tuple.length != values.length) {
+                return false;
+            }
+            for (int i = 0; i < tuple.length; ++i) {
+                Object actual = tuple[i];
+                Object expected = values[i];
+                if (actual instanceof Date) {
+                    if (!actual.toString().equals(expected.toString())) {
+                        return false;
                     }
-                } else if (value instanceof Timestamp) {
-                    assertThat((Timestamp) value)
-                        .isCloseTo((Timestamp) expected, 5L * 1000L);
-                } else {
-                    assertThat(value).isEqualTo(expected);
+                } else if (actual instanceof Time) {
+                    if (config.getTimeDeviation() != 0) {
+                        if (abs(((Time) actual).getTime() - ((Time) expected).getTime())
+                            > config.getTimeDeviation()) {
+                            return false;
+                        }
+                    } else if (!actual.toString().equals(values[i].toString())) {
+                        return false;
+                    }
+                } else if (actual instanceof Timestamp) {
+                    if (config.getTimestampDeviation() != 0) {
+                        if (abs(((Timestamp) actual).getTime() - ((Timestamp) expected).getTime())
+                            > config.getTimestampDeviation()) {
+                            return false;
+                        }
+                    } else if (!actual.toString().equals(values[i].toString())) {
+                        return false;
+                    }
+                } else if (!Objects.equals(actual, values[i])) {
+                    return false;
                 }
             }
-            count++;
+            return true;
         }
-        assertThat(count).isEqualTo(target.size());
-        return this;
+
+        @Override
+        public String toString() {
+            return Arrays.toString(tuple);
+        }
     }
 }

@@ -16,50 +16,59 @@
 
 package io.dingodb.test;
 
-import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.test.dsl.run.exec.SqlExecContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
-import java.io.IOException;
 import java.sql.SQLException;
 
-public class AutoIncrementTest {
+import static io.dingodb.test.dsl.builder.SqlTestCaseJavaBuilder.csv;
 
-    private static SqlHelper sqlHelper;
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+public class AutoIncrementTest {
+    private SqlExecContext context;
 
     @BeforeAll
     public static void setupAll() throws Exception {
-        sqlHelper = new SqlHelper();
-        sqlHelper.execFile("/table-test-auto-increment-create.sql");
+        ConnectionFactory.initLocalEnvironment();
     }
 
     @AfterAll
-    public static void cleanUpAll() throws Exception {
-        sqlHelper.cleanUp();
+    public static void cleanUpAll() {
+        ConnectionFactory.cleanUp();
     }
 
     @BeforeEach
     public void setup() throws Exception {
+        context = new SqlExecContext(ConnectionFactory.getConnection());
     }
 
     @AfterEach
     public void cleanUp() throws Exception {
+        context.cleanUp();
     }
 
     @Test
-    public void test() throws SQLException, IOException {
-        String sql = "insert into t_auto(name, age) values('a', 23), ('Billy', 19)";
-        sqlHelper.execSql(sql);
-
-        sql = "select * from t_auto";
-        sqlHelper.queryTest(
-            sql,
-            new String[]{"ID", "NAME", "AGE"},
-            DingoTypeFactory.tuple("INTEGER", "VARCHAR", "INTEGER"),
-            "1, a, 23\n"
-            + "2, Billy, 19");
+    public void test() throws SQLException {
+        context.execSql(
+            "create table {table}("
+                + "id int auto_increment, "
+                + "name varchar(32), "
+                + "age int,"
+                + "primary key (id)"
+                + ") partition by range values (2),(3)"
+        );
+        context.execSql("insert into {table}(name, age) values('a', 23), ('Billy', 19)");
+        context.execSql("select * from {table}")
+            .test(csv(
+                "ID, NAME, AGE",
+                "INT, STRING, INT",
+                "1, a, 23",
+                "2, Billy, 19"
+            ));
     }
 }

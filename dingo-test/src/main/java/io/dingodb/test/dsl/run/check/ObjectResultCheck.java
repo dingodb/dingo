@@ -17,9 +17,11 @@
 package io.dingodb.test.dsl.run.check;
 
 import io.dingodb.test.asserts.Assert;
+import io.dingodb.test.asserts.ResultSetCheckConfig;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -30,12 +32,16 @@ import java.util.List;
 public final class ObjectResultCheck extends ResultCheck {
     private final String[] columnLabels;
     private final List<Object[]> tuples;
+    private final ResultSetCheckConfig config;
 
     @Override
-    public void checkResultSet(ResultSet resultSet, String info) throws SQLException {
-        Assert.resultSet(resultSet)
+    public void checkResultSet(
+        @NonNull ResultSet resultSet,
+        @NonNull CheckContext context
+    ) throws SQLException {
+        Assert.resultSet(resultSet).config(config)
             .columnLabels(columnLabels)
             .isRecords(tuples);
-        log.debug("[PASSED] checking for column labels and rows in result set: {}", info);
+        log.debug("[PASSED] checking for column labels and rows in result set: {}", context.getInfo());
     }
 }

@@ -34,18 +34,18 @@ public class ParameterQueryCases extends SqlTestCaseJavaBuilder {
                 try (PreparedStatement statement = context.getConnection().prepareStatement(sql)) {
                     statement.setInt(1, 1);
                     boolean b = statement.execute();
-                    check(statement, b, sql).is(
+                    check(statement, b, sql).test(is(
                         new String[]{"EXPR$0"},
                         ImmutableList.of(
                             new Object[]{2}
-                        ));
+                        )));
                     statement.setInt(1, 2);
                     b = statement.execute();
-                    check(statement, b, sql).is(
+                    check(statement, b, sql).test(is(
                         new String[]{"EXPR$0"},
                         ImmutableList.of(
                             new Object[]{3}
-                        ));
+                        )));
                 }
             });
 
@@ -60,22 +60,22 @@ public class ParameterQueryCases extends SqlTestCaseJavaBuilder {
                     statement.setInt(1, 8);
                     statement.setDouble(2, 5.0);
                     boolean b = statement.execute();
-                    check(statement, b, sql).is(
+                    check(statement, b, sql).test(is(
                         new String[]{"ID", "NAME", "AMOUNT"},
                         ImmutableList.of(
                             new Object[]{5, "Emily", 5.5},
                             new Object[]{6, "Alice", 6.0},
                             new Object[]{7, "Betty", 6.5}
                         )
-                    );
+                    ));
                     statement.setDouble(2, 6.0);
                     b = statement.execute();
-                    check(statement, b, sql).is(
+                    check(statement, b, sql).test(is(
                         new String[]{"ID", "NAME", "AMOUNT"},
                         ImmutableList.of(
                             new Object[]{7, "Betty", 6.5}
                         )
-                    );
+                    ));
                 }
             });
 
@@ -86,20 +86,20 @@ public class ParameterQueryCases extends SqlTestCaseJavaBuilder {
                 try (PreparedStatement statement = context.getConnection().prepareStatement(context.transSql(sql))) {
                     statement.setInt(1, 1);
                     boolean b = statement.execute();
-                    check(statement, b, sql).is(
+                    check(statement, b, sql).test(is(
                         new String[]{"ID", "NAME", "AMOUNT"},
                         ImmutableList.of(
                             new Object[]{1, "Alice", 3.5}
                         )
-                    );
+                    ));
                     statement.setInt(1, 2);
                     b = statement.execute();
-                    check(statement, b, sql).is(
+                    check(statement, b, sql).test(is(
                         new String[]{"ID", "NAME", "AMOUNT"},
                         ImmutableList.of(
                             new Object[]{2, "Betty", 4.0}
                         )
-                    );
+                    ));
                 }
             });
 
@@ -110,7 +110,7 @@ public class ParameterQueryCases extends SqlTestCaseJavaBuilder {
                 try (PreparedStatement statement = context.getConnection().prepareStatement(context.transSql(sql))) {
                     statement.setString(1, "i");
                     boolean b = statement.execute();
-                    check(statement, b, sql).is(
+                    check(statement, b, sql).test(is(
                         new String[]{"ID", "NAME", "AMOUNT"},
                         ImmutableList.of(
                             new Object[]{1, "Alice", 3.5},
@@ -121,15 +121,15 @@ public class ParameterQueryCases extends SqlTestCaseJavaBuilder {
                             new Object[]{8, "Alice", 7.0},
                             new Object[]{9, "Cindy", 7.5}
                         )
-                    );
+                    ));
                     statement.setString(1, "o");
                     b = statement.execute();
-                    check(statement, b, sql).is(
+                    check(statement, b, sql).test(is(
                         new String[]{"ID", "NAME", "AMOUNT"},
                         ImmutableList.of(
                             new Object[]{4, "Doris", 5.0}
                         )
-                    );
+                    ));
                 }
             });
     }

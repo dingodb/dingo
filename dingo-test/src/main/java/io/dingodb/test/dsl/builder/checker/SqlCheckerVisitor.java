@@ -22,7 +22,7 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 public interface SqlCheckerVisitor<T> {
     T visit(@NonNull SqlObjectResultChecker sqlChecker);
 
-    T visit(@NonNull SqlCountResultChecker sqlChecker);
+    T visit(@NonNull SqlResultCountChecker sqlChecker);
 
     T visit(@NonNull SqlCsvStringResultChecker sqlChecker);
 

@@ -134,5 +134,25 @@ public class ExceptionCases extends SqlTestCaseJavaBuilder {
                 "select avg(name) from {table}",
                 exception(sql(90001, "90001"))
             );
+
+        test("Null in array")
+            .step("create table {table} (id int, data varchar array, primary key(id))")
+            .step(
+                "insert into {table} values(1, array['1', null, '3'])",
+                exception(SQLException.class, "Null values are not allowed")
+            );
+
+        test("Null in multiset")
+            .step("create table {table} (id int, data date multiset, primary key(id))")
+            .step("insert into {table} values(1, multiset[''])",
+                exception(SQLException.class, "Null values are not allowed")
+            );
+
+        test("Null in map")
+            .step("create table {table} (id int, data map, primary key(id))")
+            .step(
+                "insert into {table} values(1, map['a', '1', 'b', null])",
+                exception(SQLException.class, "Null values are not allowed")
+            );
     }
 }

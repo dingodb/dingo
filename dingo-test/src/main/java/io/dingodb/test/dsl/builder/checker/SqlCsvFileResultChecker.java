@@ -24,7 +24,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.io.InputStream;
 
 @RequiredArgsConstructor(access = AccessLevel.PUBLIC)
-public final class SqlCsvFileResultChecker extends SqlResultChecker {
+public final class SqlCsvFileResultChecker extends SqlResultDataChecker {
     @Getter
     private final InputStream csvFile;
 

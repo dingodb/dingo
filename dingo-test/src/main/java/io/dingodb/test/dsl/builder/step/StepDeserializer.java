@@ -21,8 +21,9 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.dingodb.test.asserts.ResultSetCheckConfig;
 import io.dingodb.test.dsl.builder.checker.SqlChecker;
-import io.dingodb.test.dsl.builder.checker.SqlResultChecker;
+import io.dingodb.test.dsl.builder.checker.SqlResultDataChecker;
 import io.dingodb.test.dsl.builder.checker.SqlUpdateCountChecker;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -47,10 +48,19 @@ public class StepDeserializer extends StdDeserializer<Step> {
             ObjectNode objectNode = (ObjectNode) jsonNode;
             SqlChecker checker = null;
             if (objectNode.has("result")) {
-                checker = parser.getCodec().treeToValue(
+                SqlResultDataChecker resultDataChecker = parser.getCodec().treeToValue(
                     objectNode.get("result"),
-                    SqlResultChecker.class
+                    SqlResultDataChecker.class
                 );
+                if (objectNode.has("config")) {
+                    resultDataChecker.setConfig(
+                        parser.getCodec().treeToValue(
+                            objectNode.get("config"),
+                            ResultSetCheckConfig.class
+                        )
+                    );
+                }
+                checker = resultDataChecker;
             } else if (objectNode.has("count")) {
                 Integer updateCount = parser.getCodec().treeToValue(
                     objectNode.get("count"),

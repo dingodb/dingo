@@ -14,24 +14,20 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.dsl.run.check;
+package io.dingodb.test.dsl.builder.checker;
 
-import io.dingodb.test.utils.ResultSetUtils;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Arrays;
+@RequiredArgsConstructor(access = AccessLevel.PUBLIC)
+public class SqlResultCountChecker extends SqlResultChecker {
+    @Getter
+    private final int rowCount;
 
-public class DumpResult extends ResultCheck {
     @Override
-    public void checkResultSet(
-        @NonNull ResultSet resultSet,
-        @NonNull CheckContext context
-    ) throws SQLException {
-        while (resultSet.next()) {
-            Object[] row = ResultSetUtils.getRow(resultSet);
-            System.out.println(Arrays.toString(row));
-        }
+    public <T> T accept(@NonNull SqlCheckerVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

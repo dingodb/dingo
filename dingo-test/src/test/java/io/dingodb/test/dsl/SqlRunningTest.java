@@ -138,6 +138,16 @@ public class SqlRunningTest extends SqlTestRunner {
     }
 
     @TestFactory
+    public Stream<DynamicTest> testDefaultValue() {
+        return getTests(new DefaultValueCases());
+    }
+
+    @TestFactory
+    public Stream<DynamicTest> testCancel() {
+        return getTests(new CancelCases());
+    }
+
+    @TestFactory
     public Stream<DynamicTest> testException() {
         return getTests(new ExceptionCases());
     }

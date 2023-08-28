@@ -14,20 +14,29 @@
  * limitations under the License.
  */
 
-package io.dingodb.test.dsl.builder.checker;
+package io.dingodb.test.asserts;
 
-import lombok.AccessLevel;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import lombok.Setter;
 
-@RequiredArgsConstructor(access = AccessLevel.PUBLIC)
-public class SqlCountResultChecker extends SqlResultChecker {
+public class ResultSetCheckConfig {
     @Getter
-    private final int rowCount;
+    @Setter
+    @JsonProperty("order")
+    private boolean checkOrder;
+    @Getter
+    @Setter
+    @JsonProperty("time_deviation")
+    private long timeDeviation;
+    @Getter
+    @Setter
+    @JsonProperty("timestamp_deviation")
+    private long timestampDeviation;
 
-    @Override
-    public <T> T accept(@NonNull SqlCheckerVisitor<T> visitor) {
-        return visitor.visit(this);
+    public ResultSetCheckConfig() {
+        checkOrder = false;
+        timeDeviation = 0;
+        timestampDeviation = 0;
     }
 }

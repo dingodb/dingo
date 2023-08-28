@@ -83,6 +83,7 @@ public class TestAggregate {
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoReduce.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class);
+        System.out.println(parser.getPlanner().toDot());
     }
 
     @Test

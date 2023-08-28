@@ -16,59 +16,56 @@
 
 package io.dingodb.test;
 
-import lombok.extern.slf4j.Slf4j;
+import io.dingodb.test.asserts.Assert;
+import io.dingodb.test.dsl.run.exec.SqlExecContext;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
-@Slf4j
+import static io.dingodb.test.dsl.builder.SqlTestCaseJavaBuilder.file;
+
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class QueryPlanTest {
-    private static SqlHelper sqlHelper;
+    private static SqlExecContext context;
 
     @BeforeAll
     public static void setupAll() throws Exception {
-        sqlHelper = new SqlHelper();
-        sqlHelper.execFile("/table-test-create.sql");
+        ConnectionFactory.initLocalEnvironment();
+        context = new SqlExecContext(ConnectionFactory.getConnection());
+        context.execSql(file("dsl/i4k_vs_f80/create.sql"));
     }
 
     @AfterAll
-    public static void cleanUpAll() throws Exception {
-        sqlHelper.cleanUp();
-    }
-
-    @BeforeEach
-    public void setup() {
-    }
-
-    @AfterEach
-    public void cleanUp() {
+    public static void cleanUpAll() throws SQLException {
+        context.cleanUp();
+        ConnectionFactory.cleanUp();
     }
 
     @Test
     public void testExplainSimpleValues() throws SQLException {
         String sql = "explain plan for select 1";
-        sqlHelper.explainTest(
-            sql
-        );
+        try (ResultSet resultSet = context.execSql(sql).getStatement().getResultSet()) {
+            Assert.resultSet(resultSet).isPlan();
+        }
     }
 
     @Test
     public void testExplainInsertValues() throws SQLException {
-        String sql = "explain plan for insert into test values(1, 'Alice', 1.0)";
-        sqlHelper.explainTest(
-            sql
-        );
+        String sql = "explain plan for insert into {table} values(1, 'Alice', 1.0)";
+        try (ResultSet resultSet = context.execSql(sql).getStatement().getResultSet()) {
+            Assert.resultSet(resultSet).isPlan();
+        }
     }
 
     @Test
     public void testExplainScan() throws SQLException {
-        String sql = "explain plan for select * from dingo.test";
-        sqlHelper.explainTest(
-            sql
-        );
+        String sql = "explain plan for select * from dingo.{table}";
+        try (ResultSet resultSet = context.execSql(sql).getStatement().getResultSet()) {
+            Assert.resultSet(resultSet).isPlan();
+        }
     }
 }
