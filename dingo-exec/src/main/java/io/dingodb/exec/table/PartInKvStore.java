@@ -118,11 +118,12 @@ public final class PartInKvStore implements Part {
 
     @Override
     public boolean update(@NonNull Object[] newTuple, @NonNull Object[] oldTuple) {
-        try {
-            return update(codec.encode(newTuple), codec.encode(oldTuple));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if (store.insertIndex(newTuple)) {
+            if (store.updateWithIndex(newTuple, oldTuple)) {
+                return store.deleteIndex(newTuple, oldTuple);
+            }
         }
+        return false;
     }
 
     @Override
@@ -139,11 +140,10 @@ public final class PartInKvStore implements Part {
 
     @Override
     public boolean remove(@NonNull Object[] tuple) {
-        try {
-            return remove(codec.encode(tuple).getKey());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if (store.deleteWithIndex(tuple)) {
+            return store.deleteIndex(tuple);
         }
+        return false;
     }
 
     @Override

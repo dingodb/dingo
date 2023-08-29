@@ -26,6 +26,7 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -110,6 +111,8 @@ public interface MetaService {
      * @return true if success
      */
     boolean dropTable(@NonNull String tableName);
+
+    boolean dropTables(@NonNull Collection<CommonId> tableIds);
 
     /**
      * Get table id by table name.

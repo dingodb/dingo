@@ -22,11 +22,9 @@ import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.type.TupleType;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
 import io.dingodb.expr.core.TypeCode;
@@ -39,6 +37,8 @@ import io.dingodb.server.executor.Configuration;
 import io.dingodb.server.executor.common.Mapping;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -137,6 +137,13 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public boolean dropTable(@NonNull String tableName) {
         return metaServiceClient.dropTable(tableName);
+    }
+
+    @Override
+    public boolean dropTables(@NonNull Collection<CommonId> tableIds) {
+        return metaServiceClient.dropTables(
+            tableIds.stream().map(Mapping::mapping).collect(Collectors.toCollection(ArrayList::new))
+        );
     }
 
     @Override
