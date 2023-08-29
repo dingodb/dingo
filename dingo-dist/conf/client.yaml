@@ -4,7 +4,7 @@ exchange:
     host: node1
     port: 8765
 client:
-    coordinatorExchangeSvrList: node1:19181,node2:19181,node3:19181
+    coordinatorExchangeSvrList: node1:22001,node2:22002,node3:22003
 security:
     cipher:
         keyPath: /opt/dingo/conf/dingodb.jks
