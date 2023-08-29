@@ -29,6 +29,7 @@ import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.TableStatistic;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -135,6 +136,12 @@ public class LocalMetaService implements MetaService {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean dropTables(@NonNull Collection<CommonId> tableIds) {
+        tableIds.forEach(tableDefinitions::remove);
+        return true;
     }
 
     @Override

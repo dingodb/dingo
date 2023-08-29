@@ -159,8 +159,38 @@ public class MemoryStoreInstance implements StoreInstance {
     }
 
     @Override
+    public boolean updateWithIndex(Object[] newRecord, Object[] oldRecord) {
+        KeyValue newKeyValue = convertRow(newRecord);
+        KeyValue oldKeyValue = convertRow(oldRecord);
+        if (Arrays.equals(newKeyValue.getKey(), oldKeyValue.getKey())) {
+            if (Arrays.equals(db.get(newKeyValue.getKey()), oldKeyValue.getValue())) {
+                db.put(newKeyValue.getKey(), newKeyValue.getValue());
+                return true;
+            } else {
+                return false;
+            }
+        }
+        throw new IllegalArgumentException();
+    }
+
+    @Override
     public boolean delete(byte[] key) {
         db.remove(key);
+        return true;
+    }
+
+    @Override
+    public boolean deleteIndex(Object[] key) {
+        return true;
+    }
+
+    public boolean deleteIndex(Object[] newRecord, Object[] oldRecord) {
+        return true;
+    }
+
+    @Override
+    public boolean deleteWithIndex(Object[] key) {
+        db.remove(convertRow(key).getKey());
         return true;
     }
 

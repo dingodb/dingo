@@ -17,6 +17,7 @@
 package io.dingodb.calcite.schema;
 
 import io.dingodb.calcite.DingoParserContext;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
@@ -26,6 +27,8 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DingoSchema extends AbstractSchema {
 
@@ -46,7 +49,12 @@ public class DingoSchema extends AbstractSchema {
     }
 
     public boolean dropTable(@NonNull String tableName) {
-        if (metaService.dropTable(tableName)) {
+        // Get all index table commonIds
+        CommonId tableId = metaService.getTableId(tableName);
+        List<CommonId> tableIds = Stream
+            .concat(Stream.of(tableId), metaService.getTableIndexDefinitions(tableId).keySet().stream())
+            .collect(Collectors.toList());
+        if (metaService.dropTables(tableIds)) {
             tableCache.remove(tableName);
             return true;
         }
