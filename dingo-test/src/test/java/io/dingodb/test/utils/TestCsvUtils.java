@@ -17,30 +17,18 @@
 package io.dingodb.test.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
-import org.junit.jupiter.api.BeforeAll;
+import io.dingodb.common.type.DingoTypeFactory;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestCsvUtils {
-    private static DingoType schema;
-
-    @BeforeAll
-    public static void setupAll() throws IOException {
-        TableDefinition tableDefinition = TableDefinition.readJson(
-            TestCsvUtils.class.getResourceAsStream("/table-test.json")
-        );
-        schema = tableDefinition.getDingoType();
-    }
-
     @Test
     public void testReadCsvLine() throws JsonProcessingException {
+        DingoType schema = DingoTypeFactory.tuple("INT", "STRING", "DOUBLE");
         List<Object[]> values = CsvUtils.readCsv(schema, "1, Alice, 1.0\n2, Betty, 2.0");
         Object[] tuple = values.get(0);
         assertThat(tuple[0]).isEqualTo(1);

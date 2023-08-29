@@ -20,13 +20,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.test.asserts.ResultSetCheckConfig;
 import io.dingodb.test.dsl.builder.checker.SqlCheckerVisitor;
-import io.dingodb.test.dsl.builder.checker.SqlCountResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlCsvFileNameResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlCsvFileResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlCsvStringResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlExceptionChecker;
 import io.dingodb.test.dsl.builder.checker.SqlObjectResultChecker;
+import io.dingodb.test.dsl.builder.checker.SqlResultCountChecker;
 import io.dingodb.test.dsl.builder.checker.SqlResultDumper;
 import io.dingodb.test.dsl.builder.checker.SqlUpdateCountChecker;
 import io.dingodb.test.utils.CsvUtils;
@@ -55,7 +56,7 @@ public class SqlCheckerConverter implements SqlCheckerVisitor<Check> {
         return new SqlCheckerConverter(callerClass, basePath);
     }
 
-    private static @NonNull Check createFromFile(InputStream csvFile) {
+    private static @NonNull Check createFromFile(InputStream csvFile, ResultSetCheckConfig config) {
         try {
             Iterator<String[]> it = CsvUtils.readCsv(csvFile);
             final String[] columnLabels = it.hasNext() ? it.next() : null;
@@ -68,7 +69,7 @@ public class SqlCheckerConverter implements SqlCheckerVisitor<Check> {
             List<Object[]> tuples = ImmutableList.copyOf(
                 Iterators.transform(it, i -> (Object[]) schema.parse(i))
             );
-            return new ObjectResultCheck(columnLabels, tuples);
+            return new ObjectResultCheck(columnLabels, tuples, config);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -76,12 +77,12 @@ public class SqlCheckerConverter implements SqlCheckerVisitor<Check> {
 
     @Override
     public Check visit(@NonNull SqlObjectResultChecker sqlChecker) {
-        return new ObjectResultCheck(sqlChecker.getColumnLabels(), sqlChecker.getTuples());
+        return new ObjectResultCheck(sqlChecker.getColumnLabels(), sqlChecker.getTuples(), sqlChecker.getConfig());
     }
 
     @Override
-    public Check visit(@NonNull SqlCountResultChecker sqlChecker) {
-        return new CountResultCheck(sqlChecker.getRowCount());
+    public Check visit(@NonNull SqlResultCountChecker sqlChecker) {
+        return new ResultCountCheck(sqlChecker.getRowCount());
     }
 
     @Override
@@ -90,7 +91,7 @@ public class SqlCheckerConverter implements SqlCheckerVisitor<Check> {
             String.join("\n", sqlChecker.getCsvLines()),
             StandardCharsets.UTF_8
         )) {
-            return createFromFile(file);
+            return createFromFile(file, sqlChecker.getConfig());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -98,13 +99,13 @@ public class SqlCheckerConverter implements SqlCheckerVisitor<Check> {
 
     @Override
     public Check visit(@NonNull SqlCsvFileResultChecker sqlChecker) {
-        return createFromFile(sqlChecker.getCsvFile());
+        return createFromFile(sqlChecker.getCsvFile(), sqlChecker.getConfig());
     }
 
     @Override
     public Check visit(@NonNull SqlCsvFileNameResultChecker sqlChecker) {
         try (InputStream file = callerClass.getResourceAsStream(basePath + "/" + sqlChecker.getFileName())) {
-            return createFromFile(file);
+            return createFromFile(file, sqlChecker.getConfig());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

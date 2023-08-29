@@ -16,16 +16,16 @@
 
 package io.dingodb.test.dsl.builder;
 
-import io.dingodb.test.dsl.builder.checker.CheckRunningContext;
-import io.dingodb.test.dsl.builder.checker.SqlCountResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlCsvFileResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlCsvStringResultChecker;
 import io.dingodb.test.dsl.builder.checker.SqlExceptionChecker;
 import io.dingodb.test.dsl.builder.checker.SqlObjectResultChecker;
+import io.dingodb.test.dsl.builder.checker.SqlResultCountChecker;
 import io.dingodb.test.dsl.builder.checker.SqlResultDumper;
 import io.dingodb.test.dsl.builder.checker.SqlUpdateCountChecker;
 import io.dingodb.test.dsl.builder.step.SqlFileStep;
 import io.dingodb.test.dsl.builder.step.SqlStringStep;
+import io.dingodb.test.dsl.run.check.CheckContext;
 import io.dingodb.test.utils.ResourceFileUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -66,8 +66,8 @@ public abstract class SqlTestCaseJavaBuilder extends SqlTestCaseBuilder {
         return new SqlUpdateCountChecker(updateCount);
     }
 
-    public static @NonNull SqlCountResultChecker rows(int rowCount) {
-        return new SqlCountResultChecker(rowCount);
+    public static @NonNull SqlResultCountChecker rows(int rowCount) {
+        return new SqlResultCountChecker(rowCount);
     }
 
     public static @NonNull SqlExceptionChecker exception(Class<? extends Exception> exception) {
@@ -95,12 +95,21 @@ public abstract class SqlTestCaseJavaBuilder extends SqlTestCaseBuilder {
         return new SqlResultDumper();
     }
 
-    public static @NonNull CheckRunningContext check(
+    public static @NonNull CheckContext check(
         Statement statement,
         boolean executeReturnedValue,
         String info
     ) throws SQLException {
-        return new CheckRunningContext(statement, executeReturnedValue, info);
+        return new CheckContext(statement, executeReturnedValue, info, null);
+    }
+
+    public static @NonNull CheckContext check(
+        Statement statement,
+        boolean executeReturnedValue,
+        String info,
+        Exception exception
+    ) throws SQLException {
+        return new CheckContext(statement, executeReturnedValue, info, exception);
     }
 
     public SqlBuildingContext.TableContext table(String tableId, String createSqlString) {

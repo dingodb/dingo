@@ -141,6 +141,50 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                 )
             );
 
+        test("Select filtered by `and` of columns")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select id, name from {table} where name in ('Alice', 'AAAA') and amount > 6",
+                csv(
+                    "id, name",
+                    "INT, STRING",
+                    "8, Alice"
+                )
+            );
+
+        test("Select filtered by `and` of one primary key and other columns")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select id, name from {table} where id in (1,2) and amount > 3.6",
+                csv(
+                    "id, name",
+                    "INT, STRING",
+                    "2, Betty"
+                )
+            );
+
+        test("Select filtered by `and` of primary keys")
+            .use("table", "i4k_vsk_f80")
+            .step(
+                "select id, name from {table} where id in (1,2,3,4) and name in ('Alice', 'Betty1')",
+                csv(
+                    "id, name",
+                    "INT, STRING",
+                    "1, Alice"
+                )
+            );
+
+        test("Select filtered by `and` of primary keys and other columns")
+            .use("table", "i4k_vsk_f80")
+            .step(
+                "select id, name from {table} where id in (1,2,3,4) and name in ('Alice', 'Betty1') and amount > 0",
+                csv(
+                    "id, name",
+                    "INT, STRING",
+                    "1, Alice"
+                )
+            );
+
         test("Select filtered by DOUBLE column")
             .use("table", "i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0")
             .step(
@@ -662,6 +706,45 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .use("table", "i4k_vs0_i40_f80_vs0")
             .step("select * from {table} limit 3", rows(3));
 
+        test("Select with sort by primary key")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select * from {table} order by id asc",
+                csv(file("i4k_vs_f80/data.csv")).order()
+            );
+
+        test("Select with sort")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select * from {table} order by name desc, amount",
+                csv(
+                    "id, name, amount",
+                    "INT, STRING, DOUBLE",
+                    "5, Emily, 5.5",
+                    "4, Doris, 5.0",
+                    "3, Cindy, 4.5",
+                    "9, Cindy, 7.5",
+                    "2, Betty, 4.0",
+                    "7, Betty, 6.5",
+                    "1, Alice, 3.5",
+                    "6, Alice, 6.0",
+                    "8, Alice, 7.0"
+                ).order()
+            );
+
+        test("Select with sort and limit")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select * from {table} order by name desc, amount limit 3 offset 2",
+                csv(
+                    "id, name, amount",
+                    "INT, STRING, DOUBLE",
+                    "3, Cindy, 4.5",
+                    "9, Cindy, 7.5",
+                    "2, Betty, 4.0"
+                ).order()
+            );
+
         test("Grouped aggregation with filter")
             .use("table", "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0")
             .step(
@@ -686,7 +769,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                 )
             );
 
-        test("New")
+        test("Multiple aggregation with `not between`")
             .use("table", "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0")
             .step(
                 "select"

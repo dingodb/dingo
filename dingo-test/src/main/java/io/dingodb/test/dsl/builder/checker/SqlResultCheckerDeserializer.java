@@ -43,7 +43,7 @@ public class SqlResultCheckerDeserializer extends StdDeserializer<SqlResultCheck
         if (jsonNode.isTextual()) {
             return new SqlCsvFileNameResultChecker(jsonNode.asText());
         } else if (jsonNode.isIntegralNumber()) {
-            return new SqlCountResultChecker(jsonNode.asInt());
+            return new SqlResultCountChecker(jsonNode.asInt());
         } else if (jsonNode.isArray()) {
             ArrayNode arrayNode = (ArrayNode) jsonNode;
             List<String> lines = new LinkedList<>();

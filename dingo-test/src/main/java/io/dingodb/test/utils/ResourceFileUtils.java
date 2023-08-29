@@ -16,9 +16,12 @@
 
 package io.dingodb.test.utils;
 
+import org.apache.commons.io.IOUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 public final class ResourceFileUtils {
     private ResourceFileUtils() {
@@ -44,6 +47,14 @@ public final class ResourceFileUtils {
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException("Something unbelievable happened.");
             }
+        }
+    }
+
+    public static @NonNull String readString(InputStream sqlFile) {
+        try {
+            return IOUtils.toString(sqlFile, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }

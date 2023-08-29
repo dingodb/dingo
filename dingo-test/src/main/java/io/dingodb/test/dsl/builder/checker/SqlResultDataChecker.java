@@ -16,22 +16,31 @@
 
 package io.dingodb.test.dsl.builder.checker;
 
-import lombok.AccessLevel;
+import io.dingodb.test.asserts.ResultSetCheckConfig;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import lombok.Setter;
 
-import java.util.List;
-
-@RequiredArgsConstructor(access = AccessLevel.PUBLIC)
-public final class SqlObjectResultChecker extends SqlResultDataChecker {
+public abstract class SqlResultDataChecker extends SqlResultChecker {
+    @Setter
     @Getter
-    private final String[] columnLabels;
-    @Getter
-    private final List<Object[]> tuples;
+    private ResultSetCheckConfig config;
 
-    @Override
-    public <T> T accept(@NonNull SqlCheckerVisitor<T> visitor) {
-        return visitor.visit(this);
+    protected SqlResultDataChecker() {
+        config = new ResultSetCheckConfig();
+    }
+
+    public SqlResultDataChecker order() {
+        config.setCheckOrder(true);
+        return this;
+    }
+
+    public SqlResultDataChecker timeDeviation(long deviation) {
+        config.setTimeDeviation(deviation);
+        return this;
+    }
+
+    public SqlResultDataChecker timestampDeviation(long deviation) {
+        config.setTimestampDeviation(deviation);
+        return this;
     }
 }

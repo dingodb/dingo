@@ -23,9 +23,6 @@ import lombok.RequiredArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.SQLException;
-import java.sql.Statement;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiredArgsConstructor(access = AccessLevel.PUBLIC)
 public class ExecSql implements Exec {
@@ -38,25 +35,9 @@ public class ExecSql implements Exec {
 
     @Override
     public void run(@NonNull SqlExecContext execContext) throws SQLException {
-        Boolean b = null;
-        Statement statement = execContext.getStatement();
-        String sql = "";
-        Exception exception = null;
-        try {
-            for (String s : sqlString.split(";")) {
-                if (!s.trim().isEmpty()) {
-                    b = statement.execute(execContext.transSql(s));
-                    sql = s;
-                }
-            }
-        } catch (Exception e) {
-            exception = e;
-        }
+        CheckContext checkContext = execContext.execSql(sqlString);
         if (check != null) {
-            if (exception == null) {
-                assertThat(b).isNotNull();
-            }
-            check.check(new CheckContext(statement, b, sql, exception));
+            check.check(checkContext);
         }
     }
 }

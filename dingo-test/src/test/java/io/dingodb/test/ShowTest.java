@@ -16,86 +16,92 @@
 
 package io.dingodb.test;
 
-import io.dingodb.common.type.DingoTypeFactory;
+import com.google.common.collect.ImmutableList;
+import io.dingodb.test.dsl.run.exec.SqlExecContext;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.sql.SQLException;
 
+import static io.dingodb.test.dsl.builder.SqlTestCaseJavaBuilder.is;
+
 public class ShowTest {
-    private static SqlHelper sqlHelper;
+    private static SqlExecContext context;
 
     @BeforeAll
     public static void setupAll() throws Exception {
-        sqlHelper = new SqlHelper();
-        sqlHelper.execFile("/table-test-auto-increment-create.sql");
+        ConnectionFactory.initLocalEnvironment();
+        context = new SqlExecContext(ConnectionFactory.getConnection());
+        context.getTableMapping().put("table", "test");
+        context.execSql(
+            "create table {table} (\n"
+                + "    id int auto_increment,\n"
+                + "    name varchar(32),\n"
+                + "    age int,\n"
+                + "    primary key (id)\n"
+                + ") partition by range values (2),(3)"
+        );
     }
 
     @AfterAll
-    public static void cleanUpAll() throws Exception {
-        sqlHelper.cleanUp();
-    }
-
-    @BeforeEach
-    public void setup() throws Exception {
-    }
-
-    @AfterEach
-    public void cleanUp() throws Exception {
+    public static void cleanUpAll() throws SQLException {
+        context.cleanUp();
+        ConnectionFactory.cleanUp();
     }
 
     @Test
-    @Disabled
-    public void showCreateTable() throws SQLException, IOException {
-        String sql = "show create table t_auto";
-
-        sqlHelper.queryTest(
-            sql,
+    public void showCreateTable() throws SQLException {
+        String sql = "show create table {table}";
+        context.execSql(sql).test(is(
             new String[]{"Table", "Create Table"},
-            DingoTypeFactory.tuple("VARCHAR", "VARCHAR"),
-            "T_AUTO, CREATE TABLE `t_auto` (`id` INTEGER',' `name` VARCHAR(32)',' `age` INTEGER',' PRIMARY KEY (`id`))");
+            ImmutableList.of(
+                new Object[]{
+                    "test",
+                    "create table test (\n"
+                        + "    id int auto_increment,\n"
+                        + "    name varchar(32),\n"
+                        + "    age int,\n"
+                        + "    primary key (id)\n"
+                        + ") partition by range values (2),(3)"
+                }
+            )
+        ));
     }
 
     @Test
-    @Disabled
-    public void showAllColumns() throws SQLException, IOException {
-        String sql = "show columns from t_auto";
-
-        sqlHelper.queryTest(
-            sql,
+    public void showAllColumns() throws SQLException {
+        String sql = "show columns from {table}";
+        context.execSql(sql).test(is(
             new String[]{"Field", "Type", "Null", "Key", "Default"},
-            DingoTypeFactory.tuple("VARCHAR", "VARCHAR", "VARCHAR", "VARCHAR", "VARCHAR"),
-            "id, INT, NO, PRI, \n"
-            + "name, STRING|NULL, YES, , \n"
-            + "age, INT|NULL, YES, , ");
+            ImmutableList.of(
+                new Object[]{"ID", "INTEGER", "NO", "PRI", " "},
+                new Object[]{"NAME", "VARCHAR(32)", "YES", " ", "NULL"},
+                new Object[]{"AGE", "INTEGER", "YES", " ", "NULL"}
+            )
+        ));
     }
 
     @Test
-    @Disabled
     public void showAllColumnsWithLike() throws SQLException, IOException {
-        String sql = "show columns from t_auto like 'na%'";
-
-        sqlHelper.queryTest(
-            sql,
+        String sql = "show columns from {table} like 'na%'";
+        context.execSql(sql).test(is(
             new String[]{"Field", "Type", "Null", "Key", "Default"},
-            DingoTypeFactory.tuple("VARCHAR", "VARCHAR", "VARCHAR", "VARCHAR", "VARCHAR"),
-            "name, STRING|NULL, YES, ,");
+            ImmutableList.of(
+                new Object[]{"NAME", "VARCHAR(32)", "YES", " ", "NULL"}
+            )
+        ));
     }
 
     @Test
-    @Disabled
-    public void showTableDistribution() throws SQLException, IOException {
-        String sql = "show table t_auto distribution";
-
-        sqlHelper.queryTest(
-            sql,
+    public void showTableDistribution() throws SQLException {
+        String sql = "show table {table} distribution";
+        context.execSql(sql).test(is(
             new String[]{"Id", "Type", "Value"},
-            DingoTypeFactory.tuple("VARCHAR", "VARCHAR", "VARCHAR"),
-            "id, Range, [ Key(1), Key(3) )");
+            ImmutableList.of(
+                new Object[]{"DISTRIBUTION_1_1", "Range", "[ Infinity, Infinity )"}
+            )
+        ));
     }
 }

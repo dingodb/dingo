@@ -16,10 +16,13 @@
 
 package io.dingodb.test.dsl.run.check;
 
+import io.dingodb.test.dsl.builder.checker.SqlChecker;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
+import java.sql.SQLException;
 import java.sql.Statement;
 
 @RequiredArgsConstructor(access = AccessLevel.PUBLIC)
@@ -32,4 +35,9 @@ public class CheckContext {
     private final String info;
     @Getter
     private final Exception exception;
+
+    public void test(@NonNull SqlChecker checker) throws SQLException {
+        SqlCheckerConverter.of(null, null).safeVisit(checker)
+            .check(new CheckContext(statement, executeReturnedValue, info, null));
+    }
 }

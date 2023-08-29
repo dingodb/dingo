@@ -25,12 +25,7 @@ import io.dingodb.test.dsl.run.check.SqlCheckerConverter;
 import io.dingodb.test.utils.ResourceFileUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.io.IOUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class StepConverter implements StepVisitor<Exec> {
@@ -51,14 +46,6 @@ public class StepConverter implements StepVisitor<Exec> {
         return new StepConverter(callerClass, basePath, SqlCheckerConverter.of(callerClass, basePath));
     }
 
-    private static @NonNull String ReadString(InputStream sqlFile) {
-        try {
-            return IOUtils.toString(sqlFile, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @Override
     public Exec visit(@NonNull CustomStep step) {
         return step.getExec();
@@ -66,19 +53,25 @@ public class StepConverter implements StepVisitor<Exec> {
 
     @Override
     public Exec visit(@NonNull SqlStringStep step) {
-        return new ExecSql(step.getSqlString(), checkerConverter.safeVisit(step.getChecker()));
+        return new ExecSql(
+            step.getSqlString(),
+            checkerConverter.safeVisit(step.getChecker())
+        );
     }
 
     @Override
     public Exec visit(@NonNull SqlFileStep step) {
-        return new ExecSql(ReadString(step.getSqlFile()), checkerConverter.safeVisit(step.getChecker()));
+        return new ExecSql(
+            ResourceFileUtils.readString(step.getSqlFile()),
+            checkerConverter.safeVisit(step.getChecker())
+        );
     }
 
     @Override
     public Exec visit(@NonNull SqlFileNameStep step) {
-        return new ExecSql(ReadString(ResourceFileUtils.getResourceFile(
-            basePath + "/" + step.getFileName(),
-            callerClass
-        )), checkerConverter.safeVisit(step.getChecker()));
+        return new ExecSql(
+            ResourceFileUtils.readString(ResourceFileUtils.getResourceFile(basePath + "/" + step.getFileName(), callerClass)),
+            checkerConverter.safeVisit(step.getChecker())
+        );
     }
 }

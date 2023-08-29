@@ -20,18 +20,19 @@ import io.dingodb.test.asserts.Assert;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 @Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PUBLIC)
-public final class CountResultCheck extends ResultCheck {
+public final class ResultCountCheck extends ResultCheck {
     private final int rowCount;
 
     @Override
-    public void checkResultSet(ResultSet resultSet, String info) throws SQLException {
+    public void checkResultSet(@NonNull ResultSet resultSet, @NonNull CheckContext context) throws SQLException {
         Assert.resultSet(resultSet).rowCount(rowCount);
-        log.debug("[PASSED] checking for column labels and rows in result set: {}", info);
+        log.debug("[PASSED] checking for column labels and rows in result set: {}", context.getInfo());
     }
 }

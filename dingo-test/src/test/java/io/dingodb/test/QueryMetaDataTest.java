@@ -19,12 +19,11 @@ package io.dingodb.test;
 import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.meta.MetaService;
 import io.dingodb.test.asserts.Assert;
-import lombok.extern.slf4j.Slf4j;
+import io.dingodb.test.dsl.run.exec.SqlExecContext;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -32,35 +31,33 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 
-@Slf4j
+import static io.dingodb.test.dsl.builder.SqlTestCaseJavaBuilder.file;
+
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class QueryMetaDataTest {
     private static final String SCHEMA_NAME = DingoRootSchema.DEFAULT_SCHEMA_NAME;
 
-    private static SqlHelper sqlHelper;
+    private static SqlExecContext context;
 
     @BeforeAll
     public static void setupAll() throws Exception {
-        sqlHelper = new SqlHelper();
-        sqlHelper.execFile("/table-test-create.sql");
-        sqlHelper.execFile("/table-test1-create.sql");
+        ConnectionFactory.initLocalEnvironment();
+        context = new SqlExecContext(ConnectionFactory.getConnection());
+        context.addTableMapping("table", "test");
+        context.execSql(file("dsl/i4k_vs_f80/create.sql"));
+        context.addTableMapping("table", "test1");
+        context.execSql(file("dsl/i4k_vsk_lk_vs_f80/create.sql"));
     }
 
     @AfterAll
-    public static void cleanUpAll() throws Exception {
-        sqlHelper.cleanUp();
-    }
-
-    @BeforeEach
-    public void setup() {
-    }
-
-    @AfterEach
-    public void cleanUp() {
+    public static void cleanUpAll() throws SQLException {
+        context.cleanUp();
+        ConnectionFactory.cleanUp();
     }
 
     @Test
     public void testGetSchemas() throws SQLException {
-        DatabaseMetaData metaData = sqlHelper.metaData();
+        DatabaseMetaData metaData = context.getConnection().getMetaData();
         try (ResultSet resultSet = metaData.getSchemas()) {
             Assert.resultSet(resultSet)
                 .columnLabels(
@@ -74,7 +71,7 @@ public class QueryMetaDataTest {
 
     @Test
     public void testGetSchemasWithPattern() throws SQLException {
-        DatabaseMetaData metaData = sqlHelper.metaData();
+        DatabaseMetaData metaData = context.getConnection().getMetaData();
         try (ResultSet resultSet = metaData.getSchemas(null, "D%")) {
             Assert.resultSet(resultSet)
                 .columnLabels(
@@ -88,7 +85,7 @@ public class QueryMetaDataTest {
 
     @Test
     public void testGetTables() throws SQLException {
-        DatabaseMetaData metaData = sqlHelper.metaData();
+        DatabaseMetaData metaData = context.getConnection().getMetaData();
         try (ResultSet resultSet = metaData.getTables(null, SCHEMA_NAME, null, null)) {
             Assert.resultSet(resultSet)
                 .columnLabels(
@@ -103,7 +100,7 @@ public class QueryMetaDataTest {
 
     @Test
     public void testGetTablesWithPattern() throws SQLException {
-        DatabaseMetaData metaData = sqlHelper.metaData();
+        DatabaseMetaData metaData = context.getConnection().getMetaData();
         try (ResultSet resultSet = metaData.getTables(null, SCHEMA_NAME, "TEST_", null)) {
             Assert.resultSet(resultSet)
                 .columnLabels(
@@ -117,7 +114,7 @@ public class QueryMetaDataTest {
 
     @Test
     public void testGetTablesNullSchema() throws SQLException {
-        DatabaseMetaData metaData = sqlHelper.metaData();
+        DatabaseMetaData metaData = context.getConnection().getMetaData();
         try (ResultSet resultSet = metaData.getTables(null, null, "%", null)) {
             Assert.resultSet(resultSet)
                 .columnLabels(
@@ -132,7 +129,7 @@ public class QueryMetaDataTest {
 
     @Test
     public void testGetColumns() throws SQLException {
-        DatabaseMetaData metaData = sqlHelper.metaData();
+        DatabaseMetaData metaData = context.getConnection().getMetaData();
         try (ResultSet resultSet = metaData.getColumns(null, SCHEMA_NAME, "TEST", null)) {
             Assert.resultSet(resultSet)
                 .columnLabels(
@@ -164,7 +161,7 @@ public class QueryMetaDataTest {
 
     @Test
     public void testGetColumnsWithPattern() throws SQLException {
-        DatabaseMetaData metaData = sqlHelper.metaData();
+        DatabaseMetaData metaData = context.getConnection().getMetaData();
         try (ResultSet resultSet = metaData.getColumns(null, SCHEMA_NAME, "TEST", "N%E")) {
             Assert.resultSet(resultSet)
                 .columnLabels(
@@ -186,7 +183,7 @@ public class QueryMetaDataTest {
 
     @Test
     public void testGetPrimaryKeys() throws SQLException {
-        DatabaseMetaData metaData = sqlHelper.metaData();
+        DatabaseMetaData metaData = context.getConnection().getMetaData();
         try (ResultSet resultSet = metaData.getPrimaryKeys(null, SCHEMA_NAME, "TEST")) {
             Assert.resultSet(resultSet)
                 .columnLabels(
