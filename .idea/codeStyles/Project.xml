@@ -20,6 +20,9 @@
       </option>
       <option name="JD_INDENT_ON_CONTINUATION" value="true" />
     </JavaCodeStyleSettings>
+    <Properties>
+      <option name="KEEP_BLANK_LINES" value="true" />
+    </Properties>
     <codeStyleSettings language="JAVA">
       <indentOptions>
         <option name="CONTINUATION_INDENT_SIZE" value="4" />

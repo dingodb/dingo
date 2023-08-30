@@ -196,7 +196,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                         !columnDefinition.getTypeName().equals("BIGINT")) {
                         throw new RuntimeException("Invalid column type: " + columnName);
                     }
-                } else if(i == 1) {
+                } else if (i == 1) {
                     if (!columnDefinition.getTypeName().equals("ARRAY") ||
                         !(columnDefinition.getElementType() != null
                             && columnDefinition.getElementType().equals("FLOAT"))) {
@@ -386,6 +386,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 .collect(Collectors.toCollection(ArrayList::new))
             ).filter(ks -> !ks.isEmpty())
             .orElseThrow(() -> DINGO_RESOURCE.primaryKeyRequired(tableName).ex());
+
+
         SqlValidator validator = new ContextSqlValidator(context, true);
 
         // Mapping, column node -> column definition
@@ -394,6 +396,13 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .map(col -> fromSqlColumnDeclaration((DingoSqlColumn) col, validator, pks))
             .collect(Collectors.toCollection(ArrayList::new));
 
+        // Check if specified primary keys are in column list.
+        List<String> cols = columns.stream().map(ColumnDefinition::getName).collect(Collectors.toList());
+        for (String pkName : pks) {
+            if (!cols.contains(pkName)) {
+                throw DINGO_RESOURCE.primaryKeyNotExist(pkName, tableName).ex();
+            }
+        }
 
         // Distinct column
         long distinctColCnt = columns.stream().map(ColumnDefinition::getName).distinct().count();

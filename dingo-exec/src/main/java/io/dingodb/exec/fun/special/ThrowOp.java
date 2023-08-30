@@ -59,7 +59,7 @@ public class ThrowOp extends Op {
             throw new DingoSqlException(
                 v != null ? v.toString() : null,
                 DingoSqlException.TEST_ERROR_CODE,
-                DingoSqlException.TEST_ERROR_STATE
+                DingoSqlException.CUSTOM_ERROR_STATE
             );
         }
 

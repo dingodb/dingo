@@ -26,16 +26,15 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.SQLException;
-import java.util.regex.Pattern;
 
 public final class ExceptionUtils {
-    private static final Pattern pattern = Pattern.compile("Error (\\d+)\\s*\\((\\w+)\\):\\s*(.*)");
-    private static final int PARSE_ERROR_CODE = 51001;
-    private static final String PARSE_ERROR_STATE = "51001";
-    private static final int NUMBER_FORMAT_ERROR_CODE = 53004;
-    private static final String NUMBER_FORMAT_ERROR_STATE = "53004";
-    private static final int DINGO_EXECUTION_FAIL_ERROR_CODE = 60000;
-    private static final String DINGO_EXECUTION_FAIL_ERROR_STATE = "60000";
+    // MySQL compatible errors
+    private static final int PARSE_ERROR_CODE = 1064;
+    private static final String PARSE_ERROR_STATE = "42000";
+
+    // Custom errors
+    private static final int NUMBER_FORMAT_ERROR_CODE = 3001;
+    private static final int DINGO_EXECUTION_FAIL_ERROR_CODE = 5001;
 
     private ExceptionUtils() {
     }
@@ -80,7 +79,7 @@ public final class ExceptionUtils {
         return new DingoSqlException(
             exception.getMessage(),
             DINGO_EXECUTION_FAIL_ERROR_CODE,
-            DINGO_EXECUTION_FAIL_ERROR_STATE
+            DingoSqlException.CUSTOM_ERROR_STATE
         );
     }
 
@@ -88,7 +87,7 @@ public final class ExceptionUtils {
         return new DingoSqlException(
             exception.getMessage(),
             NUMBER_FORMAT_ERROR_CODE,
-            NUMBER_FORMAT_ERROR_STATE
+            DingoSqlException.CUSTOM_ERROR_STATE
         );
     }
 
@@ -142,7 +141,7 @@ public final class ExceptionUtils {
     private static @NonNull SQLException internalToSql(@NonNull Throwable throwable) {
         return new SQLException(
             throwable.getMessage(),
-            DingoSqlException.UNKNOWN_ERROR_STATE,
+            DingoSqlException.CUSTOM_ERROR_STATE,
             DingoSqlException.UNKNOWN_ERROR_CODE
         );
     }
