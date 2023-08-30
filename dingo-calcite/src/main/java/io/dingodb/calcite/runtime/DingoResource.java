@@ -28,6 +28,9 @@ public interface DingoResource {
     @BaseMessage("Primary keys are required in table ''{0}''")
     ExInst<DingoSqlException> primaryKeyRequired(String a0);
 
+    @BaseMessage("Specified primary keys ''{0}'' does not exist in table ''{1}''")
+    ExInst<DingoSqlException> primaryKeyNotExist(String pkName, String tableName);
+
     @BaseMessage("''{0}'' command denied to user ''{1}''@''{2}'' for table ''{3}''")
     ExInst<DingoSqlException> operatorDenied(String a0, String a1, String a2, String a3);
 
@@ -57,8 +60,4 @@ public interface DingoResource {
 
     @BaseMessage("Can't find any matching row in the user table")
     ExInst<DingoSqlException> noMatchingRowForUser();
-
-    @BaseMessage("You have an error in your SQL syntax")
-    ExInst<DingoSqlException> parseSqlSyntaxError();
-
 }

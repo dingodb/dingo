@@ -22,6 +22,9 @@ import org.apache.calcite.rel.core.Aggregate;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import static io.dingodb.common.exception.DingoSqlException.CUSTOM_ERROR_STATE;
+import static io.dingodb.common.exception.DingoSqlException.TEST_ERROR_CODE;
+import static io.dingodb.common.exception.DingoSqlException.UNKNOWN_ERROR_CODE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -41,58 +44,58 @@ public class ExceptionCases extends SqlTestCaseJavaBuilder {
             .use("table", "i4k_vs_i40_f80_vs0_l0")
             .step(
                 "insert into {table} values(1, 'c1', 28, 109.325, 'beijing', 'true')",
-                exception(SQLException.class)
+                exception(sql(UNKNOWN_ERROR_CODE, CUSTOM_ERROR_STATE))
             );
 
         // DDL error
         test("SQL Parse error")
-            .step("select", exception(sql(51001, "51001")));
+            .step("select", exception(sql(1064, "42000")));
 
         test("Illegal expression in context")
-            .step("insert into {table} (1)", exception(sql(51002, "51002")));
+            .step("insert into {table} (1)", exception(sql(2002, CUSTOM_ERROR_STATE)));
 
         test("Unknown identifier")
             .step(
                 "create table {table} (id int, data bomb, primary key(id))",
-                exception(sql(52001, "52001"))
+                exception(sql(2003, CUSTOM_ERROR_STATE))
             );
 
         test("Table already exists")
             .use("table", "i4k_vs_i40_f80_vs0_l0")
             .step(
                 "create table {table} (id int, primary key(id))",
-                exception(sql(52002, "52002"))
+                exception(sql(1050, "42S01"))
             );
 
         // Validation error
         test("Create without primary key")
-            .step("create table {table} (id int)", exception(sql(52003, "52003")));
+            .step("create table {table} (id int)", exception(sql(1001, CUSTOM_ERROR_STATE)));
 
         test("Missing column list")
-            .step("create table {table}", exception(sql(52004, "52004")));
+            .step("create table {table}", exception(sql(4028, "HY000")));
 
         test("Table not found")
-            .step("select * from {table}", exception(sql(53001, "53001")));
+            .step("select * from {table}", exception(sql(1146, "42S02")));
 
         test("Column not found")
             .use("table", "i4k_vs_i40_f80_vs0_l0")
-            .step("select not_exist from {table}", exception(sql(53002, "53002")));
+            .step("select not_exist from {table}", exception(sql(1054, "42S22")));
 
         test("Column not allow null")
             .step("create table {table} (id int, primary key(id))")
-            .step("insert into {table} values(null)", exception(sql(53003, "53003")));
+            .step("insert into {table} values(null)", exception(sql(1364, "HY000")));
 
         test("Column not allow null (array)")
             .step("create table {table} (id int, data varchar array not null, primary key(id))")
-            .step("insert into {table} values(1, null)", exception(sql(53003, "53003")));
+            .step("insert into {table} values(1, null)", exception(sql(1364, "HY000")));
 
         test("Column not allow null (map)")
             .step("create table {table} (id int, data map not null, primary key(id))")
-            .step("insert into {table} values(1, null)", exception(sql(53003, "53003")));
+            .step("insert into {table} values(1, null)", exception(sql(1364, "HY000")));
 
         test("Number format error")
             .step("create table {table} (id int, data int, primary key(id))")
-            .step("insert into {table} values(1, 'abc')", exception(sql(53004, "53004")));
+            .step("insert into {table} values(1, 'abc')", exception(sql(3001, CUSTOM_ERROR_STATE)));
 
         test("Illegal use of dynamic parameter")
             .custom((context) -> {
@@ -102,23 +105,32 @@ public class ExceptionCases extends SqlTestCaseJavaBuilder {
                         statement.execute();
                     }
                 });
-                assertThat(e.getErrorCode()).isEqualTo(54001);
-                assertThat(e.getSQLState()).isEqualTo("54001");
+                assertThat(e.getErrorCode()).isEqualTo(2001);
+                assertThat(e.getSQLState()).isEqualTo(CUSTOM_ERROR_STATE);
             });
+
+        test("Non exist primary key")
+            .step(
+                "create table test2(uuid varchar, phone varchar, birthday date, primary key(id))",
+                exception(sql(1002, CUSTOM_ERROR_STATE))
+            );
 
         // Execution error
         test("Task failed")
             .step("create table {table} (id int, data double, primary key(id))")
             .step("insert into {table} values (1, 3.5)", count(1))
-            .step("update {table} set data = 'abc'", exception(sql(60000, "60000")));
+            .step("update {table} set data = 'abc'", exception(sql(5001, CUSTOM_ERROR_STATE)));
 
         // Unknown
         test("Cast float to int")
-            .step("select cast(18293824503.55 as int) ca", exception(sql(90001, "90001")));
+            .step(
+                "select cast(18293824503.55 as int) ca",
+                exception(sql(UNKNOWN_ERROR_CODE, CUSTOM_ERROR_STATE))
+            );
 
         // Intentionally
         test("By `thrown` function")
-            .step("select throw(null)", exception(sql(90002, "90002")));
+            .step("select throw(null)", exception(sql(TEST_ERROR_CODE, CUSTOM_ERROR_STATE)));
 
         // Other
         test("Type mismatch")
@@ -132,27 +144,27 @@ public class ExceptionCases extends SqlTestCaseJavaBuilder {
             })
             .step(
                 "select avg(name) from {table}",
-                exception(sql(90001, "90001"))
+                exception(sql(UNKNOWN_ERROR_CODE, CUSTOM_ERROR_STATE))
             );
 
         test("Null in array")
             .step("create table {table} (id int, data varchar array, primary key(id))")
             .step(
                 "insert into {table} values(1, array['1', null, '3'])",
-                exception(SQLException.class, "Null values are not allowed")
+                exception(sql(UNKNOWN_ERROR_CODE, CUSTOM_ERROR_STATE), "Null values are not allowed")
             );
 
         test("Null in multiset")
             .step("create table {table} (id int, data date multiset, primary key(id))")
             .step("insert into {table} values(1, multiset[''])",
-                exception(SQLException.class, "Null values are not allowed")
+                exception(sql(UNKNOWN_ERROR_CODE, CUSTOM_ERROR_STATE), "Null values are not allowed")
             );
 
         test("Null in map")
             .step("create table {table} (id int, data map, primary key(id))")
             .step(
                 "insert into {table} values(1, map['a', '1', 'b', null])",
-                exception(SQLException.class, "Null values are not allowed")
+                exception(sql(UNKNOWN_ERROR_CODE, CUSTOM_ERROR_STATE), "Null values are not allowed")
             );
     }
 }

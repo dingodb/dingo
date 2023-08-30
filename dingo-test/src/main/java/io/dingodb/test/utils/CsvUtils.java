@@ -16,17 +16,12 @@
 
 package io.dingodb.test.utils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import io.dingodb.common.type.DingoType;
 import io.dingodb.expr.json.runtime.Parser;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public final class CsvUtils {
     private static final Parser PARSER = Parser.CSV;
@@ -36,11 +31,5 @@ public final class CsvUtils {
 
     public static @NonNull Iterator<String[]> readCsv(InputStream is) throws IOException {
         return PARSER.readValues(is, String[].class);
-    }
-
-    public static @NonNull List<Object[]> readCsv(DingoType schema, String lines) throws JsonProcessingException {
-        return Arrays.stream(PARSER.parse(lines, String[][].class))
-            .map(i -> (Object[]) schema.parse(i))
-            .collect(Collectors.toList());
     }
 }
