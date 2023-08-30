@@ -71,6 +71,12 @@ public class ExceptionCases extends SqlTestCaseJavaBuilder {
         test("Create without primary key")
             .step("create table {table} (id int)", exception(sql(1001, CUSTOM_ERROR_STATE)));
 
+        test("Non exist primary key")
+            .step(
+                "create table test2(uuid varchar, phone varchar, birthday date, primary key(id))",
+                exception(sql(1002, CUSTOM_ERROR_STATE))
+            );
+
         test("Missing column list")
             .step("create table {table}", exception(sql(4028, "HY000")));
 
@@ -108,12 +114,6 @@ public class ExceptionCases extends SqlTestCaseJavaBuilder {
                 assertThat(e.getErrorCode()).isEqualTo(2001);
                 assertThat(e.getSQLState()).isEqualTo(CUSTOM_ERROR_STATE);
             });
-
-        test("Non exist primary key")
-            .step(
-                "create table test2(uuid varchar, phone varchar, birthday date, primary key(id))",
-                exception(sql(1002, CUSTOM_ERROR_STATE))
-            );
 
         // Execution error
         test("Task failed")
