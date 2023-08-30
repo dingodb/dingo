@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite;
 
-import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.traits.DingoConvention;
@@ -27,8 +26,8 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.logical.LogicalTableFunctionScan;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlKind;
@@ -36,6 +35,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql.validate.TableFunctionNamespace;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.SqlVectorOperator;
@@ -89,6 +89,15 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
     }
 
     @Override
+    protected void convertFrom(Blackboard bb, @Nullable SqlNode from) {
+        if (from != null && from.getKind() == SqlKind.COLLECTION_TABLE) {
+            convertCollectionTable(bb, (SqlCall) from);
+            return;
+        }
+        super.convertFrom(bb, from);
+    }
+
+    @Override
     protected void convertCollectionTable(Blackboard bb, SqlCall call) {
         final SqlOperator operator = call.getOperator();
         if (!(operator instanceof SqlFunctionScanOperator) && !(operator instanceof SqlVectorOperator)) {
@@ -99,28 +108,28 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
         RelTraitSet traits = cluster.traitSetOf(DingoConvention.NONE).replace(DingoConvention.INSTANCE)
             .replace(DingoRelStreaming.ROOT);
         RexNode rexCall = bb.convertExpression(call);
+        TableFunctionNamespace namespace = (TableFunctionNamespace) validator.getNamespace(call);
         RelNode callRel = null;
         if (operator instanceof SqlFunctionScanOperator) {
             callRel = new DingoFunctionScan(
                 cluster,
                 traits,
-                ImmutableList.of(),
-                rexCall,
-                null,
-                rexCall.getType(),
-                null);
+                (RexCall) rexCall,
+                namespace.getTable(),
+                call.getOperandList()
+            );
         } else if (operator instanceof SqlVectorOperator) {
             callRel = new DingoVector(
                 cluster,
                 traits,
-                ImmutableList.of(),
-                rexCall,
-                null,
-                rexCall.getType(),
-                null);
+                (RexCall) rexCall,
+                namespace.getTable(),
+                call.getOperandList(),
+                namespace.getIndexTableId(),
+                namespace.getIndexTableDefinition()
+            );
         }
 
         bb.setRoot(callRel, true);
-        afterTableFunction(bb, call, (LogicalTableFunctionScan) callRel);
     }
 }

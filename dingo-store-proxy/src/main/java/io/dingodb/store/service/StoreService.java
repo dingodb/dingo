@@ -27,6 +27,7 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.vector.VectorSearchResponse;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.KeyValueWithExpect;
 import io.dingodb.sdk.common.codec.CodecUtils;
@@ -57,9 +58,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -353,7 +352,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         }
 
         @Override
-        public List<byte[]> vectorSearch(CommonId indexId, Float[] floatArray, int topN) {
+        public List<VectorSearchResponse> vectorSearch(CommonId indexId, Float[] floatArray, int topN) {
             List<VectorWithId> vectors = new ArrayList<>();
             Table indexTable = tableDefinitionMap.get(mapping(indexId));
             IndexParameter indexParameter = indexTable.getIndexParameter();
@@ -400,15 +399,20 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
             List<VectorWithDistanceResult> results = indexService.vectorSearch(mapping(indexId), mapping(regionId),
                 vectors, vectorSearchParameter);
-            List<byte[]> keyList = results.stream()
-                .map(VectorWithDistanceResult::getWithDistance)
-                .flatMap(Collection::stream)
-                .map(VectorWithDistance::getWithId)
-                .map(VectorWithId::getTableData)
-                .map(VectorTableData::getKey)
-                .collect(Collectors.toList());
 
-            return keyList;
+            List<VectorSearchResponse> vectorSearchResponseList = new ArrayList<>();
+            // Add all keys and distances
+            for (VectorWithDistanceResult vectorWithDistanceResult : results) {
+                List<VectorWithDistance> withDistance = vectorWithDistanceResult.getWithDistance();
+                for (VectorWithDistance vectorWithDistance : withDistance) {
+                    VectorSearchResponse response = new VectorSearchResponse();
+                    response.setKey(vectorWithDistance.getWithId().getTableData().getKey());
+                    response.setDistance(vectorWithDistance.getDistance());
+                    vectorSearchResponseList.add(response);
+                }
+            }
+
+            return vectorSearchResponseList;
         }
 
         @Override

@@ -16,6 +16,8 @@
 
 package io.dingodb.calcite.visitor.function;
 
+import io.dingodb.calcite.DingoRelOptTable;
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
@@ -31,7 +33,6 @@ import io.dingodb.exec.operator.PartRangeScanOperator;
 import io.dingodb.meta.MetaService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexLiteral;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,21 +48,12 @@ public final class DingoFunctionScanVisitFun {
     public static Collection<Output> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, DingoFunctionScan rel
     ) {
-        RexCall rexCall = (RexCall) rel.getCall();
+        DingoRelOptTable relTable = rel.getTable();
+        DingoTable dingoTable = relTable.unwrap(DingoTable.class);
 
-        String[] nameList = ((RexLiteral) rexCall.operands.get(0)).getValueAs(String.class).split("\\.");
-        String schemaName = "DINGO";
-        String tableName;
-        if (nameList.length > 1) {
-            schemaName = nameList[0];
-            tableName = nameList[1];
-        } else {
-            tableName = nameList[0];
-        }
-
-        MetaService metaService = MetaService.root().getSubMetaService(schemaName);
-        TableDefinition td = metaService.getTableDefinition(tableName);
-        CommonId tableId = metaService.getTableId(tableName);
+        MetaService metaService = MetaService.root().getSubMetaService(relTable.getSchemaName());
+        CommonId tableId = dingoTable.getTableId();
+        TableDefinition td = dingoTable.getTableDefinition();
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = metaService.getRangeDistribution(tableId);
 
         List<Output> outputs = new ArrayList<>();

@@ -93,7 +93,7 @@ public class RangeStrategy extends PartitionStrategy<CommonId, byte[]> {
             .build();
         NavigableSet<RangeDistribution> ranges = RangeUtils.getSubRangeDistribution(this.ranges.values(), range, 0);
         ranges.descendingSet().stream().skip(1).forEach(rd -> {
-            if (Arrays.equals(rd.getEndKey(), ranges.last().getEndKey())) {
+            if (Arrays.equals(rd.getEndKey(), this.ranges.firstKey().getBytes())) {
                 rd.setWithEnd(true);
             }
         });

@@ -17,40 +17,32 @@
 package org.apache.calcite.sql2rel;
 
 import io.dingodb.calcite.DingoParserContext;
-import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.grammar.SqlUserDefinedOperators;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.TranslatableTable;
-import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlLiteral;
-import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.sql.SqlTableFunction;
-import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.apache.calcite.sql.validate.TableFunctionNamespace;
 
-import java.util.Arrays;
+import java.util.Collections;
 
 public class SqlFunctionScanOperator extends SqlFunction implements SqlTableFunction {
 
     public static void register(DingoParserContext context) {
         StandardConvertletTable.INSTANCE.registerOp(SqlUserDefinedOperators.SCAN,
             (cx, call) -> {
-                final TranslatableTable table = ((SqlFunctionScanOperator) call.getOperator()).getTable(context, call.operand(0).toString());
-                DingoTable dingoTable = (DingoTable) table;
-                final RelDataType rowType = dingoTable.getRowType(cx.getTypeFactory());
-                RexBuilder rexBuilder = new RexBuilder(cx.getTypeFactory());
-                return rexBuilder.makeCall(rowType, call.getOperator(), Arrays.asList(
-                    rexBuilder.makeLiteral(call.operand(0).toString())));
+                RexBuilder rexBuilder = cx.getRexBuilder();
+                TableFunctionNamespace namespace = (TableFunctionNamespace) cx.getValidator().getNamespace(call);
+                return  rexBuilder.makeCall(namespace.getRowType(), call.getOperator(), Collections.EMPTY_LIST);
             });
     }
 
@@ -82,11 +74,6 @@ public class SqlFunctionScanOperator extends SqlFunction implements SqlTableFunc
 
     private TranslatableTable getTable(DingoParserContext context, String tableName) {
         return  (TranslatableTable) context.getDefaultSchema().getTable(tableName, false).getTable();
-    }
-
-    @Override
-    public SqlCall createCall(@Nullable SqlLiteral functionQualifier, SqlParserPos pos, @Nullable SqlNode... operands) {
-        return super.createCall(null, pos, super.createCall(functionQualifier, pos, operands));
     }
 
 }

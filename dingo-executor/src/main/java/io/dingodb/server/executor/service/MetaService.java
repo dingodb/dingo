@@ -203,13 +203,31 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id) {
        return metaServiceClient.getTableIndexes(mapping(id)).entrySet().stream()
-           .collect(Collectors.toMap(entry -> mapping(entry.getKey()), entry -> mapping(entry.getValue())));
+           .collect(Collectors.toMap(entry -> mapping(entry.getKey()), entry -> {
+               // Remove . from the index table name
+               Table table = entry.getValue();
+               String tableName = table.getName();
+               String[] split = tableName.split("\\.");
+               if (split.length > 1) {
+                   tableName = split[split.length - 1];
+               }
+               return mapping(table).copyWithName(tableName);
+           }));
     }
 
     @Override
     public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull String name) {
         return metaServiceClient.getTableIndexes(name).entrySet().stream()
-            .collect(Collectors.toMap(entry -> mapping(entry.getKey()), entry -> mapping(entry.getValue())));
+            .collect(Collectors.toMap(entry -> mapping(entry.getKey()), entry -> {
+                // Remove . from the index table name
+                Table table = entry.getValue();
+                String tableName = table.getName();
+                String[] split = tableName.split("\\.");
+                if (split.length > 1) {
+                    tableName = split[split.length - 1];
+                }
+                return mapping(table).copyWithName(tableName);
+            }));
     }
 
     public void addDistribution(String tableName, PartitionDetailDefinition partitionDetail) {

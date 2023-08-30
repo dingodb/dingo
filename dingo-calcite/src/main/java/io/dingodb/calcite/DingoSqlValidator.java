@@ -17,13 +17,20 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.fun.DingoOperatorTable;
-import org.apache.calcite.prepare.CalciteCatalogReader;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
+import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
+import org.apache.calcite.sql.validate.TableFunctionNamespace;
+import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
+import org.apache.calcite.sql2rel.SqlVectorOperator;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class DingoSqlValidator extends SqlValidatorImpl {
     static Config CONFIG = Config.DEFAULT
@@ -49,4 +56,39 @@ public class DingoSqlValidator extends SqlValidatorImpl {
     public void validateCall(SqlCall call, SqlValidatorScope scope) {
         super.validateCall(call, scope);
     }
+
+    @Override
+    protected void registerNamespace(
+        @Nullable SqlValidatorScope usingScope, @Nullable String alias, SqlValidatorNamespace ns, boolean forceNullable
+    ) {
+        SqlNode enclosingNode = ns.getEnclosingNode();
+        if (enclosingNode instanceof SqlBasicCall &&
+            (((SqlBasicCall) enclosingNode).getOperator() instanceof SqlFunctionScanOperator ||
+                ((SqlBasicCall) enclosingNode).getOperator() instanceof SqlVectorOperator)
+        ) {
+            super.registerNamespace(
+                usingScope, alias,
+                new TableFunctionNamespace(this, (SqlBasicCall) enclosingNode),
+                forceNullable
+            );
+            return;
+        }
+        super.registerNamespace(usingScope, alias, ns, forceNullable);
+    }
+
+    @Override
+    public @Nullable SqlValidatorNamespace getNamespace(SqlNode node) {
+        switch (node.getKind()) {
+            case COLLECTION_TABLE:
+                return namespaces.get(node);
+            default:
+                return super.getNamespace(node);
+        }
+    }
+
+    @Override
+    protected void validateTableFunction(SqlCall node, SqlValidatorScope scope, RelDataType targetRowType) {
+        validateQuery(node, scope, targetRowType);
+    }
+
 }
