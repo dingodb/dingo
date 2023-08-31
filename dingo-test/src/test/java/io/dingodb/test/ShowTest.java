@@ -17,6 +17,9 @@
 package io.dingodb.test;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.schema.DingoRootSchema;
+import io.dingodb.common.CommonId;
+import io.dingodb.meta.MetaService;
 import io.dingodb.test.dsl.run.exec.SqlExecContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -28,13 +31,15 @@ import java.sql.SQLException;
 import static io.dingodb.test.dsl.builder.SqlTestCaseJavaBuilder.is;
 
 public class ShowTest {
+    private static final String tableName = "test";
+
     private static SqlExecContext context;
 
     @BeforeAll
     public static void setupAll() throws Exception {
         ConnectionFactory.initLocalEnvironment();
         context = new SqlExecContext(ConnectionFactory.getConnection());
-        context.getTableMapping().put("table", "test");
+        context.getTableMapping().put("table", tableName);
         context.execSql(
             "create table {table} (\n"
                 + "    id int auto_increment,\n"
@@ -58,7 +63,7 @@ public class ShowTest {
             new String[]{"Table", "Create Table"},
             ImmutableList.of(
                 new Object[]{
-                    "test",
+                    tableName,
                     "create table test (\n"
                         + "    id int auto_increment,\n"
                         + "    name varchar(32),\n"
@@ -97,10 +102,14 @@ public class ShowTest {
     @Test
     public void showTableDistribution() throws SQLException {
         String sql = "show table {table} distribution";
+        MetaService metaService = MetaService.root().getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME);
+        CommonId tableId = metaService.getTableId(tableName);
         context.execSql(sql).test(is(
             new String[]{"Id", "Type", "Value"},
             ImmutableList.of(
-                new Object[]{"DISTRIBUTION_1_1", "Range", "[ Infinity, Infinity )"}
+                new Object[]{"DISTRIBUTION_" + tableId.seq + "_1", "Range", "[ Infinity, Key(2) )"},
+                new Object[]{"DISTRIBUTION_" + tableId.seq + "_2", "Range", "[ Key(2), Key(3) )"},
+                new Object[]{"DISTRIBUTION_" + tableId.seq + "_3", "Range", "[ Key(3), Infinity )"}
             )
         ));
     }

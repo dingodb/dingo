@@ -30,6 +30,7 @@ import io.dingodb.common.util.RangeUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Output;
+import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.PartRangeDeleteOperator;
 import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
@@ -83,6 +84,9 @@ public final class DingoRangeDeleteVisitFun {
             operator.setId(idGenerator.get());
             Task task = job.getOrCreate(currentLocation, idGenerator);
             task.putOperator(operator);
+            OutputHint outputHint = new OutputHint();
+            outputHint.setToSumUp(true);
+            operator.getSoleOutput().setHint(outputHint);
             outputs.addAll(operator.getOutputs());
         }
 

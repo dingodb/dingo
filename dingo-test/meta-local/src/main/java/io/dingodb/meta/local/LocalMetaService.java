@@ -17,18 +17,24 @@
 package io.dingodb.meta.local;
 
 import com.google.auto.service.AutoService;
+import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.TableStatistic;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -55,6 +61,7 @@ public class LocalMetaService implements MetaService {
     private static final Map<CommonId, NavigableMap<ComparableByteArray, RangeDistribution>> distributions = new ConcurrentSkipListMap<>();
     private static final AtomicInteger metaServiceSeq = new AtomicInteger(1);
     private static final AtomicInteger tableSeq = new AtomicInteger(1);
+    private static final AtomicInteger distributionSeq = new AtomicInteger(1);
     private static Location location;
 
     private static NavigableMap<ComparableByteArray, RangeDistribution> defaultDistributions;
@@ -118,6 +125,15 @@ public class LocalMetaService implements MetaService {
     public void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
         CommonId tableId = new CommonId(TABLE, id.seq, tableSeq.incrementAndGet());
         tableDefinitions.put(tableId, tableDefinition);
+        if (tableDefinition.getPartDefinition() != null) {
+            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
+            PartitionDetailDefinition start = null;
+            for (PartitionDetailDefinition detail : tableDefinition.getPartDefinition().getDetails()) {
+                createDistribution(tableId, start, detail, codec);
+                start = detail;
+            }
+            createDistribution(tableId, start, null, codec);
+        }
     }
 
     @Override
@@ -125,6 +141,15 @@ public class LocalMetaService implements MetaService {
                              @NonNull List<TableDefinition> indexTableDefinitions) {
         CommonId tableId = new CommonId(TABLE , id.seq, tableSeq.incrementAndGet());
         tableDefinitions.put(tableId, tableDefinition);
+        if (tableDefinition.getPartDefinition() != null) {
+            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
+            PartitionDetailDefinition start = null;
+            for (PartitionDetailDefinition detail : tableDefinition.getPartDefinition().getDetails()) {
+                createDistribution(tableId, start, detail, codec);
+                start = detail;
+            }
+            createDistribution(tableId, start, null, codec);
+        }
     }
 
     @Override
@@ -227,17 +252,55 @@ public class LocalMetaService implements MetaService {
 
     }
 
+    public void createDistribution(
+        CommonId tableId, PartitionDetailDefinition start, PartitionDetailDefinition end, KeyValueCodec codec
+    ) {
+        byte[] startKey;
+        byte[] endKey;
+        if (start == null) {
+            startKey = ByteArrayUtils.EMPTY_BYTES;
+        } else {
+            try {
+                startKey = codec.encodeKeyPrefix(start.getOperand(), start.getOperand().length);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if (end == null) {
+            endKey = ByteArrayUtils.MAX;
+        } else {
+            try {
+                endKey = codec.encodeKeyPrefix(end.getOperand(), end.getOperand().length);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        addRangeDistributions(
+            tableId,
+            startKey,
+            endKey,
+            Optional.mapOrNull(start, PartitionDetailDefinition::getOperand),
+            Optional.mapOrNull(end, PartitionDetailDefinition::getOperand)
+        );
+    }
+
     public void addRangeDistributions(CommonId id, byte[] start, byte[] end) {
+        addRangeDistributions(id, start, end, null, null);
+    }
+
+    public void addRangeDistributions(CommonId id, byte[] startKey, byte[] endKey, Object[] start, Object[] end) {
         distributions.compute(id, (k, v) -> {
             if (v == null) {
                 v = new TreeMap<>();
             }
             v.put(
-                new ComparableByteArray(start),
+                new ComparableByteArray(startKey),
                 RangeDistribution.builder()
                     .id(new CommonId(DISTRIBUTION, id.seq, v.size() + 1))
-                    .startKey(start)
-                    .endKey(end)
+                    .startKey(startKey)
+                    .endKey(endKey)
+                    .start(start)
+                    .end(end)
                     .build()
             );
             return v;
