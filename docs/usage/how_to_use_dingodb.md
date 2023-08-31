@@ -20,7 +20,7 @@ The usage about SQL can be reference to [Play with DingoDB using SQL](./play_wit
     In DingoDB install path, you can start a sqlline to build connection to the cluster.
 
 ```shell
-   ./bin/sqlline.sh --host ip --user root
+   ./bin/sqlline.sh host root
 ```
 ![DingoDB Sqlline](../images/dingoDB_sqlline.png)
 

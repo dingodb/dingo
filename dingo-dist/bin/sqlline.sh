@@ -16,12 +16,10 @@
 #
 
 ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-JAR_PATH=$(find $ROOT -name sqlline-*.jar)
-NET_JAR_PATH=$(find $ROOT -name dingo-net-*.jar)
+SQLLINE_PATH=$(find $ROOT -name sqlline-*.jar)
+CLIENT_PATH=$(find $ROOT -name dingo-driver-client*.jar)
 
 java ${JAVA_OPTS} \
     -Dlogback.configurationFile=file:${ROOT}/conf/logback-sqlline.xml \
-    -classpath ${JAR_PATH}:${NET_JAR_PATH} \
-    io.dingodb.sqlline.Starter \
-    --config ${ROOT}/conf/client.yaml \
-    $@
+    -classpath ${SQLLINE_PATH}:${CLIENT_PATH} \
+    sqlline.SqlLine -d io.dingodb.driver.client.DingoDriverClient -u jdbc:dingo:thin:url=$1:8765 -n $2
