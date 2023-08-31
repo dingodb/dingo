@@ -103,6 +103,11 @@ public class SqlRunningTest extends SqlTestRunner {
     }
 
     @TestFactory
+    public Stream<DynamicTest> testJoin4() {
+        return getTests(SqlTestCaseYamlBuilder.of("join_vsk_vs0_i40_vs0_2__vsk_vs0_2__vsk_2_i40/join_cases.yml"));
+    }
+
+    @TestFactory
     public Stream<DynamicTest> testSelfJoin() {
         return getTests(SqlTestCaseYamlBuilder.of("i4k_vs0_i40/self_join_cases.yml"));
     }

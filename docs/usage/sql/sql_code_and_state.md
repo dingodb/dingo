@@ -10,22 +10,33 @@ characters). The following SQLSTATE classes are defined in SQL standards:
 * '01' contains all 'warnings'
 * '02' is the 'NOT FOUND' class
 
-SQLCODE and SQLSTATE of DingoDB
+DingoDB try to make returned SQLCODE and SQLSTATE compatible with MySQL, if the error is not compatible with MySQL, its
+SQLSTATE is "45000".
+
+## SQLCODE and SQLSTATE of DingoDB
+
+### MySQL compatible errors
+
+| SQLCODE | SQLSTATE | Description                     |
+|---------|----------|---------------------------------|
+| 1152    | 08S01    | Connection refused              |
+| 1064    | 42000    | SQL parse error                 |
+| 1050    | 42S01    | Table already exists            |
+| 4028    | HY000    | Missing column list             |
+| 1146    | 42S02    | Table not found                 |
+| 1054    | 42S22    | Column not found                |
+| 1364    | HY000    | Value of column can not be NULL |
+
+### DingoDB specified errors
 
 | SQLCODE | SQLSTATE | Description                                                |
 |---------|----------|------------------------------------------------------------|
-| 42001   | 42001    | Connection refused                                         |
-| 51001   | 51001    | SQL parse error                                            |
-| 51002   | 51002    | Illegal expression in context                              |
-| 52001   | 52001    | Unknown identifier                                         |
-| 52002   | 52002    | Table already exists                                       |
-| 52003   | 52003    | Primary keys are required                                  |
-| 52004   | 52004    | Missing column list                                        |
-| 53001   | 53001    | Table not found                                            |
-| 53002   | 53002    | Column not found                                           |
-| 53003   | 53003    | Value of column can not be NULL                            |
-| 53004   | 53004    | Number format error                                        |
-| 54001   | 54001    | Illegal use of dynamic parameter                           |
-| 60000   | 60000    | Task execution failed                                      |
-| 90001   | 90001    | Unknown error                                              |
-| 90002   | 90002    | Intentional error thrown by function `throw` (for testing) |
+| 1001    | 45000    | Primary keys are required                                  |
+| 1002    | 45000    | Specified primary key does not exist in table              |
+| 2001    | 45000    | Illegal use of dynamic parameter                           |
+| 2002    | 45000    | Illegal expression in context                              |
+| 2003    | 45000    | Unknown identifier                                         |
+| 3001    | 45000    | Number format error                                        |
+| 5001    | 45000    | Task execution failed                                      |
+| 9001    | 45000    | Unknown error                                              |
+| 9002    | 45000    | Intentional error thrown by function `throw` (for testing) |

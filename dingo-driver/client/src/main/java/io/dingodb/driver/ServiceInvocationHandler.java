@@ -80,8 +80,8 @@ public class ServiceInvocationHandler implements Service, InvocationHandler {
                 } else if (throwable instanceof ConnectException) {
                     throw new AvaticaClientRuntimeException(
                         throwable.getMessage(),
-                        42001,
-                        "42001",
+                        1152,
+                        "08S01",
                         AvaticaSeverity.ERROR,
                         Collections.emptyList(),
                         null

@@ -68,7 +68,7 @@ public final class SqlRunningContext {
         TableInfo tableInfo = tables.get(tableId);
         if (tableInfo == null) {
             throw new RuntimeException(
-                "Table \"" + tableId + "\"not found, forget to init tables or use wrong table id?"
+                "Table \"" + tableId + "\" not found, forget to init tables or use wrong table id?"
             );
         }
         boolean isNewCreated = false;
