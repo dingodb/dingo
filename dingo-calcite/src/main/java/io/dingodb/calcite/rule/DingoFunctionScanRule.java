@@ -16,13 +16,10 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.rel.DingoFunctionScan;
-import io.dingodb.calcite.rel.DingoVector;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
-import org.apache.calcite.rel.logical.LogicalTableFunctionScan;
-import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rel.core.TableFunctionScan;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
@@ -35,40 +32,14 @@ public class DingoFunctionScanRule extends RelRule<DingoFunctionScanRule.Config>
 
     @Override
     public void onMatch(@NonNull RelOptRuleCall call) {
-        final LogicalTableFunctionScan rel = call.rel(0);
-        RexCall rexCall = (RexCall) rel.getCall();
-        if (rexCall.op.getName().equals("VECTOR")) {
-            call.transformTo(
-                new DingoVector(
-                rel.getCluster(),
-                rel.getTraitSet(),
-                rel.getInputs(),
-                rexCall,
-                null,
-                rexCall.type,
-                null
-            ));
-            return;
-        }
-
-        call.transformTo(
-            new DingoFunctionScan(
-            rel.getCluster(),
-            rel.getTraitSet(),
-            rel.getInputs(),
-            rexCall,
-            null,
-            rexCall.type,
-            null
-            )
-        );
+        return;
     }
 
     @Value.Immutable
     public interface Config extends RelRule.Config {
         DingoFunctionScanRule.Config DEFAULT = ImmutableDingoFunctionScanRule.Config.builder()
             .operandSupplier(
-                b0 -> b0.operand(LogicalTableFunctionScan.class)
+                b0 -> b0.operand(TableFunctionScan.class)
                     .predicate(r -> {
                         return true;
                     }).noInputs()

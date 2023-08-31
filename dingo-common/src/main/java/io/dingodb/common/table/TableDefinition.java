@@ -468,7 +468,19 @@ public class TableDefinition {
     }
 
     public TableDefinition copyWithName(String name) {
-        TableDefinition tableDefinition = new TableDefinition(name);
+        TableDefinition tableDefinition = new TableDefinition(
+            name,
+            this.columns,
+            this.indexes,
+            this.version,
+            this.ttl,
+            this.partDefinition,
+            this.engine,
+            this.properties,
+            this.autoIncrement,
+            this.replica,
+            null
+        );
         return tableDefinition;
     }
 }

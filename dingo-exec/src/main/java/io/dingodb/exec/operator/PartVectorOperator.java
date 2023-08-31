@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.common.collect.Iterators;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
@@ -30,6 +29,7 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.vector.VectorSearchResponse;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.partition.PartitionStrategy;
 import io.dingodb.store.api.StoreInstance;
@@ -39,6 +39,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -101,22 +102,23 @@ public final class PartVectorOperator extends PartIteratorSourceOperator {
     @Override
     protected @NonNull Iterator<Object[]> createSourceIterator() {
         StoreInstance instance = StoreService.getDefault().getInstance(tableId, indexRegionId);
-        Iterator<Object[]> iterator;
-
         List<Object[]> results = new ArrayList<>();
 
-        List<byte[]> keyList = instance.vectorSearch(indexId, floatArray, topN);
-        for (byte[] key : keyList) {
-            CommonId regionId = strategy.calcPartId(key);
+        // Get all table data response
+        List<VectorSearchResponse> searchResponseList = instance.vectorSearch(indexId, floatArray, topN);
+        for (VectorSearchResponse response : searchResponseList) {
+            CommonId regionId = strategy.calcPartId(response.getKey());
             StoreInstance storeInstance = StoreService.getDefault().getInstance(tableId, regionId);
-            KeyValue keyValue = storeInstance.get(key);
+            KeyValue keyValue = storeInstance.get(response.getKey());
             try {
-                results.add(codec.decode(keyValue));
+                Object[] decode = codec.decode(keyValue);
+                Object[] result = Arrays.copyOf(decode, decode.length + 1);
+                result[decode.length] = response.getDistance();
+                results.add(result);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
-
         return results.iterator();
     }
 
