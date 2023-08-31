@@ -23,4 +23,6 @@ dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly project(':dingo-meta-api')
+    api project(':dingo-codec-api')
+
 }
