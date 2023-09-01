@@ -67,6 +67,7 @@ import io.dingodb.expr.runtime.eval.relational.LtDouble;
 import io.dingodb.expr.runtime.eval.relational.LtFloat;
 import io.dingodb.expr.runtime.eval.relational.LtInt;
 import io.dingodb.expr.runtime.eval.relational.LtLong;
+import io.dingodb.expr.runtime.eval.relational.LtString;
 import io.dingodb.expr.runtime.eval.relational.NeBool;
 import io.dingodb.expr.runtime.eval.relational.NeDouble;
 import io.dingodb.expr.runtime.eval.relational.NeFloat;
@@ -206,7 +207,7 @@ public final class RelationalFactory {
             case TypeCode.BOOL:
                 return new LtBool(CastingFactory.toBool(operand0), CastingFactory.toBool(operand1));
             case TypeCode.STRING:
-                return new EqString(operand0, operand1);
+                return new LtString(operand0, operand1);
             default:
                 break;
         }

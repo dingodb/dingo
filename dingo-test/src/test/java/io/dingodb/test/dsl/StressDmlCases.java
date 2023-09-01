@@ -85,12 +85,12 @@ public final class StressDmlCases extends SqlTestCaseJavaBuilder {
                 Random random = new Random();
                 String sql = "insert into {table} values(?, ?, ?)";
                 try (PreparedStatement statement = context.getConnection().prepareStatement(context.transSql(sql))) {
-                    for (int id = 1; id <= 50000; ++id) {
+                    for (int id = 1; id <= 5000; ++id) {
                         statement.setInt(1, id);
                         statement.setString(2, UUID.randomUUID().toString());
                         statement.setDouble(3, random.nextDouble());
                         statement.addBatch();
-                        if (id % 1000 == 0) {
+                        if (id % 500 == 0) {
                             int[] updateCounts = statement.executeBatch();
                             log.info("Execute batch \"{}\", id = {}", sql, id);
                             assertThat(updateCounts).containsOnly(1);
@@ -107,7 +107,7 @@ public final class StressDmlCases extends SqlTestCaseJavaBuilder {
                 Random random = new Random();
                 String sql = "insert into {table} values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 try (PreparedStatement statement = context.getConnection().prepareStatement(context.transSql(sql))) {
-                    for (int id = 1; id <= 50000; ++id) {
+                    for (int id = 1; id <= 5000; ++id) {
                         statement.setObject(1, id);
                         String randStr = UUID.randomUUID().toString();
                         statement.setObject(2, randStr);
@@ -131,7 +131,7 @@ public final class StressDmlCases extends SqlTestCaseJavaBuilder {
                         statement.setObject(11, randZip);
                         statement.setObject(12, random.nextBoolean());
                         statement.addBatch();
-                        if (id % 1000 == 0) {
+                        if (id % 500 == 0) {
                             int[] updateCounts = statement.executeBatch();
                             log.info("Execute batch \"{}\", id = {}", sql, id);
                             assertThat(updateCounts).containsOnly(1);

@@ -107,6 +107,19 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                 )
             );
 
+        test("Select filtered by STRING")
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select * from {table} where name < 'Betty'",
+                csv(
+                    "id, name, amount",
+                    "INT, STRING, DOUBLE",
+                    "1, Alice, 3.5",
+                    "6, Alice, 6.0",
+                    "8, Alice, 7.0"
+                )
+            );
+
         test("Select filtered by primary key")
             .use("table", "i4k_vs_f80")
             .step(
