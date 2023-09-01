@@ -17,6 +17,7 @@
 package io.dingodb.test.dsl.builder.step;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
@@ -24,8 +25,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.dingodb.test.asserts.ResultSetCheckConfig;
 import io.dingodb.test.dsl.builder.checker.SqlChecker;
 import io.dingodb.test.dsl.builder.checker.SqlResultDataChecker;
+import io.dingodb.test.dsl.builder.checker.SqlResultDumper;
 import io.dingodb.test.dsl.builder.checker.SqlUpdateCountChecker;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 
@@ -46,28 +49,7 @@ public class StepDeserializer extends StdDeserializer<Step> {
             return new SqlStringStep(jsonNode.asText());
         } else if (jsonNode.isObject()) {
             ObjectNode objectNode = (ObjectNode) jsonNode;
-            SqlChecker checker = null;
-            if (objectNode.has("result")) {
-                SqlResultDataChecker resultDataChecker = parser.getCodec().treeToValue(
-                    objectNode.get("result"),
-                    SqlResultDataChecker.class
-                );
-                if (objectNode.has("config")) {
-                    resultDataChecker.setConfig(
-                        parser.getCodec().treeToValue(
-                            objectNode.get("config"),
-                            ResultSetCheckConfig.class
-                        )
-                    );
-                }
-                checker = resultDataChecker;
-            } else if (objectNode.has("count")) {
-                Integer updateCount = parser.getCodec().treeToValue(
-                    objectNode.get("count"),
-                    Integer.class
-                );
-                checker = new SqlUpdateCountChecker(updateCount);
-            }
+            SqlChecker checker = getSqlChecker(parser, objectNode);
             if (objectNode.has("sql")) {
                 return new SqlStringStep(objectNode.get("sql").asText(), checker);
             } else if (objectNode.has("file")) {
@@ -75,5 +57,38 @@ public class StepDeserializer extends StdDeserializer<Step> {
             }
         }
         return (SqlStep) context.handleUnexpectedToken(_valueClass, parser);
+    }
+
+    private static @Nullable SqlChecker getSqlChecker(
+        @NonNull JsonParser parser,
+        @NonNull ObjectNode objectNode
+    ) throws JsonProcessingException {
+        SqlChecker checker = null;
+        if (objectNode.has("dump") && objectNode.get("dump").asBoolean()) {
+            return new SqlResultDumper();
+        }
+        if (objectNode.has("result")) {
+            SqlResultDataChecker resultDataChecker = parser.getCodec().treeToValue(
+                objectNode.get("result"),
+                SqlResultDataChecker.class
+            );
+            if (objectNode.has("config")) {
+                resultDataChecker.setConfig(
+                    parser.getCodec().treeToValue(
+                        objectNode.get("config"),
+                        ResultSetCheckConfig.class
+                    )
+                );
+            }
+            return resultDataChecker;
+        }
+        if (objectNode.has("count")) {
+            Integer updateCount = parser.getCodec().treeToValue(
+                objectNode.get("count"),
+                Integer.class
+            );
+            return new SqlUpdateCountChecker(updateCount);
+        }
+        return null;
     }
 }
