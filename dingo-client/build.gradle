@@ -40,7 +40,7 @@ task fatJar(type: Jar) {
     // classifier 'all'
     from(
         configurations.runtimeClasspath
-            .filter {it.name.startsWith("dingo")}
+            /*.filter {it.name.startsWith("dingo")}*/
             .collect {it.isDirectory() ? it : zipTree(it)},
     )
     with jar
@@ -101,7 +101,7 @@ publishing {
             /**
              * will manually release the artifactory
              */
-            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : "";
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl;
 
             credentials {
                 username = System.getenv("MAVEN_USERNAME")
@@ -117,55 +117,42 @@ publishing {
             artifacts = [ fatJar, javadocJar, sourcesJar ]
         }
         maven(MavenPublication) {
-            pom.withXml {
-                def dependenciesNode = asNode().appendNode('dependencies')
-                configurations.implementation.allDependencies.each {
-                    if (it.name == 'dingo-sdk') {
-                        def dependencyNode = dependenciesNode.appendNode('dependency')
-                        dependencyNode.appendNode('groupId', it.group)
-                        dependencyNode.appendNode('artifactId', it.name)
-                        dependencyNode.appendNode('version', it.version)
-                    }
-                }
-            }
-        }
-    }
-}
-
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-            repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                authentication(userName: ossrhUsername, password: ossrhPassword)
-            }
-
-            pom.project {
-                name 'dingo-client'
-                packaging 'jar'
+            pom {
+                name = 'dingo-client'
+                packaging = 'jar'
                 // optionally artifactId can be defined here
-                description 'DingoDB client to build connection and operation to DingoDB'
-                url 'https://www.dingodb.com/'
+                description = 'DingoDB client to build connection and operation to DingoDB'
+                url = 'https://www.dingodb.com/'
 
                 scm {
-                    connection 'scm:svn:http://foo.googlecode.com/svn/trunk/'
-                    developerConnection 'scm:svn:https://foo.googlecode.com/svn/trunk/'
-                    url 'http://foo.googlecode.com/svn/trunk/'
+                    connection = 'scm:svn:http://foo.googlecode.com/svn/trunk/'
+                    developerConnection = 'scm:svn:https://foo.googlecode.com/svn/trunk/'
+                    url = 'http://foo.googlecode.com/svn/trunk/'
                 }
 
                 licenses {
                     license {
-                        name 'The Apache License, Version 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
                     }
                 }
 
                 developers {
                     developer {
-                        id 'dingodb'
-                        name 'DingoDB develop team'
-                        email 'dingodb@zetyun.com'
+                        id = 'dingodb'
+                        name = 'DingoDB develop team'
+                        email = 'dingodb@zetyun.com'
+                    }
+                }
+            }
+            pom.withXml {
+                def dependenciesNode = asNode().appendNode('dependencies')
+                configurations.implementation.allDependencies.each {
+                    if (!it.name.startsWith('dingo')) {
+                        def dependencyNode = dependenciesNode.appendNode('dependency')
+                        dependencyNode.appendNode('groupId', it.group)
+                        dependencyNode.appendNode('artifactId', it.name)
+                        dependencyNode.appendNode('version', it.version)
                     }
                 }
             }
