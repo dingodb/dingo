@@ -100,7 +100,7 @@ public final class JobManagerImpl implements JobManager {
         if (job.isEmpty()) {
             return Collections.emptyIterator();
         }
-        if (job.getStatus() != Status.READY) {
+        if (job.getStatus() == Status.BORN) {
             distributeTasks(job);
         }
         run(job, paras);

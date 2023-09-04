@@ -48,10 +48,6 @@ import static io.dingodb.common.util.NoBreakFunctions.wrap;
 @JsonTypeName("partition")
 @JsonPropertyOrder({"strategy", "keyMapping", "partIndices", "outputs"})
 public final class PartitionOperator extends FanOutOperator {
-    @JsonProperty("tableId")
-    @JsonSerialize(using = CommonId.JacksonSerializer.class)
-    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    private final CommonId tableId;
     @JsonProperty("strategy")
     private final PartitionStrategy<CommonId, byte[]> strategy;
     @JsonProperty("tableDefinition")
@@ -62,23 +58,22 @@ public final class PartitionOperator extends FanOutOperator {
     private Map<CommonId, Integer> partIndices;
 
     private final KeyValueCodec codec;
+    private final DingoType schema;
 
     @JsonCreator
     public PartitionOperator(
-        @JsonProperty("tableId") CommonId tableId,
         @JsonProperty("strategy") PartitionStrategy<CommonId, byte[]> strategy,
         @JsonProperty("tableDefinition") TableDefinition tableDefinition
     ) {
         super();
-        this.tableId = tableId;
         this.strategy = strategy;
         this.tableDefinition = tableDefinition;
         this.codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
+        this.schema = tableDefinition.getDingoType();
     }
 
     @Override
     protected int calcOutputIndex(int pin, Object @NonNull [] tuple) {
-        DingoType schema = tableDefinition.getDingoType();
         Object[] newTuple = (Object[]) schema.convertFrom(
             Arrays.copyOf(tuple, schema.fieldCount()),
             ValueConverter.INSTANCE

@@ -24,10 +24,13 @@ import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.fin.OperatorProfile;
+import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+@Slf4j
 @JsonTypeName("coalesce")
 @JsonPropertyOrder({"inputNum", "output"})
 public final class CoalesceOperator extends SoleOutOperator {
@@ -35,7 +38,7 @@ public final class CoalesceOperator extends SoleOutOperator {
     private final int inputNum;
 
     private final List<OperatorProfile> profiles = new LinkedList<>();
-    private boolean[] finFlag;
+    private boolean[] finFlags;
 
     @JsonCreator
     public CoalesceOperator(
@@ -47,21 +50,26 @@ public final class CoalesceOperator extends SoleOutOperator {
     @Override
     public void init() {
         super.init();
-        finFlag = new boolean[inputNum];
+        finFlags = new boolean[inputNum];
     }
 
     @Override
     public synchronized boolean push(int pin, Object[] tuple) {
+        if (log.isDebugEnabled()) {
+            log.debug("Got tuple from pin {}.", pin);
+        }
         return output.push(tuple);
     }
 
     @Override
     public synchronized void fin(int pin, Fin fin) {
+        if (log.isDebugEnabled()) {
+            log.debug("Got FIN from pin {}.", pin);
+        }
         if (fin instanceof FinWithException) {
             output.fin(fin);
             return;
         }
-
         setFin(pin, fin);
         if (isAllFin()) {
             output.fin(new FinWithProfiles(profiles));
@@ -71,19 +79,25 @@ public final class CoalesceOperator extends SoleOutOperator {
 
     private void setFin(int pin, Fin fin) {
         assert pin < inputNum : "Pin no is greater than the max (" + inputNum + ").";
-        assert !finFlag[pin] : "Input on pin (" + pin + ") is already finished.";
-        finFlag[pin] = true;
+        assert !finFlags[pin] : "Input on pin (" + pin + ") is already finished.";
+        finFlags[pin] = true;
         if (fin instanceof FinWithProfiles) {
             profiles.addAll(((FinWithProfiles) fin).getProfiles());
         }
     }
 
     private boolean isAllFin() {
-        for (boolean b : finFlag) {
+        for (boolean b : finFlags) {
             if (!b) {
                 return false;
             }
         }
         return true;
+    }
+
+    @Override
+    public void setParas(Object[] paras) {
+        Arrays.fill(finFlags, false);
+        super.setParas(paras);
     }
 }

@@ -102,7 +102,7 @@ public final class StressDmlCases extends SqlTestCaseJavaBuilder {
 
         test("Batch insert with more parameters")
             .use("table", "i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0")
-            .modify("i4k_vs_f80")
+            .modify("i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0")
             .custom(context -> {
                 Random random = new Random();
                 String sql = "insert into {table} values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";

@@ -22,11 +22,13 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.impl.OutputIml;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
 import java.util.List;
 
+@Slf4j
 public abstract class FanOutOperator extends AbstractOperator {
     @JsonProperty("outputs")
     @JsonSerialize(contentAs = OutputIml.class)
@@ -38,11 +40,17 @@ public abstract class FanOutOperator extends AbstractOperator {
     @Override
     public synchronized boolean push(int pin, Object @NonNull [] tuple) {
         int index = calcOutputIndex(pin, tuple);
+        if (log.isDebugEnabled()) {
+            log.debug("Tuple is pushing to output {}.", index);
+        }
         return outputs.get(index).push(tuple);
     }
 
     @Override
     public synchronized void fin(int pin, Fin fin) {
+        if (log.isDebugEnabled()) {
+            log.debug("Got FIN, push it to {} outputs", outputs.size());
+        }
         for (Output output : outputs) {
             output.fin(fin);
         }
