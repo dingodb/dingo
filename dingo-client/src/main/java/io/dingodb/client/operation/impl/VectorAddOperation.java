@@ -115,7 +115,7 @@ public class VectorAddOperation implements Operation {
                     integer.getVector(),
                     integer.getScalarData()))
                 .collect(Collectors.toList()),
-            context.getVectorContext().isWithoutVectorData(),
+            context.getVectorContext().isReplaceDeleted(),
             context.getVectorContext().isUpdate()
         );
         for (int i = 0; i < vectors.size(); i++) {
