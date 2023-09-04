@@ -46,9 +46,11 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.index.Index;
 import io.dingodb.sdk.common.index.IndexMetrics;
+import io.dingodb.sdk.common.index.VectorIndexParameter;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.Parameters;
+import io.dingodb.sdk.common.vector.Vector;
 import io.dingodb.sdk.common.vector.VectorCalcDistance;
 import io.dingodb.sdk.common.vector.VectorDistanceRes;
 import io.dingodb.sdk.common.vector.VectorIndexMetrics;
@@ -63,6 +65,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class DingoClient {
 
@@ -353,12 +356,44 @@ public class DingoClient {
     }
 
     public List<VectorWithId> vectorAdd(String schema, String indexName, List<VectorWithId> vectors) {
-        return indexService.exec(schema, indexName, VectorAddOperation.getInstance(), vectors);
+        return vectorAdd(schema, indexName, vectors, false, false);
     }
 
     public List<VectorWithId> vectorAdd(String schema, String indexName, List<VectorWithId> vectors,
                                         Boolean replaceDeleted, Boolean isUpdate) {
         VectorContext context = VectorContext.builder().replaceDeleted(replaceDeleted).isUpdate(isUpdate).build();
+        Index index = getIndex(schema, indexName);
+        VectorIndexParameter parameter = index.getIndexParameter().getVectorIndexParameter();
+        int dimension;
+        switch (parameter.getVectorIndexType()) {
+            case VECTOR_INDEX_TYPE_FLAT:
+                dimension = parameter.getFlatParam().getDimension();
+                break;
+            case VECTOR_INDEX_TYPE_IVF_FLAT:
+                dimension = parameter.getIvfFlatParam().getDimension();
+                break;
+            case VECTOR_INDEX_TYPE_IVF_PQ:
+                dimension = parameter.getIvfPqParam().getDimension();
+                break;
+            case VECTOR_INDEX_TYPE_HNSW:
+                dimension = parameter.getHnswParam().getDimension();
+                break;
+            case VECTOR_INDEX_TYPE_DISKANN:
+                dimension = parameter.getDiskAnnParam().getDimension();
+                break;
+            default:
+                dimension = 0;
+        }
+        long count = vectors.stream()
+            .map(VectorWithId::getVector)
+            .filter(v -> v.getDimension() != dimension || (v.getValueType() == Vector.ValueType.FLOAT
+                    ? v.getFloatValues().size() != dimension : v.getBinaryValues().size() != dimension))
+            .count();
+        if (dimension != 0 && count > 0) {
+            List<VectorWithId> result = new ArrayList<>();
+            vectors.forEach(v -> result.add(null));
+            return result;
+        }
         return indexService.exec(schema, indexName, VectorAddOperation.getInstance(), vectors, context);
     }
 

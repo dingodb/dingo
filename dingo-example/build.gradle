@@ -9,6 +9,7 @@ dependencies {
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation project(':dingo-driver:dingo-driver-client')
     implementation project(':dingo-client')
+    implementation project(':dingo-common')
     implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
     runtimeOnly group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     runtimeOnly group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
@@ -31,6 +32,7 @@ task fatJar(type: Jar) {
 }
 
 fatJar.dependsOn([
+    ':dingo-common:jar',
     ':dingo-driver:dingo-driver-client:fatJar',
     ':dingo-client:fatJar',
 ])

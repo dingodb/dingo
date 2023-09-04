@@ -24,6 +24,7 @@ import io.dingodb.client.common.VectorWithId;
 import io.dingodb.proxy.common.ProxyCommon;
 import io.dingodb.proxy.index.IndexServiceGrpc;
 import io.dingodb.proxy.index.ProxyIndex;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.index.VectorIndexParameter;
 import io.dingodb.sdk.common.vector.VectorCalcDistance;
 import io.dingodb.sdk.common.vector.VectorDistanceRes;
@@ -107,6 +108,10 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
 
     @Override
     public void vectorDelete(ProxyIndex.VectorDeleteRequest req, StreamObserver<ProxyIndex.VectorDeleteResponse> resObserver) {
+        long count = req.getIdsList().stream().distinct().count();
+        if (req.getIdsCount() != count) {
+            throw new DingoClientException("During the delete operation, duplicate ids are not allowed");
+        }
         List<Boolean> vectorDelete = dingoClient.vectorDelete(req.getSchemaName(), req.getIndexName(), req.getIdsList());
         ProxyIndex.VectorDeleteResponse response = ProxyIndex.VectorDeleteResponse.newBuilder().addAllKeyStates(vectorDelete).build();
         resObserver.onNext(response);
