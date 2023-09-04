@@ -356,7 +356,6 @@ public class DingoMeta extends MetaImpl {
         @NonNull List<List<TypedValue>> parameterValues
     ) throws NoSuchStatementException {
         final List<Long> updateCounts = new ArrayList<>();
-        // TODO: This should be optimized to not redistribute tasks in each iteration.
         for (List<TypedValue> parameterValue : parameterValues) {
             ExecuteResult executeResult = execute(sh, parameterValue, -1);
             final long updateCount =
