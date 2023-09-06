@@ -72,8 +72,8 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
             req.getSchemaName(),
             req.getIndexName(),
             new HashSet<>(ids),
-            req.getWithOutVectorData(),
-            req.getWithScalarData(),
+            req.getWithoutVectorData(),
+            req.getWithoutScalarData(),
             req.getSelectedKeysList());
         ProxyIndex.VectorGetResponse response = ProxyIndex.VectorGetResponse.newBuilder()
             .addAllVectors(ids.stream().map(id -> mapping(vectorWithIdMap.get(id))).collect(Collectors.toList()))
@@ -134,9 +134,9 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
             req.getMaxScanCount(),
             req.getVectorIdEnd(),
             req.getWithoutVectorData(),
-            req.getWithScalarData(),
+            req.getWithoutScalarData(),
             req.getSelectedKeysList(),
-            req.getWithTableData(),
+            req.getWithoutTableData(),
             req.getUseScalarFilter(),
             req.getScalarForFilter().getScalarDataMap().entrySet().stream().collect(
                 Maps::newHashMap,

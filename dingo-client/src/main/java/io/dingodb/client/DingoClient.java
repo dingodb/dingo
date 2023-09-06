@@ -57,7 +57,6 @@ import io.dingodb.sdk.common.vector.VectorIndexMetrics;
 import io.dingodb.sdk.common.vector.VectorScanQuery;
 import io.dingodb.sdk.service.meta.AutoIncrementService;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -65,7 +64,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class DingoClient {
 
@@ -423,11 +421,11 @@ public class DingoClient {
 
     public Map<Long, VectorWithId> vectorBatchQuery(String schema, String indexName, Set<Long> ids,
                                               boolean withoutVectorData,
-                                              boolean withScalarData,
+                                              boolean withoutScalarData,
                                               List<String> selectedKeys) {
         VectorContext vectorContext = VectorContext.builder()
             .withoutVectorData(withoutVectorData)
-            .withScalarData(withScalarData)
+            .withoutScalarData(withoutScalarData)
             .selectedKeys(selectedKeys)
             .build();
         return indexService.exec(schema, indexName, VectorBatchQueryOperation.getInstance(), ids, vectorContext);

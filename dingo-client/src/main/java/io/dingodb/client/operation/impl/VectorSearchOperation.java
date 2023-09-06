@@ -90,8 +90,9 @@ public class VectorSearchOperation implements Operation {
             new VectorSearchParameter(
                 vectorSearch.getParameter().getTopN(),
                 vectorSearch.getParameter().isWithoutVectorData(),
-                vectorSearch.getParameter().isWithScalarData(),
+                vectorSearch.getParameter().isWithoutScalarData(),
                 vectorSearch.getParameter().getSelectedKeys(),
+                vectorSearch.getParameter().isWithoutTableData(),
                 vectorSearch.getParameter().getSearch(),
                 vectorSearch.getParameter().getVectorFilter(),
                 vectorSearch.getParameter().getVectorFilterType(),

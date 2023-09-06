@@ -103,7 +103,7 @@ public class VectorBatchQueryOperation implements Operation {
             context.getRegionId(),
             ids,
             context.getVectorContext().isWithoutVectorData(),
-            context.getVectorContext().isWithScalarData(),
+            context.getVectorContext().isWithoutScalarData(),
             context.getVectorContext().getSelectedKeys()
         ).forEach(v -> result.put(v.getId(), v));
         for (Long id : ids) {

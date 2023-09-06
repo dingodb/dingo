@@ -33,6 +33,6 @@ public class VectorContext {
 
     // vector search
     private final boolean withoutVectorData;
-    private final boolean withScalarData;
+    private final boolean withoutScalarData;
     private final List<String> selectedKeys;
 }

@@ -20,7 +20,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 
@@ -31,9 +30,7 @@ import java.util.List;
 public class VectorGet {
 
     private List<Long> ids;
-    @Value("false")
     private Boolean withoutVectorData;
-    @Value("false")
-    private Boolean withScalarData;
+    private Boolean withoutScalarData;
     private List<String> keys;
 }

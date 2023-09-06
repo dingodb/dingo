@@ -17,7 +17,6 @@
 package io.dingodb.client.common;
 
 import io.dingodb.sdk.common.vector.Search;
-import io.dingodb.sdk.service.store.Coprocessor;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,8 +30,9 @@ public class VectorSearchParameter {
 
     private Integer topN;
     private boolean withoutVectorData;
-    private boolean withScalarData;
+    private boolean withoutScalarData;
     private List<String> selectedKeys;
+    private boolean withoutTableData;
     private Search search;
 
     @Deprecated

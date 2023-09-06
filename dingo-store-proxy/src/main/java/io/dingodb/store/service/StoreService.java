@@ -23,9 +23,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.DingoConverter;
-import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.vector.VectorSearchResponse;
 import io.dingodb.sdk.common.DingoCommonId;
@@ -390,6 +388,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 true,
                 true,
                 Collections.emptyList(),
+                true,
                 search,
                 null,
                 null,

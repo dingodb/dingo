@@ -43,7 +43,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Api("Vector")
@@ -95,7 +94,7 @@ public class VectorController {
             index,
             new HashSet<>(vectorGet.getIds()),
             vectorGet.getWithoutVectorData(),
-            vectorGet.getWithScalarData(),
+            vectorGet.getWithoutScalarData(),
             vectorGet.getKeys());
         return ResponseEntity.ok(ids.stream().map(vectorWithIdMap::get).collect(Collectors.toList()));
     }
