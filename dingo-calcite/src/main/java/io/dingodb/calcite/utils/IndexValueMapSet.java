@@ -18,7 +18,6 @@ package io.dingodb.calcite.utils;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import io.dingodb.expr.parser.exception.NeverRunToHere;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +26,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -115,34 +113,5 @@ public class IndexValueMapSet<K, V> {
             }
         }
         return new IndexValueMapSet<>(newSet);
-    }
-
-    public boolean satisfyIndices(@NonNull List<@NonNull K> indices) {
-        if (set == null) {
-            return false;
-        }
-        for (Map<K, V> map : set) {
-            if (!indices.stream().allMatch(map::containsKey)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public Set<Map<K, V>> filterIndices(@NonNull List<@NonNull K> indices) {
-        Set<Map<K, V>> newSet = new HashSet<>();
-        for (Map<K, V> map : set) {
-            Map<K, V> newMap = new HashMap<>(indices.size());
-            for (K k : indices) {
-                V v = map.get(k);
-                if (v != null) {
-                    newMap.put(k, v);
-                } else {
-                    throw new NeverRunToHere("Check the indices \"" + indices + "\" are all contained.");
-                }
-            }
-            newSet.add(newMap);
-        }
-        return newSet;
     }
 }

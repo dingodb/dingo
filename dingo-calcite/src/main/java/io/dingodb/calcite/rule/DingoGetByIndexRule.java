@@ -26,20 +26,23 @@ import io.dingodb.calcite.utils.IndexValueMapSetVisitor;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.TupleMapping;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 public class DingoGetByIndexRule extends ConverterRule {
@@ -57,6 +60,32 @@ public class DingoGetByIndexRule extends ConverterRule {
         super(config);
     }
 
+    private static @Nullable Set<Map<Integer, RexNode>> filterIndices(
+        @NonNull IndexValueMapSet<Integer, RexNode> mapSet,
+        @NonNull List<@NonNull Integer> indices,
+        TupleMapping selection
+    ) {
+        Set<Map<Integer, RexNode>> set = mapSet.getSet();
+        if (set != null) {
+            Set<Map<Integer, RexNode>> newSet = new HashSet<>();
+            for (Map<Integer, RexNode> map : set) {
+                Map<Integer, RexNode> newMap = new HashMap<>(indices.size());
+                for (int k : map.keySet()) {
+                    int originIndex = (selection == null ? k : selection.get(k));
+                    if (indices.contains(originIndex)) {
+                        newMap.put(originIndex, map.get(k));
+                    }
+                }
+                if (!newMap.keySet().containsAll(indices)) {
+                    return null;
+                }
+                newSet.add(newMap);
+            }
+            return newSet;
+        }
+        return null;
+    }
+
     @Override
     public @Nullable RelNode convert(@NonNull RelNode rel) {
         LogicalDingoTableScan scan = (LogicalDingoTableScan) rel;
@@ -65,7 +94,8 @@ public class DingoGetByIndexRule extends ConverterRule {
         IndexValueMapSet<Integer, RexNode> indexValueMapSet = rexNode.accept(visitor);
         final TableDefinition td = TableUtils.getTableDefinition(scan.getTable());
         List<Integer> keyIndices = td.getKeyColumnIndices();
-        if (indexValueMapSet.satisfyIndices(keyIndices)) {
+        Set<Map<Integer, RexNode>> keyMapSet = filterIndices(indexValueMapSet, keyIndices, scan.getSelection());
+        if (keyMapSet != null) {
             RelTraitSet traits = scan.getTraitSet()
                 .replace(DingoConvention.INSTANCE)
                 .replace(DingoRelStreaming.of(scan.getTable()));
@@ -76,21 +106,23 @@ public class DingoGetByIndexRule extends ConverterRule {
                 scan.getTable(),
                 scan.getFilter(),
                 scan.getSelection(),
-                indexValueMapSet.filterIndices(keyIndices)
+                keyMapSet
             );
         }
         Map<String, Index> indexes = td.getIndexes();
         if (log.isDebugEnabled()) {
             log.debug("Definition of table = {}", td);
         }
-        Index selectedIndex = null;
         if (indexes == null) {
             return null;
         }
+        Index selectedIndex = null;
+        Set<Map<Integer, RexNode>> indexMapSet = null;
         for (Map.Entry<String, Index> entry : indexes.entrySet()) {
             Index index = entry.getValue();
             List<Integer> indices = td.getColumnIndices(Arrays.asList(index.getColumns()));
-            if (indexValueMapSet.satisfyIndices(indices)) {
+            indexMapSet = filterIndices(indexValueMapSet, indices, scan.getSelection());
+            if (indexMapSet != null) {
                 if (selectedIndex == null || selectedIndex.getColumns().length < index.getColumns().length) {
                     selectedIndex = index;
                 }
@@ -100,7 +132,6 @@ public class DingoGetByIndexRule extends ConverterRule {
             RelTraitSet traits = scan.getTraitSet()
                 .replace(DingoConvention.INSTANCE)
                 .replace(DingoRelStreaming.ROOT);
-            List<Integer> indices = td.getColumnIndices(Arrays.asList(selectedIndex.getColumns()));
             return new DingoGetByIndex(
                 scan.getCluster(),
                 traits,
@@ -110,7 +141,7 @@ public class DingoGetByIndexRule extends ConverterRule {
                 scan.getSelection(),
                 selectedIndex.getName(),
                 selectedIndex.isUnique(),
-                indexValueMapSet.filterIndices(indices),
+                indexMapSet,
                 selectedIndex.getColumns()
             );
         }
