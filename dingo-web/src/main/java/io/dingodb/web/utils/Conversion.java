@@ -256,9 +256,10 @@ public class Conversion {
         }
         return new VectorSearchParameter(
             parameter.getTopN(),
-            parameter.getWithOutVectorData(),
-            parameter.getWithScalarData(),
+            parameter.getWithoutVectorData(),
+            parameter.getWithoutScalarData(),
             parameter.getSelectedKeysList(),
+            parameter.getWithoutTableData(),
             search,
             parameter.getUseScalarFilter(),
             io.dingodb.sdk.common.vector.VectorSearchParameter.VectorFilter.valueOf(parameter.getVectorFilter().name()),

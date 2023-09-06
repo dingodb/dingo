@@ -23,9 +23,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.DingoConverter;
-import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.KeyValueWithExpect;
@@ -59,7 +57,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -391,6 +388,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 true,
                 true,
                 Collections.emptyList(),
+                true,
                 search,
                 null,
                 null,
