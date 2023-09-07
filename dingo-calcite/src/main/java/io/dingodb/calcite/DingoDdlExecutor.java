@@ -87,6 +87,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
@@ -97,6 +98,8 @@ import static org.apache.calcite.util.Static.RESOURCE;
 @Slf4j
 public class DingoDdlExecutor extends DdlExecutorImpl {
     public static final DingoDdlExecutor INSTANCE = new DingoDdlExecutor();
+
+    private static Pattern namePattern = Pattern.compile("^[A-Z_][A-Z\\d_]+$");
 
     private ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
@@ -196,6 +199,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                         !columnDefinition.getTypeName().equals("BIGINT")) {
                         throw new RuntimeException("Invalid column type: " + columnName);
                     }
+
+                    if (columnDefinition.isNullable()) {
+                        throw new RuntimeException("Column must be not null, column name: " + columnName);
+                    }
                 } else if (i == 1) {
                     if (!columnDefinition.getTypeName().equals("ARRAY") ||
                         !(columnDefinition.getElementType() != null
@@ -231,6 +238,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 // Check if the column exists in the original table
                 if (!tableColumnNames.contains(columnName)) {
                     throw new RuntimeException("Invalid column name: " + columnName);
+                }
+
+                if (columns.contains(columnName)) {
+                    continue;
                 }
 
                 ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
@@ -292,6 +303,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
 
         String name = scd.name.getSimple().toUpperCase();
+        if (!namePattern.matcher(name).matches()) {
+            throw DINGO_RESOURCE.invalidColumnName(name).ex();
+        }
 
         // Obtaining id from method
         if (scd.isAutoIncrement()) {

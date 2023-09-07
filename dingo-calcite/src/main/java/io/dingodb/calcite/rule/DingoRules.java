@@ -77,7 +77,7 @@ public final class DingoRules {
         = LogicalDingoValueRule.DEFAULT.toRule(LogicalDingoValueRule.class);
 
     public static final DingoFunctionScanRule DINGO_FUNCTION_SCAN_RULE
-        = DingoFunctionScanRule.Config.DEFAULT.toRule();
+        = DingoFunctionScanRule.DEFAULT.toRule(DingoFunctionScanRule.class);
     private static final List<RelOptRule> rules = ImmutableList.of(
         CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN,
         // CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES,

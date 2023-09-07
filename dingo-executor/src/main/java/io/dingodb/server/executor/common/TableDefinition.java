@@ -17,8 +17,12 @@
 package io.dingodb.server.executor.common;
 
 import io.dingodb.common.util.Optional;
+import io.dingodb.sdk.common.index.DiskAnnParam;
 import io.dingodb.sdk.common.index.FlatParam;
+import io.dingodb.sdk.common.index.HnswParam;
 import io.dingodb.sdk.common.index.IndexParameter;
+import io.dingodb.sdk.common.index.IvfFlatParam;
+import io.dingodb.sdk.common.index.IvfPqParam;
 import io.dingodb.sdk.common.index.ScalarIndexParameter;
 import io.dingodb.sdk.common.index.VectorIndexParameter;
 import io.dingodb.sdk.common.partition.Partition;
@@ -126,6 +130,30 @@ public class TableDefinition implements Table {
                 tableDefinition.getName() + " vector index dimension is null.");
             VectorIndexParameter.MetricType metricType = getMetricType(properties.getOrDefault("metricType", "L2"));
             switch (properties.get("type").toUpperCase()) {
+                case "HNSW":
+                    vectorIndexParameter = new VectorIndexParameter(
+                        VectorIndexParameter.VectorIndexType.VECTOR_INDEX_TYPE_HNSW,
+                        new HnswParam(dimension, metricType, 10, Integer.MAX_VALUE, 10)
+                    );
+                    break;
+                case "DISKANN":
+                    vectorIndexParameter = new VectorIndexParameter(
+                        VectorIndexParameter.VectorIndexType.VECTOR_INDEX_TYPE_DISKANN,
+                        new DiskAnnParam(dimension, metricType)
+                    );
+                    break;
+                case "IVFPQ":
+                    vectorIndexParameter = new VectorIndexParameter(
+                        VectorIndexParameter.VectorIndexType.VECTOR_INDEX_TYPE_IVF_PQ,
+                        new IvfPqParam(dimension, metricType, 10, 10, 10, 10)
+                    );
+                    break;
+                case "IVFFLAT":
+                    vectorIndexParameter = new VectorIndexParameter(
+                        VectorIndexParameter.VectorIndexType.VECTOR_INDEX_TYPE_IVF_FLAT,
+                        new IvfFlatParam(dimension, metricType, 10)
+                    );
+                    break;
                 case "FLAT":
                 default:
                     vectorIndexParameter = new VectorIndexParameter(

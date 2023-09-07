@@ -99,7 +99,7 @@ public class TableFunctionNamespace extends AbstractNamespace {
 
         cols.add(ColumnDefinition
             .builder()
-            .name(indexTableName.concat(".distance"))
+            .name(indexTableName.concat("$distance"))
             .type("FLOAT")
             .build()
         );

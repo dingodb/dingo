@@ -105,8 +105,7 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
             return;
         }
 
-        RelTraitSet traits = cluster.traitSetOf(DingoConvention.NONE).replace(DingoConvention.INSTANCE)
-            .replace(DingoRelStreaming.ROOT);
+        RelTraitSet traits = cluster.traitSetOf(DingoConvention.NONE);
         RexNode rexCall = bb.convertExpression(call);
         TableFunctionNamespace namespace = (TableFunctionNamespace) validator.getNamespace(call);
         RelNode callRel = null;

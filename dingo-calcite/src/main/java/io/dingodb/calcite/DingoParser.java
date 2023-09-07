@@ -30,7 +30,6 @@ import io.dingodb.calcite.operation.SqlToOperationConverter;
 import io.dingodb.calcite.rel.DingoCost;
 import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rule.DingoRules;
-import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.traits.DingoRelStreamingDef;
@@ -38,7 +37,6 @@ import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.config.Lex;
-import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
@@ -90,6 +88,15 @@ public class DingoParser {
             public boolean allowNiladicParentheses() {
                 return true;
             }
+
+            @Override public boolean isLimitStartCountAllowed() {
+                return true;
+            }
+
+            @Override public boolean isOffsetLimitAllowed() {
+                return true;
+            }
+
         });
 
     @Getter

@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @JsonTypeName("scan")
@@ -74,6 +75,9 @@ public final class PartVectorOperator extends PartIteratorSourceOperator {
     @JsonProperty("topN")
     private int topN;
 
+    @JsonProperty("parameterMap")
+    private Map<String, Object> parameterMap;
+
     @JsonCreator
     public PartVectorOperator(
         @JsonProperty("table") CommonId tableId,
@@ -87,7 +91,8 @@ public final class PartVectorOperator extends PartIteratorSourceOperator {
         @JsonProperty("indexId") CommonId indexId,
         @JsonProperty("indexRegionId") CommonId indexRegionId,
         @JsonProperty("floatArray") Float[] floatArray,
-        @JsonProperty("topN") int topN
+        @JsonProperty("topN") int topN,
+        @JsonProperty("topN") Map<String, Object> parameterMap
     ) {
         super(tableId, partId, schema, keyMapping, filter, selection);
         this.codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
@@ -97,6 +102,7 @@ public final class PartVectorOperator extends PartIteratorSourceOperator {
         this.indexRegionId = indexRegionId;
         this.floatArray = floatArray;
         this.topN = topN;
+        this.parameterMap = parameterMap;
     }
 
     @Override
@@ -105,7 +111,7 @@ public final class PartVectorOperator extends PartIteratorSourceOperator {
         List<Object[]> results = new ArrayList<>();
 
         // Get all table data response
-        List<VectorSearchResponse> searchResponseList = instance.vectorSearch(indexId, floatArray, topN);
+        List<VectorSearchResponse> searchResponseList = instance.vectorSearch(indexId, floatArray, topN, parameterMap);
         for (VectorSearchResponse response : searchResponseList) {
             CommonId regionId = strategy.calcPartId(response.getKey());
             StoreInstance storeInstance = StoreService.getDefault().getInstance(tableId, regionId);

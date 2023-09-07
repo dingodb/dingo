@@ -24,6 +24,7 @@ import lombok.AllArgsConstructor;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public interface StoreInstance {
 
@@ -75,7 +76,8 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default public List<VectorSearchResponse> vectorSearch(CommonId indexId, Float[] floatArray, int topN) {
+    default public List<VectorSearchResponse> vectorSearch(
+        CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap) {
         throw new UnsupportedOperationException();
     }
 
