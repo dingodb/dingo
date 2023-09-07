@@ -36,12 +36,15 @@ import io.dingodb.exec.partition.PartitionStrategy;
 import io.dingodb.meta.MetaService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlBasicCall;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNumericLiteral;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 
@@ -82,11 +85,15 @@ public final class DingoVectorVisitFun {
         NavigableMap<ComparableByteArray, RangeDistribution> indexRangeDistribution =
             metaService.getIndexRangeDistribution(rel.getIndexTableId());
 
+        // TODO: selection
         int rowTypeSize = rel.getRowType().getFieldList().size();
         int[] select = new int[rowTypeSize];
         for (int i = 0; i < rowTypeSize; i++) {
             select[i] = i;
         }
+
+        // Get query additional parameters
+        Map<String, Object> parameterMap = getParameterMap(operandsList);
 
         // Create tasks based on partitions
         for (RangeDistribution rangeDistribution : indexRangeDistribution.values()) {
@@ -102,7 +109,8 @@ public final class DingoVectorVisitFun {
                 rel.getIndexTableId(),
                 rangeDistribution.id(),
                 floatArray,
-                topN
+                topN,
+                parameterMap
             );
             operator.setId(idGenerator.get());
             Task task = job.getOrCreate(currentLocation, idGenerator);
@@ -111,5 +119,31 @@ public final class DingoVectorVisitFun {
         }
 
         return outputs;
+    }
+
+    private static Map<String, Object> getParameterMap(List<SqlNode> operandsList) {
+        Map<String, Object> parameterMap = new HashMap<>();
+        if (operandsList.size() >= 5) {
+            SqlNode sqlNode = operandsList.get(4);
+            if (sqlNode != null && sqlNode instanceof SqlBasicCall) {
+                SqlBasicCall sqlBasicCall = (SqlBasicCall) operandsList.get(4);
+                if (sqlBasicCall.getOperator().getName().equals("MAP")) {
+                    List<SqlNode> operandList = sqlBasicCall.getOperandList();
+                    String currentName = "";
+                    for (int i = 0; i < operandList.size(); i++) {
+                        if ((i == 0 || i % 2 ==0) && operandList.get(i) instanceof SqlIdentifier) {
+                            currentName = ((SqlIdentifier) operandList.get(i)).getSimple();
+                        } else {
+                            SqlNode node = operandList.get(i);
+                            if (!currentName.equals("") && node instanceof SqlNumericLiteral) {
+                                parameterMap.put(currentName, ((SqlNumericLiteral)node).getValue());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return parameterMap;
     }
 }

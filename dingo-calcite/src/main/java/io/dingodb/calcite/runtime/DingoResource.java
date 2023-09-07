@@ -40,6 +40,12 @@ public interface DingoResource {
     @BaseMessage("Invalid default value for ''{0}''")
     ExInst<DingoSqlException> invalidDefaultValue(String a0);
 
+    @BaseMessage("Invalid table value for ''{0}''")
+    ExInst<DingoSqlException> invalidTableName(String a0);
+
+    @BaseMessage("Invalid column value for ''{0}''")
+    ExInst<DingoSqlException> invalidColumnName(String a0);
+
     @BaseMessage("Incorrect column specifier for column ''{0}''")
     ExInst<DingoSqlException> specifierForColumn(String a0);
 

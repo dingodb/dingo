@@ -37,8 +37,11 @@ import io.dingodb.sdk.common.serial.schema.LongSchema;
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.vector.Search;
+import io.dingodb.sdk.common.vector.SearchDiskAnnParam;
 import io.dingodb.sdk.common.vector.SearchFlatParam;
 import io.dingodb.sdk.common.vector.SearchHnswParam;
+import io.dingodb.sdk.common.vector.SearchIvfFlatParam;
+import io.dingodb.sdk.common.vector.SearchIvfPqParam;
 import io.dingodb.sdk.common.vector.Vector;
 import io.dingodb.sdk.common.vector.VectorSearchParameter;
 import io.dingodb.sdk.common.vector.VectorTableData;
@@ -350,7 +353,8 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         }
 
         @Override
-        public List<VectorSearchResponse> vectorSearch(CommonId indexId, Float[] floatArray, int topN) {
+        public List<VectorSearchResponse> vectorSearch(
+            CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap) {
             List<VectorWithId> vectors = new ArrayList<>();
             Table indexTable = tableDefinitionMap.get(mapping(indexId));
             IndexParameter indexParameter = indexTable.getIndexParameter();
@@ -364,31 +368,14 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             VectorWithId vectorWithId = new VectorWithId(0, vector, null, null);
             vectors.add(vectorWithId);
 
-            Search search;
-            VectorIndexParameter vectorIndexParameter = indexParameter.getVectorIndexParameter();
-            switch (vectorIndexParameter.getVectorIndexType()) {
-                case VECTOR_INDEX_TYPE_IVF_FLAT:
-                case VECTOR_INDEX_TYPE_NONE:
-                case VECTOR_INDEX_TYPE_IVF_PQ:
-                case VECTOR_INDEX_TYPE_DISKANN:
-                    return null;
-                case VECTOR_INDEX_TYPE_HNSW:
-                    SearchHnswParam searchHnswParam = new SearchHnswParam(10);
-                    search = new Search(searchHnswParam);
-                    break;
-                case VECTOR_INDEX_TYPE_FLAT:
-                default: {
-                    SearchFlatParam searchFlatParam = new SearchFlatParam(10);
-                    search = new Search(searchFlatParam);
-                }
-            }
+            Search search = getSearch(indexParameter.getVectorIndexParameter().getVectorIndexType(), parameterMap);
 
             VectorSearchParameter vectorSearchParameter = new VectorSearchParameter(
                 topN,
-                true,
-                true,
+                false,
+                false,
                 Collections.emptyList(),
-                true,
+                false,
                 search,
                 null,
                 null,
@@ -453,6 +440,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                                Table index) {
             Column primaryKey = index.getColumns().get(0);
             schema.setIsKey(true);
+            schema.setAllowNull(primaryKey.isNullable());
 
             long longId = Long.parseLong(String.valueOf(record[table.getColumnIndex(primaryKey.getName())]));
 
@@ -483,6 +471,79 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             }
             VectorWithId vectorWithId = new VectorWithId(longId, vector, null, vectorTableData);
             indexService.vectorAdd(indexId, regionId, singletonList(vectorWithId), false, false);
+        }
+
+        private Search getSearch(VectorIndexParameter.VectorIndexType indexType, Map<String, Object> parameterMap) {
+            Search search;
+            Object o;
+            switch (indexType) {
+                case VECTOR_INDEX_TYPE_NONE:
+                    return null;
+                case VECTOR_INDEX_TYPE_DISKANN:
+                    SearchDiskAnnParam searchDiskAnnParam = new SearchDiskAnnParam();
+                    search = new Search(searchDiskAnnParam);
+                    break;
+                case VECTOR_INDEX_TYPE_IVF_FLAT:
+                    int nprobe = 10;
+                    o = parameterMap.get("nprobe");
+                    if (o != null) {
+                        nprobe = ((Number) o).intValue();
+                    }
+
+                    int parallel = 10;
+                    o = parameterMap.get("parallelOnQueries");
+                    if (o != null) {
+                        parallel = ((Number) o).intValue();
+                    }
+
+                    SearchIvfFlatParam searchIvfFlatParam = new SearchIvfFlatParam(nprobe, parallel);
+                    search = new Search(searchIvfFlatParam);
+                    break;
+                case VECTOR_INDEX_TYPE_IVF_PQ:
+                    int np = 10;
+                    o = parameterMap.get("nprobe");
+                    if (o != null) {
+                        np = ((Number) o).intValue();
+                    }
+
+                    int parallels = 10;
+                    o = parameterMap.get("parallelOnQueries");
+                    if (o != null) {
+                        parallels = ((Number) o).intValue();
+                    }
+
+                    int recallNum = 10;
+                    o = parameterMap.get("recallNum");
+                    if (o != null) {
+                        recallNum = ((Number) o).intValue();
+                    }
+
+                    SearchIvfPqParam searchIvfPqParam = new SearchIvfPqParam(np, parallels, recallNum);
+                    search = new Search(searchIvfPqParam);
+                    break;
+                case VECTOR_INDEX_TYPE_HNSW:
+                    int efSearch = 10;
+                    o = parameterMap.get("efSearch");
+                    if (o != null) {
+                        efSearch = ((Number) o).intValue();
+                    }
+
+                    SearchHnswParam searchHnswParam = new SearchHnswParam(efSearch);
+                    search = new Search(searchHnswParam);
+                    break;
+                case VECTOR_INDEX_TYPE_FLAT:
+                default: {
+                    int parallelOnQueries = 10;
+                    o = parameterMap.get("parallelOnQueries");
+                    if (o != null) {
+                        parallelOnQueries = ((Number) o).intValue();
+                    }
+
+                    SearchFlatParam searchFlatParam = new SearchFlatParam(parallelOnQueries);
+                    search = new Search(searchFlatParam);
+                }
+            }
+            return search;
         }
 
     }

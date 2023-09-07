@@ -350,15 +350,24 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
 List<PartitionDetailDefinition> readPartitionDetails() : {
     List<PartitionDetailDefinition> partitionDetailDefinitions = new ArrayList<PartitionDetailDefinition>();
 }{
-    [
+    (
+        <PARTITIONS>
+        [
+            <EQ>
+            {
+                partitionDetailDefinitions.add(new PartitionDetailDefinition(null, null, new Object[] {anything()}));
+                return partitionDetailDefinitions;
+            }
+        ]
+    |
         <VALUES>
-        { partitionDetailDefinitions.add(new PartitionDetailDefinition(null, null, readValues()));}
+        { partitionDetailDefinitions.add(new PartitionDetailDefinition(null, null, readValues())); }
         (
-           <COMMA>
-           { partitionDetailDefinitions.add(new PartitionDetailDefinition(null, null, readValues()));}
+            <COMMA>
+            { partitionDetailDefinitions.add(new PartitionDetailDefinition(null, null, readValues())); }
         )*
         { return partitionDetailDefinitions; }
-    ]
+    )
 }
 
 Object[] readValues() : {

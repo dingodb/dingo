@@ -109,6 +109,7 @@ data: {
       "LOCK"
       "NEXT_AUTO_INCREMENT"
       "PARAMETERS"
+      "PARTITIONS"
       "PASSWORD"
       "PREPARE"
       "RELOAD"

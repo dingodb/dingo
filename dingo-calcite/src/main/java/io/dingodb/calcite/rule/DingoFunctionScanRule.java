@@ -16,40 +16,63 @@
 
 package io.dingodb.calcite.rule;
 
+import io.dingodb.calcite.rel.DingoFunctionScan;
+import io.dingodb.calcite.rel.DingoVector;
+import io.dingodb.calcite.traits.DingoConvention;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.TableFunctionScan;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 @Slf4j
 @Value.Enclosing
-public class DingoFunctionScanRule extends RelRule<DingoFunctionScanRule.Config> {
+public class DingoFunctionScanRule extends ConverterRule {
+    public static final ConverterRule.Config DEFAULT = ConverterRule.Config.INSTANCE
+        .withConversion(
+            TableFunctionScan.class,
+            Convention.NONE,
+            DingoConvention.INSTANCE,
+            "DingoFunctionScanRule"
+        )
+        .withRuleFactory(DingoFunctionScanRule::new);
+
     public DingoFunctionScanRule(Config config) {
         super(config);
     }
 
     @Override
-    public void onMatch(@NonNull RelOptRuleCall call) {
-        return;
-    }
+    public @Nullable RelNode convert(RelNode rel) {
+        RelTraitSet traits = rel.getTraitSet()
+            .replace(DingoConvention.INSTANCE)
+            .replace(DingoRelStreaming.of(rel.getTable()));
 
-    @Value.Immutable
-    public interface Config extends RelRule.Config {
-        DingoFunctionScanRule.Config DEFAULT = ImmutableDingoFunctionScanRule.Config.builder()
-            .operandSupplier(
-                b0 -> b0.operand(TableFunctionScan.class)
-                    .predicate(r -> {
-                        return true;
-                    }).noInputs()
-            )
-            .description("DingoFunctionScanRule")
-            .build();
-
-        @Override
-        default DingoFunctionScanRule toRule() {
-            return new DingoFunctionScanRule(this);
+        if (rel instanceof DingoVector) {
+            DingoVector vector = (DingoVector) rel;
+            return new DingoVector(
+                vector.getCluster(),
+                traits,
+                vector.getCall(),
+                vector.getTable(),
+                vector.getOperands(),
+                vector.getIndexTableId(),
+                vector.getIndexTableDefinition()
+            );
+        } else if (rel instanceof DingoFunctionScan) {
+            DingoFunctionScan scan = (DingoFunctionScan) rel;
+            return new DingoFunctionScan(
+                scan.getCluster(),
+                traits,
+                scan.getCall(),
+                scan.getTable(),
+                scan.getOperands()
+            );
         }
+
+        return null;
     }
 }
