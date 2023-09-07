@@ -694,8 +694,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         String strategy = partDefinition.getFuncName().toUpperCase();
         switch (strategy) {
             case DingoPartitionStrategyFactory.RANGE_FUNC_NAME:
-            case DingoPartitionStrategyFactory.HASH_FUNC_NAME:
                 DefinitionUtils.checkAndConvertRangePartition(tableDefinition);
+                break;
+            case DingoPartitionStrategyFactory.HASH_FUNC_NAME:
+                DefinitionUtils.checkAndConvertHashRangePartition(tableDefinition);
                 break;
             default:
                 throw new IllegalStateException("Unsupported " + strategy);

@@ -246,18 +246,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         KeyValueCodec codec = CodecService.getDefault()
             .createKeyValueCodec(DingoTypeFactory.tuple(TypeCode.LONG), TupleMapping.of(new int[0]));
         metaServiceClient.getIndexRangeDistribution(mapping(id)).values().stream()
-            .map(__ -> mapping(__, codec))
-            .forEach(__ -> result.put(new ComparableByteArray(__.getStartKey()), __));
-        return result;
-    }
-
-    @Override
-    public NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull String name) {
-        NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
-        TableDefinition tableDefinition = getTableDefinition(name);
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
-        metaServiceClient.getIndexRangeDistribution(name).values().stream()
-            .map(__ -> mapping(__, codec))
+            .map(__ -> mapping(__, codec, true))
             .forEach(__ -> result.put(new ComparableByteArray(__.getStartKey()), __));
         return result;
     }
@@ -266,9 +255,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
     public NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
         NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
         TableDefinition tableDefinition = getTableDefinition(id);
+        String funcName = tableDefinition.getPartDefinition().getFuncName();
+        // hash partition strategy need use the original key
+        boolean isOriginalKey = funcName.equalsIgnoreCase("HASH");
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
         metaServiceClient.getRangeDistribution(mapping(id)).values().stream()
-            .map(__ -> mapping(__, codec))
+            .map(__ -> mapping(__, codec, isOriginalKey))
             .forEach(__ -> result.put(new ComparableByteArray(__.getStartKey()), __));
         return result;
     }

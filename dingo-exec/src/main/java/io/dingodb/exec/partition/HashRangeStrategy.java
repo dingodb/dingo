@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.ConsistentHashing;
 import io.dingodb.common.partition.RangeDistribution;
@@ -90,6 +91,8 @@ public class HashRangeStrategy extends PartitionStrategy<CommonId, byte[]> {
                 partRanges.put(key, value);
             }
         }
+
+        CodecService.getDefault().setId(keyBytes, new CommonId(CommonId.CommonType.PARTITION, 0, selectNode));
         return partRanges.floorEntry(new ComparableByteArray(keyBytes)).getValue().id();
     }
 
@@ -109,23 +112,36 @@ public class HashRangeStrategy extends PartitionStrategy<CommonId, byte[]> {
             log.trace("id:" + domain);
             map.computeIfAbsent(domain, k -> new TreeMap<>()).put(key, value);
         }
-        NavigableSet<RangeDistribution> distributions = new TreeSet<>(RangeUtils.rangeComparator());
+        NavigableSet<RangeDistribution> distributions = new TreeSet<>(RangeUtils.rangeComparator(0));
         for (Map.Entry<Long, NavigableMap<ComparableByteArray, RangeDistribution>> entry : map.entrySet()) {
             NavigableMap<ComparableByteArray, RangeDistribution> subMap = entry.getValue();
-            startKey = Optional.ofNullable(startKey).orElseGet(() -> subMap.firstEntry().getValue().getStartKey());
-            withStart = true;
-            endKey = Optional.ofNullable(endKey).orElseGet(() -> subMap.lastEntry().getValue().getEndKey());
-            withEnd = true;
-
+            byte [] newStartKey;
+            byte [] newEndKey;
+            boolean newWithStart;
+            boolean newWithEnd;
+            if (startKey == null) {
+                newStartKey = subMap.firstEntry().getValue().getStartKey();
+                newWithStart = true;
+            } else {
+                newStartKey = startKey;
+                newWithStart = withStart;
+            }
+            if (endKey == null) {
+                newEndKey = subMap.lastEntry().getValue().getEndKey();
+                newWithEnd = true;
+            } else {
+                newEndKey = endKey;
+                newWithEnd = withEnd;
+            }
             RangeDistribution range = RangeDistribution.builder()
-                .startKey(startKey)
-                .endKey(endKey)
-                .withStart(withStart)
-                .withEnd(withEnd)
+                .startKey(newStartKey)
+                .endKey(newEndKey)
+                .withStart(newWithStart)
+                .withEnd(newWithEnd)
                 .build();
-            NavigableSet<RangeDistribution> ranges = RangeUtils.getSubRangeDistribution(subMap.values(), range, 0);
+            NavigableSet<RangeDistribution> ranges = RangeUtils.getSubRangeDistribution(subMap.values(), range, 8);
             ranges.descendingSet().stream().skip(1).forEach(rd -> {
-                if (Arrays.equals(rd.getEndKey(), ranges.last().getEndKey())) {
+                if (Arrays.equals(rd.getEndKey(), subMap.lastEntry().getValue().getEndKey())) {
                     rd.setWithEnd(true);
                 }
             });
