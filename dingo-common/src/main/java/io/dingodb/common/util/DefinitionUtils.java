@@ -21,12 +21,14 @@ import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.type.converter.StrParseConverter;
 import io.dingodb.common.type.scalar.TimeType;
 
 import java.sql.Time;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -79,6 +81,23 @@ public final class DefinitionUtils {
         }
     }
 
+    public static void checkAndConvertHashRangePartition(
+        List<String> keyNames,
+        List<String> partitionBy
+    ) {
+        if (partitionBy == null || partitionBy.isEmpty()) {
+            partitionBy = keyNames;
+        } else {
+            partitionBy = partitionBy.stream().map(String::toUpperCase).collect(Collectors.toList());
+        }
+
+        if (!keyNames.equals(partitionBy)) {
+            throw new IllegalArgumentException(
+                "Partition columns must be equals primary key columns, but " + partitionBy
+            );
+        }
+    }
+
     public static void checkAndConvertRangePartition(TableDefinition tableDefinition) {
         List<ColumnDefinition> keyColumns = tableDefinition.getKeyColumns();
         PartitionDefinition partDefinition = tableDefinition.getPartDefinition();
@@ -89,6 +108,48 @@ public final class DefinitionUtils {
             keyColumns.stream().map(ColumnDefinition::getType).collect(Collectors.toList()),
             partDefinition.getDetails().stream().map(PartitionDetailDefinition::getOperand).collect(Collectors.toList())
         );
+    }
+
+    public static void checkAndConvertHashRangePartition(TableDefinition tableDefinition) {
+        List<ColumnDefinition> keyColumns = tableDefinition.getKeyColumns();
+        PartitionDefinition partDefinition = tableDefinition.getPartDefinition();
+        keyColumns.sort(Comparator.comparingInt(ColumnDefinition::getPrimary));
+        checkAndConvertHashRangePartition(
+            keyColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
+            partDefinition.getCols()
+        );
+        List<PartitionDetailDefinition> details = partDefinition.getDetails();
+        if(details.size() != 1) {
+            throw new IllegalArgumentException(
+                "Partition values count must be 1, but values count is " + details.size()
+            );
+        }
+        PartitionDetailDefinition partitionDetailDefinition = details.get(0);
+        Object[] operand = partitionDetailDefinition.getOperand();
+        if (operand.length != 1) {
+            throw new IllegalArgumentException(
+                "Partition values count must be 1, but values count is " + operand.length
+            );
+        }
+        Object ob = operand[0];
+        DataConverter fromConverter = StrParseConverter.INSTANCE;
+        DataConverter toConverter = DingoConverter.INSTANCE;
+        DingoType type = DingoTypeFactory.fromName("INT", null, false);
+        ob = mapOrNull(
+            ob,
+            v -> type.convertTo(type.convertFrom(v.toString(), fromConverter), toConverter)
+        );
+        int hashNum = (int) ob;
+        if(hashNum <= 0) {
+            throw new IllegalArgumentException(
+                "Partition values count must be non-negative number, but values count is " + hashNum
+            );
+        }
+        List<PartitionDetailDefinition> newDetails = new ArrayList<>(hashNum - 1);
+        for(int i = 0; i < hashNum - 1; i++) {
+            newDetails.add(new PartitionDetailDefinition(null, null, new Object[0]));
+        }
+        partDefinition.setDetails(newDetails);
     }
 
     public static void checkAndConvertRangePartitionDetail(

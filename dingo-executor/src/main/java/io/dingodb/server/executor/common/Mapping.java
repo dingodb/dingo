@@ -37,6 +37,7 @@ import io.dingodb.sdk.common.utils.ByteArrayUtils;
 import io.dingodb.store.api.StoreInstance;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -118,7 +119,7 @@ public final class Mapping {
 
     public static RangeDistribution mapping(
         io.dingodb.sdk.common.table.RangeDistribution rangeDistribution,
-        KeyValueCodec codec
+        KeyValueCodec codec, boolean isOriginalKey
     ) {
         try {
             byte[] startKey = rangeDistribution.getRange().getStartKey();
@@ -127,8 +128,8 @@ public final class Mapping {
                 .id(mapping(rangeDistribution.getId()))
                 .startKey(startKey)
                 .endKey(endKey)
-                .start(codec.decodeKeyPrefix(startKey))
-                .end(codec.decodeKeyPrefix(endKey))
+                .start(codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(startKey, startKey.length) : startKey))
+                .end(codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(endKey, endKey.length) : endKey))
                 .build();
         } catch (IOException e) {
             throw new RuntimeException(e);
