@@ -161,16 +161,17 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
         @Override
         public boolean insertIndex(Object[] record) {
-            record = (Object[]) tableCodec.type.convertTo(record, DingoConverter.INSTANCE);
             for (Map.Entry<DingoCommonId, Table> entry : tableDefinitionMap.entrySet()) {
+                Object[] newRecord = Arrays.copyOf(record, record.length);
+
                 DingoCommonId indexId = entry.getKey();
                 Table index = entry.getValue();
                 if (index.getIndexParameter().getIndexType().equals(IndexParameter.IndexType.INDEX_TYPE_VECTOR)) {
                     // vector index add
-                    vectorAdd(record, table, tableCodec, indexId, index);
+                    vectorAdd(newRecord, table, tableCodec, indexId, index);
                 } else {
                     // scalar index insert
-                    boolean result = scalarInsert(record, table, indexId, index);
+                    boolean result = scalarInsert(newRecord, table, indexId, index);
                     if (!result) {
                         return false;
                     }
