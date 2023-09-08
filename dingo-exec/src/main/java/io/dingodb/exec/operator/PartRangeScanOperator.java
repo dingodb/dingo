@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.common.collect.Iterators;
 import io.dingodb.codec.CodecService;
 import io.dingodb.common.AggregationOperator;
 import io.dingodb.common.CommonId;
@@ -101,26 +100,10 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
     @Override
     protected @NonNull Iterator<Object[]> createSourceIterator() {
         Iterator<Object[]> iterator;
-        DingoType realOutputSchema;
         if (coprocessor == null) {
-            realOutputSchema = schema;
             iterator = part.scan(startKey, endKey, includeStart, includeEnd);
         } else {
             iterator = part.scan(startKey, endKey, includeStart, includeEnd, coprocessor);
-            if (!coprocessor.getAggregations().isEmpty()) {
-                realOutputSchema = outputSchema;
-            } else {
-                realOutputSchema = schema;
-            }
-        }
-        if (log.isDebugEnabled()) {
-            iterator = Iterators.filter(
-                iterator,
-                tuple -> {
-                    log.debug("got tuple {}.", realOutputSchema.format(tuple));
-                    return true;
-                }
-            );
         }
         return iterator;
     }
