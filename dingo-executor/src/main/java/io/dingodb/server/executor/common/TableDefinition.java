@@ -131,9 +131,11 @@ public class TableDefinition implements Table {
             VectorIndexParameter.MetricType metricType = getMetricType(properties.getOrDefault("metricType", "L2"));
             switch (properties.get("type").toUpperCase()) {
                 case "HNSW":
+                    int efConstruction = Integer.valueOf(properties.getOrDefault("efConstruction", "10"));
+                    int nlinks = Integer.valueOf(properties.getOrDefault("nlinks", "10"));
                     vectorIndexParameter = new VectorIndexParameter(
                         VectorIndexParameter.VectorIndexType.VECTOR_INDEX_TYPE_HNSW,
-                        new HnswParam(dimension, metricType, 10, Integer.MAX_VALUE, 10)
+                        new HnswParam(dimension, metricType, efConstruction, Integer.MAX_VALUE, nlinks)
                     );
                     break;
                 case "DISKANN":
@@ -143,15 +145,20 @@ public class TableDefinition implements Table {
                     );
                     break;
                 case "IVFPQ":
+                    int ncentroids = Integer.valueOf(properties.getOrDefault("ncentroids", "10"));
+                    int nsubvector = Integer.valueOf(properties.getOrDefault("nsubvector", "10"));
+                    int bucketInitSize = Integer.valueOf(properties.getOrDefault("bucketInitSize", "10"));
+                    int bucketMaxSize = Integer.valueOf(properties.getOrDefault("bucketMaxSize", "10"));
                     vectorIndexParameter = new VectorIndexParameter(
                         VectorIndexParameter.VectorIndexType.VECTOR_INDEX_TYPE_IVF_PQ,
-                        new IvfPqParam(dimension, metricType, 10, 10, 10, 10)
+                        new IvfPqParam(dimension, metricType, ncentroids, nsubvector, bucketInitSize, bucketMaxSize)
                     );
                     break;
                 case "IVFFLAT":
+                    int nsubvector2 = Integer.valueOf(properties.getOrDefault("ncentroids", "10"));
                     vectorIndexParameter = new VectorIndexParameter(
                         VectorIndexParameter.VectorIndexType.VECTOR_INDEX_TYPE_IVF_FLAT,
-                        new IvfFlatParam(dimension, metricType, 10)
+                        new IvfFlatParam(dimension, metricType, nsubvector2)
                     );
                     break;
                 case "FLAT":
