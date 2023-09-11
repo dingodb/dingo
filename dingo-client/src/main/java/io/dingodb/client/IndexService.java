@@ -46,10 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 
 import static io.dingodb.sdk.common.utils.EntityConversion.mapping;
 import static io.dingodb.sdk.common.utils.Parameters.cleanNull;
@@ -101,24 +99,18 @@ public class IndexService {
         });
     }
 
-    private Optional<Throwable> exec(IndexInfo indexInfo, Operation operation, Operation.Fork fork, int retry, VectorContext vectorContext) {
+    private synchronized Optional<Throwable> exec(
+        IndexInfo indexInfo,
+        Operation operation,
+        Operation.Fork fork,
+        int retry,
+        VectorContext vectorContext
+    ) {
         if (retry <= 0) {
-            return Optional.of(new DingoClientException(-1, "Exceeded the retry limit for performing " + operation.getClass()));
+            return Optional.of(
+                new DingoClientException(-1, "Exceeded the retry limit for performing " + operation.getClass()));
         }
-        int i = 0;
-        List<OperationContext> contexts = new ArrayList<>(fork.getSubTasks().size());
-        for (Operation.Task subTask : fork.getSubTasks()) {
-            contexts.add(OperationContext.builder()
-                .indexId(indexInfo.indexId)
-                .regionId(subTask.getRegionId())
-                .indexService(indexService)
-                .seq(i++)
-                .parameters(subTask.getParameters())
-                .result(Any.wrap(fork.result()))
-                .vectorContext(vectorContext)
-                .build());
-        }
-
+        List<OperationContext> contexts = generateContext(indexInfo, fork, vectorContext);
         Optional<Throwable> error = Optional.empty();
         CountDownLatch countDownLatch = new CountDownLatch(contexts.size());
         contexts.forEach(context -> CompletableFuture
@@ -148,6 +140,27 @@ public class IndexService {
             log.warn("Exec {} interrupted.", operation.getClass());
         }
         return error;
+    }
+
+    private List<OperationContext> generateContext(
+        IndexInfo indexInfo,
+        Operation.Fork fork, 
+        VectorContext vectorContext
+    ) {
+        int i = 0;
+        List<OperationContext> contexts = new ArrayList<>(fork.getSubTasks().size());
+        for (Operation.Task subTask : fork.getSubTasks()) {
+            contexts.add(OperationContext.builder()
+                .indexId(indexInfo.indexId)
+                .regionId(subTask.getRegionId())
+                .indexService(indexService)
+                .seq(i++)
+                .parameters(subTask.getParameters())
+                .result(Any.wrap(fork.result()))
+                .vectorContext(vectorContext)
+                .build());
+        }
+        return contexts;
     }
 
     public synchronized boolean createIndex(String schema, String name, Index index) {
