@@ -16,17 +16,26 @@
 
 package io.dingodb.common.vector;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
-public class VectorSearchResponse {
+@Builder
+public class VectorCalcDistance {
 
-    byte[] key;
+    private Long vectorId;
 
-    long vectorId;
+    private List<List<Float>> leftList;
 
-    float distance;
+    private List<List<Float>> rightList;
 
+    private String algorithmType;
+
+    private String metricType;
+
+    private int dimension;
 }

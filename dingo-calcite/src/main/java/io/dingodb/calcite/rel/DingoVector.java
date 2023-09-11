@@ -76,7 +76,7 @@ public class DingoVector extends TableFunctionScan implements DingoRel {
     @Override
     public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, @NonNull RelMetadataQuery mq) {
         // Assume that part scan has half cost.
-        return Objects.requireNonNull(super.computeSelfCost(planner, mq));
+        return DingoCost.FACTORY.makeCost(Integer.MAX_VALUE, 0, 0);
     }
 
     @Override

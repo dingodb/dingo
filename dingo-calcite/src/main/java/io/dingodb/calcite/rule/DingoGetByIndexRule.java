@@ -60,7 +60,7 @@ public class DingoGetByIndexRule extends ConverterRule {
         super(config);
     }
 
-    private static @Nullable Set<Map<Integer, RexNode>> filterIndices(
+    public static @Nullable Set<Map<Integer, RexNode>> filterIndices(
         @NonNull IndexValueMapSet<Integer, RexNode> mapSet,
         @NonNull List<@NonNull Integer> indices,
         TupleMapping selection

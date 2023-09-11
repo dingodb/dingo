@@ -111,10 +111,7 @@ public class LogicalDingoTableScan extends TableScan {
             );
             rowCount = RelMdUtil.estimateFilteredRows(fakeInput, filter, mq);
         } else {
-            rowCount = super.estimateRowCount(mq) / DingoTableScan.ASSUME_PARTS;
-        }
-        if (selection != null) {
-            rowCount *= (double) selection.size() / (double) table.getRowType().getFieldCount();
+            rowCount = super.estimateRowCount(mq);
         }
         if (groupSet != null) {
             if (groupSet.cardinality() == 0) {

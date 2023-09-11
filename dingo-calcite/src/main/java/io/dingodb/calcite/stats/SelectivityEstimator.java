@@ -17,9 +17,11 @@
 package io.dingodb.calcite.stats;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.common.table.ColumnDefinition;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
@@ -130,7 +132,7 @@ public class SelectivityEstimator extends RexVisitorImpl<Double> {
 
     private static Pair<String, ColumnDefinition> extractCol(TableScan tableScan, RexCall pred) {
         RexInputRef rexInputRef = (RexInputRef) pred.getOperands().get(0);
-        DingoTable dingoTable = (DingoTable) ((RelOptTableImpl) tableScan.getTable()).table();
+        DingoTable dingoTable = tableScan.getTable().unwrap(DingoTable.class);
         String schemaName = dingoTable.getSchema().name();
         String tableName = schemaName + "." + dingoTable.getTableDefinition().getName();
         return Pair.of(tableName, dingoTable.getTableDefinition().getColumn(rexInputRef.getIndex()));

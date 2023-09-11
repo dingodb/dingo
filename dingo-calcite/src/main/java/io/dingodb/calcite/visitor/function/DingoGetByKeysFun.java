@@ -55,9 +55,11 @@ public final class DingoGetByKeysFun {
         Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, @NonNull DingoGetByKeys rel
     ) {
         final TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
-        final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
+        final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
+            = tableInfo.getRangeDistributions();
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        final PartitionStrategy<CommonId, byte[]> ps = DingoPartitionStrategyFactory.createPartitionStrategy(td, distributions);
+        final PartitionStrategy<CommonId, byte[]> ps
+            = DingoPartitionStrategyFactory.createPartitionStrategy(td, distributions);
         final List<Output> outputs = new LinkedList<>();
         KeyValueCodec codec = TableUtils.getKeyValueCodecForTable(td);
         List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(rel.getPoints(), td);

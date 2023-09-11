@@ -121,7 +121,8 @@ public class DingoStreamingConverterVisitFun {
         final TableInfo tableInfo = MetaServiceUtils.getTableInfo(partition.getTable());
         final TableDefinition td = TableUtils.getTableDefinition(partition.getTable());
         NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
-        final PartitionStrategy<CommonId, byte[]> ps = DingoPartitionStrategyFactory.createPartitionStrategy(td, distributions);
+        final PartitionStrategy<CommonId, byte[]> ps
+            = DingoPartitionStrategyFactory.createPartitionStrategy(td, distributions);
         for (Output input : inputs) {
             Task task = input.getTask();
             PartitionOperator operator = new PartitionOperator(ps, td);

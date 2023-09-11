@@ -22,6 +22,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -29,13 +30,14 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.List;
 
 public final class DingoFilter extends Filter implements DingoRel {
-    public DingoFilter(RelOptCluster cluster, RelTraitSet traits, RelNode input, RexNode condition) {
-        super(cluster, traits, input, condition);
+    public DingoFilter(RelOptCluster cluster, RelTraitSet traits, RelNode input, RexNode condition,
+                       List<RelHint> hints) {
+        super(cluster, traits, hints, input, condition);
     }
 
     @Override
     public @NonNull Filter copy(RelTraitSet traitSet, RelNode input, RexNode condition) {
-        return new DingoFilter(getCluster(), traitSet, input, condition);
+        return new DingoFilter(getCluster(), traitSet, input, condition, this.hints);
     }
 
     @Override

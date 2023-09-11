@@ -47,6 +47,9 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.hint.HintPredicate;
+import org.apache.calcite.rel.hint.HintStrategyTable;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.runtime.Hook;
@@ -154,12 +157,21 @@ public class DingoParser {
     }
 
     public RelRoot convert(@NonNull SqlNode sqlNode, boolean needsValidation) {
+        HintPredicate hintPredicate = new HintPredicate() {
+            @Override
+            public boolean apply(RelHint hint, RelNode rel) {
+                return true;
+            }
+        };
+        HintStrategyTable hintStrategyTable = new HintStrategyTable.Builder()
+            .hintStrategy("vector_pre", hintPredicate).build();
         SqlToRelConverter sqlToRelConverter = new DingoSqlToRelConverter(
             ViewExpanders.simpleContext(cluster),
             sqlValidator,
             context.getCatalogReader(),
             cluster,
-            sqlNode.getKind() == SqlKind.EXPLAIN
+            sqlNode.getKind() == SqlKind.EXPLAIN,
+            hintStrategyTable
         );
 
         RelRoot relRoot = sqlToRelConverter.convertQuery(sqlNode, needsValidation, true);

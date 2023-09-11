@@ -56,7 +56,8 @@ public final class DingoRangeDeleteVisitFun {
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
         NavigableSet<RangeDistribution> distributions;
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
-        final PartitionStrategy<CommonId, byte[]> ps = DingoPartitionStrategyFactory.createPartitionStrategy(td, ranges);
+        final PartitionStrategy<CommonId, byte[]> ps
+            = DingoPartitionStrategyFactory.createPartitionStrategy(td, ranges);
 
         if (rel.isNotBetween()) {
             distributions = new TreeSet<>(RangeUtils.rangeComparator());
