@@ -26,6 +26,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
@@ -47,6 +48,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 class DingoSqlToRelConverter extends SqlToRelConverter {
+
     static final Config CONFIG = SqlToRelConverter.CONFIG
         .withTrimUnusedFields(true)
         .withExpand(false)
@@ -58,7 +60,8 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
         @Nullable SqlValidator validator,
         Prepare.CatalogReader catalogReader,
         RelOptCluster cluster,
-        boolean isExplain
+        boolean isExplain,
+        HintStrategyTable hintStrategyTable
     ) {
         super(
             viewExpander,
@@ -66,7 +69,7 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
             catalogReader,
             cluster,
             StandardConvertletTable.INSTANCE,
-            CONFIG.withExplain(isExplain)
+            CONFIG.withExplain(isExplain).withHintStrategyTable(hintStrategyTable)
         );
     }
 

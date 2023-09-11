@@ -43,6 +43,9 @@ import io.dingodb.sdk.common.vector.SearchHnswParam;
 import io.dingodb.sdk.common.vector.SearchIvfFlatParam;
 import io.dingodb.sdk.common.vector.SearchIvfPqParam;
 import io.dingodb.sdk.common.vector.Vector;
+import io.dingodb.sdk.common.vector.VectorCalcDistance;
+import io.dingodb.sdk.common.vector.VectorDistance;
+import io.dingodb.sdk.common.vector.VectorDistanceRes;
 import io.dingodb.sdk.common.vector.VectorSearchParameter;
 import io.dingodb.sdk.common.vector.VectorTableData;
 import io.dingodb.sdk.common.vector.VectorWithDistance;
@@ -51,6 +54,7 @@ import io.dingodb.sdk.common.vector.VectorWithId;
 import io.dingodb.sdk.service.index.IndexServiceClient;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.sdk.service.store.StoreServiceClient;
+import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.common.Mapping;
 import io.dingodb.store.service.CodecService.KeyValueCodec;
 import lombok.extern.slf4j.Slf4j;
@@ -222,7 +226,9 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     try {
                         regionId = metaService.getIndexRangeDistribution(
                             indexId,
-                            new io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray(vectorCodec.encodeKey(new Object[]{id}), POS)).getId();
+                            new io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray(
+                                vectorCodec.encodeKey(new Object[]{id}), POS
+                            )).getId();
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -237,7 +243,8 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                         DingoCommonId regionId = metaService.getIndexRangeDistribution(
                             indexId,
                             new io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray(bytes, POS)).getId();
-                        result = storeService.kvBatchDelete(indexId, regionId, singletonList(indexCodec.resetPrefix(bytes, regionId.parentId()))).get(0);
+                        result = storeService.kvBatchDelete(indexId, regionId,
+                            singletonList(indexCodec.resetPrefix(bytes, regionId.parentId()))).get(0);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -262,13 +269,19 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     schema.setIsKey(true);
                     DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(indexId.entityId(), singletonList(schema));
 
-                    long newLongId = Long.parseLong(String.valueOf(newRecord[table.getColumnIndex(primaryKey.getName())]));
-                    long oldLongId = Long.parseLong(String.valueOf(oldRecord[table.getColumnIndex(primaryKey.getName())]));
+                    long newLongId = Long.parseLong(
+                        String.valueOf(newRecord[table.getColumnIndex(primaryKey.getName())])
+                    );
+                    long oldLongId = Long.parseLong(
+                        String.valueOf(oldRecord[table.getColumnIndex(primaryKey.getName())])
+                    );
                     if (newLongId != oldLongId) {
                         try {
                             DingoCommonId regionId = metaService.getIndexRangeDistribution(
                                 indexId,
-                                new io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray(vectorCodec.encodeKey(new Object[]{oldLongId}), POS)).getId();
+                                new io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray(
+                                    vectorCodec.encodeKey(new Object[]{oldLongId}), POS
+                                )).getId();
                             indexService.vectorDelete(indexId, regionId, singletonList(oldLongId));
                         } catch (IOException e) {
                             throw new RuntimeException(e);
@@ -284,8 +297,15 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                         io.dingodb.sdk.common.KeyValue newKv = indexCodec.encode(newRecord);
                         io.dingodb.sdk.common.KeyValue oldKv = indexCodec.encode(oldRecord);
                         if (!equal(newKv.getKey(), oldKv.getKey())) {
-                            DingoCommonId regionId = metaService.getIndexRangeDistribution(indexId, new io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray(oldKv.getKey(), POS)).getId();
-                            storeService.kvBatchDelete(indexId, regionId, singletonList(indexCodec.resetPrefix(oldKv.getKey(), regionId.parentId())));
+                            DingoCommonId regionId = metaService.getIndexRangeDistribution(
+                                indexId,
+                                new io.dingodb.sdk.common.utils.ByteArrayUtils.ComparableByteArray(
+                                    oldKv.getKey(), POS
+                                )).getId();
+                            storeService.kvBatchDelete(
+                                indexId,
+                                regionId,
+                                singletonList(indexCodec.resetPrefix(oldKv.getKey(), regionId.parentId())));
                         }
                     } catch (IOException e) {
                         throw new RuntimeException(e);
@@ -338,7 +358,13 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         public Iterator<KeyValue> scan(Range range) {
             range = new Range(setId(range.start), setId(range.end), range.withStart, range.withEnd);
             return Iterators.transform(
-                storeService.scan(storeTableId, storeRegionId, mapping(range).getRange(), range.withStart, range.withEnd),
+                storeService.scan(
+                    storeTableId,
+                    storeRegionId,
+                    mapping(range).getRange(),
+                    range.withStart,
+                    range.withEnd
+                ),
                 Mapping::mapping
             );
         }
@@ -347,7 +373,13 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         public Iterator<KeyValue> scan(Range range, Coprocessor coprocessor) {
             range = new Range(setId(range.start), setId(range.end), range.withStart, range.withEnd);
             return Iterators.transform(
-                storeService.scan(storeTableId, storeRegionId, mapping(range).getRange(), range.withStart, range.withEnd, new io.dingodb.store.common.Coprocessor(coprocessor)),
+                storeService.scan(storeTableId,
+                    storeRegionId,
+                    mapping(range).getRange(),
+                    range.withStart,
+                    range.withEnd,
+                    new io.dingodb.store.common.Coprocessor(coprocessor)
+                ),
                 Mapping::mapping
             );
         }
@@ -368,7 +400,8 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             VectorWithId vectorWithId = new VectorWithId(0, vector, null, null);
             vectors.add(vectorWithId);
 
-            Search search = getSearch(indexParameter.getVectorIndexParameter().getVectorIndexType(), parameterMap);
+            Search search = getSearch(indexParameter.getVectorIndexParameter().getVectorIndexType(),
+                parameterMap);
 
             VectorSearchParameter vectorSearchParameter = new VectorSearchParameter(
                 topN,
@@ -394,11 +427,22 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     VectorSearchResponse response = new VectorSearchResponse();
                     response.setKey(vectorWithDistance.getWithId().getTableData().getKey());
                     response.setDistance(vectorWithDistance.getDistance());
+                    response.setVectorId(vectorWithDistance.getId());
                     vectorSearchResponseList.add(response);
                 }
             }
 
             return vectorSearchResponseList;
+        }
+
+        @Override
+        public List<List<Float>> vectorCalcDistance(CommonId indexId,
+                                        CommonId regionId,
+                                        io.dingodb.common.vector.VectorCalcDistance vectorCalcDistance) {
+            VectorDistanceRes vectorDistanceRes = indexService.vectorCalcDistance(mapping(indexId),
+                mapping(regionId), mapping(vectorCalcDistance));
+            return vectorDistanceRes.getDistances().stream()
+                .map(VectorDistance::getInternalDistances).collect(Collectors.toList());
         }
 
         @Override

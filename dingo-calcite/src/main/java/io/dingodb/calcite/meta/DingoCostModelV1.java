@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.meta;
 
+import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoCost;
 import io.dingodb.calcite.rel.DingoGetByIndex;
@@ -35,6 +36,7 @@ import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
 import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -139,7 +141,7 @@ public class DingoCostModelV1 extends DingoCostModel {
     }
 
     private double getScanAvgRowSize(LogicalDingoTableScan tableScan) {
-        DingoTable dingoTable = (DingoTable) ((RelOptTableImpl) tableScan.getTable()).table();
+        DingoTable dingoTable = tableScan.getTable().unwrap(DingoTable.class);
         String schemaName = dingoTable.getNames().get(1);
         List<ColumnDefinition> selectionCdList = getSelectionCdList(tableScan, dingoTable);
         return getAvgRowSize(selectionCdList, dingoTable.getTableDefinition(), schemaName);

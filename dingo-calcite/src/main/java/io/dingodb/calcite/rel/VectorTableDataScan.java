@@ -20,43 +20,29 @@ import io.dingodb.calcite.visitor.DingoRelVisitor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.type.RelDataType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 
-public class DingoValues extends LogicalDingoValues implements DingoRel {
-    public DingoValues(
-        RelOptCluster cluster,
-        RelTraitSet traits,
-        RelDataType rowType,
-        List<Object[]> tuples
-    ) {
-        super(cluster, traits, rowType, tuples);
+public class VectorTableDataScan extends TableScan implements DingoRel {
+    public VectorTableDataScan(RelOptCluster cluster, RelTraitSet traitSet, List<RelHint> hints, RelOptTable table) {
+        super(cluster, traitSet, hints, table);
     }
 
     @Override
     public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
-        return visitor.visit(this);
+        //return visitor.visit(VectorTableDataScan);
+        return null;
     }
 
     @Override
-    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new DingoValues(getCluster(), traitSet, getRowType(), getTuples());
-    }
-
-    @Override
-    public double estimateRowCount(RelMetadataQuery mq) {
-        int size = getTuples().size();
-        return size;
-    }
-
-    @Override
-    public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, RelMetadataQuery mq) {
-        return planner.getCostFactory().makeTinyCost();
+    public @Nullable RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        return DingoCost.FACTORY.makeTinyCost();
     }
 }

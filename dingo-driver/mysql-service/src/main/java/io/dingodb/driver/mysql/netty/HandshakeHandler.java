@@ -141,15 +141,15 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                     //mysql protocol packet auto increment based by 0;
                     packetId.incrementAndGet();
                     if (isUserExists && validator(dbPwd, fullSeed, authPacket.password)) {
-//                        if ("Y".equalsIgnoreCase(userDefinition.getLock())) {
-//                            String error = String.format(ErrorCode.ER_LOCK_ACCOUNT.message, user, ip);
-//                            MysqlResponseHandler.responseError(packetId,
-//                                mysqlConnection.channel, ErrorCode.ER_LOCK_ACCOUNT, error);
-//                            if (mysqlConnection.channel.isActive()) {
-//                                mysqlConnection.channel.close();
-//                            }
-//                            return;
-//                        }
+                        //if ("Y".equalsIgnoreCase(userDefinition.getLock())) {
+                        //    String error = String.format(ErrorCode.ER_LOCK_ACCOUNT.message, user, ip);
+                        //    MysqlResponseHandler.responseError(packetId,
+                        //        mysqlConnection.channel, ErrorCode.ER_LOCK_ACCOUNT, error);
+                        //    if (mysqlConnection.channel.isActive()) {
+                        //        mysqlConnection.channel.close();
+                        //    }
+                        //    return;
+                        //}
                         if (StringUtils.isNotEmpty(userDefinition.getRequireSsl())) {
                             if (ctx.channel().pipeline().get("tls") == null) {
                                 String error =
@@ -162,24 +162,24 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                                 return;
                             }
                         }
-//                        if (userDefinition.getPasswordExpire() != null) {
-//                            String passwordExpire = userDefinition.getPasswordExpire().toString();
-//                            if (passwordExpire.equalsIgnoreCase("Y")) {
-//                                mysqlConnection.passwordExpire = true;
-//                            } else {
-//                                if (userDefinition.getExpireDays() != null) {
-//                                    Timestamp pwdLastChange = userDefinition.getPwdLastChange();
-//                                    Integer expireDay = Integer.valueOf((Integer) userDefinition.getExpireDays());
-//                                    Calendar calendar = Calendar.getInstance();
-//                                    calendar.setTimeInMillis(pwdLastChange.getTime());
-//                                    calendar.add(Calendar.DAY_OF_MONTH, expireDay);
-//                                    if (calendar.getTimeInMillis() > System.currentTimeMillis()) {
-//                                        mysqlConnection.passwordExpire = true;
-//                                    }
-//                                }
-//                                mysqlConnection.passwordExpire = false;
-//                            }
-//                        }
+                        //if (userDefinition.getPasswordExpire() != null) {
+                        //    String passwordExpire = userDefinition.getPasswordExpire().toString();
+                        //    if (passwordExpire.equalsIgnoreCase("Y")) {
+                        //        mysqlConnection.passwordExpire = true;
+                        //    } else {
+                        //        if (userDefinition.getExpireDays() != null) {
+                        //            Timestamp pwdLastChange = userDefinition.getPwdLastChange();
+                        //            Integer expireDay = Integer.valueOf((Integer) userDefinition.getExpireDays());
+                        //            Calendar calendar = Calendar.getInstance();
+                        //            calendar.setTimeInMillis(pwdLastChange.getTime());
+                        //            calendar.add(Calendar.DAY_OF_MONTH, expireDay);
+                        //            if (calendar.getTimeInMillis() > System.currentTimeMillis()) {
+                        //                mysqlConnection.passwordExpire = true;
+                        //            }
+                        //        }
+                        //        mysqlConnection.passwordExpire = false;
+                        //    }
+                        //}
 
                         OKPacket okPacket = new OKPacket();
                         okPacket.capabilities = MysqlServer.getServerCapabilities();
@@ -293,7 +293,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
         byte[] password = md.digest(toBeXord);
         if (password.length != pwd.length) {
-           return false;
+            return false;
         }
         for (int i = 0; i < password.length; i++) {
             if (password[i] != pwd[i]) {
@@ -364,6 +364,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                 dingoConnection.setClientInfo("wait_timeout", waitTimeout);
                 dingoConnection.setClientInfo("interactive_timeout", interactiveTimeout);
             } catch (SQLClientInfoException e) {
+                log.error(e.getMessage(), e);
             }
             return;
         }

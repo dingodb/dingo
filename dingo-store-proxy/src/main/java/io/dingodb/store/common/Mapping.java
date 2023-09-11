@@ -27,13 +27,17 @@ import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.Range;
 import io.dingodb.sdk.common.RangeWithOptions;
 import io.dingodb.sdk.common.SDKCommonId;
+import io.dingodb.sdk.common.index.VectorIndexParameter;
 import io.dingodb.sdk.common.partition.Partition;
 import io.dingodb.sdk.common.partition.PartitionDetail;
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
+import io.dingodb.sdk.common.vector.Vector;
+import io.dingodb.sdk.common.vector.VectorCalcDistance;
 import io.dingodb.store.api.StoreInstance;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public final class Mapping {
@@ -141,6 +145,38 @@ public final class Mapping {
 
     public static RangeWithOptions mapping(StoreInstance.Range range) {
         return new RangeWithOptions(new Range(range.start, range.end), range.withStart, range.withEnd);
+    }
+
+    public static VectorCalcDistance mapping(io.dingodb.common.vector.VectorCalcDistance vectorCalcDistance) {
+        VectorCalcDistance.AlgorithmType algorithmType;
+        switch (vectorCalcDistance.getAlgorithmType().toUpperCase()) {
+            case "FLAT":
+            default:
+                algorithmType = VectorCalcDistance.AlgorithmType.ALGORITHM_FAISS;
+                break;
+        }
+        VectorIndexParameter.MetricType metricType;
+        switch (vectorCalcDistance.getMetricType().toUpperCase()) {
+            case "INNER_PRODUCT":
+                metricType = VectorIndexParameter.MetricType.METRIC_TYPE_INNER_PRODUCT;
+                break;
+            case "COSINE":
+                metricType = VectorIndexParameter.MetricType.METRIC_TYPE_COSINE;
+                break;
+            case "L2":
+            default:
+                metricType = VectorIndexParameter.MetricType.METRIC_TYPE_L2;
+                break;
+        }
+
+        List<Vector> left = vectorCalcDistance.getLeftList().stream().map(e ->
+            Vector.getFloatInstance(vectorCalcDistance.getDimension(), e)
+        ).collect(Collectors.toList());
+
+        List<Vector> right = vectorCalcDistance.getRightList().stream().map(e ->
+            Vector.getFloatInstance(vectorCalcDistance.getDimension(), e)).collect(Collectors.toList());
+        return new VectorCalcDistance(vectorCalcDistance.getVectorId(), algorithmType, metricType,
+            left, right, false);
     }
 
 }

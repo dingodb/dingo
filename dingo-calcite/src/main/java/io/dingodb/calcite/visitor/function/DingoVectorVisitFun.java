@@ -131,7 +131,7 @@ public final class DingoVectorVisitFun {
                     List<SqlNode> operandList = sqlBasicCall.getOperandList();
                     String currentName = "";
                     for (int i = 0; i < operandList.size(); i++) {
-                        if ((i == 0 || i % 2 ==0) && operandList.get(i) instanceof SqlIdentifier) {
+                        if ((i == 0 || i % 2 == 0) && operandList.get(i) instanceof SqlIdentifier) {
                             currentName = ((SqlIdentifier) operandList.get(i)).getSimple();
                         } else {
                             SqlNode node = operandList.get(i);

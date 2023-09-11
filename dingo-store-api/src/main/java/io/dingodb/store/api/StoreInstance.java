@@ -19,6 +19,7 @@ package io.dingodb.store.api;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.vector.VectorCalcDistance;
 import io.dingodb.common.vector.VectorSearchResponse;
 import lombok.AllArgsConstructor;
 
@@ -76,8 +77,12 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default public List<VectorSearchResponse> vectorSearch(
+    default List<VectorSearchResponse> vectorSearch(
         CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap) {
+        throw new UnsupportedOperationException();
+    }
+
+    default List<List<Float>> vectorCalcDistance(CommonId indexId, CommonId regionId, VectorCalcDistance vectorCalcDistance) {
         throw new UnsupportedOperationException();
     }
 

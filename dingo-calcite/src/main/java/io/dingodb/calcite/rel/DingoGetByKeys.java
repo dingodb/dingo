@@ -49,7 +49,7 @@ public final class DingoGetByKeys extends DingoGetByIndex {
 
     @Override
     public double estimateRowCount(RelMetadataQuery mq) {
-        return points.size() / DingoTableScan.ASSUME_PARTS;
+        return points.size();
     }
 
     @Override

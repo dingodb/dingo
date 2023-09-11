@@ -75,8 +75,10 @@ public final class DingoValuesVisitFun {
             final TableDefinition td = TableUtils.getTableDefinition(
                 ((DingoRelPartitionByTable) distribution).getTable());
             final KeyValueCodec keyValueCodec = TableUtils.getKeyValueCodecForTable(td);
-            final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
-            final PartitionStrategy<CommonId, byte[]> ps = DingoPartitionStrategyFactory.createPartitionStrategy(td, distributions);
+            final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
+                = tableInfo.getRangeDistributions();
+            final PartitionStrategy<CommonId, byte[]> ps
+                = DingoPartitionStrategyFactory.createPartitionStrategy(td, distributions);
             Map<CommonId, List<Object[]>> partMap = ps.partTuples(rel.getTuples(), wrap(keyValueCodec::encodeKey));
             for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
                 ValuesOperator operator = new ValuesOperator(entry.getValue(),

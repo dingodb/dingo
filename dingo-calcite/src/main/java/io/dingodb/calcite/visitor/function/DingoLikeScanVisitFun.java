@@ -58,7 +58,8 @@ public final class DingoLikeScanVisitFun {
         }
         NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        final PartitionStrategy<CommonId, byte[]> ps = DingoPartitionStrategyFactory.createPartitionStrategy(td, distributions);
+        final PartitionStrategy<CommonId, byte[]> ps
+            = DingoPartitionStrategyFactory.createPartitionStrategy(td, distributions);
 
         List<Output> outputs = new ArrayList<>();
 

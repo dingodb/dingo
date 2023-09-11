@@ -24,7 +24,10 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalFilter;
+
+import java.util.List;
 
 public class DingoFilterRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
@@ -50,7 +53,8 @@ public class DingoFilterRule extends ConverterRule {
             filter.getCluster(),
             traits,
             convert(filter.getInput(), traits),
-            filter.getCondition()
+            filter.getCondition(),
+            filter.getHints()
         );
     }
 }

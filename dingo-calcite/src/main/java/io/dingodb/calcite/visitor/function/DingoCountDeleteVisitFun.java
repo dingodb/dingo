@@ -47,12 +47,17 @@ public final class DingoCountDeleteVisitFun {
 
     @NonNull
     public static List<Output> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, @NonNull DingoPartCountDelete rel
+        Job job,
+        IdGenerator idGenerator,
+        Location currentLocation,
+        DingoJobVisitor visitor,
+        @NonNull DingoPartCountDelete rel
     ) {
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
         CommonId tableId = tableInfo.getId();
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
+            = tableInfo.getRangeDistributions();
 
         List<Output> outputs = new ArrayList<>(distributions.size());
         for (Distribution distribution : distributions.values()) {

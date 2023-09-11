@@ -21,6 +21,7 @@ import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByKeys;
+import io.dingodb.calcite.rel.DingoGetVectorByDistance;
 import io.dingodb.calcite.rel.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoLikeScan;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
@@ -35,6 +36,7 @@ import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.DingoVector;
+import io.dingodb.calcite.rel.VectorStreamConvertor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public interface DingoRelVisitor<T> {
@@ -75,4 +77,9 @@ public interface DingoRelVisitor<T> {
     T visit(@NonNull DingoFunctionScan rel);
 
     T visit(@NonNull DingoVector rel);
+
+    T visit(@NonNull DingoGetVectorByDistance rel);
+
+    T visit(@NonNull VectorStreamConvertor rel);
+
 }
