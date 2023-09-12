@@ -56,6 +56,7 @@ import io.dingodb.sdk.common.vector.VectorDistanceRes;
 import io.dingodb.sdk.common.vector.VectorIndexMetrics;
 import io.dingodb.sdk.common.vector.VectorScanQuery;
 import io.dingodb.sdk.service.meta.AutoIncrementService;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,6 +66,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@Slf4j
 public class DingoClient {
 
     private final String schema;
@@ -387,7 +389,10 @@ public class DingoClient {
             .filter(v -> v.getDimension() != dimension || (v.getValueType() == Vector.ValueType.FLOAT
                     ? v.getFloatValues().size() != dimension : v.getBinaryValues().size() != dimension))
             .count();
-        if (dimension != 0 && count > 0) {
+        if ((dimension != 0 && count > 0) || vectors.size() >= 1024) {
+            if (vectors.size() >= 1024) {
+                log.error("Param vectors size {} is exceed max batch count 1024", vectors.size());
+            }
             List<VectorWithId> result = new ArrayList<>();
             vectors.forEach(v -> result.add(null));
             return result;
