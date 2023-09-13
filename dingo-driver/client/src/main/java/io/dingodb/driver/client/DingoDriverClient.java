@@ -19,6 +19,7 @@ package io.dingodb.driver.client;
 import io.dingodb.common.Location;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.util.NoBreakFunctions;
+import io.dingodb.driver.DingoFactory;
 import io.dingodb.driver.DingoServiceImpl;
 import io.dingodb.driver.api.MetaApi;
 import io.dingodb.net.NetService;
@@ -26,6 +27,7 @@ import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.net.netty.NetConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaConnection;
+import org.apache.calcite.avatica.AvaticaFactory;
 import org.apache.calcite.avatica.DriverVersion;
 import org.apache.calcite.avatica.Helper;
 import org.apache.calcite.avatica.Meta;
@@ -114,6 +116,11 @@ public class DingoDriverClient extends Driver {
                 throw Helper.INSTANCE.createException("connect failed");
             }
         }
+    }
+
+    @Override
+    protected AvaticaFactory createFactory() {
+        return new DingoFactory(instantiateFactory(getFactoryClassName(JdbcVersion.current())));
     }
 
     private Properties parseURL(String url, Properties defaults) throws SQLException {
