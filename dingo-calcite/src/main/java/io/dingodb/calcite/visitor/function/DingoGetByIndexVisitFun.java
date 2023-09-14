@@ -67,11 +67,11 @@ public final class DingoGetByIndexVisitFun {
         final LinkedList<Output> outputs = new LinkedList<>();
         MetaService metaService = MetaServiceUtils.getMetaService(rel.getTable());
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
-        Map<CommonId, Set> points = rel.getIndexSetMap();
+        Map<CommonId, Set> indexSetMap = rel.getIndexSetMap();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
         PartitionStrategy lookupPs = DingoPartitionStrategyFactory.createPartitionStrategy(td, ranges);
-        for (Map.Entry<CommonId, Set> indexValSet : points.entrySet()) {
+        for (Map.Entry<CommonId, Set> indexValSet : indexSetMap.entrySet()) {
             TableDefinition indexTd = rel.getIndexTdMap().get(indexValSet.getKey());
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> indexRanges
                 = metaService.getIndexRangeDistribution(indexValSet.getKey(),
