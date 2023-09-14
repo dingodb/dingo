@@ -17,9 +17,13 @@
 package io.dingodb.server.executor.schedule;
 
 import com.google.auto.service.AutoService;
+import io.dingodb.calcite.stats.task.RefreshStatsTask;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.scheduler.SchedulerServiceProvider;
 import io.dingodb.sdk.service.lock.LockService;
 import io.dingodb.server.executor.Configuration;
+import io.dingodb.server.executor.schedule.stats.AnalyzeScanTask;
+import io.dingodb.server.executor.schedule.stats.TableModifyMonitorTask;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.CronTrigger;
@@ -32,6 +36,7 @@ import org.quartz.TriggerKey;
 import org.quartz.impl.StdSchedulerFactory;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
 @Slf4j
@@ -112,6 +117,13 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
         } catch (SchedulerException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void init() {
+        this.add("monitorTableModify", "0 0 22 * * ?", new TableModifyMonitorTask());
+        this.add("analyzeTable", "0 0 23 * * ?", new AnalyzeScanTask());
+        Executors.scheduleWithFixedDelayAsync("refreshStat", new RefreshStatsTask(),
+            10, 3600, TimeUnit.SECONDS);
     }
 
 }

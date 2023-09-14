@@ -38,7 +38,6 @@ public class RefreshStatsTask extends StatsOperator implements Runnable {
 
     @Override
     public void run() {
-        log.info("load refresh Stats start");
         Map<String, TableStats> statsMap = new ConcurrentHashMap<>();
         List<RangeDistribution> rangeDistributions = new ArrayList<>(metaService
             .getRangeDistribution(bucketsTblId).values());
@@ -97,6 +96,7 @@ public class RefreshStatsTask extends StatsOperator implements Runnable {
         try {
             values = scan(statsStore, statsCodec, rangeDistributions.get(0));
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
             values = new ArrayList<>();
         }
         values.forEach(e -> {
@@ -115,6 +115,8 @@ public class RefreshStatsTask extends StatsOperator implements Runnable {
             }
         });
         StatsCache.statsMap = statsMap;
-        log.info("load refresh Stats end");
+        if (log.isDebugEnabled()) {
+            log.debug("load stats" + statsMap);
+        }
     }
 }

@@ -28,14 +28,11 @@ import io.dingodb.net.MysqlNetService;
 import io.dingodb.net.MysqlNetServiceProvider;
 import io.dingodb.net.NetService;
 import io.dingodb.scheduler.SchedulerService;
-import io.dingodb.sdk.service.lock.LockService;
 import io.dingodb.server.executor.service.AutoIncrementService;
 import io.dingodb.server.executor.service.ClusterService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ServiceLoader;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.locks.Lock;
 
 @Slf4j
 public class Starter {
@@ -79,7 +76,8 @@ public class Starter {
         // Initialize auto increment
         AutoIncrementService.INSTANCE.resetAutoIncrement();
 
-        SchedulerService.getDefault();
+        SchedulerService schedulerService = SchedulerService.getDefault();
+        schedulerService.init();
     }
 
 }

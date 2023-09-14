@@ -76,7 +76,7 @@ public class MysqlInit {
         initTableByTemplate("information_schema", "KEY_COLUMN_USAGE");
         initTableByTemplate("information_schema", "SCHEMATA");
         initTableByTemplate("information_schema", "TABLES");
-        initTableByTemplate("mysql", "ANALYZE_JOB");
+        initTableByTemplate("mysql", "ANALYZE_TASK");
         initTableByTemplate("mysql", "CM_SKETCH");
         initTableByTemplate("mysql", "TABLE_STATS");
         initTableByTemplate("mysql", "TABLE_BUCKETS");
@@ -287,8 +287,8 @@ public class MysqlInit {
             case "TABLES":
                 jsonFile = "/information-tables.json";
                 break;
-            case "ANALYZE_JOB":
-                jsonFile = "/mysql-analyzeJob.json";
+            case "ANALYZE_TASK":
+                jsonFile = "/mysql-analyzeTask.json";
                 break;
             case "CM_SKETCH":
                 jsonFile = "/mysql-cmSketch.json";

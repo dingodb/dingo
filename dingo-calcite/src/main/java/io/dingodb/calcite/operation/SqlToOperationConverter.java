@@ -121,7 +121,7 @@ public class SqlToOperationConverter {
             if (StringUtils.isEmpty(analyze.getSchemaName())) {
                 analyze.setSchemaName(getSchemaName(context));
             }
-            return Optional.of(new AnalyzeTableOperation(connection, analyze));
+            return Optional.of(new AnalyzeTableOperation(analyze));
         } else {
             return Optional.empty();
         }

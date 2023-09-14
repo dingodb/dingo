@@ -30,4 +30,6 @@ public interface SchedulerService {
 
     boolean remove(String id);
 
+    void init();
+
 }
