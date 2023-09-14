@@ -28,6 +28,15 @@ public class CollectionQueryCases extends SqlTestCaseJavaBuilder {
         table("i4k_ai40", file("i4k_ai40/create.sql"))
             .init(file("i4k_ai40/data.sql"), 1);
 
+        table("i4k_vs0_i40_f80_adt0", file("i4k_vs0_i40_f80_adt0/create.sql"))
+            .init(file("i4k_vs0_i40_f80_adt0/data.sql"), 4);
+
+        table("i4k_vs0_i40_f80_atm0", file("i4k_vs0_i40_f80_atm0/create.sql"))
+            .init(file("i4k_vs0_i40_f80_atm0/data.sql"), 4);
+
+        table("i4k_ats0", file("i4k_ats0/create.sql"))
+            .init(file("i4k_ats0/data.sql"), 2);
+
         table("i4k_vs0_i40_f80_mp0", file("i4k_vs0_i40_f80_mp0/create.sql"))
             .init(file("i4k_vs0_i40_f80_mp0/data.sql"), 1);
 
@@ -39,6 +48,46 @@ public class CollectionQueryCases extends SqlTestCaseJavaBuilder {
                     "d1, d2, d3",
                     "INT, INT, INT",
                     "1, 2, 3"
+                )
+            );
+
+        test("Array of date")
+            .use("table", "i4k_vs0_i40_f80_adt0")
+            .step(
+                "select id, name, age, amount, run_inter[1] from {table}",
+                csv(
+                    "id, name, age, amount, expr$4",
+                    "INT, STRING, INT, DOUBLE, STRING",
+                    "1, zhangsan, 18, 23.5, 1987-07-16",
+                    "2, lisi, 25, 895.89, 1999-12-12",
+                    "3, wangwu, 55, 123.123, 2001-01-01",
+                    "4, LiuJi, 100, 0.0, 1949-10-01"
+                )
+            );
+
+        test("Array of time")
+            .use("table", "i4k_vs0_i40_f80_atm0")
+            .step(
+                "select id, name, age, amount, test_time[1] from {table}",
+                csv(
+                    "id, name, age, amount, expr$4",
+                    "INT, STRING, INT, DOUBLE, STRING",
+                    "1, zhangsan, 18, 23.5, 10:11:12",
+                    "2, lisi, 25, 895.89, 23:59:59",
+                    "3, wangwu, 55, 123.123, 17:49:00",
+                    "4, LiuJi, 100, 0.0, 00:00:10"
+                )
+            );
+
+        test("Array of timestamp")
+            .use("table", "i4k_ats0")
+            .step(
+                "select id, send_time[1] from {table}",
+                csv(
+                    "id, expr$1",
+                    "INT, LONG",
+                    "1, 1669101174",
+                    "2, 1"
                 )
             );
 
