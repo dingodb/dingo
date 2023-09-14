@@ -23,6 +23,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.vector.VectorSearchResponse;
@@ -105,6 +106,11 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
     }
 
     @Override
+    public StoreInstance getInstance(@NonNull CommonId tableId, CommonId regionId, TableDefinition tableDefinition) {
+        return new StoreInstance(tableId, regionId, tableDefinition);
+    }
+
+    @Override
     public void deleteInstance(CommonId id) {
 
     }
@@ -133,6 +139,18 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             this.indexService = new IndexServiceClient(metaService);
             this.tableDefinitionMap = metaService.getTableIndexes(this.storeTableId);
             this.table = metaService.getTableDefinition(storeTableId);
+            this.tableCodec = (KeyValueCodec) CodecService.getDefault().createKeyValueCodec(mapping(table));
+        }
+
+        public StoreInstance(CommonId tableId, CommonId regionId, TableDefinition tableDefinition) {
+            this.storeTableId = mapping(tableId);
+            this.storeRegionId = mapping(regionId);
+            this.tableId = tableId;
+            this.regionId = regionId;
+            this.partitionId = new CommonId(CommonId.CommonType.PARTITION, tableId.seq, regionId.domain);
+            this.indexService = new IndexServiceClient(metaService);
+            this.tableDefinitionMap = metaService.getTableIndexes(this.storeTableId);
+            this.table = mapping(tableDefinition);
             this.tableCodec = (KeyValueCodec) CodecService.getDefault().createKeyValueCodec(mapping(table));
         }
 

@@ -116,5 +116,17 @@ public final class Utils {
         return (int) (System.currentTimeMillis() / 1000);
     }
 
+    public static int calculatePrefixCount(Object[] tuple) {
+        int i = 0;
+        for (Object val : tuple) {
+            if (val != null) {
+                i ++;
+            } else {
+                break;
+            }
+        }
+        return i;
+    }
+
     public static final int INTEGER_LEN_IN_BYTES = 4;
 }

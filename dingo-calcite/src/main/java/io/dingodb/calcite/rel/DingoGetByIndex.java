@@ -17,6 +17,8 @@
 package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
+import io.dingodb.common.CommonId;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -25,27 +27,23 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 public class DingoGetByIndex extends LogicalDingoTableScan implements DingoRel {
     @Getter
-    protected final Collection<Map<Integer, RexNode>> points;
+    protected final Map<CommonId, Set> indexSetMap;
     @Getter
-    private final String indexName;
+    protected final Map<CommonId, TableDefinition> indexTdMap;
 
     @Getter
     private final boolean isUnique;
-
-    @Getter
-    private final String[] columns;
 
     public DingoGetByIndex(
         RelOptCluster cluster,
@@ -54,31 +52,20 @@ public class DingoGetByIndex extends LogicalDingoTableScan implements DingoRel {
         RelOptTable table,
         RexNode filter,
         @Nullable TupleMapping selection,
-        String indexName,
         boolean isUnique,
-        Collection<Map<Integer, RexNode>> points,
-        String[] columns
+        Map<CommonId, Set> indexSetMap,
+        Map<CommonId, TableDefinition> indexTdMap
     ) {
         super(cluster, traitSet, hints, table, filter, selection);
-        this.indexName = indexName;
-        this.points = points;
-        this.columns = columns;
+        this.indexSetMap = indexSetMap;
+        this.indexTdMap = indexTdMap;
         this.isUnique = isUnique;
-    }
-
-    @Override
-    public double estimateRowCount(RelMetadataQuery mq) {
-        if (isUnique) {
-            return points.size();
-        } else {
-            return super.estimateRowCount(mq);
-        }
     }
 
     @Override
     public @NonNull RelWriter explainTerms(@NonNull RelWriter pw) {
         super.explainTerms(pw);
-        pw.item("points", points);
+        pw.item("points", indexSetMap);
         return pw;
     }
 

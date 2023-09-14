@@ -16,9 +16,7 @@
 
 package io.dingodb.client.utils;
 
-import io.dingodb.client.common.Key;
-import io.dingodb.client.common.Record;
-import io.dingodb.client.common.Value;
+import io.dingodb.client.IBaseDingoMapper;
 import io.dingodb.client.annotation.DingoColumn;
 import io.dingodb.client.annotation.DingoConstructor;
 import io.dingodb.client.annotation.DingoExclude;
@@ -28,9 +26,11 @@ import io.dingodb.client.annotation.DingoOrdinal;
 import io.dingodb.client.annotation.DingoRecord;
 import io.dingodb.client.annotation.DingoSetter;
 import io.dingodb.client.annotation.ParamFrom;
-import io.dingodb.client.IBaseDingoMapper;
+import io.dingodb.client.common.Key;
 import io.dingodb.client.common.PropertyDefinition;
+import io.dingodb.client.common.Record;
 import io.dingodb.client.common.SqlTypeInfo;
+import io.dingodb.client.common.Value;
 import io.dingodb.client.common.ValueType;
 import io.dingodb.client.configuration.ClassConfig;
 import io.dingodb.client.configuration.ColumnConfig;
@@ -786,7 +786,8 @@ public class ClassCacheEntry<T> {
                     if (dingoValue != null || allowNullColumns) {
                         if (dingoValue instanceof TreeMap<?, ?>) {
                             TreeMap<?, ?> treeMap = (TreeMap<?, ?>) dingoValue;
-                            // columns[index++] = new Column(name, new ArrayList(treeMap.entrySet()), MapOrder.KEY_ORDERED);
+                            // columns[index++] = new Column(name, new ArrayList(treeMap.entrySet()),
+                            // MapOrder.KEY_ORDERED);
                             values[index++] = Value.get(new ArrayList<>(treeMap.entrySet()));
                         } else {
                             values[index++] = Value.get(dingoValue);
@@ -825,7 +826,8 @@ public class ClassCacheEntry<T> {
                     if (dingoValue != null || allowNullColumns) {
                         if (dingoValue instanceof TreeMap<?, ?>) {
                             TreeMap<?, ?> treeMap = (TreeMap<?, ?>) dingoValue;
-                            // columns[index++] = new Column(name, new ArrayList(treeMap.entrySet()), MapOrder.KEY_ORDERED);
+                            // columns[index++] = new Column(name, new ArrayList(treeMap.entrySet()),
+                            // MapOrder.KEY_ORDERED);
                             values[index++] = Value.get(new ArrayList<>(treeMap.entrySet()));
                         } else {
                             values[index++] = Value.get(dingoValue);

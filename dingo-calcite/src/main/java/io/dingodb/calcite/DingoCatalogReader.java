@@ -77,7 +77,7 @@ import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-public class DingoCatalogReader implements Prepare.CatalogReader{
+public class DingoCatalogReader implements Prepare.CatalogReader {
     protected final CalciteSchema rootSchema;
     protected final RelDataTypeFactory typeFactory;
     private List<List<String>> schemaPaths;
@@ -85,7 +85,9 @@ public class DingoCatalogReader implements Prepare.CatalogReader{
     protected final CalciteConnectionConfig config;
 
     public DingoCatalogReader(CalciteSchema rootSchema,
-                              List<List<String>> array, RelDataTypeFactory typeFactory, CalciteConnectionConfig config) {
+                              List<List<String>> array,
+                              RelDataTypeFactory typeFactory,
+                              CalciteConnectionConfig config) {
         // todo: current version, ignore name case
         this(rootSchema, SqlNameMatchers.withCaseSensitive(false), array, typeFactory, config);
     }
@@ -288,7 +290,6 @@ public class DingoCatalogReader implements Prepare.CatalogReader{
         return table;
     }
 
-    /** Converts a function to a {@link org.apache.calcite.sql.SqlOperator}. */
     private static SqlOperator toOp(SqlIdentifier name,
                                     final org.apache.calcite.schema.Function function) {
         final java.util.function.Function<RelDataTypeFactory, List<RelDataType>> argTypesFactory =
@@ -436,9 +437,9 @@ public class DingoCatalogReader implements Prepare.CatalogReader{
         return nameMatcher;
     }
 
-    @Override public <C extends Object> @Nullable C unwrap(Class<C> aClass) {
-        if (aClass.isInstance(this)) {
-            return aClass.cast(this);
+    @Override public <C extends Object> @Nullable C unwrap(Class<C> clazz) {
+        if (clazz.isInstance(this)) {
+            return clazz.cast(this);
         }
         return null;
     }

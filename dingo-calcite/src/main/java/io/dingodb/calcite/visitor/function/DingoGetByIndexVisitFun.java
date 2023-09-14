@@ -19,22 +19,38 @@ package io.dingodb.calcite.visitor.function;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
+import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
+import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.table.Index;
+import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.GetByIndexOperator;
+import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
+import io.dingodb.exec.partition.PartitionStrategy;
+import io.dingodb.meta.MetaService;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static io.dingodb.common.util.Utils.calculatePrefixCount;
 
 public final class DingoGetByIndexVisitFun {
     private DingoGetByIndexVisitFun() {
@@ -42,19 +58,79 @@ public final class DingoGetByIndexVisitFun {
 
     @NonNull
     public static LinkedList<Output> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, @NonNull DingoGetByIndex rel
+        Job job,
+        IdGenerator idGenerator,
+        Location currentLocation,
+        DingoJobVisitor visitor,
+        @NonNull DingoGetByIndex rel
     ) {
-        final CommonId tableId = MetaServiceUtils.getTableId(rel.getTable());
+        final LinkedList<Output> outputs = new LinkedList<>();
+        MetaService metaService = MetaServiceUtils.getMetaService(rel.getTable());
+        TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
+        Map<CommonId, Set> points = rel.getIndexSetMap();
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        Index index = td.getIndex(rel.getIndexName());
-        TupleMapping mapping = TupleMapping.of(td.getColumnIndices(index.getColumns()));
-        List<Object[]> keyTuples = TableUtils.getTuplesForMapping(rel.getPoints(), td, mapping);
-        GetByIndexOperator operator = new GetByIndexOperator(tableId, td.getDingoType(), mapping, keyTuples,
-            SqlExprUtils.toSqlExpr(rel.getFilter()), rel.getSelection()
-        );
-        operator.setId(idGenerator.get());
-        Task task = job.getOrCreate(currentLocation, idGenerator);
-        task.putOperator(operator);
-        return new LinkedList<>(operator.getOutputs());
+        PartitionStrategy lookupPs = DingoPartitionStrategyFactory.createPartitionStrategy(td, ranges);
+        for (Map.Entry<CommonId, Set> indexValSet : points.entrySet()) {
+            TableDefinition indexTd = rel.getIndexTdMap().get(indexValSet.getKey());
+            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> indexRanges
+                = metaService.getIndexRangeDistribution(indexValSet.getKey(),
+                indexTd);
+
+            PartitionStrategy<CommonId, byte[]> ps
+                = DingoPartitionStrategyFactory.createPartitionStrategy(td, indexRanges);
+
+            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTd.getColumns());
+            List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(indexValSet.getValue(), indexTd);
+
+            Map<CommonId, List<Object[]>> partMap = new LinkedHashMap<>();
+            try {
+                for (Object[] tuple : keyTuples) {
+                    byte[] keys = codec.encodeKeyPrefix(tuple, calculatePrefixCount(tuple));
+                    CommonId partId = ps.calcPartId(keys);
+                    partMap.putIfAbsent(partId, new LinkedList<>());
+                    partMap.get(partId).add(tuple);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            List<String> columnNames = indexTd.getColumns()
+                .stream().map(ColumnDefinition::getName).collect(Collectors.toList());
+            TupleMapping tupleMapping = TupleMapping.of(td.getColumnIndices(columnNames));
+
+            boolean needLookup = isNeedLookUp(rel.getSelection(), tupleMapping);
+            for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
+                GetByIndexOperator operator = new GetByIndexOperator(
+                    indexValSet.getKey(),
+                    entry.getKey(),
+                    tableInfo.getId(),
+                    tupleMapping,
+                    entry.getValue(),
+                    SqlExprUtils.toSqlExpr(rel.getFilter()),
+                    rel.getSelection(),
+                    rel.isUnique(),
+                    lookupPs,
+                    codec,
+                    indexTd,
+                    td,
+                    needLookup
+                );
+                operator.setId(idGenerator.get());
+                Task task = job.getOrCreate(currentLocation, idGenerator);
+                task.putOperator(operator);
+                outputs.addAll(operator.getOutputs());
+            }
+        }
+        return outputs;
     }
+
+    private static boolean isNeedLookUp(TupleMapping selection, TupleMapping keyMapping) {
+        for (int index : selection.getMappings()) {
+            if (!keyMapping.contains(index)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

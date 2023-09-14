@@ -28,7 +28,7 @@ public class SqlShowTableDistribution extends SqlShow {
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator("SHOW TABLE DISTRIBUTION", SqlKind.SELECT);
 
-     /**
+    /**
      * Creates a sqlDql.
      *
      * @param pos      pos

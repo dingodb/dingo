@@ -81,8 +81,6 @@ public class ShowGrantsOperation implements QueryOperation {
             getRealAddress(sqlShowGrants.host));
         List<SchemaPrivDefinition> schemaPrivDefinitions = new ArrayList<>(privilegeGather
             .getSchemaPrivDefMap().values());
-        List<TablePrivDefinition> tablePrivDefinitions = new ArrayList<>(privilegeGather
-            .getTablePrivDefMap().values());
         UserDefinition userDefinition = privilegeGather.getUserDef();
 
         if (userDefinition == null) {
@@ -95,6 +93,8 @@ public class ShowGrantsOperation implements QueryOperation {
             sqlGrants.add(userGrant);
         }
         sqlGrants.addAll(getSchemaGrant(sqlShowGrants, schemaPrivDefinitions));
+        List<TablePrivDefinition> tablePrivDefinitions = new ArrayList<>(privilegeGather
+            .getTablePrivDefMap().values());
         sqlGrants.addAll(getTableGrant(sqlShowGrants, tablePrivDefinitions));
         return sqlGrants;
     }
