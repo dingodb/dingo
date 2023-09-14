@@ -29,7 +29,6 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptTable;
@@ -41,7 +40,6 @@ import org.apache.calcite.rex.RexUtil;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -103,6 +101,9 @@ public class DingoGetByIndexRule extends ConverterRule {
             List<Integer> indices;
             Map<CommonId, Set> indexMap = new HashMap<>();
             boolean matchIndex;
+            // example: a column index =2, b column index = 3
+            // set1 : a=v or a=v1 => Map1<entry(key = 2, value = v)>, Map2<entry(key = 2, value = v1)>
+            // set2 : a=v and b=v1 => Map1<entry(key = 2, value = v), entry(key = 2, value = v1)>
             for (Map<Integer, RexNode> map : set) {
                 matchIndex = false;
                 for (Map.Entry<CommonId, TableDefinition> index : indexTdMap.entrySet()) {
@@ -116,11 +117,14 @@ public class DingoGetByIndexRule extends ConverterRule {
                             newMap.put(indices.indexOf(originIndex), map.get(k));
                         }
                     }
+                    // Leftmost matching principle
+                    // index a columns(b, c, d)  -> where b = v  ==> matched index a
                     if (newMap.containsKey(0)) {
                         Set<Map<Integer, RexNode>> newSet
                             = indexMap.computeIfAbsent(index.getKey(), e -> new HashSet());
                         newSet.add(newMap);
                         matchIndex = true;
+                        break;
                     }
                 }
                 if (!matchIndex) {
@@ -159,10 +163,8 @@ public class DingoGetByIndexRule extends ConverterRule {
             );
         }
 
-        // get all index tuple
-        // indexes is null return
+        // get all index definition
         // find match first index to use; todo replace
-        // get keyMapSet : 1, is not null get  2. is null ,scan
         // new DingoGetIndex
         Map<CommonId, TableDefinition> indexTdMap = getScalaIndices(scan.getTable());
 
@@ -172,6 +174,10 @@ public class DingoGetByIndexRule extends ConverterRule {
         if (indexTdMap.size() == 0) {
             return null;
         }
+
+        // index a, index b :  a = v or b = v   ==> matched index a, index b
+        // index a, index b :  a = v and b = v  ==> matched first matched index a
+        // indexSetMap key = matched indexId , value = index point value
         Map<CommonId, Set> indexSetMap = filterScalarIndices(indexValueMapSet, indexTdMap, scan.getSelection(), td);
         if (indexSetMap == null) {
             return null;
