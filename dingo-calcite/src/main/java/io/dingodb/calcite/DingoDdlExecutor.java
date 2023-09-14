@@ -133,8 +133,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         @NonNull SqlIndexDeclaration indexDeclaration,
         TableDefinition tableDefinition
     ) {
-        TableDefinition indexTableDefinition = tableDefinition.copyWithName(indexDeclaration.index);
-
         List<ColumnDefinition> tableColumns = tableDefinition.getColumns();
         List<String> tableColumnNames = tableColumns.stream().map(ColumnDefinition::getName)
             .collect(Collectors.toList());
@@ -195,8 +193,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     .findFirst().get();
 
                 if (i == 0) {
-                    if (!columnDefinition.getTypeName().equals("INTEGER") &&
-                        !columnDefinition.getTypeName().equals("BIGINT")) {
+                    if (!columnDefinition.getTypeName().equals("INTEGER")
+                        && !columnDefinition.getTypeName().equals("BIGINT")) {
                         throw new RuntimeException("Invalid column type: " + columnName);
                     }
 
@@ -204,8 +202,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                         throw new RuntimeException("Column must be not null, column name: " + columnName);
                     }
                 } else if (i == 1) {
-                    if (!columnDefinition.getTypeName().equals("ARRAY") ||
-                        !(columnDefinition.getElementType() != null
+                    if (!columnDefinition.getTypeName().equals("ARRAY")
+                        || !(columnDefinition.getElementType() != null
                             && columnDefinition.getElementType().equals("FLOAT"))) {
                         throw new RuntimeException("Invalid column type: " + columnName);
                     }
@@ -259,7 +257,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 indexColumnDefinitions.add(indexColumnDefinition);
             }
         }
-
+        TableDefinition indexTableDefinition = tableDefinition.copyWithName(indexDeclaration.index);
         indexTableDefinition.setColumns(indexColumnDefinitions);
         indexTableDefinition.setPartDefinition(indexDeclaration.getPartDefinition());
         indexTableDefinition.setReplica(indexDeclaration.getReplica());
@@ -286,7 +284,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 throw new RuntimeException("Precision " + precision + " is not support.");
             }
         }
-        int scale = typeName.allowsScale() ? dataType.getScale() : RelDataType.SCALE_NOT_SPECIFIED;
         String defaultValue = null;
         ColumnStrategy strategy = scd.strategy;
         if (strategy == ColumnStrategy.DEFAULT) {
@@ -321,6 +318,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         assert pkSet != null;
         int primary = pkSet.indexOf(name);
+        int scale = typeName.allowsScale() ? dataType.getScale() : RelDataType.SCALE_NOT_SPECIFIED;
         RelDataType elementType = dataType.getComponentType();
         SqlTypeName elementTypeName = elementType != null ? elementType.getSqlTypeName() : null;
         return ColumnDefinition.builder()

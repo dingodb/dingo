@@ -18,13 +18,13 @@ package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.type.TupleMapping;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -35,6 +35,9 @@ import java.util.Map;
 
 @Slf4j
 public final class DingoGetByKeys extends DingoGetByIndex {
+    @Getter
+    Collection<Map<Integer, RexNode>> points;
+
     public DingoGetByKeys(
         RelOptCluster cluster,
         RelTraitSet traitSet,
@@ -44,7 +47,8 @@ public final class DingoGetByKeys extends DingoGetByIndex {
         @Nullable TupleMapping selection,
         Collection<Map<Integer, RexNode>> points
     ) {
-        super(cluster, traitSet, hints, table, filter, selection, null, true, points, null);
+        super(cluster, traitSet, hints, table, filter, selection, true,null, null);
+        this.points = points;
     }
 
     @Override

@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite.meta;
 
-import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoCost;
 import io.dingodb.calcite.rel.DingoGetByIndex;
@@ -25,6 +24,7 @@ import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.stats.StatsCache;
 import io.dingodb.calcite.stats.TableStats;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.scalar.DateType;
@@ -36,13 +36,11 @@ import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
 import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -52,7 +50,7 @@ public class DingoCostModelV1 extends DingoCostModel {
 
     private static final double scanFactor = 40.7;
     private static final double netFactor = 3.96;
-    private static final double requestFactor = 6000000;
+    private static final double requestFactor = 60;
     private static final double cpuFactor = 49.9;
     private static final double scanConcurrency = 15;
     private static final double lookupConcurrency = 5;
@@ -77,11 +75,15 @@ public class DingoCostModelV1 extends DingoCostModel {
         // table_scan_cost = cardinality * log2(row_size) * scanFactor
 
         double rowSize = getScanAvgRowSize(dingoGetByIndex);
-
-        DingoTable dingoTable = (DingoTable) ((RelOptTableImpl) dingoGetByIndex.getTable()).table();
+        dingoGetByIndex.getTable().unwrap(DingoTable.class);
+        DingoTable dingoTable = dingoGetByIndex.getTable().unwrap(DingoTable.class);
         String schemaName = dingoTable.getNames().get(1);
 
-        List<String> columnList = Arrays.asList(dingoGetByIndex.getColumns());
+        CommonId commonId = dingoGetByIndex.getIndexSetMap().keySet().stream().findFirst().get();
+        TableDefinition td = dingoGetByIndex.getIndexTdMap().get(commonId);
+
+        List<String> columnList = td.getColumns()
+            .stream().map(ColumnDefinition::getName).collect(Collectors.toList());
         List<ColumnDefinition> indexCdList = dingoTable.getTableDefinition().getColumns().stream()
             .filter(cd -> columnList.contains(cd.getName())).collect(Collectors.toList());
         double indexRowSize = getAvgRowSize(indexCdList,
@@ -158,7 +160,7 @@ public class DingoCostModelV1 extends DingoCostModel {
     @NonNull
     private static List<ColumnDefinition> getSelectionCdList(LogicalDingoTableScan tableScan, DingoTable dingoTable) {
         if (tableScan.getSelection() == null) {
-            return null;
+            return dingoTable.getTableDefinition().getColumns();
         }
         int[] selections = tableScan.getSelection().getMappings();
         List<ColumnDefinition> selectionCdList = new ArrayList<>();
@@ -218,9 +220,9 @@ public class DingoCostModelV1 extends DingoCostModel {
 
     private static boolean needLookUp(List<ColumnDefinition> indexCdList, List<ColumnDefinition> selectionCdList) {
         if (selectionCdList.size() > indexCdList.size()) {
-            return false;
+            return true;
         } else {
-            return selectionCdList.stream().allMatch(indexCdList::contains);
+            return !selectionCdList.stream().allMatch(indexCdList::contains);
         }
     }
 }

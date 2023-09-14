@@ -19,6 +19,7 @@ package io.dingodb.calcite.rule;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoFilter;
+import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoGetVectorByDistance;
 import io.dingodb.calcite.rel.DingoStreamingConverter;
@@ -48,6 +49,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.filterIndices;
+import static io.dingodb.calcite.rule.DingoGetByIndexRule.filterScalarIndices;
+import static io.dingodb.calcite.rule.DingoGetByIndexRule.getScalaIndices;
 
 @Slf4j
 @Value.Enclosing
@@ -83,7 +86,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         RelTraitSet traitSet = vector.getTraitSet().replace(DingoRelStreaming.of(vector.getTable()));
 
         // vector filter match primary point get
-        if (prePrimaryPlan(call, filter, vector, vectorIdPair, traitSet, selection)) {
+        if (prePrimaryOrScalarPlan(call, filter, vector, vectorIdPair, traitSet, selection)) {
             return;
         }
 
@@ -134,7 +137,39 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         call.transformTo(dingoVectorGetDistance);
     }
 
-    private static boolean prePrimaryPlan(RelOptRuleCall call,
+    private static DingoGetByIndex preScalarRelNode(DingoVector dingoVector,
+                                         IndexValueMapSet<Integer, RexNode> indexValueMapSet,
+                                         TableDefinition td,
+                                         TupleMapping selection,
+                                         DingoFilter filter) {
+        Map<CommonId, TableDefinition> indexTdMap = getScalaIndices(dingoVector.getTable());
+
+        if (indexTdMap.size() == 0) {
+            return null;
+        }
+        Map<CommonId, Set> indexSetMap = filterScalarIndices(
+            indexValueMapSet,
+            indexTdMap,
+            selection,
+            td);
+        if (indexSetMap == null) {
+            return null;
+        }
+
+        return new DingoGetByIndex(
+            dingoVector.getCluster(),
+            dingoVector.getTraitSet(),
+            ImmutableList.of(),
+            dingoVector.getTable(),
+            filter.getCondition(),
+            selection,
+            false,
+            indexSetMap,
+            indexTdMap
+        );
+    }
+
+    private static boolean prePrimaryOrScalarPlan(RelOptRuleCall call,
                                           DingoFilter filter,
                                           DingoVector vector,
                                           Pair<Integer, Integer> vectorIdPair,
@@ -149,8 +184,10 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         List<Integer> keyIndices = td.getKeyColumnIndices();
 
         Set<Map<Integer, RexNode>> keyMapSet = filterIndices(indexValueMapSet, keyIndices, selection);
+
+        RelNode scan;
         if (keyMapSet != null) {
-            RelNode dingoGetByKeys = new DingoGetByKeys(
+            scan = new DingoGetByKeys(
                 vector.getCluster(),
                 vector.getTraitSet(),
                 ImmutableList.of(),
@@ -159,34 +196,39 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
                 selection,
                 keyMapSet
             );
-            VectorStreamConvertor vectorStreamConvertor = new VectorStreamConvertor(
-                vector.getCluster(),
-                vector.getTraitSet(),
-                dingoGetByKeys,
-                vector.getIndexTableId(),
-                vectorIdPair.getKey(),
-                vector.getIndexTableDefinition(),
-                false);
-            DingoGetVectorByDistance dingoVectorGetDistance = new DingoGetVectorByDistance(
-                vector.getCluster(),
-                traitSet,
-                vectorStreamConvertor,
-                filter.getCondition(),
-                vector.getTable(),
-                vector.getOperands(),
-                vectorIdPair.getKey(),
-                vectorIdPair.getValue(),
-                vector.getIndexTableId()
-            );
-            RelTraitSet traits = vector.getCluster().traitSet()
-                .replace(DingoConvention.INSTANCE)
-                .replace(DingoRelStreaming.ROOT);
-            DingoStreamingConverter dingoStreamingConverterA = new DingoStreamingConverter(vector.getCluster(),
-                traits, dingoVectorGetDistance);
-            call.transformTo(dingoStreamingConverterA);
-            return true;
+        } else {
+            scan = preScalarRelNode(vector, indexValueMapSet, td, selection, filter);
         }
-        return false;
+
+        if (scan == null) {
+            return false;
+        }
+        VectorStreamConvertor vectorStreamConvertor = new VectorStreamConvertor(
+            vector.getCluster(),
+            vector.getTraitSet(),
+            scan,
+            vector.getIndexTableId(),
+            vectorIdPair.getKey(),
+            vector.getIndexTableDefinition(),
+            false);
+        DingoGetVectorByDistance dingoVectorGetDistance = new DingoGetVectorByDistance(
+            vector.getCluster(),
+            traitSet,
+            vectorStreamConvertor,
+            filter.getCondition(),
+            vector.getTable(),
+            vector.getOperands(),
+            vectorIdPair.getKey(),
+            vectorIdPair.getValue(),
+            vector.getIndexTableId()
+        );
+        RelTraitSet traits = vector.getCluster().traitSet()
+            .replace(DingoConvention.INSTANCE)
+            .replace(DingoRelStreaming.ROOT);
+        DingoStreamingConverter dingoStreamingConverterA = new DingoStreamingConverter(vector.getCluster(),
+            traits, dingoVectorGetDistance);
+        call.transformTo(dingoStreamingConverterA);
+        return true;
     }
 
     @Value.Immutable

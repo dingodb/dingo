@@ -51,7 +51,7 @@ public final class MetaServiceUtils {
         return names.get(names.size() - 1);
     }
 
-    private static MetaService getMetaService(@NonNull RelOptTable table) {
+    public static MetaService getMetaService(@NonNull RelOptTable table) {
         List<String> names = table.getQualifiedName();
         // ignore 0 root schema
         MetaService metaService = MetaService.root();

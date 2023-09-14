@@ -226,15 +226,6 @@ public class Murmur3 {
                 | (((long) data[i16 + 6] & 0xff) << 48)
                 | (((long) data[i16 + 7] & 0xff) << 56);
 
-            long k2 = ((long) data[i16 + 8] & 0xff)
-                | (((long) data[i16 + 9] & 0xff) << 8)
-                | (((long) data[i16 + 10] & 0xff) << 16)
-                | (((long) data[i16 + 11] & 0xff) << 24)
-                | (((long) data[i16 + 12] & 0xff) << 32)
-                | (((long) data[i16 + 13] & 0xff) << 40)
-                | (((long) data[i16 + 14] & 0xff) << 48)
-                | (((long) data[i16 + 15] & 0xff) << 56);
-
             // mix functions for k1
             k1 *= C1;
             k1 = Long.rotateLeft(k1, R1);
@@ -244,6 +235,14 @@ public class Murmur3 {
             h1 += h2;
             h1 = h1 * M + N1;
 
+            long k2 = ((long) data[i16 + 8] & 0xff)
+                | (((long) data[i16 + 9] & 0xff) << 8)
+                | (((long) data[i16 + 10] & 0xff) << 16)
+                | (((long) data[i16 + 11] & 0xff) << 24)
+                | (((long) data[i16 + 12] & 0xff) << 32)
+                | (((long) data[i16 + 13] & 0xff) << 40)
+                | (((long) data[i16 + 14] & 0xff) << 48)
+                | (((long) data[i16 + 15] & 0xff) << 56);
             // mix functions for k2
             k2 *= C2;
             k2 = Long.rotateLeft(k2, R3);

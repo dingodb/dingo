@@ -21,14 +21,14 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaConnection;
-import org.apache.calcite.avatica.util.AbstractCursor;
-import org.apache.calcite.avatica.util.DingoAccessor;
 import org.apache.calcite.avatica.AvaticaResultSet;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.QueryState;
+import org.apache.calcite.avatica.util.AbstractCursor;
 import org.apache.calcite.avatica.util.Cursor;
+import org.apache.calcite.avatica.util.DingoAccessor;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;

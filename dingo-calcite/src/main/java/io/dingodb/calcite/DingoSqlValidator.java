@@ -62,9 +62,9 @@ public class DingoSqlValidator extends SqlValidatorImpl {
         @Nullable SqlValidatorScope usingScope, @Nullable String alias, SqlValidatorNamespace ns, boolean forceNullable
     ) {
         SqlNode enclosingNode = ns.getEnclosingNode();
-        if (enclosingNode instanceof SqlBasicCall &&
-            (((SqlBasicCall) enclosingNode).getOperator() instanceof SqlFunctionScanOperator ||
-                ((SqlBasicCall) enclosingNode).getOperator() instanceof SqlVectorOperator)
+        if (enclosingNode instanceof SqlBasicCall
+            && (((SqlBasicCall) enclosingNode).getOperator() instanceof SqlFunctionScanOperator
+            || ((SqlBasicCall) enclosingNode).getOperator() instanceof SqlVectorOperator)
         ) {
             super.registerNamespace(
                 usingScope, alias,

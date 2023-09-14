@@ -241,6 +241,21 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
+    public NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull CommonId id,
+                                                                                          TableDefinition tableDefinition) {
+        NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
+        String funcName = tableDefinition.getPartDefinition().getFuncName();
+        // hash partition strategy need use the original key
+        boolean isOriginalKey = funcName.equalsIgnoreCase("HASH");
+        KeyValueCodec codec = CodecService.getDefault()
+            .createKeyValueCodec(DingoTypeFactory.tuple(TypeCode.LONG), TupleMapping.of(new int[0]));
+        metaServiceClient.getIndexRangeDistribution(mapping(id)).values().stream()
+            .map(__ -> mapping(__, codec, isOriginalKey))
+            .forEach(__ -> result.put(new ComparableByteArray(__.getStartKey()), __));
+        return result;
+    }
+
+    @Override
     public NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull CommonId id) {
         NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
         KeyValueCodec codec = CodecService.getDefault()

@@ -17,6 +17,7 @@
 package io.dingodb.store.api;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.table.TableDefinition;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public interface StoreService {
@@ -26,6 +27,10 @@ public interface StoreService {
     }
 
     default StoreInstance getInstance(@NonNull CommonId tableId, CommonId regionId) {
+        return null;
+    }
+
+    default StoreInstance getInstance(@NonNull CommonId tableId, CommonId regionId, TableDefinition tableDefinition) {
         return null;
     }
 

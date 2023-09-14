@@ -175,6 +175,11 @@ public interface MetaService {
         throw new UnsupportedOperationException();
     }
 
+    default NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(CommonId id,
+                                                                                      TableDefinition tableDefinition) {
+        throw new UnsupportedOperationException();
+    }
+
     default NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull String name) {
         throw new UnsupportedOperationException();
     }
