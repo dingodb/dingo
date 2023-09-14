@@ -19,7 +19,7 @@ package io.dingodb.driver.client;
 import io.dingodb.common.Location;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.util.NoBreakFunctions;
-import io.dingodb.driver.DingoFactory;
+import io.dingodb.driver.DingoClientFactory;
 import io.dingodb.driver.DingoServiceImpl;
 import io.dingodb.driver.api.MetaApi;
 import io.dingodb.net.NetService;
@@ -120,7 +120,7 @@ public class DingoDriverClient extends Driver {
 
     @Override
     protected AvaticaFactory createFactory() {
-        return new DingoFactory(instantiateFactory(getFactoryClassName(JdbcVersion.current())));
+        return new DingoClientFactory(instantiateFactory(getFactoryClassName(JdbcVersion.current())));
     }
 
     private Properties parseURL(String url, Properties defaults) throws SQLException {
