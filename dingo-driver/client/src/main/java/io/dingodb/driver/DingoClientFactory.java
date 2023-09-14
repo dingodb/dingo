@@ -26,12 +26,12 @@ import org.apache.calcite.avatica.QueryState;
 import java.sql.SQLException;
 import java.util.TimeZone;
 
-public class DingoFactory implements AvaticaFactory {
+public class DingoClientFactory implements AvaticaFactory {
 
     @Delegate
     private final AvaticaFactory delegate;
 
-    public DingoFactory(AvaticaFactory delegate) {
+    public DingoClientFactory(AvaticaFactory delegate) {
         this.delegate = delegate;
     }
 
@@ -39,7 +39,7 @@ public class DingoFactory implements AvaticaFactory {
     public AvaticaResultSet newResultSet(
         AvaticaStatement statement, QueryState state, Meta.Signature signature, TimeZone timeZone, Meta.Frame firstFrame
     ) throws SQLException {
-        return new DingoResultSet(
+        return new DingoClientResultSet(
             statement, state, signature, newResultSetMetaData(statement, signature), timeZone, firstFrame
         );
     }

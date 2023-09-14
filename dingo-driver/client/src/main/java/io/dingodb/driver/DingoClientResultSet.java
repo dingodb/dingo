@@ -32,9 +32,9 @@ import java.sql.Types;
 import java.util.List;
 import java.util.TimeZone;
 
-public class DingoResultSet extends AvaticaResultSet {
+public class DingoClientResultSet extends AvaticaResultSet {
 
-    public DingoResultSet(
+    public DingoClientResultSet(
         AvaticaStatement statement,
         QueryState state,
         Meta.Signature signature,
