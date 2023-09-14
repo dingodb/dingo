@@ -17,11 +17,10 @@
 package io.dingodb.calcite.stats;
 
 public enum StatsTaskState {
-    PENDING("pending"),
+    PENDING("PENDING"),
     RUNNING("RUNNING"),
     SUCCESS("SUCCESS"),
-    FAIL("FAIL")
-    ;
+    FAIL("FAIL");
 
     StatsTaskState(String state) {
         this.state = state;
