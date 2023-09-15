@@ -20,13 +20,27 @@ import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.SqlExprUtils;
+import io.dingodb.calcite.utils.TableUtils;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.TupleMapping;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.rex.RexVisitorImpl;
+import org.apache.calcite.util.mapping.Mapping;
+import org.apache.calcite.util.mapping.Mappings;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 
 @Value.Enclosing
 public class DingoAggregateScanRule extends RelRule<RelRule.Config> {
@@ -40,16 +54,46 @@ public class DingoAggregateScanRule extends RelRule<RelRule.Config> {
         DingoTableScan scan = call.rel(1);
         RelOptCluster cluster = aggregate.getCluster();
         RexNode filter = scan.getFilter();
+        TupleMapping selection = scan.getSelection();
+        boolean isCountNoArgListAgg = aggregate.getAggCallList() != null && aggregate.getAggCallList().size() == 1
+            && aggregate.getAggCallList().get(0).toString().equalsIgnoreCase("COUNT()")
+            && selection == null;
         if (filter != null) {
             DingoType schema = DefinitionMapper.mapToDingoType(scan.getTableType());
             if (scan.getSelection() != null) {
                 schema = schema.select(scan.getSelection());
+            } else if (isCountNoArgListAgg) {
+                // Optimization scenario similar to this SQL: select count(*) from t1 where sal > 1 and id = 1 and name ='a'
+                final List<Integer> selectedColumns = new ArrayList<>();
+                final RexVisitorImpl<Void> visitor = new RexVisitorImpl<Void>(true) {
+                    @Override
+                    public @Nullable Void visitInputRef(@NonNull RexInputRef inputRef) {
+                        if (!selectedColumns.contains(inputRef.getIndex())) {
+                            selectedColumns.add(inputRef.getIndex());
+                        }
+                        return null;
+                    }
+                };
+                filter.accept(visitor);
+                // Order naturally to help decoding in push down.
+                selectedColumns.sort(Comparator.naturalOrder());
+                Mapping mapping = Mappings.target(selectedColumns, scan.getRowType().getFieldCount());
+                // Push selection down over filter.
+                filter = RexUtil.apply(mapping, filter);
+                selection = TupleMapping.of(selectedColumns);
+                schema = schema.select(selection);
             }
             byte[] code = SqlExprUtils.toSqlExpr(filter).getCoding(schema, null);
             // Do not push-down if the filter can not be pushed down.
             if (code == null) {
                 return;
             }
+        } else if (isCountNoArgListAgg) {
+            // Optimization scenario similar to this SQL: select count(*) from t1
+            TableDefinition td = TableUtils.getTableDefinition(scan.getTable());
+            int firstPrimaryColumnIndex = td.getFirstPrimaryColumnIndex();
+            // selection use first primary key index
+            selection = TupleMapping.of(Arrays.asList(firstPrimaryColumnIndex));
         }
         call.transformTo(
             new DingoTableScan(
@@ -57,8 +101,8 @@ public class DingoAggregateScanRule extends RelRule<RelRule.Config> {
                 aggregate.getTraitSet(),
                 scan.getHints(),
                 scan.getTable(),
-                scan.getFilter(),
-                scan.getSelection(),
+                filter,
+                selection,
                 aggregate.getAggCallList(),
                 aggregate.getGroupSet(),
                 aggregate.getGroupSets(),
