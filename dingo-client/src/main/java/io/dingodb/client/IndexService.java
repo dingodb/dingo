@@ -99,7 +99,7 @@ public class IndexService {
         });
     }
 
-    private synchronized Optional<Throwable> exec(
+    private Optional<Throwable> exec(
         IndexInfo indexInfo,
         Operation operation,
         Operation.Fork fork,
@@ -144,7 +144,7 @@ public class IndexService {
 
     private List<OperationContext> generateContext(
         IndexInfo indexInfo,
-        Operation.Fork fork, 
+        Operation.Fork fork,
         VectorContext vectorContext
     ) {
         int i = 0;

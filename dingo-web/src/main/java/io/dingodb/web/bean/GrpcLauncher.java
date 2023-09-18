@@ -30,6 +30,8 @@ import java.util.Map;
 @Component("grpcLauncher")
 public class GrpcLauncher {
 
+    public static final int DEFAULT_MAX_MESSAGE_SIZE = 10 * 1024 * 1024;
+
     private Server server;
 
     @Value("${server.grpc.port}")
@@ -42,7 +44,10 @@ public class GrpcLauncher {
                 serverBuilder.addService((BindableService) bean);
                 log.info("{} is register in Spring Boot", bean.getClass().getSimpleName());
             }
-            server = serverBuilder.build().start();
+            server = serverBuilder
+                .maxInboundMessageSize(DEFAULT_MAX_MESSAGE_SIZE)
+                .maxInboundMetadataSize(DEFAULT_MAX_MESSAGE_SIZE)
+                .build().start();
             log.info("grpc server is started at {}", grpcServerPort);
             server.awaitTermination();
             Runtime.getRuntime().addShutdownHook(new Thread(this::grpcStop));
