@@ -61,7 +61,7 @@ public class ColumnType {
         typeMapping.put("TIME", FIELD_TYPE_TIME);
         typeMapping.put("TIMESTAMP", FIELD_TYPE_TIMESTAMP);
         typeMapping.put("CHAR", FIELD_TYPE_STRING);
-        typeMapping.put("ARRAY", FIELD_TYPE_SET);
+        typeMapping.put("ARRAY", FIELD_TYPE_VAR_STRING);
         typeMapping.put("MULTISET", FIELD_TYPE_SET);
         typeMapping.put("BOOLEAN", FIELD_TYPE_TINY);
     }

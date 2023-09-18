@@ -16,10 +16,13 @@
 
 package io.dingodb.driver.mysql.packet;
 
+import io.dingodb.common.mysql.DingoArray;
 import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 
+import java.sql.Array;
 import java.sql.Date;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -171,6 +174,15 @@ public class PrepareResultSetRowPacket extends MysqlPacket {
     }
 
     public void addColumnValue(Object val) {
+        if (val instanceof Array) {
+            DingoArray array = (DingoArray) val;
+            try {
+                List<Object> objects = (List<Object>) array.getArray();
+                val = StringUtils.join(objects);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
         values.add(val);
     }
 

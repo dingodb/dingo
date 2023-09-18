@@ -19,6 +19,7 @@ package io.dingodb.calcite.meta;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoCost;
 import io.dingodb.calcite.rel.DingoGetByIndex;
+import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
@@ -54,6 +55,8 @@ public class DingoCostModelV1 extends DingoCostModel {
     private static final double cpuFactor = 49.9;
     private static final double scanConcurrency = 15;
     private static final double lookupConcurrency = 5;
+
+    private static final double memFactor = 0.01;
 
     private static DingoCostModelV1 INSTANCE;
 
@@ -110,6 +113,13 @@ public class DingoCostModelV1 extends DingoCostModel {
 
         double cost = indexSideCost + (tableSideCost + doubleReadCost) / lookupConcurrency;
         return DingoCost.FACTORY.makeCost(cost, 0, 0);
+    }
+
+    public RelOptCost getDingoGetByIndexMerge(DingoGetByIndexMerge dingoGetByIndexMerge, RelMetadataQuery mq) {
+        RelOptCost cost = getDingoGetByIndex(dingoGetByIndexMerge, mq);
+        double rowCount = dingoGetByIndexMerge.estimateRowCount(mq);
+        RelOptCost memCost = DingoCost.FACTORY.makeCost(rowCount * memFactor, 0, 0);
+        return cost.plus(memCost);
     }
 
     public RelOptCost getDingoGetByKeys(DingoGetByKeys dingoGetByKeys, RelMetadataQuery mq) {
