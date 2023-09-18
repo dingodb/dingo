@@ -16,7 +16,9 @@
 
 package org.apache.calcite.avatica.util;
 
+import io.dingodb.common.mysql.DingoArray;
 import lombok.AllArgsConstructor;
+import org.apache.calcite.avatica.ColumnMetaData;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -28,12 +30,14 @@ import java.sql.Clob;
 import java.sql.Date;
 import java.sql.NClob;
 import java.sql.Ref;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.sql.Struct;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Map;
 
 @AllArgsConstructor
@@ -120,12 +124,17 @@ public class DingoAccessor implements Cursor.Accessor {
     }
 
     @Override
-    public Reader getCharacterStream() throws SQLException {
+    public Object getObject(Map<String, Class<?>> map) throws SQLException {
         return null;
     }
 
     @Override
-    public Object getObject(Map<String, Class<?>> map) throws SQLException {
+    public <T> T getObject(Class<T> type) throws SQLException {
+        return null;
+    }
+
+    @Override
+    public Reader getCharacterStream() throws SQLException {
         return null;
     }
 
@@ -146,7 +155,12 @@ public class DingoAccessor implements Cursor.Accessor {
 
     @Override
     public Array getArray() throws SQLException {
-        return null;
+        final Object o = getObject();
+        if (o == null) {
+            return null;
+        }
+        // If it's not an Array already, assume it is a List.
+        return new DingoArray((List<Object>) o);
     }
 
     @Override
@@ -193,12 +207,6 @@ public class DingoAccessor implements Cursor.Accessor {
     public Reader getNCharacterStream() throws SQLException {
         return null;
     }
-
-    @Override
-    public <T> T getObject(Class<T> type) throws SQLException {
-        return null;
-    }
-
 
     public static class FloatAccessor extends DingoAccessor {
         public FloatAccessor(AbstractCursor cursor, int index) {

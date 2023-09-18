@@ -20,6 +20,7 @@ import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.rel.DingoGetByIndex;
+import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoGetVectorByDistance;
 import io.dingodb.calcite.rel.DingoHashJoin;
@@ -41,6 +42,7 @@ import io.dingodb.calcite.visitor.function.DingoAggregateVisitFun;
 import io.dingodb.calcite.visitor.function.DingoCountDeleteVisitFun;
 import io.dingodb.calcite.visitor.function.DingoFilterVisitFun;
 import io.dingodb.calcite.visitor.function.DingoFunctionScanVisitFun;
+import io.dingodb.calcite.visitor.function.DingoGetByIndexMergeVisitFun;
 import io.dingodb.calcite.visitor.function.DingoGetByIndexVisitFun;
 import io.dingodb.calcite.visitor.function.DingoGetByKeysFun;
 import io.dingodb.calcite.visitor.function.DingoGetVectorByDistanceVisitFun;
@@ -207,4 +209,8 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
         return DingoVectorStreamingVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
+    @Override
+    public Collection<Output> visit(@NonNull DingoGetByIndexMerge rel) {
+        return DingoGetByIndexMergeVisitFun.visit(job, idGenerator, currentLocation, this, rel);
+    }
 }

@@ -17,6 +17,7 @@
 package io.dingodb.calcite.meta;
 
 import io.dingodb.calcite.rel.DingoGetByIndex;
+import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoTableScan;
 import org.apache.calcite.plan.RelOptCost;
@@ -24,6 +25,8 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 
 public abstract class DingoCostModel {
     public abstract RelOptCost getDingoGetByIndex(DingoGetByIndex tableScan, RelMetadataQuery mq);
+
+    public abstract RelOptCost getDingoGetByIndexMerge(DingoGetByIndexMerge dingoGetByIndexMerge, RelMetadataQuery mq);
 
     public abstract RelOptCost getDingoGetByKeys(DingoGetByKeys dingoGetByKeys, RelMetadataQuery mq);
 
