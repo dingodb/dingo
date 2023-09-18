@@ -17,9 +17,9 @@
 package io.dingodb.client.mappers;
 
 
+import io.dingodb.client.IBaseDingoMapper;
 import io.dingodb.client.utils.DeferredObjectLoader;
 import io.dingodb.client.utils.TypeUtils;
-import io.dingodb.client.IBaseDingoMapper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -107,7 +107,8 @@ public class MapMapper extends TypeMapper {
             TypeMapper itemMap = itemMapper != null ? itemMapper : mapper2;
             final Object javaKey = keyMap == null ? null : keyMap.fromDingoFormat(key);
             final Object javaItem = itemMap == null ? null : itemMap.fromDingoFormat(item);
-            if (javaKey instanceof DeferredObjectLoader.DeferredObject || javaItem instanceof DeferredObjectLoader.DeferredObject) {
+            if (javaKey instanceof DeferredObjectLoader.DeferredObject
+                || javaItem instanceof DeferredObjectLoader.DeferredObject) {
                 DeferredObjectLoader.DeferredSetter setter = object -> results.put(javaKey, object);
                 DeferredObjectLoader.DeferredObjectSetter objectSetter = new DeferredObjectLoader.DeferredObjectSetter(
                     setter,

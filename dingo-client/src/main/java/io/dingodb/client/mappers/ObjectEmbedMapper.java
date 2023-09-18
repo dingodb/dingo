@@ -16,10 +16,10 @@
 
 package io.dingodb.client.mappers;
 
+import io.dingodb.client.IBaseDingoMapper;
 import io.dingodb.client.annotation.DingoEmbed;
 import io.dingodb.client.utils.ClassCache;
 import io.dingodb.client.utils.ClassCacheEntry;
-import io.dingodb.client.IBaseDingoMapper;
 import io.dingodb.sdk.common.DingoClientException;
 
 import java.util.List;

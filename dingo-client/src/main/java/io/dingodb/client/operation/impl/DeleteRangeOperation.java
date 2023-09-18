@@ -33,7 +33,10 @@ import java.util.List;
 import java.util.NavigableSet;
 import java.util.stream.Collectors;
 
-import static io.dingodb.client.operation.RangeUtils.*;
+import static io.dingodb.client.operation.RangeUtils.convert;
+import static io.dingodb.client.operation.RangeUtils.getSubTasks;
+import static io.dingodb.client.operation.RangeUtils.validateKeyRange;
+import static io.dingodb.client.operation.RangeUtils.validateOpRange;
 
 public class DeleteRangeOperation implements Operation {
 
@@ -100,8 +103,12 @@ public class DeleteRangeOperation implements Operation {
             context.<DeleteRangeResult.DeleteResult[]>result()[context.getSeq()] = new DeleteRangeResult.DeleteResult(
                 count,
                 new OpKeyRange(
-                    new Key(Arrays.stream(codec.decodeKeyPrefix(codec.resetPrefix(range.getStartKey(), context.getTableId().entityId()))).map(Value::get).collect(Collectors.toList())),
-                    new Key(Arrays.stream(codec.decodeKeyPrefix(codec.resetPrefix(range.getEndKey(), context.getTableId().entityId()))).map(Value::get).collect(Collectors.toList())),
+                    new Key(Arrays.stream(
+                        codec.decodeKeyPrefix(codec.resetPrefix(range.getStartKey(), context.getTableId().entityId()))
+                    ).map(Value::get).collect(Collectors.toList())),
+                    new Key(Arrays.stream(
+                        codec.decodeKeyPrefix(codec.resetPrefix(range.getEndKey(), context.getTableId().entityId()))
+                    ).map(Value::get).collect(Collectors.toList())),
                     range.withStart, range.withEnd));
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -110,7 +117,8 @@ public class DeleteRangeOperation implements Operation {
 
     @Override
     public <R> R reduce(Fork context) {
-        List<DeleteRangeResult.DeleteResult> resultList = Arrays.stream(context.<DeleteRangeResult.DeleteResult[]>result()).collect(Collectors.toList());
+        List<DeleteRangeResult.DeleteResult> resultList =
+            Arrays.stream(context.<DeleteRangeResult.DeleteResult[]>result()).collect(Collectors.toList());
         long count = resultList.stream()
             .mapToLong(DeleteRangeResult.DeleteResult::getCount)
             .filter(__ -> __ > 0)

@@ -238,7 +238,10 @@ public class MappingConverter {
             List<ClassCacheEntry<?>> classCacheEntryList = new ArrayList<>();
 
             // Resolve any objects which have been seen before
-            for (Iterator<DeferredObjectLoader.DeferredObjectSetter> iterator = deferredObjects.iterator(); iterator.hasNext(); ) {
+            for (
+                Iterator<DeferredObjectLoader.DeferredObjectSetter> iterator = deferredObjects.iterator();
+                iterator.hasNext();)
+            {
                 DeferredObjectLoader.DeferredObjectSetter thisObjectSetter = iterator.next();
                 DeferredObjectLoader.DeferredObject deferredObject = thisObjectSetter.getObject();
                 Class<?> clazz = deferredObject.getType();

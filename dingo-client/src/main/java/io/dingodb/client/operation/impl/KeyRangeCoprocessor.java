@@ -99,8 +99,9 @@ public class KeyRangeCoprocessor {
                 case "REAL":
                 case "DECIMAL":
                     return true;
+                default:
+                    return false;
             }
-            return false;
         }
 
         private static boolean isComparable(String type) {
@@ -125,8 +126,9 @@ public class KeyRangeCoprocessor {
                 case "VARBINARY":
                 case "BLOB":
                     return true;
+                default:
+                    return false;
             }
-            return false;
         }
 
 

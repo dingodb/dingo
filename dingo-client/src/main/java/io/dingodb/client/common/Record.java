@@ -174,6 +174,9 @@ public final class Record {
 
     /**
      * Get column value given column name.
+     * @param name name
+     * @return T
+     * @param <T> T
      */
     public <T> T getValue(String name) {
         return (T) Optional.ofNullable(columnIndex.get(name)).map(i -> values[i].getObject()).orNull();
@@ -181,6 +184,8 @@ public final class Record {
 
     /**
      * Get column value as String.
+     * @param name name
+     * @return string
      */
     public String getString(String name) {
         return getValue(name);
@@ -188,6 +193,8 @@ public final class Record {
 
     /**
      * Get column value as double.
+     * @param name name
+     * @return double
      */
     public double getDouble(String name) {
         // The server may return number as double or long.
@@ -200,6 +207,8 @@ public final class Record {
 
     /**
      * Get column value as float.
+     * @param name name
+     * @return float
      */
     public float getFloat(String name) {
         return getValue(name);
@@ -207,6 +216,8 @@ public final class Record {
 
     /**
      * Get column value as long.
+     * @param name name
+     * @return long
      */
     public long getLong(String name) {
         // The server always returns numbers as longs if column found.
@@ -217,6 +228,8 @@ public final class Record {
 
     /**
      * Get column value as int.
+     * @param name name
+     * @return int
      */
     public int getInt(String name) {
         // The server always returns numbers as longs, so get long and cast.
@@ -225,6 +238,8 @@ public final class Record {
 
     /**
      * Get column value as short.
+     * @param name name
+     * @return short
      */
     public short getShort(String name) {
         return (short) getLong(name);
@@ -232,6 +247,8 @@ public final class Record {
 
     /**
      * Get column value as byte.
+     * @param name name
+     * @return byte
      */
     public byte getByte(String name) {
         return (byte) getLong(name);
@@ -239,6 +256,8 @@ public final class Record {
 
     /**
      * Get column value as boolean.
+     * @param name name
+     * @return boolean
      */
     public boolean getBoolean(String name) {
         Object result = getValue(name);
@@ -256,6 +275,8 @@ public final class Record {
 
     /**
      * Get column value as list.
+     * @param name name
+     * @return list
      */
     public List<?> getList(String name) {
         return getValue(name);
@@ -263,6 +284,8 @@ public final class Record {
 
     /**
      * Get column value as map.
+     * @param name name
+     * @return map
      */
     public Map<?, ?> getMap(String name) {
         return getValue(name);

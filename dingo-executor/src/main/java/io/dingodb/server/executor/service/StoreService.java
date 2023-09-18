@@ -41,7 +41,7 @@ import static java.util.Collections.singletonList;
 public final class StoreService implements io.dingodb.store.api.StoreService {
     public static final StoreService DEFAULT_INSTANCE = new StoreService();
 
-//    @AutoService(io.dingodb.store.api.StoreServiceProvider.class)
+    // @AutoService(io.dingodb.store.api.StoreServiceProvider.class)
     public static final class StoreServiceProvider implements io.dingodb.store.api.StoreServiceProvider {
         @Override
         public io.dingodb.store.api.StoreService get() {
@@ -146,7 +146,12 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         public Iterator<KeyValue> scan(Range range) {
             range = new Range(setId(range.start), setId(range.end), range.withStart, range.withEnd);
             return Iterators.transform(
-                storeService.scan(storeTableId, storeRegionId, mapping(range).getRange(), range.withStart, range.withEnd),
+                storeService.scan(
+                    storeTableId,
+                    storeRegionId,
+                    mapping(range).getRange(),
+                    range.withStart,
+                    range.withEnd),
                 Mapping::mapping
             );
         }
@@ -155,7 +160,13 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         public Iterator<KeyValue> scan(Range range, Coprocessor coprocessor) {
             range = new Range(setId(range.start), setId(range.end), range.withStart, range.withEnd);
             return Iterators.transform(
-                storeService.scan(storeTableId, storeRegionId, mapping(range).getRange(), range.withStart, range.withEnd, new io.dingodb.server.executor.common.Coprocessor(coprocessor)),
+                storeService.scan(
+                    storeTableId,
+                    storeRegionId,
+                    mapping(range).getRange(),
+                    range.withStart,
+                    range.withEnd,
+                    new io.dingodb.server.executor.common.Coprocessor(coprocessor)),
                 Mapping::mapping
             );
         }

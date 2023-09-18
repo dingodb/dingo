@@ -164,7 +164,10 @@ public class DingoClient {
      * Insert table data and index(scalar + vector) data at the same time.
      */
     public boolean upsertIndex(String tableName, Object[] record) {
-        return indexOperationService.exec(schema, tableName, PutOperation.getInstance(), new IndexOperationService.Parameter(record));
+        return indexOperationService.exec(
+            schema, tableName,
+            PutOperation.getInstance(),
+            new IndexOperationService.Parameter(record));
     }
 
     public List<Boolean> upsertNotStandard(String tableName, List<Record> records) {

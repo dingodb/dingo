@@ -47,6 +47,8 @@ public abstract class Value {
 
     /**
      * Get string or null value instance.
+     * @param value value
+     * @return value
      */
     public static Value get(String value) {
         return (value == null) ? NullValue.INSTANCE : new StringValue(value);
@@ -54,6 +56,8 @@ public abstract class Value {
 
     /**
      * Get byte array or null value instance.
+     * @param value value
+     * @return value
      */
     public static Value get(byte[] value) {
         return (value == null) ? NullValue.INSTANCE : new BytesValue(value);
@@ -61,6 +65,9 @@ public abstract class Value {
 
     /**
      * Get byte array with type or null value instance.
+     * @param value value
+     * @param type type
+     * @return value
      */
     public static Value get(byte[] value, int type) {
         return (value == null) ? NullValue.INSTANCE : new BytesValue(value, type);
@@ -68,6 +75,10 @@ public abstract class Value {
 
     /**
      * Get byte segment or null value instance.
+     * @param value value
+     * @param offset offset
+     * @param length length
+     * @return value
      */
     public static Value get(byte[] value, int offset, int length) {
         return (value == null) ? NullValue.INSTANCE : new ByteSegmentValue(value, offset, length);
@@ -75,6 +86,8 @@ public abstract class Value {
 
     /**
      * Get byte segment or null value instance.
+     * @param bb byte buffer
+     * @return value
      */
     public static Value get(ByteBuffer bb) {
         return (bb == null) ? NullValue.INSTANCE : new BytesValue(bb.array());
@@ -82,6 +95,8 @@ public abstract class Value {
 
     /**
      * Get byte value instance.
+     * @param value value
+     * @return value
      */
     public static Value get(byte value) {
         return new ByteValue(value);
@@ -89,6 +104,8 @@ public abstract class Value {
 
     /**
      * Get integer value instance.
+     * @param value value
+     * @return value
      */
     public static Value get(int value) {
         return new IntegerValue(value);
@@ -96,6 +113,8 @@ public abstract class Value {
 
     /**
      * Get long value instance.
+     * @param value value
+     * @return value
      */
     public static Value get(long value) {
         return new LongValue(value);
@@ -103,6 +122,8 @@ public abstract class Value {
 
     /**
      * Get double value instance.
+     * @param value value
+     * @return value
      */
     public static Value get(double value) {
         return new DoubleValue(value);
@@ -110,6 +131,8 @@ public abstract class Value {
 
     /**
      * Get float value instance.
+     * @param value value
+     * @return value
      */
     public static Value get(float value) {
         return new FloatValue(value);
@@ -117,6 +140,8 @@ public abstract class Value {
 
     /**
      * Get boolean value instance.
+     * @param value value
+     * @return value
      */
     public static Value get(boolean value) {
         if (UseBoolBin) {
@@ -128,6 +153,8 @@ public abstract class Value {
 
     /**
      * Get enum value string instance.
+     * @param value value
+     * @return value
      */
     public static Value get(Enum<?> value) {
         return (value == null) ? NullValue.INSTANCE : new StringValue(value.toString());
@@ -135,6 +162,8 @@ public abstract class Value {
 
     /**
      * Get UUID value string instance.
+     * @param value value
+     * @return value
      */
     public static Value get(UUID value) {
         return (value == null) ? NullValue.INSTANCE : new StringValue(value.toString());
@@ -142,6 +171,8 @@ public abstract class Value {
 
     /**
      * Get list or null value instance.
+     * @param value value
+     * @return value
      */
     public static Value get(List<?> value) {
         return (value == null) ? NullValue.INSTANCE : new ListValue(value);
@@ -149,6 +180,8 @@ public abstract class Value {
 
     /**
      * Get map or null value instance.
+     * @param value value
+     * @return value
      */
     public static Value get(Map<?,?> value) {
         return (value == null) ? NullValue.INSTANCE : new MapValue(value);
@@ -156,6 +189,8 @@ public abstract class Value {
 
     /**
      * Get value array instance.
+     * @param value value
+     * @return value
      */
     public static Value get(Value[] value) {
         return (value == null) ? NullValue.INSTANCE : new ValueArray(value);
@@ -165,6 +200,8 @@ public abstract class Value {
      * Determine value given generic object.
      * This is the slowest of the Value get() methods.
      * Useful when copying records from one cluster to another.
+     * @param value value
+     * @return value
      */
     public static Value get(Object value) {
         if (value == null) {
@@ -237,6 +274,8 @@ public abstract class Value {
 
     /**
      * Get blob or null value instance.
+     * @param value value
+     * @return value
      */
     public static Value getAsBlob(Object value) {
         return (value == null) ? NullValue.INSTANCE : new BlobValue(value);
@@ -244,6 +283,7 @@ public abstract class Value {
 
     /**
      * Get null value instance.
+     * @return value
      */
     public static Value getAsNull() {
         return NullValue.INSTANCE;
@@ -251,6 +291,8 @@ public abstract class Value {
 
     /**
      * Get value from Record object. Useful when copying records from one cluster to another.
+     * @param value value
+     * @return value
      */
     @Deprecated
     public static Value getFromRecordObject(Object value) {
@@ -266,11 +308,13 @@ public abstract class Value {
 
     /**
      * Get wire protocol value type.
+     * @return type
      */
     public abstract int getType();
 
     /**
      * Return original value as an Object.
+     * @return object
      */
     public abstract Object getObject();
 

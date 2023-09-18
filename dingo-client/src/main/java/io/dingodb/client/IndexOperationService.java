@@ -108,7 +108,8 @@ public class IndexOperationService {
         }
 
         Function<Operation, Class<? extends Operation>> func = Operation::getClass;
-        StoreInstance storeInstance = StoreService.getDefault().getInstance(mapping(tableInfo.tableId), mapping(regionId));
+        StoreInstance storeInstance =
+            StoreService.getDefault().getInstance(mapping(tableInfo.tableId), mapping(regionId));
         exec(storeInstance, parameter, operation, func);
 
         Predicate<Class<? extends Operation>> exec = __ -> secondExec(storeInstance, parameter, __);
@@ -130,9 +131,10 @@ public class IndexOperationService {
         Operation operation,
         Function<Operation, Class<? extends Operation>> func,
         int retry
-        ) {
+    ) {
         if (retry <= 0) {
-            return Optional.of(new DingoClientException(-1, "Exceeded the retry limit for performing " + PutOperation.getInstance().getClass()));
+            return Optional.of(new DingoClientException(
+                -1, "Exceeded the retry limit for performing " + PutOperation.getInstance().getClass()));
         }
         Optional<Throwable> error = Optional.empty();
         CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -156,7 +158,11 @@ public class IndexOperationService {
         return error;
     }
 
-    private static boolean secondExec(StoreInstance storeInstance, Parameter parameter, Class<? extends Operation> opClass) {
+    private static boolean secondExec(
+        StoreInstance storeInstance,
+        Parameter parameter,
+        Class<? extends Operation> opClass
+    ) {
         if (opClass == PutOperation.class) {
             return storeInstance.insertWithIndex(parameter.record);
         }
@@ -171,7 +177,11 @@ public class IndexOperationService {
         return false;
     }
 
-    private static boolean firstExec(StoreInstance storeInstance, Parameter parameter, Class<? extends Operation> opClass) {
+    private static boolean firstExec(
+        StoreInstance storeInstance,
+        Parameter parameter,
+        Class<? extends Operation> opClass
+    ) {
         if (opClass == PutOperation.class) {
             return storeInstance.insertIndex(parameter.record);
         }
@@ -202,7 +212,8 @@ public class IndexOperationService {
             DingoCommonId tableId = Parameters.nonNull(metaService.getTableId(tableName), "Table not found.");
             Table table = Parameters.nonNull(metaService.getTableDefinition(tableName), "Table not found.");
             NavigableMap<ComparableByteArray, RangeDistribution> parts = new TreeMap<>();
-            metaService.getRangeDistribution(tableId).forEach( ( k ,v ) -> parts.put(new ComparableByteArray(k.getBytes(), k.isIgnoreLen(), k.getPos()), v));
+            metaService.getRangeDistribution(tableId)
+                .forEach((k, v) -> parts.put(new ComparableByteArray(k.getBytes(), k.isIgnoreLen(), k.getPos()), v));
             KeyValueCodec keyValueCodec = new KeyValueCodec(DingoKeyValueCodec.of(tableId.entityId(), table), table);
 
             return new TableInfo(schemaName, tableName, tableId, table, keyValueCodec, parts);

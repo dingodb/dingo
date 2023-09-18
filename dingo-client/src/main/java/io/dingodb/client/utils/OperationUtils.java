@@ -46,18 +46,6 @@ public final class OperationUtils {
         }
     }
 
-    public static Object[] mapKeyPrefix(Table table, Key key) {
-        List<Column> columns = table.getColumns();
-        List<Column> keyColumns = table.getKeyColumns();
-        Object[] dst = new Object[columns.size()];
-        Object[] src = key.getUserKey().toArray();
-        if (key.columnOrder) {
-            throw new IllegalArgumentException("Key prefix not support column order key.");
-        } else {
-            return mapKey(src, dst, columns, CodecUtils.sortColumns(keyColumns).subList(0, src.length));
-        }
-    }
-
     public static Object[] mapKey(Object[] src, Object[] dst, List<Column> columns, List<Column> keyColumns) {
         if (keyColumns.size() != src.length) {
             throw new IllegalArgumentException(
@@ -71,6 +59,18 @@ public final class OperationUtils {
             }
         }
         return dst;
+    }
+
+    public static Object[] mapKeyPrefix(Table table, Key key) {
+        List<Column> columns = table.getColumns();
+        List<Column> keyColumns = table.getKeyColumns();
+        Object[] dst = new Object[columns.size()];
+        Object[] src = key.getUserKey().toArray();
+        if (key.columnOrder) {
+            throw new IllegalArgumentException("Key prefix not support column order key.");
+        } else {
+            return mapKey(src, dst, columns, CodecUtils.sortColumns(keyColumns).subList(0, src.length));
+        }
     }
 
     public static void checkParameters(List<Column> columns, Object[] record) {

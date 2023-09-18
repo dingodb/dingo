@@ -16,10 +16,10 @@
 
 package io.dingodb.client.common;
 
+import io.dingodb.client.IBaseDingoMapper;
 import io.dingodb.client.configuration.ClassConfig;
 import io.dingodb.client.mappers.TypeMapper;
 import io.dingodb.client.utils.TypeUtils;
-import io.dingodb.client.IBaseDingoMapper;
 import io.dingodb.sdk.common.DingoClientException;
 
 import java.lang.annotation.Annotation;
@@ -71,6 +71,7 @@ public class PropertyDefinition {
     /**
      * Get the type of this property. The getter and setter must agree on the property and this method
      * is only valid after the <code>validate</code> method has been called.
+     * @return class
      */
     public Class<?> getType() {
         return this.clazz;
@@ -90,6 +91,9 @@ public class PropertyDefinition {
 
     /**
      * Validate that this is a valid property.
+     * @param className class name
+     * @param config config
+     * @param allowNoSetter allow no setter
      */
     public void validate(String className, ClassConfig config, boolean allowNoSetter) {
         if (this.getter == null) {

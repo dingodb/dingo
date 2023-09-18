@@ -161,6 +161,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
+    public List<TableDefinition> getTableDefinitions(@NonNull String name) {
+        return metaServiceClient.getTables(name).stream().map(Mapping::mapping).collect(Collectors.toList());
+    }
+
+    @Override
     public TableDefinition getTableDefinition(@NonNull String name) {
         return Optional.mapOrNull(metaServiceClient.getTableDefinition(name), Mapping::mapping);
     }
@@ -196,13 +201,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public List<TableDefinition> getTableDefinitions(@NonNull String name) {
-        return metaServiceClient.getTables(name).stream().map(Mapping::mapping).collect(Collectors.toList());
-    }
-
-    @Override
     public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id) {
-       return metaServiceClient.getTableIndexes(mapping(id)).entrySet().stream()
+        return metaServiceClient.getTableIndexes(mapping(id)).entrySet().stream()
            .collect(Collectors.toMap(entry -> mapping(entry.getKey()), entry -> {
                // Remove . from the index table name
                Table table = entry.getValue();
@@ -241,8 +241,24 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull CommonId id,
-                                                                                          TableDefinition tableDefinition) {
+    public NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
+        NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
+        TableDefinition tableDefinition = getTableDefinition(id);
+        String funcName = tableDefinition.getPartDefinition().getFuncName();
+        // hash partition strategy need use the original key
+        boolean isOriginalKey = funcName.equalsIgnoreCase("HASH");
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
+        metaServiceClient.getRangeDistribution(mapping(id)).values().stream()
+            .map(__ -> mapping(__, codec, isOriginalKey))
+            .forEach(__ -> result.put(new ComparableByteArray(__.getStartKey()), __));
+        return result;
+    }
+
+    @Override
+    public NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(
+        @NonNull CommonId id,
+        TableDefinition tableDefinition
+    ) {
         NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
         String funcName = tableDefinition.getPartDefinition().getFuncName();
         // hash partition strategy need use the original key
@@ -262,20 +278,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .createKeyValueCodec(DingoTypeFactory.tuple(TypeCode.LONG), TupleMapping.of(new int[0]));
         metaServiceClient.getIndexRangeDistribution(mapping(id)).values().stream()
             .map(__ -> mapping(__, codec, true))
-            .forEach(__ -> result.put(new ComparableByteArray(__.getStartKey()), __));
-        return result;
-    }
-
-    @Override
-    public NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
-        NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
-        TableDefinition tableDefinition = getTableDefinition(id);
-        String funcName = tableDefinition.getPartDefinition().getFuncName();
-        // hash partition strategy need use the original key
-        boolean isOriginalKey = funcName.equalsIgnoreCase("HASH");
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
-        metaServiceClient.getRangeDistribution(mapping(id)).values().stream()
-            .map(__ -> mapping(__, codec, isOriginalKey))
             .forEach(__ -> result.put(new ComparableByteArray(__.getStartKey()), __));
         return result;
     }

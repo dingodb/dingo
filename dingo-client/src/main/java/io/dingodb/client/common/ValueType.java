@@ -81,7 +81,8 @@ public abstract class ValueType {
                         );
                     }
                 };
-                DeferredObjectLoader.DeferredObjectSetter objectSetter = new DeferredObjectLoader.DeferredObjectSetter(setter, (DeferredObjectLoader.DeferredObject) value);
+                DeferredObjectLoader.DeferredObjectSetter objectSetter =
+                    new DeferredObjectLoader.DeferredObjectSetter(setter, (DeferredObjectLoader.DeferredObject) value);
                 DeferredObjectLoader.add(objectSetter);
             } else {
                 this.field.set(obj, value);
@@ -146,10 +147,10 @@ public abstract class ValueType {
                                     );
                                 }
                             };
-                            DeferredObjectLoader.DeferredObjectSetter objectSetter = new DeferredObjectLoader.DeferredObjectSetter(
-                                setter,
-                                (DeferredObjectLoader.DeferredObject) value
-                            );
+                            DeferredObjectLoader.DeferredObjectSetter objectSetter =
+                                new DeferredObjectLoader.DeferredObjectSetter(
+                                    setter,
+                                    (DeferredObjectLoader.DeferredObject) value);
                             DeferredObjectLoader.add(objectSetter);
                         } else {
                             this.property.getSetter().invoke(obj, value, key);
@@ -169,9 +170,10 @@ public abstract class ValueType {
                                     );
                                 }
                             };
-                            DeferredObjectLoader.DeferredObjectSetter objectSetter = new DeferredObjectLoader.DeferredObjectSetter(
-                                setter,
-                                (DeferredObjectLoader.DeferredObject) value);
+                            DeferredObjectLoader.DeferredObjectSetter objectSetter =
+                                new DeferredObjectLoader.DeferredObjectSetter(
+                                    setter,
+                                    (DeferredObjectLoader.DeferredObject) value);
                             DeferredObjectLoader.add(objectSetter);
                         } else {
                             this.property.getSetter().invoke(obj, value, key.userKey);
@@ -190,10 +192,10 @@ public abstract class ValueType {
                                     );
                                 }
                             };
-                            DeferredObjectLoader.DeferredObjectSetter objectSetter = new DeferredObjectLoader.DeferredObjectSetter(
-                                setter,
-                                (DeferredObjectLoader.DeferredObject) value
-                            );
+                            DeferredObjectLoader.DeferredObjectSetter objectSetter =
+                                new DeferredObjectLoader.DeferredObjectSetter(
+                                    setter,
+                                    (DeferredObjectLoader.DeferredObject) value);
                             DeferredObjectLoader.add(objectSetter);
                         } else {
                             this.property.getSetter().invoke(obj, value);

@@ -34,7 +34,7 @@ import static io.dingodb.sdk.common.utils.Any.wrap;
 
 public class VectorCalcDistanceOperation implements Operation {
 
-    private final static VectorCalcDistanceOperation INSTANCE = new VectorCalcDistanceOperation();
+    private static final VectorCalcDistanceOperation INSTANCE = new VectorCalcDistanceOperation();
 
     public static VectorCalcDistanceOperation getInstance() {
         return INSTANCE;

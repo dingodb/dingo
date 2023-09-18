@@ -30,7 +30,10 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.NavigableSet;
 
-import static io.dingodb.client.operation.RangeUtils.*;
+import static io.dingodb.client.operation.RangeUtils.convert;
+import static io.dingodb.client.operation.RangeUtils.getSubTasks;
+import static io.dingodb.client.operation.RangeUtils.validateKeyRange;
+import static io.dingodb.client.operation.RangeUtils.validateOpRange;
 
 public class ScanOperation implements Operation {
 
@@ -83,7 +86,9 @@ public class ScanOperation implements Operation {
         Iterator<KeyValue> scanResult = context.getStoreService().scan(
             context.getTableId(),
             context.getRegionId(),
-            new Range(context.getCodec().resetPrefix(range.getStartKey(), context.getRegionId().parentId()), range.getEndKey()),
+            new Range(
+                context.getCodec().resetPrefix(range.getStartKey(), context.getRegionId().parentId()),
+                range.getEndKey()),
             scan.withStart,
             scan.withEnd);
 

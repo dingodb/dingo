@@ -33,7 +33,7 @@ import java.util.TreeSet;
 
 public class VectorDeleteOperation implements Operation {
 
-    private final static VectorDeleteOperation INSTANCE = new VectorDeleteOperation();
+    private static final VectorDeleteOperation INSTANCE = new VectorDeleteOperation();
 
     public static VectorDeleteOperation getInstance() {
         return INSTANCE;

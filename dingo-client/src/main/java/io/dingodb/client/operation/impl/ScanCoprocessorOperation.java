@@ -38,11 +38,21 @@ import io.dingodb.sdk.common.utils.Parameters;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static io.dingodb.client.operation.RangeUtils.*;
+import static io.dingodb.client.operation.RangeUtils.convert;
+import static io.dingodb.client.operation.RangeUtils.getSubTasks;
+import static io.dingodb.client.operation.RangeUtils.mapping;
+import static io.dingodb.client.operation.RangeUtils.validateKeyRange;
+import static io.dingodb.client.operation.RangeUtils.validateOpRange;
 import static java.math.RoundingMode.HALF_UP;
 
 public class ScanCoprocessorOperation implements Operation {
@@ -110,7 +120,9 @@ public class ScanCoprocessorOperation implements Operation {
             Coprocessor coprocessor = new Coprocessor(
                 aggregations.stream().map(agg -> mapping(agg, definition)).collect(Collectors.toList()),
                 new SchemaWrapper(tableInfo.tableId.entityId(), definition.getColumns()),
-                new SchemaWrapper(tableInfo.tableId.entityId(), resultSchemas.stream().map(RangeUtils::mapping).collect(Collectors.toList())),
+                new SchemaWrapper(tableInfo.tableId.entityId(), resultSchemas.stream()
+                    .map(RangeUtils::mapping)
+                    .collect(Collectors.toList())),
                 groupBy.stream().map(definition::getColumnIndex).collect(Collectors.toList())
             );
 
@@ -121,6 +133,11 @@ public class ScanCoprocessorOperation implements Operation {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public Fork fork(OperationContext context, TableInfo tableInfo) {
+        return null;
     }
 
     private static ColumnDefinition buildColumnDefinition(String name, String type, int primary, Column column) {
@@ -134,11 +151,6 @@ public class ScanCoprocessorOperation implements Operation {
             primary,
             column.getDefaultValue(),
             column.isAutoIncrement());
-    }
-
-    @Override
-    public Fork fork(OperationContext context, TableInfo tableInfo) {
-        return null;
     }
 
     @Override

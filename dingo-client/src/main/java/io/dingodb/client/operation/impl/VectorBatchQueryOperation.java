@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 
 public class VectorBatchQueryOperation implements Operation {
 
-    private final static VectorBatchQueryOperation INSTANCE = new VectorBatchQueryOperation();
+    private static final VectorBatchQueryOperation INSTANCE = new VectorBatchQueryOperation();
 
     public static VectorBatchQueryOperation getInstance() {
         return INSTANCE;

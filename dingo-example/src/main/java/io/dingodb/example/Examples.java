@@ -407,7 +407,8 @@ public class Examples {
         @Override
         public long query(int index) throws Exception {
             long start = System.currentTimeMillis();
-            Object[] objects = dingoClient.get(tableName, new Key(Value.get(String.valueOf(index)))).getDingoColumnValuesInOrder();
+            Object[] objects = dingoClient.get(tableName, new Key(Value.get(String.valueOf(index))))
+                .getDingoColumnValuesInOrder();
             System.out.printf(
                 "Query result u_id=%s, u_name=%s, u_age=%s, u_income=%s, u_gender=%s. \n",
                 objects[0], objects[1], objects[2], objects[3], objects[4]

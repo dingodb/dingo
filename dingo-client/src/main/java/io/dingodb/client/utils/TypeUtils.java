@@ -16,10 +16,10 @@
 
 package io.dingodb.client.utils;
 
+import io.dingodb.client.IBaseDingoMapper;
 import io.dingodb.client.annotation.DingoEmbed;
 import io.dingodb.client.annotation.DingoEnum;
 import io.dingodb.client.annotation.DingoRecord;
-import io.dingodb.client.IBaseDingoMapper;
 import io.dingodb.client.configuration.ClassConfig;
 import io.dingodb.client.configuration.ColumnConfig;
 import io.dingodb.client.configuration.EmbedConfig;
