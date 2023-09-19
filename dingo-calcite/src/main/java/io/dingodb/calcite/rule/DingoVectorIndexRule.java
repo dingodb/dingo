@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoGetByIndex;
+import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoGetVectorByDistance;
 import io.dingodb.calcite.rel.DingoStreamingConverter;
@@ -155,18 +156,32 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         if (indexSetMap == null) {
             return null;
         }
-
-        return new DingoGetByIndex(
-            dingoVector.getCluster(),
-            dingoVector.getTraitSet(),
-            ImmutableList.of(),
-            dingoVector.getTable(),
-            filter.getCondition(),
-            selection,
-            false,
-            indexSetMap,
-            indexTdMap
-        );
+        if (indexSetMap.size() > 1) {
+            return new DingoGetByIndexMerge(
+                dingoVector.getCluster(),
+                dingoVector.getTraitSet(),
+                ImmutableList.of(),
+                dingoVector.getTable(),
+                filter.getCondition(),
+                selection,
+                false,
+                indexSetMap,
+                indexTdMap,
+                td.getKeyMapping()
+            );
+        } else {
+            return new DingoGetByIndex(
+                dingoVector.getCluster(),
+                dingoVector.getTraitSet(),
+                ImmutableList.of(),
+                dingoVector.getTable(),
+                filter.getCondition(),
+                selection,
+                false,
+                indexSetMap,
+                indexTdMap
+            );
+        }
     }
 
     private static boolean prePrimaryOrScalarPlan(RelOptRuleCall call,

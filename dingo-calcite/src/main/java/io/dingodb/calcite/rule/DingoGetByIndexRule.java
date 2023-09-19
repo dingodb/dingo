@@ -17,7 +17,9 @@
 package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoTable;
+import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoGetByIndex;
+import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.traits.DingoConvention;
@@ -37,9 +39,12 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -185,17 +190,32 @@ public class DingoGetByIndexRule extends ConverterRule {
         RelTraitSet traits = scan.getTraitSet()
             .replace(DingoConvention.INSTANCE)
             .replace(DingoRelStreaming.of(scan.getTable()));
-        return new DingoGetByIndex(
-            scan.getCluster(),
-            traits,
-            scan.getHints(),
-            scan.getTable(),
-            scan.getFilter(),
-            scan.getSelection(),
-            false,
-            indexSetMap,
-            indexTdMap
-        );
+        if (indexSetMap.size() > 1) {
+            return new DingoGetByIndexMerge(
+                scan.getCluster(),
+                traits,
+                scan.getHints(),
+                scan.getTable(),
+                scan.getFilter(),
+                scan.getSelection(),
+                false,
+                indexSetMap,
+                indexTdMap,
+                td.getKeyMapping()
+            );
+        } else {
+            return new DingoGetByIndex(
+                scan.getCluster(),
+                traits,
+                scan.getHints(),
+                scan.getTable(),
+                scan.getFilter(),
+                scan.getSelection(),
+                false,
+                indexSetMap,
+                indexTdMap
+            );
+        }
     }
 
     public static Map<CommonId, TableDefinition> getScalaIndices(RelOptTable relOptTable) {

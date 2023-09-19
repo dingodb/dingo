@@ -16,7 +16,7 @@
 
 package io.dingodb.calcite.visitor.function;
 
-import io.dingodb.calcite.rel.DingoGetByIndex;
+import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.utils.TableInfo;
@@ -33,38 +33,44 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
+import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.GetByIndexOperator;
+import io.dingodb.exec.operator.IndexMergeOperator;
 import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
 import io.dingodb.exec.partition.PartitionStrategy;
 import io.dingodb.meta.MetaService;
+import lombok.AllArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.Utils.calculatePrefixCount;
 
-public final class DingoGetByIndexVisitFun {
-
-    public DingoGetByIndexVisitFun() {
-    }
-
+public final class DingoGetByIndexMergeVisitFun {
     @NonNull
-    public static LinkedList<Output> visit(
+    public static Collection<Output> visit(
         Job job,
         IdGenerator idGenerator,
         Location currentLocation,
         DingoJobVisitor visitor,
-        @NonNull DingoGetByIndex rel
+        @NonNull DingoGetByIndexMerge rel
     ) {
+        //List<Output> outputs = DingoGetByIndexVisitFun.visit(job, idGenerator, currentLocation, visitor, rel);
+        //List<Output> inputs = DingoCoalesce.coalesce(idGenerator, outputs);
+        //return DingoBridge.bridge(idGenerator, inputs, new DingoGetByIndexMergeVisitFun.OperatorSupplier(rel));
         final LinkedList<Output> outputs = new LinkedList<>();
         MetaService metaService = MetaServiceUtils.getMetaService(rel.getTable());
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
@@ -72,10 +78,7 @@ public final class DingoGetByIndexVisitFun {
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
         PartitionStrategy lookupPs = DingoPartitionStrategyFactory.createPartitionStrategy(td, ranges);
-        boolean needLookup = false;
-        if (indexSetMap.size() > 1) {
-            needLookup = true;
-        }
+        boolean needLookup = true;
         for (Map.Entry<CommonId, Set> indexValSet : indexSetMap.entrySet()) {
             TableDefinition indexTd = rel.getIndexTdMap().get(indexValSet.getKey());
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> indexRanges
@@ -102,10 +105,8 @@ public final class DingoGetByIndexVisitFun {
             List<String> columnNames = indexTd.getColumns()
                 .stream().map(ColumnDefinition::getName).collect(Collectors.toList());
             TupleMapping tupleMapping = TupleMapping.of(td.getColumnIndices(columnNames));
+            TupleMapping lookupKeyMapping = indexMergeMapping(td.getKeyMapping(), rel.getSelection());
 
-            if (!needLookup) {
-                needLookup = isNeedLookUp(rel.getSelection(), tupleMapping);
-            }
             for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
                 GetByIndexOperator operator = new GetByIndexOperator(
                     indexValSet.getKey(),
@@ -114,7 +115,7 @@ public final class DingoGetByIndexVisitFun {
                     tupleMapping,
                     entry.getValue(),
                     SqlExprUtils.toSqlExpr(rel.getFilter()),
-                    rel.getSelection(),
+                    lookupKeyMapping,
                     rel.isUnique(),
                     lookupPs,
                     codec,
@@ -128,19 +129,37 @@ public final class DingoGetByIndexVisitFun {
                 outputs.addAll(operator.getOutputs());
             }
         }
-        return outputs;
+
+        List<Output> inputs = DingoCoalesce.coalesce(idGenerator, outputs);
+        return DingoBridge.bridge(idGenerator, inputs, new DingoGetByIndexMergeVisitFun.OperatorSupplier(rel));
     }
 
-    private static boolean isNeedLookUp(TupleMapping selection, TupleMapping keyMapping) {
-        if (selection == null) {
-            return true;
+    @AllArgsConstructor
+    static class OperatorSupplier implements Supplier<Operator> {
+
+        final DingoGetByIndexMerge relNode;
+
+        @Override
+        public Operator get() {
+            return new IndexMergeOperator(
+                relNode.getKeyMapping(),
+                relNode.getSelection()
+            );
         }
-        for (int index : selection.getMappings()) {
-            if (!keyMapping.contains(index)) {
-                return true;
+    }
+
+    private static TupleMapping indexMergeMapping(TupleMapping keyMapping, TupleMapping selection) {
+        List<Integer> mappings = new ArrayList();
+        for (int i : selection.getMappings()) {
+            mappings.add(i);
+        }
+
+        for (int i : keyMapping.getMappings()) {
+            if (!mappings.contains(i)) {
+                mappings.add(i);
             }
         }
-        return false;
+        return TupleMapping.of(mappings);
     }
 
 }

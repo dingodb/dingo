@@ -16,6 +16,7 @@
 
 package io.dingodb.driver.mysql.command;
 
+import io.dingodb.common.mysql.DingoArray;
 import io.dingodb.common.mysql.ExtendedClientCapabilities;
 import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.driver.mysql.MysqlConnection;
@@ -31,10 +32,15 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.socket.SocketChannel;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.util.ArrayImpl;
+import org.apache.calcite.avatica.util.DingoAccessor;
+import org.apache.commons.lang3.StringUtils;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -136,6 +142,10 @@ public class MysqlResponseHandler {
                             val = "0";
                         }
                     }
+                } else if (typeName.equalsIgnoreCase("ARRAY")) {
+                    DingoArray dingoArray = (DingoArray) val;
+                    List<Object> array = (List<Object>) dingoArray.getArray();
+                    val = StringUtils.join(array);
                 }
                 resultSetRowPacket.addColumnValue(val);
             }
