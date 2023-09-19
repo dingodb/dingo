@@ -24,7 +24,13 @@ public class OpRangeCoprocessor extends OpRange {
 
     public final Coprocessor coprocessor;
 
-    public OpRangeCoprocessor(byte[] startKey, byte[] endKey, boolean withStart, boolean withEnd, Coprocessor coprocessor) {
+    public OpRangeCoprocessor(
+        byte[] startKey,
+        byte[] endKey,
+        boolean withStart,
+        boolean withEnd,
+        Coprocessor coprocessor
+    ) {
         super(startKey, endKey, withStart, withEnd);
         this.coprocessor = coprocessor;
     }

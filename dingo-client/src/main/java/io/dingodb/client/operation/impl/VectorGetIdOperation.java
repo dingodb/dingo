@@ -23,7 +23,6 @@ import io.dingodb.sdk.common.table.RangeDistribution;
 import io.dingodb.sdk.common.utils.Any;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -33,7 +32,7 @@ import java.util.TreeSet;
 
 public class VectorGetIdOperation implements Operation {
 
-    private final static VectorGetIdOperation INSTANCE = new VectorGetIdOperation();
+    private static final VectorGetIdOperation INSTANCE = new VectorGetIdOperation();
 
     public static VectorGetIdOperation getInstance() {
         return INSTANCE;
@@ -62,7 +61,7 @@ public class VectorGetIdOperation implements Operation {
     @Override
     public Fork fork(OperationContext context, IndexInfo indexInfo) {
         Map<DingoCommonId, VectorTuple<Boolean>> parameters = context.parameters();
-        Boolean isGetMin = new ArrayList<>(parameters.values()).get(0).v;
+        Boolean isGetMin = new ArrayList<>(parameters.values()).get(0).value;
         NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
 
@@ -86,10 +85,10 @@ public class VectorGetIdOperation implements Operation {
         Long result = context.getIndexService().vectorGetBoderId(
             context.getIndexId(),
             context.getRegionId(),
-            parameters.get(context.getRegionId()).v
+            parameters.get(context.getRegionId()).value
         );
 
-        context.<long[]>result()[parameters.get(context.getRegionId()).k] = result;
+        context.<long[]>result()[parameters.get(context.getRegionId()).key] = result;
     }
 
     @Override

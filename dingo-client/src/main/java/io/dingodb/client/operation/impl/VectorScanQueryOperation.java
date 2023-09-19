@@ -33,13 +33,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
-import java.util.Objects;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 public class VectorScanQueryOperation implements Operation {
 
-    private final static VectorScanQueryOperation INSTANCE = new VectorScanQueryOperation();
+    private static final VectorScanQueryOperation INSTANCE = new VectorScanQueryOperation();
 
     public static VectorScanQueryOperation getInstance() {
         return INSTANCE;
@@ -68,7 +67,7 @@ public class VectorScanQueryOperation implements Operation {
     @Override
     public void exec(OperationContext context) {
         Map<DingoCommonId, VectorTuple<VectorScanQuery>> parameters = context.parameters();
-        VectorScanQuery scanQuery = parameters.get(context.getRegionId()).v;
+        VectorScanQuery scanQuery = parameters.get(context.getRegionId()).value;
         List<io.dingodb.sdk.common.vector.VectorWithId> withIdList = context.getIndexService().vectorScanQuery(
             context.getIndexId(),
             context.getRegionId(),
@@ -78,7 +77,8 @@ public class VectorScanQueryOperation implements Operation {
             .map(w -> new VectorWithId(w.getId(), w.getVector(), w.getScalarData()))
             .collect(Collectors.toList());
 
-        context.<VectorWithIdArray[]>result()[parameters.get(context.getRegionId()).k] = new VectorWithIdArray(result, scanQuery.getIsReverseScan());
+        context.<VectorWithIdArray[]>result()[parameters.get(context.getRegionId()).key] =
+            new VectorWithIdArray(result, scanQuery.getIsReverseScan());
     }
 
     @AllArgsConstructor
@@ -107,7 +107,7 @@ public class VectorScanQueryOperation implements Operation {
                 .values()
                 .stream()
                 .findFirst()
-                .get().v.getIsReverseScan(),
+                .get().value.getIsReverseScan(),
             () -> false);
         VectorWithIdArray withIdArray = new VectorWithIdArray(new ArrayList<>(), isReverseScan);
         Arrays.stream(fork.<VectorWithIdArray[]>result()).forEach(v -> withIdArray.addAll(v.vectorWithIds));

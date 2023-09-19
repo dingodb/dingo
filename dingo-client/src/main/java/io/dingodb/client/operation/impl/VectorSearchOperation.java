@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 
 public class VectorSearchOperation implements Operation {
 
-    private final static VectorSearchOperation INSTANCE = new VectorSearchOperation();
+    private static final VectorSearchOperation INSTANCE = new VectorSearchOperation();
 
     public static VectorSearchOperation getInstance() {
         return INSTANCE;
@@ -79,7 +79,7 @@ public class VectorSearchOperation implements Operation {
     public void exec(OperationContext context) {
         Map<DingoCommonId, RegionSearchTuple> parameters = context.parameters();
         RegionSearchTuple tuple = parameters.get(context.getRegionId());
-        VectorSearch vectorSearch = tuple.vs.get(0).v;
+        VectorSearch vectorSearch = tuple.vs.get(0).value;
         List<io.dingodb.sdk.common.vector.VectorWithDistanceResult> results = context.getIndexService().vectorSearch(
             context.getIndexId(),
             context.getRegionId(),
@@ -105,7 +105,8 @@ public class VectorSearchOperation implements Operation {
                 .map(d -> new VectorWithDistance(
                     d.getId(), d.getVector(), d.getScalarData(), d.getDistance(), d.getMetricType()))
                 .collect(Collectors.toList());
-            context.<VectorDistanceArray[][]>result()[tuple.regionI][tuple.vs.get(i).k] = new VectorDistanceArray(distanceList);
+            context.<VectorDistanceArray[][]>result()[tuple.regionI][tuple.vs.get(i).key] =
+                new VectorDistanceArray(distanceList);
         }
     }
 

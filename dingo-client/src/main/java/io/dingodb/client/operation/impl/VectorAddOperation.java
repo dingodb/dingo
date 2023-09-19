@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 
 public class VectorAddOperation implements Operation {
 
-    private final static VectorAddOperation INSTANCE = new VectorAddOperation();
+    private static final VectorAddOperation INSTANCE = new VectorAddOperation();
 
     public static VectorAddOperation getInstance() {
         return INSTANCE;

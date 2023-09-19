@@ -58,30 +58,38 @@ public class RangeUtils {
     public static final String RANGE_FUNC_NAME = "RANGE";
     public static final String HASH_FUNC_NAME = "HASH";
 
-    public static DingoCommonId getDingoCommonId(byte[] key, String strategy, NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.sdk.common.table.RangeDistribution> rangeDistribution) {
+    public static DingoCommonId getDingoCommonId(
+        byte[] key, String strategy,
+        NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.sdk.common.table.RangeDistribution> distribution
+    ) {
         DingoCommonId commonId;
         switch (strategy) {
             case RANGE_FUNC_NAME:
                 // skip the first 8 bytes when comparing byte[] (id)
-                commonId = rangeDistribution.floorEntry(new ByteArrayUtils.ComparableByteArray(key, SKIP_LONG_POS)).getValue().getId();
+                commonId = distribution.floorEntry(
+                    new ByteArrayUtils.ComparableByteArray(key, SKIP_LONG_POS)).getValue().getId();
                 break;
             case HASH_FUNC_NAME:
                 ConsistentHashing<Long> hashRing = new ConsistentHashing<>(3);
-                NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.sdk.common.table.RangeDistribution> partRanges = new TreeMap<>();
-                for (Map.Entry<ByteArrayUtils.ComparableByteArray, io.dingodb.sdk.common.table.RangeDistribution> entry : rangeDistribution.entrySet()) {
+                NavigableMap<ByteArrayUtils.ComparableByteArray,
+                    io.dingodb.sdk.common.table.RangeDistribution> partRanges = new TreeMap<>();
+                for (Map.Entry<ByteArrayUtils.ComparableByteArray,
+                    io.dingodb.sdk.common.table.RangeDistribution> entry : distribution.entrySet()) {
                     io.dingodb.sdk.common.table.RangeDistribution value = entry.getValue();
                     log.trace("entityId:" + value.getId().entityId() + ",parentId:" + value.getId().parentId());
                     hashRing.addNode(value.getId().parentId());
                 }
                 Long selectNode = hashRing.getNode(key);
-                for (Map.Entry<ByteArrayUtils.ComparableByteArray, io.dingodb.sdk.common.table.RangeDistribution> entry : rangeDistribution.entrySet()) {
+                for (Map.Entry<ByteArrayUtils.ComparableByteArray,
+                    io.dingodb.sdk.common.table.RangeDistribution> entry : distribution.entrySet()) {
                     ByteArrayUtils.ComparableByteArray keyBytes = entry.getKey();
                     io.dingodb.sdk.common.table.RangeDistribution value = entry.getValue();
                     if (value.getId().parentId() == selectNode.longValue()) {
                         partRanges.put(keyBytes, value);
                     }
                 }
-                commonId = partRanges.floorEntry(new ByteArrayUtils.ComparableByteArray(key, SKIP_LONG_POS)).getValue().getId();
+                commonId = partRanges.floorEntry(
+                    new ByteArrayUtils.ComparableByteArray(key, SKIP_LONG_POS)).getValue().getId();
                 break;
             default:
                 throw new IllegalStateException("Unsupported " + strategy);
@@ -110,14 +118,20 @@ public class RangeUtils {
     }
 
     public static Comparator<Operation.Task> getComparator() {
-        return (e1, e2) -> ByteArrayUtils.compare(e1.<OpRange>parameters().getStartKey(), e2.<OpRange>parameters().getStartKey(), SKIP_LONG_POS);
+        return (e1, e2) -> ByteArrayUtils.compare(
+            e1.<OpRange>parameters().getStartKey(),
+            e2.<OpRange>parameters().getStartKey(), SKIP_LONG_POS);
     }
 
     public static NavigableSet<Operation.Task> getSubTasks(TableInfo tableInfo, OpRange range) {
         return getSubTasks(tableInfo, range, null);
     }
 
-    public static NavigableSet<Operation.Task> getSubTasks(TableInfo tableInfo, OpRange range, Coprocessor coprocessor) {
+    public static NavigableSet<Operation.Task> getSubTasks(
+        TableInfo tableInfo,
+        OpRange range,
+        Coprocessor coprocessor
+    ) {
         Collection<RangeDistribution> src = tableInfo.rangeDistribution.values().stream()
             .map(RangeUtils::mapping)
             .collect(Collectors.toSet());
@@ -130,7 +144,11 @@ public class RangeUtils {
             .build();
 
         NavigableSet<RangeDistribution> distributions;
-        if (Optional.of(tableInfo.definition.getPartition()).map(Partition::getFuncName).filter(f -> !f.equalsIgnoreCase(HASH_FUNC_NAME)).isPresent()) {
+        if (Optional.of(tableInfo.definition.getPartition())
+            .map(Partition::getFuncName)
+            .filter(f -> !f.equalsIgnoreCase(HASH_FUNC_NAME))
+            .isPresent()
+        ) {
             distributions = io.dingodb.common.util.RangeUtils.getSubRangeDistribution(src, rangeDistribution);
             if (distributions.size() > 0) {
                 RangeDistribution last = distributions.last();
@@ -138,9 +156,12 @@ public class RangeUtils {
             }
         } else {
             distributions = new TreeSet<>(io.dingodb.common.util.RangeUtils.rangeComparator());
-            Map<Long, List<RangeDistribution>> groupedMap = src.stream().collect(Collectors.groupingBy(rd -> rd.getId().domain));
+            Map<Long, List<RangeDistribution>> groupedMap = src
+                .stream()
+                .collect(Collectors.groupingBy(rd -> rd.getId().domain));
             for (Map.Entry<Long, List<RangeDistribution>> entry : groupedMap.entrySet()) {
-                NavigableSet<RangeDistribution> distribution = io.dingodb.common.util.RangeUtils.getSubRangeDistribution(entry.getValue(), rangeDistribution);
+                NavigableSet<RangeDistribution> distribution =
+                    io.dingodb.common.util.RangeUtils.getSubRangeDistribution(entry.getValue(), rangeDistribution);
                 if (distribution.size() > 0) {
                     RangeDistribution last = distribution.last();
                     last.setEndKey(tableInfo.codec.resetPrefix(last.getEndKey(), entry.getKey()));
@@ -160,7 +181,12 @@ public class RangeUtils {
             return distributions.stream()
                 .map(rd -> new Operation.Task(
                     mapping(rd.id()),
-                    wrap(new OpRangeCoprocessor(rd.getStartKey(), rd.getEndKey(), rd.isWithStart(), rd.isWithEnd(), coprocessor))
+                    wrap(new OpRangeCoprocessor(
+                        rd.getStartKey(),
+                        rd.getEndKey(),
+                        rd.isWithStart(),
+                        rd.isWithEnd(),
+                        coprocessor))
                 ))
                 .collect(Collectors.toCollection(() -> new TreeSet<>(getComparator())));
         }

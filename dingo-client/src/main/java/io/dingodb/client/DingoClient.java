@@ -42,6 +42,7 @@ import io.dingodb.client.operation.impl.VectorGetIdOperation;
 import io.dingodb.client.operation.impl.VectorGetRegionMetricsOperation;
 import io.dingodb.client.operation.impl.VectorScanQueryOperation;
 import io.dingodb.client.operation.impl.VectorSearchOperation;
+import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.index.Index;
@@ -74,6 +75,8 @@ public class DingoClient {
     private OperationService operationService;
     private IndexOperationService indexOperationService;
     private IndexService indexService;
+
+    public static final int MAX_MESSAGE_SIZE = 8 * 1024 * 1024;
 
     public static Integer retryTimes = 20;
 
@@ -158,10 +161,13 @@ public class DingoClient {
     }
 
     /**
-     * Insert table data and index(scalar + vector) data at the same time
+     * Insert table data and index(scalar + vector) data at the same time.
      */
     public boolean upsertIndex(String tableName, Object[] record) {
-        return indexOperationService.exec(schema, tableName, PutOperation.getInstance(), new IndexOperationService.Parameter(record));
+        return indexOperationService.exec(
+            schema, tableName,
+            PutOperation.getInstance(),
+            new IndexOperationService.Parameter(record));
     }
 
     public List<Boolean> upsertNotStandard(String tableName, List<Record> records) {
@@ -196,7 +202,7 @@ public class DingoClient {
     }
 
     /**
-     * Update table data and index(scalar + vector) data at the same time
+     * Update table data and index(scalar + vector) data at the same time.
      */
     public Boolean compareAndSetIndex(String tableName, Object[] record, Object[] expect) {
         return indexOperationService.exec(
@@ -297,7 +303,7 @@ public class DingoClient {
     }
 
     /**
-     * Delete table data and index(scalar + vector) data at the same time
+     * Delete table data and index(scalar + vector) data at the same time.
      */
     public boolean delete(String schema, String tableName, Key key) {
         return indexOperationService.exec(
@@ -362,6 +368,57 @@ public class DingoClient {
     public List<VectorWithId> vectorAdd(String schema, String indexName, List<VectorWithId> vectors,
                                         Boolean replaceDeleted, Boolean isUpdate) {
         VectorContext context = VectorContext.builder().replaceDeleted(replaceDeleted).isUpdate(isUpdate).build();
+        int dimension = getDimension(schema, indexName);
+        long count = checkDimension(vectors, dimension);
+        int messageSize = getMessageSize(vectors);
+        if ((dimension != 0 && count > 0) || vectors.size() >= 1024 || messageSize > MAX_MESSAGE_SIZE) {
+            if (vectors.size() >= 1024) {
+                log.error("Param vectors size {} is exceed max batch count 1024", vectors.size());
+            }
+            if (messageSize > MAX_MESSAGE_SIZE) {
+                log.error("Message exceeds maximum size {}: {}", MAX_MESSAGE_SIZE, messageSize);
+            }
+            List<VectorWithId> result = new ArrayList<>();
+            vectors.forEach(v -> result.add(null));
+            return result;
+        }
+        return indexService.exec(schema, indexName, VectorAddOperation.getInstance(), vectors, context);
+    }
+
+    /**
+     * Get the total size of the vector.
+     *
+     * @param vectors vectors
+     * @return Total message size
+     */
+    private static int getMessageSize(List<VectorWithId> vectors) {
+        int totalSize;
+        if (vectors.get(0).getVector().getValueType().equals(Vector.ValueType.BINARY)) {
+            totalSize = vectors.stream()
+                .map(v -> v.getVector().getBinaryValues())
+                .map(l -> l.stream()
+                    .map(b -> b.length)
+                    .reduce(Integer::sum)
+                    .orElse(0))
+                .reduce(Integer::sum)
+                .orElse(0);
+        } else {
+            totalSize = ProtostuffCodec.write(vectors).length;
+        }
+        return totalSize;
+
+    }
+
+    private static long checkDimension(List<VectorWithId> vectors, int dimension) {
+        long count = vectors.stream()
+            .map(VectorWithId::getVector)
+            .filter(v -> v.getDimension() != dimension || (v.getValueType() == Vector.ValueType.FLOAT
+                    ? v.getFloatValues().size() != dimension : v.getBinaryValues().size() != dimension))
+            .count();
+        return count;
+    }
+
+    private int getDimension(String schema, String indexName) {
         Index index = getIndex(schema, indexName);
         VectorIndexParameter parameter = index.getIndexParameter().getVectorIndexParameter();
         int dimension;
@@ -384,20 +441,7 @@ public class DingoClient {
             default:
                 dimension = 0;
         }
-        long count = vectors.stream()
-            .map(VectorWithId::getVector)
-            .filter(v -> v.getDimension() != dimension || (v.getValueType() == Vector.ValueType.FLOAT
-                    ? v.getFloatValues().size() != dimension : v.getBinaryValues().size() != dimension))
-            .count();
-        if ((dimension != 0 && count > 0) || vectors.size() >= 1024) {
-            if (vectors.size() >= 1024) {
-                log.error("Param vectors size {} is exceed max batch count 1024", vectors.size());
-            }
-            List<VectorWithId> result = new ArrayList<>();
-            vectors.forEach(v -> result.add(null));
-            return result;
-        }
-        return indexService.exec(schema, indexName, VectorAddOperation.getInstance(), vectors, context);
+        return dimension;
     }
 
     public List<VectorDistanceArray> vectorSearch(String indexName, VectorSearch vectorSearch) {

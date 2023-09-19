@@ -16,12 +16,12 @@
 
 package io.dingodb.client.mappers;
 
+import io.dingodb.client.IBaseDingoMapper;
 import io.dingodb.client.annotation.DingoEmbed;
 import io.dingodb.client.utils.ClassCache;
 import io.dingodb.client.utils.ClassCacheEntry;
 import io.dingodb.client.utils.DeferredObjectLoader;
 import io.dingodb.client.utils.TypeUtils;
-import io.dingodb.client.IBaseDingoMapper;
 import io.dingodb.sdk.common.DingoClientException;
 
 import java.util.AbstractMap;
@@ -214,8 +214,10 @@ public class ListMapper extends TypeMapper {
                         if (result instanceof DeferredObjectLoader.DeferredObject) {
                             final int thisIndex = index;
                             DeferredObjectLoader.DeferredSetter setter = object -> results.set(thisIndex, object);
-                            DeferredObjectLoader.DeferredObjectSetter objectSetter = new DeferredObjectLoader.DeferredObjectSetter(
-                                setter, (DeferredObjectLoader.DeferredObject) result);
+                            DeferredObjectLoader.DeferredObjectSetter objectSetter =
+                                new DeferredObjectLoader.DeferredObjectSetter(
+                                    setter,
+                                    (DeferredObjectLoader.DeferredObject) result);
                             DeferredObjectLoader.add(objectSetter);
                             // add a placeholder to maintain the index
                             results.add(null);
@@ -234,8 +236,10 @@ public class ListMapper extends TypeMapper {
                         if (result instanceof DeferredObjectLoader.DeferredObject) {
                             final int thisIndex = index;
                             DeferredObjectLoader.DeferredSetter setter = object -> results.set(thisIndex, object);
-                            DeferredObjectLoader.DeferredObjectSetter objectSetter = new DeferredObjectLoader.DeferredObjectSetter(
-                                setter, (DeferredObjectLoader.DeferredObject) result);
+                            DeferredObjectLoader.DeferredObjectSetter objectSetter =
+                                new DeferredObjectLoader.DeferredObjectSetter(
+                                    setter,
+                                    (DeferredObjectLoader.DeferredObject) result);
                             DeferredObjectLoader.add(objectSetter);
                             // add a placeholder to maintain the index
                             results.add(null);

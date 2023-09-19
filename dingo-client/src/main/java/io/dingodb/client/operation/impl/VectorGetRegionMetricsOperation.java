@@ -33,7 +33,7 @@ import java.util.TreeSet;
 
 public class VectorGetRegionMetricsOperation implements Operation {
 
-    private final static VectorGetRegionMetricsOperation INSTANCE = new VectorGetRegionMetricsOperation();
+    private static final VectorGetRegionMetricsOperation INSTANCE = new VectorGetRegionMetricsOperation();
 
     public static VectorGetRegionMetricsOperation getInstance() {
         return INSTANCE;

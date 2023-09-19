@@ -75,7 +75,13 @@ public class IndexService {
         return exec(schemaName, indexName, operation, parameters, VectorContext.builder().build());
     }
 
-    public <R> R exec(String schemaName, String indexName, Operation operation, Object parameters, VectorContext context) {
+    public <R> R exec(
+        String schemaName,
+        String indexName,
+        Operation operation,
+        Object parameters,
+        VectorContext context
+    ) {
         IndexInfo indexInfo = Parameters.nonNull(getRouteTable(schemaName, indexName, false), "Index not found.");
 
         Operation.Fork fork = null;
@@ -99,7 +105,7 @@ public class IndexService {
         });
     }
 
-    private synchronized Optional<Throwable> exec(
+    private Optional<Throwable> exec(
         IndexInfo indexInfo,
         Operation operation,
         Operation.Fork fork,
@@ -144,7 +150,7 @@ public class IndexService {
 
     private List<OperationContext> generateContext(
         IndexInfo indexInfo,
-        Operation.Fork fork, 
+        Operation.Fork fork,
         VectorContext vectorContext
     ) {
         int i = 0;

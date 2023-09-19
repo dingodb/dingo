@@ -237,7 +237,8 @@ public class OperationService {
             DingoCommonId tableId = Parameters.nonNull(metaService.getTableId(tableName), "Table not found.");
             Table table = Parameters.nonNull(metaService.getTableDefinition(tableName), "Table not found.");
             NavigableMap<ComparableByteArray, RangeDistribution> parts = new TreeMap<>();
-            metaService.getRangeDistribution(tableId).forEach( ( k ,v ) -> parts.put(new ComparableByteArray(k.getBytes(), k.isIgnoreLen(), k.getPos()), v));
+            metaService.getRangeDistribution(tableId)
+                .forEach((k, v) -> parts.put(new ComparableByteArray(k.getBytes(), k.isIgnoreLen(), k.getPos()), v));
             KeyValueCodec keyValueCodec = new KeyValueCodec(DingoKeyValueCodec.of(tableId.entityId(), table), table);
 
             return new TableInfo(schemaName, tableName, tableId, table, keyValueCodec, parts);

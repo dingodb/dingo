@@ -77,8 +77,8 @@ public interface Operation {
 
     @RequiredArgsConstructor
     public static class VectorTuple<V> {
-        public final int k;
-        public final V v;
+        public final int key;
+        public final V value;
     }
 
 }
