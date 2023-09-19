@@ -150,6 +150,10 @@ public final class AssertResultSet {
                             > config.getTimestampDeviation()) {
                             return false;
                         }
+                    } else if (values[i] instanceof Long) {
+                        if (((Timestamp) actual).getTime() / 1000 != (Long) values[i]) {
+                            return false;
+                        }
                     } else if (!actual.toString().equals(values[i].toString())) {
                         return false;
                     }
