@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.rule;
 
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoPartRangeDelete;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
@@ -23,8 +24,10 @@ import io.dingodb.calcite.utils.RangeUtils;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.TupleMapping;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
@@ -33,6 +36,8 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
+
+import java.util.Map;
 
 @Slf4j
 @Value.Enclosing
@@ -47,9 +52,19 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> {
         final DingoTableScan rel = call.rel(1);
         TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td);
-
-        RangeDistribution range = RangeUtils.createRangeByFilter(td, codec, rel.getFilter(), rel.getSelection());
+        RangeDistribution range;
+        if (rel.getFilter() == null && (rel.getSelection().size() == rel.getTable().getRowType().getFieldCount())) {
+            range = RangeDistribution.builder()
+                .startKey(null)
+                .endKey(null)
+                .withStart(true)
+                .withEnd(false)
+                .build();
+        } else {
+            range = RangeUtils.createRangeByFilter(td, codec, rel.getFilter(), rel.getSelection());
+        }
         if (range != null) {
+            boolean notBetween = rel.getFilter() != null ? (rel.getFilter().getKind() == SqlKind.NOT) : false;
             call.transformTo(
                 new DingoPartRangeDelete(
                     rel1.getCluster(),
@@ -58,7 +73,7 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> {
                     rel1.getRowType(),
                     range.getStartKey(),
                     range.getEndKey(),
-                    rel.getFilter().getKind() == SqlKind.NOT,
+                    notBetween,
                     range.isWithStart(),
                     range.isWithEnd()
                 )
@@ -78,6 +93,7 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> {
                         b1.operand(DingoTableScan.class)
                             .predicate(r -> {
                                 RexNode filter = r.getFilter();
+                                TupleMapping selection = r.getSelection();
                                 // Contains filter conditions: > < and
                                 if (filter != null) {
                                     SqlKind filterKind = filter.getKind();
@@ -90,6 +106,13 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> {
                                             return true;
                                         default:
                                             return false;
+                                    }
+                                } else if(selection != null) {
+                                    // Optimize delete of full table data: delete from t1
+                                    if(selection.size() == r.getTable().getRowType().getFieldCount()) {
+                                        DingoTable dingoTable = r.getTable().unwrap(DingoTable.class);
+                                        Map<CommonId, TableDefinition> indexDefinitions = dingoTable.getIndexTableDefinitions();
+                                        return indexDefinitions.size() == 0;
                                     }
                                 }
                                 return false;
