@@ -51,7 +51,7 @@ public class LongType extends AbstractScalarType {
     @Override
     protected Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter) {
         if (value instanceof Integer || value instanceof Long) {
-            converter.convertLongFrom(value);
+            return converter.convertLongFrom(value);
         }
         return super.convertValueTo(value, converter);
     }

@@ -44,7 +44,6 @@ import io.dingodb.sdk.common.vector.SearchHnswParam;
 import io.dingodb.sdk.common.vector.SearchIvfFlatParam;
 import io.dingodb.sdk.common.vector.SearchIvfPqParam;
 import io.dingodb.sdk.common.vector.Vector;
-import io.dingodb.sdk.common.vector.VectorCalcDistance;
 import io.dingodb.sdk.common.vector.VectorDistance;
 import io.dingodb.sdk.common.vector.VectorDistanceRes;
 import io.dingodb.sdk.common.vector.VectorSearchParameter;
@@ -55,7 +54,6 @@ import io.dingodb.sdk.common.vector.VectorWithId;
 import io.dingodb.sdk.service.index.IndexServiceClient;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.sdk.service.store.StoreServiceClient;
-import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.common.Mapping;
 import io.dingodb.store.service.CodecService.KeyValueCodec;
 import lombok.extern.slf4j.Slf4j;
@@ -482,10 +480,12 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             for (Column column : index.getColumns()) {
                 schemas.add(CodecUtils.createSchemaForColumn(column, table.getColumnIndex(column.getName())));
             }
+
+            Object[] newRecord = (Object[]) tableCodec.type.convertTo(record, DingoConverter.INSTANCE);
             DingoKeyValueCodec indexCodec = new DingoKeyValueCodec(indexId.entityId(), schemas);
             io.dingodb.sdk.common.KeyValue keyValue;
             try {
-                keyValue = indexCodec.encode(record);
+                keyValue = indexCodec.encode(newRecord);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
