@@ -360,11 +360,15 @@ List<PartitionDetailDefinition> readPartitionDetails() : {
             }
         ]
     |
-        <VALUES>
+        <VALUES> <LPAREN>
         { partitionDetailDefinitions.add(new PartitionDetailDefinition(null, null, readValues())); }
+        <RPAREN>
         (
+            LOOKAHEAD(2)
             <COMMA>
+            <LPAREN>
             { partitionDetailDefinitions.add(new PartitionDetailDefinition(null, null, readValues())); }
+            <RPAREN>
         )*
         { return partitionDetailDefinitions; }
     )
@@ -373,13 +377,11 @@ List<PartitionDetailDefinition> readPartitionDetails() : {
 Object[] readValues() : {
    List<Object> values = new ArrayList<Object>();
 }{
-     <LPAREN>
-        { values.add(anything());}
-        (
-          <COMMA>
-          { values.add(anything());}
-        )*
-     <RPAREN>
+    { values.add(anything());}
+    (
+      <COMMA>
+      { values.add(anything());}
+    )*
      { return values.toArray(); }
 }
 

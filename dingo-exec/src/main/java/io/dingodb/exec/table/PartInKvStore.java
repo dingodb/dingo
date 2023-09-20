@@ -120,7 +120,8 @@ public final class PartInKvStore implements Part {
     public boolean update(@NonNull Object[] newTuple, @NonNull Object[] oldTuple) {
         if (store.insertIndex(newTuple)) {
             if (store.updateWithIndex(newTuple, oldTuple)) {
-                return store.deleteIndex(newTuple, oldTuple);
+                store.deleteIndex(newTuple, oldTuple);
+                return true;
             }
         }
         return false;

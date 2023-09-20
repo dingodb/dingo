@@ -129,19 +129,17 @@ public class TableDefinition implements Table {
             int dimension = Optional.mapOrThrow(properties.get("dimension"), Integer::parseInt,
                 tableDefinition.getName() + " vector index dimension is null.");
             VectorIndexParameter.MetricType metricType = getMetricType(properties.getOrDefault("metricType", "L2"));
-            switch (properties.get("type").toUpperCase()) {
-                case "HNSW":
-                    int efConstruction = Integer.valueOf(properties.getOrDefault("efConstruction", "10"));
-                    int nlinks = Integer.valueOf(properties.getOrDefault("nlinks", "10"));
-                    vectorIndexParameter = new VectorIndexParameter(
-                        VectorIndexParameter.VectorIndexType.VECTOR_INDEX_TYPE_HNSW,
-                        new HnswParam(dimension, metricType, efConstruction, Integer.MAX_VALUE, nlinks)
-                    );
-                    break;
+            switch (properties.getOrDefault("type", "HNSW").toUpperCase()) {
                 case "DISKANN":
                     vectorIndexParameter = new VectorIndexParameter(
                         VectorIndexParameter.VectorIndexType.VECTOR_INDEX_TYPE_DISKANN,
                         new DiskAnnParam(dimension, metricType)
+                    );
+                    break;
+                case "FLAT":
+                    vectorIndexParameter = new VectorIndexParameter(
+                        VectorIndexParameter.VectorIndexType.VECTOR_INDEX_TYPE_FLAT,
+                        new FlatParam(dimension, metricType)
                     );
                     break;
                 case "IVFPQ":
@@ -161,12 +159,16 @@ public class TableDefinition implements Table {
                         new IvfFlatParam(dimension, metricType, nsubvector2)
                     );
                     break;
-                case "FLAT":
-                default:
+                case "HNSW":
+                    int efConstruction = Integer.valueOf(properties.getOrDefault("efConstruction", "10"));
+                    int nlinks = Integer.valueOf(properties.getOrDefault("nlinks", "10"));
                     vectorIndexParameter = new VectorIndexParameter(
-                        VectorIndexParameter.VectorIndexType.VECTOR_INDEX_TYPE_FLAT,
-                        new FlatParam(dimension, metricType)
+                        VectorIndexParameter.VectorIndexType.VECTOR_INDEX_TYPE_HNSW,
+                        new HnswParam(dimension, metricType, efConstruction, Integer.MAX_VALUE, nlinks)
                     );
+                    break;
+                default:
+                    throw new IllegalStateException("Unsupported type: " + properties.get("type"));
             }
 
             return new IndexParameter(IndexParameter.IndexType.INDEX_TYPE_VECTOR, vectorIndexParameter);
@@ -180,8 +182,9 @@ public class TableDefinition implements Table {
             case "COSINE":
                 return VectorIndexParameter.MetricType.METRIC_TYPE_COSINE;
             case "L2":
-            default:
                 return VectorIndexParameter.MetricType.METRIC_TYPE_L2;
+            default:
+                throw new IllegalStateException("Unsupported metric type: " + metricType);
         }
     }
 }
