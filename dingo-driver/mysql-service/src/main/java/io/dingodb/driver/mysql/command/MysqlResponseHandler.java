@@ -33,14 +33,13 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.socket.SocketChannel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ArrayImpl;
-import org.apache.calcite.avatica.util.DingoAccessor;
 import org.apache.commons.lang3.StringUtils;
 
+import java.lang.reflect.Array;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -143,9 +142,22 @@ public class MysqlResponseHandler {
                         }
                     }
                 } else if (typeName.equalsIgnoreCase("ARRAY")) {
-                    DingoArray dingoArray = (DingoArray) val;
-                    List<Object> array = (List<Object>) dingoArray.getArray();
-                    val = StringUtils.join(array);
+                    List<Object> arrayVal = null;
+                    if (val instanceof ArrayImpl) {
+                        ArrayImpl array = (ArrayImpl) val;
+                        Object o = array.getArray();
+                        arrayVal = new ArrayList<>();
+                        int length = Array.getLength(o);
+                        for (int index = 0; index < length; index ++) {
+                            arrayVal.add(Array.get(o, index));
+                        }
+                    } else if (val instanceof DingoArray) {
+                        DingoArray dingoArray = (DingoArray) val;
+                        arrayVal = (List<Object>) dingoArray.getArray();
+                    }
+                    if (arrayVal != null) {
+                        val = StringUtils.join(arrayVal);
+                    }
                 }
                 resultSetRowPacket.addColumnValue(val);
             }
