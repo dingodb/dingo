@@ -29,12 +29,14 @@ import java.lang.annotation.Target;
 public @interface DingoColumn {
     /**
      * The name of the column to use. If not specified, the field name is used for the column name.
+     * @return name
      */
     String name() default "";
 
     /**
      * The type of the column. If not specified, the field type is used for the column type.
      * address varchar array.
+     * @return element type
      */
     String elementType() default "";
 

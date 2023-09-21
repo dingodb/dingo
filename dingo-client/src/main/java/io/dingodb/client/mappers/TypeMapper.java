@@ -23,6 +23,11 @@ public abstract class TypeMapper {
     /**
      * Some types need to know if they're mapped to the correct class.
      * If they do, they can override this method to glean that information
+     *
+     * @param value value
+     * @param isSubclassOfKnownType is subclass of known type
+     * @param isUnknownType is unknown type
+     * @return object
      */
     public Object toDingoFormat(Object value, boolean isUnknownType, boolean isSubclassOfKnownType) {
         return toDingoFormat(value);

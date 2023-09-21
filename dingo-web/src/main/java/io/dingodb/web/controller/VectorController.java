@@ -20,8 +20,6 @@ import io.dingodb.client.DingoClient;
 import io.dingodb.client.common.VectorDistanceArray;
 import io.dingodb.client.common.VectorSearch;
 import io.dingodb.sdk.common.DingoClientException;
-import io.dingodb.sdk.common.vector.VectorCalcDistance;
-import io.dingodb.sdk.common.vector.VectorDistanceRes;
 import io.dingodb.sdk.common.vector.VectorIndexMetrics;
 import io.dingodb.sdk.common.vector.VectorScanQuery;
 import io.dingodb.web.mapper.EntityMapper;
@@ -128,15 +126,6 @@ public class VectorController {
             .stream()
             .map(mapper::mapping)
             .collect(Collectors.toList()));
-    }
-
-    @ApiOperation("Vector calc distance")
-    @PostMapping("/api/{schema}/{index}/calc")
-    public ResponseEntity<VectorDistanceRes> vectorCalcDistance(
-        @PathVariable String schema,
-        @PathVariable String index,
-        @RequestBody VectorCalcDistance calcDistance) {
-        return ResponseEntity.ok(dingoClient.vectorCalcDistance(schema, index, calcDistance));
     }
 
     @ApiOperation("Vector get region metrics")

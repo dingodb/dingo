@@ -29,6 +29,7 @@ import java.lang.annotation.Target;
 public @interface ParamFrom {
     /**
      * The name of the bin to use.
+     * @return value
      */
     String value();
 }
