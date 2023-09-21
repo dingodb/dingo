@@ -29,6 +29,7 @@ import java.lang.annotation.Target;
 public @interface DingoSetter {
     /**
      * The name of the column to use.
+     * @return name
      */
     String name();
 }

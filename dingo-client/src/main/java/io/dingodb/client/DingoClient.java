@@ -162,6 +162,9 @@ public class DingoClient {
 
     /**
      * Insert table data and index(scalar + vector) data at the same time.
+     * @param tableName table name
+     * @param record record
+     * @return is success
      */
     public boolean upsertIndex(String tableName, Object[] record) {
         return indexOperationService.exec(
@@ -202,7 +205,11 @@ public class DingoClient {
     }
 
     /**
-     * Update table data and index(scalar + vector) data at the same time.
+     * Update table data and index(scalar and vector) data at the same time.
+     * @param record record
+     * @param tableName  table name
+     * @param expect expect
+     * @return is success
      */
     public Boolean compareAndSetIndex(String tableName, Object[] record, Object[] expect) {
         return indexOperationService.exec(
@@ -304,6 +311,10 @@ public class DingoClient {
 
     /**
      * Delete table data and index(scalar + vector) data at the same time.
+     * @param tableName table name
+     * @param key key
+     * @param schema schema
+     * @return is success
      */
     public boolean delete(String schema, String tableName, Key key) {
         return indexOperationService.exec(
@@ -508,14 +519,6 @@ public class DingoClient {
 
     public List<Boolean> vectorDelete(String schema, String indexName, List<Long> ids) {
         return indexService.exec(schema, indexName, VectorDeleteOperation.getInstance(), ids);
-    }
-
-    public VectorDistanceRes vectorCalcDistance(String indexName, VectorCalcDistance vectorCalcDistance) {
-        return vectorCalcDistance(schema, indexName, vectorCalcDistance);
-    }
-
-    public VectorDistanceRes vectorCalcDistance(String schema, String index, VectorCalcDistance vectorCalcDistance) {
-        return indexService.exec(schema, index, VectorCalcDistanceOperation.getInstance(), vectorCalcDistance);
     }
 
     public void close() {

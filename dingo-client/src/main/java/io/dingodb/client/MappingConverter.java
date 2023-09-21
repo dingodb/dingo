@@ -66,6 +66,8 @@ public class MappingConverter {
      * the type information of the passed object must be determined on every call.
      *
      * @param obj A given Java object.
+     * @param expectedClazz expected clazz
+     * @param <T> T
      * @return A dingo format object.
      */
     @SuppressWarnings("unchecked")
@@ -90,6 +92,7 @@ public class MappingConverter {
      *
      * @param clazz  The class type to convert the Dingo record to.
      * @param record The Dingo record to convert.
+     * @param <T> T
      * @return A virtual list.
      * @throws DingoClientException an Exception will be thrown in case of encountering a ReflectiveOperationException.
      */
@@ -105,11 +108,12 @@ public class MappingConverter {
      * Given a record loaded from dingo and a class type, attempt to convert the record to
      * an instance of the passed class.
      *
+     * @param <T> T
      * @param clazz  The class type to convert the dingo record to.
      * @param record The Dingo record to convert.
      * @param entry  The entry that holds information on how to store the provided class.
      * @return A virtual list.
-     * @throws DingoClientException will be thrown when encountering a ReflectiveOperationException.
+     * @throws ReflectiveOperationException DingoClientException will be thrown when encountering a ReflectiveOperationException.
      */
     public <T> T convertToObject(Class<T> clazz,
                                  Record record,
@@ -119,6 +123,13 @@ public class MappingConverter {
 
     /**
      * This method should not be used, it is public only to allow mappers to see it.
+     * @param <T> T
+     * @param clazz The class type to convert the dingo record to.
+     * @param entry The entry that holds information on how to store the provided class.
+     * @param record The Dingo record to convert.
+     * @param resolveDependencies resolve dependencies
+     * @return A virtual list.
+     * @throws ReflectiveOperationException DingoClientException will be thrown when encountering a ReflectiveOperationException.
      */
     public <T> T convertToObject(Class<T> clazz,
                                  Record record,
@@ -138,6 +149,7 @@ public class MappingConverter {
      * Given a list of records loaded from dingo and a class type, attempt to convert the records to
      * an instance of the passed class.
      *
+     * @param <T> class
      * @param clazz  The class type to convert the Dingo record to.
      * @param record The Dingo records to convert.
      * @return A virtual list.
@@ -149,6 +161,11 @@ public class MappingConverter {
 
     /**
      * This method should not be used, it is public only to allow mappers to see it.
+     * @param <T> class
+     * @param resolveDependencies resolve dependencies
+     * @param record The Dingo record to convert.
+     * @param clazz The class type to convert the dingo record to.
+     * @return A virtual list.
      */
     public <T> T convertToObject(Class<T> clazz,
                                  List<Object> record,
@@ -171,6 +188,7 @@ public class MappingConverter {
      * Given a map of records loaded from Dingo and a class type, attempt to convert the records to
      * an instance of the passed class.
      *
+     * @param <T> class
      * @param clazz  The class type to convert the Dingo record to.
      * @param record The Dingo records to convert.
      * @return A virtual list.
@@ -184,6 +202,7 @@ public class MappingConverter {
     /**
      * Given an instance of a class (of any type), convert its properties to a list.
      *
+     * @param <T> class
      * @param instance The instance of a class (of any type).
      * @return a List of the properties of the given instance.
      */
@@ -197,6 +216,7 @@ public class MappingConverter {
      * Given an instance of a class (of any type), convert its properties to a map, properties names will use as the
      * key and properties values will be the values.
      *
+     * @param <T> class
      * @param instance The instance of a class (of any type).
      * @return the properties {@link Map} of the given instance.
      */

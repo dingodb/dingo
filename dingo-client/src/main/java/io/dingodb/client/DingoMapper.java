@@ -57,6 +57,8 @@ public interface DingoMapper extends IBaseDingoMapper {
      * If Columns are specified, only columns with the passed names will be updated (or all of them if null is passed)
      *
      * @param object The object to update.
+     * @param columnNames column names
+     * @return is success
      * @throws DingoClientException an DingoClientException will be thrown in case of an error.
      */
     boolean update(@NotNull Object object, String... columnNames);
@@ -64,6 +66,7 @@ public interface DingoMapper extends IBaseDingoMapper {
     /**
      * Read a record from the repository and map it to an instance of the passed class.
      *
+     * @param <T> class
      * @param clazz   - The type of be returned.
      * @param userKey - The key of the record.
      *                The database and table will be derived from the values specified on the passed class.
@@ -76,6 +79,7 @@ public interface DingoMapper extends IBaseDingoMapper {
     /**
      * Read a batch of records from database and map them to an instance of the passed class.
      *
+     * @param <T> class
      * @param clazz    - The type of be returned.
      * @param userKeys - The keys of the record.
      *                 The database and table will be derived from the values specified on the passed class.
@@ -87,6 +91,7 @@ public interface DingoMapper extends IBaseDingoMapper {
     /**
      * Delete a record by a user Key.
      *
+     * @param tableName table name.
      * @param userKey - The key of the record.
      * @return whether record existed on server before deletion
      * @throws DingoClientException an DingoClientException will be thrown in case of an error.
@@ -108,6 +113,7 @@ public interface DingoMapper extends IBaseDingoMapper {
      * whereas if the processor returns true subsequent records (if any) are processed.
      * The query policy used will be the one associated with the passed classtype.
      *
+     * @param <T> class
      * @param clazz     - the class used to determine which set to scan and to convert the returned records to.
      * @param processor - the Processor used to process each record
      * @param filter    - the filter used to determine which secondary index to use.
@@ -121,6 +127,7 @@ public interface DingoMapper extends IBaseDingoMapper {
      * and returns the list of records converted to the appropriate class.
      * The query policy used will be the one associated with the passed classtype.
      *
+     * @param <T> class
      * @param clazz  - the class used to determine which set to scan and to convert the returned records to.
      * @param filter - the filter used to determine which secondary index to use.
      *               If this filter is null, every record in the set

@@ -44,6 +44,7 @@ public @interface DingoEmbed {
      * private List&lt;Account&gt; accounts;
      * </pre>
      * then the objects will be stored in the database as lists of lists, rather than lists of maps.
+     * @return embed type
      */
     EmbedType elementType() default EmbedType.DEFAULT;
 
@@ -93,6 +94,7 @@ public @interface DingoEmbed {
      * <pre>
      * KEY_ORDERED_MAP('{99:["details2", 99, 200], 101:["details1", 101, 100], 1010:["details3", 1010, 300]}')
      * </pre>
+     * @return default false
      */
     boolean saveKey() default false;
 }

@@ -204,7 +204,9 @@ public class OperationService {
 
     /**
      * getTable.
-     * @return table + indexes
+     * @param schemaName schema name
+     * @param tableName table name
+     * @return table and indexes
      */
     public List<Table> getTables(String schemaName, String tableName) {
         MetaServiceClient metaService = getSubMetaService(schemaName);
@@ -212,6 +214,8 @@ public class OperationService {
     }
 
     /** getTableIndex.
+     * @param schemaName schema name
+     * @param tableName table name
      * @return indexes
      */
     public List<Table> getTableIndexes(String schemaName, String tableName) {
