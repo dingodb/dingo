@@ -56,6 +56,8 @@ import io.dingodb.exec.fun.time.FromUnixTimeEvaluatorsFactory;
 import io.dingodb.exec.fun.time.TimeFormatEvaluatorsFactory;
 import io.dingodb.exec.fun.time.TimestampFormatEvaluatorsFactory;
 import io.dingodb.exec.fun.time.UnixTimestampEvaluatorsFactory;
+import io.dingodb.exec.fun.vector.VectorImageFun;
+import io.dingodb.exec.fun.vector.VectorTextFun;
 import io.dingodb.expr.parser.DefaultFunFactory;
 
 public class DingoFunFactory extends DefaultFunFactory {
@@ -139,5 +141,7 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerUdf(GlobalVariableFun.NAME, GlobalVariableFun::new);
 
         registerUdf(AutoIncrementFun.NAME, AutoIncrementFun::new);
+        registerUdf(VectorImageFun.NAME, VectorImageFun::new);
+        registerUdf(VectorTextFun.NAME, VectorTextFun::new);
     }
 }

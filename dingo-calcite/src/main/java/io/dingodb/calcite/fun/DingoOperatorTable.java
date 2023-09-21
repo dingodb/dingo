@@ -33,6 +33,9 @@ import io.dingodb.exec.fun.string.RepeatFun;
 import io.dingodb.exec.fun.string.ReverseFun;
 import io.dingodb.exec.fun.string.RightFun;
 import io.dingodb.exec.fun.time.DateDiffFun;
+import io.dingodb.exec.fun.vector.VectorImageFun;
+import io.dingodb.exec.fun.vector.VectorL2DistanceFun;
+import io.dingodb.exec.fun.vector.VectorTextFun;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
@@ -44,10 +47,12 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.SqlAppointReturnTypeInference;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
 import org.apache.calcite.sql.type.SqlTypeFamily;
+import org.apache.calcite.sql.type.SqlTypeTransforms;
 import org.apache.calcite.sql.validate.SqlNameMatcher;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -55,6 +60,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import static org.apache.calcite.sql.type.OperandTypes.family;
+import static org.apache.calcite.sql.type.SqlAppointReturnTypeInference.FLOAT;
+import static org.apache.calcite.sql.type.SqlAppointReturnTypeInference.ret;
 
 @Slf4j
 public class DingoOperatorTable implements SqlOperatorTable {
@@ -110,7 +119,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
             LeftFun.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
             DingoInferTypes.VARCHAR1024_INTEGER,
-            OperandTypes.family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC),
+            family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC),
             SqlFunctionCategory.STRING
         );
         registerFunction(
@@ -132,8 +141,8 @@ public class DingoOperatorTable implements SqlOperatorTable {
             ReturnTypes.VARCHAR_2000_NULLABLE,
             DingoInferTypes.VARCHAR1024_INTEGER_INTEGER,
             OperandTypes.or(
-                OperandTypes.family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC),
-                OperandTypes.family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC)
+                family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC),
+                family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC)
             ),
             SqlFunctionCategory.STRING
         );
@@ -141,7 +150,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
             RepeatFun.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
             DingoInferTypes.VARCHAR1024_INTEGER,
-            OperandTypes.family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC),
+            family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC),
             SqlFunctionCategory.STRING
         );
         registerFunction(
@@ -155,7 +164,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
             RightFun.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
             DingoInferTypes.VARCHAR1024_INTEGER,
-            OperandTypes.family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC),
+            family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC),
             SqlFunctionCategory.STRING
         );
         registerFunction(
@@ -192,7 +201,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
             // Why not `OperandTypes.family(ImmutableList.of(SqlTypeFamily.DATE, SqlTypeFamily.STRING), i -> i == 1)`?
             // Because if there are any optional operands, casting is disabled.
             OperandTypes.or(
-                OperandTypes.family(SqlTypeFamily.DATE, SqlTypeFamily.STRING),
+                family(SqlTypeFamily.DATE, SqlTypeFamily.STRING),
                 OperandTypes.DATE
             ),
             SqlFunctionCategory.STRING
@@ -202,8 +211,8 @@ public class DingoOperatorTable implements SqlOperatorTable {
             ReturnTypes.VARCHAR_2000,
             DingoInferTypes.TIME_VARCHAR1024,
             OperandTypes.or(
-                OperandTypes.family(SqlTypeFamily.TIME, SqlTypeFamily.STRING),
-                OperandTypes.family(SqlTypeFamily.TIME)
+                family(SqlTypeFamily.TIME, SqlTypeFamily.STRING),
+                family(SqlTypeFamily.TIME)
             ),
             SqlFunctionCategory.STRING
         );
@@ -212,9 +221,9 @@ public class DingoOperatorTable implements SqlOperatorTable {
             ReturnTypes.VARCHAR_2000,
             DingoInferTypes.TIMESTAMP_VARCHAR1024,
             OperandTypes.or(
-                OperandTypes.family(SqlTypeFamily.TIMESTAMP, SqlTypeFamily.STRING),
+                family(SqlTypeFamily.TIMESTAMP, SqlTypeFamily.STRING),
                 OperandTypes.TIMESTAMP,
-                OperandTypes.family(SqlTypeFamily.NUMERIC, SqlTypeFamily.STRING),
+                family(SqlTypeFamily.NUMERIC, SqlTypeFamily.STRING),
                 OperandTypes.NUMERIC
             ),
             SqlFunctionCategory.STRING
@@ -223,7 +232,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
             DateDiffFun.NAME,
             ReturnTypes.BIGINT,
             DingoInferTypes.DATE_DATE,
-            OperandTypes.family(SqlTypeFamily.DATE, SqlTypeFamily.DATE),
+            family(SqlTypeFamily.DATE, SqlTypeFamily.DATE),
             SqlFunctionCategory.NUMERIC
         );
 
@@ -247,6 +256,27 @@ public class DingoOperatorTable implements SqlOperatorTable {
             ReturnTypes.BIGINT,
             InferTypes.VARCHAR_1024,
             OperandTypes.STRING_STRING,
+            SqlFunctionCategory.NUMERIC
+        );
+        registerFunction(
+            VectorImageFun.NAME,
+            ret,
+            DingoInferTypes.FLOAT,
+            OperandTypes.STRING_STRING,
+            SqlFunctionCategory.NUMERIC
+        );
+        registerFunction(
+            VectorTextFun.NAME,
+            ret,
+            DingoInferTypes.FLOAT,
+            OperandTypes.STRING_STRING,
+            SqlFunctionCategory.NUMERIC
+        );
+        registerFunction(
+            VectorL2DistanceFun.NAME,
+            FLOAT,
+            DingoInferTypes.FLOAT,
+            family(SqlTypeFamily.ARRAY, SqlTypeFamily.ARRAY),
             SqlFunctionCategory.NUMERIC
         );
     }

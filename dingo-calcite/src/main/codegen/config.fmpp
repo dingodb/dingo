@@ -212,6 +212,7 @@ data: {
       "AlterTable.ftl"
       "Show.ftl"
       "Analyze.ftl"
+      "Grant.ftl"
     ]
 
     includePosixOperators: false

@@ -288,6 +288,19 @@ public class UserService implements io.dingodb.verify.service.UserService {
     }
 
     @Override
+    public void dropTablePrivilege(String schemaName, String tableName) {
+        RangeDistribution rangeDistribution = metaService.getRangeDistribution(tablePrivTblId).firstEntry().getValue();
+
+        List<Object[]> list = scan(tablePrivStore, tablePrivCodec, rangeDistribution.getStartKey(),
+            rangeDistribution.getEndKey(), rangeDistribution.isWithStart(), true);
+        list.forEach(e -> {
+            if (schemaName.equalsIgnoreCase((String) e[2]) && tableName.equalsIgnoreCase((String) e[3])) {
+                delete(tablePrivStore, tablePrivCodec, e);
+            }
+        });
+    }
+
+    @Override
     public void flushPrivileges() {
         log.info("flush privileges");
     }
@@ -326,6 +339,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
                             row[i] = "N";
                         }
                     }
+                    break;
                 case "PASSWORD_LIFETIME":
                     if (user.getExpireDays() != null) {
                         int expireDays = Integer.parseInt(user.getExpireDays().toString());
@@ -358,6 +372,15 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     private void grantUser(UserDefinition userDefinition) {
         try {
+            String illegality = validUserGrantorPriv(
+                userDefinition.getGrantorUser(),
+                userDefinition.getGrantorHost(),
+                userDefinition.getPrivilegeList());
+            if (illegality != null) {
+                throw DINGO_RESOURCE.accessDeniedToUser(
+                    userDefinition.getGrantorUser(),
+                    userDefinition.getGrantorHost()).ex();
+            }
             KeyValue old = userStore.get(userCodec.encodeKey(getUserKeys(userDefinition)));
             Object[] userValues = userCodec.decode(old);
             userDefinition.getPrivilegeList().forEach(privilege -> {
@@ -374,6 +397,22 @@ public class UserService implements io.dingodb.verify.service.UserService {
     }
 
     private void grantDbPrivilege(SchemaPrivDefinition schemaPrivDefinition) {
+        String illegality = validUserGrantorPriv(schemaPrivDefinition.getGrantorUser(),
+            schemaPrivDefinition.getGrantorHost(),
+            schemaPrivDefinition.getPrivilegeList());
+        if (illegality != null) {
+            illegality = validDbGrantorPriv(
+                schemaPrivDefinition.getGrantorUser(),
+                schemaPrivDefinition.getGrantorHost(),
+                schemaPrivDefinition.getSchemaName(),
+                schemaPrivDefinition.getPrivilegeList());
+            if (illegality != null) {
+                throw DINGO_RESOURCE.accessDeniedToDb(
+                    schemaPrivDefinition.getGrantorUser(),
+                    schemaPrivDefinition.getGrantorHost(),
+                    schemaPrivDefinition.getSchemaName()).ex();
+            }
+        }
         boolean exist = true;
         KeyValue old = getKeyValue(
             dbPrivStore, dbPrivCodec, getDbPrivilegeKeys(schemaPrivDefinition, schemaPrivDefinition.getSchemaName())
@@ -400,13 +439,24 @@ public class UserService implements io.dingodb.verify.service.UserService {
         boolean exist = true;
         String schemaName = tablePrivDefinition.getSchemaName();
         String tableName = tablePrivDefinition.getTableName();
+        // to valid grantor have this privilege: grant
+        validTableGrantorPriv(
+            tablePrivDefinition.getGrantorUser(),
+            tablePrivDefinition.getGrantorHost(),
+            schemaName,
+            tableName,
+            tablePrivDefinition.getPrivilegeList());
         KeyValue old = getKeyValue(
             tablePrivStore, tablePrivCodec, getTablePrivilegeKeys(tablePrivDefinition, schemaName, tableName)
         );
         Object[] tpValues = decode(tablePrivCodec, old);
         if (tpValues == null) {
             tpValues = getTablePrivilege(
-                tablePrivDefinition.getUser(), tablePrivDefinition.getHost(), schemaName, tableName
+                tablePrivDefinition.getUser(),
+                tablePrivDefinition.getHost(),
+                schemaName,
+                tableName,
+                tablePrivDefinition.getGrantor()
             );
             exist = false;
         }
@@ -427,6 +477,76 @@ public class UserService implements io.dingodb.verify.service.UserService {
         }
     }
 
+    private void validTableGrantorPriv(String user,
+                                          String host,
+                                          String schemaName,
+                                          String tableName,
+                                          List<String> grantPrivList) {
+        String illegality = validUserGrantorPriv(user, host, grantPrivList);
+        if (illegality == null) {
+            return;
+        }
+        illegality = validDbGrantorPriv(user, host, schemaName, grantPrivList);
+        if (illegality == null) {
+            return;
+        }
+
+        Object[] tablePrivilegeParam = getTablePrivilege(user, host, schemaName, tableName, "");
+        Object[] tablePriv = get(tablePrivStore, tablePrivCodec, tablePrivilegeParam);
+        if (tablePriv == null || tablePriv[6] == null) {
+            throw DINGO_RESOURCE.operatorDenied(grantPrivList.get(0), user, host, tableName).ex();
+        }
+        String[] privileges = ((String) tablePriv[6]).split(",");
+        List<String> privilegeList = Arrays.asList(privileges);
+        if (!privilegeList.contains("grant")) {
+            throw DINGO_RESOURCE.operatorDenied("grant", user, host, tableName).ex();
+        }
+        for (String privilege : grantPrivList) {
+            if (!privilegeList.contains(privilege)) {
+                throw DINGO_RESOURCE.operatorDenied(privilege, user, host, tableName).ex();
+            }
+        }
+    }
+
+    private String validDbGrantorPriv(String user,
+                                    String host,
+                                    String schemaName,
+                                    List<String> grantPrivList) {
+        Object[] originDbVal = getDbPrivilege(user, host, schemaName);
+        Object[] dbVal = get(dbPrivStore, dbPrivCodec, originDbVal);
+        if (dbVal == null) {
+            return "";
+        }
+        int index;
+        for (String privilege : grantPrivList) {
+            index = PrivilegeDict.dbPrivilegeIndex.get(privilege);
+            if (!"Y".equalsIgnoreCase((String) dbVal[index])) {
+                return privilege;
+            }
+        }
+        return null;
+    }
+
+    private String validUserGrantorPriv(String user,
+                                    String host,
+                                    List<String> grantPrivList) {
+        UserDefinition userDefinition = getUserDefinition(user, host);
+        if (userDefinition == null) {
+            return "";
+        }
+        if (!userDefinition.getPrivileges()[8]) {
+            return "grant";
+        }
+        int index;
+        for (String privilege : grantPrivList) {
+            index = PrivilegeDict.privilegeIndexDict.get(privilege);
+            if (!userDefinition.getPrivileges()[index]) {
+               return privilege;
+            }
+        }
+        return null;
+    }
+
     private Object[] getDbPrivilege(String user, String host, String db) {
         Object[] dbValues = new Object[dbPrivTd.getColumnsCount()];
         dbValues[0] = host;
@@ -440,16 +560,25 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     private List<Object[]> getTablePrivilegeList(UserDefinition user) {
         Object[] keys = getTablePrivilegeKeys(user, "", "");
-        return scan(tablePrivStore, tablePrivCodec, keys);
+        try {
+            byte[] prefix = tablePrivCodec.encodeKeyPrefix(keys, 2);
+            return scan(tablePrivStore, tablePrivCodec, prefix, prefix, true, true);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private Object[] getTablePrivilege(String user, String host, String db, String tableName) {
+    private Object[] getTablePrivilege(String user,
+                                       String host,
+                                       String db,
+                                       String tableName,
+                                       String grantor) {
         Object[] tpValues = new Object[tablePrivTd.getColumnsCount()];
         tpValues[0] = host;
         tpValues[1] = user;
         tpValues[2] = db;
         tpValues[3] = tableName;
-        tpValues[4] = "";
+        tpValues[4] = grantor;
         tpValues[5] = new Timestamp(System.currentTimeMillis());
         tpValues[6] = "";
         tpValues[7] = "";
@@ -520,7 +649,12 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     private List<Object[]> getSchemaPrivilegeList(PrivilegeDefinition user) {
         Object[] keys = getDbPrivilegeKeys(user, "");
-        return scan(dbPrivStore, dbPrivCodec, keys);
+        try {
+            byte[] prefix = dbPrivCodec.encodeKeyPrefix(keys, 2);
+            return scan(dbPrivStore, dbPrivCodec, prefix, prefix, true, true);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static Boolean[] tpMapping(Object[] tpValues) {
@@ -593,11 +727,15 @@ public class UserService implements io.dingodb.verify.service.UserService {
         }
     }
 
-    private static List<Object[]> scan(StoreInstance store, KeyValueCodec codec, Object[] startKey) {
+    private static List<Object[]> scan(StoreInstance store,
+                                       KeyValueCodec codec,
+                                       byte[] startKey,
+                                       byte[] endKey,
+                                       boolean withStart,
+                                       boolean withEnd) {
         try {
-            byte[] prefix = codec.encodeKeyPrefix(startKey, 2);
             Iterator<KeyValue> iterator = store.scan(
-                new StoreInstance.Range(prefix, prefix, true, true)
+                new StoreInstance.Range(startKey, endKey, withStart, withEnd)
             );
             if (iterator == null) {
                 return null;

@@ -86,6 +86,11 @@ public class UserTestService implements UserService {
     }
 
     @Override
+    public void dropTablePrivilege(String schemaName, String tableName) {
+
+    }
+
+    @Override
     public void flushPrivileges() {
         UserService.super.flushPrivileges();
     }

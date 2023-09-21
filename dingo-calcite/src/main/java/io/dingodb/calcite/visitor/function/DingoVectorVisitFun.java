@@ -33,12 +33,16 @@ import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.PartVectorOperator;
 import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
 import io.dingodb.exec.partition.PartitionStrategy;
+import io.dingodb.exec.restful.VectorExtract;
 import io.dingodb.meta.MetaService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNumericLiteral;
+import org.apache.calcite.sql.fun.SqlArrayValueConstructor;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 public final class DingoVectorVisitFun {
@@ -69,13 +74,8 @@ public final class DingoVectorVisitFun {
 
         List<SqlNode> operandsList = rel.getOperands();
 
-        List<SqlNode> operands = ((SqlBasicCall) operandsList.get(2)).getOperandList();
-        Float[] floatArray = new Float[operands.size()];
-        for (int i = 0; i < operands.size(); i++) {
-            floatArray[i] = (
-                (Number) Objects.requireNonNull(((SqlNumericLiteral) operands.get(i)).getValue())
-            ).floatValue();
-        }
+        Float[] floatArray;
+        floatArray = getVectorFloats(operandsList);
 
         int topN = ((Number) Objects.requireNonNull(((SqlNumericLiteral) operandsList.get(3)).getValue())).intValue();
 
@@ -119,6 +119,46 @@ public final class DingoVectorVisitFun {
         }
 
         return outputs;
+    }
+
+    public static Float[] getVectorFloats(List<SqlNode> operandsList) {
+        Float[] floatArray;
+        SqlBasicCall basicCall = (SqlBasicCall) operandsList.get(2);
+        if (basicCall.getOperator() instanceof SqlArrayValueConstructor) {
+            List<SqlNode> operands = basicCall.getOperandList();
+            floatArray = new Float[operands.size()];
+            for (int i = 0; i < operands.size(); i++) {
+                floatArray[i] = (
+                    (Number) Objects.requireNonNull(((SqlNumericLiteral) operands.get(i)).getValue())
+                ).floatValue();
+            }
+        } else {
+            List<SqlNode> sqlNodes = basicCall.getOperandList();
+            if (sqlNodes.size() < 2) {
+                throw new RuntimeException("vector load param error");
+            }
+            List<Object> paramList = sqlNodes.stream().map(e -> {
+                if (e instanceof SqlLiteral) {
+                    return ((SqlLiteral)e).getValue();
+                } else if (e instanceof SqlIdentifier) {
+                    return ((SqlIdentifier)e).getSimple();
+                } else {
+                    return e.toString();
+                }
+            }).collect(Collectors.toList());
+            if (paramList.get(1) == null) {
+                throw new RuntimeException("vector load param error");
+            }
+            String param = paramList.get(1).toString();
+            if (param.contains("'")) {
+                param = param.replace("'", "");
+            }
+            floatArray = VectorExtract.getVector(
+                basicCall.getOperator().getName(),
+                paramList.get(0).toString(),
+                param);
+        }
+        return floatArray;
     }
 
     private static Map<String, Object> getParameterMap(List<SqlNode> operandsList) {
