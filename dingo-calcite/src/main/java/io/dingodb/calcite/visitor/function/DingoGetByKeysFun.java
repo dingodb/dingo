@@ -25,18 +25,19 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.EmptySourceOperator;
 import io.dingodb.exec.operator.GetByKeysOperator;
-import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
-import io.dingodb.exec.partition.PartitionStrategy;
-import io.dingodb.exec.partition.RangeStrategy;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.LinkedList;
@@ -58,8 +59,10 @@ public final class DingoGetByKeysFun {
         final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
             = tableInfo.getRangeDistributions();
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        final PartitionStrategy<CommonId, byte[]> ps
-            = DingoPartitionStrategyFactory.createPartitionStrategy(td, distributions);
+        final PartitionService ps = PartitionService.getService(
+            Optional.ofNullable(td.getPartDefinition())
+                .map(PartitionDefinition::getFuncName)
+                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         final List<Output> outputs = new LinkedList<>();
         KeyValueCodec codec = TableUtils.getKeyValueCodecForTable(td);
         List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(rel.getPoints(), td);
@@ -71,7 +74,7 @@ public final class DingoGetByKeysFun {
             outputs.addAll(operator.getOutputs());
             return outputs;
         }
-        Map<CommonId, List<Object[]>> partMap = ps.partTuples(keyTuples, wrap(codec::encodeKey));
+        Map<CommonId, List<Object[]>> partMap = ps.partTuples(keyTuples, wrap(codec::encodeKey), distributions);
         for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
             GetByKeysOperator operator = new GetByKeysOperator(tableInfo.getId(), entry.getKey(), td.getDingoType(),
                 td.getKeyMapping(), entry.getValue(), SqlExprUtils.toSqlExpr(rel.getFilter()), rel.getSelection()

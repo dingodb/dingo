@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.common;
+package io.dingodb.partition.base;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigInteger;

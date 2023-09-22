@@ -25,13 +25,18 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.partition.PartitionDefinition;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.common.vector.VectorSearchResponse;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.partition.PartitionStrategy;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreService;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +48,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 
 @Slf4j
 @JsonTypeName("scan")
@@ -56,8 +62,10 @@ public final class PartVectorOperator extends PartIteratorSourceOperator {
     @JsonProperty("tableDefinition")
     private final TableDefinition tableDefinition;
 
-    @JsonProperty("strategy")
-    private final PartitionStrategy<CommonId, byte[]> strategy;
+    @JsonProperty("distributions")
+    @JsonSerialize(keyUsing = ByteArrayUtils.ComparableByteArray.JacksonKeySerializer.class)
+    @JsonDeserialize(keyUsing = ByteArrayUtils.ComparableByteArray.JacksonKeyDeserializer.class)
+    private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
 
     @JsonProperty("indexId")
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
@@ -87,7 +95,7 @@ public final class PartVectorOperator extends PartIteratorSourceOperator {
         @JsonProperty("filter") SqlExpr filter,
         @JsonProperty("selection") TupleMapping selection,
         @JsonProperty("tableDefinition") TableDefinition tableDefinition,
-        @JsonProperty("strategy") PartitionStrategy<CommonId, byte[]> strategy,
+        @JsonProperty("distributions") NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
         @JsonProperty("indexId") CommonId indexId,
         @JsonProperty("indexRegionId") CommonId indexRegionId,
         @JsonProperty("floatArray") Float[] floatArray,
@@ -97,7 +105,7 @@ public final class PartVectorOperator extends PartIteratorSourceOperator {
         super(tableId, partId, schema, keyMapping, filter, selection);
         this.codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
         this.tableDefinition = tableDefinition;
-        this.strategy = strategy;
+        this.distributions = distributions;
         this.indexId = indexId;
         this.indexRegionId = indexRegionId;
         this.floatArray = floatArray;
@@ -113,7 +121,11 @@ public final class PartVectorOperator extends PartIteratorSourceOperator {
         // Get all table data response
         List<VectorSearchResponse> searchResponseList = instance.vectorSearch(indexId, floatArray, topN, parameterMap);
         for (VectorSearchResponse response : searchResponseList) {
-            CommonId regionId = strategy.calcPartId(response.getKey());
+            CommonId regionId = PartitionService.getService(
+                    Optional.ofNullable(tableDefinition.getPartDefinition())
+                        .map(PartitionDefinition::getFuncName)
+                        .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME)).
+                calcPartId(response.getKey(), distributions);
             StoreInstance storeInstance = StoreService.getDefault().getInstance(tableId, regionId);
             KeyValue keyValue = storeInstance.get(response.getKey());
             try {

@@ -24,6 +24,7 @@ import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
@@ -34,9 +35,8 @@ import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.LikeScanOperator;
-import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
-import io.dingodb.exec.partition.PartitionStrategy;
-import io.dingodb.exec.partition.RangeStrategy;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -58,12 +58,13 @@ public final class DingoLikeScanVisitFun {
         }
         NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        final PartitionStrategy<CommonId, byte[]> ps
-            = DingoPartitionStrategyFactory.createPartitionStrategy(td, distributions);
-
+        final PartitionService ps = PartitionService.getService(
+            Optional.ofNullable(td.getPartDefinition())
+                .map(PartitionDefinition::getFuncName)
+                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         List<Output> outputs = new ArrayList<>();
 
-        for (RangeDistribution distribution : ps.calcPartitionRange(rel.getPrefix(), rel.getPrefix(), true, true)) {
+        for (RangeDistribution distribution : ps.calcPartitionRange(rel.getPrefix(), rel.getPrefix(), true, true, distributions)) {
             LikeScanOperator operator = new LikeScanOperator(
                 tableInfo.getId(),
                 distribution.id(),

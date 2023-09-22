@@ -28,6 +28,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
@@ -38,8 +39,8 @@ import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.PartRangeScanOperator;
-import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
-import io.dingodb.exec.partition.PartitionStrategy;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -65,8 +66,10 @@ public final class DingoTableScanVisitFun {
 
         NavigableSet<RangeDistribution> distributions;
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
-        PartitionStrategy<CommonId, byte[]> ps = DingoPartitionStrategyFactory.createPartitionStrategy(td, ranges);
-
+        final PartitionService ps = PartitionService.getService(
+            Optional.ofNullable(td.getPartDefinition())
+                .map(PartitionDefinition::getFuncName)
+                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         SqlExpr filter = null;
         byte[] startKey = null;
         byte[] endKey = null;
@@ -84,13 +87,13 @@ public final class DingoTableScanVisitFun {
             }
             if (rel.getFilter().getKind() == SqlKind.NOT) {
                 distributions = new TreeSet<>(io.dingodb.common.util.RangeUtils.rangeComparator());
-                distributions.addAll(ps.calcPartitionRange(null, startKey, true, !withStart));
-                distributions.addAll(ps.calcPartitionRange(endKey, null, !withEnd, true));
+                distributions.addAll(ps.calcPartitionRange(null, startKey, true, !withStart, ranges));
+                distributions.addAll(ps.calcPartitionRange(endKey, null, !withEnd, true, ranges));
             } else {
-                distributions = ps.calcPartitionRange(startKey, endKey, withStart, withEnd);
+                distributions = ps.calcPartitionRange(startKey, endKey, withStart, withEnd, ranges);
             }
         } else {
-            distributions = ps.calcPartitionRange(startKey, endKey, withStart, withEnd);
+            distributions = ps.calcPartitionRange(startKey, endKey, withStart, withEnd, ranges);
         }
 
         List<Output> outputs = new ArrayList<>();
