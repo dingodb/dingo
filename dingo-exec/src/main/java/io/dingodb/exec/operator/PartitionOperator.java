@@ -25,15 +25,18 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.impl.OutputIml;
-import io.dingodb.exec.partition.PartitionStrategy;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
 import io.dingodb.meta.MetaService;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -46,10 +49,12 @@ import java.util.NavigableMap;
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 @JsonTypeName("partition")
-@JsonPropertyOrder({"strategy", "keyMapping", "partIndices", "outputs"})
+@JsonPropertyOrder({"distributions", "keyMapping", "partIndices", "outputs"})
 public final class PartitionOperator extends FanOutOperator {
-    @JsonProperty("strategy")
-    private final PartitionStrategy<CommonId, byte[]> strategy;
+    @JsonProperty("distributions")
+    @JsonSerialize(keyUsing = ComparableByteArray.JacksonKeySerializer.class)
+    @JsonDeserialize(keyUsing = ComparableByteArray.JacksonKeyDeserializer.class)
+    private final NavigableMap<ComparableByteArray, RangeDistribution> distributions;
     @JsonProperty("tableDefinition")
     private final TableDefinition tableDefinition;
     @JsonProperty("partIndices")
@@ -62,11 +67,11 @@ public final class PartitionOperator extends FanOutOperator {
 
     @JsonCreator
     public PartitionOperator(
-        @JsonProperty("strategy") PartitionStrategy<CommonId, byte[]> strategy,
+        @JsonProperty("distributions") NavigableMap<ComparableByteArray, RangeDistribution> distributions,
         @JsonProperty("tableDefinition") TableDefinition tableDefinition
     ) {
         super();
-        this.strategy = strategy;
+        this.distributions = distributions;
         this.tableDefinition = tableDefinition;
         this.codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
         this.schema = tableDefinition.getDingoType();
@@ -78,7 +83,11 @@ public final class PartitionOperator extends FanOutOperator {
             Arrays.copyOf(tuple, schema.fieldCount()),
             ValueConverter.INSTANCE
         );
-        CommonId partId = strategy.calcPartId(newTuple, wrap(codec::encodeKey));
+        CommonId partId = PartitionService.getService(
+                Optional.ofNullable(tableDefinition.getPartDefinition())
+                    .map(PartitionDefinition::getFuncName)
+                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME)).
+            calcPartId(newTuple, wrap(codec::encodeKey), distributions);
         return partIndices.get(partId);
     }
 

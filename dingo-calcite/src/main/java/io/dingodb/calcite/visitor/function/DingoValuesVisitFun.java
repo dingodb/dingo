@@ -28,18 +28,19 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.ValuesOperator;
-import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
-import io.dingodb.exec.partition.PartitionStrategy;
-import io.dingodb.exec.partition.RangeStrategy;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.LinkedList;
@@ -77,9 +78,11 @@ public final class DingoValuesVisitFun {
             final KeyValueCodec keyValueCodec = TableUtils.getKeyValueCodecForTable(td);
             final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
                 = tableInfo.getRangeDistributions();
-            final PartitionStrategy<CommonId, byte[]> ps
-                = DingoPartitionStrategyFactory.createPartitionStrategy(td, distributions);
-            Map<CommonId, List<Object[]>> partMap = ps.partTuples(rel.getTuples(), wrap(keyValueCodec::encodeKey));
+            final PartitionService ps = PartitionService.getService(
+                Optional.ofNullable(td.getPartDefinition())
+                    .map(PartitionDefinition::getFuncName)
+                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+            Map<CommonId, List<Object[]>> partMap = ps.partTuples(rel.getTuples(), wrap(keyValueCodec::encodeKey), distributions);
             for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
                 ValuesOperator operator = new ValuesOperator(entry.getValue(),
                     Objects.requireNonNull(DefinitionMapper.mapToDingoType(rel.getRowType()))

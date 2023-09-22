@@ -73,16 +73,8 @@ public final class Mapping {
             table.getCreateSql());
     }
 
-    public static io.dingodb.sdk.common.table.TableDefinition mapping(TableDefinition tableDefinition) {
-        return io.dingodb.sdk.common.table.TableDefinition.builder()
-            .name(tableDefinition.getName())
-            .columns(tableDefinition.getColumns().stream().map(Mapping::mapping).collect(Collectors.toList()))
-            .version(tableDefinition.getVersion())
-            .autoIncrement(tableDefinition.getAutoIncrement())
-            .replica(tableDefinition.getReplica())
-            .engine(tableDefinition.getEngine())
-            .ttl(tableDefinition.getTtl())
-            .build();
+    public static io.dingodb.store.common.TableDefinition mapping(TableDefinition tableDefinition) {
+        return new io.dingodb.store.common.TableDefinition(tableDefinition);
     }
 
     public static PartitionDefinition mapping(Partition partition) {

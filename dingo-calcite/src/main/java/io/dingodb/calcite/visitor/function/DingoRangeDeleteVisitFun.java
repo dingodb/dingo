@@ -21,11 +21,12 @@ import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.RangeUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
@@ -33,9 +34,8 @@ import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.PartRangeDeleteOperator;
-import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
-import io.dingodb.exec.partition.PartitionStrategy;
-import io.dingodb.exec.partition.RangeStrategy;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -56,16 +56,17 @@ public final class DingoRangeDeleteVisitFun {
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
         NavigableSet<RangeDistribution> distributions;
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
-        final PartitionStrategy<CommonId, byte[]> ps
-            = DingoPartitionStrategyFactory.createPartitionStrategy(td, ranges);
-
+        final PartitionService ps = PartitionService.getService(
+            Optional.ofNullable(td.getPartDefinition())
+                .map(PartitionDefinition::getFuncName)
+                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         if (rel.isNotBetween()) {
             distributions = new TreeSet<>(RangeUtils.rangeComparator());
-            distributions.addAll(ps.calcPartitionRange(null, rel.getStartKey(), true, !rel.isIncludeStart()));
-            distributions.addAll(ps.calcPartitionRange(rel.getEndKey(), null, !rel.isIncludeEnd(), true));
+            distributions.addAll(ps.calcPartitionRange(null, rel.getStartKey(), true, !rel.isIncludeStart(), ranges));
+            distributions.addAll(ps.calcPartitionRange(rel.getEndKey(), null, !rel.isIncludeEnd(), true, ranges));
         } else {
             distributions = ps.calcPartitionRange(
-                rel.getStartKey(), rel.getEndKey(), rel.isIncludeStart(), rel.isIncludeEnd()
+                rel.getStartKey(), rel.getEndKey(), rel.isIncludeStart(), rel.isIncludeEnd(), ranges
             );
         }
 

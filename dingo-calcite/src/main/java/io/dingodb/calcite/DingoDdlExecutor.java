@@ -48,7 +48,7 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.DefinitionUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
-import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
+import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
 import io.dingodb.verify.service.UserService;
 import io.dingodb.verify.service.UserServiceProvider;
@@ -691,10 +691,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     ) {
         String strategy = partDefinition.getFuncName().toUpperCase();
         switch (strategy) {
-            case DingoPartitionStrategyFactory.RANGE_FUNC_NAME:
+            case DingoPartitionServiceProvider.RANGE_FUNC_NAME:
                 DefinitionUtils.checkAndConvertRangePartition(tableDefinition);
                 break;
-            case DingoPartitionStrategyFactory.HASH_FUNC_NAME:
+            case DingoPartitionServiceProvider.HASH_FUNC_NAME:
                 DefinitionUtils.checkAndConvertHashRangePartition(tableDefinition);
                 break;
             default:

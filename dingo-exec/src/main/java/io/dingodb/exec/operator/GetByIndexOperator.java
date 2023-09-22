@@ -26,12 +26,17 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.partition.PartitionDefinition;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.codec.RawJsonDeserializer;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.partition.PartitionStrategy;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
 import io.dingodb.exec.table.PartInKvStore;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreService;
@@ -43,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NavigableMap;
 
 import static io.dingodb.common.util.Utils.calculatePrefixCount;
 
@@ -84,7 +90,7 @@ public final class GetByIndexOperator extends PartIteratorSourceOperator {
 
     private KeyValueCodec lookupCodec;
 
-    private PartitionStrategy<CommonId, byte[]> strategy;
+    private NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges;
 
     public GetByIndexOperator(
         CommonId indexTableId,
@@ -95,7 +101,7 @@ public final class GetByIndexOperator extends PartIteratorSourceOperator {
         SqlExpr filter,
         TupleMapping selection,
         Boolean isUnique,
-        PartitionStrategy<CommonId, byte[]> strategy,
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges,
         KeyValueCodec codec,
         TableDefinition indexDefinition,
         TableDefinition tableDefinition,
@@ -109,7 +115,7 @@ public final class GetByIndexOperator extends PartIteratorSourceOperator {
         this.indexValues = indexValues;
         this.isUnique = isUnique;
         // Determine if it is necessary : lookup table
-        this.strategy = strategy;
+        this.ranges = ranges;
         this.codec = codec;
         this.indexDefinition = indexDefinition;
         this.tableDefinition = tableDefinition;
@@ -127,7 +133,7 @@ public final class GetByIndexOperator extends PartIteratorSourceOperator {
         @JsonProperty("filter") SqlExpr filter,
         @JsonProperty("selection") TupleMapping selection,
         @JsonProperty("isUnique") Boolean isUnique,
-        @JsonProperty("strategy") PartitionStrategy<CommonId, byte[]> strategy,
+        @JsonProperty("strategy") NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges,
         @JsonProperty("codec") KeyValueCodec codec,
         @JsonProperty("indexDefinition") TableDefinition indexDefinition,
         @JsonProperty("tableDefinition") TableDefinition tableDefinition,
@@ -142,7 +148,7 @@ public final class GetByIndexOperator extends PartIteratorSourceOperator {
             filter,
             selection,
             isUnique,
-            strategy,
+            ranges,
             codec,
             indexDefinition,
             tableDefinition,
@@ -200,7 +206,11 @@ public final class GetByIndexOperator extends PartIteratorSourceOperator {
         }
         try {
             byte[] keys = lookupCodec.encodeKey(keyTuples);
-            CommonId regionId = strategy.calcPartId(keys);
+            CommonId regionId = PartitionService.getService(
+                    Optional.ofNullable(tableDefinition.getPartDefinition())
+                        .map(PartitionDefinition::getFuncName)
+                        .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME)).
+                calcPartId(keys, ranges);
             StoreInstance storeInstance = StoreService.getDefault().getInstance(tableId, regionId);
             return lookupCodec.decode(storeInstance.get(keys));
         } catch (IOException e) {

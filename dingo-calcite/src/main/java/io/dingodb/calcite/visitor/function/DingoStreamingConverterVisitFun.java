@@ -27,7 +27,6 @@ import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.cluster.ClusterService;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
@@ -42,8 +41,8 @@ import io.dingodb.exec.operator.HashOperator;
 import io.dingodb.exec.operator.PartitionOperator;
 import io.dingodb.exec.operator.hash.HashStrategy;
 import io.dingodb.exec.operator.hash.SimpleHashStrategy;
-import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
-import io.dingodb.exec.partition.PartitionStrategy;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
@@ -121,11 +120,9 @@ public class DingoStreamingConverterVisitFun {
         final TableInfo tableInfo = MetaServiceUtils.getTableInfo(partition.getTable());
         final TableDefinition td = TableUtils.getTableDefinition(partition.getTable());
         NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
-        final PartitionStrategy<CommonId, byte[]> ps
-            = DingoPartitionStrategyFactory.createPartitionStrategy(td, distributions);
         for (Output input : inputs) {
             Task task = input.getTask();
-            PartitionOperator operator = new PartitionOperator(ps, td);
+            PartitionOperator operator = new PartitionOperator(distributions, td);
             operator.setId(idGenerator.get());
             operator.createOutputs(distributions);
             task.putOperator(operator);

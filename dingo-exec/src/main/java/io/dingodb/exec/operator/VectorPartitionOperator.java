@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
@@ -31,10 +32,12 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.impl.OutputIml;
-import io.dingodb.exec.partition.PartitionStrategy;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
 import io.dingodb.meta.MetaService;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -49,8 +52,10 @@ public class VectorPartitionOperator extends FanOutOperator {
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     private final CommonId tableId;
-    @JsonProperty("strategy")
-    private final PartitionStrategy<CommonId, byte[]> strategy;
+    @JsonProperty("distributions")
+    @JsonSerialize(keyUsing = ByteArrayUtils.ComparableByteArray.JacksonKeySerializer.class)
+    @JsonDeserialize(keyUsing = ByteArrayUtils.ComparableByteArray.JacksonKeyDeserializer.class)
+    private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
 
     @JsonProperty("partIndices")
     @JsonSerialize(keyUsing = CommonId.JacksonKeySerializer.class)
@@ -61,17 +66,20 @@ public class VectorPartitionOperator extends FanOutOperator {
 
     private final KeyValueCodec codec;
 
+    @JsonProperty("indexTableDefinition")
+    private final TableDefinition tableDefinition;
+
     @JsonCreator
     public VectorPartitionOperator(
         @JsonProperty("tableId") CommonId tableId,
-        @JsonProperty("strategy") PartitionStrategy<CommonId, byte[]> strategy,
+        @JsonProperty("distributions") NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
         @JsonProperty("indexId") CommonId indexId,
         @JsonProperty("index") Integer index,
         @JsonProperty("indexTableDefinition") TableDefinition td
     ) {
         super();
         this.tableId = tableId;
-        this.strategy = strategy;
+        this.distributions = distributions;
         this.index = index;
         DingoType dingoType = new LongType(false);
         TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
@@ -79,6 +87,7 @@ public class VectorPartitionOperator extends FanOutOperator {
             new int[] {0}
         );
         this.codec = CodecService.getDefault().createKeyValueCodec(indexId, tupleType, outputKeyMapping);
+        this.tableDefinition = td;
     }
 
 
@@ -94,7 +103,11 @@ public class VectorPartitionOperator extends FanOutOperator {
             throw new RuntimeException(e);
         }
         CodecService.getDefault().setId(key, CommonId.EMPTY_TABLE);
-        CommonId partId = strategy.calcPartId(key);
+        CommonId partId = PartitionService.getService(
+                Optional.ofNullable(tableDefinition.getPartDefinition())
+                    .map(PartitionDefinition::getFuncName)
+                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME)).
+            calcPartId(key, distributions);
 
         return partIndices.get(partId);
     }

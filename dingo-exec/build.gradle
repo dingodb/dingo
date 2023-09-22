@@ -30,6 +30,7 @@ dependencies {
     api project(':dingo-net-api')
     api project(':dingo-store-api')
 
+    implementation project(':dingo-partition-api')
     implementation project(':dingo-expr:dingo-expr-parser')
 
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: 'jackson'.v()

@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.partition;
-
-import io.dingodb.common.ConsistentHashing;
+package io.dingodb.partition.base;
 
 import java.nio.charset.StandardCharsets;
 

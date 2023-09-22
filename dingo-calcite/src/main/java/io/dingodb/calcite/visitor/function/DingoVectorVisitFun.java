@@ -31,8 +31,8 @@ import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.PartVectorOperator;
-import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
-import io.dingodb.exec.partition.PartitionStrategy;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
 import io.dingodb.meta.MetaService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlBasicCall;
@@ -65,8 +65,6 @@ public final class DingoVectorVisitFun {
         TableDefinition td = dingoTable.getTableDefinition();
 
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = metaService.getRangeDistribution(tableId);
-        PartitionStrategy<CommonId, byte[]> ps = DingoPartitionStrategyFactory.createPartitionStrategy(td, ranges);
-
         List<SqlNode> operandsList = rel.getOperands();
 
         List<SqlNode> operands = ((SqlBasicCall) operandsList.get(2)).getOperandList();
@@ -105,7 +103,7 @@ public final class DingoVectorVisitFun {
                 null,
                 TupleMapping.of(select),
                 td,
-                ps,
+                ranges,
                 rel.getIndexTableId(),
                 rangeDistribution.id(),
                 floatArray,

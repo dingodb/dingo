@@ -26,11 +26,13 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Operator;
@@ -38,15 +40,14 @@ import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.GetByIndexOperator;
 import io.dingodb.exec.operator.IndexMergeOperator;
-import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
-import io.dingodb.exec.partition.PartitionStrategy;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
 import io.dingodb.meta.MetaService;
 import lombok.AllArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -75,18 +76,18 @@ public final class DingoGetByIndexMergeVisitFun {
         MetaService metaService = MetaServiceUtils.getMetaService(rel.getTable());
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         Map<CommonId, Set> indexSetMap = rel.getIndexSetMap();
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
+        NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        PartitionStrategy lookupPs = DingoPartitionStrategyFactory.createPartitionStrategy(td, ranges);
+        PartitionService lookupPs = PartitionService.getService(
+            Optional.ofNullable(td.getPartDefinition())
+            .map(PartitionDefinition::getFuncName)
+            .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         boolean needLookup = true;
         for (Map.Entry<CommonId, Set> indexValSet : indexSetMap.entrySet()) {
             TableDefinition indexTd = rel.getIndexTdMap().get(indexValSet.getKey());
-            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> indexRanges
+            NavigableMap<ComparableByteArray, RangeDistribution> indexRanges
                 = metaService.getIndexRangeDistribution(indexValSet.getKey(),
                 indexTd);
-
-            PartitionStrategy<CommonId, byte[]> ps
-                = DingoPartitionStrategyFactory.createPartitionStrategy(td, indexRanges);
 
             KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTd.getColumns());
             List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(indexValSet.getValue(), indexTd);
@@ -95,7 +96,7 @@ public final class DingoGetByIndexMergeVisitFun {
             try {
                 for (Object[] tuple : keyTuples) {
                     byte[] keys = codec.encodeKeyPrefix(tuple, calculatePrefixCount(tuple));
-                    CommonId partId = ps.calcPartId(keys);
+                    CommonId partId = lookupPs.calcPartId(keys, indexRanges);
                     partMap.putIfAbsent(partId, new LinkedList<>());
                     partMap.get(partId).add(tuple);
                 }
@@ -117,7 +118,7 @@ public final class DingoGetByIndexMergeVisitFun {
                     SqlExprUtils.toSqlExpr(rel.getFilter()),
                     lookupKeyMapping,
                     rel.isUnique(),
-                    lookupPs,
+                    ranges,
                     codec,
                     indexTd,
                     td,

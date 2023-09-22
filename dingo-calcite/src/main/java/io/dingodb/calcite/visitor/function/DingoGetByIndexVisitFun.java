@@ -26,18 +26,20 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.GetByIndexOperator;
-import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
-import io.dingodb.exec.partition.PartitionStrategy;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
 import io.dingodb.meta.MetaService;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -71,7 +73,6 @@ public final class DingoGetByIndexVisitFun {
         Map<CommonId, Set> indexSetMap = rel.getIndexSetMap();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        PartitionStrategy lookupPs = DingoPartitionStrategyFactory.createPartitionStrategy(td, ranges);
         boolean needLookup = false;
         if (indexSetMap.size() > 1) {
             needLookup = true;
@@ -82,8 +83,10 @@ public final class DingoGetByIndexVisitFun {
                 = metaService.getIndexRangeDistribution(indexValSet.getKey(),
                 indexTd);
 
-            PartitionStrategy<CommonId, byte[]> ps
-                = DingoPartitionStrategyFactory.createPartitionStrategy(td, indexRanges);
+            PartitionService ps =PartitionService.getService(
+                Optional.ofNullable(td.getPartDefinition())
+                    .map(PartitionDefinition::getFuncName)
+                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
 
             KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTd.getColumns());
             List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(indexValSet.getValue(), indexTd);
@@ -92,7 +95,7 @@ public final class DingoGetByIndexVisitFun {
             try {
                 for (Object[] tuple : keyTuples) {
                     byte[] keys = codec.encodeKeyPrefix(tuple, calculatePrefixCount(tuple));
-                    CommonId partId = ps.calcPartId(keys);
+                    CommonId partId = ps.calcPartId(keys, indexRanges);
                     partMap.putIfAbsent(partId, new LinkedList<>());
                     partMap.get(partId).add(tuple);
                 }
@@ -116,7 +119,7 @@ public final class DingoGetByIndexVisitFun {
                     SqlExprUtils.toSqlExpr(rel.getFilter()),
                     rel.getSelection(),
                     rel.isUnique(),
-                    lookupPs,
+                    ranges,
                     codec,
                     indexTd,
                     td,

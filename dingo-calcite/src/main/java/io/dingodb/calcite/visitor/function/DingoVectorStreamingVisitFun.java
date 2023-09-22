@@ -36,8 +36,8 @@ import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.CoalesceOperator;
 import io.dingodb.exec.operator.VectorPartitionOperator;
-import io.dingodb.exec.partition.DingoPartitionStrategyFactory;
-import io.dingodb.exec.partition.PartitionStrategy;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
 import io.dingodb.meta.MetaService;
 
 import java.util.Collection;
@@ -83,13 +83,11 @@ public final class DingoVectorStreamingVisitFun {
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
             = metaService.getIndexRangeDistribution(rel.getIndexId());
 
-        final PartitionStrategy<CommonId, byte[]> ps
-            = DingoPartitionStrategyFactory.createPartitionStrategy(td, distributions);
         for (Output input : inputs) {
             Task task = input.getTask();
             VectorPartitionOperator operator = new VectorPartitionOperator(
                 tableInfo.getId(),
-                ps,
+                distributions,
                 indexId,
                 rel.getVectorIdIndex(),
                 rel.getIndexTableDefinition());
