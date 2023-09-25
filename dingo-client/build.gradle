@@ -62,7 +62,8 @@ fatJar.dependsOn(
     ':dingo-codec-api:jar',
     ':dingo-partition-api:jar',
     ':dingo-partition-base:jar',
-    ':dingo-store-proxy:jar'
+    ':dingo-store-proxy:jar',
+    ':dingo-meta-api:jar'
 )
 
 tasks.named("build") { x ->
