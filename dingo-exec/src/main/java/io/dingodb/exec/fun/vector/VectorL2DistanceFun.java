@@ -50,6 +50,6 @@ public class VectorL2DistanceFun extends RtFun {
         for (int i = 0; i < vectorA.size(); i++) {
             distance += Math.pow(vectorA.get(i) - vectorB.get(i), 2);
         }
-        return Math.sqrt(distance);
+        return distance;
     }
 }
