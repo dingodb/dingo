@@ -103,7 +103,7 @@ public class ShowGrantsOperation implements QueryOperation {
         List<Boolean> userPrivileges = Arrays.asList(userDefinition.getPrivileges());
         long count = userPrivileges.stream()
             .filter(isPrivilege -> isPrivilege).count();
-
+        boolean withGrantOption = userPrivileges.get(8);
         if (count > 0) {
             boolean isAllPrivilege = false;
             List<String> privileges;
@@ -125,7 +125,7 @@ public class ShowGrantsOperation implements QueryOperation {
                 pos,
                 new ArrayList<>());
             SqlGrant sqlGrant = new SqlGrant(pos, isAllPrivilege, privileges, subject,
-                dingoSqlShowGrants.user, dingoSqlShowGrants.host);
+                dingoSqlShowGrants.user, dingoSqlShowGrants.host, withGrantOption);
             log.info("user sqlGrant:" + sqlGrant);
             return sqlGrant;
         }
@@ -137,6 +137,7 @@ public class ShowGrantsOperation implements QueryOperation {
         List<SqlGrant> sqlGrants = new ArrayList<>();
         for (SchemaPrivDefinition schemaPrivDefinition : schemaPrivDefinitions) {
             List<Boolean> schemaPrivileges = Arrays.asList(schemaPrivDefinition.getPrivileges());
+            boolean withGrantOption = schemaPrivileges.get(8);
             long count = schemaPrivileges.stream()
                 .filter(isPrivilege -> isPrivilege).count();
 
@@ -160,7 +161,7 @@ public class ShowGrantsOperation implements QueryOperation {
                     null, sqlParserPos,
                     new ArrayList<>());
                 SqlGrant sqlGrant = new SqlGrant(sqlParserPos, isAllPrivilege, privileges, subject,
-                    sqlShowGrants.user, sqlShowGrants.host);
+                    sqlShowGrants.user, sqlShowGrants.host, withGrantOption);
                 log.info("schema sqlGrant:" + sqlGrant);
                 sqlGrants.add(sqlGrant);
             }
@@ -176,6 +177,7 @@ public class ShowGrantsOperation implements QueryOperation {
                 continue;
             }
             List<Boolean> userPrivileges = Arrays.asList(tablePrivDefinition.getPrivileges());
+            boolean withGrantOption = userPrivileges.get(8);
             long count = userPrivileges.stream()
                 .filter(isPrivilege -> isPrivilege).count();
 
@@ -199,7 +201,7 @@ public class ShowGrantsOperation implements QueryOperation {
                     tablePrivDefinition.getTableName()), null, sqlParserPos,
                     new ArrayList<>());
                 SqlGrant sqlGrant = new SqlGrant(sqlParserPos, isAllPrivilege, privileges, subject,
-                    sqlShowGrants.user, sqlShowGrants.host);
+                    sqlShowGrants.user, sqlShowGrants.host, withGrantOption);
                 log.info("table sqlGrant:" + sqlGrant);
                 sqlGrants.add(sqlGrant);
             }

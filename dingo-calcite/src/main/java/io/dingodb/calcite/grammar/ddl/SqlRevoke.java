@@ -33,7 +33,7 @@ public class SqlRevoke extends SqlGrant {
 
     public SqlRevoke(SqlParserPos pos, boolean isAllPrivilege, List<String> privilege,
                           SqlIdentifier subject, String user, String host) {
-        super(pos, isAllPrivilege, privilege, subject, user, host);
+        super(pos, isAllPrivilege, privilege, subject, user, host, false);
     }
 
 

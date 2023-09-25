@@ -30,6 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SqlGrant extends SqlDdl {
     public List<String> privileges;
@@ -43,6 +44,8 @@ public class SqlGrant extends SqlDdl {
     public String user;
     public String host;
 
+    public boolean withGrantOption;
+
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("GRANT", SqlKind.OTHER_DDL);
 
@@ -51,8 +54,13 @@ public class SqlGrant extends SqlDdl {
      *
      * @param pos pos
      */
-    public SqlGrant(SqlParserPos pos, boolean isAllPrivilege, List<String> privilege, SqlIdentifier subject,
-                             String user, String host) {
+    public SqlGrant(SqlParserPos pos,
+                    boolean isAllPrivilege,
+                    List<String> privilege,
+                    SqlIdentifier subject,
+                    String user,
+                    String host,
+                    boolean withGrantOption) {
         super(OPERATOR, pos);
         this.isAllPrivilege = isAllPrivilege;
         this.privileges = privilege;
@@ -69,6 +77,7 @@ public class SqlGrant extends SqlDdl {
         }
         this.user = user.startsWith("'") ? user.replace("'", "") : user;
         this.host = host.startsWith("'") ? host.replace("'", "") : host;
+        this.withGrantOption = withGrantOption;
     }
 
     @Override
@@ -79,9 +88,16 @@ public class SqlGrant extends SqlDdl {
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword("GRANT");
+        AtomicInteger i = new AtomicInteger();
         privileges.forEach(k -> {
-            writer.keyword(k);
+            if (!k.equalsIgnoreCase("grant")) {
+                writer.keyword(k);
+                i.getAndIncrement();
+            }
         });
+        if (i.get() == 0) {
+            writer.keyword("USAGE");
+        }
         writer.keyword("ON");
         writer.keyword(schema);
         writer.keyword(".");
@@ -90,6 +106,11 @@ public class SqlGrant extends SqlDdl {
         writer.keyword(user);
         writer.keyword("@");
         writer.keyword(host);
+        if (withGrantOption) {
+            writer.keyword("with");
+            writer.keyword("grant");
+            writer.keyword("option");
+        }
     }
 
     public List<String> getPrivileges(PrivilegeType privilegeType) {

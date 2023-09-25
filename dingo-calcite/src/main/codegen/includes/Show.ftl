@@ -48,7 +48,7 @@ SqlShow SqlShow(): {
 }
 
 SqlShow SqlShowTable(Span s): {
-   String tableName = null;
+   SqlIdentifier tableName = null;
    String schema = null;
    String pattern = null;
 } {
@@ -60,7 +60,7 @@ SqlShow SqlShowTable(Span s): {
        return new SqlShowTableStatus(s.end(this), schema, pattern);
      }
     |
-    (<QUOTED_STRING> | <IDENTIFIER>) { tableName = token.image.toUpperCase(); }
+     tableName = CompoundTableIdentifier()
      <DISTRIBUTION> { return new SqlShowTableDistribution(s.end(this), tableName); }
    )
 }

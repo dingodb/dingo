@@ -223,7 +223,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
 
         @Override
         public @Nullable Object get(String name) {
-            return null;
+            return connection.getContext().getOption(name);
         }
     }
 }

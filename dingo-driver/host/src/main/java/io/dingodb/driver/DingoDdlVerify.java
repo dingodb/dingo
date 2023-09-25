@@ -28,9 +28,12 @@ import io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
+import io.dingodb.calcite.grammar.dql.SqlDesc;
+import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
+import io.dingodb.calcite.grammar.dql.SqlShowCreateUser;
 import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
-import io.dingodb.common.error.DingoException;
+import io.dingodb.calcite.grammar.dql.SqlShowTableDistribution;
 import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.verify.privilege.PrivilegeVerify;
@@ -81,6 +84,18 @@ public class DingoDdlVerify {
             accessTypes.add(DingoSqlAccessEnum.CREATE_USER);
         } else if (sqlNode instanceof SqlGrant) {
             accessTypes.add(DingoSqlAccessEnum.GRANT);
+            SqlGrant sqlGrant = (SqlGrant) sqlNode;
+            if ("*".equals(sqlGrant.schema)) {
+                schemaName = null;
+            } else {
+                schemaName = sqlGrant.schema;
+            }
+            if ("*".equals(sqlGrant.table)) {
+                tableName = null;
+            } else {
+                tableName = sqlGrant.table;
+            }
+            schemaTables = new String[]{schemaName, tableName};
         } else if (sqlNode instanceof SqlFlushPrivileges) {
             accessTypes.add(DingoSqlAccessEnum.RELOAD);
         } else if (sqlNode instanceof SqlSetPassword) {
@@ -144,6 +159,40 @@ public class DingoDdlVerify {
             }
             accessTypes.add(DingoSqlAccessEnum.SELECT);
             schemaTables = new String[] {"mysql", ""};
+        } else if (sqlNode instanceof SqlShowCreateTable) {
+            SqlShowCreateTable showCreateTable = (SqlShowCreateTable) sqlNode;
+            if (showCreateTable.schemaName == null) {
+                showCreateTable.schemaName = connection.getContext().getDefaultSchemaName();
+            }
+            if (!PrivilegeVerify.verify(user, host, showCreateTable.schemaName,
+                showCreateTable.tableName, "getTables")) {
+                throw new RuntimeException(String.format("Access denied for user '%s'@'%s'", user, host));
+            }
+        } else if (sqlNode instanceof SqlDesc) {
+            SqlDesc sqlDesc = (SqlDesc) sqlNode;
+            if (sqlDesc.schemaName == null) {
+                sqlDesc.schemaName = connection.getContext().getDefaultSchemaName();
+            }
+            if (!PrivilegeVerify.verify(user, host, sqlDesc.schemaName,
+                sqlDesc.tableName, "getTables")) {
+                throw new RuntimeException(String.format("Access denied for user '%s'@'%s'", user, host));
+            }
+        } else if (sqlNode instanceof SqlShowCreateUser) {
+            SqlShowCreateUser showCreateUser = (SqlShowCreateUser) sqlNode;
+            if (user.equals(showCreateUser.userName) && host.equals(showCreateUser.host)) {
+                return;
+            }
+            accessTypes.add(DingoSqlAccessEnum.SELECT);
+            schemaTables = new String[] {"mysql", "user"};
+        } else if (sqlNode instanceof SqlShowTableDistribution) {
+            SqlShowTableDistribution sqlShowTableDistribution = (SqlShowTableDistribution) sqlNode;
+            if (sqlShowTableDistribution.schemaName == null) {
+                sqlShowTableDistribution.schemaName = connection.getContext().getDefaultSchemaName();
+            }
+            if (!PrivilegeVerify.verify(user, host, sqlShowTableDistribution.schemaName,
+                sqlShowTableDistribution.tableName, "getTables")) {
+                throw new RuntimeException(String.format("Access denied for user '%s'@'%s'", user, host));
+            }
         }
 
         if (schemaTables != null) {

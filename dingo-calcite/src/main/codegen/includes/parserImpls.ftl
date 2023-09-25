@@ -708,35 +708,6 @@ SqlDrop SqlDropIndex(Span s, boolean replace) :
     }
 }
 
-SqlGrant SqlGrant() : {
- final Span s;
- final SqlIdentifier subject;
- boolean isAllPrivileges = false;
- SqlIdentifier userIdentifier;
- String user;
- String host = "%";
- String privilege = "";
- List<String> privilegeList = new ArrayList();
-} {
-   <GRANT> { s = span(); }
-   [ <ALL> <PRIVILEGES> { isAllPrivileges = true; } ]
-   [
-     privilege = privilege() { privilegeList.add(privilege.toLowerCase()); }
-     (
-       <COMMA> privilege = privilege() { privilegeList.add(privilege.toLowerCase()); }
-     )*
-   ]
-   <ON>
-   subject = getSchemaTable()
-   <TO>
-   ( <QUOTED_STRING> | <IDENTIFIER> )
-   { user = token.image; }
-    [<AT_SPLIT> (<QUOTED_STRING>|<IDENTIFIER>) { host = token.image;} ]
-    {
-        return new SqlGrant(s.end(this), isAllPrivileges, privilegeList, subject, user, host);
-    }
-}
-
 SqlIdentifier getSchemaTable() :
 {
     final List<String> nameList = new ArrayList<String>();
@@ -849,69 +820,6 @@ void schemaTableSegment(List<String> names, List<SqlParserPos> positions) :
             positions.add(pos);
         }
     }
-}
-
-SqlRevoke SqlRevoke() : {
- final Span s;
- SqlIdentifier subject = null;
- boolean isAllPrivileges = false;
- String user = "";
- String host = "%";
- String privilege = "";
- List<String> privilegeList = new ArrayList();
-} {
-   <REVOKE> { s = span(); }
-   [ <ALL> <PRIVILEGES> { isAllPrivileges = true; } ]
-   [
-     privilege = privilege() { privilegeList.add(privilege); }
-     (
-       <COMMA> privilege = privilege()
-       { privilegeList.add(privilege); }
-     )*
-   ]
-   <ON>
-   subject = getSchemaTable()
-   <FROM>
-    ( <QUOTED_STRING> | <IDENTIFIER> )
-    { user = user = token.image; }
-    [<AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER>) {host = token.image; } ]
-    {
-        return new SqlRevoke(s.end(this), isAllPrivileges, privilegeList, subject, user, host);
-    }
-}
-
-String privilege() : {
-   String privilege = "";
-}
-{
-  ( <SELECT>
-  | <UPDATE>
-  | <INSERT>
-  | <DELETE>
-  | <DROP>
-  | <GRANT>
-  | <REVOKE>
-  | <INDEX>
-  | <ALTER>
-  | <RELOAD>
-  )
-  {
-     return token.image.toLowerCase();
-  }
-  |
-    <CREATE>
-    [ <VIEW> { return "create view"; }]
-    [ <USER> { return "create user"; }]
-    { return token.image; }
-  |
-    <SHOW><DATABASES>
-    { return "show databases"; }
-}
-
-SqlFlushPrivileges SqlFlush ():{
-  final Span s;
-} {
-   <FLUSH> { s = span(); } <PRIVILEGES> { return new SqlFlushPrivileges(s.end(this)); }
 }
 
 SqlDesc SqlDesc(): {

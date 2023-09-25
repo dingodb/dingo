@@ -56,6 +56,12 @@ import io.dingodb.exec.fun.time.FromUnixTimeEvaluatorsFactory;
 import io.dingodb.exec.fun.time.TimeFormatEvaluatorsFactory;
 import io.dingodb.exec.fun.time.TimestampFormatEvaluatorsFactory;
 import io.dingodb.exec.fun.time.UnixTimestampEvaluatorsFactory;
+import io.dingodb.exec.fun.vector.VectorCosineDistanceFun;
+import io.dingodb.exec.fun.vector.VectorDistanceFun;
+import io.dingodb.exec.fun.vector.VectorIPDistanceFun;
+import io.dingodb.exec.fun.vector.VectorImageFun;
+import io.dingodb.exec.fun.vector.VectorL2DistanceFun;
+import io.dingodb.exec.fun.vector.VectorTextFun;
 import io.dingodb.expr.parser.DefaultFunFactory;
 
 public class DingoFunFactory extends DefaultFunFactory {
@@ -139,5 +145,11 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerUdf(GlobalVariableFun.NAME, GlobalVariableFun::new);
 
         registerUdf(AutoIncrementFun.NAME, AutoIncrementFun::new);
+        registerUdf(VectorImageFun.NAME, VectorImageFun::new);
+        registerUdf(VectorTextFun.NAME, VectorTextFun::new);
+        registerUdf(VectorDistanceFun.NAME, VectorDistanceFun::new);
+        registerUdf(VectorL2DistanceFun.NAME, VectorL2DistanceFun::new);
+        registerUdf(VectorIPDistanceFun.NAME, VectorIPDistanceFun::new);
+        registerUdf(VectorCosineDistanceFun.NAME, VectorCosineDistanceFun::new);
     }
 }

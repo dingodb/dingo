@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static io.dingodb.calcite.rel.LogicalDingoTableScan.dispatchDistanceCondition;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.filterIndices;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.filterScalarIndices;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.getScalaIndices;
@@ -80,6 +81,9 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         DingoTable dingoTable = vector.getTable().unwrap(DingoTable.class);
         assert dingoTable != null;
         TupleMapping selection = getDefaultSelection(dingoTable);
+        if (filter != null) {
+            dispatchDistanceCondition(filter.getCondition(), selection, dingoTable);
+        }
 
         // if filter matched point get by primary key, then DingoGetByKeys priority highest
         Pair<Integer, Integer> vectorIdPair = getVectorIndex(dingoTable);

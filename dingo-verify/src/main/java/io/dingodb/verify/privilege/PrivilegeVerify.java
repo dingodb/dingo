@@ -47,13 +47,21 @@ public final class PrivilegeVerify {
 
     private final static List<Integer> filterPx = new ArrayList<Integer>();
     static {
+        // select
         filterPx.add(0);
+        // insert
         filterPx.add(1);
+        // update
         filterPx.add(2);
+        // delete
         filterPx.add(3);
+        // index
         filterPx.add(4);
+        // alter
         filterPx.add(5);
+        // create
         filterPx.add(6);
+        // drop
         filterPx.add(7);
     }
 

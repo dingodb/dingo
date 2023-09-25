@@ -96,7 +96,6 @@ public class MysqlInit {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        sleep();
         DingoCommonId tableId = mysqlMetaClient.getTableId(tableName);
         Map<String, Object> userValuesMap = getUserObjectMap(tableName);
         Object[] userValues = userValuesMap.values().toArray();
@@ -150,7 +149,6 @@ public class MysqlInit {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        sleep();
         DingoCommonId tableId = informationMetaClient.getTableId(tableName);
 
         KeyValueCodec codec = DingoKeyValueCodec.of(tableId.entityId(), tableDefinition);
@@ -361,14 +359,6 @@ public class MysqlInit {
             }
         });
         return map;
-    }
-
-    private static void sleep() {
-        try {
-            Thread.sleep(25 * 1000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public static Integer check() {

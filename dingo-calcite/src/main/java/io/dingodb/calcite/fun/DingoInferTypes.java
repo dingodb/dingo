@@ -38,6 +38,8 @@ public final class DingoInferTypes {
         = explicit(SqlTypeName.TIMESTAMP, SqlTypeName.VARCHAR);
     public static final SqlOperandTypeInference DATE_DATE
         = explicit(SqlTypeName.DATE, SqlTypeName.DATE);
+    public static final SqlOperandTypeInference FLOAT
+        = explicit(SqlTypeName.FLOAT, SqlTypeName.FLOAT);
 
     private DingoInferTypes() {
     }
