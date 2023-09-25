@@ -49,6 +49,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
+import static io.dingodb.common.util.ByteArrayUtils.greatThanOrEqual;
 import static io.dingodb.sdk.common.utils.EntityConversion.mapping;
 import static io.dingodb.sdk.common.utils.Parameters.cleanNull;
 
@@ -193,6 +194,10 @@ public class IndexService {
         return metaService.getIndex(name);
     }
 
+    public Index getIndex(String schema, String name, boolean forceRefresh) {
+        return Parameters.nonNull(getRouteTable(schema, name, forceRefresh), "Index not found.").index;
+    }
+
     public List<Index> getIndexes(String schema) {
         MetaServiceClient metaService = getSubMetaService(schema);
         return new ArrayList<>(metaService.getIndexes(mapping(metaService.id())).values());
@@ -210,17 +215,40 @@ public class IndexService {
     private IndexInfo getRouteTable(String schemaName, String indexName, boolean forceRefresh) {
         return routeTables.compute(
             schemaName + "." + indexName,
-            (k, v) -> cleanNull(forceRefresh ? null : v, () -> refreshRouteTable(schemaName, indexName))
+            (k, v) -> cleanNull(forceRefresh ? null : v, () -> refreshRouteTable(schemaName, indexName, retryTimes))
         );
     }
 
-    private IndexInfo refreshRouteTable(String schemaName, String indexName) {
+    private IndexInfo refreshRouteTable(String schemaName, String indexName, int retry) {
+        if (retry <= 0) {
+            throw new DingoClientException(-1, "Refreshing routes exceeded the retry limit");
+        }
         MetaServiceClient metaService = getSubMetaService(schemaName);
         schema.setIsKey(true);
         DingoCommonId indexId = Parameters.nonNull(metaService.getIndexId(indexName), "Index not found.");
         Index index = Parameters.nonNull(metaService.getIndex(indexName), "Index not found.");
+        // Return all routing information, including the newly split region that is not ready
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
             metaService.getIndexRangeDistribution(indexName);
+        for (RangeDistribution rangeDistribution : parts.values()) {
+            log.info(">>>>>> refresh route table, regionId: {}, leader: {}, voters:{}, range: {} -- {}, region epoch: {} <<<<<<",
+                rangeDistribution.getId(),
+                rangeDistribution.getLeader(),
+                rangeDistribution.getVoters(),
+                rangeDistribution.getRange().getStartKey(),
+                rangeDistribution.getRange().getEndKey(),
+                rangeDistribution.getRegionEpoch());
+            // In an unprepared region, startKey and endKey in the range are opposite
+            if (greatThanOrEqual(rangeDistribution.getRange().getStartKey(), rangeDistribution.getRange().getEndKey())) {
+                try {
+                    log.info("Region is not ready, sleep 1s...");
+                    Thread.sleep(1000);
+                    return refreshRouteTable(schemaName, indexName, retry - 1);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
         KeyValueCodec codec = new KeyValueCodec(
             new DingoKeyValueCodec(indexId.entityId(), Collections.singletonList(schema)), dingoType);
 

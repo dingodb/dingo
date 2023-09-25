@@ -421,16 +421,15 @@ public class DingoClient {
     }
 
     private static long checkDimension(List<VectorWithId> vectors, int dimension) {
-        long count = vectors.stream()
+        return vectors.stream()
             .map(VectorWithId::getVector)
             .filter(v -> v.getDimension() != dimension || (v.getValueType() == Vector.ValueType.FLOAT
                     ? v.getFloatValues().size() != dimension : v.getBinaryValues().size() != dimension))
             .count();
-        return count;
     }
 
     private int getDimension(String schema, String indexName) {
-        Index index = getIndex(schema, indexName);
+        Index index = indexService.getIndex(schema, indexName, false);
         VectorIndexParameter parameter = index.getIndexParameter().getVectorIndexParameter();
         int dimension;
         switch (parameter.getVectorIndexType()) {
