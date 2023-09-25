@@ -32,6 +32,7 @@ dependencies {
 
     implementation project(':dingo-partition-api')
     implementation project(':dingo-expr:dingo-expr-parser')
+    implementation project(':dingo-tool-service')
 
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: 'jackson'.v()
     implementation group: 'org.apache.avro', name: 'avro', version: 'avro'.v()

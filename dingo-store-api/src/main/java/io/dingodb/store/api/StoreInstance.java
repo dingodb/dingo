@@ -82,10 +82,6 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default List<List<Float>> vectorCalcDistance(CommonId indexId, CommonId regionId, VectorCalcDistance vectorCalcDistance) {
-        throw new UnsupportedOperationException();
-    }
-
     default long count(Range range) {
         throw new UnsupportedOperationException();
     }

@@ -77,4 +77,5 @@ include 'dingo-codec-serial'
 include 'dingo-scheduler-api'
 include 'dingo-partition-api'
 include 'dingo-partition-base'
+include 'dingo-tool-service'
 

@@ -1,0 +1,25 @@
+plugins {
+    id 'java'
+}
+
+group 'io.dingodb'
+version '0.7.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+    implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
+    implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
+    implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
+
+    implementation project(":dingo-common")
+    implementation project(":dingo-store-api")
+    implementation project(":dingo-codec-api")
+}
+
+test {
+    useJUnitPlatform()
+}

@@ -151,36 +151,4 @@ public final class Mapping {
         return new RangeWithOptions(new Range(range.start, range.end), range.withStart, range.withEnd);
     }
 
-    public static VectorCalcDistance mapping(io.dingodb.common.vector.VectorCalcDistance vectorCalcDistance) {
-        VectorCalcDistance.AlgorithmType algorithmType;
-        switch (vectorCalcDistance.getAlgorithmType().toUpperCase()) {
-            case "FLAT":
-            default:
-                algorithmType = VectorCalcDistance.AlgorithmType.ALGORITHM_FAISS;
-                break;
-        }
-        VectorIndexParameter.MetricType metricType;
-        switch (vectorCalcDistance.getMetricType().toUpperCase()) {
-            case "INNER_PRODUCT":
-                metricType = VectorIndexParameter.MetricType.METRIC_TYPE_INNER_PRODUCT;
-                break;
-            case "COSINE":
-                metricType = VectorIndexParameter.MetricType.METRIC_TYPE_COSINE;
-                break;
-            case "L2":
-            default:
-                metricType = VectorIndexParameter.MetricType.METRIC_TYPE_L2;
-                break;
-        }
-
-        List<Vector> left = vectorCalcDistance.getLeftList().stream().map(e ->
-            Vector.getFloatInstance(vectorCalcDistance.getDimension(), e)
-        ).collect(Collectors.toList());
-
-        List<Vector> right = vectorCalcDistance.getRightList().stream().map(e ->
-            Vector.getFloatInstance(vectorCalcDistance.getDimension(), e)).collect(Collectors.toList());
-        return new VectorCalcDistance(vectorCalcDistance.getVectorId(), algorithmType, metricType,
-            left, right, false);
-    }
-
 }
