@@ -145,15 +145,30 @@ public final class DefinitionMapper {
     ) {
         RelDataType relDataType;
         SqlTypeName type = SqlTypeName.get(column.getTypeName().toUpperCase());
+
+        if (type == null) {
+            return mapToJavaRelDataType(column.getTypeName().toUpperCase(), typeFactory);
+        }
+
         switch (type) {
             case ARRAY:
                 relDataType = typeFactory.createArrayType(
-                    typeFactory.createSqlType(SqlTypeName.get(column.getElementType().toUpperCase())), -1
+                   Optional.mapOrGet(
+                       SqlTypeName.get(column.getElementType().toUpperCase()),
+                       typeFactory::createSqlType,
+                       () -> mapToJavaRelDataType(column.getElementType().toUpperCase(), typeFactory)
+                   ),
+                    -1
                 );
                 break;
             case MULTISET:
                 relDataType = typeFactory.createMultisetType(
-                    typeFactory.createSqlType(SqlTypeName.get(column.getElementType().toUpperCase())), -1
+                    Optional.mapOrGet(
+                        SqlTypeName.get(column.getElementType().toUpperCase()),
+                        typeFactory::createSqlType,
+                        () -> mapToJavaRelDataType(column.getElementType().toUpperCase(), typeFactory)
+                    ),
+                    -1
                 );
                 break;
             case MAP:
@@ -174,6 +189,20 @@ public final class DefinitionMapper {
                 }
         }
         return typeFactory.createTypeWithNullability(relDataType, column.isNullable());
+    }
+
+    public static RelDataType mapToJavaRelDataType(String typeName, RelDataTypeFactory typeFactory) {
+        switch (typeName) {
+            case "INT":
+                return typeFactory.createJavaType(Integer.class);
+            case "LONG":
+                return typeFactory.createJavaType(Long.class);
+            case "BOOL":
+                return typeFactory.createJavaType(Boolean.class);
+            case "STRING":
+                return typeFactory.createJavaType(String.class);
+        }
+        return null;
     }
 
     public static RelDataType mapToRelDataType(TableDefinition table, @NonNull RelDataTypeFactory typeFactory) {
