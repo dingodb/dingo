@@ -60,6 +60,10 @@ public class TableFunctionNamespace extends AbstractNamespace {
 
     @Override
     protected RelDataType validateImpl(RelDataType targetRowType) {
+        if (table == null) {
+            throw new RuntimeException("Table is not exist: "
+                + ((SqlIdentifier) this.function.operand(0)).names.get(0));
+        }
         DingoTable dingoTable = table.unwrap(DingoTable.class);
         List<ColumnDefinition> tableCols = dingoTable.getTableDefinition().getColumns();
         ArrayList<ColumnDefinition> cols = new ArrayList<>(tableCols.size() + 1);

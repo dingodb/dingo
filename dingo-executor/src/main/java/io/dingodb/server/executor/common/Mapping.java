@@ -84,8 +84,8 @@ public final class Mapping {
     public static ColumnDefinition mapping(Column column) {
         return ColumnDefinition.getInstance(
             column.getName(),
-            column.getType().equals("STRING") ? "VARCHAR" : column.getType(),
-            column.getElementType(),
+            column.getType().toUpperCase(),
+            column.getElementType().toUpperCase(),
             column.getPrecision(),
             column.getScale(),
             column.isNullable(),
@@ -97,8 +97,8 @@ public final class Mapping {
     public static Column mapping(ColumnDefinition definition) {
         return io.dingodb.sdk.common.table.ColumnDefinition.builder()
             .name(definition.getName())
-            .type(definition.getTypeName())
-            .elementType(definition.getElementType())
+            .type(definition.getTypeName().toUpperCase())
+            .elementType(definition.getElementType().toUpperCase())
             .precision(definition.getPrecision())
             .scale(definition.getScale())
             .nullable(definition.isNullable())
