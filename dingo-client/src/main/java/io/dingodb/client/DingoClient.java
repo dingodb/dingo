@@ -382,16 +382,14 @@ public class DingoClient {
         int dimension = getDimension(schema, indexName);
         long count = checkDimension(vectors, dimension);
         int messageSize = getMessageSize(vectors);
-        if ((dimension != 0 && count > 0) || vectors.size() >= 1024 || messageSize > MAX_MESSAGE_SIZE) {
-            if (vectors.size() >= 1024) {
-                log.error("Param vectors size {} is exceed max batch count 1024", vectors.size());
-            }
-            if (messageSize > MAX_MESSAGE_SIZE) {
-                log.error("Message exceeds maximum size {}: {}", MAX_MESSAGE_SIZE, messageSize);
-            }
-            List<VectorWithId> result = new ArrayList<>();
-            vectors.forEach(v -> result.add(null));
-            return result;
+        if (vectors.size() >= 1024) {
+            throw new DingoClientException("Param vectors size " + vectors.size() + " is exceed max batch count 1024");
+        }
+        if (messageSize > MAX_MESSAGE_SIZE) {
+            throw new DingoClientException("Message exceeds maximum size " + MAX_MESSAGE_SIZE + " : " + messageSize);
+        }
+        if (dimension != 0 && count > 0) {
+            throw new DingoClientException("Dimension is not the same length as its value or from the time it was created");
         }
         return indexService.exec(schema, indexName, VectorAddOperation.getInstance(), vectors, context);
     }

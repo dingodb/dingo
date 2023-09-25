@@ -62,6 +62,7 @@ fatJar.dependsOn(
     ':dingo-codec-api:jar',
     ':dingo-partition-api:jar',
     ':dingo-partition-base:jar',
+    ':dingo-meta-api:jar',
     ':dingo-store-proxy:jar'
 )
 
