@@ -16,6 +16,8 @@
 
 package io.dingodb.common.mysql;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -82,5 +84,10 @@ public class DingoArray implements Array {
     @Override
     public void free() throws SQLException {
 
+    }
+
+    @Override
+    public String toString() {
+        return StringUtils.join(list);
     }
 }

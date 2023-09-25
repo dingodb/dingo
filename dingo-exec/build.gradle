@@ -29,6 +29,7 @@ dependencies {
     api project(':dingo-meta-api')
     api project(':dingo-net-api')
     api project(':dingo-store-api')
+    api project(':dingo-tool-api')
 
     implementation project(':dingo-partition-api')
     implementation project(':dingo-expr:dingo-expr-parser')

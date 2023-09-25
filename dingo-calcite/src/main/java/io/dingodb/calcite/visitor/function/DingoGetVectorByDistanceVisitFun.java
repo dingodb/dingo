@@ -82,7 +82,6 @@ public final class DingoGetVectorByDistanceVisitFun {
             VectorPointDistanceOperator operator = new VectorPointDistanceOperator(
                 distributions.firstEntry().getValue(),
                 rel.getVectorIndex(),
-                tableInfo.getId(),
                 rel.getIndexTableId(),
                 targetVector,
                 dimension,

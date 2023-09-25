@@ -45,8 +45,10 @@ dependencies {
     implementation project(":dingo-net-api")
     implementation project(":dingo-store-api")
     implementation project(":dingo-scheduler-api")
+    implementation project(":dingo-tool-api")
     implementation project(':dingo-store-proxy')
     implementation project(":dingo-partition-base")
+    implementation project(":dingo-tool-service")
 
     implementation project(":dingo-driver:dingo-mysql-service")
 

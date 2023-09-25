@@ -1,0 +1,18 @@
+plugins {
+    id 'java-conventions'
+    id 'java-library'
+}
+
+dependencies {
+    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+    compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
+
+    implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
+
+    implementation project(":dingo-common")
+    implementation project(":dingo-tool-api")
+}
+
+test {
+    useJUnitPlatform()
+}

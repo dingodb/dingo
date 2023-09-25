@@ -24,8 +24,7 @@ import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.vector.VectorCalcDistance;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
-import io.dingodb.store.api.StoreInstance;
-import io.dingodb.store.api.StoreService;
+import io.dingodb.tool.api.ToolService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -55,13 +54,12 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     private CommonId indexTableId;
 
-    StoreInstance instance;
+    ToolService toolService;
 
     List<Object[]> cache;
 
     public VectorPointDistanceOperator(RangeDistribution rangeDistribution,
                                        Integer vectorIndex,
-                                       CommonId tableId,
                                        CommonId indexTableId,
                                        List<Float> targetVector,
                                        Integer dimension,
@@ -76,7 +74,7 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
         this.algType = algType;
         this.metricType = metricType;
         cache = new LinkedList<>();
-        instance = StoreService.getDefault().getInstance(tableId, indexTableId);
+        toolService = ToolService.getDefault();
     }
 
     @Override
@@ -111,7 +109,7 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
             .algorithmType(algType)
             .metricType(metricType)
             .build();
-        List<Float> floatArray = instance.vectorCalcDistance(
+        List<Float> floatArray = toolService.vectorCalcDistance(
             indexTableId,
             rangeDistribution.getId(),
             vectorCalcDistance).get(0);

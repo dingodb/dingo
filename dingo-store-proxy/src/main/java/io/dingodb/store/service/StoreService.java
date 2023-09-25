@@ -50,8 +50,6 @@ import io.dingodb.sdk.common.vector.SearchHnswParam;
 import io.dingodb.sdk.common.vector.SearchIvfFlatParam;
 import io.dingodb.sdk.common.vector.SearchIvfPqParam;
 import io.dingodb.sdk.common.vector.Vector;
-import io.dingodb.sdk.common.vector.VectorDistance;
-import io.dingodb.sdk.common.vector.VectorDistanceRes;
 import io.dingodb.sdk.common.vector.VectorSearchParameter;
 import io.dingodb.sdk.common.vector.VectorTableData;
 import io.dingodb.sdk.common.vector.VectorWithDistance;
@@ -483,16 +481,6 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             }
 
             return vectorSearchResponseList;
-        }
-
-        @Override
-        public List<List<Float>> vectorCalcDistance(CommonId indexId,
-                                        CommonId regionId,
-                                        io.dingodb.common.vector.VectorCalcDistance vectorCalcDistance) {
-            VectorDistanceRes vectorDistanceRes = indexService.vectorCalcDistance(mapping(indexId),
-                mapping(regionId), mapping(vectorCalcDistance));
-            return vectorDistanceRes.getDistances().stream()
-                .map(VectorDistance::getInternalDistances).collect(Collectors.toList());
         }
 
         @Override
