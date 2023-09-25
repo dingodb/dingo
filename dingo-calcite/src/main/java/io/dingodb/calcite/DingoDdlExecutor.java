@@ -482,6 +482,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             v.remove(tableName);
             return v;
         });
+        userService.dropTablePrivilege(schema.name(), tableName);
     }
 
     public void execute(@NonNull SqlTruncate truncate, CalcitePrepare.Context context) {
@@ -522,6 +523,13 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (userService.existsUser(UserDefinition.builder().user(sqlGrant.user)
             .host(sqlGrant.host).build())) {
             PrivilegeDefinition privilegeDefinition = getPrivilegeDefinition(sqlGrant, context);
+            String grantorUser = (String) context.getDataContext().get("user");
+            String grantorHost = (String) context.getDataContext().get("host");
+            privilegeDefinition.setGrantorUser(grantorUser);
+            privilegeDefinition.setGrantorHost(grantorHost);
+            if (sqlGrant.withGrantOption) {
+                privilegeDefinition.getPrivilegeList().add("grant");
+            }
             userService.grant(privilegeDefinition);
         } else {
             throw new RuntimeException("You are not allowed to create a user with GRANT");

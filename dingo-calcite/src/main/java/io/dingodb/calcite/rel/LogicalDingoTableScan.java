@@ -17,7 +17,11 @@
 package io.dingodb.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.DingoTable;
+import io.dingodb.calcite.fun.DingoOperatorTable;
 import io.dingodb.calcite.utils.RelDataTypeUtils;
+import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
@@ -34,13 +38,21 @@ import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.lang.reflect.Field;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static io.dingodb.calcite.rule.DingoVectorIndexRule.getDefaultSelection;
 
 public class LogicalDingoTableScan extends TableScan {
     @Getter
@@ -86,6 +98,10 @@ public class LogicalDingoTableScan extends TableScan {
         this.groupSet = groupSet;
         this.groupSets = groupSets;
         this.pushDown = pushDown;
+        if (filter != null) {
+            DingoTable dingoTable = table.unwrap(DingoTable.class);
+            dispatchDistanceCondition(filter, selection, dingoTable);
+        }
     }
 
     public boolean isKey(ImmutableBitSet columns) {
@@ -173,5 +189,86 @@ public class LogicalDingoTableScan extends TableScan {
         pw.itemIf("aggCalls", aggCalls, aggCalls != null);
         pw.itemIf("pushDown", pushDown, pushDown);
         return pw;
+    }
+
+    public static void dispatchDistanceCondition(RexNode rexPredicate, TupleMapping tupleMapping, DingoTable dingoTable) {
+        if (tupleMapping == null) {
+            tupleMapping = getDefaultSelection(dingoTable);
+        }
+        if (rexPredicate.isA(SqlKind.AND) || rexPredicate.isA(SqlKind.OR)) {
+            for (RexNode operand : ((RexCall) rexPredicate).getOperands()) {
+                dispatchDistanceCondition(operand, tupleMapping, dingoTable);
+            }
+        } else if (rexPredicate.isA(SqlKind.COMPARISON)) {
+            for (RexNode operand : ((RexCall) rexPredicate).getOperands()) {
+                if (operand instanceof RexCall) {
+                    RexCall rexCall = (RexCall) operand;
+                    SqlOperator sqlOperator = rexCall.getOperator();
+                    String name = sqlOperator.getName();
+                    if (rexCall.getOperands().size() == 0) {
+                        continue;
+                    }
+                    RexNode ref = rexCall.getOperands().get(0);
+                    if (name.equalsIgnoreCase("distance") && ref instanceof RexInputRef) {
+                        RexInputRef rexInputRef = (RexInputRef) ref;
+                        int colIndex = tupleMapping.get(rexInputRef.getIndex());
+
+                        ColumnDefinition columnDefinition = dingoTable.getTableDefinition().getColumn(colIndex);
+                        String metricType = getIndexMetricType(dingoTable, columnDefinition.getName());
+                        SqlOperator sqlOperator1 = findSqlOperator(metricType);
+
+                        try {
+                            Field field = RexCall.class.getDeclaredField("op");
+                            field.setAccessible(true);
+                            field.set(rexCall, sqlOperator1);
+                            field.setAccessible(false);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public static String getIndexMetricType(DingoTable dingoTable, String colName) {
+        Collection<TableDefinition> indexDef = dingoTable.getIndexTableDefinitions().values();
+        for (TableDefinition index : indexDef) {
+            if (index.getColumn(colName) != null) {
+                return index.getProperties().getProperty("metricType");
+            }
+        }
+        return null;
+    }
+
+    public static SqlOperator findSqlOperator(String metricType) {
+        if (metricType == null) {
+            throw new RuntimeException("found not metric type");
+        }
+        String metricTypeFullName;
+        switch (metricType) {
+            case "L2" :
+                metricTypeFullName = "l2Distance";
+                break;
+            case "INNER_PRODUCT":
+                metricTypeFullName = "IPDistance";
+                break;
+            case "COSINE":
+                metricTypeFullName = "cosineDistance";
+                break;
+            default:
+                metricTypeFullName = null;
+                break;
+        }
+        if (metricTypeFullName == null) {
+            throw new RuntimeException("found not distance fun");
+        }
+        List<SqlOperator> sqlOperatorList = DingoOperatorTable.instance().getOperatorList();
+        for (SqlOperator sqlOperator : sqlOperatorList) {
+            if (sqlOperator.getName().equalsIgnoreCase(metricTypeFullName)) {
+                return sqlOperator;
+            }
+        }
+        throw new RuntimeException("found not distance fun");
     }
 }

@@ -79,7 +79,7 @@ public class DingoMeta extends MetaImpl {
     }
 
     @NonNull
-    private static Predicate<String> patToFilter(@NonNull Pat pat) {
+    private static Predicate<String> patToFilter(@NonNull Pat pat, boolean caseInSensitive) {
         if (pat.s == null) {
             return str -> true;
         }
@@ -114,7 +114,12 @@ public class DingoMeta extends MetaImpl {
             }
         }
         buf.append("$");
-        Pattern regex = Pattern.compile(buf.toString());
+        Pattern regex;
+        if (caseInSensitive) {
+            regex = Pattern.compile(buf.toString(), Pattern.CASE_INSENSITIVE);
+        } else {
+            regex = Pattern.compile(buf.toString());
+        }
         return str -> regex.matcher(str).matches();
     }
 
@@ -138,7 +143,7 @@ public class DingoMeta extends MetaImpl {
         @NonNull CalciteSchema usedSchema,
         @NonNull Pat pat
     ) {
-        final Predicate<String> filter = patToFilter(pat);
+        final Predicate<String> filter = patToFilter(pat, true);
         if (usedSchema.getSubSchemaMap().isEmpty()) {
             return Collections.emptyList();
         }
@@ -153,7 +158,7 @@ public class DingoMeta extends MetaImpl {
         @NonNull Collection<CalciteSchema> schemas,
         @NonNull Pat pat
     ) {
-        final Predicate<String> filter = patToFilter(pat);
+        final Predicate<String> filter = patToFilter(pat, true);
         return schemas.stream()
             .flatMap(s -> s.getTableNames().stream()
                 .filter(filter)
@@ -511,7 +516,7 @@ public class DingoMeta extends MetaImpl {
         final Collection<CalciteSchema.TableEntry> tables = getMatchedTables(
             getMatchedSubSchema(context.getRootSchema(), schemaPattern), tableNamePattern
         );
-        final Predicate<String> filter = patToFilter(columnNamePattern);
+        final Predicate<String> filter = patToFilter(columnNamePattern, true);
         List<MetaColumn> columns = tables.stream()
             .flatMap(t -> {
                 RelDataType rowType = t.getTable().getRowType(context.getTypeFactory());

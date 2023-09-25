@@ -54,6 +54,9 @@ public interface UserService {
 
     CommonId getTableId(String schemaName, String table);
 
+    @ApiDeclaration
+    void dropTablePrivilege(String schemaName, String tableName);
+
     default void flushPrivileges() {
 
     }

@@ -39,6 +39,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNumericLiteral;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +49,7 @@ import java.util.Properties;
 import java.util.function.Supplier;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
+import static io.dingodb.calcite.visitor.function.DingoVectorVisitFun.getVectorFloats;
 
 public final class DingoGetVectorByDistanceVisitFun {
 
@@ -91,14 +93,8 @@ public final class DingoGetVectorByDistanceVisitFun {
     }
 
     public static List<Float> getTargetVector(List<SqlNode> operandList) {
-        List<SqlNode> operands = ((SqlBasicCall) operandList.get(2)).getOperandList();
-        List<Float> floatArray = new ArrayList<>();
-        for (int i = 0; i < operands.size(); i++) {
-            floatArray.add((
-                (Number) Objects.requireNonNull(((SqlNumericLiteral) operands.get(i)).getValue())
-            ).floatValue());
-        }
-        return floatArray;
+        Float[] vector = getVectorFloats(operandList);
+        return Arrays.asList(vector);
     }
 
     private static Properties getVectorProperties(DingoRelOptTable dingoRelOptTable) {

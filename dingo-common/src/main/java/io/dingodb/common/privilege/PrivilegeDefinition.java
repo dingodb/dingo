@@ -32,6 +32,10 @@ public class PrivilegeDefinition {
     String user;
     String host;
 
+    String grantorUser;
+
+    String grantorHost;
+
     public String key() {
         return user + "#" + host;
     }
@@ -46,5 +50,9 @@ public class PrivilegeDefinition {
     public PrivilegeDefinition(String user, String host) {
         this.user = user;
         this.host = host;
+    }
+
+    public String getGrantor() {
+        return grantorUser + "@" + grantorHost;
     }
 }

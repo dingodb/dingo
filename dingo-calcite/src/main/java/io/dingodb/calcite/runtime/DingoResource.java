@@ -66,4 +66,10 @@ public interface DingoResource {
 
     @BaseMessage("Can't find any matching row in the user table")
     ExInst<DingoSqlException> noMatchingRowForUser();
+
+    @BaseMessage("Access denied for user ''{0}''@''{1}''")
+    ExInst<DingoSqlException> accessDeniedToUser(String a0, String a1);
+
+    @BaseMessage("Access denied for user ''{0}''@''{1}'' to database ''{2}''")
+    ExInst<DingoSqlException> accessDeniedToDb(String a0, String a1, String a2);
 }

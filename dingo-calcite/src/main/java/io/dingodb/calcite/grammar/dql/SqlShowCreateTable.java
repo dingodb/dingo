@@ -22,10 +22,15 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.commons.lang3.StringUtils;
 
 public class SqlShowCreateTable extends SqlShow {
 
     public SqlIdentifier tableIdentifier;
+
+    public String schemaName;
+
+    public String tableName;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator("SHOW CREATE TABLE", SqlKind.SELECT);
 
@@ -37,17 +42,23 @@ public class SqlShowCreateTable extends SqlShow {
     public SqlShowCreateTable(SqlParserPos pos, SqlIdentifier tableIdentifier) {
         super(OPERATOR, pos);
         this.tableIdentifier = tableIdentifier;
+        if (tableIdentifier.names.size() == 1) {
+            this.tableName = tableIdentifier.names.get(0);
+        } else {
+            this.schemaName = tableIdentifier.names.get(0);
+            this.tableName = tableIdentifier.names.get(1);
+        }
     }
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword("SHOW CREATE TABLE ");
-        if (tableIdentifier.names.size() == 1) {
-            writer.keyword(tableIdentifier.names.get(0));
+        if (StringUtils.isBlank(schemaName)) {
+            writer.keyword(tableName);
         } else {
-            writer.keyword(tableIdentifier.names.get(0));
+            writer.keyword(schemaName);
             writer.keyword(".");
-            writer.keyword(tableIdentifier.names.get(1));
+            writer.keyword(tableName);
         }
     }
 }
