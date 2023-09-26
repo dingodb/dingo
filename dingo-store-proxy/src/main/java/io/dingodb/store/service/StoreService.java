@@ -259,7 +259,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     Column primaryCol = index.getColumns().get(0);
                     long id = Long.parseLong(String.valueOf(record[table.getColumnIndex(primaryCol.getName())]));
 
-                    DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(indexId.entityId(), singletonList(schema));
+                    DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(0l, singletonList(schema));
                     DingoCommonId regionId;
                     try {
                         CommonId commonId = mapping(indexId);
@@ -277,7 +277,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     List<DingoSchema> schemas = index.getKeyColumns().stream()
                         .map(k -> CodecUtils.createSchemaForColumn(k, table.getColumnIndex(k.getName())))
                         .collect(Collectors.toList());
-                    DingoKeyValueCodec indexCodec = new DingoKeyValueCodec(indexId.entityId(), schemas);
+                    DingoKeyValueCodec indexCodec = new DingoKeyValueCodec(0l, schemas);
                     try {
                         byte[] bytes = indexCodec.encodeKey(record);
                         CommonId commonId = mapping(indexId);
@@ -311,7 +311,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 if (index.getIndexParameter().getIndexType().equals(IndexParameter.IndexType.INDEX_TYPE_VECTOR)) {
                     Column primaryKey = index.getColumns().get(0);
                     schema.setIsKey(true);
-                    DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(indexId.entityId(), singletonList(schema));
+                    DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(0l, singletonList(schema));
 
                     long newLongId = Long.parseLong(
                         String.valueOf(newRecord[table.getColumnIndex(primaryKey.getName())])
@@ -338,7 +338,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     for (Column column : index.getColumns()) {
                         schemas.add(CodecUtils.createSchemaForColumn(column, table.getColumnIndex(column.getName())));
                     }
-                    DingoKeyValueCodec indexCodec = new DingoKeyValueCodec(indexId.entityId(), schemas);
+                    DingoKeyValueCodec indexCodec = new DingoKeyValueCodec(0l, schemas);
                     try {
                         io.dingodb.sdk.common.KeyValue newKv = indexCodec.encode(newRecord);
                         io.dingodb.sdk.common.KeyValue oldKv = indexCodec.encode(oldRecord);
@@ -503,7 +503,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             }
 
             Object[] newRecord = (Object[]) tableCodec.type.convertTo(record, DingoConverter.INSTANCE);
-            DingoKeyValueCodec indexCodec = new DingoKeyValueCodec(indexId.entityId(), schemas);
+            DingoKeyValueCodec indexCodec = new DingoKeyValueCodec(0l, schemas);
             io.dingodb.sdk.common.KeyValue keyValue;
             try {
                 keyValue = indexCodec.encode(newRecord);
@@ -532,7 +532,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
             long longId = Long.parseLong(String.valueOf(record[table.getColumnIndex(primaryKey.getName())]));
 
-            DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(indexId.entityId(), singletonList(schema));
+            DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(0l, singletonList(schema));
             DingoCommonId regionId;
             try {
                 CommonId commonId = mapping(indexId);
