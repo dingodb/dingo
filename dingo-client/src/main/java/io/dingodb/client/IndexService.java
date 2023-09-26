@@ -49,7 +49,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
-import static io.dingodb.common.util.ByteArrayUtils.greatThanOrEqual;
 import static io.dingodb.sdk.common.utils.EntityConversion.mapping;
 import static io.dingodb.sdk.common.utils.Parameters.cleanNull;
 
@@ -215,19 +214,15 @@ public class IndexService {
     private IndexInfo getRouteTable(String schemaName, String indexName, boolean forceRefresh) {
         return routeTables.compute(
             schemaName + "." + indexName,
-            (k, v) -> cleanNull(forceRefresh ? null : v, () -> refreshRouteTable(schemaName, indexName, retryTimes))
+            (k, v) -> cleanNull(forceRefresh ? null : v, () -> refreshRouteTable(schemaName, indexName))
         );
     }
 
-    private IndexInfo refreshRouteTable(String schemaName, String indexName, int retry) {
-        if (retry <= 0) {
-            throw new DingoClientException(-1, "Refreshing routes exceeded the retry limit");
-        }
+    private IndexInfo refreshRouteTable(String schemaName, String indexName) {
         MetaServiceClient metaService = getSubMetaService(schemaName);
         schema.setIsKey(true);
         DingoCommonId indexId = Parameters.nonNull(metaService.getIndexId(indexName), "Index not found.");
         Index index = Parameters.nonNull(metaService.getIndex(indexName), "Index not found.");
-        // Return all routing information, including the newly split region that is not ready
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
             metaService.getIndexRangeDistribution(indexName);
         for (RangeDistribution rangeDistribution : parts.values()) {
@@ -238,16 +233,6 @@ public class IndexService {
                 rangeDistribution.getRange().getStartKey(),
                 rangeDistribution.getRange().getEndKey(),
                 rangeDistribution.getRegionEpoch());
-            // In an unprepared region, startKey and endKey in the range are opposite
-            if (greatThanOrEqual(rangeDistribution.getRange().getStartKey(), rangeDistribution.getRange().getEndKey())) {
-                try {
-                    log.info("Region is not ready, sleep 1s...");
-                    Thread.sleep(1000);
-                    return refreshRouteTable(schemaName, indexName, retry - 1);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
         }
         KeyValueCodec codec = new KeyValueCodec(
             new DingoKeyValueCodec(indexId.entityId(), Collections.singletonList(schema)), dingoType);
