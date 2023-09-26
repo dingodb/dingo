@@ -62,7 +62,7 @@ public class IndexService {
     private final AutoIncrementService autoIncrementService;
     private final int retryTimes;
     private final DingoSchema<Long> schema = new LongSchema(0);
-    private final DingoType dingoType = new LongType(true);
+    private final DingoType dingoType = new LongType(false);
 
     public IndexService(String coordinatorSvr, AutoIncrementService autoIncrementService, int retryTimes) {
         this.rootMetaService = new MetaServiceClient(coordinatorSvr);
@@ -221,6 +221,7 @@ public class IndexService {
     private IndexInfo refreshRouteTable(String schemaName, String indexName) {
         MetaServiceClient metaService = getSubMetaService(schemaName);
         schema.setIsKey(true);
+        schema.setAllowNull(false);
         DingoCommonId indexId = Parameters.nonNull(metaService.getIndexId(indexName), "Index not found.");
         Index index = Parameters.nonNull(metaService.getIndex(indexName), "Index not found.");
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
