@@ -37,6 +37,7 @@ import io.dingodb.client.operation.impl.ScanOperation;
 import io.dingodb.client.operation.impl.VectorAddOperation;
 import io.dingodb.client.operation.impl.VectorBatchQueryOperation;
 import io.dingodb.client.operation.impl.VectorCalcDistanceOperation;
+import io.dingodb.client.operation.impl.VectorCountOperation;
 import io.dingodb.client.operation.impl.VectorDeleteOperation;
 import io.dingodb.client.operation.impl.VectorGetIdOperation;
 import io.dingodb.client.operation.impl.VectorGetRegionMetricsOperation;
@@ -516,6 +517,10 @@ public class DingoClient {
 
     public List<Boolean> vectorDelete(String schema, String indexName, List<Long> ids) {
         return indexService.exec(schema, indexName, VectorDeleteOperation.getInstance(), ids);
+    }
+
+    public Long vectorCount(String schema, String indexName) {
+        return indexService.exec(schema, indexName, VectorCountOperation.getInstance(), null);
     }
 
     public void close() {

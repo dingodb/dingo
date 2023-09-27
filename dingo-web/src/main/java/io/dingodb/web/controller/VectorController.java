@@ -164,4 +164,14 @@ public class VectorController {
             return Result.errorMsg(e.getMessage());
         }
     }
+
+    @ApiOperation("Vector count")
+    @GetMapping("/api/{schema}/{index}/count")
+    public Result<Long> vectorCount(@PathVariable String schema, @PathVariable String index) {
+        try {
+            return Result.ok(dingoClient.vectorCount(schema, index));
+        } catch (Exception e) {
+            return Result.errorMsg(e.getMessage());
+        }
+    }
 }
