@@ -299,7 +299,7 @@ public class Conversion {
                 Vector.ValueType.valueOf(vector.getValueType().name()),
                 vector.getFloatValuesList(),
                 vector.getBinaryValuesList().stream().map(ByteString::toByteArray).collect(Collectors.toList())),
-            withId.getScalarData().getScalarDataMap().entrySet().stream().collect(
+            withId.getScalarDataMap().entrySet().stream().collect(
                 Maps::newHashMap,
                 (map, entry) -> map.put(entry.getKey(), mapping(entry.getValue())),
                 Map::putAll
@@ -345,19 +345,17 @@ public class Conversion {
             builder.setVector(mapping(withId.getVector()));
         }
         if (withId.getScalarData() != null) {
-            builder.setScalarData(mapping(withId.getScalarData()));
+            builder.putAllScalarData(mapping(withId.getScalarData()));
         }
         builder.setId(withId.getId());
         return builder.build();
     }
 
-    public static ProxyCommon.VectorScalarData mapping(Map<String, ScalarValue> scalarData) {
-        return ProxyCommon.VectorScalarData.newBuilder().putAllScalarData(scalarData.entrySet().stream()
-                .collect(
-                    Maps::newHashMap,
+    public static Map<String, ProxyCommon.ScalarValue> mapping(Map<String, ScalarValue> scalarData) {
+        return scalarData.entrySet().stream()
+                .collect(Maps::newHashMap,
                     (map, entry) -> map.put(entry.getKey(), mapping(entry.getValue())),
-                    Map::putAll))
-            .build();
+                    Map::putAll);
     }
 
     public static ProxyCommon.Vector mapping(Vector vector) {

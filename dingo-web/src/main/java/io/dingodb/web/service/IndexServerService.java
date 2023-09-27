@@ -33,6 +33,7 @@ import io.dingodb.web.utils.Conversion;
 import io.grpc.stub.StreamObserver;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,9 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
             builder.addAllVectors(resVectors.stream().map(Conversion::mapping).collect(Collectors.toList()));
             error.setErrcode(ProxyError.Errno.OK);
         } catch (Exception e) {
+            List<VectorWithId> result = new ArrayList<>();
+            req.getVectorsList().forEach(v -> result.add(null));
+            builder.addAllVectors(result.stream().map(Conversion::mapping).collect(Collectors.toList()));
             error.setErrcode(ProxyError.Errno.EINTERNAL).setErrmsg(e.getMessage());
         }
         resObserver.onNext(builder.setError(error.build()).build());
@@ -107,11 +111,9 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
             builder.addAllBatchResults(vectorSearch.stream().map(s -> ProxyIndex.VectorWithDistanceResult.newBuilder()
                 .addAllVectorWithDistances(s.getVectorWithDistances().stream().map(r ->
                         ProxyCommon.VectorWithDistance.newBuilder()
-                            .setVectorWithId(ProxyCommon.VectorWithId.newBuilder()
-                                .setId(r.getId())
-                                .setVector(mapping(r.getVector()))
-                                .setScalarData(mapping(r.getScalarData()))
-                                .build())
+                            .setId(r.getId())
+                            .setVector(mapping(r.getVector()))
+                            .putAllScalarData(mapping(r.getScalarData()))
                             .setDistance(r.getDistance())
                             .setMetricType(ProxyCommon.MetricType.valueOf(r.getMetricType().name()))
                             .build())
@@ -220,6 +222,23 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
         } catch (Exception e) {
             error.setErrcode(ProxyError.Errno.EINTERNAL).setErrmsg(e.getMessage());
         }
+        resObserver.onNext(builder.setError(error.build()).build());
+        resObserver.onCompleted();
+    }
+
+    @Override
+    public void vectorCount(
+        ProxyIndex.VectorCountRequest req, StreamObserver<ProxyIndex.VectorCountResponse> resObserver) {
+        ProxyIndex.VectorCountResponse.Builder builder = ProxyIndex.VectorCountResponse.newBuilder();
+        ProxyError.Error.Builder error = ProxyError.Error.newBuilder();
+        try {
+            Long count = dingoClient.vectorCount(req.getSchemaName(), req.getIndexName());
+            builder.setCount(count);
+            error.setErrcode(ProxyError.Errno.OK);
+        } catch (Exception e) {
+            error.setErrcode(ProxyError.Errno.EINTERNAL).setErrmsg(e.getMessage());
+        }
+
         resObserver.onNext(builder.setError(error.build()).build());
         resObserver.onCompleted();
     }
