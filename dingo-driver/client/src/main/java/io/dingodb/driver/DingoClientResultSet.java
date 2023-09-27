@@ -75,8 +75,13 @@ public class DingoClientResultSet extends AvaticaResultSet {
 
             if (columnMetaData.type.id == Types.ARRAY) {
                 ColumnMetaData.ArrayType arrayType = (ColumnMetaData.ArrayType) columnMetaData.type;
-                if (arrayType.getComponent().id == Types.FLOAT) {
-                    this.accessorList.set(i, new DingoAccessor.ArrayAccessor((AbstractCursor) cursor, i));
+                if (arrayType.getComponent().id == Types.FLOAT
+                    || arrayType.getComponent().id == Types.TIME
+                    || arrayType.getComponent().id == Types.DATE
+                    || arrayType.getComponent().id == Types.TIMESTAMP
+                ) {
+                    this.accessorList.set(i,
+                        new DingoAccessor.ArrayAccessor((AbstractCursor) cursor, i, this.localCalendar));
                 }
             }
         }
@@ -91,11 +96,14 @@ public class DingoClientResultSet extends AvaticaResultSet {
             if (columnMetaData.type.id == Types.FLOAT) {
                 this.accessorList.set(i, new DingoAccessor.FloatAccessor((AbstractCursor) cursor, i));
             }
-
             if (columnMetaData.type.id == Types.ARRAY) {
                 ColumnMetaData.ArrayType arrayType = (ColumnMetaData.ArrayType) columnMetaData.type;
-                if (arrayType.getComponent().id == Types.FLOAT) {
-                    this.accessorList.set(i, new DingoAccessor.ArrayAccessor((AbstractCursor) cursor, i));
+                if (arrayType.getComponent().id == Types.FLOAT
+                    || arrayType.getComponent().id == Types.TIME
+                    || arrayType.getComponent().id == Types.DATE
+                    || arrayType.getComponent().id == Types.TIMESTAMP) {
+                    this.accessorList.set(i,
+                        new DingoAccessor.ArrayAccessor((AbstractCursor) cursor, i, this.localCalendar));
                 }
             }
         }

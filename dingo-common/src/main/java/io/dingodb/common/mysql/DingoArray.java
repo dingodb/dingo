@@ -21,14 +21,24 @@ import org.apache.commons.lang3.StringUtils;
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 
-public class DingoArray implements Array {
-    private final List<Object> list;
+import static io.dingodb.common.util.Utils.getDateByTimezone;
 
-    public DingoArray(List<Object> list) {
-        this.list = list;
+public class DingoArray implements Array {
+    private List<Object> list;
+
+    private Calendar calendar;
+
+    public DingoArray(List<Object> list, Calendar calendar) {
+        if (calendar != null) {
+            this.list = getDateByTimezone(list, calendar.getTimeZone());
+        } else {
+            this.list = list;
+        }
+        this.calendar = calendar;
     }
 
     @Override

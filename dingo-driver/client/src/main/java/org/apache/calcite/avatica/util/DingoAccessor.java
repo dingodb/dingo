@@ -18,7 +18,6 @@ package org.apache.calcite.avatica.util;
 
 import io.dingodb.common.mysql.DingoArray;
 import lombok.AllArgsConstructor;
-import org.apache.calcite.avatica.ColumnMetaData;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -30,7 +29,6 @@ import java.sql.Clob;
 import java.sql.Date;
 import java.sql.NClob;
 import java.sql.Ref;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.sql.Struct;
@@ -40,10 +38,20 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 
-@AllArgsConstructor
 public class DingoAccessor implements Cursor.Accessor {
 
     protected final AbstractCursor.Getter getter;
+
+    protected Calendar calendar;
+
+    public DingoAccessor(AbstractCursor.Getter getter) {
+        this.getter = getter;
+    }
+
+    public DingoAccessor(AbstractCursor.Getter getter, Calendar calendar) {
+        this.getter = getter;
+        this.calendar = calendar;
+    }
 
     public boolean wasNull() throws SQLException {
         return getter.wasNull();
@@ -160,7 +168,7 @@ public class DingoAccessor implements Cursor.Accessor {
             return null;
         }
         // If it's not an Array already, assume it is a List.
-        return new DingoArray((List<Object>) o);
+        return new DingoArray((List<Object>) o, calendar);
     }
 
     @Override
@@ -224,8 +232,8 @@ public class DingoAccessor implements Cursor.Accessor {
     }
 
     public static class ArrayAccessor extends DingoAccessor {
-        public ArrayAccessor(AbstractCursor cursor, int index) {
-            super(cursor.createGetter(index));
+        public ArrayAccessor(AbstractCursor cursor, int index, Calendar calendar) {
+            super(cursor.createGetter(index), calendar);
         }
     }
 

@@ -17,12 +17,15 @@
 package io.dingodb.driver.mysql.packet;
 
 import io.dingodb.common.mysql.DingoArray;
+import io.dingodb.driver.mysql.MysqlConnection;
 import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
 import lombok.Setter;
+import org.apache.calcite.avatica.util.ArrayImpl;
 import org.apache.commons.lang3.StringUtils;
 
 import java.sql.Array;
+import java.sql.Connection;
 import java.sql.Date;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -30,6 +33,8 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+
+import static io.dingodb.driver.mysql.command.MysqlResponseHandler.getArrayObject;
 
 public class PrepareResultSetRowPacket extends MysqlPacket {
     List<Object> values = new ArrayList<>();
@@ -173,15 +178,9 @@ public class PrepareResultSetRowPacket extends MysqlPacket {
         }
     }
 
-    public void addColumnValue(Object val) {
+    public void addColumnValue(Object val, MysqlConnection connection) throws SQLException {
         if (val instanceof Array) {
-            DingoArray array = (DingoArray) val;
-            try {
-                List<Object> objects = (List<Object>) array.getArray();
-                val = StringUtils.join(objects);
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+            val = getArrayObject(connection, val);
         }
         values.add(val);
     }
