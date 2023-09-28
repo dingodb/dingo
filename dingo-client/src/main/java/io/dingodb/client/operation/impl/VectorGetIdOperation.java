@@ -76,7 +76,7 @@ public class VectorGetIdOperation implements Operation {
         }
 
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
-        return new Fork(context.result(), subTasks, false);
+        return new Fork(new long[subTasks.size()], subTasks, false);
     }
 
     @Override
