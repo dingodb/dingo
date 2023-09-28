@@ -235,6 +235,11 @@ public class DingoAccessor implements Cursor.Accessor {
         public ArrayAccessor(AbstractCursor cursor, int index, Calendar calendar) {
             super(cursor.createGetter(index), calendar);
         }
+
+        public ArrayAccessor(AbstractCursor cursor, int index) {
+            super(cursor.createGetter(index), null);
+        }
+
     }
 
 }
