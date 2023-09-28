@@ -78,7 +78,6 @@ public class DingoClientResultSet extends AvaticaResultSet {
                 if (arrayType.getComponent().id == Types.FLOAT
                     || arrayType.getComponent().id == Types.TIME
                     || arrayType.getComponent().id == Types.DATE
-                    || arrayType.getComponent().id == Types.TIMESTAMP
                 ) {
                     this.accessorList.set(i,
                         new DingoAccessor.ArrayAccessor((AbstractCursor) cursor, i, this.localCalendar));
@@ -100,8 +99,7 @@ public class DingoClientResultSet extends AvaticaResultSet {
                 ColumnMetaData.ArrayType arrayType = (ColumnMetaData.ArrayType) columnMetaData.type;
                 if (arrayType.getComponent().id == Types.FLOAT
                     || arrayType.getComponent().id == Types.TIME
-                    || arrayType.getComponent().id == Types.DATE
-                    || arrayType.getComponent().id == Types.TIMESTAMP) {
+                    || arrayType.getComponent().id == Types.DATE) {
                     this.accessorList.set(i,
                         new DingoAccessor.ArrayAccessor((AbstractCursor) cursor, i, this.localCalendar));
                 }

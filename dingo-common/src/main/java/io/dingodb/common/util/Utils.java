@@ -155,14 +155,6 @@ public final class Utils {
                 long v = date.getTime();
                 v -= timeZone.getOffset(v);
                 return new Date(v);
-            } else if (e instanceof Timestamp) {
-                Timestamp timestamp  = (Timestamp) e;
-                if (timestamp == null) {
-                    return null;
-                }
-                long v = timestamp.getTime();
-                v -= timeZone.getOffset(v);
-                return new Timestamp(v);
             } else {
                 return e;
             }

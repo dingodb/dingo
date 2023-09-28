@@ -84,7 +84,7 @@ public final class DingoGetByIndexVisitFun {
                 indexTd);
 
             PartitionService ps =PartitionService.getService(
-                Optional.ofNullable(td.getPartDefinition())
+                Optional.ofNullable(indexTd.getPartDefinition())
                     .map(PartitionDefinition::getFuncName)
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
 

@@ -78,11 +78,17 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
                 return;
             }
         }
+        RelNode relNode = getDingoGetVectorByDistance(filter.getCondition(), vector);
+        // pre filter
+        call.transformTo(relNode);
+    }
+
+    public static RelNode getDingoGetVectorByDistance(RexNode condition, DingoVector vector) {
         DingoTable dingoTable = vector.getTable().unwrap(DingoTable.class);
         assert dingoTable != null;
         TupleMapping selection = getDefaultSelection(dingoTable);
-        if (filter != null) {
-            dispatchDistanceCondition(filter.getCondition(), selection, dingoTable);
+        if (condition != null) {
+            dispatchDistanceCondition(condition, selection, dingoTable);
         }
 
         // if filter matched point get by primary key, then DingoGetByKeys priority highest
@@ -91,8 +97,9 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         RelTraitSet traitSet = vector.getTraitSet().replace(DingoRelStreaming.of(vector.getTable()));
 
         // vector filter match primary point get
-        if (prePrimaryOrScalarPlan(call, filter, vector, vectorIdPair, traitSet, selection)) {
-            return;
+        RelNode relNode = prePrimaryOrScalarPlan(condition, vector, vectorIdPair, traitSet, selection);
+        if (relNode != null) {
+            return relNode;
         }
 
         // pre filtering
@@ -105,12 +112,11 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         // 3. scalar index -> vector search by vectorIds
         // scalar operator -> vector search by vectorIds
         // scalar operator -> vector get distance and sorted by vectorIds
-
         DingoTableScan dingoTableScan = new DingoTableScan(vector.getCluster(),
             traitSet,
             ImmutableList.of(),
             vector.getTable(),
-            filter.getCondition(),
+            condition,
             selection,
             null,
             null,
@@ -126,27 +132,24 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
             vectorIdPair.getKey(),
             vector.getIndexTableDefinition(),
             false);
-        DingoGetVectorByDistance dingoVectorGetDistance = new DingoGetVectorByDistance(
+        return new DingoGetVectorByDistance(
             vector.getCluster(),
             traitSet,
             vectorStreamConvertor,
-            filter.getCondition(),
+            condition,
             vector.getTable(),
             vector.getOperands(),
             vectorIdPair.getKey(),
             vectorIdPair.getValue(),
             vector.getIndexTableId()
             );
-
-        // pre filter
-        call.transformTo(dingoVectorGetDistance);
     }
 
     private static DingoGetByIndex preScalarRelNode(DingoVector dingoVector,
                                          IndexValueMapSet<Integer, RexNode> indexValueMapSet,
                                          TableDefinition td,
                                          TupleMapping selection,
-                                         DingoFilter filter) {
+                                         RexNode condition) {
         Map<CommonId, TableDefinition> indexTdMap = getScalaIndices(dingoVector.getTable());
 
         if (indexTdMap.size() == 0) {
@@ -166,7 +169,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
                 dingoVector.getTraitSet(),
                 ImmutableList.of(),
                 dingoVector.getTable(),
-                filter.getCondition(),
+                condition,
                 selection,
                 false,
                 indexSetMap,
@@ -179,7 +182,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
                 dingoVector.getTraitSet(),
                 ImmutableList.of(),
                 dingoVector.getTable(),
-                filter.getCondition(),
+                condition,
                 selection,
                 false,
                 indexSetMap,
@@ -188,14 +191,17 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         }
     }
 
-    private static boolean prePrimaryOrScalarPlan(RelOptRuleCall call,
-                                          DingoFilter filter,
+    private static RelNode prePrimaryOrScalarPlan(
+                                          RexNode condition,
                                           DingoVector vector,
                                           Pair<Integer, Integer> vectorIdPair,
                                           RelTraitSet traitSet,
                                           TupleMapping selection) {
+        if (condition == null) {
+            return null;
+        }
         DingoTable dingoTable = vector.getTable().unwrap(DingoTable.class);
-        RexNode rexNode = RexUtil.toDnf(vector.getCluster().getRexBuilder(), filter.getCondition());
+        RexNode rexNode = RexUtil.toDnf(vector.getCluster().getRexBuilder(), condition);
         IndexValueMapSetVisitor visitor = new IndexValueMapSetVisitor(vector.getCluster().getRexBuilder());
         IndexValueMapSet<Integer, RexNode> indexValueMapSet = rexNode.accept(visitor);
         assert dingoTable != null;
@@ -211,16 +217,16 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
                 vector.getTraitSet(),
                 ImmutableList.of(),
                 vector.getTable(),
-                filter.getCondition(),
+                condition,
                 selection,
                 keyMapSet
             );
         } else {
-            scan = preScalarRelNode(vector, indexValueMapSet, td, selection, filter);
+            scan = preScalarRelNode(vector, indexValueMapSet, td, selection, condition);
         }
 
         if (scan == null) {
-            return false;
+            return null;
         }
         VectorStreamConvertor vectorStreamConvertor = new VectorStreamConvertor(
             vector.getCluster(),
@@ -234,7 +240,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
             vector.getCluster(),
             traitSet,
             vectorStreamConvertor,
-            filter.getCondition(),
+            condition,
             vector.getTable(),
             vector.getOperands(),
             vectorIdPair.getKey(),
@@ -244,10 +250,8 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         RelTraitSet traits = vector.getCluster().traitSet()
             .replace(DingoConvention.INSTANCE)
             .replace(DingoRelStreaming.ROOT);
-        DingoStreamingConverter dingoStreamingConverterA = new DingoStreamingConverter(vector.getCluster(),
+        return new DingoStreamingConverter(vector.getCluster(),
             traits, dingoVectorGetDistance);
-        call.transformTo(dingoStreamingConverterA);
-        return true;
     }
 
     @Value.Immutable

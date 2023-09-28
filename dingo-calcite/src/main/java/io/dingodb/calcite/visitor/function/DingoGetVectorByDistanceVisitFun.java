@@ -71,13 +71,15 @@ public final class DingoGetVectorByDistanceVisitFun {
         @Override
         public Operator get() {
             DingoRelOptTable dingoRelOptTable = (DingoRelOptTable) rel.getTable();
-            Properties properties = getVectorProperties(dingoRelOptTable);
+            List<Float> targetVector = getTargetVector(rel.getOperands());
+            Properties properties = getVectorProperties(dingoRelOptTable, targetVector.size());
+            if (properties == null) {
+                throw new RuntimeException("not found vector index");
+            }
             MetaService metaService = MetaService.root().getSubMetaService(dingoRelOptTable.getSchemaName());
-            TableInfo tableInfo = MetaServiceUtils.getTableInfo(dingoRelOptTable);
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
                 = metaService.getIndexRangeDistribution(rel.getIndexTableId());
 
-            List<Float> targetVector = getTargetVector(rel.getOperands());
             int dimension = Integer.parseInt(properties.getOrDefault("dimension", targetVector.size()).toString());
             VectorPointDistanceOperator operator = new VectorPointDistanceOperator(
                 distributions.firstEntry().getValue(),
@@ -96,7 +98,7 @@ public final class DingoGetVectorByDistanceVisitFun {
         return Arrays.asList(vector);
     }
 
-    private static Properties getVectorProperties(DingoRelOptTable dingoRelOptTable) {
+    private static Properties getVectorProperties(DingoRelOptTable dingoRelOptTable, int dimension) {
         DingoTable dingoTable = dingoRelOptTable.unwrap(DingoTable.class);
         Map<CommonId, TableDefinition> indexDefinitions = dingoTable.getIndexTableDefinitions();
         for (Map.Entry<CommonId, TableDefinition> entry : indexDefinitions.entrySet()) {
@@ -106,7 +108,10 @@ public final class DingoGetVectorByDistanceVisitFun {
             if (indexType.equals("scalar")) {
                 continue;
             }
-            return indexTableDefinition.getProperties();
+            int dimension1 = Integer.parseInt(indexTableDefinition.getProperties().getProperty("dimension"));
+            if (dimension == dimension1) {
+                return indexTableDefinition.getProperties();
+            }
         }
         return null;
     }
