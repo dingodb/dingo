@@ -98,7 +98,7 @@ public final class TupleMapping {
     public int find(int index) {
         for (int i = 0; i < mappings.length; ++i) {
             if (mappings[i] == index) {
-                return i;
+                return mappings[i];
             }
         }
         return -1;

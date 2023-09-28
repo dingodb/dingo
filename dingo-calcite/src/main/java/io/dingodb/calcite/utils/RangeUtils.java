@@ -69,7 +69,7 @@ public final class RangeUtils {
         byte[] conditionValue;
         for (RexNode filter : filters) {
             conditionValue = calcConditionValue(
-                RuleUtils.checkCondition(filter), codec, realIndex, table.getColumnsCount()
+                RuleUtils.checkCondition(filter), codec, realIndex, table.getColumnsCount(), table
             );
             if (conditionValue == null) {
                 return null;
@@ -108,13 +108,15 @@ public final class RangeUtils {
             .build();
     }
 
-    private static byte[] calcConditionValue(RuleUtils.ConditionInfo info, KeyValueCodec codec, int pkIndex, int columnCount) {
+    private static byte[] calcConditionValue(RuleUtils.ConditionInfo info,
+                                             KeyValueCodec codec,
+                                             int pkIndex,
+                                             int columnCount,
+                                             TableDefinition tableDefinition) {
         if (info == null || info.index != pkIndex) {
             return null;
         }
-        Object value = RexLiteralUtils.convertFromRexLiteral(info.value,
-            DefinitionMapper.mapToDingoType(info.value.getType())
-        );
+        Object value = RexLiteralUtils.convertFromRexLiteral(info.value, tableDefinition.getColumn(pkIndex).getType());
         if (value == null) {
             return null;
         }
