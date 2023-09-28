@@ -19,6 +19,7 @@ package io.dingodb.driver.mysql.command;
 import io.dingodb.common.mysql.DingoArray;
 import io.dingodb.common.mysql.ExtendedClientCapabilities;
 import io.dingodb.common.mysql.MysqlServer;
+import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.mysql.MysqlConnection;
 import io.dingodb.driver.mysql.packet.ColumnPacket;
 import io.dingodb.driver.mysql.packet.ColumnsNumberPacket;
@@ -36,12 +37,19 @@ import org.apache.calcite.avatica.util.ArrayImpl;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Array;
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+
+import static io.dingodb.common.util.Utils.getDateByTimezone;
 
 @Slf4j
 public class MysqlResponseHandler {
@@ -142,22 +150,7 @@ public class MysqlResponseHandler {
                         }
                     }
                 } else if (typeName.equalsIgnoreCase("ARRAY")) {
-                    List<Object> arrayVal = null;
-                    if (val instanceof ArrayImpl) {
-                        ArrayImpl array = (ArrayImpl) val;
-                        Object o = array.getArray();
-                        arrayVal = new ArrayList<>();
-                        int length = Array.getLength(o);
-                        for (int index = 0; index < length; index ++) {
-                            arrayVal.add(Array.get(o, index));
-                        }
-                    } else if (val instanceof DingoArray) {
-                        DingoArray dingoArray = (DingoArray) val;
-                        arrayVal = (List<Object>) dingoArray.getArray();
-                    }
-                    if (arrayVal != null) {
-                        val = StringUtils.join(arrayVal);
-                    }
+                    val = getArrayObject(mysqlConnection, val);
                 }
                 resultSetRowPacket.addColumnValue(val);
             }
@@ -171,6 +164,26 @@ public class MysqlResponseHandler {
         }
     }
 
+    public static Object getArrayObject(MysqlConnection mysqlConnection, Object val) throws SQLException {
+        List<Object> arrayVal = null;
+        if (val instanceof ArrayImpl) {
+            ArrayImpl array = (ArrayImpl) val;
+            Object o = array.getArray();
+            arrayVal = new ArrayList<>();
+            int length = Array.getLength(o);
+            for (int index = 0; index < length; index ++) {
+                arrayVal.add(Array.get(o, index));
+            }
+            DingoConnection dingoConnection = (DingoConnection) mysqlConnection.getConnection();
+            arrayVal = getDateByTimezone(arrayVal, dingoConnection.getTimeZone());
+        } else if (val instanceof DingoArray) {
+            DingoArray dingoArray = (DingoArray) val;
+            arrayVal = (List<Object>) dingoArray.getArray();
+        }
+        val = StringUtils.join(arrayVal);
+        return val;
+    }
+
     private static void handlerPrepareRowPacket(ResultSet resultSet,
                                                 AtomicLong packetId,
                                                 MysqlConnection mysqlConnection,
@@ -181,7 +194,7 @@ public class MysqlResponseHandler {
             resultSetRowPacket.packetId = (byte) packetId.getAndIncrement();
             resultSetRowPacket.setMetaData(resultSet.getMetaData());
             for (int i = 1; i <= columnCount; i ++) {
-                resultSetRowPacket.addColumnValue(resultSet.getObject(i));
+                resultSetRowPacket.addColumnValue(resultSet.getObject(i), mysqlConnection);
             }
             resultSetRowPacket.write(buffer);
             int writerIndex = buffer.writerIndex();

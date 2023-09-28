@@ -18,11 +18,17 @@ package io.dingodb.common.util;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.Collection;
+import java.util.List;
+import java.util.TimeZone;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public final class Utils {
     private Utils() {
@@ -126,6 +132,41 @@ public final class Utils {
             }
         }
         return i;
+    }
+
+    public static List<Object> getDateByTimezone(List<Object> objectList, TimeZone timeZone) {
+        if (timeZone == null) {
+            return objectList;
+        }
+        return objectList.stream().map(e -> {
+            if (e instanceof Time) {
+                Time date  = (Time) e;
+                if (date == null) {
+                    return null;
+                }
+                long v = date.getTime();
+                v -= timeZone.getOffset(v);
+                return new Time(v);
+            } else if (e instanceof Date) {
+                java.sql.Date date = (Date) e;
+                if (date == null) {
+                    return null;
+                }
+                long v = date.getTime();
+                v -= timeZone.getOffset(v);
+                return new Date(v);
+            } else if (e instanceof Timestamp) {
+                Timestamp timestamp  = (Timestamp) e;
+                if (timestamp == null) {
+                    return null;
+                }
+                long v = timestamp.getTime();
+                v -= timeZone.getOffset(v);
+                return new Timestamp(v);
+            } else {
+                return e;
+            }
+        }).collect(Collectors.toList());
     }
 
     public static final int INTEGER_LEN_IN_BYTES = 4;
