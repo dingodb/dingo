@@ -75,6 +75,9 @@ public class JsonConverter implements DataConverter {
 
     @Override
     public Long convertLongFrom(@NonNull Object value) {
+        if (value instanceof Long) {
+            return (Long) value;
+        }
         return ((JsonNode) value).longValue();
     }
 

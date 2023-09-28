@@ -78,10 +78,6 @@ public final class DingoGetByIndexMergeVisitFun {
         Map<CommonId, Set> indexSetMap = rel.getIndexSetMap();
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        PartitionService lookupPs = PartitionService.getService(
-            Optional.ofNullable(td.getPartDefinition())
-            .map(PartitionDefinition::getFuncName)
-            .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         boolean needLookup = true;
         for (Map.Entry<CommonId, Set> indexValSet : indexSetMap.entrySet()) {
             TableDefinition indexTd = rel.getIndexTdMap().get(indexValSet.getKey());
@@ -89,6 +85,10 @@ public final class DingoGetByIndexMergeVisitFun {
                 = metaService.getIndexRangeDistribution(indexValSet.getKey(),
                 indexTd);
 
+            PartitionService lookupPs = PartitionService.getService(
+                Optional.ofNullable(indexTd.getPartDefinition())
+                    .map(PartitionDefinition::getFuncName)
+                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
             KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTd.getColumns());
             List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(indexValSet.getValue(), indexTd);
 
