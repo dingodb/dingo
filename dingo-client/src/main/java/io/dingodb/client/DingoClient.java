@@ -383,7 +383,7 @@ public class DingoClient {
         int dimension = getDimension(schema, indexName);
         long count = checkDimension(vectors, dimension);
         int messageSize = getMessageSize(vectors);
-        if (vectors.size() >= 1024) {
+        if (vectors.size() > 1024) {
             throw new DingoClientException("Param vectors size " + vectors.size() + " is exceed max batch count 1024");
         }
         if (messageSize > MAX_MESSAGE_SIZE) {
