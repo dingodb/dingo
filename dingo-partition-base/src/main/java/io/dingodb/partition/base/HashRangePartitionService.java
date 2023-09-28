@@ -71,16 +71,17 @@ public class HashRangePartitionService implements PartitionService {
         NavigableMap<ComparableByteArray, RangeDistribution> ranges
     ) {
 
-        Map<Long, NavigableMap<ComparableByteArray, RangeDistribution>> map = new HashMap<>();
+        Map<CommonId, NavigableMap<ComparableByteArray, RangeDistribution>> map = new HashMap<>();
         for (Map.Entry<ComparableByteArray, RangeDistribution> entry : ranges.entrySet()) {
             ComparableByteArray key = entry.getKey();
             RangeDistribution value = entry.getValue();
             Long domain = value.getId().domain;
-            log.trace("id:" + domain);
-            map.computeIfAbsent(domain, k -> new TreeMap<>()).put(key, value);
+            CommonId commonId = new CommonId(CommonId.CommonType.PARTITION, 0, domain);
+            log.trace("commonId:" + commonId);
+            map.computeIfAbsent(commonId, k -> new TreeMap<>()).put(key, value);
         }
         NavigableSet<RangeDistribution> distributions = new TreeSet<>(RangeUtils.rangeComparator(0));
-        for (Map.Entry<Long, NavigableMap<ComparableByteArray, RangeDistribution>> entry : map.entrySet()) {
+        for (Map.Entry<CommonId, NavigableMap<ComparableByteArray, RangeDistribution>> entry : map.entrySet()) {
             NavigableMap<ComparableByteArray, RangeDistribution> subMap = entry.getValue();
             byte [] newStartKey;
             byte [] newEndKey;
@@ -90,14 +91,16 @@ public class HashRangePartitionService implements PartitionService {
                 newStartKey = subMap.firstEntry().getValue().getStartKey();
                 newWithStart = true;
             } else {
-                newStartKey = startKey;
+                // set partition id
+                newStartKey = CodecService.getDefault().setId(Arrays.copyOf(startKey, startKey.length), entry.getKey());
                 newWithStart = withStart;
             }
             if (endKey == null) {
                 newEndKey = subMap.lastEntry().getValue().getEndKey();
                 newWithEnd = true;
             } else {
-                newEndKey = endKey;
+                // set partition id
+                newEndKey = CodecService.getDefault().setId(Arrays.copyOf(endKey, endKey.length), entry.getKey());
                 newWithEnd = withEnd;
             }
             RangeDistribution range = RangeDistribution.builder()
@@ -106,7 +109,7 @@ public class HashRangePartitionService implements PartitionService {
                 .withStart(newWithStart)
                 .withEnd(newWithEnd)
                 .build();
-            NavigableSet<RangeDistribution> subRanges = RangeUtils.getSubRangeDistribution(subMap.values(), range, 8);
+            NavigableSet<RangeDistribution> subRanges = RangeUtils.getSubRangeDistribution(subMap.values(), range, 0);
             subRanges.descendingSet().stream().skip(1).forEach(rd -> {
                 if (Arrays.equals(rd.getEndKey(), subMap.lastEntry().getValue().getEndKey())) {
                     rd.setWithEnd(true);

@@ -86,7 +86,7 @@ public final class DingoTableScanVisitFun {
                 withEnd = range.isWithEnd();
             }
             if (rel.getFilter().getKind() == SqlKind.NOT) {
-                distributions = new TreeSet<>(io.dingodb.common.util.RangeUtils.rangeComparator());
+                distributions = new TreeSet<>(io.dingodb.common.util.RangeUtils.rangeComparator(0));
                 distributions.addAll(ps.calcPartitionRange(null, startKey, true, !withStart, ranges));
                 distributions.addAll(ps.calcPartitionRange(endKey, null, !withEnd, true, ranges));
             } else {
