@@ -74,7 +74,7 @@ public class VectorGetRegionMetricsOperation implements Operation {
         }
 
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
-        return new Fork(context.result(), subTasks, false);
+        return new Fork(new VectorIndexMetrics[subTasks.size()], subTasks, false);
     }
 
     @Override

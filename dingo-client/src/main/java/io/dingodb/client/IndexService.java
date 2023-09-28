@@ -132,6 +132,9 @@ public class IndexService {
                             if (newFork == null) {
                                 return exec(newIndexInfo, operation, newFork, 0, vectorContext).orNull();
                             }
+                            if (fork.result() != newFork.result()) {
+                                fork.setResult(newFork.result());
+                            }
                             return exec(newIndexInfo, operation, newFork, retry - 1, vectorContext).orNull();
                         } else {
                             return err;

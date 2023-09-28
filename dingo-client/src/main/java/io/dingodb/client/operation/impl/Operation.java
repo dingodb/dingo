@@ -25,6 +25,7 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 import java.util.NavigableSet;
 
@@ -46,7 +47,8 @@ public interface Operation {
     @Getter
     @AllArgsConstructor
     class Fork {
-        private final Object result;
+        @Setter
+        private Object result;
         private final NavigableSet<Task> subTasks;
         private final boolean ignoreError;
 
