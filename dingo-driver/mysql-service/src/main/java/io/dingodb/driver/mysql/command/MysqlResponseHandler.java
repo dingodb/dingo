@@ -180,8 +180,10 @@ public class MysqlResponseHandler {
             DingoArray dingoArray = (DingoArray) val;
             arrayVal = (List<Object>) dingoArray.getArray();
         }
-        val = StringUtils.join(arrayVal);
-        return val;
+        if (arrayVal == null) {
+            return "null";
+        }
+        return StringUtils.join(arrayVal);
     }
 
     private static void handlerPrepareRowPacket(ResultSet resultSet,
