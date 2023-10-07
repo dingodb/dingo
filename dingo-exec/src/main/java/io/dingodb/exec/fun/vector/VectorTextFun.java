@@ -41,7 +41,13 @@ public class VectorTextFun extends RtFun {
 
     @Override
     protected @Nullable Object fun(@NonNull Object @NonNull [] values) {
-        Float[] vector = VectorExtract.getVector(VectorTextFun.NAME, (String) values[0], values[1]);
+        if (values.length < 2) {
+            throw new RuntimeException("vector load param error");
+        }
+        if (!(values[0] instanceof String) || !(values[1] instanceof String)) {
+            throw new RuntimeException("vector load param error");
+        }
+        Float[] vector = VectorExtract.getTxtVector(VectorTextFun.NAME, (String) values[0], values[1]);
         return Arrays.asList(vector);
     }
 }

@@ -53,6 +53,7 @@ import static io.dingodb.calcite.rel.LogicalDingoTableScan.dispatchDistanceCondi
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.filterIndices;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.filterScalarIndices;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.getScalaIndices;
+import static io.dingodb.calcite.visitor.function.DingoGetVectorByDistanceVisitFun.getTargetVector;
 
 @Slf4j
 @Value.Enclosing
@@ -91,8 +92,9 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
             dispatchDistanceCondition(condition, selection, dingoTable);
         }
 
+        List<Float> targetVector = getTargetVector(vector.getOperands());
         // if filter matched point get by primary key, then DingoGetByKeys priority highest
-        Pair<Integer, Integer> vectorIdPair = getVectorIndex(dingoTable);
+        Pair<Integer, Integer> vectorIdPair = getVectorIndex(dingoTable, targetVector.size());
         assert vectorIdPair != null;
         RelTraitSet traitSet = vector.getTraitSet().replace(DingoRelStreaming.of(vector.getTable()));
 
@@ -271,7 +273,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         }
     }
 
-    private static Pair<Integer, Integer> getVectorIndex(DingoTable dingoTable) {
+    private static Pair<Integer, Integer> getVectorIndex(DingoTable dingoTable, int dimension) {
         Map<CommonId, TableDefinition> indexDefinitions = dingoTable.getIndexTableDefinitions();
         for (Map.Entry<CommonId, TableDefinition> entry : indexDefinitions.entrySet()) {
             TableDefinition indexTableDefinition = entry.getValue();
@@ -281,6 +283,10 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
                 continue;
             }
 
+            int dimension1 = Integer.parseInt(indexTableDefinition.getProperties().getProperty("dimension"));
+            if (dimension != dimension1) {
+                continue;
+            }
             String vectorIdColName = indexTableDefinition.getColumn(0).getName();
             String vectorColName = indexTableDefinition.getColumn(1).getName();
             int vectorIdIndex = 0;

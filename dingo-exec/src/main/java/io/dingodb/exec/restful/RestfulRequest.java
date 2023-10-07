@@ -30,6 +30,6 @@ public class RestfulRequest {
     private String param;
 
     public String getUrl() {
-        return restUrl.replace("host", host);
+        return restUrl.replace("host:port", host);
     }
 }
