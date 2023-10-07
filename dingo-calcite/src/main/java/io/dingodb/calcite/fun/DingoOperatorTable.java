@@ -262,14 +262,14 @@ public class DingoOperatorTable implements SqlOperatorTable {
         registerFunction(
             VectorImageFun.NAME,
             ret,
-            DingoInferTypes.FLOAT,
-            OperandTypes.STRING_STRING,
+            DingoInferTypes.VARCHAR1024_VARCHAR1024_BOOLEAN,
+            family(SqlTypeFamily.STRING, SqlTypeFamily.STRING, SqlTypeFamily.BOOLEAN),
             SqlFunctionCategory.NUMERIC
         );
         registerFunction(
             VectorTextFun.NAME,
             ret,
-            DingoInferTypes.FLOAT,
+            DingoInferTypes.VARCHAR,
             OperandTypes.STRING_STRING,
             SqlFunctionCategory.NUMERIC
         );

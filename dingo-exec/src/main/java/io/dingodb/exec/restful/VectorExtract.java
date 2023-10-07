@@ -25,22 +25,46 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class VectorExtract {
-    private static RestfulConnection connection = new RestfulConnection();
-    private static Map<String, RestfulRequest> vectorInterface = new HashMap<>();
+    private static final RestfulConnection connection = new RestfulConnection();
+    private static final Map<String, RestfulRequest> vectorInterface = new HashMap<>();
 
     static {
-        vectorInterface.put(VectorImageFun.NAME, new RestfulRequest("", null, "PUT", ""));
+        vectorInterface.put(VectorImageFun.NAME,
+            new RestfulRequest("http://host:port/img2vec", null, "PUT", ""));
         vectorInterface.put(VectorTextFun.NAME,
-            new RestfulRequest("http://host:8080/text2vec", null, "PUT", ""));
+            new RestfulRequest("http://host:port/text2vec", null, "PUT", ""));
     }
 
-    public static Float[] getVector(String funName, String host, Object param) {
-        if (host.contains("'")) {
-            host = host.replace("'", "");
-        }
+    public static Float[] getTxtVector(String funName, String host, Object param) {
+        host = removeQuote(host);
         RestfulRequest request = vectorInterface.get(funName.toLowerCase());
-        Map<String, String> paramMap = new HashMap<>();
+        Map<String, Object> paramMap = new HashMap<>();
         paramMap.put("text_str", param.toString());
+        return getRestFulFloats(host, request, paramMap);
+    }
+
+    public static Float[] getImgVector(String funName, String host, Object url, boolean localPath) {
+        host = removeQuote(host);
+        RestfulRequest request = vectorInterface.get(funName.toLowerCase());
+        Map<String, Object> paramMap = new HashMap<>();
+        String imgUrl = url.toString();
+        imgUrl = removeQuote(imgUrl);
+        paramMap.put("img_url", imgUrl);
+        paramMap.put("local_path", localPath);
+        return getRestFulFloats(host, request, paramMap);
+    }
+
+    private static String removeQuote(String param) {
+        if (param == null) {
+            throw new RuntimeException("vector load param error");
+        }
+        if (param.contains("'")) {
+            param = param.replace("'", "");
+        }
+        return param;
+    }
+
+    private static Float[] getRestFulFloats(String host, RestfulRequest request, Map<String, Object> paramMap) {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             request.setParam(objectMapper.writeValueAsString(paramMap));

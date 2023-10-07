@@ -30,6 +30,8 @@ import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.fun.vector.VectorImageFun;
+import io.dingodb.exec.fun.vector.VectorTextFun;
 import io.dingodb.exec.operator.PartVectorOperator;
 import io.dingodb.exec.restful.VectorExtract;
 import io.dingodb.meta.MetaService;
@@ -117,7 +119,7 @@ public final class DingoVectorVisitFun {
     }
 
     public static Float[] getVectorFloats(List<SqlNode> operandsList) {
-        Float[] floatArray;
+        Float[] floatArray = null;
         SqlBasicCall basicCall = (SqlBasicCall) operandsList.get(2);
         if (basicCall.getOperator() instanceof SqlArrayValueConstructor) {
             List<SqlNode> operands = basicCall.getOperandList();
@@ -141,17 +143,36 @@ public final class DingoVectorVisitFun {
                     return e.toString();
                 }
             }).collect(Collectors.toList());
-            if (paramList.get(1) == null) {
+            if (paramList.get(1) == null || paramList.get(0) == null) {
                 throw new RuntimeException("vector load param error");
             }
             String param = paramList.get(1).toString();
             if (param.contains("'")) {
                 param = param.replace("'", "");
             }
-            floatArray = VectorExtract.getVector(
-                basicCall.getOperator().getName(),
-                paramList.get(0).toString(),
-                param);
+            String funcName = basicCall.getOperator().getName();
+            if (funcName.equalsIgnoreCase(VectorTextFun.NAME)) {
+                floatArray = VectorExtract.getTxtVector(
+                    basicCall.getOperator().getName(),
+                    paramList.get(0).toString(),
+                    param);
+            } else if (funcName.equalsIgnoreCase(VectorImageFun.NAME)) {
+                if (paramList.size() < 3) {
+                    throw new RuntimeException("vector load param error");
+                }
+                Object localPath = paramList.get(2);
+                if (!(localPath instanceof Boolean)) {
+                    throw new RuntimeException("vector load param error");
+                }
+                floatArray = VectorExtract.getImgVector(
+                    basicCall.getOperator().getName(),
+                    paramList.get(0).toString(),
+                    paramList.get(1),
+                    (Boolean) paramList.get(2));
+            }
+        }
+        if (floatArray == null) {
+            throw new RuntimeException("vector load error");
         }
         return floatArray;
     }

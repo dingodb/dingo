@@ -26,6 +26,7 @@ public final class DingoInferTypes {
     public static final SqlOperandTypeInference DECIMAL = allToBe(SqlTypeName.DECIMAL);
     public static final SqlOperandTypeInference DOUBLE = allToBe(SqlTypeName.DOUBLE);
     public static final SqlOperandTypeInference TIMESTAMP = allToBe(SqlTypeName.TIMESTAMP);
+    public static final SqlOperandTypeInference VARCHAR = allToBe(SqlTypeName.VARCHAR);
     public static final SqlOperandTypeInference VARCHAR1024_INTEGER
         = explicit(SqlTypeName.VARCHAR, SqlTypeName.INTEGER);
     public static final SqlOperandTypeInference VARCHAR1024_INTEGER_INTEGER
@@ -40,6 +41,9 @@ public final class DingoInferTypes {
         = explicit(SqlTypeName.DATE, SqlTypeName.DATE);
     public static final SqlOperandTypeInference FLOAT
         = explicit(SqlTypeName.FLOAT, SqlTypeName.FLOAT);
+
+    public static final SqlOperandTypeInference VARCHAR1024_VARCHAR1024_BOOLEAN
+        = explicit(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR, SqlTypeName.BOOLEAN);
 
     private DingoInferTypes() {
     }

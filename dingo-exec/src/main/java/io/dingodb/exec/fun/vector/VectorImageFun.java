@@ -26,7 +26,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.Arrays;
 
 public class VectorImageFun extends RtFun {
-    public static final String NAME = "image2vec";
+    public static final String NAME = "img2vec";
 
     private static final long serialVersionUID = 2796411347891525563L;
 
@@ -42,7 +42,14 @@ public class VectorImageFun extends RtFun {
 
     @Override
     protected @Nullable Object fun(@NonNull Object @NonNull [] values) {
-        Float[] vector = VectorExtract.getVector(VectorImageFun.NAME, (String) values[0], values[1]);
+        if (values.length < 3) {
+            throw new RuntimeException("vector load param error");
+        }
+        if (!(values[0] instanceof String) || !(values[1] instanceof String) || !(values[2] instanceof Boolean)) {
+            throw new RuntimeException("vector load param error");
+        }
+        Float[] vector = VectorExtract.getImgVector(VectorImageFun.NAME, (String) values[0],
+            values[1], (Boolean) values[2]);
         return Arrays.asList(vector);
     }
 }
