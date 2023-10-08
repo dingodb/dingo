@@ -82,6 +82,7 @@ public class IndexService {
         Object parameters,
         VectorContext context
     ) {
+        schemaName = schemaName.toUpperCase();
         IndexInfo indexInfo = Parameters.nonNull(getRouteTable(schemaName, indexName, false), "Index not found.");
 
         Operation.Fork fork = null;
@@ -128,7 +129,10 @@ public class IndexService {
                     .ifPresent(__ -> log.error(__.getMessage(), __))
                     .map(err -> {
                         if (err instanceof DingoClientException.InvalidRouteTableException) {
-                            IndexInfo newIndexInfo = getRouteTable(indexInfo.schemaName, indexInfo.indexName, true);
+                            IndexInfo newIndexInfo = getRouteTable(
+                                indexInfo.schemaName.toUpperCase(),
+                                indexInfo.indexName,
+                                true);
                             Operation.Fork newFork = operation.fork(context, newIndexInfo);
                             if (newFork == null) {
                                 return exec(newIndexInfo, operation, newFork, 0, vectorContext).orNull();
@@ -188,7 +192,7 @@ public class IndexService {
 
     public boolean dropIndex(String schema, String indexName) {
         MetaServiceClient metaService = getSubMetaService(schema);
-        routeTables.remove(schema + "." + indexName);
+        routeTables.remove(schema.toUpperCase() + "." + indexName);
         return metaService.dropIndex(indexName);
     }
 
@@ -198,7 +202,7 @@ public class IndexService {
     }
 
     public Index getIndex(String schema, String name, boolean forceRefresh) {
-        return Parameters.nonNull(getRouteTable(schema, name, forceRefresh), "Index not found.").index;
+        return Parameters.nonNull(getRouteTable(schema.toUpperCase(), name, forceRefresh), "Index not found.").index;
     }
 
     public List<Index> getIndexes(String schema) {
@@ -212,6 +216,7 @@ public class IndexService {
     }
 
     private MetaServiceClient getSubMetaService(String schemaName) {
+        schemaName = schemaName.toUpperCase();
         return Parameters.nonNull(rootMetaService.getSubMetaService(schemaName), "Schema not found: " + schemaName);
     }
 

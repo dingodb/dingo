@@ -83,18 +83,18 @@ public class DingoClient {
     }
 
     public DingoClient(String coordinatorSvr, Integer retryTimes) {
-        this(coordinatorSvr, "dingo", retryTimes);
+        this(coordinatorSvr, "DINGO", retryTimes);
     }
 
     public DingoClient(String coordinatorSvr, String schema, Integer retryTimes) {
         operationService = new OperationService(coordinatorSvr, retryTimes);
         indexService = new IndexService(coordinatorSvr, new AutoIncrementService(coordinatorSvr), retryTimes);
         indexOperationService = new IndexOperationService(coordinatorSvr, retryTimes);
-        this.schema = schema;
+        this.schema = schema.toUpperCase();
     }
 
     public DingoClient(String schema, OperationService operationService) {
-        this.schema = schema;
+        this.schema = schema.toUpperCase();
         this.operationService = operationService;
     }
 

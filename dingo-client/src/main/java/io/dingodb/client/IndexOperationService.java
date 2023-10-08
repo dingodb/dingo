@@ -97,7 +97,8 @@ public class IndexOperationService {
     }
 
     public boolean exec(String schemaName, String tableName, Operation operation, Object parameters) {
-        TableInfo tableInfo = Parameters.nonNull(getRouteTable(schemaName, tableName, false), "Table not found.");
+        TableInfo tableInfo = Parameters.nonNull(
+            getRouteTable(schemaName.toUpperCase(), tableName, false), "Table not found.");
 
         Parameter parameter = (Parameter) parameters;
         DingoCommonId regionId;
@@ -196,6 +197,7 @@ public class IndexOperationService {
     }
 
     private MetaServiceClient getSubMetaService(String schemaName) {
+        schemaName = schemaName.toUpperCase();
         return Parameters.nonNull(rootMetaService.getSubMetaService(schemaName), "Schema not found: " + schemaName);
     }
 

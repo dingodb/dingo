@@ -55,11 +55,6 @@ public final class Mapping {
         return new ComparableByteArray(bytes.getBytes());
     }
 
-
-    public static io.dingodb.server.executor.common.TableDefinition mapping(TableDefinition tableDefinition) {
-        return new io.dingodb.server.executor.common.TableDefinition(tableDefinition);
-    }
-
     public static TableDefinition mapping(Table table) {
         Properties properties = new Properties();
         Map<String, String> map = table.getProperties();
