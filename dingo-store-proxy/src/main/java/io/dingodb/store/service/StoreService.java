@@ -22,7 +22,6 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.converter.DingoConverter;
@@ -74,7 +73,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.stream.Collectors;
 
-import static io.dingodb.sdk.common.utils.ByteArrayUtils.POS;
 import static io.dingodb.sdk.common.utils.ByteArrayUtils.equal;
 import static io.dingodb.store.common.Mapping.mapping;
 import static java.util.Collections.singletonList;
@@ -257,6 +255,8 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 Boolean result = false;
                 if (index.getIndexParameter().getIndexType().equals(IndexParameter.IndexType.INDEX_TYPE_VECTOR)) {
                     Column primaryCol = index.getColumns().get(0);
+                    schema.setIsKey(true);
+                    schema.setAllowNull(false);
                     long id = Long.parseLong(String.valueOf(record[table.getColumnIndex(primaryCol.getName())]));
 
                     DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(0l, singletonList(schema));
@@ -311,6 +311,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 if (index.getIndexParameter().getIndexType().equals(IndexParameter.IndexType.INDEX_TYPE_VECTOR)) {
                     Column primaryKey = index.getColumns().get(0);
                     schema.setIsKey(true);
+                    schema.setAllowNull(false);
                     DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(0l, singletonList(schema));
 
                     long newLongId = Long.parseLong(

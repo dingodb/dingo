@@ -76,6 +76,7 @@ public class OperationService {
     }
 
     public <R> R exec(String schemaName, String tableName, Operation operation, Object parameters) {
+        schemaName = schemaName.toUpperCase();
         TableInfo tableInfo = Parameters.nonNull(getRouteTable(schemaName, tableName, false), "Table not found.");
 
         Operation.Fork fork;
@@ -121,7 +122,10 @@ public class OperationService {
                     .ifPresent(__ -> log.error(__.getMessage(), __))
                     .filter(DingoClientException.InvalidRouteTableException.class::isInstance)
                     .map(err -> {
-                        TableInfo newTableInfo = getRouteTable(tableInfo.schemaName, tableInfo.tableName, true);
+                        TableInfo newTableInfo = getRouteTable(
+                            tableInfo.schemaName.toUpperCase(),
+                            tableInfo.tableName,
+                            true);
                         Operation.Fork newFork = operation.fork(context, newTableInfo);
                         if (newFork == null) {
                             return exec(operation, newTableInfo, newFork, 0).orNull();
@@ -182,18 +186,19 @@ public class OperationService {
 
     public boolean dropTable(String schema, String tableName) {
         MetaServiceClient metaService = getSubMetaService(schema);
-        routeTables.remove(schema + "." + tableName);
+        routeTables.remove(schema.toUpperCase() + "." + tableName);
         return metaService.dropTable(tableName);
     }
 
     public boolean dropTables(String schema, List<String> tableNames) {
         MetaServiceClient metaService = getSubMetaService(schema);
-        tableNames.forEach(t -> routeTables.remove(schema + "." + t));
+        tableNames.forEach(t -> routeTables.remove(schema.toUpperCase() + "." + t));
         return metaService.dropTables(tableNames);
     }
 
     public Table getTableDefinition(String schemaName, String tableName) {
-        return Parameters.nonNull(getRouteTable(schemaName, tableName, true), "Table not found.").definition;
+        return Parameters.nonNull(
+            getRouteTable(schemaName.toUpperCase(), tableName, true), "Table not found.").definition;
     }
 
     /**
@@ -218,6 +223,7 @@ public class OperationService {
     }
 
     private MetaServiceClient getSubMetaService(String schemaName) {
+        schemaName = schemaName.toUpperCase();
         return Parameters.nonNull(rootMetaService.getSubMetaService(schemaName), "Schema not found: " + schemaName);
     }
 
