@@ -38,7 +38,7 @@ import java.util.NavigableMap;
 
 public abstract class StatsOperator {
     public static StoreService storeService = StoreService.getDefault();
-    public static MetaService metaService = MetaService.root().getSubMetaService("mysql");
+    public static MetaService metaService = MetaService.root().getSubMetaService("MYSQL");
 
     public static CommonId analyzeTaskTblId = metaService.getTableId("analyze_task");
     public static CommonId bucketsTblId = metaService.getTableId("table_buckets");

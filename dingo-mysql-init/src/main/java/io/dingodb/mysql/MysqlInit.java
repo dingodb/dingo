@@ -42,11 +42,14 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.stream.Collectors;
 
-public class MysqlInit {
+public final class MysqlInit {
 
     static MetaServiceClient rootMeta;
 
     static StoreServiceClient storeServiceClient;
+
+    static final String MYSQL = "MYSQL";
+    static final String INFORMATION_SCHEMA = "INFORMATION_SCHEMA";
 
     static final String USER = "USER";
     static final String DB = "DB";
@@ -64,22 +67,22 @@ public class MysqlInit {
         initMetaStore(coordinatorSvr);
         System.out.println("init meta store success");
         initUser(USER);
-        initDbPrivilege(DB);
-        initTablePrivilege(TABLES_PRIV);
+        initTableByTemplate(MYSQL, DB);
+        initTableByTemplate(MYSQL, TABLES_PRIV);
         initGlobalVariables(GLOBAL_VARIABLES);
-        initTableByTemplate("information_schema", "COLUMNS");
-        initTableByTemplate("information_schema", "PARTITIONS");
-        initTableByTemplate("information_schema", "EVENTS");
-        initTableByTemplate("information_schema", "TRIGGERS");
-        initTableByTemplate("information_schema", "STATISTICS");
-        initTableByTemplate("information_schema", "ROUTINES");
-        initTableByTemplate("information_schema", "KEY_COLUMN_USAGE");
-        initTableByTemplate("information_schema", "SCHEMATA");
-        initTableByTemplate("information_schema", "TABLES");
-        initTableByTemplate("mysql", "ANALYZE_TASK");
-        initTableByTemplate("mysql", "CM_SKETCH");
-        initTableByTemplate("mysql", "TABLE_STATS");
-        initTableByTemplate("mysql", "TABLE_BUCKETS");
+        initTableByTemplate(INFORMATION_SCHEMA, "COLUMNS");
+        initTableByTemplate(INFORMATION_SCHEMA, "PARTITIONS");
+        initTableByTemplate(INFORMATION_SCHEMA, "EVENTS");
+        initTableByTemplate(INFORMATION_SCHEMA, "TRIGGERS");
+        initTableByTemplate(INFORMATION_SCHEMA, "STATISTICS");
+        initTableByTemplate(INFORMATION_SCHEMA, "ROUTINES");
+        initTableByTemplate(INFORMATION_SCHEMA, "KEY_COLUMN_USAGE");
+        initTableByTemplate(INFORMATION_SCHEMA, "SCHEMATA");
+        initTableByTemplate(INFORMATION_SCHEMA, "TABLES");
+        initTableByTemplate(MYSQL, "ANALYZE_TASK");
+        initTableByTemplate(MYSQL, "CM_SKETCH");
+        initTableByTemplate(MYSQL, "TABLE_STATS");
+        initTableByTemplate(MYSQL, "TABLE_BUCKETS");
         close();
         // check
         initMetaStore(coordinatorSvr);
@@ -90,12 +93,13 @@ public class MysqlInit {
 
     public static void initUser(String tableName) throws IOException {
         TableDefinition tableDefinition = getTableDefinition(tableName);
-        MetaServiceClient mysqlMetaClient = rootMeta.getSubMetaService("mysql");
+        MetaServiceClient mysqlMetaClient = rootMeta.getSubMetaService(MYSQL);
         try {
             mysqlMetaClient.createTable(tableName, tableDefinition);
         } catch (Exception e) {
             e.printStackTrace();
         }
+        System.out.println("create user table success");
         DingoCommonId tableId = mysqlMetaClient.getTableId(tableName);
         Map<String, Object> userValuesMap = getUserObjectMap(tableName);
         Object[] userValues = userValuesMap.values().toArray();
@@ -119,31 +123,9 @@ public class MysqlInit {
         storeServiceClient = new StoreServiceClient(rootMeta);
     }
 
-    public static void initDbPrivilege(String tableName) throws IOException {
-        TableDefinition tableDefinition = getTableDefinition(tableName);
-        MetaServiceClient mysqlMetaClient = rootMeta.getSubMetaService("mysql");
-        try {
-            mysqlMetaClient.createTable(tableName, tableDefinition);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        System.out.println("init db privilege success");
-    }
-
-    public static void initTablePrivilege(String tableName) throws IOException {
-        TableDefinition tableDefinition = getTableDefinition(tableName);
-        MetaServiceClient mysqlMetaClient = rootMeta.getSubMetaService("mysql");
-        try {
-            mysqlMetaClient.createTable(tableName, tableDefinition);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        System.out.println("init table privilege success");
-    }
-
     public static void initGlobalVariables(String tableName) throws IOException {
         TableDefinition tableDefinition = getTableDefinition(tableName);
-        MetaServiceClient informationMetaClient = rootMeta.getSubMetaService("information_schema");
+        MetaServiceClient informationMetaClient = rootMeta.getSubMetaService(INFORMATION_SCHEMA);
         try {
             informationMetaClient.createTable(tableName, tableDefinition);
         } catch (Exception e) {
@@ -312,7 +294,7 @@ public class MysqlInit {
     }
 
     private static Map<String, Object> getUserObjectMap(String tableName) {
-        MetaServiceClient mysqlMetaClient = rootMeta.getSubMetaService("mysql");
+        MetaServiceClient mysqlMetaClient = rootMeta.getSubMetaService(MYSQL);
         Table table = mysqlMetaClient.getTableDefinition(tableName);
 
         List<Column> columnList = table.getColumns();
@@ -362,7 +344,7 @@ public class MysqlInit {
     }
 
     public static Integer check() {
-        MetaServiceClient mysqlMetaClient = rootMeta.getSubMetaService("mysql");
+        MetaServiceClient mysqlMetaClient = rootMeta.getSubMetaService("MYSQL");
         Map<String, Table> tableDefinitionMap  = mysqlMetaClient.getTableDefinitionsBySchema();
         boolean mysqlCheck = tableDefinitionMap.get(USER) != null && tableDefinitionMap.get(DB) != null
                 && tableDefinitionMap.get(TABLES_PRIV) != null;
@@ -392,7 +374,7 @@ public class MysqlInit {
 
         }
 
-        MetaServiceClient informationMetaClient = rootMeta.getSubMetaService("information_schema");
+        MetaServiceClient informationMetaClient = rootMeta.getSubMetaService(INFORMATION_SCHEMA);
         boolean informationSchemaCheck = informationMetaClient.getTableDefinitionsBySchema().get("GLOBAL_VARIABLES") != null;
         boolean check = mysqlCheck && informationSchemaCheck;
         return check ? 0 : 1;
