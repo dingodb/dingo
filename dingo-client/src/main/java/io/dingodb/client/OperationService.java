@@ -38,7 +38,6 @@ import io.dingodb.sdk.common.utils.Parameters;
 import io.dingodb.sdk.service.connector.MetaServiceConnector;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.sdk.service.store.StoreServiceClient;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -119,6 +118,7 @@ public class OperationService {
             .exceptionally(Optional::of)
             .thenAccept(e -> {
                 e.map(OperationUtils::getCause)
+                    .ifPresent(__ -> log.error(__.getMessage(), __))
                     .filter(DingoClientException.InvalidRouteTableException.class::isInstance)
                     .map(err -> {
                         TableInfo newTableInfo = getRouteTable(tableInfo.schemaName, tableInfo.tableName, true);
@@ -161,12 +161,6 @@ public class OperationService {
         MetaServiceClient metaService = getSubMetaService(schema);
         Optional.ifPresent(table.getPartition(), __ -> checkAndConvertRangePartition(table));
         return metaService.createTable(name, table);
-    }
-
-    public synchronized boolean createTables(String schema, @NonNull Table table, List<Table> indexes) {
-        MetaServiceClient metaService = getSubMetaService(schema);
-        Optional.ifPresent(table.getPartition(), __ -> checkAndConvertRangePartition(table));
-        return metaService.createTables(table, indexes);
     }
 
     private void checkAndConvertRangePartition(Table table) {

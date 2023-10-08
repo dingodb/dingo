@@ -144,6 +144,7 @@ public class IndexOperationService {
             .exceptionally(Optional::of)
             .thenAccept(e -> {
                 e.map(OperationUtils::getCause)
+                    .ifPresent(__ -> log.error(__.getMessage(), __))
                     .map(err -> {
                         exec.test(func.apply(operation));
                         return exec(storeInstance, parameter, operation, func, retry - 1).orNull();

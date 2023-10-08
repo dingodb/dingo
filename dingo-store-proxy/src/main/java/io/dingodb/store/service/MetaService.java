@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package io.dingodb.server.executor.service;
+package io.dingodb.store.service;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoTypeFactory;
@@ -33,8 +32,9 @@ import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.TableStatistic;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
-import io.dingodb.server.executor.Configuration;
-import io.dingodb.server.executor.common.Mapping;
+import io.dingodb.store.Configuration;
+import io.dingodb.store.common.Mapping;
+import io.dingodb.store.common.PartitionDetailDefinition;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
@@ -48,7 +48,7 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.CommonId.CommonType.SCHEMA;
-import static io.dingodb.server.executor.common.Mapping.mapping;
+import static io.dingodb.store.common.Mapping.mapping;
 
 public class MetaService implements io.dingodb.meta.MetaService {
 
@@ -126,8 +126,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
                              @NonNull List<TableDefinition> indexTableDefinitions) {
         List<Table> indexTables = indexTableDefinitions.stream().map(Mapping::mapping).collect(Collectors.toList());
         indexTables.forEach(__ -> {
-            io.dingodb.server.executor.common.TableDefinition table =
-                (io.dingodb.server.executor.common.TableDefinition) __;
+           io.dingodb.store.common.TableDefinition table =
+                (io.dingodb.store.common.TableDefinition) __;
             table.setProperties(__.getProperties());
             table.setName(tableDefinition.getName() + "." + __.getName());
         });
@@ -231,7 +231,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     public void addDistribution(String tableName, PartitionDetailDefinition partitionDetail) {
-        metaServiceClient.addDistribution(tableName, mapping(partitionDetail));
+        metaServiceClient.addDistribution(tableName, partitionDetail);
     }
 
     public RangeDistribution getRangeDistribution(CommonId tableId, CommonId distributionId) {
@@ -284,7 +284,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public TableStatistic getTableStatistic(@NonNull String tableName) {
-        return new io.dingodb.meta.TableStatistic() {
+        return new TableStatistic() {
 
             @Override
             public byte[] getMinKey() {
