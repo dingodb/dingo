@@ -32,7 +32,9 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Optional;
+import io.dingodb.meta.MetaService;
 import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.api.StoreService;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
 import io.dingodb.verify.service.UserServiceProvider;
 import lombok.extern.slf4j.Slf4j;
@@ -70,8 +72,8 @@ public class UserService implements io.dingodb.verify.service.UserService {
     public static final String dbPrivilegeTable = "DB";
     public static final String tablePrivilegeTable = "TABLES_PRIV";
 
-    private final MetaService metaService = MetaService.ROOT.getSubMetaService("mysql");
-    private final StoreService storeService = StoreService.DEFAULT_INSTANCE;
+    private final MetaService metaService = MetaService.root().getSubMetaService("mysql");
+    private final StoreService storeService = StoreService.getDefault();
 
     private final CommonId userTblId = metaService.getTableId(userTable);
     private final CommonId dbPrivTblId = metaService.getTableId(dbPrivilegeTable);

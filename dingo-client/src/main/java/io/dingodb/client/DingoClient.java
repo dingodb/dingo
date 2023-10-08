@@ -36,7 +36,6 @@ import io.dingodb.client.operation.impl.ScanCoprocessorOperation;
 import io.dingodb.client.operation.impl.ScanOperation;
 import io.dingodb.client.operation.impl.VectorAddOperation;
 import io.dingodb.client.operation.impl.VectorBatchQueryOperation;
-import io.dingodb.client.operation.impl.VectorCalcDistanceOperation;
 import io.dingodb.client.operation.impl.VectorCountOperation;
 import io.dingodb.client.operation.impl.VectorDeleteOperation;
 import io.dingodb.client.operation.impl.VectorGetIdOperation;
@@ -53,8 +52,6 @@ import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.Parameters;
 import io.dingodb.sdk.common.vector.Vector;
-import io.dingodb.sdk.common.vector.VectorCalcDistance;
-import io.dingodb.sdk.common.vector.VectorDistanceRes;
 import io.dingodb.sdk.common.vector.VectorIndexMetrics;
 import io.dingodb.sdk.common.vector.VectorScanQuery;
 import io.dingodb.sdk.service.meta.AutoIncrementService;
@@ -112,10 +109,6 @@ public class DingoClient {
 
     public boolean createTable(String schema, Table table) {
         return operationService.createTable(schema, table.getName(), table);
-    }
-
-    public boolean createTables(String schema, Table table, List<Table> indexes) {
-        return operationService.createTables(schema, table, indexes);
     }
 
     public boolean dropTable(String tableName) {

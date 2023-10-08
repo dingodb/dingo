@@ -28,8 +28,8 @@ import io.dingodb.net.MysqlNetService;
 import io.dingodb.net.MysqlNetServiceProvider;
 import io.dingodb.net.NetService;
 import io.dingodb.scheduler.SchedulerService;
-import io.dingodb.server.executor.service.AutoIncrementService;
 import io.dingodb.server.executor.service.ClusterService;
+import io.dingodb.store.service.AutoIncrementService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ServiceLoader;

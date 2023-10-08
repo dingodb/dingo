@@ -27,17 +27,16 @@ import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.Range;
 import io.dingodb.sdk.common.RangeWithOptions;
 import io.dingodb.sdk.common.SDKCommonId;
-import io.dingodb.sdk.common.index.VectorIndexParameter;
 import io.dingodb.sdk.common.partition.Partition;
 import io.dingodb.sdk.common.partition.PartitionDetail;
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
-import io.dingodb.sdk.common.vector.Vector;
-import io.dingodb.sdk.common.vector.VectorCalcDistance;
 import io.dingodb.store.api.StoreInstance;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 public final class Mapping {
@@ -59,6 +58,12 @@ public final class Mapping {
     }
 
     public static TableDefinition mapping(Table table) {
+        Properties properties = new Properties();
+        Map<String, String> map = table.getProperties();
+        if (map != null) {
+            properties.putAll(map);
+        }
+
         return new TableDefinition(
             table.getName(),
             table.getColumns().stream().map(Mapping::mapping).collect(Collectors.toList()),
@@ -67,7 +72,7 @@ public final class Mapping {
             table.getTtl(),
             mapping(table.getPartition()),
             table.getEngine(),
-            null,
+            properties,
             table.getAutoIncrement(),
             table.getReplica(),
             table.getCreateSql());
@@ -85,6 +90,25 @@ public final class Mapping {
             partition.getFuncName(),
             partition.getCols(),
             partition.getDetails().stream().map(Mapping::mapping).collect(Collectors.toList()));
+    }
+
+    public static RangeDistribution mapping(
+        io.dingodb.sdk.common.table.RangeDistribution rangeDistribution,
+        KeyValueCodec codec, boolean isOriginalKey
+    ) {
+        try {
+            byte[] startKey = rangeDistribution.getRange().getStartKey();
+            byte[] endKey = rangeDistribution.getRange().getEndKey();
+            return RangeDistribution.builder()
+                .id(mapping(rangeDistribution.getId()))
+                .startKey(startKey)
+                .endKey(endKey)
+                .start(codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(startKey, startKey.length) : startKey))
+                .end(codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(endKey, endKey.length) : endKey))
+                .build();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static io.dingodb.common.partition.PartitionDetailDefinition mapping(PartitionDetail partitionDetail) {

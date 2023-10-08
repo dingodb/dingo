@@ -125,6 +125,7 @@ public class IndexService {
             .exceptionally(Optional::of)
             .thenAccept(e -> {
                 e.map(OperationUtils::getCause)
+                    .ifPresent(__ -> log.error(__.getMessage(), __))
                     .map(err -> {
                         if (err instanceof DingoClientException.InvalidRouteTableException) {
                             IndexInfo newIndexInfo = getRouteTable(indexInfo.schemaName, indexInfo.indexName, true);
