@@ -28,11 +28,19 @@ public class VectorExtract {
     private static final RestfulConnection connection = new RestfulConnection();
     private static final Map<String, RestfulRequest> vectorInterface = new HashMap<>();
 
+    private static final String VECTOR_IMG_URL = "http://host:port/img2vec";
+
+    private static final String VECTOR_TXT_URL = "http://host:port/text2vec";
+
+    private static final String VECTOR_RESTFUL_METHOD = "PUT";
+
     static {
+        // restful url is temp constant
+        // use to demonstrate
         vectorInterface.put(VectorImageFun.NAME,
-            new RestfulRequest("http://host:port/img2vec", null, "PUT", ""));
+            new RestfulRequest(VECTOR_IMG_URL, null, VECTOR_RESTFUL_METHOD, ""));
         vectorInterface.put(VectorTextFun.NAME,
-            new RestfulRequest("http://host:port/text2vec", null, "PUT", ""));
+            new RestfulRequest(VECTOR_TXT_URL, null, VECTOR_RESTFUL_METHOD, ""));
     }
 
     public static Float[] getTxtVector(String funName, String host, Object param) {

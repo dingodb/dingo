@@ -71,6 +71,9 @@ public class ToolService implements io.dingodb.tool.api.ToolService {
     public static VectorCalcDistance mapping(io.dingodb.common.vector.VectorCalcDistance vectorCalcDistance) {
         VectorCalcDistance.AlgorithmType algorithmType;
         switch (vectorCalcDistance.getAlgorithmType().toUpperCase()) {
+            case "HNSW":
+                algorithmType = VectorCalcDistance.AlgorithmType.ALGORITHM_HNSWLIB;
+                break;
             case "FLAT":
             default:
                 algorithmType = VectorCalcDistance.AlgorithmType.ALGORITHM_FAISS;

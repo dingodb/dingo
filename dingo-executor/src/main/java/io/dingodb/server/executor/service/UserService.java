@@ -72,7 +72,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
     public static final String dbPrivilegeTable = "DB";
     public static final String tablePrivilegeTable = "TABLES_PRIV";
 
-    private final MetaService metaService = MetaService.root().getSubMetaService("mysql");
+    private final MetaService metaService = MetaService.root().getSubMetaService("MYSQL");
     private final StoreService storeService = StoreService.getDefault();
 
     private final CommonId userTblId = metaService.getTableId(userTable);
