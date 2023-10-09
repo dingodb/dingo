@@ -51,6 +51,9 @@ public class DingoSchema extends AbstractSchema {
     public boolean dropTable(@NonNull String tableName) {
         // Get all index table commonIds
         CommonId tableId = metaService.getTableId(tableName);
+        if (tableId == null) {
+            return false;
+        }
         List<CommonId> tableIds = Stream
             .concat(Stream.of(tableId), metaService.getTableIndexDefinitions(tableId).keySet().stream())
             .collect(Collectors.toList());
