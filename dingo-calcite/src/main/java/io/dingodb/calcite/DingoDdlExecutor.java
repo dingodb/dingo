@@ -472,10 +472,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         assert tableName != null;
         existed = schema.dropTable(tableName);
         if (!existed && !drop.ifExists) {
-            throw SqlUtil.newContextException(
-                drop.name.getParserPosition(),
-                RESOURCE.tableNotFound(drop.name.toString())
-            );
+            String schemaName = schema.getMetaService().name();
+            throw DINGO_RESOURCE.unknownTable(schemaName + "." + tableName).ex();
         }
 
         env.getTableIdMap().computeIfPresent(schema.id(), (k, v) -> {
