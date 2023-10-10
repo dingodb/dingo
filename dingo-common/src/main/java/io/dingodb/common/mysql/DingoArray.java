@@ -21,7 +21,10 @@ import org.apache.commons.lang3.StringUtils;
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -32,12 +35,15 @@ public class DingoArray implements Array {
 
     private Calendar calendar;
 
-    public DingoArray(List<Object> list, Calendar calendar) {
+    private ResultSet resultSet;
+
+    public DingoArray(List<Object> list, Calendar calendar, ResultSet resultSet) {
         if (calendar != null) {
             this.list = getDateByTimezone(list, calendar.getTimeZone());
         } else {
             this.list = list;
         }
+        this.resultSet = resultSet;
         this.calendar = calendar;
     }
 
@@ -73,7 +79,7 @@ public class DingoArray implements Array {
 
     @Override
     public ResultSet getResultSet() throws SQLException {
-        return null;
+        return resultSet;
     }
 
     @Override

@@ -17,7 +17,7 @@
 package org.apache.calcite.avatica.util;
 
 import io.dingodb.common.mysql.DingoArray;
-import lombok.AllArgsConstructor;
+import org.apache.calcite.avatica.ColumnMetaData;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -29,14 +29,18 @@ import java.sql.Clob;
 import java.sql.Date;
 import java.sql.NClob;
 import java.sql.Ref;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.sql.Struct;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
+import java.util.stream.Collectors;
 
 public class DingoAccessor implements Cursor.Accessor {
 
@@ -168,7 +172,28 @@ public class DingoAccessor implements Cursor.Accessor {
             return null;
         }
         // If it's not an Array already, assume it is a List.
-        return new DingoArray((List<Object>) o, calendar);
+        List<Object> list = (List<Object>) o;
+        ColumnMetaData.ScalarType arrayElementType
+            = ColumnMetaData.scalar(Types.INTEGER, "INTEGER", ColumnMetaData.Rep.PRIMITIVE_INT);
+        if (list.size() > 0) {
+            Object item = list.get(0);
+            if (item instanceof Float) {
+                list = list.stream().map(e -> new BigDecimal(Float.toString((Float)item))).collect(Collectors.toList());
+                arrayElementType
+                    = ColumnMetaData.scalar(Types.FLOAT, "FLOAT", ColumnMetaData.Rep.PRIMITIVE_FLOAT);
+            } else if (item instanceof Time) {
+                arrayElementType
+                    = ColumnMetaData.scalar(Types.TIME, "TIME", ColumnMetaData.Rep.JAVA_SQL_TIME);
+            } else if (item instanceof Date) {
+                arrayElementType
+                    = ColumnMetaData.scalar(Types.DATE, "DATE", ColumnMetaData.Rep.JAVA_SQL_DATE);
+            }
+        }
+
+        TimeZone timeZone = TimeZone.getDefault();
+        ArrayFactoryImpl factory = new ArrayFactoryImpl(timeZone);
+        ResultSet resultSet = factory.create(arrayElementType, list);
+        return new DingoArray(list, calendar, resultSet);
     }
 
     @Override

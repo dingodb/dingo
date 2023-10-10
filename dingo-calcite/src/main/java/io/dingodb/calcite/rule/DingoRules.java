@@ -85,6 +85,9 @@ public final class DingoRules {
     public static final DingoVectorJoinRule DINGO_VECTOR_JOIN_RULE
         = DingoVectorJoinRule.Config.DEFAULT.toRule();
 
+    public static final DingoModifyIndexRule DINGO_MODIFY_INDEX_RULE
+        = DingoModifyIndexRule.Config.DEFAULT.toRule();
+
     private static final List<RelOptRule> rules = ImmutableList.of(
         CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN,
         // CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES,
@@ -119,7 +122,8 @@ public final class DingoRules {
         LOGICAL_DINGO_VALUE_RULE,
         DINGO_FUNCTION_SCAN_RULE,
         DINGO_VECTOR_INDEX_RULE,
-        DINGO_VECTOR_JOIN_RULE
+        DINGO_VECTOR_JOIN_RULE,
+        DINGO_MODIFY_INDEX_RULE
     );
 
     private DingoRules() {

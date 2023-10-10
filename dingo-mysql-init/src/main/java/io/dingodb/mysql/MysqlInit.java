@@ -19,6 +19,7 @@ package io.dingodb.mysql;
 import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Maps;
 import io.dingodb.common.Common;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.KeyValue;
 import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
@@ -57,6 +58,11 @@ public final class MysqlInit {
 
     static final String GLOBAL_VARIABLES = "GLOBAL_VARIABLES";
 
+    private static int exceptionRetries = 0;
+
+    private static final Long retryInterval = 6000L;
+    private static final int maxRetries = 20;
+
 
     public static void main(String[] args) throws IOException {
         if (args.length < 1) {
@@ -94,27 +100,52 @@ public final class MysqlInit {
     public static void initUser(String tableName) throws IOException {
         TableDefinition tableDefinition = getTableDefinition(tableName);
         MetaServiceClient mysqlMetaClient = rootMeta.getSubMetaService(MYSQL);
+        DingoCommonId tableId = mysqlMetaClient.getTableId(tableName);
         try {
-            mysqlMetaClient.createTable(tableName, tableDefinition);
+            if (tableId == null) {
+                mysqlMetaClient.createTable(tableName, tableDefinition);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
         System.out.println("create user table success");
-        DingoCommonId tableId = mysqlMetaClient.getTableId(tableName);
-        Map<String, Object> userValuesMap = getUserObjectMap(tableName);
-        Object[] userValues = userValuesMap.values().toArray();
-        KeyValueCodec codec = DingoKeyValueCodec.of(tableId.entityId(), tableDefinition);
-        KeyValue keyValue = codec.encode(userValues);
+        try {
+            Map<String, Object> userValuesMap = getUserObjectMap(tableName);
+            Object[] userValues = userValuesMap.values().toArray();
+            KeyValueCodec codec = DingoKeyValueCodec.of(tableId.entityId(), tableDefinition);
+            KeyValue keyValue = codec.encode(userValues);
 
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
+            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
                 = mysqlMetaClient.getRangeDistribution(tableId);
-        if (rangeDistribution == null) {
-            return;
+            if (rangeDistribution == null) {
+                return;
+            }
+            DingoCommonId regionId = rangeDistribution.firstEntry().getValue().getId();
+            keyValue.setKey(codec.resetPrefix(keyValue.getKey(), regionId.parentId()));
+            storeServiceClient.kvPut(tableId, regionId, keyValue);
+        } catch (Exception e) {
+            if (e instanceof DingoClientException) {
+                if (!continueRetry()) {
+                   return;
+                }
+                initUser(tableName);
+            }
         }
-        DingoCommonId regionId = rangeDistribution.firstEntry().getValue().getId();
-        keyValue.setKey(codec.resetPrefix(keyValue.getKey(), regionId.parentId()));
-        storeServiceClient.kvPut(tableId, regionId, keyValue);
+        exceptionRetries = 0;
         System.out.println("init user success");
+    }
+
+    private static boolean continueRetry() {
+        if (exceptionRetries > maxRetries) {
+            return false;
+        }
+        try {
+            Thread.sleep(retryInterval);
+        } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
+        exceptionRetries ++;
+        return true;
     }
 
     public static void initMetaStore(String coordinatorSvr) {
@@ -126,29 +157,41 @@ public final class MysqlInit {
     public static void initGlobalVariables(String tableName) throws IOException {
         TableDefinition tableDefinition = getTableDefinition(tableName);
         MetaServiceClient informationMetaClient = rootMeta.getSubMetaService(INFORMATION_SCHEMA);
+        DingoCommonId tableId = informationMetaClient.getTableId(tableName);
         try {
-            informationMetaClient.createTable(tableName, tableDefinition);
+            if (tableId == null) {
+                informationMetaClient.createTable(tableName, tableDefinition);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        DingoCommonId tableId = informationMetaClient.getTableId(tableName);
 
-        KeyValueCodec codec = DingoKeyValueCodec.of(tableId.entityId(), tableDefinition);
-        List<Object[]> values = initGlobalVariables();
+        try {
+            KeyValueCodec codec = DingoKeyValueCodec.of(tableId.entityId(), tableDefinition);
+            List<Object[]> values = initGlobalVariables();
 
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
-            = informationMetaClient.getRangeDistribution(tableId);
-        if (rangeDistribution == null) {
-            return;
+            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
+                = informationMetaClient.getRangeDistribution(tableId);
+            if (rangeDistribution == null) {
+                return;
+            }
+            DingoCommonId regionId = rangeDistribution.firstEntry().getValue().getId();
+
+            List<KeyValue> keyValueList = values.stream()
+                .map(NoBreakFunctions.wrap(codec::encode, NoBreakFunctions.throwException()))
+                .peek(__ -> __.setKey(codec.resetPrefix(__.getKey(), regionId.parentId())))
+                .collect(Collectors.toList());
+
+            storeServiceClient.kvBatchPut(tableId, regionId, keyValueList);
+        } catch (Exception e) {
+            if (e instanceof DingoClientException) {
+                if (!continueRetry()) {
+                    return;
+                }
+                initGlobalVariables(tableName);
+            }
         }
-        DingoCommonId regionId = rangeDistribution.firstEntry().getValue().getId();
-
-        List<KeyValue> keyValueList = values.stream()
-            .map(NoBreakFunctions.wrap(codec::encode, NoBreakFunctions.throwException()))
-            .peek(__ -> __.setKey(codec.resetPrefix(__.getKey(), regionId.parentId())))
-            .collect(Collectors.toList());
-
-        storeServiceClient.kvBatchPut(tableId, regionId, keyValueList);
+        exceptionRetries = 0;
         System.out.println("init global variables success");
     }
 

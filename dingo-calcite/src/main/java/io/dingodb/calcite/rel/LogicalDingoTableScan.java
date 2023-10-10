@@ -24,6 +24,7 @@ import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -67,6 +68,11 @@ public class LogicalDingoTableScan extends TableScan {
     protected final ImmutableList<ImmutableBitSet> groupSets;
     @Getter
     protected final boolean pushDown;
+
+    @Getter
+    @Setter
+    // temporary constant
+    protected boolean forUpdate = false;
 
     public LogicalDingoTableScan(
         RelOptCluster cluster,

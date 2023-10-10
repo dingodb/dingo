@@ -71,7 +71,9 @@ import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.Connection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -80,6 +82,11 @@ import static io.dingodb.calcite.rule.DingoRules.DINGO_AGGREGATE_SCAN_RULE;
 // Each sql parsing requires a new instance.
 @Slf4j
 public class DingoParser {
+    private static Map<String, String> sensitiveKey = new HashMap();
+    static {
+        sensitiveKey.put(".\"USER\"", ".USER");
+    }
+
     public static SqlParser.Config PARSER_CONFIG = SqlParser.config()
         .withLex(Lex.MYSQL)
         .withCaseSensitive(false)
@@ -143,6 +150,7 @@ public class DingoParser {
 
     @SuppressWarnings("MethodMayBeStatic")
     public SqlNode parse(String sql) throws SqlParseException {
+        sql = processKeyWords(sql);
         SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
         SqlNode sqlNode = parser.parseQuery();
         if (log.isDebugEnabled()) {
@@ -240,5 +248,14 @@ public class DingoParser {
 
     public Operation convertToOperation(SqlNode sqlNode, Connection connection, DingoParserContext context) {
         return SqlToOperationConverter.convert(sqlNode, connection, context).get();
+    }
+
+    private String processKeyWords(String sql) {
+        for (Map.Entry<String, String> entry : sensitiveKey.entrySet()) {
+            if (sql.contains(entry.getKey())) {
+                sql = sql.replace(entry.getKey(), entry.getValue());
+            }
+        }
+        return sql;
     }
 }
