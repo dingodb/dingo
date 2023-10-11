@@ -20,5 +20,3 @@ security:
         storePass: dingodb
         alias: dingodb
         issuer: dingo
-store:
-    coordinators: coordinator:12321
