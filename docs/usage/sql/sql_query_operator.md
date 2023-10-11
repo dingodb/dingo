@@ -23,6 +23,21 @@ dingo> select * from TEST;
 +----+-------+--------+
 ```
 
+### SELECT vector
+
+```sql
+select * from vector(table_name, vector_index,m,n,y); 
+```
+- Paramter
+
+ | paramter     | description                                                                |
+|--------------|----------------------------------------------------------------------------|
+ | table_name   | Table‘s name.                                                              |
+| vector_index | Vector index.                                                              |
+| m            | The vector to be queried.                                                  |
+ | n            | Refers to the number of rows to be queried.                                |
+| y            | Refers to additional query parameters, such as efSearch in HNSW algorithm. |
+
 ### SELECT clause
 
 ```sql
@@ -102,7 +117,7 @@ dingo> select distinct amount from Test;
 ```
 ### LIKE
 
-```sql
+```
 dingo> SELECT * FROM TEST;
 +----+-------+-----+--------+----------+-----------------------+
 | ID | NAME  | AGE | AMOUNT |  CLASS   |     BIR               |

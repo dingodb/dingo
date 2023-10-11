@@ -2,7 +2,7 @@
 
 ## Introducation
 
-DingoDB is hybird Serving & Analytical Processing (HSAP) Database. In order to be more faster, it presents a Java API which is comprehensive and powerful to do operations on the database, such as DDL or DML operation.
+DingoDB is a distributed real-time multi-modal database. In order to be more faster, it presents a Java API which is comprehensive and powerful to do operations on the database, such as DDL or DML operation.
 
 ## Operation using DingoClient
 
@@ -10,11 +10,11 @@ DingoDB is hybird Serving & Analytical Processing (HSAP) Database. In order to b
 
 `dingo-sdk` artifactory can be download from maven central using pom directly.
 
-```java
+```xml
 <dependency>
     <groupId>io.dingodb</groupId>
     <artifactId>dingo-client</artifactId>
-    <version>0.6.0-SNAPSHOT</version>
+    <version>0.7.0</version>
 </dependency>
 ```
 

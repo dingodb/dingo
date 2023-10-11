@@ -14,5 +14,6 @@ SQL
    sql_date_function.md
    sql_aggregate_function.md
    sql_join_function.md
+   sql_vector_function.md
    sql_code_and_state.md
    mysql_protocol.md

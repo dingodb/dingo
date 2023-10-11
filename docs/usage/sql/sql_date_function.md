@@ -277,7 +277,8 @@ Date_Format(date,format)
 
 - Return Type
 
-```Return the processed result according to the date format specified by Format.
+```
+Return the processed result according to the date format specified by Format.
 ```
 
 - Examples

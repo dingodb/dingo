@@ -41,7 +41,7 @@ Using Key/Value memory storage, since Key/Value is a binary byte array, it is no
 *StoreMetaManager：*Manage all metadata of store, including StoreServerMeta and StoreRegionMeta.
 ## 4.Implementation process
 
-- 创建Table/Region
+- Create Table/Region
 ![Create Table](../../images/store_createTable.png)
 1. Verify that partitions can be created.
     * epoch==0&&state=NEW && NotExist(region)

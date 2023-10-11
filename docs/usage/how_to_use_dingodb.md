@@ -22,7 +22,7 @@ The usage about SQL can be reference to [Play with DingoDB using SQL](./play_wit
 ```shell
    ./bin/sqlline.sh host root
 ```
-![DingoDB Sqlline](../images/dingoDB_sqlline.png)
+![DingoDB Sqlline](../images/dingo_sqlline.png)
 
 * MySQL
 
@@ -34,4 +34,10 @@ mysql -h ip -P 3307 -u root -p ******
 
 ## Using Key-Value SDK
 
-DingoDB is hybird Serving & Analytical Processing (HSAP) Database. In order to be more faster, it presents a Java API which is comprehensive and powerful to do operations on the database, such as DDL or DML operation. The detail about the SDK client can be found in [Play with dingo using SDK](./play_with_dingo_using_dingoclient.md).
+DingoDB is a distributed real-time multi-modal database. It combines the features of a data lake and a vector database. It can store any type of data (key-value, PDF, audio, video, etc) with data of any size.Using it, you can build your Vector Ocean (The Next Generation data architecture following data warehouse and data lake initiated by DataCanvas) and analyze structured and unstructured data with extremely low latency.
+* Java SDK
+
+  The detail about the SDK client can be found in [Play with dingo using Java SDK](./play_with_dingo_using_dingoclient.md).
+* Python SDK
+
+  The detail about the SDK client can be found in [Play with dingo using Python SDK](./play_with_dingo_using_Langchain.md).
