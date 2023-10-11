@@ -8,6 +8,7 @@ Design
    coordinator
    store
    executor
+   vector_index
    Raft
    network
    expression

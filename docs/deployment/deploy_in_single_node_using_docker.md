@@ -26,45 +26,17 @@ There are many types of roles in the cluster mode of DingoDB, such as coordinato
 ## Component list and port usage
 | Component | Version | Port                                                                                             | Remarks                                         |
 |-----------|---------|--------------------------------------------------------------------------------------------------|-------------------------------------------------|
-| DingoDB   | 0.6.0   | raft:22101-22103/20101-20103     <br/>server:22001-22003/20001-20003     <br/>executor:3307/8765 | Real-time analytics database                    |
+| DingoDB   | 0.7.0   | raft:22101-22103/20101-20103     <br/>server:22001-22003/20001-20003     <br/>executor:3307/8765 | Real-time analytics database                    |
 
 ## Installation Notes
 
-### 1. Pull container
+### 1.Environment Setup
+#### (1) Environment Description
+Currently, docker-compose startup is only supported on Linux environments. Windows and macOS do not support the host network mode of Docker.
 
-```shell
-docker pull dingodatabase/dingo-store:latest
-```
-### 2. Starting a container based on Docker Compose
-
-#### (1) Pull the corresponding Docker Compose configuration
-
-```shell
-# Mode one
-curl https://raw.githubusercontent.com/dingodb/dingo-store/main/docker/docker-compose.yml -o docker-compose.yml
- 
-# Mode two
-git clone https://github.com/dingodb/dingo-store.git
-cd dingo-store/docker
-```
-#### (2) Deploy dingo-store and executor
- * Pull the corresponding docker-compose configuration.
-```shell
-# Mode One
-curl https://raw.githubusercontent.com/dingodb/dingo-deploy/main/container/docker-compose/docker-compose.yml -o docker-compose.yml
- 
-# Mode Two
-git clone https://github.com/dingodb/dingo-deploy.git
-cd  dingo-deploy/container/docker-compose
-```
-
-#### (3) Start the corresponding container.
-
-```shell
-#  Change to your IP address.
-DINGO_HOST_IP=127.0.0.1 docker-compose -f ./docker-compose.yml up -d
- 
-#Note: Check your docker-compose version, corresponding to the following relationship, modify docker-compose.yml version appropriately
+You need to configure the git, Docker, and docker-compose environments in advance.
+```text
+ # Note: Check your docker-compose version and correspondingly modify the 'version' field in the downloaded configuration file 'docker-compose.yml' as follows:
   docker-compose.yml version| Docker Engine version| Docker Compose version
   2.4；                       17.12.0+;              1.21.0+
   2.3；                       17.06.0+;              1.16.0+
@@ -72,169 +44,285 @@ DINGO_HOST_IP=127.0.0.1 docker-compose -f ./docker-compose.yml up -d
   2.1；                       1.12.0+;               1.9.0+
   2.0；                       1.10.0+ ;              1.6.0+
 ```
-### 3. View the status of cluster
+
+### 1.2 Pull container
 
 ```shell
-# View the status of container
-docker ps
-"""
-CONTAINER ID   IMAGE                              COMMAND                  CREATED         STATUS         PORTS                                       NAMES
-800b7b04411f   dingodatabase/dingo-store:latest   "/opt/dingo-store/sc…"   5 seconds ago   Up 4 seconds                                               store3
-b2beb3c01af6   dingodatabase/dingo-store:latest   "/opt/dingo-store/sc…"   5 seconds ago   Up 4 seconds                                               store1
-4e88fdfdacb5   dingodatabase/dingo-store:latest   "/opt/dingo-store/sc…"   5 seconds ago   Up 4 seconds                                               store2
-f1e6b8249fb1   dingodatabase/dingo-store:latest   "/opt/dingo-store/sc…"   5 seconds ago   Up 5 seconds                                               coordinator2
-fd5a4bb985ce   dingodatabase/dingo-store:latest   "/opt/dingo-store/sc…"   5 seconds ago   Up 5 seconds                                               coordinator3
-70e29cbfed78   dingodatabase/dingo-store:latest   "/opt/dingo-store/sc…"   5 seconds ago   Up 5 seconds                                               coordinator1
-"""
+docker pull dingodatabase/dingo-store:latest
+docker pull dingodatabase/dingo:latest
+```
+### 2. Starting a container based on Docker Compose
+
+#### (1) Pull the corresponding Docker Compose configuration
+
+```shell
+# Method one
+curl https://raw.githubusercontent.com/dingodb/dingo-store/main/docker/docker-compose.yml -o docker-compose.yml
  
-# Enter the container
+# Method two
+git clone https://github.com/dingodb/dingo-store.git
+cd dingo-store/docker
+```
+#### (2) Configuration file description
+The docker-compose file includes 3 coordinators, 3 stores, 3 indexes, 1 executor, and 1 web. You can modify the file to start only a subset of these nodes or add more nodes based on your actual needs.
+
+The coordinators, stores, and indexes use the host network mode, while the executor and web use the bridge network mode.
+
+#### (3) Start the corresponding containers
+```shell
+#  Replace with your own IP address (do not use 127.0.0.1 as web and executor use the bridge network and 127.0.0.1 does not point to the host)
+# If the docker-compose.yml file is in the current directory and has the same name, you do not need to use the -f parameter.
+DINGO_HOST_IP=x.x.x.x docker-compose -f ./docker-compose.yml up -d
+ 
+# Stop and remove the containers.
+docker-compose -f ./docker-compose.yml down
+```
+
+### 3. View the status of cluster
+
+#### (1) Check the status of the containers
+To check if all 11 containers specified in the docker-compose.yml configuration file are in an "Up" state.
+```shell
+[root@dingo221 ~]# docker ps
+CONTAINER ID   IMAGE                                      COMMAND                  CREATED        STATUS        PORTS                                                                                      NAMES
+0bde306f4c2e   dingodatabase/dingo-store:latest           "/opt/dingo-store/sc…"   45 hours ago   Up 45 hours                                                                                              store3
+fa0d18e2d0fe   dingodatabase/dingo-store:latest           "/opt/dingo-store/sc…"   45 hours ago   Up 45 hours                                                                                              store2
+45ce67bc688a   dingodatabase/dingo-store:latest           "/opt/dingo-store/sc…"   45 hours ago   Up 45 hours                                                                                              index3
+3631bfea894c   dingodatabase/dingo-store:latest           "/opt/dingo-store/sc…"   45 hours ago   Up 45 hours                                                                                              index2
+92cf6df0e87d   dingodatabase/dingo-store:latest           "/opt/dingo-store/sc…"   45 hours ago   Up 45 hours                                                                                              store1
+9775c834ee2b   dingodatabase/dingo-store:latest           "/opt/dingo-store/sc…"   45 hours ago   Up 45 hours                                                                                              index1
+3439f679c211   dingodatabase/dingo-store:latest           "/opt/dingo-store/sc…"   45 hours ago   Up 45 hours                                                                                              coordinator1
+c927d17f848f   dingodatabase/dingo:latest                 "/opt/dingo/bin/star…"   45 hours ago   Up 45 hours   0.0.0.0:9999->9999/tcp, :::9999->9999/tcp, 0.0.0.0:13000->13000/tcp, :::13000->13000/tcp   web
+72381a6822ef   dingodatabase/dingo-store:latest           "/opt/dingo-store/sc…"   45 hours ago   Up 45 hours                                                                                              coordinator2
+1581e4b35d14   dingodatabase/dingo:latest                 "/opt/dingo/bin/star…"   45 hours ago   Up 45 hours   0.0.0.0:3307->3307/tcp, :::3307->3307/tcp, 0.0.0.0:8765->8765/tcp, :::8765->8765/tcp       executor
+18f8f13b7fab   dingodatabase/dingo-store:latest           "/opt/dingo-store/sc…"   45 hours ago   Up 45 hours                                                                                              coordinator3
+```
+#### (2) View the state of dingo-store(coordinator/store/index)
+In the new version, all the dingodb_client_coordinator instances have been merged into dingodb_client.
+```shell
+# To enter a container
 docker exec -it coordinator1 bash
+cd build/bin/
  
-# View the coordinator status （ Replace the IP address of your host machine with this one）.
-cd build/bin
-./dingodb_client_coordinator --method=GetCoordinatorMap --req_num=1 --coordinator-addr=172.26.0.2:22001  
-I0406 10:01:54.634954   178 coordinator_client_function_coor.cc:72] leader_location: 172.26.0.2:22001
-I0406 10:01:54.635211   171 coordinator_client_function_coor.cc:213] Received response get_coordinator_map=0 request_attachment=0 response_attachment=0 latency=189
-I0406 10:01:54.635224   171 coordinator_client_function_coor.cc:217] leader_location 
-{
-  host: "172.26.0.2"
-  port: 22001
+# View the state of coordinator
+[root@coordinator1 bin]#  ./dingodb_client --method=GetCoordinatorMap
+E20230928 11:06:15.231629   186 dingodb_client.cc:804] [main] coordinator url is empty, try to use file://./coor_list
+I20230928 11:06:15.232175   186 client_interation.cc:42] [Init] Init channel 172.30.14.221:22001
+I20230928 11:06:15.244812   186 client_interation.cc:42] [Init] Init channel 172.30.14.221:22002
+I20230928 11:06:15.244900   186 client_interation.cc:42] [Init] Init channel 172.30.14.221:22003
+I20230928 11:06:15.245754   197 naming_service_thread.cpp:203] brpc::policy::FileNamingService("./coor_list"): added 3
+I20230928 11:06:15.246028   186 coordinator_interaction.cc:65] [InitByNameService] Init channel by service_name file://./coor_list service_type=0
+I20230928 11:06:15.246181   186 coordinator_interaction.cc:65] [InitByNameService] Init channel by service_name file://./coor_list service_type=1
+I20230928 11:06:15.246259   186 coordinator_interaction.cc:65] [InitByNameService] Init channel by service_name file://./coor_list service_type=3
+I20230928 11:06:15.256951   186 coordinator_interaction.h:217] [SendRequestByService] name_service_channel_ connect with meta server finished. response errcode: 0, leader_addr: 172.30.14.221:22003
+I20230928 11:06:15.257054   186 coordinator_client_function_coor.cc:514] [SendGetCoordinatorMap] SendRequest status=OK
+I20230928 11:06:15.257094   186 coordinator_client_function_coor.cc:515] [SendGetCoordinatorMap] leader_location {
+  host: "172.30.14.221"
+  port: 22002
 }
-coordinator_locations {
-  host: "172.26.0.2"
-  port: 22001
+auto_increment_leader_location {
+  host: "172.30.14.221"
+  port: 22002
 }
-coordinator_locations {
-  host: "172.26.0.3"
-  port: 22001
-}
-coordinator_locations {
-  host: "172.26.0.4"
-  port: 22001
-}
-"""
  
-# View the status of store
-./dingodb_client_coordinator --method=GetStoreMap --req_num=1 --coordinator-addr=172.26.0.2:22001
-"""
-WARNING: Logging before InitGoogleLogging() is written to STDERR
-I0406 10:02:00.826020   185 coordinator_client_function_coor.cc:72] leader_location: 172.26.0.2:22001
-I0406 10:02:00.826290   184 coordinator_client_function_coor.cc:171] Received response get_store_map=1 request_attachment=0 response_attachment=0 latency=200
-I0406 10:02:00.826304   184 coordinator_client_function_coor.cc:175] epoch: 1003
+ 
+#  View the state of store
+[root@coordinator1 bin]# ./dingodb_client --method=GetStoreMap
+E20230928 11:07:00.918895   198 dingodb_client.cc:804] [main] coordinator url is empty, try to use file://./coor_list
+I20230928 11:07:00.919196   198 client_interation.cc:42] [Init] Init channel 172.30.14.221:22001
+I20230928 11:07:00.930696   198 client_interation.cc:42] [Init] Init channel 172.30.14.221:22002
+I20230928 11:07:00.930780   198 client_interation.cc:42] [Init] Init channel 172.30.14.221:22003
+I20230928 11:07:00.931160   206 naming_service_thread.cpp:203] brpc::policy::FileNamingService("./coor_list"): added 3
+I20230928 11:07:00.931306   198 coordinator_interaction.cc:65] [InitByNameService] Init channel by service_name file://./coor_list service_type=0
+I20230928 11:07:00.931385   198 coordinator_interaction.cc:65] [InitByNameService] Init channel by service_name file://./coor_list service_type=1
+I20230928 11:07:00.931493   198 coordinator_interaction.cc:65] [InitByNameService] Init channel by service_name file://./coor_list service_type=3
+I20230928 11:07:00.937242   198 coordinator_interaction.h:217] [SendRequestByService] name_service_channel_ connect with meta server finished. response errcode: 0, leader_addr: 172.30.14.221:22002
+I20230928 11:07:00.937340   198 coordinator_client_function_coor.cc:463] [SendGetStoreMap] SendRequest status=OK
+I20230928 11:07:00.937357   198 coordinator_client_function_coor.cc:465] [SendGetStoreMap] epoch: 1006
 storemap {
-  epoch: 1003
+  epoch: 1006
+  stores {
+    id: 1101
+    state: STORE_NORMAL
+    server_location {
+      host: "172.30.14.221"
+      port: 21001
+    }
+    raft_location {
+      host: "172.30.14.221"
+      port: 21101
+    }
+    keyring: "TO_BE_CONTINUED"
+    create_timestamp: 1695707860131
+    last_seen_timestamp: 1695870413206
+    store_type: NODE_TYPE_INDEX
+  }
+  stores {
+    id: 1102
+    state: STORE_NORMAL
+    server_location {
+      host: "172.30.14.221"
+      port: 21002
+    }
+    raft_location {
+      host: "172.30.14.221"
+      port: 21102
+    }
+    keyring: "TO_BE_CONTINUED"
+    create_timestamp: 1695707860201
+    last_seen_timestamp: 1695870413492
+    store_type: NODE_TYPE_INDEX
+  }
+  stores {
+    id: 1103
+    state: STORE_NORMAL
+    server_location {
+      host: "172.30.14.221"
+      port: 21003
+    }
+    raft_location {
+      host: "172.30.14.221"
+      port: 21103
+    }
+    keyring: "TO_BE_CONTINUED"
+    create_timestamp: 1695707860173
+    last_seen_timestamp: 1695870413492
+    store_type: NODE_TYPE_INDEX
+  }
   stores {
     id: 1001
+    state: STORE_NORMAL
     server_location {
-      host: "172.26.0.7"
+      host: "172.30.14.221"
       port: 20001
     }
     raft_location {
-      host: "172.26.0.7"
+      host: "172.30.14.221"
       port: 20101
     }
     keyring: "TO_BE_CONTINUED"
+    create_timestamp: 1695707860182
+    last_seen_timestamp: 1695870413491
   }
   stores {
     id: 1002
+    state: STORE_NORMAL
     server_location {
-      host: "172.26.0.6"
-      port: 20001
+      host: "172.30.14.221"
+      port: 20002
     }
     raft_location {
-      host: "172.26.0.6"
-      port: 20101
+      host: "172.30.14.221"
+      port: 20102
     }
     keyring: "TO_BE_CONTINUED"
+    create_timestamp: 1695707860184
+    last_seen_timestamp: 1695870413490
   }
   stores {
     id: 1003
+    state: STORE_NORMAL
     server_location {
-      host: "172.26.0.5"
-      port: 20001
+      host: "172.30.14.221"
+      port: 20003
     }
     raft_location {
-      host: "172.26.0.5"
-      port: 20101
+      host: "172.30.14.221"
+      port: 20103
     }
     keyring: "TO_BE_CONTINUED"
+    create_timestamp: 1695707870144
+    last_seen_timestamp: 1695870413205
   }
 }
-"""
+store_id=1101 type=NODE_TYPE_INDEX addr={host: "172.30.14.221" port: 21001} state=STORE_NORMAL in_state=STORE_IN create_timestamp=1695707860131 last_seen_timestamp=1695870413206
+store_id=1102 type=NODE_TYPE_INDEX addr={host: "172.30.14.221" port: 21002} state=STORE_NORMAL in_state=STORE_IN create_timestamp=1695707860201 last_seen_timestamp=1695870413492
+store_id=1103 type=NODE_TYPE_INDEX addr={host: "172.30.14.221" port: 21003} state=STORE_NORMAL in_state=STORE_IN create_timestamp=1695707860173 last_seen_timestamp=1695870413492
+store_id=1001 type=NODE_TYPE_STORE addr={host: "172.30.14.221" port: 20001} state=STORE_NORMAL in_state=STORE_IN create_timestamp=1695707860182 last_seen_timestamp=1695870413491
+store_id=1002 type=NODE_TYPE_STORE addr={host: "172.30.14.221" port: 20002} state=STORE_NORMAL in_state=STORE_IN create_timestamp=1695707860184 last_seen_timestamp=1695870413490
+store_id=1003 type=NODE_TYPE_STORE addr={host: "172.30.14.221" port: 20003} state=STORE_NORMAL in_state=STORE_IN create_timestamp=1695707870144 last_seen_timestamp=1695870413205
+DINGODB_HAVE_STORE_AVAILABLE, store_count=3
+DINGODB_HAVE_INDEX_AVAILABLE, index_count=3
  
-# Cseate table
-./dingodb_client_coordinator --method=CreateTable --req_num=1 --coordinator-addr=172.26.0.2:22001 --id=1001
-
-"""
-entity_type: ENTITY_TYPE_TABLE
-  parent_entity_id: 2
-  entity_id: 1001
-}
-"""
  
-# View table
-./dingodb_client_coordinator --method=GetTable --req_num=1 --coordinator-addr=172.26.0.2:22001 --id=1001
-
-"""
-WARNING: Logging before InitGoogleLogging() is written to STDERR
-I0406 10:17:14.174944   212 coordinator_client_function_coor.cc:72] leader_location: 172.26.0.2:22001
-I0406 10:17:14.176126   210 coordinator_client_function_meta.cc:149] Received response table_id=1001 request_attachment=0 response_attachment=0 latency=229
-I0406 10:17:14.176141   210 coordinator_client_function_meta.cc:153] table_definition_with_id {
-  table_id {
-    entity_type: ENTITY_TYPE_TABLE
-    parent_entity_id: 2
-    entity_id: 1001
-  }
-  table_definition {
-    name: "t_test1"
-    columns {
-      name: "test_columen_0"
-      sql_type: SQL_TYPE_INTEGER
-      element_type: ELEM_TYPE_BYTES
-      precision: 100
-      indexOfKey: 7
-      default_val: "0"
-    }
-    columns {
-      name: "test_columen_1"
-      sql_type: SQL_TYPE_INTEGER
-      element_type: ELEM_TYPE_BYTES
-      precision: 100
-      indexOfKey: 7
-      default_val: "0"
-    }
-    columns {
-      name: "test_columen_2"
-      sql_type: SQL_TYPE_INTEGER
-      element_type: ELEM_TYPE_BYTES
-      precision: 100
-      indexOfKey: 7
-      default_val: "0"
-    }
-    version: 1
-    table_partition {
-      columns: "test_part_column"
-      range_partition {
-        ranges {
-          start_key: "100"
-        }
-        ranges {
-          start_key: "200"
-        }
-        ranges {
-          start_key: "300"
-        }
-      }
-    }
-    properties {
-      key: "test property"
-      value: "test_property_value"
-    }
-  }
-}
-"""
+# Other opeartor
+./dingodb_client --method=CreateTable --name=test1  # Create table
+./dingodb_client --method=GetTable --id=60067     # View the table
+```
+#### (3) View the state of dingo(executor/web)
+```shell
+# To view the executor and ensure that the MySQL init process was successful.
+[root@dingo221 ~]# docker logs executor
+DINGODB_STORE_NORMAL = 0, wait 1 second
+DINGO_MYSQL_COORDINATORS: 172.30.14.221:22001
+ERRCODE 0
+DINGODB_STORE_NORMAL: 0 DINGODB_SCHEMA_MYSQL 0
+DINGODB_STORE_NORMAL = 0, wait 1 second
+DINGO_MYSQL_COORDINATORS: 172.30.14.221:22001
+ERRCODE 1
+LEADER_HOST:  LEADER_PORT:
+DINGODB_STORE_NORMAL = 0, wait 1 second
+DINGO_MYSQL_COORDINATORS: 172.30.14.221:22001
+ERRCODE 1
+LEADER_HOST: 172.30.14.221 LEADER_PORT: 22002
+DINGODB_STORE_NORMAL = 0, wait 1 second
+DINGO_MYSQL_COORDINATORS: 172.30.14.221:22001
+ERRCODE 1
+LEADER_HOST: 172.30.14.221 LEADER_PORT: 22002
+DINGODB_STORE_NORMAL = 0, wait 1 second
+DINGO_MYSQL_COORDINATORS: 172.30.14.221:22001
+ERRCODE 1
+LEADER_HOST: 172.30.14.221 LEADER_PORT: 22002
+DINGODB_STORE_NORMAL = 0, wait 1 second
+DINGO_MYSQL_COORDINATORS: 172.30.14.221:22001
+ERRCODE 1
+LEADER_HOST: 172.30.14.221 LEADER_PORT: 22002
+DINGODB_STORE_NORMAL = 0, wait 1 second
+DINGO_MYSQL_COORDINATORS: 172.30.14.221:22001
+ERRCODE 1
+LEADER_HOST: 172.30.14.221 LEADER_PORT: 22002
+DINGODB_STORE_NORMAL = 0, wait 1 second
+DINGO_MYSQL_COORDINATORS: 172.30.14.221:22001
+ERRCODE 1
+LEADER_HOST: 172.30.14.221 LEADER_PORT: 22002
+DINGODB_STORE_NORMAL = 0, wait 1 second
+DINGO_MYSQL_COORDINATORS: 172.30.14.221:22001
+ERRCODE 1
+LEADER_HOST: 172.30.14.221 LEADER_PORT: 22002
+DINGODB_STORE_NORMAL = 0, wait 1 second
+DINGO_MYSQL_COORDINATORS: 172.30.14.221:22001
+ERRCODE 1
+LEADER_HOST: 172.30.14.221 LEADER_PORT: 22002
+DINGODB_STORE_NORMAL = 0, wait 1 second
+DINGO_MYSQL_COORDINATORS: 172.30.14.221:22001
+ERRCODE 1
+LEADER_HOST: 172.30.14.221 LEADER_PORT: 22002
+DINGODB_STORE_NORMAL >= 3, start to initialize MySQL
+init meta store success
+[main] WARN io.dingodb.sdk.service.connector.ServiceConnector - Exec class io.dingodb.sdk.service.meta.MetaServiceClient$$Lambda$133/1293226111 failed, code: [EREGION_UNAVAILABLE], message: Not enough stores for create region, will retry...
+[main] WARN io.dingodb.sdk.service.connector.ServiceConnector - Exec class io.dingodb.sdk.service.meta.MetaServiceClient$$Lambda$133/1293226111 failed, code: [EREGION_UNAVAILABLE], message: Not enough stores for create region, will retry...
+[main] WARN io.dingodb.sdk.service.connector.ServiceConnector - Exec class io.dingodb.sdk.service.meta.MetaServiceClient$$Lambda$133/1293226111 failed, code: [EREGION_UNAVAILABLE], message: Not enough stores for create region, will retry...
+[main] WARN io.dingodb.sdk.service.connector.ServiceConnector - Exec class io.dingodb.sdk.service.meta.MetaServiceClient$$Lambda$133/1293226111 failed, code: [EREGION_UNAVAILABLE], message: Not enough stores for create region, will retry...
+init user success
+init db privilege success
+init table privilege success
+init global variables success
+init information_schema.COLUMNS success
+init information_schema.PARTITIONS success
+init information_schema.EVENTS success
+init information_schema.TRIGGERS success
+init information_schema.STATISTICS success
+init information_schema.ROUTINES success
+init information_schema.KEY_COLUMN_USAGE success
+init information_schema.SCHEMATA success
+init information_schema.TABLES success
+init mysql.ANALYZE_TASK success
+init mysql.CM_SKETCH success
+init mysql.TABLE_STATS success
+init mysql.TABLE_BUCKETS success
+Java mysql init succes
  
-# Other
-./dingodb_client_coordinator --method=GetTables --req_num=1 --coordinator-addr=172.26.0.2:22001 #  查询tables
-./dingodb_client_coordinator --method=GetTableRange --coordinator-addr=192.168.1.201:32002 --id=1002  # 获取表分区的leader
+ 
+#  The address to access the web swagger,replace <your_ip_address> with your actual IP address.
+http://<your_ip_address>:13000/swagger-ui/index.html
 ```

@@ -50,5 +50,4 @@
 | Data Type    | Syntax                          |
 |--------------|---------------------------------|
 | Map          | Map [key,value]                 |
-| Multiset     | Multiset [value1,value2,value3] |
 | Array        | Array [value1,value2,value3]    |
