@@ -69,6 +69,31 @@ public class VectorSearchOperation implements Operation {
         return new Fork(new VectorDistanceArray[subTasks.size()][vectorSearch.getVectors().size()], subTasks, false);
     }
 
+    @Override
+    public Fork fork(OperationContext context, IndexInfo indexInfo) {
+        Map<DingoCommonId, RegionSearchTuple> parameters = context.parameters();
+        VectorSearch vectorSearch = new ArrayList<>(parameters.values()).get(0).vs.get(0).value;
+
+        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
+        Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
+
+        List<RangeDistribution> rangeDistributions = new ArrayList<>(indexInfo.rangeDistribution.values());
+        for (int i = 0; i < rangeDistributions.size(); i++) {
+            RangeDistribution distribution = rangeDistributions.get(i);
+            Map<DingoCommonId, RegionSearchTuple> regionParam = subTaskMap.computeIfAbsent(
+                distribution.getId(), k -> new Any(new HashMap<>())
+            ).getValue();
+
+            List<VectorTuple<VectorSearch>> tuples = new ArrayList<>();
+            for (int i1 = 0; i1 < vectorSearch.getVectors().size(); i1++) {
+                tuples.add(new VectorTuple<>(i1, vectorSearch));
+            }
+            regionParam.put(distribution.getId(), new RegionSearchTuple(i, tuples));
+        }
+        subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
+        return new Fork(new VectorDistanceArray[subTasks.size()][vectorSearch.getVectors().size()], subTasks, false);
+    }
+
     @RequiredArgsConstructor
     static class RegionSearchTuple {
         private final int regionI;

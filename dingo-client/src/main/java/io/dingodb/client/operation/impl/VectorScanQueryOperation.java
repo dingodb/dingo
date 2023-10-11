@@ -65,6 +65,27 @@ public class VectorScanQueryOperation implements Operation {
     }
 
     @Override
+    public Fork fork(OperationContext context, IndexInfo indexInfo) {
+        Map<DingoCommonId, VectorTuple<VectorScanQuery>> parameters = context.parameters();
+        VectorScanQuery query = new ArrayList<>(parameters.values()).get(0).value;
+        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
+        Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
+
+        List<RangeDistribution> rangeDistributions = new ArrayList<>(indexInfo.rangeDistribution.values());
+        for (int i = 0; i < rangeDistributions.size(); i++) {
+            RangeDistribution distribution = rangeDistributions.get(i);
+            Map<DingoCommonId, VectorTuple<VectorScanQuery>> regionParam = subTaskMap.computeIfAbsent(
+                distribution.getId(), k -> new Any(new HashMap<>())
+            ).getValue();
+
+            regionParam.put(distribution.getId(), new VectorTuple<>(i, query));
+        }
+
+        subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
+        return new Fork(new VectorWithIdArray[subTasks.size()], subTasks, false);
+    }
+
+    @Override
     public void exec(OperationContext context) {
         Map<DingoCommonId, VectorTuple<VectorScanQuery>> parameters = context.parameters();
         VectorScanQuery scanQuery = parameters.get(context.getRegionId()).value;
