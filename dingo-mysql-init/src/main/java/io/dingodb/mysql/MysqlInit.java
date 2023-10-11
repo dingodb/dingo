@@ -94,6 +94,7 @@ public final class MysqlInit {
         initMetaStore(coordinatorSvr);
         int code = check();
         close();
+        System.out.println("code:" + code);
         System.exit(code);
     }
 
@@ -104,6 +105,7 @@ public final class MysqlInit {
         try {
             if (tableId == null) {
                 mysqlMetaClient.createTable(tableName, tableDefinition);
+                tableId = mysqlMetaClient.getTableId(tableName);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -124,7 +126,7 @@ public final class MysqlInit {
             keyValue.setKey(codec.resetPrefix(keyValue.getKey(), regionId.parentId()));
             storeServiceClient.kvPut(tableId, regionId, keyValue);
         } catch (Exception e) {
-            if (e instanceof DingoClientException) {
+            if (e instanceof DingoClientException.InvalidRouteTableException) {
                 if (!continueRetry()) {
                    return;
                 }
@@ -161,6 +163,7 @@ public final class MysqlInit {
         try {
             if (tableId == null) {
                 informationMetaClient.createTable(tableName, tableDefinition);
+                tableId = informationMetaClient.getTableId(tableName);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -184,7 +187,7 @@ public final class MysqlInit {
 
             storeServiceClient.kvBatchPut(tableId, regionId, keyValueList);
         } catch (Exception e) {
-            if (e instanceof DingoClientException) {
+            if (e instanceof DingoClientException.InvalidRouteTableException) {
                 if (!continueRetry()) {
                     return;
                 }
