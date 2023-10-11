@@ -56,6 +56,7 @@ public class Starter {
             return;
         }
         DingoConfiguration.parse(config);
+        Configuration.instance();
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         env.setRole(DingoRole.EXECUTOR);
 
