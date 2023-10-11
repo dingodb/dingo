@@ -178,7 +178,7 @@ public class DingoAccessor implements Cursor.Accessor {
         if (list.size() > 0) {
             Object item = list.get(0);
             if (item instanceof Float) {
-                list = list.stream().map(e -> new BigDecimal(Float.toString((Float)item))).collect(Collectors.toList());
+                list = list.stream().map(e -> new BigDecimal(Float.toString((Float)e))).collect(Collectors.toList());
                 arrayElementType
                     = ColumnMetaData.scalar(Types.FLOAT, "FLOAT", ColumnMetaData.Rep.PRIMITIVE_FLOAT);
             } else if (item instanceof Time) {
