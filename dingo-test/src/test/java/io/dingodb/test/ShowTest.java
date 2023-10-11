@@ -107,9 +107,9 @@ public class ShowTest {
         context.execSql(sql).test(is(
             new String[]{"Id", "Type", "Value"},
             ImmutableList.of(
-                new Object[]{"DISTRIBUTION_" + tableId.seq + "_1", "Range", "[ Infinity, Key(2) )"},
-                new Object[]{"DISTRIBUTION_" + tableId.seq + "_2", "Range", "[ Key(2), Key(3) )"},
-                new Object[]{"DISTRIBUTION_" + tableId.seq + "_3", "Range", "[ Key(3), Infinity )"}
+                new Object[]{"DISTRIBUTION_" + tableId.seq + "_1", "range", "[ Infinity, Key(2) )"},
+                new Object[]{"DISTRIBUTION_" + tableId.seq + "_2", "range", "[ Key(2), Key(3) )"},
+                new Object[]{"DISTRIBUTION_" + tableId.seq + "_3", "range", "[ Key(3), Infinity )"}
             )
         ));
     }
