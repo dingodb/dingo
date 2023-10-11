@@ -235,14 +235,16 @@ public class IndexService {
         Index index = Parameters.nonNull(metaService.getIndex(indexName), "Index not found.");
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
             metaService.getIndexRangeDistribution(indexName);
-        for (RangeDistribution rangeDistribution : parts.values()) {
-            log.info(">>>>>> refresh route table, regionId: {}, leader: {}, voters:{}, range: {} -- {}, region epoch: {} <<<<<<",
-                rangeDistribution.getId(),
-                rangeDistribution.getLeader(),
-                rangeDistribution.getVoters(),
-                rangeDistribution.getRange().getStartKey(),
-                rangeDistribution.getRange().getEndKey(),
-                rangeDistribution.getRegionEpoch());
+        if (log.isDebugEnabled()) {
+            for (RangeDistribution rangeDistribution : parts.values()) {
+                log.info(">>>>>> refresh route table, regionId: {}, leader: {}, voters:{}, range: {} -- {}, region epoch: {} <<<<<<",
+                    rangeDistribution.getId(),
+                    rangeDistribution.getLeader(),
+                    rangeDistribution.getVoters(),
+                    rangeDistribution.getRange().getStartKey(),
+                    rangeDistribution.getRange().getEndKey(),
+                    rangeDistribution.getRegionEpoch());
+            }
         }
         KeyValueCodec codec = new KeyValueCodec(
             new DingoKeyValueCodec(indexId.entityId(), Collections.singletonList(schema)), dingoType);
