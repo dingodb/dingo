@@ -21,7 +21,9 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.meta.MetaService;
+import io.dingodb.partition.DingoPartitionServiceProvider;
 import lombok.Setter;
 import org.apache.calcite.sql.SqlNode;
 
@@ -79,15 +81,22 @@ public class ShowTableDistributionOperation implements QueryOperation {
 
         List<Integer> keyColumnIndices = tableDefinition.getKeyColumnIndices();
         List<RangeDistribution> ranges = rangeDistribution.values().stream().collect(Collectors.toList());
+        String partName = Optional.ofNullable(tableDefinition.getPartDefinition().getFuncName())
+            .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME);
+        boolean hashPartition = partName.toLowerCase().equals("hash");
         for (int i = 0; i < ranges.size(); i++) {
             RangeDistribution range = ranges.get(i);
             List<String> rangeValues = new ArrayList<>();
 
             rangeValues.add(range.getId().toString());
-            rangeValues.add("Range");
-
+            rangeValues.add(partName);
             String key = buildKeyStr(keyColumnIndices, range.getStart());
-            rangeValues.add(key);
+            // hash(partid) + key
+            if (hashPartition) {
+                rangeValues.add(partName.toLowerCase() + "(" + range.getId().domain + ") " + key);
+            } else {
+                rangeValues.add(key);
+            }
 
             if (i + 1 < ranges.size()) {
                 key = buildKeyStr(keyColumnIndices, ranges.get(i + 1).getStart());

@@ -140,6 +140,7 @@ void TableElement(List<SqlNode> list) :
         type = DataType()
         [ <AUTO_INCREMENT> {autoIncrement = true; } ]
         nullable = NullableOptDefaultTrue()
+        [ <AUTO_INCREMENT> {autoIncrement = true; } ]
         (
             [ <GENERATED> <ALWAYS> ] <AS> <LPAREN>
             e = Expression(ExprContext.ACCEPT_SUB_QUERY) <RPAREN>
