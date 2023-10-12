@@ -4,6 +4,7 @@
 !.editorconfig
 !.github
 !.gitlab-ci.yml
+!.readthedocs.yaml
 
 bin/
 
