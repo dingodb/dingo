@@ -91,12 +91,11 @@ public class ShowTableDistributionOperation implements QueryOperation {
             rangeValues.add(range.getId().toString());
             rangeValues.add(partName);
             String key = buildKeyStr(keyColumnIndices, range.getStart());
-            // hash(partid) + key
+            // hash(partid)
             if (hashPartition) {
-                rangeValues.add(partName.toLowerCase() + "(" + range.getId().domain + ") " + key);
-            } else {
-                rangeValues.add(key);
+                rangeValues.add(partName.toLowerCase() + "(" + range.getId().domain + ") ");
             }
+            rangeValues.add(key);
 
             if (i + 1 < ranges.size()) {
                 key = buildKeyStr(keyColumnIndices, ranges.get(i + 1).getStart());
@@ -109,7 +108,14 @@ public class ShowTableDistributionOperation implements QueryOperation {
         }
 
         regionList.forEach(row -> {
-            row.set(row.size() - 2, String.format("[ %s, %s )", row.get(row.size() - 2), row.get(row.size() - 1)));
+            if (hashPartition) {
+                // hash(partid) [key, key)
+                row.set(row.size() - 3, String.format("%s [ %s, %s )", row.get(row.size() - 3), row.get(row.size() - 2), row.get(row.size() - 1)));
+                row.remove(row.size() - 2);
+            } else {
+                // [key, key)
+                row.set(row.size() - 2, String.format("[ %s, %s )", row.get(row.size() - 2), row.get(row.size() - 1)));
+            }
             row.remove(row.size() - 1);
         });
         return regionList;
