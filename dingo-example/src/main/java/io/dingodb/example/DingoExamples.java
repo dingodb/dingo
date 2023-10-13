@@ -45,7 +45,7 @@ import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 
-public class Examples {
+public class DingoExamples {
 
     public static final String TABLE_SCHEMA = "Table schema: \n"
         + "| -------------- | ---------------------- |\n"
@@ -63,7 +63,7 @@ public class Examples {
     @Parameter(names = "--help", help = true, order = 0)
     private boolean help;
 
-    @Parameter(description = "[driver] or [sdk] or [schema], if schema, show table schema.", order = 1, required = true)
+    @Parameter(description = "[jdbc] or [sdk] or [schema] or [pojo], if schema, show table schema.", order = 1, required = true)
     private String option;
 
     @Parameter(names = "--config", description = "Config file path.", order = 2)
@@ -108,7 +108,7 @@ public class Examples {
 
 
     public static void main(String[] args) throws Exception {
-        Examples examples = new Examples();
+        DingoExamples examples = new DingoExamples();
         JCommander commander = new JCommander(examples);
         commander.parse(args);
         examples.exec(commander);
@@ -121,14 +121,15 @@ public class Examples {
         }
 
         switch (option.toUpperCase()) {
-            case "JDBC":
+            case "JDBC": // operating a table using SQL
                 Class.forName("io.dingodb.driver.client.DingoDriverClient");
                 runOperation(new JDBCRunner(
-                    table.toUpperCase(),
-                    DriverManager.getConnection(DingoDriverClient.CONNECT_STRING_PREFIX + "url=" + jdbcUrl)
+                    table.toUpperCase(), DriverManager.getConnection(
+                        DingoDriverClient.CONNECT_STRING_PREFIX + "url=" + jdbcUrl, "root", "123123")
                 ));
                 break;
-            case "SDK":
+            case "SDK": // Operate tables using interfaces
+                // Parse the configuration file to obtain the coordinator address. eg: dingo-dist/conf/client.yaml
                 DingoConfiguration.parse(config);
                 String coordinatorServerList = Configuration.coordinatorExchangeSvrList();
                 DingoClient dingoClient = new DingoClient(coordinatorServerList, 10);
@@ -137,10 +138,10 @@ public class Examples {
                     dingoClient)
                 );
                 break;
-            case "SCHEMA":
+            case "SCHEMA": // show table schema
                 System.out.println(TABLE_SCHEMA);
                 break;
-            case "POJO":
+            case "POJO": // Use object classes to manipulate tables
                 DingoConfiguration.parse(config);
                 String coordinatorserverlist = Configuration.coordinatorExchangeSvrList();
                 DingoClient dingoClient1 = new DingoClient(coordinatorserverlist, 10);
@@ -182,7 +183,7 @@ public class Examples {
                         System.out.printf("Insert %d use %dms, current %dms\n", i, total += elapsed, elapsed);
                     }
                 }
-                runner.insert(records);
+                // runner.insert(records);
                 break;
             }
             case "QUERY": {
@@ -239,6 +240,11 @@ public class Examples {
         };
     }
 
+    /**
+     * Generate table data.
+     *
+     * @return row of data
+     */
     private Object[] generateRecord(int seed) {
         return new Object[] {
             String.valueOf(seed),
@@ -246,14 +252,6 @@ public class Examples {
             Math.abs(RANDOM.nextInt()) % 99,
             seed * 0.1,
             RANDOM.nextBoolean()};
-    }
-
-    private Object[] generatePersonRecord(int seed) {
-        return new Object[] {
-            seed + 1,
-            "dingo" + seed,
-            10 + seed,
-            1000.0 * seed};
     }
 
     static interface Runner {
@@ -291,10 +289,11 @@ public class Examples {
         public long insert(Object[] record) throws Exception {
             long start = System.currentTimeMillis();
             Person person = new Person();
-            person.setId((Integer) record[0]);
+            person.setId((String) record[0]);
             person.setName((String) record[1]);
             person.setAge((Integer) record[2]);
-            person.setSalary((Double) record[3]);
+            person.setIncome((Double) record[3]);
+            person.setGender((Boolean) record[4]);
             dingoOpCli.save(person);
             return System.currentTimeMillis() - start;
         }
@@ -305,10 +304,11 @@ public class Examples {
             List<Person> people = new ArrayList<>();
             for (Object[] record : records) {
                 Person person = new Person();
-                person.setId((Integer) record[0]);
+                person.setId((String) record[0]);
                 person.setName((String) record[1]);
                 person.setAge((Integer) record[2]);
-                person.setSalary((Double) record[3]);
+                person.setIncome((Double) record[3]);
+                person.setGender((Boolean) record[4]);
                 people.add(person);
             }
             dingoOpCli.save(people.toArray());
@@ -323,7 +323,7 @@ public class Examples {
         @Override
         public long query(int seed) throws Exception {
             long start = System.currentTimeMillis();
-            dingoOpCli.read(Person.class, new Object[]{(seed + 1), ("dingo" + seed)});
+            dingoOpCli.read(Person.class, new Object[]{(String.valueOf(seed))});
             return System.currentTimeMillis() - start;
         }
 
@@ -337,7 +337,6 @@ public class Examples {
 
         private final DingoClient dingoClient;
         private final String tableName;
-        private Table table;
 
         SDKRunner(String tableName, DingoClient dingoClient) {
             this.tableName = tableName;
@@ -345,11 +344,6 @@ public class Examples {
             boolean isOK = dingoClient.open();
             if (!isOK) {
                 throw new RuntimeException("Open connection failed");
-            }
-            try {
-                this.table = this.dingoClient.getTableDefinition(tableName);
-            } catch (NullPointerException e) {
-                e.printStackTrace();
             }
         }
 
@@ -369,14 +363,13 @@ public class Examples {
                 .build();
 
             boolean createTable = dingoClient.createTable(tableDefinition);
-            if (createTable) {
-                this.table = dingoClient.getTableDefinition(tableName);
-            }
+            System.out.println("create table success: " + createTable);
         }
 
         @Override
         public long insert(Object[] record) throws Exception {
             long start = System.currentTimeMillis();
+            Table table = dingoClient.getTableDefinition(tableName);
             dingoClient.upsert(tableName, new Record(table.getColumns(), record));
             return System.currentTimeMillis() - start;
         }
@@ -384,6 +377,7 @@ public class Examples {
         @Override
         public long insert(List<Object[]> records) throws Exception {
             long start = System.currentTimeMillis();
+            Table table = dingoClient.getTableDefinition(tableName);
             dingoClient.upsert(
                 tableName,
                 records.stream().map(record -> new Record(table.getColumns(), record)).collect(Collectors.toList()));
@@ -397,8 +391,11 @@ public class Examples {
             Iterator<Record> iterator = dingoClient.scan(tableName, startKey, endKey, true, true);
             int line = 0;
             while (iterator.hasNext()) {
-                Record next = iterator.next();
-                System.out.println(Arrays.toString(next.getDingoColumnValuesInOrder()));
+                List<Object> objects = iterator.next().getColumnValuesInOrder();
+                System.out.printf(
+                    "Query result u_id=%s, u_name=%s, u_age=%s, u_income=%s, u_gender=%s. \n",
+                    objects.get(0), objects.get(1), objects.get(2), objects.get(3), objects.get(4)
+                );
                 line++;
             }
             System.out.println("Count: " + line);
@@ -407,11 +404,11 @@ public class Examples {
         @Override
         public long query(int index) throws Exception {
             long start = System.currentTimeMillis();
-            Object[] objects = dingoClient.get(tableName, new Key(Value.get(String.valueOf(index))))
-                .getDingoColumnValuesInOrder();
+            List<Object> objects = dingoClient.get(tableName, new Key(Value.get(String.valueOf(index))))
+                .getColumnValuesInOrder();
             System.out.printf(
                 "Query result u_id=%s, u_name=%s, u_age=%s, u_income=%s, u_gender=%s. \n",
-                objects[0], objects[1], objects[2], objects[3], objects[4]
+                objects.get(0), objects.get(1), objects.get(2), objects.get(3), objects.get(4)
             );
             return System.currentTimeMillis() - start;
         }
@@ -484,7 +481,7 @@ public class Examples {
                 try (ResultSet resultSet = statement.executeQuery(sql)) {
                     ResultSetMetaData metaData = resultSet.getMetaData();
                     int columnCount = metaData.getColumnCount();
-                    int line = 1;
+                    int line = 0;
                     StringJoiner joiner = new StringJoiner(",").setEmptyValue("");
                     while (resultSet.next()) {
                         for (int i = 1; i < columnCount + 1; i++) {

@@ -28,9 +28,9 @@ import lombok.ToString;
 @ToString
 public class Person {
     @DingoKey
-    private int id;
-    @DingoKey
+    private String id;
     private String name;
     private int age;
-    private double salary;
+    private double income;
+    private boolean gender;
 }

@@ -459,24 +459,6 @@ public class DingoOpCli implements DingoMapper {
         Key startKey = new Key(tableName, Arrays.asList(filter.getStartKey()));
         Key endKey = new Key(tableName, Arrays.asList(filter.getEndKey()));
 
-        String startRange = filter.getColumnValueStart().toString();
-        String endRange = filter.getColumnValueEnd().toString();
-
-        DingoFilter dingoFilter = null;
-        if (filter.getColumnValueStart().getType() == Value.ParticleType.STRING) {
-            dingoFilter = new DingoStringRangeFilter(
-                columnIndex,
-                startRange,
-                endRange
-            );
-        } else {
-            dingoFilter = new DingoNumberRangeFilter(
-                columnIndex,
-                Double.valueOf(startRange),
-                Double.valueOf(endRange)
-            );
-        }
-
         Iterator<Record> iterator = dingoClient.scan(tableName, startKey, endKey, true, false);
         try {
             while (iterator.hasNext()) {
