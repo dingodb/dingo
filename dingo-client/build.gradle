@@ -80,10 +80,6 @@ task sourcesJar(type: Jar) {
     from sourceSets.main.allSource
 }
 
-artifacts {
-    archives javadocJar, sourcesJar
-}
-
 project.gradle.taskGraph.whenReady { graph ->
     project.tasks.findAll().forEach { task ->
         if (task.name.contains("signArchives")) {
@@ -92,9 +88,7 @@ project.gradle.taskGraph.whenReady { graph ->
     }
 }
 
-signing {
-    sign configurations.archives
-}
+
 
 publishing {
     repositories {
@@ -109,8 +103,8 @@ publishing {
             url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl;
 
             credentials {
-                username = System.getenv("MAVEN_USERNAME")
-                password = System.getenv("MAVEN_TOKEN")
+                username = System.getenv("MAVEN_USERNAME") != null ? System.getenv("MAVEN_USERNAME") : project.findProperty("ossrhUsername") 
+                password = System.getenv("MAVEN_TOKEN") != null ? System.getenv("MAVEN_TOKEN") : project.findProperty("ossrhPassword")
             }
         }
     }
@@ -163,4 +157,8 @@ publishing {
             }
         }
     }
+}
+
+signing {
+    sign publishing.publications.maven
 }
