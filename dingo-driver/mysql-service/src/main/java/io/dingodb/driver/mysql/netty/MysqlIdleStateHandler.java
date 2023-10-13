@@ -252,6 +252,7 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
                     }
                     service = null;
                     idleTimeoutFuture = null;
+                    log.info("this channel will close");
                     ctx.channel().close();
                 } catch (Throwable t) {
                     ctx.fireExceptionCaught(t);

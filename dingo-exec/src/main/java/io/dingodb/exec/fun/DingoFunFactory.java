@@ -18,6 +18,7 @@ package io.dingodb.exec.fun;
 
 import io.dingodb.exec.fun.like.LikeBinaryOp;
 import io.dingodb.exec.fun.like.LikeOp;
+import io.dingodb.exec.fun.mysql.VersionFun;
 import io.dingodb.exec.fun.number.AbsEvaluatorsFactory;
 import io.dingodb.exec.fun.number.CeilEvaluatorsFactory;
 import io.dingodb.exec.fun.number.FloorEvaluatorsFactory;
@@ -151,5 +152,6 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerUdf(VectorL2DistanceFun.NAME, VectorL2DistanceFun::new);
         registerUdf(VectorIPDistanceFun.NAME, VectorIPDistanceFun::new);
         registerUdf(VectorCosineDistanceFun.NAME, VectorCosineDistanceFun::new);
+        registerUdf(VersionFun.NAME, VersionFun::new);
     }
 }

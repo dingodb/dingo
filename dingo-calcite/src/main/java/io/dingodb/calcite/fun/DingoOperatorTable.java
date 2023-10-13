@@ -21,6 +21,7 @@ import com.google.common.collect.Multimap;
 import io.dingodb.exec.fun.AutoIncrementFun;
 import io.dingodb.exec.fun.DingoFunFactory;
 import io.dingodb.exec.fun.mysql.GlobalVariableFun;
+import io.dingodb.exec.fun.mysql.VersionFun;
 import io.dingodb.exec.fun.number.FormatFun;
 import io.dingodb.exec.fun.number.PowFun;
 import io.dingodb.exec.fun.string.ConcatFun;
@@ -300,6 +301,13 @@ public class DingoOperatorTable implements SqlOperatorTable {
             DingoInferTypes.FLOAT,
             family(SqlTypeFamily.ARRAY, SqlTypeFamily.ARRAY),
             SqlFunctionCategory.NUMERIC
+        );
+        registerFunction(
+            VersionFun.NAME,
+            ReturnTypes.VARCHAR_2000,
+            null,
+            OperandTypes.POSITIVE_INTEGER_LITERAL.or(OperandTypes.NILADIC),
+            SqlFunctionCategory.STRING
         );
     }
 
