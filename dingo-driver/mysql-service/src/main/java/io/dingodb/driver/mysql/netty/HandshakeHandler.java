@@ -363,6 +363,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
             try {
                 dingoConnection.setClientInfo("wait_timeout", waitTimeout);
                 dingoConnection.setClientInfo("interactive_timeout", interactiveTimeout);
+                dingoConnection.setClientInfo(ScopeVariables.globalVariables);
             } catch (SQLClientInfoException e) {
                 log.error(e.getMessage(), e);
             }
