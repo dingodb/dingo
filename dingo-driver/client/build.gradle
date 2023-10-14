@@ -141,6 +141,11 @@ publishing {
                     }
                 }
             }
+            if (!version.endsWith("SNAPSHOT")) {
+                   signing {
+                           sign publishing.publications.maven
+                   }
+            }
         }
     }
 }
@@ -152,8 +157,4 @@ project.gradle.taskGraph.whenReady { graph ->
             task.enabled = false
         }
     }
-}
-
-signing {
-    sign publishing.publications.maven
 }

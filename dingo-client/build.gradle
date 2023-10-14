@@ -155,10 +155,12 @@ publishing {
                     }
                 }
             }
+            if (!version.endsWith("SNAPSHOT")) {
+                   signing {
+                           sign publishing.publications.maven
+                   }
+            }
+
         }
     }
-}
-
-signing {
-    sign publishing.publications.maven
 }
