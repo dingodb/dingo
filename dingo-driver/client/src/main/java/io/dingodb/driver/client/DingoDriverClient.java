@@ -106,7 +106,7 @@ public class DingoDriverClient extends Driver {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         //env.setRole(DingoRole.JDBC);
         if ((props = this.parseURL(url, info)) == null) {
-            throw new IllegalArgumentException("Bad url: " + url);
+            return null;
         } else {
             log.info("info:" + props);
             env.putAll(props);
@@ -185,7 +185,7 @@ public class DingoDriverClient extends Driver {
                 hostAndPort = hostStuff;
                 String[] hostPortPair = parseHostPortPair(hostAndPort);
                 if (hostPortPair.length != 2) {
-                    throw new IllegalArgumentException("Bad url: " + url);
+                    return null;
                 }
                 if (hostPortPair[0] != null && hostPortPair[0].trim().length() > 0) {
                     urlProps.setProperty("remoteHost", hostPortPair[0]);
