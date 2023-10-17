@@ -34,6 +34,7 @@ import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
 import io.dingodb.calcite.schema.DingoSchema;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
@@ -84,6 +85,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -93,6 +95,7 @@ import java.util.stream.Collectors;
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
 import static io.dingodb.common.util.Optional.mapOrNull;
 import static io.dingodb.common.util.PrivilegeUtils.getRealAddress;
+import static io.dingodb.common.util.Utils.calculatePrefixCount;
 import static org.apache.calcite.util.Static.RESOURCE;
 
 @Slf4j
@@ -488,8 +491,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final Pair<DingoSchema, String> schemaTableName
             = getSchemaAndTableName(name, context);
         final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
-        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
-        TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName.toUpperCase());
+        String tableName = Parameters.nonNull(schemaTableName.right, "table name").toUpperCase();
+        TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
+        Map<CommonId, TableDefinition> indexDefinitionMap = schema.getMetaService().getTableIndexDefinitions(tableName);
         if (tableDefinition == null) {
             throw SqlUtil.newContextException(
                 name.getParserPosition(),
@@ -501,7 +505,30 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 RESOURCE.tableNotFound(name.toString())
             );
         }
-        schema.createTable(tableName, tableDefinition);
+        // partitionDetail operand [x,null,null] error  transform to operand[x]
+        List<TableDefinition> indexTableDefinitions = indexDefinitionMap.values()
+            .stream().map(e -> {
+                if (e.getPartDefinition() == null) {
+                    return e;
+                }
+                e.getPartDefinition().getDetails().forEach(detail -> {
+                    transformOperand(detail);
+                });
+                return e;
+            }).collect(Collectors.toList());
+        if (tableDefinition.getPartDefinition() != null) {
+            tableDefinition.getPartDefinition().getDetails().forEach(detail -> {
+                transformOperand(detail);
+            });
+        }
+        schema.createTables(tableDefinition, indexTableDefinitions);
+    }
+
+    private static void transformOperand(PartitionDetailDefinition detail) {
+        int i = calculatePrefixCount(detail.getOperand());
+        Object[] val = new Object[i];
+        System.arraycopy(detail.getOperand(), 0, val, 0, i);
+        detail.setOperand(val);
     }
 
 
