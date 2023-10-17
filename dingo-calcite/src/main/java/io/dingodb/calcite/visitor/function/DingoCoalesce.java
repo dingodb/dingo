@@ -16,24 +16,40 @@
 
 package io.dingodb.calcite.visitor.function;
 
+import io.dingodb.calcite.traits.DingoRelPartition;
+import io.dingodb.common.CommonId;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.Id;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Output;
+import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.CoalesceOperator;
 import io.dingodb.exec.operator.SumUpOperator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class DingoCoalesce {
-    @NonNull
+
     public static List<Output> coalesce(IdGenerator idGenerator, @NonNull Collection<Output> inputs) {
+        return coalesce(idGenerator, inputs, Collections.emptySet(), Collections.emptySet());
+    }
+    @NonNull
+    public static List<Output> coalesce(
+        IdGenerator idGenerator,
+        @NonNull Collection<Output> inputs,
+        Set<DingoRelPartition> dstPartitions,
+        Set<DingoRelPartition> srcPartitions
+    ) {
         // Coalesce inputs from the same task. taskId --> list of inputs
         Map<Id, List<Output>> inputsMap = new HashMap<>();
         for (Output input : inputs) {
@@ -49,27 +65,38 @@ public class DingoCoalesce {
                 // Need no coalescing.
                 outputs.addAll(list);
             } else {
-                Output one = list.get(0);
-                Task task = one.getTask();
-                Operator operator = new CoalesceOperator(size);
-                operator.setId(idGenerator.get());
-                task.putOperator(operator);
-                int i = 0;
-                for (Output input : list) {
-                    input.setLink(operator.getInput(i));
-                    ++i;
-                }
-                Output newOutput = operator.getSoleOutput();
-                newOutput.copyHint(one);
-                if (one.isToSumUp()) {
-                    Operator sumUpOperator = new SumUpOperator();
-                    sumUpOperator.setId(idGenerator.get());
-                    task.putOperator(sumUpOperator);
-                    operator.getSoleOutput().setLink(sumUpOperator.getInput(0));
-                    sumUpOperator.getSoleOutput().copyHint(newOutput);
-                    outputs.add(sumUpOperator.getSoleOutput());
-                } else {
-                    outputs.add(newOutput);
+                Map<CommonId, List<Output>> partOutputs = list.stream()
+                    .collect(Collectors.groupingBy(
+                        output -> Optional.ofNullable(output.getHint())
+                            .filter(!dstPartitions.isEmpty())
+                            .map(OutputHint::getPartId)
+                            .orElseGet(() -> CommonId.EMPTY_DISTRIBUTE)
+                    ));
+                for (Map.Entry<CommonId, List<Output>> partOutput : partOutputs.entrySet()) {
+                    List<Output> value = partOutput.getValue();
+                    int valueSize = value.size();
+                    Output one = value.get(0);
+                    Task task = one.getTask();
+                    Operator operator = new CoalesceOperator(valueSize);
+                    operator.setId(idGenerator.get());
+                    task.putOperator(operator);
+                    int i = 0;
+                    for (Output input : value) {
+                        input.setLink(operator.getInput(i));
+                        ++i;
+                    }
+                    Output newOutput = operator.getSoleOutput();
+                    newOutput.copyHint(one);
+                    if (one.isToSumUp()) {
+                        Operator sumUpOperator = new SumUpOperator();
+                        sumUpOperator.setId(idGenerator.get());
+                        task.putOperator(sumUpOperator);
+                        operator.getSoleOutput().setLink(sumUpOperator.getInput(0));
+                        sumUpOperator.getSoleOutput().copyHint(newOutput);
+                        outputs.add(sumUpOperator.getSoleOutput());
+                    } else {
+                        outputs.add(newOutput);
+                    }
                 }
             }
         }
