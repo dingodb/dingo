@@ -106,7 +106,7 @@ public class DingoStreamingConverterVisitFun {
         }
         if (dstPartitions.size() < media.getPartitions().size()) {
             assert dstDistribution == null && dstPartitions.size() == 0 || dstPartitions.size() == 1;
-            outputs = DingoCoalesce.coalesce(idGenerator, outputs);
+            outputs = DingoCoalesce.coalesce(idGenerator, outputs, dstPartitions, media.getPartitions());
         }
         return outputs;
     }
