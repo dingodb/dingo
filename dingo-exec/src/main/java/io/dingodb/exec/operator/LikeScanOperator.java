@@ -35,7 +35,7 @@ import java.util.Iterator;
 @Slf4j
 @JsonTypeName("likeScan")
 @JsonPropertyOrder({
-    "table", "part", "schema", "keyMapping", "filter", "selection", "output", "prefix"
+    "table", "part", "schema", "schemaVersion", "keyMapping", "filter", "selection", "output", "prefix"
 })
 public final class LikeScanOperator extends PartIteratorSourceOperator {
     @JsonProperty("prefix")
@@ -46,12 +46,13 @@ public final class LikeScanOperator extends PartIteratorSourceOperator {
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
+        @JsonProperty("schemaVersion") int schemaVersion,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("filter") SqlExpr filter,
         @JsonProperty("selection") TupleMapping selection,
         @JsonProperty("prefix") byte[] prefix
     ) {
-        super(tableId, partId, schema, keyMapping, filter, selection);
+        super(tableId, partId, schema, schemaVersion, keyMapping, filter, selection);
         this.prefix = prefix;
     }
 
@@ -65,7 +66,7 @@ public final class LikeScanOperator extends PartIteratorSourceOperator {
         super.init();
         part = new PartInKvStore(
             Services.KV_STORE.getInstance(tableId, partId),
-            CodecService.getDefault().createKeyValueCodec(schema, keyMapping)
+            CodecService.getDefault().createKeyValueCodec(schemaVersion, schema, keyMapping)
         );
     }
 }

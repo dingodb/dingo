@@ -76,8 +76,15 @@ public final class DingoGetByKeysFun {
         }
         Map<CommonId, List<Object[]>> partMap = ps.partTuples(keyTuples, wrap(codec::encodeKey), distributions);
         for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
-            GetByKeysOperator operator = new GetByKeysOperator(tableInfo.getId(), entry.getKey(), td.getDingoType(),
-                td.getKeyMapping(), entry.getValue(), SqlExprUtils.toSqlExpr(rel.getFilter()), rel.getSelection()
+            GetByKeysOperator operator = new GetByKeysOperator(
+                tableInfo.getId(),
+                entry.getKey(),
+                td.getDingoType(),
+                td.getVersion(),
+                td.getKeyMapping(),
+                entry.getValue(),
+                SqlExprUtils.toSqlExpr(rel.getFilter()),
+                rel.getSelection()
             );
             operator.setId(idGenerator.get());
             Task task = job.getOrCreate(currentLocation, idGenerator);

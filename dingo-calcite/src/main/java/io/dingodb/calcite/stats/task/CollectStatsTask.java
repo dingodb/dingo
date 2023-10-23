@@ -65,7 +65,9 @@ public class CollectStatsTask implements Callable {
                             List<StatsNormal> statsNormals) {
         Part part = new PartInKvStore(
             Services.KV_STORE.getInstance(tableId, rangeDistribution.id()),
-            CodecService.getDefault().createKeyValueCodec(tableId, td.getDingoType(), td.getKeyMapping())
+            CodecService.getDefault().createKeyValueCodec(
+                td.getVersion(), tableId, td.getDingoType(), td.getKeyMapping()
+            )
         );
         tupleIterator = part.scan(rangeDistribution.getStartKey(), rangeDistribution.getEndKey(),
             rangeDistribution.isWithStart(), true);

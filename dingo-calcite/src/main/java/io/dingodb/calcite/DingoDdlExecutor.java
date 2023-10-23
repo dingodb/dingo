@@ -17,6 +17,7 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
+import io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
 import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
@@ -81,8 +82,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -492,8 +492,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             = getSchemaAndTableName(name, context);
         final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         String tableName = Parameters.nonNull(schemaTableName.right, "table name").toUpperCase();
-        TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
-        Map<CommonId, TableDefinition> indexDefinitionMap = schema.getMetaService().getTableIndexDefinitions(tableName);
+        DingoTable table = (DingoTable) schema.getTable(tableName);
+        TableDefinition tableDefinition = table.getTableDefinition();
+        Map<CommonId, TableDefinition> indexDefinitionMap = table.getIndexTableDefinitions();
         if (tableDefinition == null) {
             throw SqlUtil.newContextException(
                 name.getParserPosition(),
@@ -629,14 +630,39 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         schema.addDistribution(tableName, sqlAlterTableDistribution.getPartitionDefinition());
     }
 
+    public void execute(@NonNull SqlAlterAddColumn sqlAlterAddColumn, CalcitePrepare.Context context) {
+        final Pair<DingoSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlAlterAddColumn.table, context);
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        DingoTable table = (DingoTable) schema.getTable(tableName);
+        TableDefinition tableDefinition = table.getTableDefinition();
+        ColumnDefinition newColumn = fromSqlColumnDeclaration(
+            (DingoSqlColumn) sqlAlterAddColumn.getColumnDeclaration(),
+            new ContextSqlValidator(context, true),
+            tableDefinition.getKeyColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList())
+        );
+        List<ColumnDefinition> columns = new ArrayList<>();
+        columns.addAll(tableDefinition.getColumns());
+        if (tableDefinition.getColumn(newColumn.getName()) != null) {
+            throw new RuntimeException();
+        }
+        columns.add(newColumn);
+        tableDefinition.setColumns(columns);
+        schema.updateTable(tableName, tableDefinition);
+    }
+
     public void execute(@NonNull SqlAlterAddIndex sqlAlterAddIndex, CalcitePrepare.Context context) {
         final Pair<DingoSchema, String> schemaTableName
             = getSchemaAndTableName(sqlAlterAddIndex.table, context);
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
         final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
-        Index index = new Index(sqlAlterAddIndex.index, sqlAlterAddIndex.getColumnNames(), sqlAlterAddIndex.isUnique);
-        validateIndex(schema, tableName, index);
-        schema.createIndex(tableName, Collections.singletonList(index));
+        DingoTable table = (DingoTable) schema.getTable(tableName);
+        TableDefinition indexDefinition = fromSqlIndexDeclaration(
+            sqlAlterAddIndex.getIndexDeclaration(), table.getTableDefinition()
+        );
+        validateIndex(schema, tableName, indexDefinition);
+        schema.createIndex(tableName, indexDefinition);
     }
 
     public void execute(@NonNull SqlCreateIndex sqlCreateIndex, CalcitePrepare.Context context) {
@@ -645,8 +671,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
         final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         Index index = new Index(sqlCreateIndex.index, sqlCreateIndex.getColumnNames(), sqlCreateIndex.isUnique);
-        validateIndex(schema, tableName, index);
-        schema.createIndex(tableName, Arrays.asList(index));
+//        validateIndex(schema, tableName, index);
+//        schema.createIndex(tableName, Arrays.asList(index));
     }
 
     public void execute(@NonNull SqlDropIndex sqlDropIndex, CalcitePrepare.Context context) {
@@ -691,29 +717,43 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void validateDropIndex(DingoSchema schema, String tableName, String indexName) {
-        if (schema.getTable(tableName) == null) {
+        DingoTable table = (DingoTable) schema.getTable(tableName);
+        if (table == null) {
             throw new IllegalArgumentException("table " + tableName + " does not exist ");
         }
-        TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
-        if (tableDefinition != null) {
-            if (tableDefinition.getIndexes() == null) {
-                throw new IllegalArgumentException("index " + indexName + " does not exist ");
-            } else {
-                if (!tableDefinition.getIndexes().containsKey(indexName)) {
-                    throw new IllegalArgumentException("index " + indexName + " does not exist ");
-                }
-            }
-
+        Collection<TableDefinition> indexes = table.getIndexTableDefinitions().values();
+        if (indexes.stream().map(TableDefinition::getName).noneMatch(indexName::equalsIgnoreCase)) {
+            throw new RuntimeException("The index " + indexName + "not exist.");
         }
     }
 
-    public void validateIndex(DingoSchema schema, String tableName, Index newIndex) {
-        if (schema.getTable(tableName) == null) {
+    public void validateIndex(DingoSchema schema, String tableName, TableDefinition index) {
+        DingoTable table = (DingoTable) schema.getTable(tableName);
+        if (table == null) {
             throw new IllegalArgumentException("table " + tableName + " does not exist ");
         }
-        TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
-        if (tableDefinition != null) {
-            tableDefinition.validationIndex(newIndex);
+        String indexName = index.getName();
+        Collection<TableDefinition> indexes = table.getIndexTableDefinitions().values();
+        for (TableDefinition existIndex : indexes) {
+            String name = existIndex.getName();
+            if (indexName.equalsIgnoreCase(name)) {
+                throw new RuntimeException("The index " + indexName + " already exist.");
+            }
+            List<String> existIndexColumns = existIndex.getColumns().stream()
+                .map(ColumnDefinition::getName)
+                .sorted()
+                .collect(Collectors.toList());
+            List<String> newIndexColumns = index.getColumns().stream()
+                .map(ColumnDefinition::getName)
+                .sorted()
+                .collect(Collectors.toList());
+            if (existIndexColumns.equals(newIndexColumns)) {
+                throw new RuntimeException("The index columns same of " + existIndex.getName());
+            }
+            if ("vector".equalsIgnoreCase(index.getProperties().getProperty("indexType"))
+                && existIndex.getColumn(1).equals(index.getColumn(1))) {
+                throw new RuntimeException("The vector index column same of " + existIndex.getName());
+            }
         }
     }
 

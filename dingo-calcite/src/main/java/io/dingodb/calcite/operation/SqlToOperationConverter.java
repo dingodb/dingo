@@ -26,6 +26,7 @@ import io.dingodb.calcite.grammar.dql.SqlShowCreateUser;
 import io.dingodb.calcite.grammar.dql.SqlShowDatabases;
 import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
+import io.dingodb.calcite.grammar.dql.SqlShowTableIndex;
 import io.dingodb.calcite.grammar.dql.SqlShowTableDistribution;
 import io.dingodb.calcite.grammar.dql.SqlShowTableStatus;
 import io.dingodb.calcite.grammar.dql.SqlShowTables;
@@ -122,6 +123,9 @@ public class SqlToOperationConverter {
                 analyze.setSchemaName(getSchemaName(context));
             }
             return Optional.of(new AnalyzeTableOperation(analyze));
+        } else if (sqlNode instanceof SqlShowTableIndex) {
+            SqlShowTableIndex sqlShowTableIndex = (SqlShowTableIndex) sqlNode;
+            return Optional.of(new ShowTableIndexOperation(sqlNode, sqlShowTableIndex.tableName));
         } else {
             return Optional.empty();
         }

@@ -17,7 +17,6 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
-import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
 import lombok.Setter;

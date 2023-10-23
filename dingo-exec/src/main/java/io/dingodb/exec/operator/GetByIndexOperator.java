@@ -35,9 +35,9 @@ import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.codec.RawJsonDeserializer;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.table.PartInKvStore;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
-import io.dingodb.exec.table.PartInKvStore;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreService;
 import lombok.extern.slf4j.Slf4j;
@@ -107,7 +107,15 @@ public final class GetByIndexOperator extends PartIteratorSourceOperator {
         TableDefinition tableDefinition,
         boolean isLookup
     ) {
-        super(indexTableId, partId, tableDefinition.getDingoType(), indices, filter, selection);
+        super(
+            indexTableId,
+            partId,
+            tableDefinition.getDingoType(),
+            tableDefinition.getVersion(),
+            indices,
+            filter,
+            selection
+        );
         this.indexTableId = indexTableId;
         this.partId = partId;
         this.tableId = tableId;
@@ -183,7 +191,7 @@ public final class GetByIndexOperator extends PartIteratorSourceOperator {
             StoreService.getDefault().getInstance(indexTableId, partId, indexDefinition),
             codec
         );
-        lookupCodec = CodecService.getDefault().createKeyValueCodec(tableDefinition.getColumns());
+        lookupCodec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
     }
 
     private List<Iterator<Object[]>> scan() {

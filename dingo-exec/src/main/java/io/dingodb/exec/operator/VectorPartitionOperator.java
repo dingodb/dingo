@@ -36,9 +36,9 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.impl.OutputIml;
+import io.dingodb.meta.MetaService;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
-import io.dingodb.meta.MetaService;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
@@ -86,7 +86,8 @@ public class VectorPartitionOperator extends FanOutOperator {
         TupleMapping outputKeyMapping = TupleMapping.of(
             new int[] {0}
         );
-        this.codec = CodecService.getDefault().createKeyValueCodec(indexId, tupleType, outputKeyMapping);
+        this.codec = CodecService.getDefault()
+            .createKeyValueCodec(td.getVersion(), indexId, tupleType, outputKeyMapping);
         this.tableDefinition = td;
     }
 

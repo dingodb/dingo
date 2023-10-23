@@ -32,7 +32,7 @@ import java.util.List;
 
 @Slf4j
 @JsonTypeName("update")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "mapping", "updates", "output"})
+@JsonPropertyOrder({"table", "part", "schema", "schemaVersion", "keyMapping", "mapping", "updates", "output"})
 public final class PartUpdateOperator extends PartModifyOperator {
     @JsonProperty("mapping")
     private final TupleMapping mapping;
@@ -44,11 +44,12 @@ public final class PartUpdateOperator extends PartModifyOperator {
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
+        @JsonProperty("schemaVersion") int schemaVersion,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("mapping") TupleMapping mapping,
         @JsonProperty("updates") List<SqlExpr> updates
     ) {
-        super(tableId, partId, schema, keyMapping);
+        super(tableId, partId, schema, schemaVersion, keyMapping);
         this.mapping = mapping;
         this.updates = updates;
     }

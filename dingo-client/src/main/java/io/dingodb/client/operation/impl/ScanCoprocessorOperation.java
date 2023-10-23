@@ -36,7 +36,6 @@ import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.Parameters;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -118,6 +117,7 @@ public class ScanCoprocessorOperation implements Operation {
                 resultSchemas.add(buildColumnDefinition(alias, agg.operation.resultType(column.getType()), -1, column));
             }
             Coprocessor coprocessor = new Coprocessor(
+                tableInfo.definition.getVersion(),
                 aggregations.stream().map(agg -> mapping(agg, definition)).collect(Collectors.toList()),
                 new SchemaWrapper(tableInfo.tableId.entityId(), definition.getColumns()),
                 new SchemaWrapper(tableInfo.tableId.entityId(), resultSchemas.stream()
@@ -169,9 +169,9 @@ public class ScanCoprocessorOperation implements Operation {
         );
 
         List<Column> columnDefinitions = coprocessor.getResultSchema().getSchemas();
-        KeyValueCodec codec = new KeyValueCodec(
-            DingoKeyValueCodec.of(context.getTableId().entityId(), columnDefinitions), columnDefinitions
-        );
+        KeyValueCodec codec = new KeyValueCodec(DingoKeyValueCodec.of(
+            context.getTable().getVersion(), context.getTableId().entityId(), columnDefinitions
+        ), columnDefinitions);
         context.<Iterator<KeyValue>[]>result()[context.getSeq()] = new CoprocessorIterator(
             columnDefinitions, codec, scanResult, context.getTableId().entityId()
         );
@@ -193,27 +193,23 @@ public class ScanCoprocessorOperation implements Operation {
 
         List<Column> resultSchemas = coprocessor.resultSchema.getSchemas();
         for (KeyValue record : list) {
-            try {
-                Record current = new Record(columnDefinitions, codec.getKeyValueCodec().decode(record));
-                ByteArrayUtils.ComparableByteArray byteArray = new ByteArrayUtils.ComparableByteArray(record.getKey());
-                if (cache.get(byteArray) == null) {
-                    cache.put(byteArray, current);
-                    continue;
-                } else {
-                    for (int i = 1; i <= aggregations.size(); i++) {
-                        Record old = cache.get(byteArray);
-                        Object result = reduce(
-                            (KeyRangeCoprocessor.AggType) aggregations.get(aggregations.size() - i).getOperation(),
-                            current.getValues().get(current.getValues().size() - i),
-                            old.getValues().get(old.getValues().size() - i),
-                            resultSchemas.get(resultSchemas.size() - i));
-                        current.setValue(result, current.getValues().size() - i);
-                    }
-                }
+            Record current = new Record(columnDefinitions, codec.getKeyValueCodec().decode(record));
+            ByteArrayUtils.ComparableByteArray byteArray = new ByteArrayUtils.ComparableByteArray(record.getKey());
+            if (cache.get(byteArray) == null) {
                 cache.put(byteArray, current);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+                continue;
+            } else {
+                for (int i = 1; i <= aggregations.size(); i++) {
+                    Record old = cache.get(byteArray);
+                    Object result = reduce(
+                        (KeyRangeCoprocessor.AggType) aggregations.get(aggregations.size() - i).getOperation(),
+                        current.getValues().get(current.getValues().size() - i),
+                        old.getValues().get(old.getValues().size() - i),
+                        resultSchemas.get(resultSchemas.size() - i));
+                    current.setValue(result, current.getValues().size() - i);
+                }
             }
+            cache.put(byteArray, current);
         }
 
         if (standard) {

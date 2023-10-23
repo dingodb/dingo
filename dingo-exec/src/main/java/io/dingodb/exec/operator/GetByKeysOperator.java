@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @JsonTypeName("get")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "keys", "filter", "selection", "output"})
+@JsonPropertyOrder({"table", "part", "schema", "schemaVersion", "keyMapping", "keys", "filter", "selection", "output"})
 public final class GetByKeysOperator extends PartIteratorSourceOperator {
     private final List<Object[]> keyTuples;
 
@@ -49,12 +49,13 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
         CommonId tableId,
         CommonId partId,
         DingoType schema,
+        int schemaVersion,
         TupleMapping keyMapping,
         List<Object[]> keyTuples,
         SqlExpr filter,
         TupleMapping selection
     ) {
-        super(tableId, partId, schema, keyMapping, filter, selection);
+        super(tableId, partId, schema, schemaVersion, keyMapping, filter, selection);
         this.keyTuples = keyTuples;
     }
 
@@ -63,6 +64,7 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
+        @JsonProperty("schemaVersion") int schemaVersion,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonDeserialize(using = RawJsonDeserializer.class)
         @JsonProperty("keys") JsonNode jsonNode,
@@ -73,6 +75,7 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
             tableId,
             partId,
             schema,
+            schemaVersion,
             keyMapping,
             RawJsonDeserializer.convertBySchema(jsonNode, schema.select(keyMapping)),
             filter,
@@ -102,7 +105,7 @@ public final class GetByKeysOperator extends PartIteratorSourceOperator {
         super.init();
         part = new PartInKvStore(
             Services.KV_STORE.getInstance(tableId, partId),
-            CodecService.getDefault().createKeyValueCodec(schema, keyMapping)
+            CodecService.getDefault().createKeyValueCodec(schemaVersion, schema, keyMapping)
         );
     }
 }

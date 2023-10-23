@@ -32,7 +32,6 @@ import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.PartRangeScanOperator;
 import io.dingodb.meta.MetaService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.rex.RexCall;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -63,6 +62,7 @@ public final class DingoFunctionScanVisitFun {
                 tableId,
                 rd.id(),
                 td.getDingoType(),
+                td.getVersion(),
                 td.getKeyMapping(),
                 null,
                 td.getMapping(),

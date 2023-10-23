@@ -36,8 +36,6 @@ import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.CoalesceOperator;
 import io.dingodb.exec.operator.VectorPartitionOperator;
-import io.dingodb.partition.DingoPartitionServiceProvider;
-import io.dingodb.partition.PartitionService;
 import io.dingodb.meta.MetaService;
 
 import java.util.Collection;

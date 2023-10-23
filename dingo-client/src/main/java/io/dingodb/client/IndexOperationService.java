@@ -102,11 +102,7 @@ public class IndexOperationService {
 
         Parameter parameter = (Parameter) parameters;
         DingoCommonId regionId;
-        try {
-            regionId = tableInfo.calcRegionId(tableInfo.codec.encodeKey(parameter.record));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        regionId = tableInfo.calcRegionId(tableInfo.codec.encodeKey(parameter.record));
 
         Function<Operation, Class<? extends Operation>> func = Operation::getClass;
         StoreInstance storeInstance =
@@ -217,7 +213,9 @@ public class IndexOperationService {
             NavigableMap<ComparableByteArray, RangeDistribution> parts = new TreeMap<>();
             metaService.getRangeDistribution(tableId)
                 .forEach((k, v) -> parts.put(new ComparableByteArray(k.getBytes(), k.isIgnoreLen(), k.getPos()), v));
-            KeyValueCodec keyValueCodec = new KeyValueCodec(DingoKeyValueCodec.of(tableId.entityId(), table), table);
+            KeyValueCodec keyValueCodec = new KeyValueCodec(
+                DingoKeyValueCodec.of(table.getVersion(), tableId.entityId(), table), table
+            );
 
             return new TableInfo(schemaName, tableName, tableId, table, keyValueCodec, parts);
         } catch (Exception e) {

@@ -112,38 +112,34 @@ public class GetOperation implements Operation {
 
     @Override
     public void exec(OperationContext context) {
-        try {
-            Map<byte[], Integer> parameters = context.parameters();
-            ArrayList<byte[]> keys = new ArrayList<>(parameters.keySet());
-            Map<byte[], KeyValue> result = new TreeMap<>(ByteArrayUtils::compare);
-            DingoCommonId regionId = context.getRegionId();
-            context.getStoreService().kvBatchGet(
-                context.getTableId(),
-                regionId,
-                keys.stream()
-                    .map(k -> context.getCodec().resetPrefix(k, regionId.parentId()))
-                    .collect(Collectors.toList())
-            ).forEach(kv -> {
-                byte[] bytes = context.getCodec().resetPrefix(kv.getKey(), context.getTableId().entityId());
-                result.put(bytes, new KeyValue(bytes, kv.getValue()));
-            });
-            for (int i = 0; i < keys.size(); i++) {
-                KeyValue keyValue = result.get(keys.get(i));
-                if (keyValue == null) {
-                    continue;
-                }
-                Object[] values;
-                if (standard) {
-                    values = context.getCodec().decode(keyValue);
-                } else {
-                    values = context.getCodec().getKeyValueCodec().decode(keyValue);
-                }
-                context.<Record[]>result()[parameters.get(keys.get(i))] = new Record(
-                    context.getTable().getColumns(), values
-                );
+        Map<byte[], Integer> parameters = context.parameters();
+        ArrayList<byte[]> keys = new ArrayList<>(parameters.keySet());
+        Map<byte[], KeyValue> result = new TreeMap<>(ByteArrayUtils::compare);
+        DingoCommonId regionId = context.getRegionId();
+        context.getStoreService().kvBatchGet(
+            context.getTableId(),
+            regionId,
+            keys.stream()
+                .map(k -> context.getCodec().resetPrefix(k, regionId.parentId()))
+                .collect(Collectors.toList())
+        ).forEach(kv -> {
+            byte[] bytes = context.getCodec().resetPrefix(kv.getKey(), context.getTableId().entityId());
+            result.put(bytes, new KeyValue(bytes, kv.getValue()));
+        });
+        for (int i = 0; i < keys.size(); i++) {
+            KeyValue keyValue = result.get(keys.get(i));
+            if (keyValue == null) {
+                continue;
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            Object[] values;
+            if (standard) {
+                values = context.getCodec().decode(keyValue);
+            } else {
+                values = context.getCodec().getKeyValueCodec().decode(keyValue);
+            }
+            context.<Record[]>result()[parameters.get(keys.get(i))] = new Record(
+                context.getTable().getColumns(), values
+            );
         }
     }
 

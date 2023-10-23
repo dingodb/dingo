@@ -88,7 +88,7 @@ public final class DingoGetByIndexVisitFun {
                     .map(PartitionDefinition::getFuncName)
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
 
-            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTd.getColumns());
+            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTd);
             List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(indexValSet.getValue(), indexTd);
 
             Map<CommonId, List<Object[]>> partMap = new LinkedHashMap<>();

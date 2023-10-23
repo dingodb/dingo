@@ -55,16 +55,12 @@ public class VectorBatchQueryOperation implements Operation {
             if (id < 0) {
                 id = 0L;
             }
-            try {
-                byte[] key = indexInfo.codec.encodeKey(new Object[]{id});
-                Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
-                    indexInfo.calcRegionId(key), k -> new Any(new HashMap<>())
-                ).getValue();
+            byte[] key = indexInfo.codec.encodeKey(new Object[]{id});
+            Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
+                indexInfo.calcRegionId(key), k -> new Any(new HashMap<>())
+            ).getValue();
 
-                regionParams.put(id, i++);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            regionParams.put(id, i++);
         }
 
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
@@ -78,16 +74,12 @@ public class VectorBatchQueryOperation implements Operation {
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
 
         for (Map.Entry<Long, Integer> parameter : parameters.entrySet()) {
-            try {
-                byte[] key = indexInfo.codec.encodeKey(new Object[]{parameter.getKey()});
-                Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
-                    indexInfo.calcRegionId(key), k -> new Any(new HashMap<>())
-                ).getValue();
+            byte[] key = indexInfo.codec.encodeKey(new Object[]{parameter.getKey()});
+            Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
+                indexInfo.calcRegionId(key), k -> new Any(new HashMap<>())
+            ).getValue();
 
-                regionParams.put(parameter.getKey(), parameter.getValue());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            regionParams.put(parameter.getKey(), parameter.getValue());
         }
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
         return new Fork(context.result(), subTasks, false);

@@ -77,6 +77,7 @@ public final class DingoRangeDeleteVisitFun {
                 tableInfo.getId(),
                 rd.id(),
                 td.getDingoType(),
+                td.getVersion(),
                 td.getKeyMapping(),
                 rd.getStartKey(),
                 rd.getEndKey(),

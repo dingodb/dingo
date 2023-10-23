@@ -98,6 +98,7 @@ public final class DingoVectorVisitFun {
                 tableId,
                 rangeDistribution.id(),
                 td.getDingoType(),
+                td.getVersion(),
                 td.getKeyMapping(),
                 null,
                 TupleMapping.of(select),

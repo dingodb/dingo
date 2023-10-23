@@ -65,26 +65,26 @@ public class KeyValueCodec implements io.dingodb.sdk.common.codec.KeyValueCodec 
         return DingoTypeFactory.fromName(column.getType(), column.getElementType(), column.isNullable());
     }
 
-    public Object[] decode(KeyValue keyValue) throws IOException {
+    public Object[] decode(KeyValue keyValue) {
         return (Object[]) dingoType.convertFrom(keyValueCodec.decode(keyValue), DingoConverter.INSTANCE);
     }
 
     @Override
-    public Object[] decodeKeyPrefix(byte[] keyPrefix) throws IOException {
+    public Object[] decodeKeyPrefix(byte[] keyPrefix) {
         return (Object[]) dingoType.convertFrom(keyValueCodec.decodeKeyPrefix(keyPrefix), DingoConverter.INSTANCE);
     }
 
-    public KeyValue encode(Object @NonNull [] record) throws IOException {
+    public KeyValue encode(Object @NonNull [] record) {
         Object[] converted = (Object[]) dingoType.convertTo(record, DingoConverter.INSTANCE);
         return keyValueCodec.encode(converted);
     }
 
-    public byte[] encodeKey(Object[] record) throws IOException {
+    public byte[] encodeKey(Object[] record) {
         Object[] converted = (Object[]) dingoType.convertTo(record, DingoConverter.INSTANCE);
         return keyValueCodec.encodeKey(converted);
     }
 
-    public byte[] encodeKeyPrefix(Object[] record, int columnCount) throws IOException {
+    public byte[] encodeKeyPrefix(Object[] record, int columnCount) {
         Object[] converted = (Object[]) dingoType.convertTo(record, DingoConverter.INSTANCE);
         return keyValueCodec.encodeKeyPrefix(converted, columnCount);
     }

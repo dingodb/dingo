@@ -29,14 +29,17 @@ import java.util.Iterator;
 public abstract class FilterProjectSourceOperator extends IteratorSourceOperator {
     @JsonProperty("schema")
     protected final DingoType schema;
+    @JsonProperty("schemaVersion")
+    protected final int schemaVersion;
     @JsonProperty("filter")
     protected SqlExpr filter;
     @JsonProperty("selection")
     protected TupleMapping selection;
 
-    public FilterProjectSourceOperator(DingoType schema, SqlExpr filter, TupleMapping selection) {
+    public FilterProjectSourceOperator(DingoType schema, int schemaVersion, SqlExpr filter, TupleMapping selection) {
         super();
         this.schema = schema;
+        this.schemaVersion = schemaVersion;
         this.filter = filter;
         this.selection = selection;
     }

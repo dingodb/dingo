@@ -55,19 +55,24 @@ public class DingoTableModifyVisitFun {
             Operator operator;
             switch (rel.getOperation()) {
                 case INSERT:
-                    operator = new PartInsertOperator(tableId, input.getHint().getPartId(), td.getDingoType(),
-                        td.getKeyMapping()
+                    operator = new PartInsertOperator(
+                        tableId, input.getHint().getPartId(), td.getDingoType(), td.getVersion(), td.getKeyMapping()
                     );
                     break;
                 case UPDATE:
-                    operator = new PartUpdateOperator(tableId, input.getHint().getPartId(), td.getDingoType(),
-                        td.getKeyMapping(), TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
+                    operator = new PartUpdateOperator(
+                        tableId,
+                        input.getHint().getPartId(),
+                        td.getDingoType(),
+                        td.getVersion(),
+                        td.getKeyMapping(),
+                        TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
                         rel.getSourceExpressionList().stream().map(SqlExprUtils::toSqlExpr).collect(Collectors.toList())
                     );
                     break;
                 case DELETE:
-                    operator = new PartDeleteOperator(tableId, input.getHint().getPartId(), td.getDingoType(),
-                        td.getKeyMapping()
+                    operator = new PartDeleteOperator(
+                        tableId, input.getHint().getPartId(), td.getDingoType(), td.getVersion(),td.getKeyMapping()
                     );
                     break;
                 default:

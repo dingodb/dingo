@@ -23,7 +23,6 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
@@ -36,7 +35,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -200,24 +198,10 @@ public class LocalMetaService implements MetaService {
     }
 
     @Override
-    public List<TableDefinition> getTableDefinitions(@NonNull String name) {
-        //TODO:
-        return Collections.singletonList(getTableDefinition(name));
-    }
-
-    @Override
     public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id) {
         //TODO:
         Map<CommonId, TableDefinition> map = new HashMap<>();
         map.put(id, getTableDefinition(id));
-        return map;
-    }
-
-    @Override
-    public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull String name) {
-        //TODO:
-        Map<CommonId, TableDefinition> map = new HashMap<>();
-        map.put(getTableId(name), getTableDefinition(name));
         return map;
     }
 
@@ -232,24 +216,8 @@ public class LocalMetaService implements MetaService {
     }
 
     @Override
-    public NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull String name) {
-        return Parameters.cleanNull(distributions.get(id), defaultDistributions);
-    }
-
-    @Override
     public Location currentLocation() {
         return location;
-    }
-
-    @Override
-    public void createIndex(String tableName, @NonNull List<Index> indexList) {
-        TableDefinition td = getTableDefinition(tableName);
-        indexList.forEach(td::addIndex);
-    }
-
-    @Override
-    public void dropIndex(String tableName, String indexName) {
-
     }
 
     public void createDistribution(

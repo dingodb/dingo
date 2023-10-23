@@ -53,7 +53,7 @@ import java.util.NavigableMap;
 @Slf4j
 @JsonTypeName("scan")
 @JsonPropertyOrder({
-    "table", "part", "schema", "keyMapping", "filter", "selection", "indexId", "indexRegionId"
+    "table", "part", "schema", "schemaVersion", "keyMapping", "filter", "selection", "indexId", "indexRegionId"
 })
 public final class PartVectorOperator extends PartIteratorSourceOperator {
 
@@ -91,6 +91,7 @@ public final class PartVectorOperator extends PartIteratorSourceOperator {
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
+        @JsonProperty("schemaVersion") int schemaVersion,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("filter") SqlExpr filter,
         @JsonProperty("selection") TupleMapping selection,
@@ -102,7 +103,7 @@ public final class PartVectorOperator extends PartIteratorSourceOperator {
         @JsonProperty("topN") int topN,
         @JsonProperty("topN") Map<String, Object> parameterMap
     ) {
-        super(tableId, partId, schema, keyMapping, filter, selection);
+        super(tableId, partId, schema, schemaVersion, keyMapping, filter, selection);
         this.codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
         this.tableDefinition = tableDefinition;
         this.distributions = distributions;

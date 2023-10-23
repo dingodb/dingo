@@ -39,24 +39,34 @@ public interface CodecService {
         return new KeyValue(setId(keyValue.getKey(), id), keyValue.getValue());
     }
 
-    KeyValueCodec createKeyValueCodec(CommonId id, DingoType type, TupleMapping keyMapping);
+    KeyValueCodec createKeyValueCodec(int version, CommonId id, DingoType type, TupleMapping keyMapping);
 
-    KeyValueCodec createKeyValueCodec(CommonId id, List<ColumnDefinition> columns);
+    KeyValueCodec createKeyValueCodec(int version, CommonId id, List<ColumnDefinition> columns);
+
+    @Deprecated
+    default KeyValueCodec createKeyValueCodec(CommonId id, DingoType type, TupleMapping keyMapping) {
+        return createKeyValueCodec(1, id, type, keyMapping);
+    }
+
+    @Deprecated
+    default KeyValueCodec createKeyValueCodec(CommonId id, List<ColumnDefinition> columns) {
+        return createKeyValueCodec(1, id, columns);
+    }
 
     default KeyValueCodec createKeyValueCodec(CommonId id, TableDefinition tableDefinition) {
-        return createKeyValueCodec(id, tableDefinition.getColumns());
+        return createKeyValueCodec(tableDefinition.getVersion(), id, tableDefinition.getColumns());
     }
 
-    default KeyValueCodec createKeyValueCodec(DingoType type, TupleMapping keyMapping) {
-        return createKeyValueCodec(CommonId.EMPTY_TABLE, type, keyMapping);
+    default KeyValueCodec createKeyValueCodec(int version, DingoType type, TupleMapping keyMapping) {
+        return createKeyValueCodec(version, CommonId.EMPTY_TABLE, type, keyMapping);
     }
 
-    default KeyValueCodec createKeyValueCodec(List<ColumnDefinition> columns) {
-        return createKeyValueCodec(CommonId.EMPTY_TABLE, columns);
+    default KeyValueCodec createKeyValueCodec(int version, List<ColumnDefinition> columns) {
+        return createKeyValueCodec(version, CommonId.EMPTY_TABLE, columns);
     }
 
     default KeyValueCodec createKeyValueCodec(TableDefinition tableDefinition) {
-        return createKeyValueCodec(CommonId.EMPTY_TABLE, tableDefinition.getColumns());
+        return createKeyValueCodec(tableDefinition.getVersion(), CommonId.EMPTY_TABLE, tableDefinition.getColumns());
     }
 
 }

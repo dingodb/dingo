@@ -18,6 +18,7 @@ package io.dingodb.web.handler;
 
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.web.utils.Message;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import static io.dingodb.common.util.StackTraces.CURRENT_STACK;
 import static io.dingodb.common.util.StackTraces.formatStackTrace;
 
+@Slf4j
 @RestControllerAdvice
 public class ExceptionHandle {
 
@@ -38,6 +40,7 @@ public class ExceptionHandle {
         if (e instanceof DingoClientException) {
             code = ((DingoClientException) e).getErrorCode();
         }
+        log.error(stackTrace, e);
         return new Message(code, e.getMessage(), stackTrace);
     }
 

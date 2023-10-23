@@ -41,6 +41,8 @@ public abstract class PartModifyOperator extends SoleOutOperator {
     protected final CommonId partId;
     @JsonProperty("schema")
     protected final DingoType schema;
+    @JsonProperty("schemaVersion")
+    protected final int schemaVersion;
     @JsonProperty("keyMapping")
     protected final TupleMapping keyMapping;
 
@@ -51,19 +53,21 @@ public abstract class PartModifyOperator extends SoleOutOperator {
         CommonId tableId,
         CommonId partId,
         DingoType schema,
+        int schemaVersion,
         TupleMapping keyMapping
     ) {
         super();
         this.tableId = tableId;
         this.partId = partId;
         this.schema = schema;
+        this.schemaVersion = schemaVersion;
         this.keyMapping = keyMapping;
     }
 
     protected Part getPart() {
         return new PartInKvStore(
             Services.KV_STORE.getInstance(tableId, partId),
-            CodecService.getDefault().createKeyValueCodec(schema, keyMapping)
+            CodecService.getDefault().createKeyValueCodec(schemaVersion, schema, keyMapping)
         );
     }
 

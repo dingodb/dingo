@@ -261,37 +261,30 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
                     DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(0l, singletonList(schema));
                     DingoCommonId regionId;
-                    try {
-                        CommonId commonId = mapping(indexId);
-                        NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.common.partition.RangeDistribution> distribution = MetaService.root().getIndexRangeDistribution(commonId, mapping(index));
-                        PartitionService ps = PartitionService.getService(
-                            Optional.ofNullable(index.getPartition())
-                                .map(Partition::getFuncName)
-                                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-                        regionId = mapping(ps.calcPartId(vectorCodec.encodeKey(new Object[]{id}),distribution));
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+                    CommonId commonId = mapping(indexId);
+                    NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.common.partition.RangeDistribution> distribution = MetaService.root().getIndexRangeDistribution(commonId, mapping(index));
+                    PartitionService ps = PartitionService.getService(
+                        Optional.ofNullable(index.getPartition())
+                            .map(Partition::getFuncName)
+                            .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+                    regionId = mapping(ps.calcPartId(vectorCodec.encodeKey(new Object[]{id}),distribution));
+
                     result = indexService.vectorDelete(indexId, regionId, singletonList(id)).get(0);
                 } else {
                     List<DingoSchema> schemas = index.getKeyColumns().stream()
                         .map(k -> CodecUtils.createSchemaForColumn(k, table.getColumnIndex(k.getName())))
                         .collect(Collectors.toList());
                     DingoKeyValueCodec indexCodec = new DingoKeyValueCodec(0l, schemas);
-                    try {
-                        byte[] bytes = indexCodec.encodeKey(record);
-                        CommonId commonId = mapping(indexId);
-                        NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.common.partition.RangeDistribution> distribution = MetaService.root().getIndexRangeDistribution(commonId, mapping(index));
-                        PartitionService ps = PartitionService.getService(
-                            Optional.ofNullable(index.getPartition())
-                                .map(Partition::getFuncName)
-                                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-                        DingoCommonId regionId = mapping(ps.calcPartId(bytes, distribution));
-                        result = storeService.kvBatchDelete(indexId, regionId,
-                            singletonList(indexCodec.resetPrefix(bytes, regionId.parentId()))).get(0);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+                    byte[] bytes = indexCodec.encodeKey(record);
+                    CommonId commonId = mapping(indexId);
+                    NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.common.partition.RangeDistribution> distribution = MetaService.root().getIndexRangeDistribution(commonId, mapping(index));
+                    PartitionService ps = PartitionService.getService(
+                        Optional.ofNullable(index.getPartition())
+                            .map(Partition::getFuncName)
+                            .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+                    DingoCommonId regionId = mapping(ps.calcPartId(bytes, distribution));
+                    result = storeService.kvBatchDelete(indexId, regionId,
+                        singletonList(indexCodec.resetPrefix(bytes, regionId.parentId()))).get(0);
                 }
                 if (!result) {
                     return false;
@@ -321,18 +314,14 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                         String.valueOf(oldRecord[table.getColumnIndex(primaryKey.getName())])
                     );
                     if (newLongId != oldLongId) {
-                        try {
-                            CommonId commonId = mapping(indexId);
-                            NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.common.partition.RangeDistribution> distribution = MetaService.root().getIndexRangeDistribution(commonId, mapping(index));
-                            PartitionService ps = PartitionService.getService(
-                                Optional.ofNullable(index.getPartition())
-                                    .map(Partition::getFuncName)
-                                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-                            DingoCommonId regionId = mapping(ps.calcPartId(vectorCodec.encodeKey(new Object[]{oldLongId}), distribution));
-                            indexService.vectorDelete(indexId, regionId, singletonList(oldLongId));
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
+                        CommonId commonId = mapping(indexId);
+                        NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.common.partition.RangeDistribution> distribution = MetaService.root().getIndexRangeDistribution(commonId, mapping(index));
+                        PartitionService ps = PartitionService.getService(
+                            Optional.ofNullable(index.getPartition())
+                                .map(Partition::getFuncName)
+                                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+                        DingoCommonId regionId = mapping(ps.calcPartId(vectorCodec.encodeKey(new Object[]{oldLongId}), distribution));
+                        indexService.vectorDelete(indexId, regionId, singletonList(oldLongId));
                     }
                 } else {
                     List<DingoSchema> schemas = new ArrayList<>();
@@ -340,24 +329,20 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                         schemas.add(CodecUtils.createSchemaForColumn(column, table.getColumnIndex(column.getName())));
                     }
                     DingoKeyValueCodec indexCodec = new DingoKeyValueCodec(0l, schemas);
-                    try {
-                        io.dingodb.sdk.common.KeyValue newKv = indexCodec.encode(newRecord);
-                        io.dingodb.sdk.common.KeyValue oldKv = indexCodec.encode(oldRecord);
-                        if (!equal(newKv.getKey(), oldKv.getKey())) {
-                            CommonId commonId = mapping(indexId);
-                            NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.common.partition.RangeDistribution> distribution = MetaService.root().getIndexRangeDistribution(commonId, mapping(index));
-                            PartitionService ps = PartitionService.getService(
-                                Optional.ofNullable(index.getPartition())
-                                    .map(Partition::getFuncName)
-                                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-                            DingoCommonId regionId = mapping(ps.calcPartId(oldKv.getKey(), distribution));
-                            storeService.kvBatchDelete(
-                                indexId,
-                                regionId,
-                                singletonList(indexCodec.resetPrefix(oldKv.getKey(), regionId.parentId())));
-                        }
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
+                    io.dingodb.sdk.common.KeyValue newKv = indexCodec.encode(newRecord);
+                    io.dingodb.sdk.common.KeyValue oldKv = indexCodec.encode(oldRecord);
+                    if (!equal(newKv.getKey(), oldKv.getKey())) {
+                        CommonId commonId = mapping(indexId);
+                        NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.common.partition.RangeDistribution> distribution = MetaService.root().getIndexRangeDistribution(commonId, mapping(index));
+                        PartitionService ps = PartitionService.getService(
+                            Optional.ofNullable(index.getPartition())
+                                .map(Partition::getFuncName)
+                                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+                        DingoCommonId regionId = mapping(ps.calcPartId(oldKv.getKey(), distribution));
+                        storeService.kvBatchDelete(
+                            indexId,
+                            regionId,
+                            singletonList(indexCodec.resetPrefix(oldKv.getKey(), regionId.parentId())));
                     }
                 }
                 if (!result) {
@@ -506,11 +491,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             Object[] newRecord = (Object[]) tableCodec.type.convertTo(record, DingoConverter.INSTANCE);
             DingoKeyValueCodec indexCodec = new DingoKeyValueCodec(0l, schemas);
             io.dingodb.sdk.common.KeyValue keyValue;
-            try {
-                keyValue = indexCodec.encode(newRecord);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            keyValue = indexCodec.encode(newRecord);
             CommonId commonId = mapping(indexId);
             NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.common.partition.RangeDistribution> distribution = MetaService.root().getIndexRangeDistribution(commonId, mapping(index));
             PartitionService ps = PartitionService.getService(
@@ -535,20 +516,19 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
             DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(0l, singletonList(schema));
             DingoCommonId regionId;
-            try {
-                CommonId commonId = mapping(indexId);
-                NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.common.partition.RangeDistribution> distribution = MetaService.root().getIndexRangeDistribution(commonId, mapping(index));
-                PartitionService ps
-                    = PartitionService.getService(index.getPartition().getFuncName());
-                regionId = mapping(ps.calcPartId(vectorCodec.encodeKey(new Object[]{longId}), distribution));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            CommonId commonId = mapping(indexId);
+            NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.common.partition.RangeDistribution> distribution = MetaService.root().getIndexRangeDistribution(commonId, mapping(index));
+            PartitionService ps
+                = PartitionService.getService(index.getPartition().getFuncName());
+            regionId = mapping(ps.calcPartId(vectorCodec.encodeKey(new Object[]{longId}), distribution));
 
             Column value = index.getColumns().get(1);
             Vector vector;
             if (value.getElementType().equalsIgnoreCase("FLOAT")) {
                 List<Float> values = (List<Float>) record[table.getColumnIndex(value.getName())];
+                if (values == null) {
+                    return;
+                }
                 vector = Vector.getFloatInstance(values.size(), values);
             } else {
                 List<byte[]> values = (List<byte[]>) record[table.getColumnIndex(value.getName())];

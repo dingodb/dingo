@@ -48,13 +48,9 @@ public class RecordIterator implements Iterator<Record> {
 
     @Override
     public Record next() {
-        try {
-            KeyValue keyValue = kvIterator.next();
-            return new Record(
-                columns,
-                codec.decode(new KeyValue(codec.resetPrefix(keyValue.getKey(), id), keyValue.getValue())));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        KeyValue keyValue = kvIterator.next();
+        return new Record(
+            columns,
+            codec.decode(new KeyValue(codec.resetPrefix(keyValue.getKey(), id), keyValue.getValue())));
     }
 }

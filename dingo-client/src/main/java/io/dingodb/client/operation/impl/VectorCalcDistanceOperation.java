@@ -46,15 +46,11 @@ public class VectorCalcDistanceOperation implements Operation {
         NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
         Map<DingoCommonId, VectorCalcDistance> subTaskMap = new HashMap<>();
 
-        try {
-            byte[] bytes = indexInfo.codec.encodeKey(new Object[]{calcDistance.getVectorId()});
-            subTaskMap.putIfAbsent(
-                indexInfo.calcRegionId(bytes),
-                calcDistance
-            );
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        byte[] bytes = indexInfo.codec.encodeKey(new Object[]{calcDistance.getVectorId()});
+        subTaskMap.putIfAbsent(
+            indexInfo.calcRegionId(bytes),
+            calcDistance
+        );
 
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, wrap(v))));
         return new Fork(new VectorDistanceRes[subTasks.size()], subTasks, false);
