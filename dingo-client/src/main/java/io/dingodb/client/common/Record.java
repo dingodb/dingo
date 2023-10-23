@@ -299,4 +299,12 @@ public final class Record {
         }
         return stringJoiner.toString();
     }
+
+    public String toJson() {
+        StringJoiner stringJoiner = new StringJoiner(", ", "{", "}");
+        for (int i = 0; i < columns.length; i++) {
+            stringJoiner.add("\"" + columns[i].getName() + "\": " + (values[i].getType() == Value.ParticleType.STRING ? "\"" + values[i] + "\"" : values[i]));
+        }
+        return stringJoiner.toString();
+    }
 }
