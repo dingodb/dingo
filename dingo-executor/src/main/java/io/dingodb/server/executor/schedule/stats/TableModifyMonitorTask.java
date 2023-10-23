@@ -37,7 +37,7 @@ public class TableModifyMonitorTask extends StatsOperator implements Runnable {
 
         MetaService metaService = MetaService.root();
         List<Object[]> analyzeTaskList = new ArrayList<>();
-        Map<CommonId, Long> commitCountMap = metaService.getTableCommitCount();
+        Map<CommonId, Long> commitCountMap = metaService.getAllTableCommitCount();
         Map<String, MetaService> subMetaServiceMap = metaService.getSubMetaServices();
         subMetaServiceMap.forEach((key, subMetaService) -> {
             if (key.equalsIgnoreCase("mysql")

@@ -31,6 +31,7 @@ import java.util.List;
 @AllArgsConstructor
 public class Coprocessor implements io.dingodb.sdk.service.store.Coprocessor {
 
+    public final int schemaVersion;
     public final List<io.dingodb.sdk.service.store.AggregationOperator> aggregations;
     public final SchemaWrapper originalSchema;
     public final SchemaWrapper resultSchema;
@@ -38,7 +39,7 @@ public class Coprocessor implements io.dingodb.sdk.service.store.Coprocessor {
 
     @Override
     public int getSchemaVersion() {
-        return 0;
+        return schemaVersion;
     }
 
     @Override

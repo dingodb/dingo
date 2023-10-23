@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @JsonTypeName("removePart")
-@JsonPropertyOrder({"table", "partStartKey", "schema", "keyMapping", "output"})
+@JsonPropertyOrder({"table", "partStartKey", "schema", "schemaVersion", "keyMapping", "output"})
 public final class RemovePartOperator extends SourceOperator {
     @JsonProperty("table")
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
@@ -49,6 +49,9 @@ public final class RemovePartOperator extends SourceOperator {
     @JsonProperty("schema")
     private final DingoType schema;
 
+    @JsonProperty("schemaVersion")
+    private final int schemaVersion;
+
     @JsonProperty("keyMapping")
     private final TupleMapping keyMapping;
 
@@ -59,12 +62,14 @@ public final class RemovePartOperator extends SourceOperator {
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
+        @JsonProperty("schemaVersion") int schemaVersion,
         @JsonProperty("keyMapping") TupleMapping keyMapping
     ) {
         this.tableId = tableId;
         this.partId = partId;
         this.keyMapping = keyMapping;
         this.schema = schema;
+        this.schemaVersion = schemaVersion;
     }
 
     @Override
@@ -72,7 +77,7 @@ public final class RemovePartOperator extends SourceOperator {
         super.init();
         part = new PartInKvStore(
             Services.KV_STORE.getInstance(tableId, partId),
-            CodecService.getDefault().createKeyValueCodec(schema, keyMapping)
+            CodecService.getDefault().createKeyValueCodec(schemaVersion, schema, keyMapping)
         );
     }
 

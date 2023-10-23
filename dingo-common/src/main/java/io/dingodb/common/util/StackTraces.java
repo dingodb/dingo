@@ -100,8 +100,16 @@ public final class StackTraces {
     public static String formatStackTrace(StackTraceElement[] stackTrace, int stack, int deep) {
         StringJoiner joiner = new StringJoiner("\n    =======> ", "[\n    |||||||| ", "\n]");
         deep = (deep += stack) < 0 ? stackTrace.length - 1 : Math.min(deep, stackTrace.length - 1);
+        boolean dingoStack = false;
         for (int i = deep; i > stack; i--) {
-            joiner.add(stackTrace[i].toString());
+            String trace = stackTrace[i].toString();
+            if (dingoStack) {
+                joiner.add(trace);
+                continue;
+            }
+            if (trace.contains("dingo")) {
+                dingoStack = true;
+            }
         }
         return joiner.toString();
     }

@@ -44,11 +44,12 @@ public abstract class PartIteratorSourceOperator extends FilterProjectSourceOper
         CommonId tableId,
         CommonId partId,
         DingoType schema,
+        int schemaVersion,
         TupleMapping keyMapping,
         SqlExpr filter,
         TupleMapping selection
     ) {
-        super(schema, filter, selection);
+        super(schema, schemaVersion, filter, selection);
         this.tableId = tableId;
         this.partId = partId;
         this.keyMapping = keyMapping;

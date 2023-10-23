@@ -121,9 +121,9 @@ public class IndexController {
 
     @ApiOperation("Get index")
     @GetMapping("/api/{schema}/{index}")
-    public Result<Index> get(@PathVariable String schema, @PathVariable String index) {
+    public Result<IndexDefinition> get(@PathVariable String schema, @PathVariable String index) {
         try {
-            return Result.ok(dingoClient.getIndex(schema, index));
+            return Result.ok(mapper.mapping(dingoClient.getIndex(schema, index)));
         } catch (Exception e) {
             return Result.errorMsg(e.getMessage());
         }

@@ -77,6 +77,7 @@ public class TableFunctionNamespace extends AbstractNamespace {
         }
 
         String indexTableName = "";
+        String indexColumn = ((SqlIdentifier) operandList.get(1)).getSimple().toUpperCase();
         // Get all index table definition
         Map<CommonId, TableDefinition> indexDefinitions = dingoTable.getIndexTableDefinitions();
         for (Map.Entry<CommonId, TableDefinition> entry : indexDefinitions.entrySet()) {
@@ -91,7 +92,7 @@ public class TableFunctionNamespace extends AbstractNamespace {
             List<String> indexColumns = indexTableDefinition.getColumns().stream().map(ColumnDefinition::getName)
                 .collect(Collectors.toList());
             // Skip if the vector column is not included
-            if (!indexColumns.contains(((SqlIdentifier) operandList.get(1)).getSimple().toUpperCase())) {
+            if (!indexColumns.contains(indexColumn)) {
                 continue;
             }
 
@@ -99,6 +100,10 @@ public class TableFunctionNamespace extends AbstractNamespace {
             this.indexTableId = entry.getKey();
             this.indexTableDefinition  = indexTableDefinition;
             break;
+        }
+
+        if (indexTableId == null) {
+            throw new RuntimeException("Not found index for " + indexColumn);
         }
 
         cols.add(ColumnDefinition

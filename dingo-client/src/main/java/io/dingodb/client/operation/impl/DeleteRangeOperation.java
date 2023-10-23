@@ -99,20 +99,16 @@ public class DeleteRangeOperation implements Operation {
         } catch (Exception e) {
             count = -1;
         }
-        try {
-            context.<DeleteRangeResult.DeleteResult[]>result()[context.getSeq()] = new DeleteRangeResult.DeleteResult(
-                count,
-                new OpKeyRange(
-                    new Key(Arrays.stream(
-                        codec.decodeKeyPrefix(codec.resetPrefix(range.getStartKey(), context.getTableId().entityId()))
-                    ).map(Value::get).collect(Collectors.toList())),
-                    new Key(Arrays.stream(
-                        codec.decodeKeyPrefix(codec.resetPrefix(range.getEndKey(), context.getTableId().entityId()))
-                    ).map(Value::get).collect(Collectors.toList())),
-                    range.withStart, range.withEnd));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        context.<DeleteRangeResult.DeleteResult[]>result()[context.getSeq()] = new DeleteRangeResult.DeleteResult(
+            count,
+            new OpKeyRange(
+                new Key(Arrays.stream(
+                    codec.decodeKeyPrefix(codec.resetPrefix(range.getStartKey(), context.getTableId().entityId()))
+                ).map(Value::get).collect(Collectors.toList())),
+                new Key(Arrays.stream(
+                    codec.decodeKeyPrefix(codec.resetPrefix(range.getEndKey(), context.getTableId().entityId()))
+                ).map(Value::get).collect(Collectors.toList())),
+                range.withStart, range.withEnd));
     }
 
     @Override

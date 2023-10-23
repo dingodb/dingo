@@ -26,16 +26,17 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.converter.ValueConverter;
 
 @JsonTypeName("insert")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "output"})
+@JsonPropertyOrder({"table", "part", "schema", "schemaVersion", "keyMapping", "output"})
 public final class PartInsertOperator extends PartModifyOperator {
     @JsonCreator
     public PartInsertOperator(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
+        @JsonProperty("schemaVersion") int schemaVersion,
         @JsonProperty("keyMapping") TupleMapping keyMapping
     ) {
-        super(tableId, partId, schema, keyMapping);
+        super(tableId, partId, schema, schemaVersion, keyMapping);
     }
 
     @Override

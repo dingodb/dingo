@@ -41,6 +41,16 @@ public class CodecService implements io.dingodb.codec.CodecService {
     }
 
     @Override
+    public KeyValueCodec createKeyValueCodec(int version, CommonId id, DingoType type, TupleMapping keyMapping) {
+        return createKeyValueCodec(id, type, keyMapping);
+    }
+
+    @Override
+    public KeyValueCodec createKeyValueCodec(int version, CommonId id, List<ColumnDefinition> columns) {
+        return createKeyValueCodec(id, columns);
+    }
+
+    @Override
     public KeyValueCodec createKeyValueCodec(CommonId id, DingoType type, TupleMapping keyMapping) {
         return new DingoKeyValueCodec(type, keyMapping);
     }

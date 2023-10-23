@@ -34,7 +34,6 @@ import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.store.Configuration;
 import io.dingodb.store.common.Mapping;
-import io.dingodb.store.common.PartitionDetailDefinition;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
@@ -107,7 +106,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         return new MetaService(metaServiceClient.getSubMetaService(name));
     }
 
-    public MetaService getSubMetaService(CommonId id) {
+    public MetaService getSubMetaServices(CommonId id) {
         return new MetaService(metaServiceClient.getSubMetaService(mapping(id)));
     }
 
@@ -132,6 +131,36 @@ public class MetaService implements io.dingodb.meta.MetaService {
             table.setName(tableDefinition.getName() + "." + __.getName());
         });
         metaServiceClient.createTables(mapping(tableDefinition), indexTables);
+    }
+
+    @Override
+    public void createIndex(CommonId tableId, TableDefinition table, TableDefinition index) {
+        io.dingodb.store.common.TableDefinition indexTable = mapping(index);
+        indexTable.setProperties(indexTable.getProperties());
+        indexTable.setName(table.getName() + "." + index.getName());
+        metaServiceClient.addTableIndex(mapping(tableId), indexTable);
+    }
+
+    @Override
+    public void updateTable(CommonId tableId, @NonNull TableDefinition tableDefinition) {
+        Table oldTable = metaServiceClient.getTableDefinition(mapping(tableId));
+        Table newTable = io.dingodb.sdk.common.table.TableDefinition.builder()
+            .name(oldTable.getName())
+            .columns(tableDefinition.getColumns().stream().map(Mapping::mapping).collect(Collectors.toList()))
+            .engine(oldTable.getEngine())
+            .partition(oldTable.getPartition())
+            .properties(oldTable.getProperties())
+            .version(oldTable.getVersion() + 1)
+            .ttl(oldTable.getVersion())
+            .replica(oldTable.getReplica())
+            .createSql(oldTable.getCreateSql())
+            .build();
+        metaServiceClient.updateTable(newTable);
+    }
+
+    @Override
+    public void dropIndex(CommonId tableId, CommonId indexId) {
+        metaServiceClient.dropTableIndex(mapping(tableId), mapping(indexId));
     }
 
     @Override
@@ -161,11 +190,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public List<TableDefinition> getTableDefinitions(@NonNull String name) {
-        return metaServiceClient.getTables(name).stream().map(Mapping::mapping).collect(Collectors.toList());
-    }
-
-    @Override
     public TableDefinition getTableDefinition(@NonNull String name) {
         return Optional.mapOrNull(metaServiceClient.getTableDefinition(name), Mapping::mapping);
     }
@@ -176,7 +200,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public synchronized Map<CommonId, Long> getTableCommitCount() {
+    public synchronized Map<CommonId, Long> getAllTableCommitCount() {
         if (this == ROOT) {
             return metaServiceClient.getTableCommitCount().entrySet().stream()
                 .collect(Collectors.toMap(e -> mapping(e.getKey()), Map.Entry::getValue));
@@ -185,7 +209,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public synchronized Map<CommonId, Long> getTableCommitIncrement() {
+    public synchronized Map<CommonId, Long> getAllTableCommitIncrement() {
         if (this == ROOT) {
             Map<CommonId, Long> result = new HashMap<>();
             Map<CommonId, Long> newMetrics = metaServiceClient.getTableCommitCount().entrySet().stream()
@@ -216,22 +240,10 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull String name) {
-        return metaServiceClient.getTableIndexes(name).entrySet().stream()
-            .collect(Collectors.toMap(entry -> mapping(entry.getKey()), entry -> {
-                // Remove . from the index table name
-                Table table = entry.getValue();
-                String tableName = table.getName();
-                String[] split = tableName.split("\\.");
-                if (split.length > 1) {
-                    tableName = split[split.length - 1];
-                }
-                return mapping(table).copyWithName(tableName);
-            }));
-    }
-
-    public void addDistribution(String tableName, PartitionDetailDefinition partitionDetail) {
-        metaServiceClient.addDistribution(tableName, partitionDetail);
+    public void addDistribution(
+        String tableName, io.dingodb.common.partition.PartitionDetailDefinition partitionDetail
+    ) {
+        metaServiceClient.addDistribution(tableName, mapping(partitionDetail));
     }
 
     public RangeDistribution getRangeDistribution(CommonId tableId, CommonId distributionId) {
@@ -263,8 +275,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
         String funcName = tableDefinition.getPartDefinition().getFuncName();
         // hash partition strategy need use the original key
         boolean isOriginalKey = funcName.equalsIgnoreCase("HASH");
-        KeyValueCodec codec = CodecService.getDefault()
-            .createKeyValueCodec(DingoTypeFactory.tuple(TypeCode.LONG), TupleMapping.of(new int[0]));
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+            tableDefinition.getVersion(), DingoTypeFactory.tuple(TypeCode.LONG), TupleMapping.of(new int[0])
+        );
         metaServiceClient.getIndexRangeDistribution(mapping(id)).values().stream()
             .map(__ -> mapping(__, codec, isOriginalKey))
             .forEach(__ -> result.put(new ComparableByteArray(__.getStartKey()), __));
@@ -274,8 +287,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull CommonId id) {
         NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
+        // The index schema can not change, so version 1.
         KeyValueCodec codec = CodecService.getDefault()
-            .createKeyValueCodec(DingoTypeFactory.tuple(TypeCode.LONG), TupleMapping.of(new int[0]));
+            .createKeyValueCodec(1, DingoTypeFactory.tuple(TypeCode.LONG), TupleMapping.of(new int[0]));
         metaServiceClient.getIndexRangeDistribution(mapping(id)).values().stream()
             .map(__ -> mapping(__, codec, true))
             .forEach(__ -> result.put(new ComparableByteArray(__.getStartKey()), __));

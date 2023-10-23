@@ -17,6 +17,7 @@
 package io.dingodb.web.mapper;
 
 import io.dingodb.common.partition.PartitionDefinition;
+import io.dingodb.sdk.common.index.Index;
 import io.dingodb.sdk.common.index.IndexDefinition;
 import io.dingodb.sdk.common.partition.PartitionDetailDefinition;
 import io.dingodb.sdk.common.partition.PartitionRule;
@@ -29,7 +30,6 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -47,6 +47,9 @@ public interface EntityMapper {
 
     @Mapping(source = "indexParameter", target = "parameter")
     IndexDefinition mapping(io.dingodb.client.common.IndexDefinition definition);
+
+//    @Mapping(source = "parameter", target = "indexParameter")
+    io.dingodb.client.common.IndexDefinition mapping(Index definition);
 
     default PartitionRule mapping(PartitionDefinition definition) {
         return new PartitionRule(

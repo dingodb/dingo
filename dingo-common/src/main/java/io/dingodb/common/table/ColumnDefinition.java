@@ -37,6 +37,10 @@ public class ColumnDefinition {
     public static final int DEFAULT_PRECISION = -1;
     public static final int DEFAULT_SCALE = Integer.MIN_VALUE;
 
+    public static final int NORMAL_STATE = 1;
+    public static final int HIDE_STATE = 0;
+    public static final int DELETE_STATE = -1;
+
     @JsonProperty(value = "name", required = true)
     @Getter
     private final String name;
@@ -87,6 +91,11 @@ public class ColumnDefinition {
     @Builder.Default
     private final boolean autoIncrement = false;
 
+    @JsonProperty("state")
+    @Getter
+    @Builder.Default
+    private final int state = NORMAL_STATE;
+
     @JsonCreator
     public static ColumnDefinition getInstance(
         @JsonProperty("name") String name,
@@ -97,12 +106,28 @@ public class ColumnDefinition {
         @JsonProperty("nullable") boolean nullable,
         @JsonProperty("primary") int primary,
         @JsonProperty("default") String defaultValue,
-        @JsonProperty("autoIncrement") boolean autoIncrement
+        @JsonProperty("autoIncrement") boolean autoIncrement,
+        @JsonProperty("state") byte state,
+        @JsonProperty("create_version") int createVersion
     ) {
         return builder()
             .name(name)
             .type(type)
             .elementType(elementTypeName)
+            .precision(precision == null ? DEFAULT_PRECISION : precision)
+            .scale(scale == null ? DEFAULT_SCALE : scale)
+            .nullable(nullable)
+            .primary(primary)
+            .defaultValue(defaultValue)
+            .autoIncrement(autoIncrement)
+            .build();
+    }
+
+    public static ColumnDefinition getInstance(String name, String type, String elementType, Integer precision, Integer scale, boolean nullable, int primary, String defaultValue, boolean autoIncrement) {
+        return builder()
+            .name(name)
+            .type(type)
+            .elementType(elementType)
             .precision(precision == null ? DEFAULT_PRECISION : precision)
             .scale(scale == null ? DEFAULT_SCALE : scale)
             .nullable(nullable)

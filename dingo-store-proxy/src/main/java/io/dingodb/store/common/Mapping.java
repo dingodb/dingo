@@ -118,6 +118,9 @@ public final class Mapping {
             partitionDetail.getOperand());
     }
 
+    public static PartitionDetailDefinition mapping(io.dingodb.common.partition.PartitionDetailDefinition partitionDetail) {
+        return new PartitionDetailDefinition(partitionDetail);
+    }
 
     public static RangeDistribution mapping(
         io.dingodb.sdk.common.table.RangeDistribution rangeDistribution,
@@ -148,7 +151,8 @@ public final class Mapping {
             column.isNullable(),
             column.getPrimary(),
             column.getDefaultValue(),
-            column.isAutoIncrement());
+
+            column.isAutoIncrement(), (byte) 0, 1);
     }
 
     public static DingoCommonId mapping(CommonId commonId) {

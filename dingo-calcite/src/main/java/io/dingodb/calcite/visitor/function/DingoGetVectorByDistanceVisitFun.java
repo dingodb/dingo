@@ -19,8 +19,6 @@ package io.dingodb.calcite.visitor.function;
 import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoGetVectorByDistance;
-import io.dingodb.calcite.utils.MetaServiceUtils;
-import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
@@ -34,17 +32,13 @@ import io.dingodb.exec.base.Output;
 import io.dingodb.exec.operator.VectorPointDistanceOperator;
 import io.dingodb.meta.MetaService;
 import lombok.AllArgsConstructor;
-import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNumericLiteral;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.function.Supplier;
 

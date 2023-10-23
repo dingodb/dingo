@@ -35,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @JsonTypeName("rangeDelete")
 @JsonPropertyOrder({
-    "table", "part", "schema", "keyMapping", "filter", "selection", "output",
+    "table", "part", "schema", "schemaVersion", "keyMapping", "filter", "selection", "output",
     "startKey", "endKey", "includeStart", "includeEnd"})
 public final class PartRangeDeleteOperator extends SourceOperator {
     @JsonProperty("table")
@@ -50,6 +50,8 @@ public final class PartRangeDeleteOperator extends SourceOperator {
 
     @JsonProperty("schema")
     private final DingoType schema;
+    @JsonProperty("schemaVersion")
+    private final int schemaVersion;
     @JsonProperty("keyMapping")
     private final TupleMapping keyMapping;
 
@@ -70,6 +72,7 @@ public final class PartRangeDeleteOperator extends SourceOperator {
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
+        @JsonProperty("schemaVersion") int schemaVersion,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("startKey") byte[] startKey,
         @JsonProperty("endKey") byte[] endKey,
@@ -79,6 +82,7 @@ public final class PartRangeDeleteOperator extends SourceOperator {
         this.tableId = tableId;
         this.partId = partId;
         this.schema = schema;
+        this.schemaVersion = schemaVersion;
         this.keyMapping = keyMapping;
         this.startKey = startKey;
         this.endKey = endKey;
@@ -91,7 +95,7 @@ public final class PartRangeDeleteOperator extends SourceOperator {
         super.init();
         part = new PartInKvStore(
             Services.KV_STORE.getInstance(tableId, partId),
-            CodecService.getDefault().createKeyValueCodec(schema, keyMapping)
+            CodecService.getDefault().createKeyValueCodec(schemaVersion, schema, keyMapping)
         );
     }
 

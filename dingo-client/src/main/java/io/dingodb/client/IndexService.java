@@ -202,7 +202,9 @@ public class IndexService {
     }
 
     public Index getIndex(String schema, String name, boolean forceRefresh) {
-        return Parameters.nonNull(getRouteTable(schema.toUpperCase(), name, forceRefresh), "Index not found.").index;
+        return Parameters.nonNull(
+            getRouteTable(schema.toUpperCase(), name.toUpperCase(), forceRefresh), "Index not found."
+        ).index;
     }
 
     public List<Index> getIndexes(String schema) {
@@ -247,7 +249,8 @@ public class IndexService {
             }
         }
         KeyValueCodec codec = new KeyValueCodec(
-            new DingoKeyValueCodec(indexId.entityId(), Collections.singletonList(schema)), dingoType);
+            new DingoKeyValueCodec(indexId.entityId(), Collections.singletonList(schema)), dingoType
+        );
 
         return new IndexInfo(schemaName, indexName, indexId, index, codec, this.autoIncrementService, parts);
     }

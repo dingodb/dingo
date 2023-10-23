@@ -393,7 +393,7 @@ public final class MysqlInit {
                 && tableDefinitionMap.get(TABLES_PRIV) != null;
         if (mysqlCheck) {
             DingoCommonId tableId = mysqlMetaClient.getTableId(USER);
-            TableDefinition tableDefinition = (TableDefinition) tableDefinitionMap.get(USER);
+            Table tableDefinition = tableDefinitionMap.get(USER);
             Object[] userKeys = new Object[tableDefinition.getColumns().size()];
             userKeys[0] = "%";
             userKeys[1] = "root";
@@ -411,7 +411,7 @@ public final class MysqlInit {
                 if (res == null || res.length == 0) {
                     return 1;
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 return 1;
             }
 

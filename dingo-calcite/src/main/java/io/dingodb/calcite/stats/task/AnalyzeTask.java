@@ -292,9 +292,14 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                 builder.resultSchema(SchemaWrapperUtils.buildSchemaWrapper(
                     outputSchema, outputKeyMapping, tableId.seq
                 ));
+                builder.schemaVersion(td.getVersion());
                 Coprocessor coprocessor = builder.build();
-                Part part = new PartInKvStore(Services.KV_STORE.getInstance(tableId, rangeDistribution.getId()),
-                    CodecService.getDefault().createKeyValueCodec(tableId, outputSchema, outputKeyMapping));
+                Part part = new PartInKvStore(
+                    Services.KV_STORE.getInstance(tableId, rangeDistribution.getId()),
+                    CodecService.getDefault().createKeyValueCodec(
+                        td.getVersion(), tableId, outputSchema, outputKeyMapping
+                    )
+                );
                 return part.scan(rangeDistribution.getStartKey(), rangeDistribution.getEndKey(),
                     rangeDistribution.isWithStart(), true, coprocessor);
             }).collect(Collectors.toList());
@@ -314,7 +319,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
     private void startAnalyzeTask(CommonId tableId) {
         Object[] values = get(analyzeTaskStore, analyzeTaskCodec, getAnalyzeTaskKeys(schemaName, tableName));
         if (values == null) {
-            Long commitCount = MetaService.root().getTableCommitCount().getOrDefault(tableId, 0L);
+            Long commitCount = MetaService.root().getAllTableCommitCount().getOrDefault(tableId, 0L);
             if (commitCount > totalCount) {
                 commitCount = totalCount;
             }

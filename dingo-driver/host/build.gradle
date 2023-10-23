@@ -24,6 +24,7 @@ dependencies {
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     api group: 'org.apache.calcite.avatica', name: 'avatica-server', version: 'avatica'.v()
     implementation project(':dingo-calcite')
+    implementation project(':dingo-driver:dingo-driver-client')
     implementation project(':dingo-verify')
     implementation project(':dingo-meta-api')
 }

@@ -62,7 +62,7 @@ public final class DingoCountDeleteVisitFun {
         List<Output> outputs = new ArrayList<>(distributions.size());
         for (Distribution distribution : distributions.values()) {
             Operator operator = rel.isDoDeleting() ? new RemovePartOperator(tableId, distribution.id(),
-                td.getDingoType(), td.getKeyMapping()
+                td.getDingoType(), td.getVersion(), td.getKeyMapping()
             ) : new PartCountOperator(tableId, distribution.id(), td.getDingoType(), td.getKeyMapping());
             operator.setId(idGenerator.get());
             Task task = job.getOrCreate(currentLocation, idGenerator);

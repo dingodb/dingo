@@ -45,7 +45,7 @@ import java.util.stream.IntStream;
 @Slf4j
 @JsonTypeName("scan")
 @JsonPropertyOrder({
-    "table", "part", "schema", "keyMapping", "filter", "selection", "output",
+    "table", "part", "schema", "schemaVersion", "keyMapping", "filter", "selection", "output",
     "startKey", "endKey", "includeStart", "includeEnd", "prefixScan"
 })
 public final class PartRangeScanOperator extends PartIteratorSourceOperator {
@@ -74,6 +74,7 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
+        @JsonProperty("schemaVersion") int schemaVersion,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("filter") SqlExpr filter,
         @JsonProperty("selection") TupleMapping selection,
@@ -86,7 +87,7 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
         @JsonProperty("outSchema") DingoType outSchema,
         @JsonProperty("pushDown") boolean pushDown
     ) {
-        super(tableId, partId, schema, keyMapping, filter, selection);
+        super(tableId, partId, schema, schemaVersion, keyMapping, filter, selection);
         this.startKey = startKey;
         this.endKey = endKey;
         this.includeStart = includeStart;
@@ -153,16 +154,17 @@ public final class PartRangeScanOperator extends PartIteratorSourceOperator {
             builder.resultSchema(SchemaWrapperUtils.buildSchemaWrapper(
                 outputSchema, outputKeyMapping, tableId.seq
             ));
+            builder.schemaVersion(schemaVersion);
             coprocessor = builder.build();
             part = new PartInKvStore(
                 Services.KV_STORE.getInstance(tableId, partId),
-                CodecService.getDefault().createKeyValueCodec(outputSchema, outputKeyMapping)
+                CodecService.getDefault().createKeyValueCodec(schemaVersion, outputSchema, outputKeyMapping)
             );
             return;
         }
         part = new PartInKvStore(
             Services.KV_STORE.getInstance(tableId, partId),
-            CodecService.getDefault().createKeyValueCodec(schema, keyMapping)
+            CodecService.getDefault().createKeyValueCodec(schemaVersion, schema, keyMapping)
         );
     }
 }

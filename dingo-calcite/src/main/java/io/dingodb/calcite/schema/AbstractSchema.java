@@ -99,8 +99,8 @@ public abstract class AbstractSchema implements Schema {
                 return null;
             }
 
-            TableDefinition tableDefinition = metaService.getTableDefinition(name);
-            addTableCache(name, tableDefinition, metaService.getTableIndexDefinitions(name));
+            TableDefinition tableDefinition = metaService.getTableDefinition(tableId);
+            addTableCache(name, tableDefinition, metaService.getTableIndexDefinitions(tableId));
         }
         return tableCache.get(name);
     }

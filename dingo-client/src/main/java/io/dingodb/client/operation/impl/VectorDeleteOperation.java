@@ -51,17 +51,13 @@ public class VectorDeleteOperation implements Operation {
                 id = 0L;
             }
 
-            try {
-                byte[] bytes = indexInfo.codec.encodeKey(new Object[]{id});
-                Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
-                    indexInfo.calcRegionId(bytes),
-                    k -> new Any(new HashMap<>())
-                ).getValue();
+            byte[] bytes = indexInfo.codec.encodeKey(new Object[]{id});
+            Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
+                indexInfo.calcRegionId(bytes),
+                k -> new Any(new HashMap<>())
+            ).getValue();
 
-                regionParams.put(id, i);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            regionParams.put(id, i);
         }
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
         return new Fork(new Boolean[ids.size()], subTasks, false);
@@ -74,16 +70,12 @@ public class VectorDeleteOperation implements Operation {
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
 
         for (Map.Entry<Long, Integer> parameter : parameters.entrySet()) {
-            try {
-                byte[] bytes = indexInfo.codec.encodeKey(new Object[]{parameter.getKey()});
-                Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
-                    indexInfo.calcRegionId(bytes), k -> new Any(new HashMap<>())
-                ).getValue();
+            byte[] bytes = indexInfo.codec.encodeKey(new Object[]{parameter.getKey()});
+            Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
+                indexInfo.calcRegionId(bytes), k -> new Any(new HashMap<>())
+            ).getValue();
 
-                regionParams.put(parameter.getKey(), parameter.getValue());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            regionParams.put(parameter.getKey(), parameter.getValue());
         }
 
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));

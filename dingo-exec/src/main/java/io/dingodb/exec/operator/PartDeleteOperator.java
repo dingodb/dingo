@@ -25,16 +25,17 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 
 @JsonTypeName("delete")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "output"})
+@JsonPropertyOrder({"table", "part", "schema", "schemaVersion", "keyMapping", "output"})
 public final class PartDeleteOperator extends PartModifyOperator {
     @JsonCreator
     public PartDeleteOperator(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
+        @JsonProperty("schemaVersion") int schemaVersion,
         @JsonProperty("keyMapping") TupleMapping keyMapping
     ) {
-        super(tableId, partId, schema, keyMapping);
+        super(tableId, partId, schema, schemaVersion, keyMapping);
     }
 
     @Override

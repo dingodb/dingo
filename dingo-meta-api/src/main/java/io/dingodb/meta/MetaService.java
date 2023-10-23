@@ -20,18 +20,10 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.partition.PartitionDetailDefinition;
-import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.Index;
-import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
 
-public interface MetaService {
+public interface MetaService extends SchemaService, TableService {
 
     static MetaService root() {
         return MetaServiceProvider.getDefault().root();
@@ -55,6 +47,10 @@ public interface MetaService {
      */
     String name();
 
+    /**
+     * Whether current meta service is root meta service.
+     * @return true if current meta service is root
+     */
     default boolean isRoot() {
         return id().equals(root().id());
     }
@@ -92,99 +88,15 @@ public interface MetaService {
      */
     boolean dropSubMetaService(String name);
 
-    /**
-     * Create and save table meta, initialize table storage.
-     * Notice: check the table name case, because by default, the table names are converted to uppercase
-     *
-     * @param tableName       table name
-     * @param tableDefinition table definition
-     */
-    void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition);
+    default Map<CommonId, Long> getAllTableCommitCount() {
+        throw new UnsupportedOperationException();
+    }
 
-    void createTables(@NonNull TableDefinition tableDefinition, @NonNull List<TableDefinition> indexTableDefinitions);
-
-    /**
-     * Drop table meta and table storage.
-     * Notice: check the table name case, because by default, the table names are converted to uppercase
-     *
-     * @param tableName table name
-     * @return true if success
-     */
-    boolean dropTable(@NonNull String tableName);
-
-    boolean dropTables(@NonNull Collection<CommonId> tableIds);
-
-    /**
-     * Get table id by table name.
-     * Notice: check the table name case, because by default, the table names are converted to uppercase
-     *
-     * @param tableName table name
-     * @return table id or null if not found
-     */
-    CommonId getTableId(@NonNull String tableName);
-
-    /**
-     * Returns all table definition.
-     *
-     * @return all table definition
-     */
-    Map<String, TableDefinition> getTableDefinitions();
-
-    /**
-     * Get table definition by table name.
-     * Notice: check the table name case, because by default, the table names are converted to uppercase
-     *
-     * @param name table name
-     * @return table definition or null if not found.
-     */
-    TableDefinition getTableDefinition(@NonNull String name);
-
-    /**
-     * Get table definition by table id.
-     *
-     * @param id table id
-     * @return table definition or null if not found.
-     */
-    TableDefinition getTableDefinition(@NonNull CommonId id);
-
-    List<TableDefinition> getTableDefinitions(@NonNull String name);
-
-    Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull String name);
-
-    Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id);
+    default Map<CommonId, Long> getAllTableCommitIncrement() {
+        throw new UnsupportedOperationException();
+    }
 
     default void addDistribution(String tableName, PartitionDetailDefinition detail) {
-    }
-
-    default Map<CommonId, Long> getTableCommitCount() {
-        throw new UnsupportedOperationException();
-    }
-
-    default Map<CommonId, Long> getTableCommitIncrement() {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Get range distributions by table id.
-     *
-     * @param id table id
-     * @return table range distributions
-     */
-    default NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
-        // todo
-        throw new UnsupportedOperationException();
-    }
-
-    default NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(CommonId id,
-                                                                                      TableDefinition tableDefinition) {
-        throw new UnsupportedOperationException();
-    }
-
-    default NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull String name) {
-        throw new UnsupportedOperationException();
-    }
-
-    default NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull CommonId id) {
         throw new UnsupportedOperationException();
     }
 
@@ -196,18 +108,4 @@ public interface MetaService {
     default Location currentLocation() {
         return DingoConfiguration.location();
     }
-
-    default void createIndex(String tableName, List<Index> indexList) {
-        throw new UnsupportedOperationException();
-    }
-
-    default void dropIndex(String tableName, String indexName) {
-        throw new UnsupportedOperationException();
-    }
-
-    TableStatistic getTableStatistic(@NonNull String tableName);
-
-    Long getAutoIncrement(CommonId tableId);
-
-    Long getNextAutoIncrement(CommonId tableId);
 }
