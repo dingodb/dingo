@@ -48,7 +48,7 @@ jobs:
       run: |
         mkdir dingo
         unzip ./dingo-dist/build/distributions/dingo.zip -d dingo
-        wget https://github.com/dingodb/dingo-deploy/blob/main/artifacts/sqlline-1.13.0-SNAPSHOT-jar-with-dependencies.jar -P dingo/libs/
+        wget https://github.com/dingodb/dingo-deploy/raw/main/artifacts/sqlline-1.13.0-SNAPSHOT-jar-with-dependencies.jar -P dingo/libs/
         cp -r ./dingo-client/build/docs/javadoc ./dingo/javadoc
         cp -r ./docker/templates/bin/* ./dingo/bin/
         cp -r ./docker/templates/conf/* ./dingo/conf/
