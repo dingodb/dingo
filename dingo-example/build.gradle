@@ -6,6 +6,7 @@ plugins {
 }
 
 dependencies {
+    implementation group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1.1'
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation project(':dingo-driver:dingo-driver-client')
     implementation project(':dingo-client')
