@@ -128,7 +128,9 @@ public class ShowTableDistributionOperation implements QueryOperation {
         StringBuilder builder = new StringBuilder();
         for (int i = 0; ; i++) {
             Object object;
-            if (i >= keyColumnIndices.size() || (object = start[keyColumnIndices.get(i)]) == null) {
+            if (
+                i >= keyColumnIndices.size() || i >= start.length || (object = start[keyColumnIndices.get(i)]) == null
+            ) {
                 if (i == 0) {
                     builder.append("Infinity");
                 } else {

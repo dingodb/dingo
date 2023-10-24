@@ -141,6 +141,7 @@ public final class Mapping {
             for (int i = (operand.length - 1); i >= 0; --i) {
                 if (operand[i] != null) {
                     operand = Arrays.copyOf(operand, i + 1);
+                    break;
                 }
             }
         }

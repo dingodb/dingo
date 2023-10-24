@@ -222,6 +222,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     .scale(columnDefinition.getScale())
                     .nullable(columnDefinition.isNullable())
                     .primary(primary)
+                    .state(i >= 2 ? ColumnDefinition.HIDE_STATE : ColumnDefinition.NORMAL_STATE)
                     .build();
                 indexColumnDefinitions.add(indexColumnDefinition);
             }
