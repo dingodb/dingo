@@ -19,6 +19,7 @@ package io.dingodb.calcite;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
 import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
@@ -88,7 +89,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -147,7 +147,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .map(SqlIdentifier::getSimple)
             .map(String::toUpperCase)
             .collect(Collectors.toCollection(ArrayList::new));
-
+        int keySize = columns.size();
         tableDefinition.getKeyColumns().stream()
             .sorted(Comparator.comparingInt(ColumnDefinition::getPrimary))
             .map(ColumnDefinition::getName)
@@ -180,6 +180,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     .scale(columnDefinition.getScale())
                     .nullable(columnDefinition.isNullable())
                     .primary(i)
+                    .state(i >= keySize ? ColumnDefinition.HIDE_STATE : ColumnDefinition.NORMAL_STATE)
                     .build();
                 indexColumnDefinitions.add(indexColumnDefinition);
             }
@@ -256,6 +257,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     .scale(columnDefinition.getScale())
                     .nullable(columnDefinition.isNullable())
                     .primary(-1)
+                    .state(ColumnDefinition.HIDE_STATE)
                     .build();
                 indexColumnDefinitions.add(indexColumnDefinition);
             }
@@ -442,19 +444,18 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         }
 
-        TableDefinition tableDefinition = new TableDefinition(
-            tableName,
-            columns,
-            new ConcurrentHashMap<>(),
-            1,
-            create.getTtl(),
-            create.getPartDefinition(),
-            create.getEngine(),
-            create.getProperties(),
-            create.getAutoIncrement(),
-            create.getReplica(),
-            create.getOriginalCreateSql()
-        );
+        TableDefinition tableDefinition = TableDefinition.builder()
+            .name(tableName)
+            .columns(columns)
+            .version(1)
+            .ttl(create.getTtl())
+            .partDefinition(create.getPartDefinition())
+            .engine(create.getEngine())
+            .properties(create.getProperties())
+            .autoIncrement(create.getAutoIncrement())
+            .replica(create.getReplica())
+            .createSql(create.getOriginalCreateSql())
+            .build();
         List<TableDefinition> indexTableDefinitions = getIndexDefinitions(create, tableDefinition);
 
         // Validate partition strategy
@@ -665,6 +666,23 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         schema.createIndex(tableName, indexDefinition);
     }
 
+    public void execute(@NonNull SqlAlterIndex sqlAlterIndex, CalcitePrepare.Context context) {
+        final Pair<DingoSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlAlterIndex.table, context);
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        DingoTable table = (DingoTable) schema.getTable(tableName);
+        TableDefinition indexDefinition = table.getIndexDefinition(sqlAlterIndex.getIndex());
+        if (indexDefinition == null) {
+            throw new RuntimeException("The index " + sqlAlterIndex.getIndex() + " not exist.");
+        }
+        if (sqlAlterIndex.getProperties().contains("indexType")) {
+            throw new IllegalArgumentException("Cannot change index type.");
+        }
+        indexDefinition.getProperties().putAll(sqlAlterIndex.getProperties());
+        schema.createDifferenceIndex(tableName, sqlAlterIndex.getIndex(), indexDefinition);
+    }
+
     public void execute(@NonNull SqlCreateIndex sqlCreateIndex, CalcitePrepare.Context context) {
         final Pair<DingoSchema, String> schemaTableName
             = getSchemaAndTableName(sqlCreateIndex.table, context);
@@ -738,21 +756,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             String name = existIndex.getName();
             if (indexName.equalsIgnoreCase(name)) {
                 throw new RuntimeException("The index " + indexName + " already exist.");
-            }
-            List<String> existIndexColumns = existIndex.getColumns().stream()
-                .map(ColumnDefinition::getName)
-                .sorted()
-                .collect(Collectors.toList());
-            List<String> newIndexColumns = index.getColumns().stream()
-                .map(ColumnDefinition::getName)
-                .sorted()
-                .collect(Collectors.toList());
-            if (existIndexColumns.equals(newIndexColumns)) {
-                throw new RuntimeException("The index columns same of " + existIndex.getName());
-            }
-            if ("vector".equalsIgnoreCase(index.getProperties().getProperty("indexType"))
-                && existIndex.getColumn(1).equals(index.getColumn(1))) {
-                throw new RuntimeException("The vector index column same of " + existIndex.getName());
             }
         }
     }

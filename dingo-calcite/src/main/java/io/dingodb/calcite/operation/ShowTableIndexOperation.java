@@ -33,7 +33,11 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.Properties;
 import java.util.stream.Collectors;
+
+import static io.dingodb.common.table.ColumnDefinition.HIDE_STATE;
+import static io.dingodb.common.table.ColumnDefinition.NORMAL_STATE;
 
 public class ShowTableIndexOperation implements QueryOperation {
 
@@ -53,12 +57,16 @@ public class ShowTableIndexOperation implements QueryOperation {
     @Override
     public Iterator getIterator() {
         List<Object[]> tuples;
+        String indexTypeKey = "indexType";
         tuples = metaService.getTableIndexDefinitions(metaService.getTableId(tableName)).values().stream().map(
             index -> new Object[] {
                 tableName,
                 index.getName().toUpperCase(),
-                index.getProperties().getProperty("indexType").toUpperCase(),
-                index.getColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList())
+                index.getProperties().getProperty(indexTypeKey).toUpperCase(),
+                index.getColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
+                Optional.of(new Properties())
+                    .ifPresent(__ -> __.putAll(index.getProperties()))
+                    .ifPresent(__ -> __.remove(indexTypeKey)).get()
             }
         ).collect(Collectors.toList());
         return tuples.iterator();
@@ -71,7 +79,12 @@ public class ShowTableIndexOperation implements QueryOperation {
         columns.add("Key_name");
         columns.add("Index_type");
         columns.add("Column_name");
+        columns.add("Parameters");
         return columns;
+    }
+
+    private boolean normal(ColumnDefinition column) {
+        return (column.getState() & NORMAL_STATE) == NORMAL_STATE && (column.getState() & HIDE_STATE) == 0;
     }
 
 }

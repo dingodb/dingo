@@ -20,6 +20,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.partition.PartitionDetailDefinition;
+import io.dingodb.common.table.TableDefinition;
 
 import java.util.Map;
 

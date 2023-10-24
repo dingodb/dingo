@@ -79,6 +79,20 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
         return (DingoSchema) context.getSchemaByNames(names).schema;
     }
 
+    public CommonId getIndexId(String name) {
+        return indexTableDefinitions.entrySet().stream()
+            .filter(e -> e.getValue().getName().equalsIgnoreCase(name)).findAny()
+            .map(Map.Entry::getKey)
+            .orElse(null);
+    }
+
+    public TableDefinition getIndexDefinition(String name) {
+        return indexTableDefinitions.entrySet().stream()
+            .filter(e -> e.getValue().getName().equalsIgnoreCase(name)).findAny()
+            .map(Map.Entry::getValue)
+            .orElse(null);
+    }
+
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
         return DefinitionMapper.mapToRelDataType(tableDefinition, typeFactory);

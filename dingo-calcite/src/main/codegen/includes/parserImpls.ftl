@@ -407,17 +407,21 @@ Properties readProperties() : {
 }{
 	<LPAREN>
     [<RPAREN> {return properties;}]
-    { key = getNextToken().image; }
-    <EQ>
-    { properties.setProperty(key, getNextToken().image); }
+    readProperty(properties)
     (
         <COMMA>
-        { key = getNextToken().image; }
-        <EQ>
-        { properties.setProperty(key, getNextToken().image); }
+        readProperty(properties)
     )*
 	<RPAREN>
 	{ return properties; }
+}
+
+void readProperty(Properties properties) : {
+    String key;
+}{
+    { key = getNextToken().image; }
+    <EQ>
+    { properties.setProperty(key, getNextToken().image); }
 }
 
 String symbol() : {

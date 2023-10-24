@@ -97,6 +97,11 @@ public class TableDefinition implements Table {
         return map;
     }
 
+    public TableDefinition useProperties() {
+        this.properties = getProperties();
+        return this;
+    }
+
     @Override
     public long getAutoIncrement() {
         return tableDefinition.getAutoIncrement();

@@ -28,6 +28,7 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.expr.json.runtime.Parser;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -48,6 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+@Builder
 @JsonPropertyOrder({"name", "columns", "ttl", "partition", "prop", "engine"})
 @EqualsAndHashCode
 @AllArgsConstructor
@@ -94,6 +96,7 @@ public class TableDefinition {
 
     @JsonProperty("autoIncrement")
     @Getter
+    @Builder.Default
     private long autoIncrement = 1;
     @JsonProperty("replica")
     @Getter

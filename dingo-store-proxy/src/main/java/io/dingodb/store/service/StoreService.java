@@ -233,7 +233,9 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            return storeService.kvCompareAndSet(storeTableId, storeRegionId, kvExpect);
+            // TODO: schema version update, compare return false
+            // return storeService.kvCompareAndSet(storeTableId, storeRegionId, kvExpect);
+            return storeService.kvPut(storeTableId, storeRegionId, kvExpect);
         }
 
         @Override

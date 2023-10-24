@@ -33,6 +33,7 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlRollback"
       "io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn"
       "io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex"
+      "io.dingodb.calcite.grammar.ddl.SqlAlterIndex"
       "io.dingodb.calcite.grammar.ddl.SqlAlterUser"
       "io.dingodb.calcite.grammar.ddl.SqlAlterTable"
       "io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution"
