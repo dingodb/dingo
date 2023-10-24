@@ -91,7 +91,35 @@ public class DingoSchema extends AbstractSchema {
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(definition);
         metaService.createIndex(tableId, definition, indexDefinition);
         tableCache.remove(tableName);
+        table = (DingoTable) getTable(tableName);
+        recreateIndexData(tableName, indexDefinition.getName(), definition);
+    }
+
+    public void createDifferenceIndex(String tableName, String indexName, TableDefinition indexDefinition) {
+        DingoTable table = (DingoTable) getTable(tableName);
+        metaService.createDifferenceIndex(table.getTableId(), table.getIndexId(indexName), indexDefinition);
+        tableCache.remove(tableName);
+        table = (DingoTable) getTable(tableName);
+        recreateIndexData(tableName, indexName, table.getTableDefinition());
+    }
+
+    public void dropIndex(@NonNull String tableName, @NonNull String index) {
+        DingoTable table = (DingoTable) getTable(tableName);
+        CommonId indexId = table.getIndexTableDefinitions().entrySet().stream()
+            .filter(e -> e.getValue().getName().equalsIgnoreCase(index.toUpperCase()))
+            .map(Map.Entry::getKey)
+            .findAny().orElseThrow(() -> DingoResource.DINGO_RESOURCE.unknownIndex(index).ex());
+        metaService.dropIndex(table.getTableId(), indexId);
+        tableCache.remove(tableName);
+        table = (DingoTable) getTable(tableName);
+    }
+
+    private void recreateIndexData(
+        @NonNull String tableName, String indexName, @NonNull TableDefinition tableDefinition
+    ) {
         try {
+            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
+            CommonId tableId = getTableId(tableName);
             Collection<RangeDistribution> ranges = metaService.getRangeDistribution(tableId).values();
             StoreService storeService = StoreService.getDefault();
             for (RangeDistribution range : ranges) {
@@ -104,19 +132,10 @@ public class DingoSchema extends AbstractSchema {
                 }
             }
         } catch (Exception e) {
-            log.error("Add index {} success, recreate index date failed.", indexDefinition.getName(), e);
-            dropIndex(tableName, indexDefinition.getName());
+            log.error("Recreate {} index date failed.", indexName, e);
+            dropIndex(tableName, indexName);
             throw new RuntimeException(e);
         }
-    }
-
-    public void dropIndex(@NonNull String tableName, @NonNull String index) {
-        DingoTable table = (DingoTable) getTable(tableName);
-        CommonId indexId = table.getIndexTableDefinitions().entrySet().stream()
-            .filter(e -> e.getValue().getName().equalsIgnoreCase(index.toUpperCase()))
-            .map(Map.Entry::getKey)
-            .findAny().orElseThrow(() -> DingoResource.DINGO_RESOURCE.unknownIndex(index).ex());
-        metaService.dropIndex(table.getTableId(), indexId);
     }
 
     public Collection<Index> getIndex(@NonNull String tableName) {

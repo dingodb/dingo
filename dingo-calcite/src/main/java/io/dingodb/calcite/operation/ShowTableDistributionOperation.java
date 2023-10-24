@@ -122,7 +122,7 @@ public class ShowTableDistributionOperation implements QueryOperation {
     }
 
     private String buildKeyStr(List<Integer> keyColumnIndices, Object[] start) {
-        if (start == null) {
+        if (start == null || start.length == 0) {
             return "Infinity";
         }
         StringBuilder builder = new StringBuilder();

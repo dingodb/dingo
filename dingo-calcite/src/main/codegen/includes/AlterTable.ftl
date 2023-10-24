@@ -20,13 +20,18 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
     SqlAlterTable alterTable;
 } {
     <TABLE> id = CompoundIdentifier()
-    <ADD>
     (
-        alterTable = addPartition(s, scope, id)
-        |
-        alterTable = addIndex(s, scope, id)
-        |
-        alterTable = addColumn(s, scope, id)
+        <ADD>
+        (
+            alterTable = addPartition(s, scope, id)
+            |
+            alterTable = addIndex(s, scope, id)
+            |
+            alterTable = addColumn(s, scope, id)
+        )
+    |
+        <ALTER>
+        alterTable = alterIndex(s, scope, id)
     )
     { return alterTable; }
 }
@@ -79,7 +84,6 @@ SqlAlterTable addColumn(Span s, String scope, SqlIdentifier id): {
 
 SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
     final String index;
-    Boolean autoIncrement = false;
     Properties properties = null;
     PartitionDefinition partitionDefinition = null;
     int replica = 0;
@@ -118,8 +122,27 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
     }
 }
 
-//SqlAlterTable dropColumn(Span s, String scope, SqlIdentifier id): {
-//}
-//{
-//    { retrun null; }
-//}
+SqlAlterTable alterIndex(Span s, String scope, SqlIdentifier id): {
+    final String index;
+    Properties properties = new Properties();
+    String key;
+}
+{
+    <INDEX> { s.add(this); }
+    { index = getNextToken().image; }
+    <SET>
+    readProperty(properties)
+    (
+        <COMMA>
+        readProperty(properties)
+    )*
+    (
+        <AND>
+        readProperty(properties)
+    )*
+    {
+        return new SqlAlterIndex(
+            s.end(this), id, index, properties
+        );
+    }
+}

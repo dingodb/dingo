@@ -25,10 +25,15 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.Properties;
 
 public interface TableService {
 
     default void createIndex(CommonId tableId, TableDefinition table, TableDefinition index) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void createDifferenceIndex(CommonId tableId, CommonId indexId, TableDefinition indexDefinition) {
         throw new UnsupportedOperationException();
     }
 

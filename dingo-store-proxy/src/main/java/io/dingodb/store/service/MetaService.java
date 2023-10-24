@@ -142,6 +142,14 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
+    public void createDifferenceIndex(CommonId tableId, CommonId indexId, TableDefinition indexDefinition) {
+        Table oldIndex = metaServiceClient.getTableIndexes(mapping(tableId)).get(mapping(indexId));
+        Table newIndex = mapping(indexDefinition).useProperties();
+        dropIndex(tableId, indexId);
+        metaServiceClient.addTableIndex(mapping(tableId), newIndex);
+    }
+
+    @Override
     public void updateTable(CommonId tableId, @NonNull TableDefinition tableDefinition) {
         Table oldTable = metaServiceClient.getTableDefinition(mapping(tableId));
         Table newTable = io.dingodb.sdk.common.table.TableDefinition.builder()
