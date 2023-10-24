@@ -17,22 +17,15 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.utils.MetaServiceUtils;
-import io.dingodb.common.CommonId;
-import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.meta.MetaService;
-import io.dingodb.partition.DingoPartitionServiceProvider;
 import lombok.Setter;
 import org.apache.calcite.sql.SqlNode;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NavigableMap;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
@@ -63,7 +56,9 @@ public class ShowTableIndexOperation implements QueryOperation {
                 tableName,
                 index.getName().toUpperCase(),
                 index.getProperties().getProperty(indexTypeKey).toUpperCase(),
-                index.getColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
+                index.getColumns().stream()
+                    .filter(this::isNormal)
+                    .map(ColumnDefinition::getName).collect(Collectors.toList()),
                 Optional.of(new Properties())
                     .ifPresent(__ -> __.putAll(index.getProperties()))
                     .ifPresent(__ -> __.remove(indexTypeKey)).get()
@@ -83,7 +78,7 @@ public class ShowTableIndexOperation implements QueryOperation {
         return columns;
     }
 
-    private boolean normal(ColumnDefinition column) {
+    private boolean isNormal(ColumnDefinition column) {
         return (column.getState() & NORMAL_STATE) == NORMAL_STATE && (column.getState() & HIDE_STATE) == 0;
     }
 
