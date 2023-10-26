@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.verify.privilege.PrivilegeVerify;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.plan.RelOptSchema;
@@ -45,7 +46,9 @@ import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
+    @EqualsAndHashCode.Include
     private final RelOptTableImpl relOptTable;
     @Getter
     private final String tableName;

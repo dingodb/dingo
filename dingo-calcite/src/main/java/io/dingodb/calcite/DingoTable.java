@@ -23,6 +23,7 @@ import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.TableStatistic;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.Prepare;
@@ -44,14 +45,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class DingoTable extends AbstractTable implements TranslatableTable {
     @Getter
+    @EqualsAndHashCode.Include
     private final CommonId tableId;
     @Getter
     private final DingoParserContext context;
     @Getter
+    @EqualsAndHashCode.Include
     private final List<String> names;
     @Getter
+    @EqualsAndHashCode.Include
     private final TableDefinition tableDefinition;
     @Getter
     private final Map<CommonId, TableDefinition> indexTableDefinitions;
