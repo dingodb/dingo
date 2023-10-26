@@ -16,22 +16,21 @@
 
 package io.dingodb.calcite.traits;
 
+import io.dingodb.calcite.DingoTable;
 import lombok.AccessLevel;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.calcite.plan.RelOptTable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
+import java.util.Objects;
 
-@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class DingoRelPartitionByTable extends DingoRelPartition {
     @Getter
     private final RelOptTable table;
 
-    @EqualsAndHashCode.Include
     public @Nullable List<String> getTableName() {
         return table != null ? table.getQualifiedName() : null;
     }
@@ -39,5 +38,26 @@ public class DingoRelPartitionByTable extends DingoRelPartition {
     @Override
     public String toString() {
         return "TABLE(" + table.getQualifiedName() + ")";
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+        DingoRelPartitionByTable that = (DingoRelPartitionByTable) o;
+        return Objects.equals(table.unwrap(DingoTable.class), that.table.unwrap(DingoTable.class));
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), table.unwrap(DingoTable.class));
     }
 }
