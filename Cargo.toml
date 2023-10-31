@@ -1,0 +1,18 @@
+[package]
+name = "tantivy_search"
+version = "0.1.0"
+authors = ["André Guedes <andre.guedes@neoway.com.br>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "tantivy_search" # 指定编译出来库的名字
+crate-type = ["cdylib", "staticlib"] # staticlib 为静态库，cdylib 为动态库，两种类型的库都创建
+
+[dependencies]
+libc = "0.2.82"
+tantivy = "0.20.2"
+rayon = "1.5"
+once_cell = "1.7"
+flurry = "0.3"
