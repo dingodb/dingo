@@ -58,6 +58,10 @@ public class DingoRootSchema extends AbstractSchema {
         metaService.createSubMetaService(schemaName);
     }
 
+    public void dropSubSchema(String schemaName) {
+        metaService.dropSubMetaService(schemaName);
+    }
+
     @Override
     public Schema getSubSchema(String name) {
         return Optional.mapOrNull(

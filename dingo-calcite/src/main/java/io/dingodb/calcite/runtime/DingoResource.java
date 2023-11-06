@@ -40,6 +40,9 @@ public interface DingoResource {
     @BaseMessage("Invalid default value for ''{0}''")
     ExInst<DingoSqlException> invalidDefaultValue(String a0);
 
+    @BaseMessage("Invalid schema value for ''{0}''")
+    ExInst<DingoSqlException> invalidSchemaName(String a0);
+
     @BaseMessage("Invalid table value for ''{0}''")
     ExInst<DingoSqlException> invalidTableName(String a0);
 
@@ -72,6 +75,9 @@ public interface DingoResource {
 
     @BaseMessage("Access denied for user ''{0}''@''{1}'' to database ''{2}''")
     ExInst<DingoSqlException> accessDeniedToDb(String a0, String a1, String a2);
+
+    @BaseMessage("Error 1051(42S02): Unknown schema ''{0}''")
+    ExInst<DingoSqlException> unknownSchema(String a0);
 
     @BaseMessage("Error 1051(42S02): Unknown table ''{0}''")
     ExInst<DingoSqlException> unknownTable(String a0);

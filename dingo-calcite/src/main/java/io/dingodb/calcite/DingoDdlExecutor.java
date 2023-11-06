@@ -33,6 +33,7 @@ import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
+import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.environment.ExecutionEnvironment;
@@ -69,7 +70,9 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSetOption;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.ddl.DingoSqlColumn;
+import org.apache.calcite.sql.ddl.SqlCreateSchema;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
+import org.apache.calcite.sql.ddl.SqlDropSchema;
 import org.apache.calcite.sql.ddl.SqlDropTable;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.dialect.AnsiSqlDialect;
@@ -371,6 +374,28 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw new AssertionError("The schema not found or not belong to dingo.");
         }
         return Pair.of((DingoSchema) schema, tableName.toUpperCase());
+    }
+
+    public void execute(SqlCreateSchema schema, CalcitePrepare.Context context) {
+        DingoRootSchema rootSchema = (DingoRootSchema) context.getMutableRootSchema().schema;
+        rootSchema.createSubSchema(schema.name.names.get(0));
+    }
+
+    public void execute(SqlDropSchema schema, CalcitePrepare.Context context) {
+        DingoRootSchema rootSchema = (DingoRootSchema) context.getMutableRootSchema().schema;
+        String schemaName = schema.name.names.get(0);
+        if (schemaName.equalsIgnoreCase(context.getDefaultSchemaPath().get(0))) {
+            throw new RuntimeException("Schema used.");
+        }
+        Schema subSchema = rootSchema.getSubSchema(schemaName);
+        if (subSchema == null) {
+            throw DINGO_RESOURCE.unknownSchema(schemaName).ex();
+        }
+        if (subSchema.getTableNames().isEmpty()) {
+            rootSchema.dropSubSchema(schemaName);
+        } else {
+            throw new RuntimeException("Schema not empty.");
+        }
     }
 
     @SuppressWarnings({"unused"})

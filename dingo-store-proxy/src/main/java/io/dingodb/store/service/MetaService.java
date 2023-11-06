@@ -104,11 +104,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public MetaService getSubMetaService(String name) {
-        return new MetaService(metaServiceClient.getSubMetaService(name));
+        return Optional.mapOrNull(metaServiceClient.getSubMetaService(name), MetaService::new);
     }
 
     public MetaService getSubMetaService(CommonId id) {
-        return new MetaService(metaServiceClient.getSubMetaService(mapping(id)));
+        return Optional.mapOrNull(metaServiceClient.getSubMetaService(mapping(id)), MetaService::new);
     }
 
     @Override
