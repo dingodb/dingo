@@ -17,6 +17,7 @@
 package io.dingodb.store.common;
 
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Parameters;
 import io.dingodb.sdk.common.index.DiskAnnParam;
 import io.dingodb.sdk.common.index.FlatParam;
 import io.dingodb.sdk.common.index.HnswParam;
@@ -143,25 +144,30 @@ public class TableDefinition implements Table {
                     );
                     break;
                 case "IVFPQ":
-                    int ncentroids = Integer.valueOf(properties.getOrDefault("ncentroids", "10"));
-                    int nsubvector = Integer.valueOf(properties.getOrDefault("nsubvector", "10"));
-                    int bucketInitSize = Integer.valueOf(properties.getOrDefault("bucketInitSize", "10"));
-                    int bucketMaxSize = Integer.valueOf(properties.getOrDefault("bucketMaxSize", "10"));
+                    ;
+                    int ncentroids = Integer.parseInt(properties.getOrDefault("ncentroids", "0"));
+                    int nsubvector = Integer.parseInt(Parameters.nonNull(properties.get("nsubvector"), "nsubvector"));
+                    int bucketInitSize = Integer.parseInt(properties.getOrDefault("bucketInitSize", "0"));
+                    int bucketMaxSize = Integer.parseInt(properties.getOrDefault("bucketMaxSize", "0"));
+                    int nbitsPerIdx = Integer.parseInt(properties.getOrDefault("nbitsPerIdx", "0"));
                     vectorIndexParameter = new VectorIndexParameter(
                         VectorIndexParameter.VectorIndexType.VECTOR_INDEX_TYPE_IVF_PQ,
-                        new IvfPqParam(dimension, metricType, ncentroids, nsubvector, bucketInitSize, bucketMaxSize)
+                        new IvfPqParam(
+                            dimension, metricType, ncentroids, nsubvector, bucketInitSize, bucketMaxSize, nbitsPerIdx
+                        )
                     );
                     break;
-                case "IVFFLAT":
-                    int nsubvector2 = Integer.valueOf(properties.getOrDefault("ncentroids", "10"));
+                case "IVFFLAT":{
+                    int ncentroids2 = Integer.valueOf(properties.getOrDefault("ncentroids", "0"));
                     vectorIndexParameter = new VectorIndexParameter(
                         VectorIndexParameter.VectorIndexType.VECTOR_INDEX_TYPE_IVF_FLAT,
-                        new IvfFlatParam(dimension, metricType, nsubvector2)
+                        new IvfFlatParam(dimension, metricType, ncentroids2)
                     );
                     break;
+                }
                 case "HNSW":
-                    int efConstruction = Integer.valueOf(properties.getOrDefault("efConstruction", "10"));
-                    int nlinks = Integer.valueOf(properties.getOrDefault("nlinks", "10"));
+                    int efConstruction = Integer.valueOf(properties.getOrDefault("efConstruction", "40"));
+                    int nlinks = Integer.valueOf(properties.getOrDefault("nlinks", "32"));
                     vectorIndexParameter = new VectorIndexParameter(
                         VectorIndexParameter.VectorIndexType.VECTOR_INDEX_TYPE_HNSW,
                         new HnswParam(dimension, metricType, efConstruction, Integer.MAX_VALUE, nlinks)

@@ -32,7 +32,8 @@ public class Coprocessor {
 
     private static final SchemaWrapper DEFAULT_WRAPPER = SchemaWrapper.builder().build();
 
-    private int schemaVersion;
+    @Builder.Default
+    private int schemaVersion = 1;
 
     @Builder.Default
     private SchemaWrapper originalSchema = DEFAULT_WRAPPER;
