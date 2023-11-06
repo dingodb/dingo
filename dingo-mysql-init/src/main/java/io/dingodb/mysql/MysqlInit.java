@@ -239,11 +239,12 @@ public final class MysqlInit {
         values.add(new Object[]{"version_compile_machine", "x86_64"});
         values.add(new Object[]{"init_connect", ""});
         values.add(new Object[]{"collation_connection", "utf8_general_ci"});
-        values.add(new Object[]{"collation_server", "latin1_swedish_ci"});
-        values.add(new Object[]{"character_set_server", "latin1"});
-        values.add(new Object[]{"character_set_results", "utf8"});
-        values.add(new Object[]{"character_set_client", "utf8"});
-        values.add(new Object[]{"character_set_connection", "utf8"});
+        values.add(new Object[]{"collation_database", "utf8_general_ci"});
+        values.add(new Object[]{"collation_server", "utf8_general_ci"});
+        values.add(new Object[]{"character_set_server", "utf8"});
+        values.add(new Object[]{"character_set_results", "gbk"});
+        values.add(new Object[]{"character_set_client", "gbk"});
+        values.add(new Object[]{"character_set_connection", "gbk"});
         values.add(new Object[]{"auto_increment_increment", "1"});
         values.add(new Object[]{"auto_increment_offset", "1"});
         values.add(new Object[]{"protocol_version", "10"});

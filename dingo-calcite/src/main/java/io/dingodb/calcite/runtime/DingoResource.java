@@ -73,6 +73,9 @@ public interface DingoResource {
     @BaseMessage("Access denied for user ''{0}''@''{1}'' to database ''{2}''")
     ExInst<DingoSqlException> accessDeniedToDb(String a0, String a1, String a2);
 
+    @BaseMessage("Unknown character set ''{0}''")
+    ExInst<DingoSqlException> unknownCharacterSet(String a0);
+
     @BaseMessage("Error 1051(42S02): Unknown table ''{0}''")
     ExInst<DingoSqlException> unknownTable(String a0);
 }

@@ -27,10 +27,16 @@ import org.apache.calcite.sql.SqlSetOption;
 import java.sql.Connection;
 import java.sql.SQLClientInfoException;
 
+import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
+
 public class SetOptionOperation implements DdlOperation {
 
     private static final String TEMPLATE = "UPDATE INFORMATION_SCHEMA.GLOBAL_VARIABLES "
         + "SET VARIABLE_VALUE = 'tmpValue' WHERE VARIABLE_NAME = 'tmpName'";
+
+    public static final String CONNECTION_CHARSET = "character_set_connection";
+    private static final String CLIENT_CHARSET = "character_set_client";
+    private static final String RESULTS_CHARSET = "character_set_results";
 
     public Connection connection;
 
@@ -48,6 +54,9 @@ public class SetOptionOperation implements DdlOperation {
             name = sqlIdentifier.names.get(0);
         } else {
             name = sqlIdentifier.names.get(1);
+        }
+        if (name.equalsIgnoreCase("names")) {
+            scope = "SESSION";
         }
         if ("USER".equals(scope)) {
             name = "@" + name;
@@ -75,7 +84,9 @@ public class SetOptionOperation implements DdlOperation {
                 if (valStr.contains("'")) {
                     valStr = valStr.replace("'", "");
                 }
-                connection.setClientInfo(name, valStr);
+                if (!setCharacter(name, valStr)) {
+                    connection.setClientInfo(name, valStr);
+                }
             } else if ("SYSTEM".equals(scope)) {
                 if (!ScopeVariables.globalVariables.containsKey(name)) {
                     throw new RuntimeException(String.format(ErrorCode.ER_UNKNOWN_VARIABLES.message, name));
@@ -87,6 +98,26 @@ public class SetOptionOperation implements DdlOperation {
         } catch (SQLClientInfoException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private boolean setCharacter(String name, String value) {
+        if (name.equalsIgnoreCase("names")) {
+            value = value.toLowerCase();
+            // todo Unknown encoding may cause connection failure
+            // The known character sets include utf8, gbk, latin1, utf8mb4
+            //if (!ScopeVariables.characterSet.contains(value)) {
+            //    throw DINGO_RESOURCE.unknownCharacterSet(value).ex();
+            //}
+            try {
+                connection.setClientInfo(CONNECTION_CHARSET, value);
+                connection.setClientInfo(CLIENT_CHARSET, value);
+                connection.setClientInfo(RESULTS_CHARSET, value);
+            } catch (SQLClientInfoException e) {
+                throw new RuntimeException(e);
+            }
+            return true;
+        }
+        return false;
     }
 
 }
