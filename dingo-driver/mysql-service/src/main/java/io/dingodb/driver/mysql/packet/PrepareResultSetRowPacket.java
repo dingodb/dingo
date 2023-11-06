@@ -16,16 +16,13 @@
 
 package io.dingodb.driver.mysql.packet;
 
-import io.dingodb.common.mysql.DingoArray;
 import io.dingodb.driver.mysql.MysqlConnection;
 import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
 import lombok.Setter;
-import org.apache.calcite.avatica.util.ArrayImpl;
-import org.apache.commons.lang3.StringUtils;
 
+import java.io.UnsupportedEncodingException;
 import java.sql.Array;
-import java.sql.Connection;
 import java.sql.Date;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -38,6 +35,9 @@ import static io.dingodb.driver.mysql.command.MysqlResponseHandler.getArrayObjec
 
 public class PrepareResultSetRowPacket extends MysqlPacket {
     List<Object> values = new ArrayList<>();
+
+    @Setter
+    private String characterSet;
 
     @Setter
     private ResultSetMetaData metaData;
@@ -85,7 +85,12 @@ public class PrepareResultSetRowPacket extends MysqlPacket {
                     case "ARRAY":
                     case "MULTISET":
                         if (val != null) {
-                            byte[] v = val.toString().getBytes();
+                            byte[] v = new byte[0];
+                            try {
+                                v = val.toString().getBytes(characterSet);
+                            } catch (UnsupportedEncodingException e) {
+                                throw new RuntimeException(e);
+                            }
                             values.set(i - 1, v);
                             totalSize += BufferUtil.getLength(v);
                         }

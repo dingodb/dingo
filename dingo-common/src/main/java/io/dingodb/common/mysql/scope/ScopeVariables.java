@@ -26,7 +26,9 @@ public class ScopeVariables {
 
     public static Properties sessionVariables = new Properties();
 
-    public static List<String> immutableVariables = new ArrayList<>();
+    public static final List<String> immutableVariables = new ArrayList<>();
+
+    public static final List<String> characterSet = new ArrayList<>();
 
     static {
         // used to client connection
@@ -42,5 +44,11 @@ public class ScopeVariables {
         immutableVariables.add("have_openssl");
         immutableVariables.add("have_ssl");
         immutableVariables.add("have_statement_timeout");
+
+        characterSet.add("utf8mb4");
+        characterSet.add("utf8");
+        characterSet.add("utf-8");
+        characterSet.add("gbk");
+        characterSet.add("latin1");
     }
 }

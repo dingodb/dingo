@@ -78,6 +78,9 @@ public interface DingoResource {
 
     @BaseMessage("Error 1051(42S02): Unknown schema ''{0}''")
     ExInst<DingoSqlException> unknownSchema(String a0);
+    
+    @BaseMessage("Unknown character set ''{0}''")
+    ExInst<DingoSqlException> unknownCharacterSet(String a0);
 
     @BaseMessage("Error 1051(42S02): Unknown table ''{0}''")
     ExInst<DingoSqlException> unknownTable(String a0);

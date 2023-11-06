@@ -20,12 +20,17 @@ import io.dingodb.common.mysql.MysqlMessage;
 import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ResultSetRowPacket extends MysqlPacket {
+
+    @Setter
+    private String characterSet;
 
     public List<String> values = new ArrayList<>();
     private static final byte NULL_MARK = (byte) 251;
@@ -80,7 +85,12 @@ public class ResultSetRowPacket extends MysqlPacket {
             if (val == null) {
                 buf.writeByte(NULL_MARK);
             } else {
-                byte[] fv = values.get(i).getBytes();
+                byte[] fv = new byte[0];
+                try {
+                    fv = values.get(i).getBytes(characterSet);
+                } catch (UnsupportedEncodingException e) {
+                    throw new RuntimeException(e);
+                }
                 BufferUtil.writeLength(buf, fv.length);
                 buf.writeBytes(fv);
             }
@@ -97,7 +107,11 @@ public class ResultSetRowPacket extends MysqlPacket {
             if (val == null) {
                 size += 1;
             } else {
-                size += BufferUtil.getLength(val.toString().getBytes());
+                try {
+                    size += BufferUtil.getLength(val.toString().getBytes(characterSet));
+                } catch (UnsupportedEncodingException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
         return size;
