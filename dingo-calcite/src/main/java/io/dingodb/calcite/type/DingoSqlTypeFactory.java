@@ -23,6 +23,8 @@ import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.lang.reflect.Type;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -98,5 +100,10 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
         }
         // This will copy any multiset type as `MultisetSqlType`.
         return super.createTypeWithNullability(type, nullable);
+    }
+
+    @Override
+    public Charset getDefaultCharset() {
+        return StandardCharsets.UTF_8;
     }
 }

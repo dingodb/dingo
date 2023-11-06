@@ -49,6 +49,8 @@ import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import static io.dingodb.calcite.operation.SetOptionOperation.CONNECTION_CHARSET;
+import static io.dingodb.common.util.Utils.getCharacterSet;
 import static io.dingodb.common.util.Utils.getDateByTimezone;
 
 @Slf4j
@@ -138,6 +140,9 @@ public class MysqlResponseHandler {
         while (resultSet.next()) {
             ResultSetRowPacket resultSetRowPacket = new ResultSetRowPacket();
             resultSetRowPacket.packetId = (byte) packetId.getAndIncrement();
+            String characterSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
+            characterSet = getCharacterSet(characterSet);
+            resultSetRowPacket.setCharacterSet(characterSet);
             for (int i = 1; i <= columnCount; i ++) {
                 Object val = resultSet.getObject(i);
                 typeName = metaData.getColumnTypeName(i);
@@ -193,6 +198,9 @@ public class MysqlResponseHandler {
                                                 int columnCount) throws SQLException {
         while (resultSet.next()) {
             PrepareResultSetRowPacket resultSetRowPacket = new PrepareResultSetRowPacket();
+            String characterSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
+            characterSet = getCharacterSet(characterSet);
+            resultSetRowPacket.setCharacterSet(characterSet);
             resultSetRowPacket.packetId = (byte) packetId.getAndIncrement();
             resultSetRowPacket.setMetaData(resultSet.getMetaData());
             for (int i = 1; i <= columnCount; i ++) {

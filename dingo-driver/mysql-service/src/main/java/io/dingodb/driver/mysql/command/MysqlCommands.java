@@ -32,6 +32,7 @@ import io.dingodb.driver.mysql.packet.QueryPacket;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.Meta;
 
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -45,8 +46,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static io.dingodb.common.mysql.constant.ErrorCode.ER_NOT_ALLOWED_COMMAND;
-import static io.dingodb.common.mysql.constant.ErrorCode.ER_UNKNOWN_ERROR;
+import static io.dingodb.calcite.operation.SetOptionOperation.CONNECTION_CHARSET;
+import static io.dingodb.common.util.Utils.getCharacterSet;
 
 @Slf4j
 public class MysqlCommands {
@@ -71,7 +72,14 @@ public class MysqlCommands {
 
     public void execute(QueryPacket queryPacket,
                         MysqlConnection mysqlConnection) {
-        String sql = new String(queryPacket.message);
+        String sql;
+        try {
+            String characterSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
+            characterSet = getCharacterSet(characterSet);
+            sql = new String(queryPacket.message, characterSet);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         AtomicLong packetId = new AtomicLong(queryPacket.packetId + 1);
         if (log.isDebugEnabled()) {
             log.debug("receive sql:" + sql);
@@ -261,7 +269,15 @@ public class MysqlCommands {
                         case MysqlType.FIELD_TYPE_VAR_STRING:
                         case MysqlType.FIELD_TYPE_STRING:
                         case MysqlType.FIELD_TYPE_VARCHAR:
-                            String charVal = new String(v.getValue());
+                            String characterSet = mysqlConnection.getConnection()
+                                .getClientInfo(CONNECTION_CHARSET);
+                            characterSet = getCharacterSet(characterSet);
+                            String charVal;
+                            try {
+                                charVal = new String(v.getValue(), characterSet);
+                            } catch (UnsupportedEncodingException e) {
+                                throw new RuntimeException(e);
+                            }
                             preparedStatement.setString(k, charVal);
                             break;
                         case MysqlType.FIELD_TYPE_DECIMAL:

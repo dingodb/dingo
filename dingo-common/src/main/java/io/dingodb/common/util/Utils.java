@@ -161,5 +161,12 @@ public final class Utils {
         }).collect(Collectors.toList());
     }
 
+    public static String getCharacterSet(String characterSet) {
+        if (characterSet.equalsIgnoreCase("utf8mb4")) {
+            return "utf8";
+        }
+        return characterSet;
+    }
+
     public static final int INTEGER_LEN_IN_BYTES = 4;
 }

@@ -147,7 +147,7 @@ public class QueryMetaDataTest {
                     },
                     new Object[]{
                         null, SCHEMA_NAME, "TEST", "NAME", 12,
-                        "VARCHAR(32) NOT NULL", 32, null, 10, 0,
+                        "VARCHAR(32) CHARACTER SET \"UTF-8\" NOT NULL", 32, null, 10, 0,
                         32, 2, "NO", "", ""
                     },
                     new Object[]{
@@ -174,7 +174,7 @@ public class QueryMetaDataTest {
                 .isRecords(Collections.singletonList(
                     new Object[]{
                         null, SCHEMA_NAME, "TEST", "NAME", 12,
-                        "VARCHAR(32) NOT NULL", 32, null, 10, 0,
+                        "VARCHAR(32) CHARACTER SET \"UTF-8\" NOT NULL", 32, null, 10, 0,
                         32, 2, "NO", "", ""
                     }
                 ));
