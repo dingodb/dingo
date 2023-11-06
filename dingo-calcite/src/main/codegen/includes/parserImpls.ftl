@@ -39,7 +39,7 @@ SqlCreate SqlCreateSchema(Span s, boolean replace) :
     final SqlIdentifier id;
 }
 {
-    <SCHEMA> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
+    ( <SCHEMA> | <DATABASE> ) ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     {
         return SqlDdlNodes.createSchema(s.end(this), replace, ifNotExists, id);
     }
@@ -614,7 +614,7 @@ SqlDrop SqlDropSchema(Span s, boolean replace) :
     |
         { foreign = false; }
     )
-    <SCHEMA> ifExists = IfExistsOpt() id = CompoundIdentifier() {
+    ( <SCHEMA> | <DATABASE> ) ifExists = IfExistsOpt() id = CompoundIdentifier() {
         return SqlDdlNodes.dropSchema(s.end(this), foreign, ifExists, id);
     }
 }
