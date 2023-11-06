@@ -36,7 +36,8 @@ public class VectorCoprocessor implements Coprocessor {
 
     private static final VectorSchemaWrapper DEFAULT_WRAPPER = VectorSchemaWrapper.builder().build();
 
-    private int schemaVersion;
+    @Builder.Default
+    private int schemaVersion = 1;
     @Builder.Default
     private VectorSchemaWrapper originalSchema = DEFAULT_WRAPPER;
     @Builder.Default

@@ -114,7 +114,11 @@ public final class CodecService implements io.dingodb.codec.CodecService {
 
     @Override
     public byte[] setId(byte[] key, CommonId id) {
-        new BufImpl(key).writeLong(id.seq);
+        BufImpl buf = new BufImpl(key);
+        // skip namespace
+        buf.skip(1);
+        // reset id
+        buf.writeLong(id.seq);
         return key;
     }
 

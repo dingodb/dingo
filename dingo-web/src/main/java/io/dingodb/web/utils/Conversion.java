@@ -137,7 +137,8 @@ public class Conversion {
                         pqParam.getNcentroids(),
                         pqParam.getNsubvector(),
                         pqParam.getBucketInitSize(),
-                        pqParam.getBucketMaxSize()
+                        pqParam.getBucketMaxSize(),
+                        pqParam.getNbitsPerIdx()
                     )
                 );
                 break;

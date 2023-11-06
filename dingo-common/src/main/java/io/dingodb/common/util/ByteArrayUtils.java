@@ -100,7 +100,9 @@ public class ByteArrayUtils {
 
     public static final byte[] MIN = EMPTY_BYTES;
     public static final byte[] MAX = new byte[] {(byte) 0xFF };
-    public static final int SKIP_LONG_POS = 8;
+
+    // todo optimized code, [namespace(1)|id(8)]
+    public static final int SKIP_LONG_POS = 9;
 
     public static int compare(byte[] bytes1, byte[] bytes2, boolean ignoreLen) {
         return compare(bytes1, bytes2, ignoreLen, 0);

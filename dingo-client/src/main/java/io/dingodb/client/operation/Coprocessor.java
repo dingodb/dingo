@@ -38,7 +38,7 @@ public class Coprocessor implements io.dingodb.sdk.service.store.Coprocessor {
 
     @Override
     public int getSchemaVersion() {
-        return 0;
+        return 1;
     }
 
     @Override
