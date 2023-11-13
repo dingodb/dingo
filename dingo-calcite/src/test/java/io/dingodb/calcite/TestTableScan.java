@@ -30,11 +30,13 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.impl.JobManagerImpl;
+import io.dingodb.exec.impl.LocalTimestampOracle;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.asserts.AssertJob;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.logical.LogicalFilter;
+import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -98,10 +100,11 @@ public class TestTableScan {
         assertThat((scan).getFilter()).isNull();
         assertThat((scan).getSelection()).isEqualTo(TupleMapping.of(Arrays.asList(0, 1, 2)));
         // To job.
-        Job job = jobManager.createJob(getClass().getName());
+        long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
-        assertJob.task("0001").location(currentLocation).operatorNum(4);
+        assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(4);
     }
 
     @Test
@@ -125,10 +128,11 @@ public class TestTableScan {
         assertThat((scan).getFilter()).isNotNull();
         assertThat((scan).getSelection()).isEqualTo(TupleMapping.of(Arrays.asList(0, 1, 2)));
         // To job.
-        Job job = jobManager.createJob(getClass().getName());
+        long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
-        assertJob.task("0001").location(currentLocation).operatorNum(4);
+        assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(4);
     }
 
     @Test
@@ -151,10 +155,11 @@ public class TestTableScan {
         assertThat((scan).getFilter()).isNull();
         assertThat((scan).getSelection()).isNotNull();
         // To job.
-        Job job = jobManager.createJob(getClass().getName());
+        long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
-        assertJob.task("0001").location(currentLocation).operatorNum(4);
+        assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(4);
     }
 
     @Test
@@ -178,10 +183,11 @@ public class TestTableScan {
         assertThat((scan).getFilter()).isNotNull();
         assertThat((scan).getSelection()).isNotNull();
         // To job.
-        Job job = jobManager.createJob(getClass().getName());
+        long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
-        assertJob.task("0001").location(currentLocation).operatorNum(4);
+        assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(4);
     }
 
     @Test
@@ -205,10 +211,11 @@ public class TestTableScan {
         assertThat((scan).getFilter()).isNotNull();
         assertThat((scan).getSelection()).isEqualTo(TupleMapping.of(Arrays.asList(0, 1, 2)));
         // To job.
-        Job job = jobManager.createJob(getClass().getName());
+        long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
-        assertJob.task("0001").location(currentLocation).operatorNum(4);
+        assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(4);
     }
 
     @Test

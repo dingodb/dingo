@@ -17,9 +17,8 @@
 package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.calcite.traits.DingoRelPartition;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.util.Optional;
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Output;
@@ -51,14 +50,14 @@ public class DingoCoalesce {
         Set<DingoRelPartition> srcPartitions
     ) {
         // Coalesce inputs from the same task. taskId --> list of inputs
-        Map<Id, List<Output>> inputsMap = new HashMap<>();
+        Map<CommonId, List<Output>> inputsMap = new HashMap<>();
         for (Output input : inputs) {
-            Id taskId = input.getTaskId();
+            CommonId taskId = input.getTaskId();
             List<Output> list = inputsMap.computeIfAbsent(taskId, k -> new LinkedList<>());
             list.add(input);
         }
         List<Output> outputs = new LinkedList<>();
-        for (Map.Entry<Id, List<Output>> entry : inputsMap.entrySet()) {
+        for (Map.Entry<CommonId, List<Output>> entry : inputsMap.entrySet()) {
             List<Output> list = entry.getValue();
             int size = list.size();
             if (size <= 1) {
@@ -78,7 +77,7 @@ public class DingoCoalesce {
                     Output one = value.get(0);
                     Task task = one.getTask();
                     Operator operator = new CoalesceOperator(valueSize);
-                    operator.setId(idGenerator.get());
+                    operator.setId(idGenerator.getOperatorId(task.getId()));
                     task.putOperator(operator);
                     int i = 0;
                     for (Output input : value) {
@@ -89,7 +88,7 @@ public class DingoCoalesce {
                     newOutput.copyHint(one);
                     if (one.isToSumUp()) {
                         Operator sumUpOperator = new SumUpOperator();
-                        sumUpOperator.setId(idGenerator.get());
+                        sumUpOperator.setId(idGenerator.getOperatorId(task.getId()));
                         task.putOperator(sumUpOperator);
                         operator.getSoleOutput().setLink(sumUpOperator.getInput(0));
                         sumUpOperator.getSoleOutput().copyHint(newOutput);

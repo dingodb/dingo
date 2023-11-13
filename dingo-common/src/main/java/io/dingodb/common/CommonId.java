@@ -16,8 +16,6 @@
 
 package io.dingodb.common;
 
-import com.fasterxml.jackson.core.Base64Variant;
-import com.fasterxml.jackson.core.Base64Variants;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -27,6 +25,7 @@ import com.fasterxml.jackson.databind.KeyDeserializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import lombok.EqualsAndHashCode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -48,15 +47,29 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     public static final int DOMAIN_IDX = TYPE_IDX + TYPE_LEN;
     public static final int SEQ_IDX = DOMAIN_IDX + DOMAIN_LEN;
 
+    private static final int STR_TYPE_INDEX = 0;
+    private static final int STR_DOMAIN_INDEX = 1;
+    private static final int STR_SEQ_INDEX = 2;
+
     public static final CommonId EMPTY_TABLE = new CommonId(CommonType.TABLE, 0, 0);
     public static final CommonId EMPTY_DISTRIBUTE = new CommonId(CommonType.DISTRIBUTION, 0, 0);
+    public static final CommonId EMPTY_CONNECTION = new CommonId(CommonType.CONNECTION, 0, 0);
+    public static final CommonId EMPTY_JOB = new CommonId(CommonType.JOB, 0, 0);
 
+    public static final CommonId EMPTY_TASK = new CommonId(CommonType.TASK, 0, 0);
+    public static final CommonId EMPTY_TRANSACTION = new CommonId(CommonType.TRANSACTION, 0, 0);
+
+    // data 0 -> 19, op 20 -> 59 , exec 60 -> 79
     public enum CommonType {
         SCHEMA(0),
         TABLE(1),
         DISTRIBUTION(2),
         PARTITION(3),
-        OP(100);
+        OP(20),
+        CONNECTION(60),
+        TRANSACTION(61),
+        JOB(62),
+        TASK(63);
 
         public final int code;
 
@@ -74,7 +87,11 @@ public class CommonId implements Comparable<CommonId>, Serializable {
                 case 1: return TABLE;
                 case 2: return DISTRIBUTION;
                 case 3: return PARTITION;
-                case 100: return OP;
+                case 20: return OP;
+                case 60: return CONNECTION;
+                case 61: return TRANSACTION;
+                case 62: return JOB;
+                case 63: return TASK;
                 default:
                     throw new IllegalStateException("Unexpected value: " + code);
             }
@@ -124,20 +141,6 @@ public class CommonId implements Comparable<CommonId>, Serializable {
         return target;
     }
 
-    /**
-     * PartitionOperator partIndices Serializable .
-     * @return commonId base64 str
-     */
-    public String encodeToString() {
-        Base64Variant base64Variant = Base64Variants.getDefaultVariant();
-        return base64Variant.encode(encode());
-    }
-
-    public static CommonId decode(String key) {
-        Base64Variant base64Variant = Base64Variants.getDefaultVariant();
-        return decode(base64Variant.decode(key));
-    }
-
     public static CommonId decode(byte[] content) {
         return decode(content, 0);
     }
@@ -148,6 +151,44 @@ public class CommonId implements Comparable<CommonId>, Serializable {
             content.length >= SEQ_IDX ? decodeLong(content, index + DOMAIN_IDX) : 0,
             content.length >= LEN ? decodeLong(content, index + SEQ_IDX) : 0
         );
+    }
+
+    private static String[] split(String str) {
+        return str.split("_");
+    }
+
+    private static CommonId parseParts(String[] parts) {
+        return new CommonId(
+            getType(parts),
+            getDomain(parts),
+            getSeq(parts));
+    }
+
+    private static CommonType getType(String[] parts) {
+        return CommonType.valueOf(getTypeByIndex(parts));
+    }
+
+    private static String getTypeByIndex(String[] parts) {
+        return parts[STR_TYPE_INDEX];
+    }
+
+    private static Long getDomain(String[] parts) {
+        return Long.parseLong(parts[STR_DOMAIN_INDEX]);
+    }
+
+    private static Long getSeq(String[] parts) {
+        return Long.parseLong(parts[STR_SEQ_INDEX]);
+    }
+
+    private static Optional<CommonId> doParse(String str) {
+        return Optional.ofNullable(str)
+            .map(CommonId::split)
+            .filter(parts -> parts.length == 3)
+            .map(CommonId::parseParts);
+    }
+
+    public static CommonId parse(@NonNull String str) {
+        return doParse(str).get();
     }
 
     public static CommonId prefix(byte type, long domain) {
@@ -162,7 +203,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     public static class JacksonSerializer extends JsonSerializer<CommonId> {
         @Override
         public void serialize(CommonId value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            gen.writeBinary(value.encode());
+            gen.writeString(value.toString());
         }
     }
 
@@ -170,14 +211,14 @@ public class CommonId implements Comparable<CommonId>, Serializable {
 
         @Override
         public CommonId deserialize(JsonParser parser, DeserializationContext context) throws IOException {
-            return decode(parser.getBinaryValue());
+            return parse(parser.getValueAsString());
         }
     }
 
     public static class JacksonKeySerializer extends JsonSerializer<CommonId> {
         @Override
         public void serialize(CommonId value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            gen.writeFieldName(value.encodeToString());
+            gen.writeFieldName(value.toString());
         }
     }
 
@@ -185,9 +226,10 @@ public class CommonId implements Comparable<CommonId>, Serializable {
 
         @Override
         public Object deserializeKey(String key, DeserializationContext ctxt) throws IOException {
-            return decode(key);
+            return parse(key);
         }
 
     }
+
 
 }

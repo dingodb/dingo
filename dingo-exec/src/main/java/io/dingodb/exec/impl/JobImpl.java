@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Task;
 import io.dingodb.expr.json.runtime.Parser;
@@ -43,31 +43,34 @@ public final class JobImpl implements Job {
 
     @JsonProperty("jobId")
     @Getter
-    private final Id jobId;
-    @JsonProperty("tasks")
-    @JsonSerialize(contentAs = TaskImpl.class)
-    @JsonDeserialize(contentAs = TaskImpl.class)
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    private final CommonId jobId;
+
     @Getter
-    private final Map<Id, Task> tasks;
+    @JsonProperty("tasks")
+    @JsonSerialize(keyUsing = CommonId.JacksonKeySerializer.class, contentAs = TaskImpl.class)
+    @JsonDeserialize(keyUsing = CommonId.JacksonKeyDeserializer.class, contentAs = TaskImpl.class)
+    private final Map<CommonId, Task> tasks;
 
     // Need not serialize this, for it is serialized in tasks.
     private final DingoType parasType;
 
-    private Id rootTaskId = null;
+    private CommonId rootTaskId = null;
 
     @JsonCreator
-    public JobImpl(@JsonProperty("jobId") Id jobId) {
+    public JobImpl(@JsonProperty("jobId") CommonId jobId) {
         this(jobId, null);
     }
 
-    public JobImpl(@JsonProperty("jobId") Id jobId, @Nullable DingoType parasType) {
+    public JobImpl(@JsonProperty("jobId") CommonId jobId, @Nullable DingoType parasType) {
         this.jobId = jobId;
         this.tasks = new HashMap<>();
         this.parasType = parasType;
     }
 
     @Override
-    public @NonNull Task create(Id id, Location location) {
+    public @NonNull Task create(CommonId id, Location location) {
         if (tasks.containsKey(id)) {
             throw new IllegalArgumentException("The task \"" + id + "\" already exists in job \"" + jobId + "\".");
         }
@@ -87,7 +90,7 @@ public final class JobImpl implements Job {
     }
 
     @Override
-    public void markRoot(Id taskId) {
+    public void markRoot(CommonId taskId) {
         assert tasks.get(taskId).getRoot() != null
             : "The root task must has a root operator.";
         rootTaskId = taskId;

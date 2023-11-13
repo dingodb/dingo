@@ -16,14 +16,14 @@
 
 package io.dingodb.exec.utils;
 
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public final class TagUtils {
     private TagUtils() {
     }
 
-    public static @NonNull String tag(Id jobId, Id id) {
+    public static @NonNull String tag(CommonId jobId, CommonId id) {
         return jobId + ":" + id;
     }
 }

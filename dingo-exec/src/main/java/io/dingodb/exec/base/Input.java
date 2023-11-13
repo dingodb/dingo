@@ -18,6 +18,9 @@ package io.dingodb.exec.base;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.dingodb.common.CommonId;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -27,7 +30,9 @@ import lombok.Setter;
 public final class Input {
     @JsonProperty("operator")
     @Getter
-    private final Id operatorId;
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    private final CommonId operatorId;
     @JsonProperty("pin")
     @Getter
     private final int pin;

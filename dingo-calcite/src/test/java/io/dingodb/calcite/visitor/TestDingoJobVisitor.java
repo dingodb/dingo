@@ -33,6 +33,7 @@ import io.dingodb.common.Location;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.impl.JobManagerImpl;
+import io.dingodb.exec.impl.LocalTimestampOracle;
 import io.dingodb.exec.operator.CoalesceOperator;
 import io.dingodb.exec.operator.ValuesOperator;
 import io.dingodb.meta.MetaService;
@@ -103,16 +104,17 @@ public class TestDingoJobVisitor {
             null,
             null
         );
-        Job job = jobManager.createJob(getClass().getName());
+        long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, scan, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(1);
         CommonId tableId = MetaService.root()
             .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME)
             .getTableId(FULL_TABLE_NAME);
-        assertJob.task("0001").operatorNum(2).location(MockMetaServiceProvider.LOC_0)
+        assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0)
             .source(0).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 1))
             .soleOutput().isNull();
-        assertJob.task("0001").operatorNum(2).location(MockMetaServiceProvider.LOC_1)
+        assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_1)
             .source(1).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 2))
             .soleOutput().isNull();
     }
@@ -135,11 +137,12 @@ public class TestDingoJobVisitor {
                 null
             )
         );
-        Job job = jobManager.createJob(getClass().getName());
+        long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, converter, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(1);
         AssertTask assertTask =
-            assertJob.task("0001").operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(2);
+            assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(2);
         CommonId tableId = MetaService.root()
             .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME)
             .getTableId(FULL_TABLE_NAME);
@@ -170,11 +173,12 @@ public class TestDingoJobVisitor {
                 null
             )
         );
-        Job job = jobManager.createJob(getClass().getName());
+        long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, converter, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(1);
         AssertTask assertTask =
-            assertJob.task("0001").operatorNum(3).location(MockMetaServiceProvider.LOC_0).sourceNum(2);
+            assertJob.task(jobSeqId, 0).operatorNum(3).location(MockMetaServiceProvider.LOC_0).sourceNum(2);
         CommonId tableId = MetaService.root()
             .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME)
             .getTableId(FULL_TABLE_NAME);
@@ -200,7 +204,8 @@ public class TestDingoJobVisitor {
                 new Object[]{2, "Betty", 2.0}
             )
         );
-        Job job = jobManager.createJob(getClass().getName());
+        long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, values, currentLocation);
         ValuesOperator operator = (ValuesOperator) Assert.job(job)
             .soleTask().location(MockMetaServiceProvider.LOC_0).operatorNum(1)
@@ -237,9 +242,10 @@ public class TestDingoJobVisitor {
             null,
             true
         );
-        Job job = jobManager.createJob(getClass().getName());
+        long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, partModify, currentLocation);
         Assert.job(job).taskNum(1)
-            .task("0001").location(MockMetaServiceProvider.LOC_0).operatorNum(4);
+            .task(jobSeqId, 0).location(MockMetaServiceProvider.LOC_0).operatorNum(4);
     }
 }

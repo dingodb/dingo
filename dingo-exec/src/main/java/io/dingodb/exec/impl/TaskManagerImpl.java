@@ -16,7 +16,7 @@
 
 package io.dingodb.exec.impl;
 
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.base.TaskManager;
 import lombok.extern.slf4j.Slf4j;
@@ -29,43 +29,43 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class TaskManagerImpl implements TaskManager {
     public static final TaskManagerImpl INSTANCE = new TaskManagerImpl();
 
-    private final Map<Id, Task> taskMap = new ConcurrentHashMap<>();
+    private final Map<CommonId, Task> taskMap = new ConcurrentHashMap<>();
 
     private TaskManagerImpl() {
     }
 
-    public static @NonNull Id taskFullId(Id jobId, Id taskId) {
-        return new Id(jobId + ":" + taskId);
+    public static @NonNull String taskFullId(CommonId jobId, CommonId taskId) {
+        return jobId + ":" + taskId;
     }
 
     @Override
     public void addTask(@NonNull Task task) {
-        Id jobId = task.getJobId();
-        Id id = task.getId();
-        Id taskFullId = taskFullId(jobId, id);
-        taskMap.put(taskFullId, task);
+        CommonId jobId = task.getJobId();
+        CommonId id = task.getId();
+        String taskFullId = taskFullId(jobId, id);
+        taskMap.put(id, task);
         if (log.isDebugEnabled()) {
-            log.debug("Added task \"{}\". # of tasks: {}.", taskFullId, taskMap.size());
+            log.debug("Added task \"{}\". # of job:tasks: {}.", taskFullId, taskMap.size());
         }
         task.init();
     }
 
     @Override
-    public @NonNull Task getTask(Id jobId, Id taskId) {
-        Id id = taskFullId(jobId, taskId);
-        Task task = taskMap.get(id);
+    public @NonNull Task getTask(CommonId jobId, CommonId taskId) {
+        String taskFullId = taskFullId(jobId, taskId);
+        Task task = taskMap.get(taskId);
         if (task != null) {
             return task;
         }
-        throw new IllegalArgumentException("Non-existed task id \"" + id + "\".");
+        throw new IllegalArgumentException("Non-existed job:task id \"" + taskFullId + "\".");
     }
 
     @Override
-    public void removeTask(Id jobId, Id taskId) {
-        Id taskFullId = taskFullId(jobId, taskId);
-        Task task = taskMap.remove(taskFullId);
+    public void removeTask(CommonId jobId, CommonId taskId) {
+        String taskFullId = taskFullId(jobId, taskId);
+        Task task = taskMap.remove(taskId);
         if (log.isDebugEnabled()) {
-            log.debug("Removed task \"{}\". # of tasks: {}.", taskFullId, taskMap.size());
+            log.debug("Removed task \"{}\". # of job:tasks: {}.", taskFullId, taskMap.size());
         }
         if (task != null) {
             task.destroy();

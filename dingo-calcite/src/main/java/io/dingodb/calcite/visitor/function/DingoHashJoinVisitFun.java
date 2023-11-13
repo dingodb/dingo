@@ -20,7 +20,7 @@ import io.dingodb.calcite.rel.DingoHashJoin;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Operator;
@@ -46,14 +46,14 @@ public class DingoHashJoinVisitFun {
     ) {
         Collection<Output> leftInputs = dingo(rel.getLeft()).accept(visitor);
         Collection<Output> rightInputs = dingo(rel.getRight()).accept(visitor);
-        Map<Id, Output> leftInputsMap = new HashMap<>(leftInputs.size());
-        Map<Id, Output> rightInputsMap = new HashMap<>(rightInputs.size());
+        Map<CommonId, Output> leftInputsMap = new HashMap<>(leftInputs.size());
+        Map<CommonId, Output> rightInputsMap = new HashMap<>(rightInputs.size());
         // Only one left input in each task, because of coalescing.
         leftInputs.forEach(i -> leftInputsMap.put(i.getTaskId(), i));
         rightInputs.forEach(i -> rightInputsMap.put(i.getTaskId(), i));
         List<Output> outputs = new LinkedList<>();
-        for (Map.Entry<Id, Output> entry : leftInputsMap.entrySet()) {
-            Id taskId = entry.getKey();
+        for (Map.Entry<CommonId, Output> entry : leftInputsMap.entrySet()) {
+            CommonId taskId = entry.getKey();
             Output left = entry.getValue();
             Output right = rightInputsMap.get(taskId);
             JoinInfo joinInfo = rel.analyzeCondition();
@@ -63,7 +63,7 @@ public class DingoHashJoinVisitFun {
                 rel.getJoinType() == JoinRelType.LEFT || rel.getJoinType() == JoinRelType.FULL,
                 rel.getJoinType() == JoinRelType.RIGHT || rel.getJoinType() == JoinRelType.FULL
             );
-            operator.setId(idGenerator.get());
+            operator.setId(idGenerator.getOperatorId(taskId));
             left.setLink(operator.getInput(0));
             right.setLink(operator.getInput(1));
             Task task = job.getTask(taskId);

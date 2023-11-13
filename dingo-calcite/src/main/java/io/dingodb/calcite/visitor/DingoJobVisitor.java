@@ -92,7 +92,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     public static void renderJob(Job job, RelNode input, Location currentLocation, boolean checkRoot) {
-        IdGenerator idGenerator = new IdGeneratorImpl();
+        IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
         DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation);
         Collection<Output> outputs = dingo(input).accept(visitor);
         if (checkRoot && outputs.size() > 0) {

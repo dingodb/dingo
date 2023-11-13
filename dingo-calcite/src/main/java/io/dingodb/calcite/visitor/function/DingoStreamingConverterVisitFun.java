@@ -123,7 +123,7 @@ public class DingoStreamingConverterVisitFun {
         for (Output input : inputs) {
             Task task = input.getTask();
             PartitionOperator operator = new PartitionOperator(distributions, td);
-            operator.setId(idGenerator.get());
+            operator.setId(idGenerator.getOperatorId(task.getId()));
             operator.createOutputs(distributions);
             task.putOperator(operator);
             input.setLink(operator.getInput(0));
@@ -143,7 +143,7 @@ public class DingoStreamingConverterVisitFun {
         for (Output input : inputs) {
             Task task = input.getTask();
             HashOperator operator = new HashOperator(hs, TupleMapping.of(hash.getKeys()));
-            operator.setId(idGenerator.get());
+            operator.setId(idGenerator.getOperatorId(task.getId()));
             operator.createOutputs(locations);
             task.putOperator(operator);
             input.setLink(operator.getInput(0));

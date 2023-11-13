@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.base;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.fin.Fin;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -25,9 +26,9 @@ import java.util.Collection;
 import static io.dingodb.common.util.Utils.sole;
 
 public interface Operator {
-    Id getId();
+    CommonId getId();
 
-    void setId(Id id);
+    void setId(CommonId id);
 
     Task getTask();
 

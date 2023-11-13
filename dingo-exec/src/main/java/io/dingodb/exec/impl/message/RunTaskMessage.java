@@ -22,8 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.codec.RawJsonDeserializer;
 import io.dingodb.exec.converter.JsonConverter;
@@ -36,10 +37,14 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public class RunTaskMessage extends TaskMessage {
     @JsonProperty("job")
     @Getter
-    private final Id jobId;
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    private final CommonId jobId;
     @JsonProperty("task")
     @Getter
-    private final Id taskId;
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    private final CommonId taskId;
     @JsonProperty("parasType")
     @Getter
     private final @NonNull DingoType parasType;
@@ -47,8 +52,8 @@ public class RunTaskMessage extends TaskMessage {
     private final Object @Nullable [] paras;
 
     public RunTaskMessage(
-        Id jobId,
-        Id taskId,
+        CommonId jobId,
+        CommonId taskId,
         @NonNull DingoType parasType,
         Object @Nullable [] paras
     ) {
@@ -68,8 +73,8 @@ public class RunTaskMessage extends TaskMessage {
 
     @JsonCreator
     public static @NonNull RunTaskMessage fromJson(
-        @JsonProperty("job") Id jobId,
-        @JsonProperty("task") Id taskId,
+        @JsonProperty("job") CommonId jobId,
+        @JsonProperty("task") CommonId taskId,
         @NonNull @JsonProperty("parasType") DingoType parasType,
         @JsonDeserialize(using = RawJsonDeserializer.class)
         @JsonProperty("paras") JsonNode paras

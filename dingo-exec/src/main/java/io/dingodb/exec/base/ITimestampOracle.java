@@ -16,25 +16,6 @@
 
 package io.dingodb.exec.base;
 
-import io.dingodb.common.CommonId;
-import io.dingodb.common.type.DingoType;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
-
-import java.util.Iterator;
-
-public interface JobManager {
-    Job createJob(long start_ts, long jobSeqId, DingoType parasType);
-
-    default Job createJob(long start_ts, long jobSeqId) {
-        return createJob(start_ts, jobSeqId, null);
-    }
-
-    Job getJob(CommonId jobId);
-
-    void removeJob(CommonId jobId);
-
-    @NonNull Iterator<Object[]> createIterator(@NonNull Job job, Object @Nullable [] paras);
-
-    void close();
+public interface ITimestampOracle {
+    long nextTimestamp();
 }

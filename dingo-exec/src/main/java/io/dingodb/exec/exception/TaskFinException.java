@@ -16,7 +16,7 @@
 
 package io.dingodb.exec.exception;
 
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,9 +25,9 @@ public class TaskFinException extends RuntimeException {
     private static final long serialVersionUID = 2818712157071556900L;
 
     @Getter
-    private final Id jobId;
+    private final CommonId jobId;
 
-    public TaskFinException(String message, Id jobId) {
+    public TaskFinException(String message, CommonId jobId) {
         super(message);
         this.jobId = jobId;
         log.warn("Job \"{}\" failed with error message: {}", jobId, message);

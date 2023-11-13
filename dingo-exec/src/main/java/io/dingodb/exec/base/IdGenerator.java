@@ -16,10 +16,19 @@
 
 package io.dingodb.exec.base;
 
+import io.dingodb.common.CommonId;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public interface IdGenerator {
-    @NonNull Id get(String idPrefix);
+    @NonNull CommonId getOperatorId(long taskSeqId);
 
-    @NonNull Id get();
+    @NonNull CommonId getOperatorId(CommonId taskId);
+
+    @NonNull CommonId getTaskId(long jobSeqId);
+
+    @NonNull CommonId getTaskId();
+
+    @NonNull CommonId getJobId(long start_ts, long jobSeqId);
+
+    @NonNull CommonId getJobId(long start_ts);
 }

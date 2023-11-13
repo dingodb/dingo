@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @JsonTypeName("hashJoin")
 @JsonPropertyOrder({"joinType", "leftMapping", "rightMapping"})
-public class HashJoinOperator extends SoleOutOperator {
+public class  HashJoinOperator extends SoleOutOperator {
     @JsonProperty("leftMapping")
     private final TupleMapping leftMapping;
     @JsonProperty("rightMapping")

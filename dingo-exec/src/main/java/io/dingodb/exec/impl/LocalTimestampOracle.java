@@ -1,0 +1,52 @@
+/*
+ * Copyright 2021 DataCanvas
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.dingodb.exec.impl;
+
+import io.dingodb.exec.base.ITimestampOracle;
+
+import java.util.concurrent.atomic.AtomicLong;
+
+public class LocalTimestampOracle implements ITimestampOracle {
+
+    public static LocalTimestampOracle INSTANCE = new LocalTimestampOracle();
+    private final AtomicLong localClock;
+    private static int BITS_PHYSICAL_TIME = 46;
+    private static int BITS_LOGICAL_TIME = 18;
+    private static int LOGICAL_TIME_MASK = (1 << BITS_LOGICAL_TIME) - 1;
+
+    public LocalTimestampOracle() {
+        localClock = new AtomicLong();
+    }
+
+    public LocalTimestampOracle(final long init) {
+        localClock = new AtomicLong(init);
+    }
+
+    private long next(long threshold) {
+        // Make sure localClock is beyond the threshold
+        long last = localClock.get();
+        while (last < threshold && !localClock.compareAndSet(last, threshold)) {
+            last = localClock.get();
+        }
+        return localClock.incrementAndGet();
+    }
+
+    @Override
+    public long nextTimestamp() {
+        return next(System.currentTimeMillis() << BITS_LOGICAL_TIME);
+    }
+}

@@ -16,7 +16,7 @@
 
 package io.dingodb.driver;
 
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import lombok.Getter;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -30,14 +30,14 @@ import java.util.Map;
 // because protostuff wants to recover/serialize the class from net messages.
 public final class DingoSignature extends Meta.Signature {
     @Getter
-    private final Id jobId;
+    private final CommonId jobId;
 
     public DingoSignature(
         List<ColumnMetaData> columns,
         String sql,
         Meta.CursorFactory cursorFactory,
         Meta.StatementType statementType,
-        @Nullable Id jobId
+        @Nullable CommonId jobId
     ) {
         this(columns, sql, null, null, cursorFactory, statementType, jobId);
     }
@@ -49,7 +49,7 @@ public final class DingoSignature extends Meta.Signature {
         Map<String, Object> internalParameters,
         Meta.CursorFactory cursorFactory,
         Meta.StatementType statementType,
-        @Nullable Id jobId
+        @Nullable CommonId jobId
     ) {
         super(columns, sql, parameters, internalParameters, cursorFactory, statementType);
         this.jobId = jobId;

@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Status;
 import io.dingodb.exec.base.Task;
@@ -53,34 +53,40 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class TaskImpl implements Task {
     @JsonProperty("id")
     @Getter
-    private final Id id;
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    private final CommonId id;
     @JsonProperty("jobId")
     @Getter
-    private final Id jobId;
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    private final CommonId jobId;
     @JsonProperty("location")
     @Getter
     private final Location location;
     @JsonProperty("operators")
-    @JsonSerialize(contentAs = AbstractOperator.class)
-    @JsonDeserialize(contentAs = AbstractOperator.class)
+    @JsonSerialize(keyUsing = CommonId.JacksonKeySerializer.class, contentAs = AbstractOperator.class)
+    @JsonDeserialize(keyUsing = CommonId.JacksonKeyDeserializer.class, contentAs = AbstractOperator.class)
     @Getter
-    private final Map<Id, Operator> operators;
+    private final Map<CommonId, Operator> operators;
     @JsonProperty("runList")
     @Getter
-    private final List<Id> runList;
+    @JsonSerialize(contentUsing = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(contentUsing = CommonId.JacksonDeserializer.class)
+    private final List<CommonId> runList;
     @JsonProperty("parasType")
     @Getter
     private final DingoType parasType;
     private final transient AtomicInteger status;
-    private Id rootOperatorId = null;
+    private CommonId rootOperatorId = null;
     private CountDownLatch activeThreads = null;
     @Getter
     private TaskStatus taskInitStatus;
 
     @JsonCreator
     public TaskImpl(
-        @JsonProperty("id") Id id,
-        @JsonProperty("jobId") Id jobId,
+        @JsonProperty("id") CommonId id,
+        @JsonProperty("jobId") CommonId jobId,
         @JsonProperty("location") Location location,
         @JsonProperty("parasType") DingoType parasType
     ) {
@@ -99,7 +105,7 @@ public final class TaskImpl implements Task {
     }
 
     @Override
-    public void markRoot(Id operatorId) {
+    public void markRoot(CommonId operatorId) {
         assert operators.get(operatorId) instanceof RootOperator
             : "The root operator must be a `RootOperator`.";
         rootOperatorId = operatorId;
@@ -170,7 +176,7 @@ public final class TaskImpl implements Task {
         }
         activeThreads = new CountDownLatch(runList.size());
         setParas(paras);
-        for (Id operatorId : runList) {
+        for (CommonId operatorId : runList) {
             final Operator operator = operators.get(operatorId);
             assert operator instanceof SourceOperator
                 : "Operators in run list must be source operator.";

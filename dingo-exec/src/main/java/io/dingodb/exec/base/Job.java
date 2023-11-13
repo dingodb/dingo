@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.base;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -25,21 +26,21 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public interface Job {
-    Id getJobId();
+    CommonId getJobId();
 
-    Map<Id, Task> getTasks();
+    Map<CommonId, Task> getTasks();
 
-    @NonNull Task create(Id id, Location location);
+    @NonNull Task create(CommonId id, Location location);
 
     DingoType getParasType();
 
-    default Task getTask(Id id) {
+    default Task getTask(CommonId id) {
         return getTasks().get(id);
     }
 
     Task getRoot();
 
-    void markRoot(Id taskId);
+    void markRoot(CommonId taskId);
 
     default Task getByLocation(Location location) {
         List<Task> tasks = getTasks().values().stream()
@@ -52,7 +53,7 @@ public interface Job {
     default Task getOrCreate(Location location, IdGenerator idGenerator) {
         Task task = getByLocation(location);
         if (task == null) {
-            task = create(idGenerator.get(), location);
+            task = create(idGenerator.getTaskId(), location);
         }
         return task;
     }

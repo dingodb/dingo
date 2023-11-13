@@ -91,7 +91,7 @@ public final class DingoVectorStreamingVisitFun {
                 indexId,
                 rel.getVectorIdIndex(),
                 rel.getIndexTableDefinition());
-            operator.setId(idGenerator.get());
+            operator.setId(idGenerator.getOperatorId(task.getId()));
             operator.createOutputs(distributions);
             task.putOperator(operator);
             input.setLink(operator.getInput(0));
@@ -119,7 +119,7 @@ public final class DingoVectorStreamingVisitFun {
                 Output one = list.get(0);
                 Task task = one.getTask();
                 Operator operator = new CoalesceOperator(size);
-                operator.setId(idGenerator.get());
+                operator.setId(idGenerator.getOperatorId(task.getId()));
                 task.putOperator(operator);
                 int i = 0;
                 for (Output input : list) {

@@ -19,7 +19,9 @@ package io.dingodb.exec.impl.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.exec.base.Id;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Task;
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -28,15 +30,19 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 public class DestroyTaskMessage extends TaskMessage {
     @JsonProperty("job")
     @Getter
-    private final Id jobId;
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    private final CommonId jobId;
     @JsonProperty("task")
     @Getter
-    private final Id taskId;
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    private final CommonId taskId;
 
     @JsonCreator
     public DestroyTaskMessage(
-        @JsonProperty("job") Id jobId,
-        @JsonProperty("task") Id taskId
+        @JsonProperty("job") CommonId jobId,
+        @JsonProperty("task") CommonId taskId
     ) {
         this.jobId = jobId;
         this.taskId = taskId;

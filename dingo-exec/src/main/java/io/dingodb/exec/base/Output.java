@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.base;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.exec.fin.Fin;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -43,7 +44,7 @@ public interface Output {
         return getOperator().getTask();
     }
 
-    default Id getTaskId() {
+    default CommonId getTaskId() {
         return getTask().getId();
     }
 
