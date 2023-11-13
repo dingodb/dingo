@@ -17,7 +17,7 @@
 package io.dingodb.test.asserts;
 
 import io.dingodb.common.Location;
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.operator.SourceOperator;
 
@@ -43,21 +43,21 @@ public final class AssertTask extends Assert<Task, AssertTask> {
     }
 
     public AssertTask sourceNum(int num) {
-        List<Id> runList = instance.getRunList();
+        List<CommonId> runList = instance.getRunList();
         assertThat(runList).size().isEqualTo(num);
         return this;
     }
 
     @Nonnull
     public AssertOperator soleSource() {
-        List<Id> runList = instance.getRunList();
+        List<CommonId> runList = instance.getRunList();
         assertThat(runList).size().isEqualTo(1);
         return Assert.operator(instance.getOperator(sole(runList)));
     }
 
     @Nonnull
     public AssertOperator source(int index) {
-        List<Id> runList = instance.getRunList();
+        List<CommonId> runList = instance.getRunList();
         assertThat(runList).size().isGreaterThan(index);
         return Assert.operator(instance.getOperator(runList.get(index)))
             .isA(SourceOperator.class);

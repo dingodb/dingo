@@ -17,7 +17,7 @@
 package io.dingodb.test.asserts;
 
 import io.dingodb.common.util.Utils;
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Task;
 
@@ -38,10 +38,10 @@ public final class AssertJob extends Assert<Job, AssertJob> {
     }
 
     @Nonnull
-    public AssertTask task(String strId) {
-        Map<Id, Task> tasks = instance.getTasks();
+    public AssertTask task(long jobSeqId, int strId) {
+        Map<CommonId, Task> tasks = instance.getTasks();
         assertThat(tasks).isNotNull();
-        Task task = tasks.get(new Id(strId));
+        Task task = tasks.get(new CommonId(io.dingodb.common.CommonId.CommonType.TASK, jobSeqId, strId));
         assertThat(task).isNotNull();
         return Assert.task(task);
     }

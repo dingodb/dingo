@@ -20,8 +20,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.channel.SendEndpoint;
 import io.dingodb.exec.codec.TxRxCodec;
 import io.dingodb.exec.codec.TxRxCodecImpl;
@@ -46,7 +48,9 @@ public final class SendOperator extends SinkOperator {
     @JsonProperty("port")
     private final int port;
     @JsonProperty("receiveId")
-    private final Id receiveId;
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    private final CommonId receiveId;
     @JsonProperty("schema")
     private final DingoType schema;
     private final List<Object[]> tupleList;
@@ -59,9 +63,10 @@ public final class SendOperator extends SinkOperator {
     public SendOperator(
         @JsonProperty("host") String host,
         @JsonProperty("port") int port,
-        @JsonProperty("receiveId") Id receiveId,
+        @JsonProperty("receiveId") CommonId receiveId,
         @JsonProperty("schema") DingoType schema
     ) {
+        super();
         this.host = host;
         this.port = port;
         this.receiveId = receiveId;

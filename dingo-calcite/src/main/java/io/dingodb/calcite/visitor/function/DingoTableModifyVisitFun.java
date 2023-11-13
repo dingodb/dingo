@@ -73,7 +73,7 @@ public class DingoTableModifyVisitFun {
                 default:
                     throw new IllegalStateException("Operation \"" + rel.getOperation() + "\" is not supported.");
             }
-            operator.setId(idGenerator.get());
+            operator.setId(idGenerator.getOperatorId(task.getId()));
             task.putOperator(operator);
             input.setLink(operator.getInput(0));
             OutputHint hint = new OutputHint();

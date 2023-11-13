@@ -28,6 +28,7 @@ import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
+import io.dingodb.exec.impl.LocalTimestampOracle;
 import io.dingodb.meta.MetaService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -271,7 +272,9 @@ public final class DingoDriverParser extends DingoParser {
         final RelNode relNode = optimize(relRoot.rel);
         Location currentLocation = MetaService.root().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
-        Job job = jobManager.createJob(jobIdPrefix, DefinitionMapper.mapToDingoType(parasType));
+        // get start_ts for jobSeqId, if transaction is not null ,transaction start_ts is jobDomainId
+        long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        Job job = jobManager.createJob(jobSeqId, jobSeqId, DefinitionMapper.mapToDingoType(parasType));
         DingoJobVisitor.renderJob(job, relNode, currentLocation, true);
         if (explain != null) {
             statementType = Meta.StatementType.CALL;

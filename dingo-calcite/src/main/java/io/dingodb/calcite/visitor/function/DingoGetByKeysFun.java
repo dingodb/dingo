@@ -68,8 +68,8 @@ public final class DingoGetByKeysFun {
         List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(rel.getPoints(), td);
         if (keyTuples.isEmpty()) {
             EmptySourceOperator operator = new EmptySourceOperator();
-            operator.setId(idGenerator.get());
             Task task = job.getOrCreate(currentLocation, idGenerator);
+            operator.setId(idGenerator.getOperatorId(task.getId()));
             task.putOperator(operator);
             outputs.addAll(operator.getOutputs());
             return outputs;
@@ -79,8 +79,8 @@ public final class DingoGetByKeysFun {
             GetByKeysOperator operator = new GetByKeysOperator(tableInfo.getId(), entry.getKey(), td.getDingoType(),
                 td.getKeyMapping(), entry.getValue(), SqlExprUtils.toSqlExpr(rel.getFilter()), rel.getSelection()
             );
-            operator.setId(idGenerator.get());
             Task task = job.getOrCreate(currentLocation, idGenerator);
+            operator.setId(idGenerator.getOperatorId(task.getId()));
             task.putOperator(operator);
             outputs.addAll(operator.getOutputs());
         }

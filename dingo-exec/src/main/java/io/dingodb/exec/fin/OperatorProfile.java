@@ -17,7 +17,9 @@
 package io.dingodb.exec.fin;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.dingodb.exec.base.Id;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.dingodb.common.CommonId;
 import lombok.Data;
 
 import java.text.SimpleDateFormat;
@@ -26,7 +28,9 @@ import java.util.Date;
 @Data
 public class OperatorProfile {
     @JsonProperty("id")
-    Id operatorId;
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    CommonId operatorId;
     @JsonProperty("start")
     long startTimeStamp;
     @JsonProperty("end")

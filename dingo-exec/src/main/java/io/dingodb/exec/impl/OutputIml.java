@@ -19,7 +19,9 @@ package io.dingodb.exec.impl;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.dingodb.exec.base.Id;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Input;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Output;
@@ -44,7 +46,7 @@ public class OutputIml implements Output {
     }
 
     @JsonCreator
-    public OutputIml(@JsonProperty("operator") Id operatorId, @JsonProperty("pin") int pin) {
+    public OutputIml(@JsonSerialize(using = CommonId.JacksonSerializer.class) @JsonDeserialize(using = CommonId.JacksonDeserializer.class) @JsonProperty("operator") CommonId operatorId, @JsonProperty("pin") int pin) {
         this.link = new Input(operatorId, pin);
     }
 

@@ -16,19 +16,50 @@
 
 package io.dingodb.exec.impl;
 
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.IdGenerator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public final class IdGeneratorImpl implements IdGenerator {
     private long currentValue = 0;
 
-    public @NonNull Id get(String idPrefix) {
-        return new Id(idPrefix + "-" + String.format("%04X", currentValue++));
+    private long jobSeqId = 0;
+
+    public IdGeneratorImpl() {
+    }
+
+    public IdGeneratorImpl(long jobSeqId) {
+        this.jobSeqId = jobSeqId;
+    }
+
+
+    @Override
+    public @NonNull CommonId getOperatorId(long taskSeqId) {
+        return new CommonId(io.dingodb.common.CommonId.CommonType.OP, taskSeqId, currentValue++);
     }
 
     @Override
-    public @NonNull Id get() {
-        return new Id(String.format("%04X", currentValue++));
+    public @NonNull CommonId getOperatorId(CommonId taskId) {
+        return new CommonId(io.dingodb.common.CommonId.CommonType.OP, taskId.seq, currentValue++);
+    }
+
+    @Override
+    public @NonNull CommonId getTaskId(long jobSeqId) {
+        return new CommonId(io.dingodb.common.CommonId.CommonType.TASK, jobSeqId, currentValue++);
+    }
+
+    @Override
+    public @NonNull CommonId getTaskId() {
+        return new CommonId(io.dingodb.common.CommonId.CommonType.TASK, jobSeqId, currentValue++);
+    }
+
+    @Override
+    public @NonNull CommonId getJobId(long start_ts, long jobSeqId) {
+        return new CommonId(io.dingodb.common.CommonId.CommonType.JOB, start_ts, jobSeqId);
+    }
+
+    @Override
+    public @NonNull CommonId getJobId(long start_ts) {
+        return new CommonId(io.dingodb.common.CommonId.CommonType.JOB, start_ts, jobSeqId);
     }
 }

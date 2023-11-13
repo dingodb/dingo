@@ -16,7 +16,7 @@
 
 package io.dingodb.driver;
 
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.JobManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.Meta;
@@ -28,7 +28,7 @@ public final class DingoStatementUtils {
 
     public static void removeJobInSignature(JobManager jobManager, Meta.Signature signature) {
         if (signature instanceof DingoSignature) {
-            Id jobId = ((DingoSignature) signature).getJobId();
+            CommonId jobId = ((DingoSignature) signature).getJobId();
             if (jobId != null) {
                 if (log.isDebugEnabled()) {
                     log.debug("Job id \"{}\" found in signature, remove it.", jobId);

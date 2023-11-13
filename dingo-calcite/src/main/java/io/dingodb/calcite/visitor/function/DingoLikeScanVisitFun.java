@@ -74,8 +74,8 @@ public final class DingoLikeScanVisitFun {
                 rel.getSelection(),
                 rel.getPrefix()
             );
-            operator.setId(idGenerator.get());
             Task task = job.getOrCreate(currentLocation, idGenerator);
+            operator.setId(idGenerator.getOperatorId(task.getId()));
             task.putOperator(operator);
             outputs.addAll(operator.getOutputs());
         }

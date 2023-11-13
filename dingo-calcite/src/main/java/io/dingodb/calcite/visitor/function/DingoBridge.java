@@ -38,7 +38,7 @@ public final class DingoBridge {
         for (Output input : inputs) {
             Operator operator = operatorSupplier.get();
             Task task = input.getTask();
-            operator.setId(idGenerator.get());
+            operator.setId(idGenerator.getOperatorId(task.getId()));
             task.putOperator(operator);
             input.setLink(operator.getInput(0));
             operator.getSoleOutput().copyHint(input);

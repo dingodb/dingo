@@ -83,8 +83,8 @@ public final class DingoRangeDeleteVisitFun {
                 rd.isWithStart(),
                 rd.isWithEnd()
             );
-            operator.setId(idGenerator.get());
             Task task = job.getOrCreate(currentLocation, idGenerator);
+            operator.setId(idGenerator.getOperatorId(task.getId()));
             task.putOperator(operator);
             OutputHint outputHint = new OutputHint();
             outputHint.setToSumUp(true);

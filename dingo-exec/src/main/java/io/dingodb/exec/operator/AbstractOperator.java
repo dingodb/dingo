@@ -17,9 +17,12 @@
 package io.dingodb.exec.operator;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.dingodb.exec.base.Id;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Task;
 import lombok.Getter;
@@ -60,7 +63,10 @@ import lombok.Setter;
 public abstract class AbstractOperator implements Operator {
     @Getter
     @Setter
-    protected Id id;
+    @JsonProperty("id")
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    protected CommonId id;
     @Getter
     @Setter
     protected Task task;

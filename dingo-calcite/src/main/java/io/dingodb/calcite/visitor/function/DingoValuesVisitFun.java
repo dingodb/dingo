@@ -64,7 +64,7 @@ public final class DingoValuesVisitFun {
             ValuesOperator operator = new ValuesOperator(rel.getTuples(),
                 Objects.requireNonNull(DefinitionMapper.mapToDingoType(rel.getRowType()))
             );
-            operator.setId(idGenerator.get());
+            operator.setId(idGenerator.getOperatorId(task.getId()));
             task.putOperator(operator);
             return operator.getOutputs();
         }
@@ -87,13 +87,13 @@ public final class DingoValuesVisitFun {
                 ValuesOperator operator = new ValuesOperator(entry.getValue(),
                     Objects.requireNonNull(DefinitionMapper.mapToDingoType(rel.getRowType()))
                 );
-                operator.setId(idGenerator.get());
+                Location location = currentLocation;
+                Task task = job.getOrCreate(location, idGenerator);
+                operator.setId(idGenerator.getOperatorId(task.getId()));
                 OutputHint hint = new OutputHint();
                 hint.setPartId(entry.getKey());
-                Location location = currentLocation;
                 hint.setLocation(location);
                 operator.getSoleOutput().setHint(hint);
-                Task task = job.getOrCreate(location, idGenerator);
                 task.putOperator(operator);
                 outputs.addAll(operator.getOutputs());
             }

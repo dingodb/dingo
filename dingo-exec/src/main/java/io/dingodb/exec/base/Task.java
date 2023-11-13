@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.base;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -25,17 +26,17 @@ import java.util.List;
 import java.util.Map;
 
 public interface Task {
-    Id getId();
+    CommonId getId();
 
-    Id getJobId();
+    CommonId getJobId();
 
     Location getLocation();
 
     Operator getRoot();
 
-    void markRoot(Id operatorId);
+    void markRoot(CommonId operatorId);
 
-    Map<Id, Operator> getOperators();
+    Map<CommonId, Operator> getOperators();
 
     int getStatus();
 
@@ -51,7 +52,7 @@ public interface Task {
      */
     void putOperator(@NonNull Operator operator);
 
-    List<Id> getRunList();
+    List<CommonId> getRunList();
 
     void init();
 
@@ -69,7 +70,7 @@ public interface Task {
         getOperators().values().forEach(Operator::destroy);
     }
 
-    default @Nullable Operator getOperator(Id id) {
+    default @Nullable Operator getOperator(CommonId id) {
         return getOperators().get(id);
     }
 

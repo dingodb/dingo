@@ -18,7 +18,7 @@ package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Output;
@@ -38,8 +38,9 @@ public final class DingoExchangeFun {
         if (target.equals(task.getLocation())) {
             return input;
         }
-        Id id = idGenerator.get();
-        Id receiveId = idGenerator.get();
+        CommonId id = idGenerator.getOperatorId(task.getId());
+        Task rcvTask = job.getOrCreate(target, idGenerator);
+        CommonId receiveId = idGenerator.getOperatorId(rcvTask.getId());
         SendOperator send = new SendOperator(target.getHost(), target.getPort(), receiveId, schema);
         send.setId(id);
         input.setLink(send.getInput(0));
@@ -47,7 +48,6 @@ public final class DingoExchangeFun {
         ReceiveOperator receive = new ReceiveOperator(task.getHost(), task.getLocation().getPort(), schema);
         receive.setId(receiveId);
         receive.getSoleOutput().copyHint(input);
-        Task rcvTask = job.getOrCreate(target, idGenerator);
         rcvTask.putOperator(receive);
         return receive.getSoleOutput();
     }

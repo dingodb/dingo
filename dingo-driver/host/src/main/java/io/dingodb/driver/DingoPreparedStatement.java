@@ -17,7 +17,7 @@
 package io.dingodb.driver;
 
 import io.dingodb.driver.type.converter.TypedValueConverter;
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import org.apache.calcite.avatica.AvaticaPreparedStatement;
@@ -79,7 +79,7 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
         if (signature instanceof DingoSignature) {
             try {
                 Object[] parasValue = TypedValue.values(getParameterValues()).toArray();
-                Id jobId = ((DingoSignature) signature).getJobId();
+                CommonId jobId = ((DingoSignature) signature).getJobId();
                 Job job = jobManager.getJob(jobId);
                 Object[] paras = ((Object[]) job.getParasType().convertFrom(
                     parasValue,

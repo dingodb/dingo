@@ -75,8 +75,8 @@ public final class DingoFunctionScanVisitFun {
                 td.getDingoType(),
                 false
             );
-            operator.setId(idGenerator.get());
             Task task = job.getOrCreate(currentLocation, idGenerator);
+            operator.setId(idGenerator.getOperatorId(task.getId()));
             task.putOperator(operator);
             outputs.addAll(operator.getOutputs());
         }

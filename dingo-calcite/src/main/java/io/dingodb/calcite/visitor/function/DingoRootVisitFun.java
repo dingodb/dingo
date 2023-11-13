@@ -22,7 +22,7 @@ import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Operator;
@@ -54,7 +54,7 @@ public class DingoRootVisitFun {
         }
         Operator operator = new RootOperator(DefinitionMapper.mapToDingoType(rel.getRowType()), selection);
         Task task = input.getTask();
-        Id id = idGenerator.get();
+        CommonId id = idGenerator.getOperatorId(task.getId());
         operator.setId(id);
         task.putOperator(operator);
         input.setLink(operator.getInput(0));

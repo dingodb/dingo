@@ -44,9 +44,9 @@ public class DingoReduceVisitFun {
                 DefinitionMapper.mapToDingoType(rel.getOriginalInputType())
             )
         );
-        operator.setId(idGenerator.get());
         Output input = sole(inputs);
         Task task = input.getTask();
+        operator.setId(idGenerator.getOperatorId(task.getId()));
         task.putOperator(operator);
         input.setLink(operator.getInput(0));
         return operator.getOutputs();

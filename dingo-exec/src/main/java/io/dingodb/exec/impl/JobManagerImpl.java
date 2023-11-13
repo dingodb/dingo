@@ -22,7 +22,7 @@ import io.dingodb.common.Location;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.Services;
-import io.dingodb.exec.base.Id;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
@@ -51,7 +51,7 @@ public final class JobManagerImpl implements JobManager {
     public static final String TASK_TAG = "DINGO_TASK";
     public static final JobManagerImpl INSTANCE = new JobManagerImpl(10);
 
-    private final Map<Id, Job> jobMap = new ConcurrentHashMap<>();
+    private final Map<CommonId, Job> jobMap = new ConcurrentHashMap<>();
     private final Map<Location, Channel> channelMap;
     private final TaskManager taskManager;
     private final IdGenerator idGenerator;
@@ -63,9 +63,9 @@ public final class JobManagerImpl implements JobManager {
     }
 
     @Override
-    public @NonNull Job createJob(String idPrefix, DingoType parasType) {
-        Job job = new JobImpl(idGenerator.get(idPrefix), parasType);
-        Id jobId = job.getJobId();
+    public @NonNull Job createJob(long start_ts,long jobSeqId, DingoType parasType) {
+        Job job = new JobImpl(idGenerator.getJobId(start_ts, jobSeqId), parasType);
+        CommonId jobId = job.getJobId();
         jobMap.put(jobId, job);
         if (log.isDebugEnabled()) {
             log.debug("Created job \"{}\". # of jobs: {}.", jobId, jobMap.size());
@@ -74,12 +74,12 @@ public final class JobManagerImpl implements JobManager {
     }
 
     @Override
-    public Job getJob(Id jobId) {
+    public Job getJob(CommonId jobId) {
         return jobMap.get(jobId);
     }
 
     @Override
-    public void removeJob(Id jobId) {
+    public void removeJob(CommonId jobId) {
         Job job = jobMap.remove(jobId);
         if (log.isDebugEnabled()) {
             log.debug("Removed job \"{}\". # of jobs: {}.", jobId, jobMap.size());
