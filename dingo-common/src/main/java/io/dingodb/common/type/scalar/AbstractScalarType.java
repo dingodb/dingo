@@ -19,16 +19,23 @@ package io.dingodb.common.type.scalar;
 import io.dingodb.common.type.NullType;
 import io.dingodb.common.type.NullableType;
 import io.dingodb.common.type.converter.DataConverter;
-import io.dingodb.expr.core.TypeCode;
+import io.dingodb.expr.runtime.type.Type;
 import io.dingodb.serial.schema.DingoSchema;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 
+@EqualsAndHashCode(of = {"type"}, callSuper = true)
 public abstract class AbstractScalarType extends NullableType {
-    protected AbstractScalarType(int typeCode, boolean nullable) {
-        super(typeCode, nullable);
+    @Getter
+    protected final Type type;
+
+    protected AbstractScalarType(Type type, boolean nullable) {
+        super(nullable);
+        this.type = type;
     }
 
     @Override
@@ -58,7 +65,6 @@ public abstract class AbstractScalarType extends NullableType {
 
     @Override
     public String toString() {
-        String name = TypeCode.nameOf(typeCode);
-        return nullable ? name + "|" + NullType.NULL : name;
+        return nullable ? type + "|" + NullType.NULL : type.toString();
     }
 }

@@ -21,10 +21,8 @@ import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.CalcValueUtils;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.expr.core.TypeCode;
-import io.dingodb.expr.parser.exception.ElementNotExists;
-import io.dingodb.expr.parser.exception.ExprCompileException;
-import io.dingodb.expr.runtime.EvalEnv;
+import io.dingodb.expr.runtime.ExprConfig;
+import io.dingodb.expr.runtime.exception.ElementNotExist;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.logical.LogicalFilter;
@@ -51,15 +49,13 @@ public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config>
         DingoType tupleType = DefinitionMapper.mapToDingoType(values.getRowType());
         DingoType rowType = DefinitionMapper.mapToDingoType(project.getRowType());
         List<Object[]> tuples = new LinkedList<>();
-        EvalEnv env = CalcValueUtils.getEnv(call);
+        ExprConfig config = CalcValueUtils.getConfig(call);
         try {
             for (Object[] tuple : values.getTuples()) {
-                tuples.add(CalcValueUtils.calcValues(project.getProjects(), rowType, tuple, tupleType, env));
+                tuples.add(CalcValueUtils.calcValues(project.getProjects(), rowType, tuple, tupleType, config));
             }
-        } catch (ElementNotExists e) { // Means it is not a constant.
+        } catch (ElementNotExist e) { // Means not constants.
             return;
-        } catch (ExprCompileException e) {
-            throw new RuntimeException(e);
         }
         call.transformTo(new LogicalDingoValues(
             project.getCluster(),
@@ -77,24 +73,17 @@ public class DingoValuesReduceRule extends RelRule<DingoValuesReduceRule.Config>
         LogicalDingoValues values = call.rel(1);
         DingoType tupleType = DefinitionMapper.mapToDingoType(values.getRowType());
         List<Object[]> tuples = new LinkedList<>();
-        EvalEnv env = CalcValueUtils.getEnv(call);
-        try {
-            for (Object[] tuple : values.getTuples()) {
-                Object v = CalcValueUtils.calcValue(
-                    filter.getCondition(),
-                    DingoTypeFactory.scalar(TypeCode.BOOL, false),
-                    tuple,
-                    tupleType,
-                    env
-                );
-                if (v != null && (boolean) v) {
-                    tuples.add(tuple);
-                }
+        for (Object[] tuple : values.getTuples()) {
+            Object v = CalcValueUtils.calcValue(
+                filter.getCondition(),
+                DingoTypeFactory.INSTANCE.scalar("BOOL", false),
+                tuple,
+                tupleType,
+                CalcValueUtils.getConfig(call)
+            );
+            if (v != null && (boolean) v) {
+                tuples.add(tuple);
             }
-        } catch (ElementNotExists e) {
-            return;
-        } catch (ExprCompileException e) {
-            throw new RuntimeException(e);
         }
         call.transformTo(new LogicalDingoValues(
             filter.getCluster(),

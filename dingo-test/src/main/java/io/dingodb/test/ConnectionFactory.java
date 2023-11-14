@@ -55,7 +55,7 @@ public final class ConnectionFactory {
         }
 
         Services.initNetService();
-        Services.NET.listenPort(FakeLocation.PORT);
+        Services.NET.listenPort(DingoConfiguration.port());
 
         TreeMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> defaultDistribution = new TreeMap<>();
         byte[] startKey = ByteArrayUtils.EMPTY_BYTES;
@@ -72,7 +72,7 @@ public final class ConnectionFactory {
         LocalMetaService metaService = LocalMetaService.ROOT;
         metaService.createSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME);
         metaService.setRangeDistributions(defaultDistribution);
-        LocalMetaService.setLocation(new FakeLocation(0));
+        LocalMetaService.setLocation(new FakeLocation(0, DingoConfiguration.port()));
     }
 
     public static Connection getConnection() throws ClassNotFoundException, SQLException, IOException {

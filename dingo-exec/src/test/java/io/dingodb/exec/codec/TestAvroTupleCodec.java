@@ -37,7 +37,7 @@ public class TestAvroTupleCodec {
     public static @NonNull Stream<Arguments> getArguments() {
         return Stream.of(
             arguments(
-                DingoTypeFactory.tuple("INT", "STRING", "DOUBLE"),
+                DingoTypeFactory.INSTANCE.tuple("INT", "STRING", "DOUBLE"),
                 ImmutableList.of(
                     new Object[]{1, "Alice", 3.5},
                     new Object[]{2, "Betty", 3.6},

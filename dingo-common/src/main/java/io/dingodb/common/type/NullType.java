@@ -19,7 +19,8 @@ package io.dingodb.common.type;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.converter.DataConverter;
-import io.dingodb.expr.core.TypeCode;
+import io.dingodb.expr.runtime.type.Type;
+import io.dingodb.expr.runtime.type.Types;
 import io.dingodb.serial.schema.DingoSchema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -30,7 +31,7 @@ public class NullType extends AbstractDingoType {
     public static final NullType NULL = new NullType();
 
     private NullType() {
-        super(TypeCode.NULL);
+        super();
     }
 
     @JsonCreator
@@ -59,6 +60,11 @@ public class NullType extends AbstractDingoType {
     }
 
     @Override
+    public Type getType() {
+        return Types.NULL;
+    }
+
+    @Override
     public List<DingoSchema> toDingoSchemas() {
         // TODO: no dingo null schema
         return null;
@@ -71,12 +77,12 @@ public class NullType extends AbstractDingoType {
     }
 
     @Override
-    public <S> @NonNull S toSchema(@NonNull SchemaConverter<S> converter) {
-        return converter.createSchema(this);
+    public @NonNull String format(Object value) {
+        return "NULL";
     }
 
     @Override
-    public @NonNull String format(Object value) {
-        return "NULL";
+    public <R, T> R accept(@NonNull DingoTypeVisitor<R, T> visitor, T obj) {
+        return visitor.visitNullType(this, obj);
     }
 }

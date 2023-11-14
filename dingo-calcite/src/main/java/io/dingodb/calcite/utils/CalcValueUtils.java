@@ -21,9 +21,9 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.expr.SqlExprCompileContext;
 import io.dingodb.exec.expr.SqlExprEvalContext;
 import io.dingodb.exec.type.converter.ExprConverter;
-import io.dingodb.expr.parser.Expr;
-import io.dingodb.expr.parser.exception.ExprCompileException;
-import io.dingodb.expr.runtime.EvalEnv;
+import io.dingodb.expr.runtime.ExprCompiler;
+import io.dingodb.expr.runtime.ExprConfig;
+import io.dingodb.expr.runtime.expr.Expr;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -41,13 +41,14 @@ public final class CalcValueUtils {
         @NonNull DingoType targetType,
         Object[] tuple,
         DingoType tupleType,
-        @Nullable EvalEnv env
-    ) throws ExprCompileException {
+        ExprConfig config
+    ) {
         Expr expr = RexConverter.convert(rexNode);
-        SqlExprEvalContext etx = new SqlExprEvalContext(env);
+        SqlExprEvalContext etx = new SqlExprEvalContext();
         etx.setTuple(tuple);
         return targetType.convertFrom(
-            expr.compileIn(new SqlExprCompileContext(tupleType, null, env)).eval(etx),
+            ExprCompiler.ADVANCED.visit(expr, new SqlExprCompileContext(tupleType, null))
+                .eval(etx, config),
             ExprConverter.INSTANCE
         );
     }
@@ -57,19 +58,27 @@ public final class CalcValueUtils {
         DingoType targetType,
         Object[] tuple,
         DingoType tupleType,
-        @Nullable EvalEnv env
-    ) throws ExprCompileException {
+        @Nullable ExprConfig config
+    ) {
         int size = rexNodeList.size();
         Object[] result = new Object[size];
         for (int i = 0; i < size; ++i) {
-            result[i] = calcValue(rexNodeList.get(i), targetType.getChild(i), tuple, tupleType, env);
+            result[i] = calcValue(rexNodeList.get(i), targetType.getChild(i), tuple, tupleType, config);
         }
         return result;
     }
 
-    public static @NonNull EvalEnv getEnv(@NonNull RelOptRuleCall call) {
-        return EvalEnv.builder()
-            .timeZone(call.getPlanner().getContext().unwrap(TimeZone.class))
-            .build();
+    public static @NonNull ExprConfig getConfig(@NonNull RelOptRuleCall call) {
+        return new ExprConfig() {
+            @Override
+            public boolean withRangeCheck() {
+                return true;
+            }
+
+            @Override
+            public TimeZone getTimeZone() {
+                return call.getPlanner().getContext().unwrap(TimeZone.class);
+            }
+        };
     }
 }

@@ -17,23 +17,17 @@
 package io.dingodb.exec.expr;
 
 import io.dingodb.expr.runtime.EvalContext;
-import io.dingodb.expr.runtime.EvalEnv;
-import lombok.Getter;
 import lombok.Setter;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class SqlExprEvalContext implements EvalContext {
     private static final long serialVersionUID = 9182182810857271788L;
 
-    @Getter
-    private final EvalEnv env;
     @Setter
     private Object[] paras = null;
     @Setter
     private Object[] tuple = null;
 
-    public SqlExprEvalContext(@Nullable EvalEnv env) {
-        this.env = env;
+    public SqlExprEvalContext() {
     }
 
     @Override

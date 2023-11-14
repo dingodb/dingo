@@ -21,7 +21,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.converter.DataConverter;
-import io.dingodb.expr.core.TypeCode;
+import io.dingodb.expr.runtime.type.Type;
+import io.dingodb.expr.runtime.type.Types;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -48,7 +49,7 @@ public class MapType extends NullableType {
         @JsonProperty("value") DingoType valueType,
         @JsonProperty("nullable") boolean nullable
     ) {
-        super(TypeCode.MAP, nullable);
+        super(nullable);
         this.keyType = keyType;
         this.valueType = valueType;
     }
@@ -69,6 +70,11 @@ public class MapType extends NullableType {
     }
 
     @Override
+    public Type getType() {
+        return Types.map(keyType.getType(), valueType.getType());
+    }
+
+    @Override
     public List<DingoSchema> toDingoSchemas() {
         return null;
     }
@@ -76,11 +82,6 @@ public class MapType extends NullableType {
     @Override
     public DingoSchema toDingoSchema(int index) {
         return null;
-    }
-
-    @Override
-    public <S> @NonNull S toSchema(@NonNull SchemaConverter<S> converter) {
-        return converter.createSchema(this);
     }
 
     @Override
@@ -103,6 +104,11 @@ public class MapType extends NullableType {
             return b.toString();
         }
         return NullType.NULL.format(null);
+    }
+
+    @Override
+    public <R, T> R accept(@NonNull DingoTypeVisitor<R, T> visitor, T obj) {
+        return visitor.visitMapType(this, obj);
     }
 
     @Override

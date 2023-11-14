@@ -19,27 +19,31 @@ package io.dingodb.calcite.fun;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import io.dingodb.exec.fun.AutoIncrementFun;
-import io.dingodb.exec.fun.DingoFunFactory;
 import io.dingodb.exec.fun.mysql.GlobalVariableFun;
 import io.dingodb.exec.fun.mysql.VersionFun;
-import io.dingodb.exec.fun.number.FormatFun;
-import io.dingodb.exec.fun.number.PowFun;
-import io.dingodb.exec.fun.string.ConcatFun;
-import io.dingodb.exec.fun.string.LTrimFun;
-import io.dingodb.exec.fun.string.LeftFun;
-import io.dingodb.exec.fun.string.LocateFun;
-import io.dingodb.exec.fun.string.MidFun;
-import io.dingodb.exec.fun.string.RTrimFun;
-import io.dingodb.exec.fun.string.RepeatFun;
-import io.dingodb.exec.fun.string.ReverseFun;
-import io.dingodb.exec.fun.string.RightFun;
-import io.dingodb.exec.fun.time.DateDiffFun;
+import io.dingodb.exec.fun.special.ThrowFun;
 import io.dingodb.exec.fun.vector.VectorCosineDistanceFun;
-import io.dingodb.exec.fun.vector.VectorDistanceFun;
 import io.dingodb.exec.fun.vector.VectorIPDistanceFun;
 import io.dingodb.exec.fun.vector.VectorImageFun;
 import io.dingodb.exec.fun.vector.VectorL2DistanceFun;
 import io.dingodb.exec.fun.vector.VectorTextFun;
+import io.dingodb.expr.runtime.op.mathematical.PowFunFactory;
+import io.dingodb.expr.runtime.op.string.ConcatFunFactory;
+import io.dingodb.expr.runtime.op.string.LTrim1FunFactory;
+import io.dingodb.expr.runtime.op.string.LeftFunFactory;
+import io.dingodb.expr.runtime.op.string.Locate2FunFactory;
+import io.dingodb.expr.runtime.op.string.Mid2FunFactory;
+import io.dingodb.expr.runtime.op.string.NumberFormatFunFactory;
+import io.dingodb.expr.runtime.op.string.RTrim1FunFactory;
+import io.dingodb.expr.runtime.op.string.RepeatFunFactory;
+import io.dingodb.expr.runtime.op.string.ReverseFunFactory;
+import io.dingodb.expr.runtime.op.string.RightFunFactory;
+import io.dingodb.expr.runtime.op.time.DateDiffFunFactory;
+import io.dingodb.expr.runtime.op.time.DateFormat1FunFactory;
+import io.dingodb.expr.runtime.op.time.FromUnixTimeFunFactory;
+import io.dingodb.expr.runtime.op.time.TimeFormat1FunFactory;
+import io.dingodb.expr.runtime.op.time.TimestampFormat1FunFactory;
+import io.dingodb.expr.runtime.op.time.UnixTimestamp1FunFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
@@ -95,15 +99,15 @@ public class DingoOperatorTable implements SqlOperatorTable {
 
         // number
         registerFunction(
-            FormatFun.NAME,
+            NumberFormatFunFactory.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
             DingoInferTypes.DECIMAL,
             OperandTypes.NUMERIC_NUMERIC,
             SqlFunctionCategory.STRING
         );
         registerFunction(
-            PowFun.NAME,
-            DingoReturnTypes.DECIMAL_NULLABLE,
+            PowFunFactory.NAME,
+            ReturnTypes.DOUBLE,
             DingoInferTypes.DOUBLE,
             OperandTypes.NUMERIC_NUMERIC,
             SqlFunctionCategory.STRING
@@ -111,35 +115,35 @@ public class DingoOperatorTable implements SqlOperatorTable {
 
         // string
         registerFunction(
-            ConcatFun.NAME,
+            ConcatFunFactory.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
             InferTypes.VARCHAR_1024,
             OperandTypes.STRING_STRING,
             SqlFunctionCategory.STRING
         );
         registerFunction(
-            LeftFun.NAME,
+            LeftFunFactory.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
             DingoInferTypes.VARCHAR1024_INTEGER,
             family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC),
             SqlFunctionCategory.STRING
         );
         registerFunction(
-            LocateFun.NAME,
+            Locate2FunFactory.NAME,
             ReturnTypes.INTEGER_NULLABLE,
             InferTypes.VARCHAR_1024,
             OperandTypes.STRING_STRING,
             SqlFunctionCategory.NUMERIC
         );
         registerFunction(
-            LTrimFun.NAME,
+            LTrim1FunFactory.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
             InferTypes.VARCHAR_1024,
             OperandTypes.STRING,
             SqlFunctionCategory.STRING
         );
         registerFunction(
-            MidFun.NAME,
+            Mid2FunFactory.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
             DingoInferTypes.VARCHAR1024_INTEGER_INTEGER,
             OperandTypes.or(
@@ -149,28 +153,28 @@ public class DingoOperatorTable implements SqlOperatorTable {
             SqlFunctionCategory.STRING
         );
         registerFunction(
-            RepeatFun.NAME,
+            RepeatFunFactory.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
             DingoInferTypes.VARCHAR1024_INTEGER,
             family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC),
             SqlFunctionCategory.STRING
         );
         registerFunction(
-            ReverseFun.NAME,
+            ReverseFunFactory.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
             InferTypes.VARCHAR_1024,
             OperandTypes.STRING,
             SqlFunctionCategory.STRING
         );
         registerFunction(
-            RightFun.NAME,
+            RightFunFactory.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
             DingoInferTypes.VARCHAR1024_INTEGER,
             family(SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC),
             SqlFunctionCategory.STRING
         );
         registerFunction(
-            RTrimFun.NAME,
+            RTrim1FunFactory.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
             InferTypes.VARCHAR_1024,
             OperandTypes.STRING,
@@ -179,14 +183,14 @@ public class DingoOperatorTable implements SqlOperatorTable {
 
         // time
         registerFunction(
-            DingoFunFactory.FROM_UNIXTIME,
+            FromUnixTimeFunFactory.NAME,
             ReturnTypes.TIMESTAMP,
             InferTypes.VARCHAR_1024,
             OperandTypes.NUMERIC,
             SqlFunctionCategory.STRING
         );
         registerFunction(
-            DingoFunFactory.UNIX_TIMESTAMP,
+            UnixTimestamp1FunFactory.NAME,
             ReturnTypes.BIGINT,
             DingoInferTypes.TIMESTAMP,
             OperandTypes.or(
@@ -197,7 +201,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
             SqlFunctionCategory.NUMERIC
         );
         registerFunction(
-            DingoFunFactory.DATE_FORMAT,
+            DateFormat1FunFactory.NAME,
             ReturnTypes.VARCHAR_2000,
             DingoInferTypes.DATE_VARCHAR1024,
             // Why not `OperandTypes.family(ImmutableList.of(SqlTypeFamily.DATE, SqlTypeFamily.STRING), i -> i == 1)`?
@@ -209,7 +213,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
             SqlFunctionCategory.STRING
         );
         registerFunction(
-            DingoFunFactory.TIME_FORMAT,
+            TimeFormat1FunFactory.NAME,
             ReturnTypes.VARCHAR_2000,
             DingoInferTypes.TIME_VARCHAR1024,
             OperandTypes.or(
@@ -219,7 +223,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
             SqlFunctionCategory.STRING
         );
         registerFunction(
-            DingoFunFactory.TIMESTAMP_FORMAT,
+            TimestampFormat1FunFactory.NAME,
             ReturnTypes.VARCHAR_2000,
             DingoInferTypes.TIMESTAMP_VARCHAR1024,
             OperandTypes.or(
@@ -231,7 +235,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
             SqlFunctionCategory.STRING
         );
         registerFunction(
-            DateDiffFun.NAME,
+            DateDiffFunFactory.NAME,
             ReturnTypes.BIGINT,
             DingoInferTypes.DATE_DATE,
             family(SqlTypeFamily.DATE, SqlTypeFamily.DATE),
@@ -240,10 +244,10 @@ public class DingoOperatorTable implements SqlOperatorTable {
 
         // special
         registerFunction(
-            DingoFunFactory.THROW,
+            ThrowFun.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
-            InferTypes.VARCHAR_1024,
-            OperandTypes.STRING,
+            null,
+            OperandTypes.NILADIC,
             SqlFunctionCategory.STRING
         );
         registerFunction(
@@ -290,13 +294,6 @@ public class DingoOperatorTable implements SqlOperatorTable {
         );
         registerFunction(
             VectorCosineDistanceFun.NAME,
-            FLOAT,
-            DingoInferTypes.FLOAT,
-            family(SqlTypeFamily.ARRAY, SqlTypeFamily.ARRAY),
-            SqlFunctionCategory.NUMERIC
-        );
-        registerFunction(
-            VectorDistanceFun.NAME,
             FLOAT,
             DingoInferTypes.FLOAT,
             family(SqlTypeFamily.ARRAY, SqlTypeFamily.ARRAY),

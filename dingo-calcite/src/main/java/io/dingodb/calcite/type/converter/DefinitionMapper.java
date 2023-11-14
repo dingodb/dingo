@@ -23,7 +23,6 @@ import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.NullType;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.util.Optional;
-import io.dingodb.expr.core.TypeCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.rel.type.RelDataType;
@@ -37,34 +36,20 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static io.dingodb.common.type.DingoTypeFactory.fromName;
 import static io.dingodb.common.type.DingoTypeFactory.list;
 import static io.dingodb.common.type.DingoTypeFactory.map;
-import static io.dingodb.common.type.DingoTypeFactory.scalar;
-import static io.dingodb.expr.core.TypeCode.BINARY;
-import static io.dingodb.expr.core.TypeCode.BOOL;
-import static io.dingodb.expr.core.TypeCode.DATE;
-import static io.dingodb.expr.core.TypeCode.DECIMAL;
-import static io.dingodb.expr.core.TypeCode.DOUBLE;
-import static io.dingodb.expr.core.TypeCode.FLOAT;
-import static io.dingodb.expr.core.TypeCode.INT;
-import static io.dingodb.expr.core.TypeCode.LONG;
-import static io.dingodb.expr.core.TypeCode.STRING;
-import static io.dingodb.expr.core.TypeCode.TIME;
-import static io.dingodb.expr.core.TypeCode.TIMESTAMP;
 
 @Slf4j
 public final class DefinitionMapper {
-
     private DefinitionMapper() {
     }
 
-    public static SqlTypeName mapToSqlTypeName(DingoType type) {
-        return SqlTypeName.get(TypeCode.nameOf(type.getTypeCode()));
-    }
-
     public static DingoType mapToDingoType(SqlTypeName columnType, SqlTypeName elementType, boolean nullable) {
-        return fromName(columnType.getName(), Optional.mapOrNull(elementType, SqlTypeName::getName), nullable);
+        return DingoTypeFactory.INSTANCE.fromName(
+            columnType.getName(),
+            Optional.mapOrNull(elementType, SqlTypeName::getName),
+            nullable
+        );
     }
 
     public static DingoType mapToDingoType(TableDefinition table) {
@@ -85,7 +70,7 @@ public final class DefinitionMapper {
                 ColumnMetaData.StructType structType = (ColumnMetaData.StructType) colMeta.type;
                 return mapToDingoType(structType.columns);
             default:
-                return scalar(sqlTypeIdToDingoTypeCode(colMeta.type.id), colMeta.nullable != 0);
+                return DingoTypeFactory.INSTANCE.scalar(colMeta.type.id, colMeta.nullable != 0);
         }
     }
 
@@ -97,7 +82,7 @@ public final class DefinitionMapper {
 
     public static DingoType mapToDingoType(ColumnMetaData.AvaticaType avaticaType) {
         if (avaticaType instanceof ColumnMetaData.ScalarType) {
-            return scalar(sqlTypeIdToDingoTypeCode(avaticaType.id), false);
+            return DingoTypeFactory.INSTANCE.scalar(avaticaType.id, false);
         } else if (avaticaType instanceof ColumnMetaData.ArrayType) {
             ColumnMetaData.ArrayType arrayType = (ColumnMetaData.ArrayType) avaticaType;
             //return array(fromAvaticaType(arrayType.getComponent()), false);
@@ -125,8 +110,8 @@ public final class DefinitionMapper {
                     DingoType valueType = mapToDingoType(Objects.requireNonNull(relDataType.getValueType()));
                     return map(keyType, valueType, relDataType.isNullable());
                 default:
-                    return scalar(
-                        TypeCode.codeOf(relDataType.getSqlTypeName().getName()),
+                    return DingoTypeFactory.INSTANCE.scalar(
+                        relDataType.getSqlTypeName().getName(),
                         relDataType.isNullable()
                     );
             }
@@ -153,11 +138,11 @@ public final class DefinitionMapper {
         switch (type) {
             case ARRAY:
                 relDataType = typeFactory.createArrayType(
-                   Optional.mapOrGet(
-                       SqlTypeName.get(column.getElementType().toUpperCase()),
-                       typeFactory::createSqlType,
-                       () -> mapToJavaRelDataType(column.getElementType().toUpperCase(), typeFactory)
-                   ),
+                    Optional.mapOrGet(
+                        SqlTypeName.get(column.getElementType().toUpperCase()),
+                        typeFactory::createSqlType,
+                        () -> mapToJavaRelDataType(column.getElementType().toUpperCase(), typeFactory)
+                    ),
                     -1
                 );
                 break;
@@ -212,40 +197,6 @@ public final class DefinitionMapper {
             columns.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
             columns.stream().map(ColumnDefinition::getName).map(String::toUpperCase).collect(Collectors.toList())
         );
-    }
-
-    private static int sqlTypeIdToDingoTypeCode(int typeId) {
-        switch (typeId) {
-            case Types.INTEGER:
-                return INT;
-            case Types.BIGINT:
-                return LONG;
-            case Types.FLOAT:
-                return FLOAT;
-            case Types.DOUBLE:
-            case Types.REAL:
-                return DOUBLE;
-            case Types.BOOLEAN:
-                return BOOL;
-            case Types.DECIMAL:
-                return DECIMAL;
-            case Types.CHAR:
-            case Types.VARCHAR:
-                return STRING;
-            case Types.DATE:
-                return DATE;
-            case Types.TIME:
-                return TIME;
-            case Types.TIMESTAMP:
-                return TIMESTAMP;
-            case Types.BINARY:
-                return BINARY;
-            case Types.JAVA_OBJECT:
-                return TypeCode.OBJECT;
-            default:
-                break;
-        }
-        throw new IllegalArgumentException("Unsupported sql type id \"" + typeId + "\".");
     }
 
 }

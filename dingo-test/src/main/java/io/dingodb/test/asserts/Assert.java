@@ -19,7 +19,6 @@ package io.dingodb.test.asserts;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Task;
-import io.dingodb.expr.test.ExprTestUtils;
 import lombok.Getter;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlNode;
@@ -31,6 +30,7 @@ import java.sql.Time;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.offset;
 
 public class Assert<T, A extends Assert<T, A>> {
     @Getter
@@ -91,10 +91,16 @@ public class Assert<T, A extends Assert<T, A>> {
     }
 
     public A isEqualTo(Object value) {
-        if (instance instanceof Date || instance instanceof Time) {
+        if (value == null) {
+            assertThat(instance).isNull();
+        } else if (instance instanceof Date || instance instanceof Time) {
             assertThat(instance.toString()).isEqualTo(value);
+        } else if (instance instanceof Float) {
+            assertThat((Float) instance).isCloseTo((Float) value, offset(1E-6f));
+        } else if (instance instanceof Double) {
+            assertThat((Double) instance).isCloseTo((Double) value, offset(1E-6));
         } else {
-            ExprTestUtils.assertEquals(instance, value);
+            assertThat(instance).isEqualTo(value);
         }
         return cast();
     }

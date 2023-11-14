@@ -55,8 +55,6 @@ task fatJar(type: Jar) {
 
 fatJar.dependsOn(
     ':dingo-common:jar',
-    ':dingo-expr:dingo-expr-runtime:jar',
-    ':dingo-expr:dingo-expr-json-runtime:jar',
     ':dingo-store-api:jar',
     ':dingo-serial:jar',
     ':dingo-codec-api:jar',
@@ -103,7 +101,7 @@ publishing {
             url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl;
 
             credentials {
-                username = System.getenv("MAVEN_USERNAME") != null ? System.getenv("MAVEN_USERNAME") : project.findProperty("ossrhUsername") 
+                username = System.getenv("MAVEN_USERNAME") != null ? System.getenv("MAVEN_USERNAME") : project.findProperty("ossrhUsername")
                 password = System.getenv("MAVEN_TOKEN") != null ? System.getenv("MAVEN_TOKEN") : project.findProperty("ossrhPassword")
             }
         }

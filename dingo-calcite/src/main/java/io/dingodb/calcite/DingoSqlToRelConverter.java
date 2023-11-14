@@ -19,8 +19,6 @@ package io.dingodb.calcite;
 import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.traits.DingoConvention;
-import io.dingodb.calcite.traits.DingoRelStreaming;
-import io.dingodb.exec.fun.string.SubstringFun;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -79,7 +77,7 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
         if (node.getKind() == SqlKind.OTHER_FUNCTION) {
             SqlOperator operator = ((SqlCall) node).getOperator();
             // Override `substring` function to avoid complicated conversion in Calcite.
-            if (operator.isName(SubstringFun.NAME, false)) {
+            if (operator.isName("substring", false)) {
                 // The same of `this.rexBuilder`.
                 RexBuilder rb = bb.getRexBuilder();
                 List<RexNode> operands = ((SqlCall) node).getOperandList().stream()

@@ -20,7 +20,8 @@ plugins {
 }
 
 dependencies {
-    api project(':dingo-expr:dingo-expr-json-runtime')
+    api group: 'io.dingodb.expr', name: 'dingo-expr-json', version: 'dingo-expr'.v()
+    api group: 'io.dingodb.expr', name: 'dingo-expr-runtime', version: 'dingo-expr'.v()
     api project(':dingo-serial')
     implementation group: 'org.apache.commons', name: 'commons-text', version: 'commons-text'.v()
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: 'jackson'.v()

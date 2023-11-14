@@ -23,7 +23,6 @@ import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.NullableType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
-import io.dingodb.expr.core.TypeCode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -37,11 +36,11 @@ public final class SchemaWrapperUtils {
     }
 
     private static ColumnDefinition mapDingoType(@NonNull NullableType type, int primary) {
-        String typeName = TypeCode.nameOf(type.getTypeCode());
-        if (typeName.equals(TypeCode.LIST_NAME)) {
+        String typeName = type.getType().toString();
+        if (type instanceof  ListType) {
             return ColumnDefinition.builder()
                 .type(typeName)
-                .elementType(TypeCode.nameOf(((ListType) type).getElementType().getTypeCode()))
+                .elementType((((ListType) type).getElementType().toString()))
                 .primary(primary)
                 .nullable(type.isNullable())
                 .build();

@@ -21,9 +21,10 @@ plugins {
 
 dependencies {
 
-    annotationProcessor project(':dingo-expr:dingo-expr-annotations')
-    compileOnly project(':dingo-expr:dingo-expr-annotations')
+    annotationProcessor group: 'io.dingodb.expr', name: 'dingo-expr-annotations', version: 'dingo-expr'.v()
+    compileOnly group: 'io.dingodb.expr', name: 'dingo-expr-annotations', version: 'dingo-expr'.v()
 
+    api group: 'io.dingodb.expr', name: 'dingo-expr-parser', version: 'dingo-expr'.v()
     api project(':dingo-cluster-api')
     api project(':dingo-codec-api')
     api project(':dingo-meta-api')
@@ -32,12 +33,11 @@ dependencies {
     api project(':dingo-tool-api')
 
     implementation project(':dingo-partition-api')
-    implementation project(':dingo-expr:dingo-expr-parser')
 
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-coding', version: 'dingo-expr'.v()
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: 'jackson'.v()
     implementation group: 'org.apache.avro', name: 'avro', version: 'avro'.v()
 
     testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()
-    testImplementation project(':dingo-expr:dingo-expr-test')
 
 }

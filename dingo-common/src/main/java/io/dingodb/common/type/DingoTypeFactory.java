@@ -29,18 +29,92 @@ import io.dingodb.common.type.scalar.ObjectType;
 import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
-import io.dingodb.expr.core.TypeCode;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.sql.Types;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.Function;
 
 @Slf4j
 public final class DingoTypeFactory {
+    public static final DingoTypeFactory INSTANCE = new DingoTypeFactory();
+
+    private final Map<String, Function<@NonNull Boolean, AbstractScalarType>> scalarGenerators;
+
     private DingoTypeFactory() {
+        scalarGenerators = new TreeMap<>(String::compareToIgnoreCase);
+        scalarGenerators.put("INT", IntegerType::new);
+        scalarGenerators.put("INTEGER", IntegerType::new);
+        scalarGenerators.put("LONG", LongType::new);
+        scalarGenerators.put("BIGINT", LongType::new);
+        scalarGenerators.put("FLOAT", FloatType::new);
+        scalarGenerators.put("DOUBLE", DoubleType::new);
+        scalarGenerators.put("REAL", DoubleType::new);
+        scalarGenerators.put("BOOL", BooleanType::new);
+        scalarGenerators.put("BOOLEAN", BooleanType::new);
+        scalarGenerators.put("STRING", StringType::new);
+        scalarGenerators.put("CHAR", StringType::new);
+        scalarGenerators.put("VARCHAR", StringType::new);
+        scalarGenerators.put("DECIMAL", DecimalType::new);
+        scalarGenerators.put("DATE", DateType::new);
+        scalarGenerators.put("TIME", TimeType::new);
+        scalarGenerators.put("TIMESTAMP", TimestampType::new);
+        scalarGenerators.put("BINARY", BinaryType::new);
+        scalarGenerators.put("VARBINARY", BinaryType::new);
+        scalarGenerators.put("OBJECT", ObjectType::new);
+        scalarGenerators.put("ANY", ObjectType::new);
     }
 
-    public static DingoType fromName(String typeName, String elementTypeName, boolean nullable) {
+    public static @NonNull TupleType tuple(DingoType[] fields) {
+        return new TupleType(fields);
+    }
+
+    public static @NonNull ListType list(DingoType elementType, boolean nullable) {
+        return new ListType(elementType, nullable);
+    }
+
+    public static @NonNull MapType map(DingoType keyType, DingoType valueType, boolean nullable) {
+        return new MapType(keyType, valueType, nullable);
+    }
+
+    private static String typeNameOfSqlTypeId(int typeId) {
+        switch (typeId) {
+            case Types.INTEGER:
+                return "INT";
+            case Types.BIGINT:
+                return "LONG";
+            case Types.FLOAT:
+                return "FLOAT";
+            case Types.DOUBLE:
+            case Types.REAL:
+                return "DOUBLE";
+            case Types.BOOLEAN:
+                return "BOOL";
+            case Types.DECIMAL:
+                return "DECIMAL";
+            case Types.CHAR:
+            case Types.VARCHAR:
+                return "STRING";
+            case Types.DATE:
+                return "DATE";
+            case Types.TIME:
+                return "TIME";
+            case Types.TIMESTAMP:
+                return "TIMESTAMP";
+            case Types.BINARY:
+                return "BINARY";
+            case Types.JAVA_OBJECT:
+                return "OBJECT";
+            default:
+                break;
+        }
+        throw new IllegalArgumentException("Unsupported sql type id \"" + typeId + "\".");
+    }
+
+    public DingoType fromName(String typeName, String elementTypeName, boolean nullable) {
         if (typeName == null) {
             throw new IllegalArgumentException("Invalid column type: null.");
         }
@@ -51,107 +125,43 @@ public final class DingoTypeFactory {
                 if (elementTypeName == null) {
                     elementTypeName = "OBJECT";
                 }
-                return list(TypeCode.codeOf(elementTypeName.toUpperCase()), nullable);
+                return list(elementTypeName, nullable);
             default:
-                return scalar(TypeCode.codeOf(typeName), nullable);
+                return scalar(typeName, nullable);
         }
     }
 
-    public static @NonNull AbstractScalarType scalar(int typeCode, boolean nullable) {
-        switch (typeCode) {
-            case TypeCode.INT:
-                return new IntegerType(nullable);
-            case TypeCode.STRING:
-                return new StringType(nullable);
-            case TypeCode.BOOL:
-                return new BooleanType(nullable);
-            case TypeCode.LONG:
-                return new LongType(nullable);
-            case TypeCode.FLOAT:
-                return new FloatType(nullable);
-            case TypeCode.DOUBLE:
-                return new DoubleType(nullable);
-            case TypeCode.DECIMAL:
-                return new DecimalType(nullable);
-            case TypeCode.DATE:
-                return new DateType(nullable);
-            case TypeCode.TIME:
-                return new TimeType(nullable);
-            case TypeCode.TIMESTAMP:
-                return new TimestampType(nullable);
-            case TypeCode.BINARY:
-                return new BinaryType(nullable);
-            case TypeCode.OBJECT:
-                return new ObjectType(nullable);
-            default:
-                break;
-        }
-        throw new IllegalArgumentException("Cannot create scalar type \"" + TypeCode.nameOf(typeCode) + "\".");
+    public @NonNull ListType list(String typeString, boolean nullable) {
+        return list(scalar(typeString), nullable);
     }
 
-    public static @NonNull AbstractScalarType scalar(@NonNull String typeString) {
-        String[] v = typeString.split("\\|", 2);
-        boolean nullable = v.length > 1 && v[1].equals(NullType.NULL.toString());
-        return scalar(TypeCode.codeOf(v[0]), nullable);
+    public @NonNull MapType map(String keyTypeString, String valueTypeString, boolean nullable) {
+        return map(scalar(keyTypeString), scalar(valueTypeString), nullable);
     }
 
-    public static @NonNull AbstractScalarType scalar(int typeCode) {
-        return scalar(typeCode, false);
-    }
-
-    public static @NonNull TupleType tuple(DingoType[] fields) {
-        return new TupleType(fields);
-    }
-
-    public static @NonNull TupleType tuple(String... types) {
+    public @NonNull TupleType tuple(String... types) {
         return tuple(
             Arrays.stream(types)
-                .map(DingoTypeFactory::scalar)
+                .map(this::scalar)
                 .toArray(DingoType[]::new)
         );
     }
 
-    public static @NonNull TupleType tuple(int... typeCodes) {
-        return tuple(
-            Arrays.stream(typeCodes)
-                .mapToObj(DingoTypeFactory::scalar)
-                .toArray(DingoType[]::new)
-        );
+    public @NonNull AbstractScalarType scalar(String typeName, boolean nullable) {
+        Function<@NonNull Boolean, AbstractScalarType> fun = scalarGenerators.get(typeName);
+        if (fun != null) {
+            return fun.apply(nullable);
+        }
+        throw new IllegalArgumentException("Unknown type name \"" + typeName + "\".");
     }
 
-    public static @NonNull ArrayType array(DingoType elementType, boolean nullable) {
-        return new ArrayType(elementType, nullable);
+    public @NonNull AbstractScalarType scalar(@NonNull String typeString) {
+        String[] v = typeString.split("\\|", 2);
+        boolean nullable = v.length > 1 && v[1].equals(NullType.NULL.toString());
+        return scalar(v[0], nullable);
     }
 
-    public static @NonNull ArrayType array(int elementTypeCode, boolean nullable) {
-        return array(scalar(elementTypeCode, false), nullable);
-    }
-
-    public static @NonNull ArrayType array(String type, boolean nullable) {
-        return array(scalar(type), nullable);
-    }
-
-    public static @NonNull ListType list(DingoType elementType, boolean nullable) {
-        return new ListType(elementType, nullable);
-    }
-
-    public static @NonNull ListType list(int elementTypeCode, boolean nullable) {
-        return list(scalar(elementTypeCode, false), nullable);
-    }
-
-    public static @NonNull ListType list(String type, boolean nullable) {
-        return list(scalar(type), nullable);
-    }
-
-    public static @NonNull MapType map(DingoType keyType, DingoType valueType, boolean nullable) {
-        return new MapType(keyType, valueType, nullable);
-    }
-
-    public static @NonNull MapType map(int keyTypeCode, int valueTypeCode, boolean nullable) {
-        return map(scalar(keyTypeCode, false), scalar(valueTypeCode, false), nullable);
-    }
-
-    public static @NonNull MapType map(String keyType, String valueType, boolean nullable) {
-        return map(scalar(keyType), scalar(valueType), nullable);
+    public @NonNull AbstractScalarType scalar(int sqlTypeId, boolean nullable) {
+        return scalar(typeNameOfSqlTypeId(sqlTypeId), nullable);
     }
 }

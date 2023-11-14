@@ -23,8 +23,8 @@ import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.expr.parser.Expr;
-import io.dingodb.expr.parser.exception.ExprCompileException;
+import io.dingodb.expr.runtime.ExprCompiler;
+import io.dingodb.expr.runtime.expr.Expr;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -58,11 +58,7 @@ public final class TableUtils {
                 Object[] tuple = new Object[td.getColumnsCount()];
                 for (Map.Entry<Integer, RexNode> entry : item.entrySet()) {
                     Expr expr = RexConverter.convert(entry.getValue());
-                    try {
-                        tuple[entry.getKey()] = expr.compileIn(null).eval(null);
-                    } catch (ExprCompileException e) {
-                        throw new RuntimeException(e);
-                    }
+                    tuple[entry.getKey()] = ExprCompiler.ADVANCED.visit(expr).eval();
                 }
                 return tuple;
             })

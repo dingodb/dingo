@@ -19,32 +19,27 @@ package io.dingodb.exec.expr;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.exec.fun.DingoFunFactory;
 import io.dingodb.exec.type.converter.ExprConverter;
-import io.dingodb.expr.parser.Expr;
-import io.dingodb.expr.parser.ExprCompiler;
-import io.dingodb.expr.parser.exception.ExprCompileException;
+import io.dingodb.expr.coding.ExprCoder;
+import io.dingodb.expr.parser.ExprParser;
 import io.dingodb.expr.parser.exception.ExprParseException;
-import io.dingodb.expr.parser.parser.DingoExprCompiler;
 import io.dingodb.expr.runtime.CompileContext;
-import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.eval.Eval;
+import io.dingodb.expr.runtime.ExprCompiler;
+import io.dingodb.expr.runtime.ExprConfig;
+import io.dingodb.expr.runtime.exception.ExprCompileException;
+import io.dingodb.expr.runtime.expr.Expr;
 import lombok.Getter;
 
 import java.io.ByteArrayOutputStream;
 
 public class SqlExpr {
-    private static final DingoExprCompiler compiler = new DingoExprCompiler(
-        DingoFunFactory.getInstance()
-    );
-
     @JsonProperty("expr")
     @Getter
     private final String exprString;
     @JsonProperty("type")
     private final DingoType type;
     private final SqlExprEvalContext etx;
-    private RtExpr expr;
+    private Expr expr;
 
     @JsonCreator
     public SqlExpr(
@@ -54,38 +49,30 @@ public class SqlExpr {
         this.exprString = exprString;
         this.type = type;
         // TODO: Runtime env
-        this.etx = new SqlExprEvalContext(null);
+        this.etx = new SqlExprEvalContext();
     }
 
     private Expr getExpr() throws ExprParseException {
-        return compiler.parse(exprString);
+        return ExprParser.DEFAULT.parse(exprString);
     }
 
     public byte[] getCoding(DingoType tupleType, DingoType parasType) {
         try {
-            CompileContext context = new SqlExprCompileContext(tupleType, parasType);
-            ExprCompiler exprCompiler = new ExprCompiler(context);
+            compileIn(tupleType, parasType);
             ByteArrayOutputStream os = new ByteArrayOutputStream();
-            Eval eval = getExpr().accept(exprCompiler);
-            if (eval != null) {
-                EvalSerializer serializer = new EvalSerializer(os);
-                if (eval.accept(serializer)) {
-                    return os.toByteArray();
-                }
+            if (ExprCoder.INSTANCE.visit(expr, os) == ExprCoder.OK) {
+                return os.toByteArray();
             }
             return null;
         } catch (ExprCompileException e) {
             return null;
-        } catch (ExprParseException e) {
-            throw new IllegalStateException(e);
         }
     }
 
     public void compileIn(DingoType tupleType, DingoType parasType) {
         try {
-            expr = getExpr().compileIn(
-                new SqlExprCompileContext(tupleType, parasType)
-            );
+            CompileContext context = new SqlExprCompileContext(tupleType, parasType);
+            expr = ExprCompiler.ADVANCED.visit(getExpr(), context);
         } catch (ExprParseException | ExprCompileException e) {
             throw new IllegalStateException(e);
         }
@@ -97,7 +84,7 @@ public class SqlExpr {
 
     public Object eval(Object[] tuple) {
         etx.setTuple(tuple);
-        return type.convertFrom(expr.eval(etx), ExprConverter.INSTANCE);
+        return type.convertFrom(expr.eval(etx, ExprConfig.ADVANCED), ExprConverter.INSTANCE);
     }
 
     public SqlExpr copy() {

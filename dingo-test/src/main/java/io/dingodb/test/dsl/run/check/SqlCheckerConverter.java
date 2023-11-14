@@ -60,7 +60,7 @@ public class SqlCheckerConverter implements SqlCheckerVisitor<Check> {
         try {
             Iterator<String[]> it = CsvUtils.readCsv(csvFile);
             final String[] columnLabels = it.hasNext() ? it.next() : null;
-            final DingoType schema = it.hasNext() ? DingoTypeFactory.tuple(it.next()) : null;
+            final DingoType schema = it.hasNext() ? DingoTypeFactory.INSTANCE.tuple(it.next()) : null;
             if (columnLabels == null || schema == null) {
                 throw new IllegalArgumentException(
                     "Result file must be csv and its first two rows are column names and schema definitions."

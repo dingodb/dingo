@@ -26,6 +26,7 @@ import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.traits.DingoRelStreaming;
+import io.dingodb.expr.runtime.exception.CastingException;
 import io.dingodb.test.asserts.Assert;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelNode;
@@ -223,7 +224,7 @@ public class TestInsert {
     @ParameterizedTest
     @ValueSource(strings = {
         // TODO: LogicalProject(ID=[CAST(2147483648:BIGINT):INTEGER NOT NULL], NAME=['WrongId'], AMOUNT=[1.0:DOUBLE])
-        // "insert into `test` values(2147483648, 'WrongId', 1.0)",
+        "insert into `test` values(2147483648, 'WrongId', 1.0)",
         "insert into `table-with-array` values (1, multiset[1, 2], array[2147483648, 4])",
         "insert into `table-with-array` values (1, multiset[-2147483649, 2], array[3, 4])"
     })
@@ -233,8 +234,7 @@ public class TestInsert {
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             parser.optimize(relRoot.rel);
         });
-        exception.printStackTrace();
-        assertThat(exception.getCause()).isInstanceOf(ArithmeticException.class)
-            .hasMessageContaining("exceeds limits of integers");
+        assertThat(exception.getCause()).isInstanceOf(CastingException.class)
+            .hasMessageContaining("exceeds limits of INT");
     }
 }

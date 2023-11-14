@@ -49,7 +49,7 @@ public class AvroTupleCodec implements TupleCodec {
 
     public AvroTupleCodec(@NonNull DingoType type) {
         this.type = type;
-        this.schema = type.toSchema(AvroSchemaConverter.INSTANCE);
+        this.schema = AvroSchemaConverter.INSTANCE.visit(type);
         this.reader = new GenericDatumReader<>(schema);
         this.writer = new GenericDatumWriter<>(schema);
     }

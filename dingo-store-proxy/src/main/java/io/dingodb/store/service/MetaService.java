@@ -26,7 +26,6 @@ import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
-import io.dingodb.expr.core.TypeCode;
 import io.dingodb.meta.Meta;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.TableStatistic;
@@ -126,7 +125,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                              @NonNull List<TableDefinition> indexTableDefinitions) {
         List<Table> indexTables = indexTableDefinitions.stream().map(Mapping::mapping).collect(Collectors.toList());
         indexTables.forEach(__ -> {
-           io.dingodb.store.common.TableDefinition table =
+            io.dingodb.store.common.TableDefinition table =
                 (io.dingodb.store.common.TableDefinition) __;
             table.setProperties(__.getProperties());
             table.setName(tableDefinition.getName() + "." + __.getName());
@@ -203,16 +202,16 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id) {
         return metaServiceClient.getTableIndexes(mapping(id)).entrySet().stream()
-           .collect(Collectors.toMap(entry -> mapping(entry.getKey()), entry -> {
-               // Remove . from the index table name
-               Table table = entry.getValue();
-               String tableName = table.getName();
-               String[] split = tableName.split("\\.");
-               if (split.length > 1) {
-                   tableName = split[split.length - 1];
-               }
-               return mapping(table).copyWithName(tableName);
-           }));
+            .collect(Collectors.toMap(entry -> mapping(entry.getKey()), entry -> {
+                // Remove . from the index table name
+                Table table = entry.getValue();
+                String tableName = table.getName();
+                String[] split = tableName.split("\\.");
+                if (split.length > 1) {
+                    tableName = split[split.length - 1];
+                }
+                return mapping(table).copyWithName(tableName);
+            }));
     }
 
     @Override
@@ -264,7 +263,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         // hash partition strategy need use the original key
         boolean isOriginalKey = funcName.equalsIgnoreCase("HASH");
         KeyValueCodec codec = CodecService.getDefault()
-            .createKeyValueCodec(DingoTypeFactory.tuple(TypeCode.LONG), TupleMapping.of(new int[0]));
+            .createKeyValueCodec(DingoTypeFactory.INSTANCE.tuple("LONG"), TupleMapping.of(new int[0]));
         metaServiceClient.getIndexRangeDistribution(mapping(id)).values().stream()
             .map(__ -> mapping(__, codec, isOriginalKey))
             .forEach(__ -> result.put(new ComparableByteArray(__.getStartKey()), __));
@@ -275,7 +274,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     public NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull CommonId id) {
         NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
         KeyValueCodec codec = CodecService.getDefault()
-            .createKeyValueCodec(DingoTypeFactory.tuple(TypeCode.LONG), TupleMapping.of(new int[0]));
+            .createKeyValueCodec(DingoTypeFactory.INSTANCE.tuple("LONG"), TupleMapping.of(new int[0]));
         metaServiceClient.getIndexRangeDistribution(mapping(id)).values().stream()
             .map(__ -> mapping(__, codec, true))
             .forEach(__ -> result.put(new ComparableByteArray(__.getStartKey()), __));

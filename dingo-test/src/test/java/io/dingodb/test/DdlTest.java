@@ -19,7 +19,6 @@ package io.dingodb.test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableMap;
 import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.expr.core.TypeCode;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.test.dsl.run.exec.SqlExecContext;
 import org.junit.jupiter.api.AfterAll;
@@ -83,9 +82,8 @@ public class DdlTest {
     public void testCreateTable(@Nonnull String type, String value) throws SQLException {
         context.execSql("create table {table} (id int, data " + type + ", primary key(id))");
         context.execSql("insert into {table} values(1, " + value + ")");
-        int typeCode = TypeCode.codeOf(type.toUpperCase());
         Object result = context.querySingleValue("select data from {table}");
-        Object expected = DingoTypeFactory.scalar(typeCode, false).parse(value);
+        Object expected = DingoTypeFactory.INSTANCE.scalar(type, false).parse(value);
         assertThat(result).isEqualTo(expected);
     }
 
@@ -100,9 +98,8 @@ public class DdlTest {
     public void testCreateTableStringLiteral(@Nonnull String type, String value) throws SQLException {
         context.execSql("create table {table} (id int, data " + type + ", primary key(id))");
         context.execSql("insert into {table} values(1, '" + value + "')");
-        int typeCode = TypeCode.codeOf(type.toUpperCase());
         Object result = context.querySingleValue("select data from {table}");
-        Object expected = DingoTypeFactory.scalar(typeCode, false).parse(value);
+        Object expected = DingoTypeFactory.INSTANCE.scalar(type, false).parse(value);
         assertThat(result).isEqualTo(expected);
     }
 

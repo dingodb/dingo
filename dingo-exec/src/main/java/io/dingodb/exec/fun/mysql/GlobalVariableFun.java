@@ -17,23 +17,24 @@
 package io.dingodb.exec.fun.mysql;
 
 import io.dingodb.common.mysql.scope.ScopeVariables;
-import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.op.RtStringFun;
+import io.dingodb.expr.runtime.ExprConfig;
+import io.dingodb.expr.runtime.op.UnaryOp;
+import io.dingodb.expr.runtime.type.Type;
+import io.dingodb.expr.runtime.type.Types;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
-public class GlobalVariableFun extends RtStringFun {
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+public class GlobalVariableFun extends UnaryOp {
+    public static final GlobalVariableFun INSTANCE = new GlobalVariableFun();
     public static final String NAME = "@@";
 
     private static final long serialVersionUID = 5242457055774200529L;
 
-    public GlobalVariableFun(RtExpr[] paras) {
-        super(paras);
-    }
-
     @Override
-    protected @Nullable Object fun(@NonNull Object @NonNull [] values) {
-        String str = String.valueOf(values[0]);
+    protected Object evalNonNullValue(@NonNull Object value, ExprConfig config) {
+        String str = (String) value;
         str = str.toLowerCase();
         if (str.startsWith("session.")) {
             str = str.substring(8);
@@ -41,5 +42,18 @@ public class GlobalVariableFun extends RtStringFun {
         } else {
             return ScopeVariables.globalVariables.getOrDefault(str, "");
         }
+    }
+
+    @Override
+    public Object keyOf(@NonNull Type type) {
+        if (type.equals(Types.STRING)) {
+            return Types.STRING;
+        }
+        return null;
+    }
+
+    @Override
+    public UnaryOp getOp(Object key) {
+        return (key != null && key.equals(Types.STRING)) ? this : null;
     }
 }

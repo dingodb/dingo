@@ -174,7 +174,7 @@ public class OperationService {
         columns.stream().filter(Column::isPrimary)
             .sorted(Comparator.comparingInt(Column::getPrimary))
             .peek(col -> keyNames.add(col.getName()))
-            .map(col -> DingoTypeFactory.fromName(col.getType(), col.getElementType(), col.isNullable()))
+            .map(col -> DingoTypeFactory.INSTANCE.fromName(col.getType(), col.getElementType(), col.isNullable()))
             .forEach(keyTypes::add);
         DefinitionUtils.checkAndConvertRangePartition(
             keyNames,

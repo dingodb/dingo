@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestSchemaWrapperUtils {
     @Test
     public void testBuildSchemaWrapper() {
-        DingoType type = DingoTypeFactory.tuple("INT", "LONG", "STRING", "DOUBLE|NULL");
+        DingoType type = DingoTypeFactory.INSTANCE.tuple("INT", "LONG", "STRING", "DOUBLE|NULL");
         TupleMapping mapping = TupleMapping.of(ImmutableList.of(0, 2));
         Coprocessor.SchemaWrapper sw = SchemaWrapperUtils.buildSchemaWrapper(type, mapping, 1);
         assertThat(sw.getCommonId()).isEqualTo(1);

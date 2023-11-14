@@ -13,4 +13,5 @@ sql
 sqlline
 sqls
 substr
+ucase
 unixtime

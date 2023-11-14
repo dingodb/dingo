@@ -14,28 +14,26 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.operator.hash;
+package io.dingodb.exec.fun.vector;
 
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.exec.utils.NumberUtils;
-import lombok.Setter;
+import io.dingodb.expr.runtime.op.BinaryOp;
+import io.dingodb.expr.runtime.type.Type;
+import io.dingodb.expr.runtime.type.Types;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Objects;
-
-@JsonTypeName("simple")
-public final class SimpleHashStrategy implements HashStrategy {
-    @Setter
-    private int outputNum;
+public abstract class BinaryVectorVectorFun extends BinaryOp {
+    private static final long serialVersionUID = 9015040211359619477L;
 
     @Override
-    public int selectOutput(Object @NonNull [] tuple) {
-        int hash = Objects.hash(tuple);
-        return NumberUtils.posMod(hash, outputNum);
+    public Object keyOf(@NonNull Type type0, @NonNull Type type1) {
+        if (type0.equals((Types.LIST_FLOAT)) && type1.equals((Types.LIST_FLOAT))) {
+            return Types.LIST_FLOAT;
+        }
+        return null;
     }
 
     @Override
-    public @NonNull String toString() {
-        return this.getClass().getSimpleName();
+    public BinaryOp getOp(Object key) {
+        return (key != null && key.equals(Types.LIST_FLOAT)) ? this : null;
     }
 }

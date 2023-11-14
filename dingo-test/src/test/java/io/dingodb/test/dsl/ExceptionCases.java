@@ -126,7 +126,7 @@ public class ExceptionCases extends SqlTestCaseJavaBuilder {
 
         // Intentionally
         test("By `thrown` function")
-            .step("select throw(null)", exception(sql(TEST_ERROR_CODE, CUSTOM_ERROR_STATE)));
+            .step("select throw()", exception(sql(TEST_ERROR_CODE, CUSTOM_ERROR_STATE)));
 
         // Other
         test("Type mismatch")

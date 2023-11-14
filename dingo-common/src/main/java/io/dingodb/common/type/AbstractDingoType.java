@@ -18,24 +18,18 @@ package io.dingodb.common.type;
 
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.common.type.converter.StrParseConverter;
-import io.dingodb.expr.core.TypeCode;
-import lombok.EqualsAndHashCode;
+import io.dingodb.expr.runtime.exception.NeverRunHere;
 import lombok.Getter;
 import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-@EqualsAndHashCode(of = {"typeCode"})
 public abstract class AbstractDingoType implements DingoType {
-    @Getter
-    @Setter
-    protected int typeCode;
     @Getter
     @Setter
     private Integer id;
 
-    protected AbstractDingoType(int typeCode) {
-        this.typeCode = typeCode;
+    protected AbstractDingoType() {
     }
 
     protected abstract @Nullable Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter);
@@ -49,12 +43,12 @@ public abstract class AbstractDingoType implements DingoType {
 
     @Override
     public DingoType getChild(@NonNull Object index) {
-        throw new IllegalStateException("Get child of type \"" + TypeCode.nameOf(typeCode) + "\" is stupid.");
+        throw new NeverRunHere();
     }
 
     @Override
     public @NonNull DingoType select(@NonNull TupleMapping mapping) {
-        throw new IllegalStateException("Selecting fields from type \"" + TypeCode.nameOf(typeCode) + "\" is stupid.");
+        throw new NeverRunHere();
     }
 
     @Override

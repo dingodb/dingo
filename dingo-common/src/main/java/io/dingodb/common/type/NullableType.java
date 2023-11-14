@@ -20,12 +20,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 
-@EqualsAndHashCode(of = {"nullable"}, callSuper = true)
+@EqualsAndHashCode(of = {"nullable"}, callSuper = false)
 public abstract class NullableType extends AbstractDingoType {
     protected final boolean nullable;
 
-    protected NullableType(int typeCode, boolean nullable) {
-        super(typeCode);
+    protected NullableType(boolean nullable) {
+        super();
         this.nullable = nullable;
     }
 
