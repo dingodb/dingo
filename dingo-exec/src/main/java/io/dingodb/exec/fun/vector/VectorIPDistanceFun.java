@@ -16,33 +16,21 @@
 
 package io.dingodb.exec.fun.vector;
 
-import io.dingodb.expr.core.TypeCode;
-import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.op.RtFun;
+import io.dingodb.expr.runtime.ExprConfig;
+import io.dingodb.expr.runtime.type.Type;
+import io.dingodb.expr.runtime.type.Types;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 
-public class VectorIPDistanceFun extends RtFun {
-    private static final long serialVersionUID = 7869256649847747534L;
-
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+public class VectorIPDistanceFun extends BinaryVectorVectorFun {
+    public static final VectorIPDistanceFun INSTANCE = new VectorIPDistanceFun();
     public static final String NAME = "IPDistance";
 
-    public VectorIPDistanceFun(@NonNull RtExpr[] paras) {
-        super(paras);
-    }
-
-    @Override
-    public int typeCode() {
-        return TypeCode.ARRAY;
-    }
-
-    @Override
-    protected @Nullable Object fun(@NonNull Object @NonNull [] values) {
-        Double distance = innerProduct((List<Float>) values[0], (List<Float>) values[1]);
-        return distance.floatValue();
-    }
+    private static final long serialVersionUID = 7869256649847747534L;
 
     public static double innerProduct(List<Float> vectorA, List<Float> vectorB) {
         double dotProduct = 0.0;
@@ -50,5 +38,16 @@ public class VectorIPDistanceFun extends RtFun {
             dotProduct += vectorA.get(i) * vectorB.get(i);
         }
         return 1 - dotProduct;
+    }
+
+    @Override
+    public Type getType() {
+        return Types.FLOAT;
+    }
+
+    @Override
+    protected Object evalNonNullValue(@NonNull Object value0, @NonNull Object value1, ExprConfig config) {
+        double distance = innerProduct((List<Float>) value0, (List<Float>) value1);
+        return (float) distance;
     }
 }

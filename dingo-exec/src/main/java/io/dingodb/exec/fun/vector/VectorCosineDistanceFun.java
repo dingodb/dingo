@@ -16,9 +16,9 @@
 
 package io.dingodb.exec.fun.vector;
 
-import io.dingodb.expr.core.TypeCode;
-import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.op.RtFun;
+import io.dingodb.expr.runtime.ExprConfig;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -27,28 +27,15 @@ import java.util.List;
 
 import static io.dingodb.exec.fun.vector.VectorIPDistanceFun.innerProduct;
 
-public class VectorCosineDistanceFun extends RtFun {
-    private static final long serialVersionUID = 7709745346405714020L;
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+public class VectorCosineDistanceFun extends BinaryVectorVectorFun {
+    public static final VectorCosineDistanceFun INSTANCE = new VectorCosineDistanceFun();
     public static final String NAME = "cosineDistance";
 
-    public VectorCosineDistanceFun(@NonNull RtExpr[] paras) {
-        super(paras);
-    }
-
-    @Override
-    public int typeCode() {
-        return TypeCode.ARRAY;
-    }
-
-    @Override
-    protected @Nullable Object fun(@NonNull Object @NonNull [] values) {
-        List<Float> vectorA = transform((List<Float>) values[0]);
-        List<Float> vectorB = transform((List<Float>) values[1]);
-        Double distance = innerProduct(vectorA, vectorB);
-        return distance.floatValue();
-    }
+    private static final long serialVersionUID = 7709745346405714020L;
 
     private static final double tmp = 1E-30;
+
     private static List<Float> transform(List<Float> vector) {
         int dimension = vector.size();
         List<Float> vectorRes = new ArrayList<>(dimension);
@@ -57,10 +44,17 @@ public class VectorCosineDistanceFun extends RtFun {
             norm += vector.get(i) * vector.get(i);
         }
         norm = 1.0 / (Math.sqrt(norm) + tmp);
-        for (int i = 0; i < dimension; i ++) {
+        for (int i = 0; i < dimension; i++) {
             vectorRes.add((float) (vector.get(i) * norm));
         }
         return vectorRes;
     }
 
+    @Override
+    protected Object evalNonNullValue(@NonNull Object value0, @NonNull Object value1, ExprConfig config) {
+        List<Float> vectorA = transform((List<Float>) value0);
+        List<Float> vectorB = transform((List<Float>) value1);
+        double distance = innerProduct(vectorA, vectorB);
+        return (float) distance;
+    }
 }

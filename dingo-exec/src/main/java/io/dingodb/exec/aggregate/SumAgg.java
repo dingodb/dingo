@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.AggregationOperator;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.expr.runtime.evaluator.arithmetic.AddEvaluatorsFactory;
+import io.dingodb.expr.runtime.expr.Exprs;
 
 @JsonTypeName("sum")
 public class SumAgg extends UnityEvaluatorAgg {
@@ -31,7 +31,7 @@ public class SumAgg extends UnityEvaluatorAgg {
         @JsonProperty("type") DingoType type
     ) {
         super(index, type);
-        setEvaluator(AddEvaluatorsFactory.INSTANCE);
+        setOp(Exprs.ADD.getOp(Exprs.ADD.keyOf(type.getType(), type.getType())));
     }
 
     @Override

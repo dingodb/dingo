@@ -22,10 +22,7 @@ import io.dingodb.calcite.utils.CalcValueUtils;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.util.ArrayUtils;
-import io.dingodb.expr.core.TypeCode;
-import io.dingodb.expr.parser.exception.ElementNotExists;
-import io.dingodb.expr.parser.exception.ExprCompileException;
-import io.dingodb.expr.runtime.EvalEnv;
+import io.dingodb.expr.runtime.ExprConfig;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -51,27 +48,21 @@ public class DingoValuesJoinRule extends RelRule<DingoValuesJoinRule.Config> imp
         List<Object[]> tuples = new LinkedList<>();
         if (join.getJoinType() == JoinRelType.INNER) {
             DingoType type = DefinitionMapper.mapToDingoType(join.getRowType());
-            EvalEnv env = CalcValueUtils.getEnv(call);
-            try {
-                for (Object[] v0 : value0.getTuples()) {
-                    for (Object[] v1 : value1.getTuples()) {
-                        Object[] newTuple = ArrayUtils.concat(v0, v1);
-                        Object v = CalcValueUtils.calcValue(
-                            join.getCondition(),
-                            DingoTypeFactory.scalar(TypeCode.BOOL, false),
-                            newTuple,
-                            type,
-                            env
-                        );
-                        if (v != null && (boolean) v) {
-                            tuples.add(newTuple);
-                        }
+            ExprConfig config = CalcValueUtils.getConfig(call);
+            for (Object[] v0 : value0.getTuples()) {
+                for (Object[] v1 : value1.getTuples()) {
+                    Object[] newTuple = ArrayUtils.concat(v0, v1);
+                    Object v = CalcValueUtils.calcValue(
+                        join.getCondition(),
+                        DingoTypeFactory.INSTANCE.scalar("BOOL", false),
+                        newTuple,
+                        type,
+                        config
+                    );
+                    if (v != null && (boolean) v) {
+                        tuples.add(newTuple);
                     }
                 }
-            } catch (ElementNotExists e) {
-                return;
-            } catch (ExprCompileException e) {
-                throw new RuntimeException(e);
             }
             call.transformTo(new LogicalDingoValues(
                 join.getCluster(),

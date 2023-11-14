@@ -19,10 +19,10 @@ package io.dingodb.common.type.scalar;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.type.DingoTypeVisitor;
 import io.dingodb.common.type.NullType;
-import io.dingodb.common.type.SchemaConverter;
 import io.dingodb.common.type.converter.DataConverter;
-import io.dingodb.expr.core.TypeCode;
+import io.dingodb.expr.runtime.type.Types;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.serial.schema.DingoSchema;
 import io.dingodb.serial.schema.LongSchema;
@@ -35,7 +35,7 @@ import java.sql.Date;
 public class DateType extends AbstractScalarType {
     @JsonCreator
     public DateType(@JsonProperty("nullable") boolean nullable) {
-        super(TypeCode.DATE, nullable);
+        super(Types.DATE, nullable);
     }
 
     @Override
@@ -49,15 +49,15 @@ public class DateType extends AbstractScalarType {
     }
 
     @Override
-    public <S> @NonNull S toSchema(@NonNull SchemaConverter<S> converter) {
-        return converter.createSchema(this);
-    }
-
-    @Override
     public @NonNull String format(@Nullable Object value) {
         return value != null
             ? DateTimeUtils.dateFormat((Date) value) + ":" + this
             : NullType.NULL.format(null);
+    }
+
+    @Override
+    public <R, T> R accept(@NonNull DingoTypeVisitor<R, T> visitor, T obj) {
+        return visitor.visitDateType(this, obj);
     }
 
     @Override

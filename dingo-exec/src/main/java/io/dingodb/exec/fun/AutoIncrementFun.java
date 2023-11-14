@@ -16,33 +16,50 @@
 
 package io.dingodb.exec.fun;
 
-import io.dingodb.expr.core.TypeCode;
-import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.op.RtFun;
+import io.dingodb.expr.annotations.Operators;
+import io.dingodb.expr.runtime.ExprConfig;
+import io.dingodb.expr.runtime.op.BinaryOp;
+import io.dingodb.expr.runtime.type.Type;
+import io.dingodb.expr.runtime.type.Types;
 import io.dingodb.meta.MetaService;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
-public class AutoIncrementFun extends RtFun {
+public class AutoIncrementFun extends BinaryOp {
+    public static final AutoIncrementFun INSTANCE = new AutoIncrementFun();
 
     public static final String NAME = "AutoIncrementFun";
 
     private static final long serialVersionUID = 2857219177350245989L;
 
-    protected AutoIncrementFun(@NonNull RtExpr[] paras) {
-        super(paras);
+    private AutoIncrementFun() {
     }
 
     @Override
-    protected @Nullable Object fun(@NonNull Object @NonNull [] values) {
-        String schemaName  = String.valueOf(values[0]);
-        String tableName = String.valueOf(values[1]);
-        MetaService metaService = MetaService.root().getSubMetaService(schemaName);
-        return metaService.getAutoIncrement(metaService.getTableId(tableName));
+    protected Object evalNonNullValue(@NonNull Object value0, @NonNull Object value1, ExprConfig config) {
+        MetaService metaService = MetaService.root().getSubMetaService((String) value0);
+        return metaService.getAutoIncrement(metaService.getTableId((String) value1));
     }
 
     @Override
-    public int typeCode() {
-        return TypeCode.LONG;
+    public Type getType() {
+        return Types.LONG;
+    }
+
+    @Override
+    public @NonNull String getName() {
+        return NAME;
+    }
+
+    @Override
+    public Object keyOf(@NonNull Type type0, @NonNull Type type1) {
+        if (type0.equals(Types.STRING) && type1.equals(Types.STRING)) {
+            return Types.STRING;
+        }
+        return null;
+    }
+
+    @Override
+    public BinaryOp getOp(Object key) {
+        return (key != null && key.equals(Types.STRING)) ? INSTANCE : null;
     }
 }

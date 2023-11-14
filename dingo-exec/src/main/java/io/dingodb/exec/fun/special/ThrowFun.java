@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.fun.mysql;
+package io.dingodb.exec.fun.special;
 
+import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.expr.runtime.EvalContext;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.NullaryOp;
@@ -24,15 +25,19 @@ import lombok.RequiredArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public class VersionFun extends NullaryOp {
-    public static final VersionFun INSTANCE = new VersionFun();
-    public static final String NAME = "version";
+public class ThrowFun extends NullaryOp {
+    public static final ThrowFun INSTANCE = new ThrowFun();
+    public static final String NAME = "THROW";
 
-    private static final long serialVersionUID = -4130064040675181327L;
+    private static final long serialVersionUID = -2796011351737125199L;
 
     @Override
     public Object eval(EvalContext context, ExprConfig config) {
-        return "5.7.41";
+        throw new DingoSqlException(
+            "Thrown intentionally for testing.",
+            DingoSqlException.TEST_ERROR_CODE,
+            DingoSqlException.CUSTOM_ERROR_STATE
+        );
     }
 
     @Override

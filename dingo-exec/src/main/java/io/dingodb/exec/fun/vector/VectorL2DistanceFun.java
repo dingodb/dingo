@@ -16,40 +16,45 @@
 
 package io.dingodb.exec.fun.vector;
 
-import io.dingodb.expr.core.TypeCode;
-import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.op.RtFun;
+import io.dingodb.expr.runtime.ExprConfig;
+import io.dingodb.expr.runtime.type.Type;
+import io.dingodb.expr.runtime.type.Types;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 
-public class VectorL2DistanceFun extends RtFun {
+public class VectorL2DistanceFun extends BinaryVectorVectorFun {
+    public static final VectorL2DistanceFun INSTANCE = new VectorL2DistanceFun();
+
     public static final String NAME = "l2Distance";
 
     private static final long serialVersionUID = -8016553875879480268L;
 
-    public VectorL2DistanceFun(@NonNull RtExpr[] paras) {
-        super(paras);
+    private VectorL2DistanceFun() {
     }
 
-
-    @Override
-    public int typeCode() {
-        return TypeCode.ARRAY;
-    }
-
-    @Override
-    protected @Nullable Object fun(@NonNull Object @NonNull [] values) {
-        Double distance = l2Distance((List<Float>) values[0], (List<Float>) values[1]);
-        return distance.floatValue();
-    }
-
-    private double l2Distance(List<Float> vectorA, List<Float> vectorB) {
+    private static double l2Distance(@NonNull List<Float> vectorA, List<Float> vectorB) {
         double distance = 0.0;
         for (int i = 0; i < vectorA.size(); i++) {
             distance += Math.pow(vectorA.get(i) - vectorB.get(i), 2);
         }
         return distance;
     }
+
+    @Override
+    protected Object evalNonNullValue(@NonNull Object value0, @NonNull Object value1, ExprConfig config) {
+        double distance = l2Distance((List<Float>) value0, (List<Float>) value1);
+        return (float) distance;
+    }
+
+    @Override
+    public Type getType() {
+        return Types.FLOAT;
+    }
+
+    @Override
+    public @NonNull String getName() {
+        return super.getName();
+    }
+
 }

@@ -135,7 +135,7 @@ public class ColumnDefinition {
     }
 
     public DingoType getType() {
-        return DingoTypeFactory.fromName(type, elementType, nullable);
+        return DingoTypeFactory.INSTANCE.fromName(type, elementType, nullable);
     }
 
     public String getTypeName() {

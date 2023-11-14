@@ -18,7 +18,8 @@ package io.dingodb.calcite.type.converter;
 
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.DataConverter;
-import io.dingodb.expr.core.Casting;
+import io.dingodb.expr.runtime.ExprCompiler;
+import io.dingodb.expr.runtime.expr.Exprs;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.util.NlsString;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -64,12 +65,12 @@ public class RexLiteralConverter implements DataConverter {
 
     @Override
     public Integer convertIntegerFrom(@NonNull Object value) {
-        return Casting.decimalToIntRC((BigDecimal) value);
+        return (Integer) ExprCompiler.ADVANCED.visit(Exprs.op(Exprs.TO_INT_C, Exprs.val(value))).eval();
     }
 
     @Override
     public Long convertLongFrom(@NonNull Object value) {
-        return Casting.decimalToLongRC((BigDecimal) value);
+        return (Long) ExprCompiler.ADVANCED.visit(Exprs.op(Exprs.TO_LONG_C, Exprs.val(value))).eval();
     }
 
     @Override

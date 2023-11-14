@@ -16,25 +16,23 @@
 
 package io.dingodb.calcite.visitor;
 
+import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.exec.expr.SqlExprCompileContext;
 import io.dingodb.exec.fun.DingoFunFactory;
-import io.dingodb.exec.fun.special.CastListItemsOp;
-import io.dingodb.exec.fun.special.ListConstructorOp;
-import io.dingodb.exec.fun.special.MapConstructorOp;
-import io.dingodb.expr.core.TypeCode;
-import io.dingodb.expr.core.evaluator.EvaluatorFactory;
-import io.dingodb.expr.core.evaluator.EvaluatorKey;
-import io.dingodb.expr.parser.DingoExprParser;
-import io.dingodb.expr.parser.Expr;
-import io.dingodb.expr.parser.FunFactory;
-import io.dingodb.expr.parser.OpFactory;
-import io.dingodb.expr.parser.exception.UndefinedFunctionName;
-import io.dingodb.expr.parser.op.IndexOp;
-import io.dingodb.expr.parser.op.Op;
-import io.dingodb.expr.parser.op.OpWithEvaluator;
-import io.dingodb.expr.parser.value.Null;
-import io.dingodb.expr.parser.value.Value;
+import io.dingodb.expr.runtime.ExprConfig;
+import io.dingodb.expr.runtime.compiler.CastingFactory;
+import io.dingodb.expr.runtime.expr.Expr;
+import io.dingodb.expr.runtime.expr.Exprs;
+import io.dingodb.expr.runtime.expr.OpExpr;
+import io.dingodb.expr.runtime.op.BinaryOp;
+import io.dingodb.expr.runtime.op.NullaryOp;
+import io.dingodb.expr.runtime.op.TertiaryOp;
+import io.dingodb.expr.runtime.op.UnaryOp;
+import io.dingodb.expr.runtime.op.VariadicOp;
+import io.dingodb.expr.runtime.op.time.DateFormat2FunFactory;
+import io.dingodb.expr.runtime.op.time.TimeFormat2FunFactory;
+import io.dingodb.expr.runtime.op.time.TimestampFormat2FunFactory;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexDynamicParam;
@@ -43,47 +41,20 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.fun.SqlTrimFunction;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.NonNull;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public final class RexConverter extends RexVisitorImpl<Expr> {
     private static final RexConverter INSTANCE = new RexConverter();
 
-    private static final List<String> REX_CONST_LITERAL = Stream
-        .of("BOTH", "LEADING", "TRAILING")
-        .collect(Collectors.toList());
-
-    private final FunFactory funFactory;
+    private final DingoFunFactory funFactory;
 
     private RexConverter() {
         super(true);
         funFactory = DingoFunFactory.getInstance();
-    }
-
-    private static int typeCodeOf(@NonNull RelDataType type) {
-        return TypeCode.codeOf(type.getSqlTypeName().getName());
-    }
-
-    private static Op getCastOpWithCheck(RelDataType type, RelDataType inputType) {
-        Op op;
-        try {
-            op = DingoFunFactory.getInstance().getCastFun(typeCodeOf(type));
-            if (op instanceof OpWithEvaluator) { // Check if the evaluator exists.
-                EvaluatorFactory factory = ((OpWithEvaluator) op).getFactory();
-                factory.getEvaluator(EvaluatorKey.of(typeCodeOf(inputType)));
-            }
-        } catch (UndefinedFunctionName e) {
-            throw new UnsupportedOperationException(
-                "Unsupported cast operation: from \"" + inputType + "\" to \"" + type + "\"."
-            );
-        }
-        return op;
     }
 
     public static Expr convert(@NonNull RexNode rexNode) {
@@ -92,147 +63,348 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
 
     @Override
     public @NonNull Expr visitInputRef(@NonNull RexInputRef inputRef) {
-        IndexOp op = new IndexOp();
-        op.setExprArray(new Expr[]{SqlExprCompileContext.TUPLE, Value.of(inputRef.getIndex())});
-        return op;
+        return Exprs.op(Exprs.INDEX, Exprs.var(SqlExprCompileContext.TUPLE_VAR_NAME), Exprs.val(inputRef.getIndex()));
     }
 
     @Override
-    public Expr visitLiteral(@NonNull RexLiteral literal) {
-        Object value;
-        if (literal.getType().getSqlTypeName() == SqlTypeName.SYMBOL) {
-            // TODO: should consider the symbol enum, not the string, to avoid misunderstand from a real string.
-            value = Objects.requireNonNull(literal.getValue()).toString();
-        } else {
-            value = RexLiteralUtils.convertFromRexLiteral(literal);
-        }
-        // `null` is implemented by Var in dingo-expr.
-        return value != null ? Value.of(value) : Null.INSTANCE;
+    public @NonNull Expr visitLiteral(@NonNull RexLiteral literal) {
+        Object value = RexLiteralUtils.convertFromRexLiteral(literal);
+        return Exprs.val(value, DefinitionMapper.mapToDingoType(literal.getType()).getType());
     }
 
     @Override
     public @NonNull Expr visitCall(@NonNull RexCall call) {
-        Op op;
         SqlKind kind = call.getKind();
         switch (kind) {
             case PLUS_PREFIX:
-                op = OpFactory.getUnary(DingoExprParser.ADD);
-                break;
+                return Exprs.op(
+                    Exprs.POS,
+                    call.getOperands().get(0).accept(this)
+                );
             case MINUS_PREFIX:
-                op = OpFactory.getUnary(DingoExprParser.SUB);
-                break;
+                return Exprs.op(
+                    Exprs.NEG,
+                    call.getOperands().get(0).accept(this)
+                );
             case PLUS:
-                op = OpFactory.getBinary(DingoExprParser.ADD);
-                break;
+                return Exprs.op(
+                    Exprs.ADD,
+                    call.getOperands().get(0).accept(this),
+                    call.getOperands().get(1).accept(this)
+                );
             case MINUS:
-                op = OpFactory.getBinary(DingoExprParser.SUB);
-                break;
+                return Exprs.op(
+                    Exprs.SUB,
+                    call.getOperands().get(0).accept(this),
+                    call.getOperands().get(1).accept(this)
+                );
             case TIMES:
-                op = OpFactory.getBinary(DingoExprParser.MUL);
-                break;
+                return Exprs.op(
+                    Exprs.MUL,
+                    call.getOperands().get(0).accept(this),
+                    call.getOperands().get(1).accept(this)
+                );
             case DIVIDE:
-                op = OpFactory.getBinary(DingoExprParser.DIV);
-                break;
+                return Exprs.op(
+                    Exprs.DIV,
+                    call.getOperands().get(0).accept(this),
+                    call.getOperands().get(1).accept(this)
+                );
             case LESS_THAN:
-                op = OpFactory.getBinary(DingoExprParser.LT);
-                break;
+                return Exprs.op(
+                    Exprs.LT,
+                    call.getOperands().get(0).accept(this),
+                    call.getOperands().get(1).accept(this)
+                );
             case LESS_THAN_OR_EQUAL:
-                op = OpFactory.getBinary(DingoExprParser.LE);
-                break;
+                return Exprs.op(
+                    Exprs.LE,
+                    call.getOperands().get(0).accept(this),
+                    call.getOperands().get(1).accept(this)
+                );
             case EQUALS:
-                op = OpFactory.getBinary(DingoExprParser.EQ);
-                break;
+                return Exprs.op(
+                    Exprs.EQ,
+                    call.getOperands().get(0).accept(this),
+                    call.getOperands().get(1).accept(this)
+                );
             case GREATER_THAN:
-                op = OpFactory.getBinary(DingoExprParser.GT);
-                break;
+                return Exprs.op(
+                    Exprs.GT,
+                    call.getOperands().get(0).accept(this),
+                    call.getOperands().get(1).accept(this)
+                );
             case GREATER_THAN_OR_EQUAL:
-                op = OpFactory.getBinary(DingoExprParser.GE);
-                break;
+                return Exprs.op(
+                    Exprs.GE,
+                    call.getOperands().get(0).accept(this),
+                    call.getOperands().get(1).accept(this)
+                );
             case NOT_EQUALS:
-                op = OpFactory.getBinary(DingoExprParser.NE);
-                break;
+                return Exprs.op(
+                    Exprs.NE,
+                    call.getOperands().get(0).accept(this),
+                    call.getOperands().get(1).accept(this)
+                );
             case NOT:
-                op = OpFactory.getUnary(DingoExprParser.NOT);
-                break;
+                return Exprs.op(
+                    Exprs.NOT,
+                    call.getOperands().get(0).accept(this)
+                );
             case AND:
+                return Exprs.op(
+                    Exprs.AND_FUN,
+                    getOperandsArray(call)
+                );
             case OR:
+                return Exprs.op(
+                    Exprs.OR_FUN,
+                    getOperandsArray(call)
+                );
             case CASE:
+                return Exprs.op(
+                    Exprs.CASE,
+                    getOperandsArray(call)
+                );
             case IS_NULL:
+                return Exprs.op(
+                    Exprs.IS_NULL,
+                    call.getOperands().get(0).accept(this)
+                );
             case IS_NOT_NULL:
+                return Exprs.op(Exprs.NOT, Exprs.op(
+                    Exprs.IS_NULL,
+                    call.getOperands().get(0).accept(this)
+                ));
             case IS_TRUE:
+                return Exprs.op(
+                    Exprs.IS_TRUE,
+                    call.getOperands().get(0).accept(this)
+                );
             case IS_NOT_TRUE:
+                return Exprs.op(Exprs.NOT, Exprs.op(
+                    Exprs.IS_TRUE,
+                    call.getOperands().get(0).accept(this)
+                ));
             case IS_FALSE:
+                return Exprs.op(
+                    Exprs.IS_FALSE,
+                    call.getOperands().get(0).accept(this)
+                );
             case IS_NOT_FALSE:
+                return Exprs.op(Exprs.NOT, Exprs.op(
+                    Exprs.IS_FALSE,
+                    call.getOperands().get(0).accept(this)
+                ));
             case TRIM:
+                RexNode r = call.getOperands().get(0);
+                if (r.getKind() == SqlKind.LITERAL && ((RexLiteral) r).getTypeName() == SqlTypeName.SYMBOL) {
+                    SqlTrimFunction.Flag flag = (SqlTrimFunction.Flag) ((RexLiteral) r).getValue();
+                    if (flag != null) {
+                        switch (flag) {
+                            case BOTH:
+                                return Exprs.op(
+                                    Exprs.TRIM2,
+                                    call.getOperands().get(2).accept(this),
+                                    call.getOperands().get(1).accept(this)
+                                );
+                            case LEADING:
+                                return Exprs.op(
+                                    Exprs.LTRIM2,
+                                    call.getOperands().get(2).accept(this),
+                                    call.getOperands().get(1).accept(this)
+                                );
+                            case TRAILING:
+                                return Exprs.op(
+                                    Exprs.RTRIM2,
+                                    call.getOperands().get(2).accept(this),
+                                    call.getOperands().get(1).accept(this)
+                                );
+                        }
+                    }
+                }
+                break;
             case LTRIM:
             case RTRIM:
-                op = funFactory.getFun(kind.name());
+                // These are Oracle functions.
                 break;
             case CAST:
                 RelDataType type = call.getType();
-                RexNode operand = call.getOperands().get(0);
-                SqlTypeName sqlTypeName = type.getSqlTypeName();
-                if (sqlTypeName == SqlTypeName.ARRAY || sqlTypeName == SqlTypeName.MULTISET) {
-                    op = funFactory.getFun(CastListItemsOp.NAME);
-                    RelDataType newType = type.getComponentType();
-                    op.setExprArray(new Expr[]{
-                        Value.of(Objects.requireNonNull(newType).getSqlTypeName().getName()),
-                        operand.accept(this)
-                    });
-                    return op;
-                }
-                op = getCastOpWithCheck(type, operand.getType());
-                break;
+                return Exprs.op(
+                    CastingFactory.get(DefinitionMapper.mapToDingoType(type).getType(), ExprConfig.ADVANCED),
+                    call.getOperands().get(0).accept(this)
+                );
             case ARRAY_VALUE_CONSTRUCTOR:
             case MULTISET_VALUE_CONSTRUCTOR:
-                op = funFactory.getFun(ListConstructorOp.NAME);
-                break;
+                return Exprs.op(
+                    Exprs.LIST,
+                    getOperandsArray(call)
+                );
             case ITEM:
-                op = funFactory.getFun(DingoFunFactory.ITEM);
-                break;
-            case MAP_VALUE_CONSTRUCTOR:
-                op = funFactory.getFun(MapConstructorOp.NAME);
-                break;
-            case LIKE:
-            case OTHER:
-                if (call.op.getName().equals("||")) {
-                    op = funFactory.getFun("concat");
+                RexNode value = call.getOperands().get(0);
+                RexNode index = call.getOperands().get(1);
+                if ((value.getType().getSqlTypeName() == SqlTypeName.ARRAY
+                    || value.getType().getSqlTypeName() == SqlTypeName.MULTISET)
+                    && index.getType().getSqlTypeName() == SqlTypeName.INTEGER) {
+                    return Exprs.op(Exprs.INDEX, value.accept(this), Exprs.op(Exprs.SUB, index.accept(this), 1));
                 } else {
-                    op = funFactory.getFun(call.op.getName());
+                    return Exprs.op(Exprs.INDEX, value.accept(this), index.accept(this));
+                }
+            case MAP_VALUE_CONSTRUCTOR:
+                return Exprs.op(Exprs.MAP, getOperandsArray(call));
+            case LIKE:
+                Expr pattern;
+                if (call.getOperands().size() == 3) {
+                    pattern = Exprs.op(
+                        Exprs._CP2,
+                        call.getOperands().get(1).accept(this),
+                        call.getOperands().get(2).accept(this)
+                    );
+                } else {
+                    pattern = Exprs.op(Exprs._CP1, call.getOperands().get(1).accept(this));
+                }
+                if (call.getOperands().get(1).getType().getSqlTypeName().equals(SqlTypeName.BINARY)) {
+                    return Exprs.op(
+                        Exprs.MATCHES,
+                        call.getOperands().get(0).accept(this),
+                        pattern
+                    );
+                } else {
+                    return Exprs.op(
+                        Exprs.MATCHES_NC,
+                        call.getOperands().get(0).accept(this),
+                        pattern
+                    );
+                }
+            case OTHER:
+                if (call.op.equals(SqlStdOperatorTable.CONCAT)) {
+                    return Exprs.op(
+                        Exprs.CONCAT,
+                        call.getOperands().get(0).accept(this),
+                        call.getOperands().get(1).accept(this)
+                    );
+                } else if (call.op.equals(SqlStdOperatorTable.SLICE)) {
+                    return Exprs.op(
+                        Exprs.SLICE,
+                        call.getOperands().get(0).accept(this),
+                        0
+                    );
+                } else {
+                    OpExpr opExpr = getFunFromFactory(call);
+                    if (opExpr != null) {
+                        return opExpr;
+                    }
                 }
                 break;
             case MOD:
-                op = funFactory.getFun(call.op.getName());
-                break;
+                return Exprs.op(
+                    Exprs.MOD,
+                    call.getOperands().get(0).accept(this),
+                    call.getOperands().get(1).accept(this)
+                );
             case FLOOR:
+                return Exprs.op(
+                    Exprs.FLOOR,
+                    call.getOperands().get(0).accept(this)
+                );
             case CEIL:
+                return Exprs.op(
+                    Exprs.CEIL,
+                    call.getOperands().get(0).accept(this)
+                );
             case OTHER_FUNCTION: {
-                op = funFactory.getFun(call.op.getName());
+                OpExpr opExpr = getFunFromFactory(call);
+                if (opExpr != null) {
+                    return opExpr;
+                }
                 break;
             }
             default:
-                throw new UnsupportedOperationException("Unsupported operation: \"" + call + "\".");
+                break;
         }
-        List<Expr> exprList = new ArrayList<>();
-        for (RexNode node : call.getOperands()) {
-            Expr expr = node.accept(this);
-            if (REX_CONST_LITERAL.contains(expr.toString())) {
-                exprList.add(Value.of(expr.toString()));
-            } else {
-                exprList.add(expr);
-            }
-        }
-        op.setExprArray(exprList.toArray(new Expr[0]));
-        return op;
+        throw new UnsupportedOperationException("Unsupported operation: \"" + call + "\".");
     }
 
     @Override
     public @NonNull Expr visitDynamicParam(@NonNull RexDynamicParam dynamicParam) {
-        IndexOp op = new IndexOp();
-        op.setExprArray(new Expr[]{
-            SqlExprCompileContext.PARAS,
-            Value.of(dynamicParam.getIndex())
-        });
-        return op;
+        return Exprs.op(Exprs.INDEX, Exprs.var(SqlExprCompileContext.SQL_DYNAMIC_VAR_NAME), dynamicParam.getIndex());
+    }
+
+    private @Nullable OpExpr getFunFromFactory(@NonNull RexCall call) {
+        String funName = call.op.getName();
+        switch (call.getOperands().size()) {
+            case 0:
+                NullaryOp nullaryOp = funFactory.getNullaryFun(funName);
+                if (nullaryOp != null) {
+                    return Exprs.op(nullaryOp);
+                }
+                break;
+            case 1:
+                UnaryOp unaryOp = funFactory.getUnaryFun(funName);
+                if (unaryOp != null) {
+                    return Exprs.op(
+                        unaryOp,
+                        call.getOperands().get(0).accept(this)
+                    );
+                }
+                break;
+            case 2:
+                // TODO: This should not exists.
+                if (funName.equals("LIKE_BINARY")) {
+                    return Exprs.op(
+                        Exprs.MATCHES,
+                        call.getOperands().get(0).accept(this),
+                        Exprs.op(Exprs._CP1, call.getOperands().get(1).accept(this))
+                    );
+                }
+                BinaryOp binaryOp = funFactory.getBinaryFun(funName);
+                if (binaryOp != null) {
+                    switch (binaryOp.getName()) {
+                        case DateFormat2FunFactory.NAME:
+                        case TimeFormat2FunFactory.NAME:
+                        case TimestampFormat2FunFactory.NAME:
+                            return Exprs.op(
+                                binaryOp,
+                                call.getOperands().get(0).accept(this),
+                                Exprs.op(Exprs._CTF, call.getOperands().get(1).accept(this))
+                            );
+                        default:
+                            return Exprs.op(
+                                binaryOp,
+                                call.getOperands().get(0).accept(this),
+                                call.getOperands().get(1).accept(this)
+                            );
+                    }
+                }
+                break;
+            case 3:
+                TertiaryOp tertiaryOp = funFactory.getTertiaryFun(funName);
+                if (tertiaryOp != null) {
+                    return Exprs.op(
+                        tertiaryOp,
+                        call.getOperands().get(0).accept(this),
+                        call.getOperands().get(1).accept(this),
+                        call.getOperands().get(2).accept(this)
+                    );
+                }
+                break;
+            default:
+                break;
+        }
+        VariadicOp variadicOp = funFactory.getVariadicFun(funName);
+        if (variadicOp != null) {
+            return Exprs.op(
+                variadicOp,
+                getOperandsArray(call)
+            );
+        }
+        return null;
+    }
+
+    @NonNull
+    private Object @NonNull [] getOperandsArray(@NonNull RexCall call) {
+        return call.getOperands().stream()
+            .map(o -> o.accept(this))
+            .toArray(Expr[]::new);
     }
 }

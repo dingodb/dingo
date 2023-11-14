@@ -17,10 +17,10 @@
 package io.dingodb.exec.impl;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.ProjectOperator;
@@ -42,12 +42,12 @@ public class TestTaskImpl {
                 new Object[]{1, "Alice", 1.0},
                 new Object[]{2, "Betty", 2.0}
             ),
-            DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE")
+            DingoTypeFactory.INSTANCE.tuple("INTEGER", "STRING", "DOUBLE")
         );
         IdGeneratorImpl idGenerator = new IdGeneratorImpl(CommonId.EMPTY_JOB.seq);
         values.setId(idGenerator.getOperatorId(CommonId.EMPTY_TASK.seq));
         task.putOperator(values);
-        RootOperator root = new RootOperator(DingoTypeFactory.tuple("INTEGER", "STRING", "DOUBLE"), null);
+        RootOperator root = new RootOperator(DingoTypeFactory.INSTANCE.tuple("INTEGER", "STRING", "DOUBLE"), null);
         root.setId(idGenerator.getOperatorId(CommonId.EMPTY_TASK.seq));
         task.putOperator(root);
         values.getOutputs().get(0).setLink(root.getInput(0));
@@ -59,25 +59,25 @@ public class TestTaskImpl {
 
     @Test
     public void testParas() {
-        DingoType parasType = DingoTypeFactory.tuple("INT", "STRING");
+        DingoType parasType = DingoTypeFactory.INSTANCE.tuple("INT", "STRING");
         Task task = new TaskImpl(CommonId.EMPTY_TASK, CommonId.EMPTY_JOB, Mockito.mock(Location.class), parasType);
         ValuesOperator values = new ValuesOperator(
             ImmutableList.of(new Object[]{0}),
-            DingoTypeFactory.tuple("INT")
+            DingoTypeFactory.INSTANCE.tuple("INT")
         );
         IdGeneratorImpl idGenerator = new IdGeneratorImpl(CommonId.EMPTY_JOB.seq);
         values.setId(idGenerator.getOperatorId(CommonId.EMPTY_TASK.seq));
         task.putOperator(values);
         ProjectOperator project = new ProjectOperator(
             Arrays.asList(
-                new SqlExpr("_P[0]", DingoTypeFactory.scalar("INT")),
-                new SqlExpr("_P[1]", DingoTypeFactory.scalar("STRING"))
+                new SqlExpr("_P[0]", DingoTypeFactory.INSTANCE.scalar("INT")),
+                new SqlExpr("_P[1]", DingoTypeFactory.INSTANCE.scalar("STRING"))
             ),
-            DingoTypeFactory.tuple("INT")
+            DingoTypeFactory.INSTANCE.tuple("INT")
         );
         project.setId(idGenerator.getOperatorId(CommonId.EMPTY_TASK.seq));
         task.putOperator(project);
-        RootOperator root = new RootOperator(DingoTypeFactory.tuple("INTEGER", "STRING"), null);
+        RootOperator root = new RootOperator(DingoTypeFactory.INSTANCE.tuple("INTEGER", "STRING"), null);
         root.setId(idGenerator.getOperatorId(CommonId.EMPTY_TASK.seq));
         task.putOperator(root);
         values.getSoleOutput().setLink(project.getInput(0));

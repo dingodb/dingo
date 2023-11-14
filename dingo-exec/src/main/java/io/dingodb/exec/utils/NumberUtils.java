@@ -14,30 +14,25 @@
  * limitations under the License.
  */
 
-package io.dingodb.test;
+package io.dingodb.exec.utils;
 
-import io.dingodb.common.Location;
-
-public class FakeLocation extends Location {
-    private static final long serialVersionUID = 3123677892588410633L;
-
-    private final int id;
-
-    public FakeLocation(int id, int port) {
-        super("127.0.0.1", port);
-        this.id = id;
+public class NumberUtils {
+    private NumberUtils() {
     }
 
-    @Override
-    public boolean equals(Object other) {
-        if (other instanceof FakeLocation) {
-            return this.id == ((FakeLocation) other).id;
+    public static int posMod(int dividend, int divisor) {
+        if (divisor < 0) {
+            divisor = -divisor;
         }
-        return false;
+        int index = dividend % divisor;
+        return index >= 0 ? index : index + divisor;
     }
 
-    @Override
-    public int hashCode() {
-        return id;
+    public static long posMod(long dividend, long divisor) {
+        if (divisor < 0) {
+            divisor = -divisor;
+        }
+        long index = dividend % divisor;
+        return index >= 0 ? index : index + divisor;
     }
 }

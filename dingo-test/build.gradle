@@ -51,7 +51,6 @@ dependencies {
     implementation project(':dingo-driver:dingo-driver-client')
     implementation project(':dingo-driver:dingo-driver-host')
     implementation project(':dingo-exec')
-    implementation project(':dingo-expr:dingo-expr-test')
     implementation project(':dingo-net-netty')
     implementation project(':dingo-test:dingo-meta-local')
     implementation project(':dingo-test:dingo-store-memory')

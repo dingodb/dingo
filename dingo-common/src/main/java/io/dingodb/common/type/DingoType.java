@@ -32,6 +32,7 @@ import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.expr.runtime.CompileContext;
+import io.dingodb.expr.runtime.type.Type;
 import io.dingodb.serial.schema.DingoSchema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -55,7 +56,6 @@ import java.util.List;
     @JsonSubTypes.Type(StringType.class),
     @JsonSubTypes.Type(TimestampType.class),
     @JsonSubTypes.Type(TimeType.class),
-    @JsonSubTypes.Type(ArrayType.class),
     @JsonSubTypes.Type(ListType.class),
     @JsonSubTypes.Type(MapType.class),
     @JsonSubTypes.Type(NullType.class),
@@ -70,9 +70,12 @@ public interface DingoType extends CompileContext {
      * Number of the fields for a tuple type.
      *
      * @return number of fields if this is a tuple type;
-     * -1 if this is a scalar type
+     *     -1 if this is a scalar type
      */
     int fieldCount();
+
+    @Override
+    Type getType();
 
     @Override
     DingoType getChild(Object index);
@@ -93,8 +96,6 @@ public interface DingoType extends CompileContext {
 
     DingoSchema toDingoSchema(int index);
 
-    <S> @NonNull S toSchema(@NonNull SchemaConverter<S> converter);
-
     /**
      * Parse string(s) into value(s) of this type. Specially, {@code "NULL"} is parsed to null.
      *
@@ -110,4 +111,6 @@ public interface DingoType extends CompileContext {
      * @return the formatted {@link String}
      */
     @NonNull String format(@Nullable Object value);
+
+    <R, T> R accept(@NonNull DingoTypeVisitor<R, T> visitor, T obj);
 }

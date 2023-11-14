@@ -16,7 +16,19 @@
 
 package io.dingodb.common.type;
 
-import io.dingodb.expr.core.TypeCode;
+import io.dingodb.expr.runtime.type.AnyType;
+import io.dingodb.expr.runtime.type.BoolType;
+import io.dingodb.expr.runtime.type.BytesType;
+import io.dingodb.expr.runtime.type.DateType;
+import io.dingodb.expr.runtime.type.DecimalType;
+import io.dingodb.expr.runtime.type.DoubleType;
+import io.dingodb.expr.runtime.type.FloatType;
+import io.dingodb.expr.runtime.type.IntType;
+import io.dingodb.expr.runtime.type.LongType;
+import io.dingodb.expr.runtime.type.StringType;
+import io.dingodb.expr.runtime.type.TimeType;
+import io.dingodb.expr.runtime.type.TimestampType;
+import io.dingodb.expr.runtime.type.TypeVisitorBase;
 import io.dingodb.serial.schema.BooleanListSchema;
 import io.dingodb.serial.schema.BytesListSchema;
 import io.dingodb.serial.schema.DingoSchema;
@@ -25,34 +37,74 @@ import io.dingodb.serial.schema.FloatListSchema;
 import io.dingodb.serial.schema.IntegerListSchema;
 import io.dingodb.serial.schema.LongListSchema;
 import io.dingodb.serial.schema.StringListSchema;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public final class TypeUtils {
     private TypeUtils() {
     }
 
-    public static DingoSchema elementTypeToDingoList(DingoType elementType) {
-        switch (elementType.getTypeCode()) {
-            case TypeCode.BOOL:
-                return new BooleanListSchema(-1);
-            case TypeCode.INT:
+    public static DingoSchema elementTypeToDingoList(@NonNull DingoType elementType) {
+        return new TypeVisitorBase<DingoSchema, Void>() {
+
+            @Override
+            public DingoSchema visitIntType(@NonNull IntType type, Void obj) {
                 return new IntegerListSchema(-1);
-            case TypeCode.FLOAT:
-                return new FloatListSchema(-1);
-            case TypeCode.DOUBLE:
-                return new DoubleListSchema(-1);
-            case TypeCode.STRING:
-                return new StringListSchema(-1);
-            case TypeCode.TIME:
-            case TypeCode.TIMESTAMP:
-            case TypeCode.DATE:
-            case TypeCode.LONG:
+            }
+
+            @Override
+            public DingoSchema visitLongType(@NonNull LongType type, Void obj) {
                 return new LongListSchema(-1);
-            case TypeCode.BINARY:
-            case TypeCode.OBJECT:
-            case TypeCode.DECIMAL:
+            }
+
+            @Override
+            public DingoSchema visitFloatType(@NonNull FloatType type, Void obj) {
+                return new FloatListSchema(-1);
+            }
+
+            @Override
+            public DingoSchema visitDoubleType(@NonNull DoubleType type, Void obj) {
+                return new DoubleListSchema(-1);
+            }
+
+            @Override
+            public DingoSchema visitBoolType(@NonNull BoolType type, Void obj) {
+                return new BooleanListSchema(-1);
+            }
+
+            @Override
+            public DingoSchema visitDecimalType(@NonNull DecimalType type, Void obj) {
                 return new BytesListSchema(-1);
-            default:
-                throw new RuntimeException("Not Support ListType");
-        }
+            }
+
+            @Override
+            public DingoSchema visitStringType(@NonNull StringType type, Void obj) {
+                return new StringListSchema(-1);
+            }
+
+            @Override
+            public DingoSchema visitBytesType(@NonNull BytesType type, Void obj) {
+                return new BytesListSchema(-1);
+            }
+
+            @Override
+            public DingoSchema visitDateType(@NonNull DateType type, Void obj) {
+                return new LongListSchema(-1);
+            }
+
+            @Override
+            public DingoSchema visitTimeType(@NonNull TimeType type, Void obj) {
+                return new LongListSchema(-1);
+            }
+
+            @Override
+            public DingoSchema visitTimestampType(@NonNull TimestampType type, Void obj) {
+                return new LongListSchema(-1);
+            }
+
+            @Override
+            public DingoSchema visitAnyType(@NonNull AnyType type, Void obj) {
+                return new BytesListSchema(-1);
+            }
+        }.visit(elementType.getType());
     }
 }

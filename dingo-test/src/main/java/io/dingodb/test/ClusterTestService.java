@@ -19,6 +19,7 @@ package io.dingodb.test;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.Location;
+import io.dingodb.common.config.DingoConfiguration;
 
 import java.util.List;
 
@@ -28,9 +29,9 @@ public class ClusterTestService implements ClusterService {
     @Override
     public List<Location> getComputingLocations() {
         return ImmutableList.of(
-            new FakeLocation(0),
-            new FakeLocation(1),
-            new FakeLocation(2)
+            new FakeLocation(0, DingoConfiguration.port()),
+            new FakeLocation(1, DingoConfiguration.port()),
+            new FakeLocation(2, DingoConfiguration.port())
         );
     }
 }

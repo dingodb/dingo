@@ -18,7 +18,7 @@ package io.dingodb.calcite;
 
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.visitor.RexConverter;
-import io.dingodb.expr.parser.Expr;
+import io.dingodb.expr.runtime.expr.Expr;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.logical.LogicalProject;
@@ -57,8 +57,7 @@ public class TestRexWithTable {
             arguments(
                 "name = 'Betty' and name = 'Alice' and amount < 1.0",
                 "AND(_[1] == 'Betty', _[1] == 'Alice', _[2] < 1.0)"
-            ),
-            arguments("from_unixtime(123)", "from_unixtime(123)")
+            )
         );
     }
 

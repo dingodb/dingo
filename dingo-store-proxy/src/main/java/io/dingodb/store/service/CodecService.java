@@ -20,14 +20,13 @@ import com.google.auto.service.AutoService;
 import io.dingodb.codec.CodecServiceProvider;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.type.ArrayType;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.NullableType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.converter.DingoConverter;
-import io.dingodb.expr.core.TypeCode;
+import io.dingodb.expr.runtime.type.Type;
 import io.dingodb.sdk.common.codec.CodecUtils;
 import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
 import io.dingodb.sdk.common.serial.BufImpl;
@@ -146,14 +145,14 @@ public final class CodecService implements io.dingodb.codec.CodecService {
             int valueIndex = mappings.length;
             for (int i = 0; i < fields.length; i++) {
                 DingoType field = fields[i];
-                String typeName = TypeCode.nameOf(field.getTypeCode());
+                String typeName;
                 String elementType = "";
-                if (typeName.equals(TypeCode.LIST_NAME)) {
+                if (field instanceof ListType) {
                     ListType listType = (ListType) field;
-                    elementType = TypeCode.nameOf(listType.getElementType().getTypeCode());
-                } else if (type.equals(TypeCode.ARRAY_NAME)) {
-                    ArrayType arrayType = (ArrayType) field;
-                    elementType = TypeCode.nameOf(arrayType.getElementType().getTypeCode());
+                    typeName = "LIST";
+                    elementType = listType.getElementType().getType().toString();
+                } else {
+                    typeName = field.getType().toString();
                 }
                 DingoSchema schema = CodecUtils.createSchemaForTypeName(typeName, elementType);
 
@@ -169,7 +168,7 @@ public final class CodecService implements io.dingodb.codec.CodecService {
             }
             return Arrays.<DingoSchema>asList(schemas);
         } else {
-            return Collections.singletonList(CodecUtils.createSchemaForTypeName(TypeCode.nameOf(type.getTypeCode())));
+            return Collections.singletonList(CodecUtils.createSchemaForTypeName(type.getType().toString()));
         }
     }
 

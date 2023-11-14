@@ -21,7 +21,6 @@ import com.google.common.collect.Iterators;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.expr.runtime.op.logical.RtLogicalOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Iterator;
@@ -50,7 +49,10 @@ public abstract class FilterProjectSourceOperator extends IteratorSourceOperator
         if (filter != null) {
             iterator = Iterators.filter(
                 iterator,
-                tuple -> RtLogicalOp.test(filter.eval(tuple))
+                tuple -> {
+                    Object v = filter.eval(tuple);
+                    return v != null && (Boolean) v;
+                }
             );
         }
         return iterator;

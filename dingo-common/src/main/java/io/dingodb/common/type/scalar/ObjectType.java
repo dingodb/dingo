@@ -19,9 +19,9 @@ package io.dingodb.common.type.scalar;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.type.SchemaConverter;
+import io.dingodb.common.type.DingoTypeVisitor;
 import io.dingodb.common.type.converter.DataConverter;
-import io.dingodb.expr.core.TypeCode;
+import io.dingodb.expr.runtime.type.Types;
 import io.dingodb.serial.schema.BytesSchema;
 import io.dingodb.serial.schema.DingoSchema;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -30,7 +30,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 public class ObjectType extends AbstractScalarType {
     @JsonCreator
     public ObjectType(@JsonProperty("nullable") boolean nullable) {
-        super(TypeCode.OBJECT, nullable);
+        super(Types.ANY, nullable);
     }
 
     @Override
@@ -44,8 +44,8 @@ public class ObjectType extends AbstractScalarType {
     }
 
     @Override
-    public <S> @NonNull S toSchema(@NonNull SchemaConverter<S> converter) {
-        return converter.createSchema(this);
+    public <R, T> R accept(@NonNull DingoTypeVisitor<R, T> visitor, T obj) {
+        return visitor.visitObjectType(this, obj);
     }
 
     @Override

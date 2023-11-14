@@ -21,7 +21,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.converter.DataConverter;
-import io.dingodb.expr.core.TypeCode;
+import io.dingodb.expr.runtime.type.Type;
+import io.dingodb.expr.runtime.type.Types;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -38,13 +39,17 @@ public class ListType extends NullableType {
     @JsonProperty("element")
     private final DingoType elementType;
 
+    @Getter
+    private final Type type;
+
     @JsonCreator
     ListType(
-        @JsonProperty("element") DingoType elementType,
+        @JsonProperty("element") @NonNull DingoType elementType,
         @JsonProperty("nullable") boolean nullable
     ) {
-        super(TypeCode.LIST, nullable);
+        super(nullable);
         this.elementType = elementType;
+        this.type = Types.list(elementType.getType());
     }
 
     @Override
@@ -75,11 +80,6 @@ public class ListType extends NullableType {
     }
 
     @Override
-    public <S> @NonNull S toSchema(@NonNull SchemaConverter<S> converter) {
-        return converter.createSchema(this);
-    }
-
-    @Override
     public @NonNull String format(@Nullable Object value) {
         if (value != null) {
             List<?> list = (List<?>) value;
@@ -95,6 +95,11 @@ public class ListType extends NullableType {
             return b.toString();
         }
         return NullType.NULL.format(null);
+    }
+
+    @Override
+    public <R, T> R accept(@NonNull DingoTypeVisitor<R, T> visitor, T obj) {
+        return visitor.visitListType(this, obj);
     }
 
     @Override

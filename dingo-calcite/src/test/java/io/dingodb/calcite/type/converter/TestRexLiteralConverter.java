@@ -18,7 +18,6 @@ package io.dingodb.calcite.type.converter;
 
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.expr.core.TypeCode;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -50,7 +49,7 @@ public class TestRexLiteralConverter {
         RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
         RelDataType relDataType = typeFactory.createSqlType(SqlTypeName.TIME);
         RexLiteral literal = RexLiteral.fromJdbcString(relDataType, SqlTypeName.TIME, jdbcString);
-        DingoType type = DingoTypeFactory.scalar(TypeCode.TIME, false);
+        DingoType type = DingoTypeFactory.INSTANCE.scalar("TIME", false);
         Time result = (Time) type.convertFrom(literal.getValue(), RexLiteralConverter.INSTANCE);
         assertThat(result).isEqualTo(value);
     }

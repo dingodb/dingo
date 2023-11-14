@@ -16,142 +16,62 @@
 
 package io.dingodb.exec.fun;
 
-import io.dingodb.exec.fun.like.LikeBinaryOp;
-import io.dingodb.exec.fun.like.LikeOp;
-import io.dingodb.exec.fun.mysql.VersionFun;
-import io.dingodb.exec.fun.number.AbsEvaluatorsFactory;
-import io.dingodb.exec.fun.number.CeilEvaluatorsFactory;
-import io.dingodb.exec.fun.number.FloorEvaluatorsFactory;
-import io.dingodb.exec.fun.number.FormatFun;
-import io.dingodb.exec.fun.number.ModEvaluatorsFactory;
-import io.dingodb.exec.fun.number.PowFun;
-import io.dingodb.exec.fun.number.RoundEvaluatorsFactory;
-import io.dingodb.exec.fun.special.ArrayConstructorOp;
-import io.dingodb.exec.fun.special.CaseOp;
-import io.dingodb.exec.fun.special.CastListItemsOp;
-import io.dingodb.exec.fun.special.ItemEvaluatorsFactory;
-import io.dingodb.exec.fun.special.ListConstructorOp;
-import io.dingodb.exec.fun.special.MapConstructorOp;
-import io.dingodb.exec.fun.special.RtSliceFun;
-import io.dingodb.exec.fun.special.ThrowOp;
-import io.dingodb.exec.fun.string.CharLengthFun;
-import io.dingodb.exec.fun.string.ConcatFun;
 import io.dingodb.exec.fun.mysql.GlobalVariableFun;
-import io.dingodb.exec.fun.string.LTrimFun;
-import io.dingodb.exec.fun.string.LeftFun;
-import io.dingodb.exec.fun.string.LocateFun;
-import io.dingodb.exec.fun.string.MidFun;
-import io.dingodb.exec.fun.string.RTrimFun;
-import io.dingodb.exec.fun.string.RepeatFun;
-import io.dingodb.exec.fun.string.ReplaceFun;
-import io.dingodb.exec.fun.string.ReverseFun;
-import io.dingodb.exec.fun.string.RightFun;
-import io.dingodb.exec.fun.string.SubstringFun;
-import io.dingodb.exec.fun.string.TrimFun;
-import io.dingodb.exec.fun.time.CurrentDateFun;
-import io.dingodb.exec.fun.time.CurrentTimeFun;
-import io.dingodb.exec.fun.time.CurrentTimestampFun;
-import io.dingodb.exec.fun.time.DateDiffFun;
-import io.dingodb.exec.fun.time.DateFormatEvaluatorsFactory;
-import io.dingodb.exec.fun.time.FromUnixTimeEvaluatorsFactory;
-import io.dingodb.exec.fun.time.TimeFormatEvaluatorsFactory;
-import io.dingodb.exec.fun.time.TimestampFormatEvaluatorsFactory;
-import io.dingodb.exec.fun.time.UnixTimestampEvaluatorsFactory;
+import io.dingodb.exec.fun.mysql.VersionFun;
+import io.dingodb.exec.fun.special.ThrowFun;
 import io.dingodb.exec.fun.vector.VectorCosineDistanceFun;
-import io.dingodb.exec.fun.vector.VectorDistanceFun;
 import io.dingodb.exec.fun.vector.VectorIPDistanceFun;
 import io.dingodb.exec.fun.vector.VectorImageFun;
 import io.dingodb.exec.fun.vector.VectorL2DistanceFun;
 import io.dingodb.exec.fun.vector.VectorTextFun;
 import io.dingodb.expr.parser.DefaultFunFactory;
+import io.dingodb.expr.runtime.expr.Exprs;
+import io.dingodb.expr.runtime.op.mathematical.AbsCheckFunFactory;
+import io.dingodb.expr.runtime.type.IntType;
+import io.dingodb.expr.runtime.type.LongType;
 
 public class DingoFunFactory extends DefaultFunFactory {
-    // number functions
-    public static final String ABS = "abs";
-    public static final String CEIL = "ceil";
-    public static final String FLOOR = "floor";
-    public static final String MOD = "mod";
-    public static final String ROUND = "round";
+    public static final String SUBSTRING = "SUBSTRING";
     // special function
     public static final String ITEM = "item";
-    // date & time functions
-    public static final String DATE_FORMAT = "date_format";
-    public static final String TIME_FORMAT = "time_format";
-    public static final String TIMESTAMP_FORMAT = "timestamp_format";
-    public static final String FROM_UNIXTIME = "from_unixtime";
     public static final String UNIX_TIMESTAMP = "unix_timestamp";
     // special
-    public  static final String THROW = "throw";
 
     private static DingoFunFactory instance;
 
     private DingoFunFactory() {
         super();
+        registerUnaryFun(IntType.NAME, Exprs.TO_INT_C);
+        registerUnaryFun(LongType.NAME, Exprs.TO_LONG_C);
+        registerUnaryFun(AbsCheckFunFactory.NAME, Exprs.ABS_C);
+        registerBinaryFun(SUBSTRING, Exprs.MID2);
+        registerTertiaryFun(SUBSTRING, Exprs.MID3);
+        registerNullaryFun(ThrowFun.NAME, ThrowFun.INSTANCE);
+
+        registerUnaryFun(GlobalVariableFun.NAME, GlobalVariableFun.INSTANCE);
+
+        registerBinaryFun(AutoIncrementFun.NAME, AutoIncrementFun.INSTANCE);
+        registerTertiaryFun(VectorImageFun.NAME, VectorImageFun.INSTANCE);
+        registerBinaryFun(VectorTextFun.NAME, VectorTextFun.INSTANCE);
+        registerBinaryFun(VectorL2DistanceFun.NAME, VectorL2DistanceFun.INSTANCE);
+        registerBinaryFun(VectorIPDistanceFun.NAME, VectorIPDistanceFun.INSTANCE);
+        registerBinaryFun(VectorCosineDistanceFun.NAME, VectorCosineDistanceFun.INSTANCE);
+        registerNullaryFun(VersionFun.NAME, VersionFun.INSTANCE);
+//        // like
+//        registerUdf(LikeBinaryOp.NAME, LikeBinaryOp::new);
+//        registerUdf(LikeOp.NAME, LikeOp::new);
+//        // number
+//        registerUdf(FormatFun.NAME, FormatFun::new);
+//        registerUdf(PowFun.NAME, PowFun::new);
+//        registerEvaluator(ROUND, RoundEvaluatorsFactory.INSTANCE);
+        // special
+//        funSuppliers.put(CaseOp.NAME, CaseOp::fun);
     }
 
     public static synchronized DingoFunFactory getInstance() {
         if (instance == null) {
             instance = new DingoFunFactory();
-            instance.init();
         }
         return instance;
-    }
-
-    private void init() {
-        // like
-        registerUdf(LikeBinaryOp.NAME, LikeBinaryOp::new);
-        registerUdf(LikeOp.NAME, LikeOp::new);
-        // number
-        registerEvaluator(ABS, AbsEvaluatorsFactory.INSTANCE);
-        registerEvaluator(CEIL, CeilEvaluatorsFactory.INSTANCE);
-        registerEvaluator(FLOOR, FloorEvaluatorsFactory.INSTANCE);
-        registerUdf(FormatFun.NAME, FormatFun::new);
-        registerEvaluator(MOD, ModEvaluatorsFactory.INSTANCE);
-        registerUdf(PowFun.NAME, PowFun::new);
-        registerEvaluator(ROUND, RoundEvaluatorsFactory.INSTANCE);
-        // special
-        funSuppliers.put(ArrayConstructorOp.NAME, ArrayConstructorOp::fun);
-        funSuppliers.put(ListConstructorOp.NAME, ListConstructorOp::fun);
-        funSuppliers.put(MapConstructorOp.NAME, MapConstructorOp::fun);
-        funSuppliers.put(CastListItemsOp.NAME, CastListItemsOp::fun);
-        funSuppliers.put(CaseOp.NAME, CaseOp::fun);
-        funSuppliers.put(THROW, () -> new ThrowOp(THROW));
-        registerUdf(RtSliceFun.NAME, RtSliceFun::new);
-        registerEvaluator(ITEM, ItemEvaluatorsFactory.INSTANCE);
-        // string
-        registerUdf(CharLengthFun.NAME, CharLengthFun::new);
-        registerUdf(ConcatFun.NAME, ConcatFun::new);
-        registerUdf(LeftFun.NAME, LeftFun::new);
-        registerUdf(LocateFun.NAME, LocateFun::new);
-        registerUdf(LTrimFun.NAME, LTrimFun::new);
-        registerUdf(MidFun.NAME, MidFun::new);
-        registerUdf(RepeatFun.NAME, RepeatFun::new);
-        registerUdf(ReplaceFun.NAME, ReplaceFun::new);
-        registerUdf(ReverseFun.NAME, ReverseFun::new);
-        registerUdf(RightFun.NAME, RightFun::new);
-        registerUdf(RTrimFun.NAME, RTrimFun::new);
-        registerUdf(SubstringFun.NAME, SubstringFun::new);
-        registerUdf(TrimFun.NAME, TrimFun::new);
-        // time
-        registerUdf(CurrentDateFun.NAME, CurrentDateFun::new);
-        registerUdf(CurrentTimeFun.NAME, CurrentTimeFun::new);
-        registerUdf(CurrentTimestampFun.NAME, CurrentTimestampFun::new);
-        registerEvaluator(FROM_UNIXTIME, FromUnixTimeEvaluatorsFactory.INSTANCE);
-        registerEvaluator(UNIX_TIMESTAMP, UnixTimestampEvaluatorsFactory.INSTANCE);
-        registerUdf(DateDiffFun.NAME, DateDiffFun::new);
-        registerEvaluator(DATE_FORMAT, DateFormatEvaluatorsFactory.INSTANCE);
-        registerEvaluator(TIME_FORMAT, TimeFormatEvaluatorsFactory.INSTANCE);
-        registerEvaluator(TIMESTAMP_FORMAT, TimestampFormatEvaluatorsFactory.INSTANCE);
-        // system variable
-        registerUdf(GlobalVariableFun.NAME, GlobalVariableFun::new);
-
-        registerUdf(AutoIncrementFun.NAME, AutoIncrementFun::new);
-        registerUdf(VectorImageFun.NAME, VectorImageFun::new);
-        registerUdf(VectorTextFun.NAME, VectorTextFun::new);
-        registerUdf(VectorDistanceFun.NAME, VectorDistanceFun::new);
-        registerUdf(VectorL2DistanceFun.NAME, VectorL2DistanceFun::new);
-        registerUdf(VectorIPDistanceFun.NAME, VectorIPDistanceFun::new);
-        registerUdf(VectorCosineDistanceFun.NAME, VectorCosineDistanceFun::new);
-        registerUdf(VersionFun.NAME, VersionFun::new);
     }
 }

@@ -16,11 +16,10 @@
 
 package io.dingodb.exec.codec;
 
-import io.dingodb.common.type.ArrayType;
+import io.dingodb.common.type.DingoTypeVisitorBase;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.MapType;
 import io.dingodb.common.type.NullType;
-import io.dingodb.common.type.SchemaConverter;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.scalar.BinaryType;
 import io.dingodb.common.type.scalar.BooleanType;
@@ -40,7 +39,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class AvroSchemaConverter implements SchemaConverter<Schema> {
+public class AvroSchemaConverter extends DingoTypeVisitorBase<Schema, Void> {
     public static final AvroSchemaConverter INSTANCE = new AvroSchemaConverter();
 
     private AvroSchemaConverter() {
@@ -52,95 +51,91 @@ public class AvroSchemaConverter implements SchemaConverter<Schema> {
     }
 
     @Override
-    public @NonNull Schema createSchema(@NonNull NullType type) {
+    public Schema visitNullType(@NonNull NullType type, Void obj) {
         return Schema.create(Schema.Type.NULL);
     }
 
     @Override
-    public @NonNull Schema createSchema(@NonNull IntegerType type) {
+    public Schema visitIntegerType(@NonNull IntegerType type, Void obj) {
         return ofNullable(Schema.create(Schema.Type.INT), type.isNullable());
     }
 
     @Override
-    public @NonNull Schema createSchema(@NonNull LongType type) {
+    public Schema visitLongType(@NonNull LongType type, Void obj) {
         return ofNullable(Schema.create(Schema.Type.LONG), type.isNullable());
     }
 
     @Override
-    public @NonNull Schema createSchema(@NonNull FloatType type) {
+    public Schema visitFloatType(@NonNull FloatType type, Void obj) {
         return ofNullable(Schema.create(Schema.Type.FLOAT), type.isNullable());
     }
 
     @Override
-    public @NonNull Schema createSchema(@NonNull DoubleType type) {
+    public Schema visitDoubleType(@NonNull DoubleType type, Void obj) {
         return ofNullable(Schema.create(Schema.Type.DOUBLE), type.isNullable());
     }
 
     @Override
-    public @NonNull Schema createSchema(@NonNull DecimalType type) {
-        return ofNullable(Schema.create(Schema.Type.STRING), type.isNullable());
-    }
-
-    @Override
-    public @NonNull Schema createSchema(@NonNull StringType type) {
-        return ofNullable(Schema.create(Schema.Type.STRING), type.isNullable());
-    }
-
-    @Override
-    public @NonNull Schema createSchema(@NonNull BooleanType type) {
+    public Schema visitBooleanType(@NonNull BooleanType type, Void obj) {
         return ofNullable(Schema.create(Schema.Type.BOOLEAN), type.isNullable());
     }
 
     @Override
-    public @NonNull Schema createSchema(@NonNull BinaryType type) {
+    public Schema visitDecimalType(@NonNull DecimalType type, Void obj) {
+        return ofNullable(Schema.create(Schema.Type.STRING), type.isNullable());
+    }
+
+    @Override
+    public Schema visitStringType(@NonNull StringType type, Void obj) {
+        return ofNullable(Schema.create(Schema.Type.STRING), type.isNullable());
+    }
+
+    @Override
+    public Schema visitBinaryType(@NonNull BinaryType type, Void obj) {
         return ofNullable(Schema.create(Schema.Type.BYTES), type.isNullable());
     }
 
     @Override
-    public @NonNull Schema createSchema(@NonNull DateType type) {
+    public Schema visitDateType(@NonNull DateType type, Void obj) {
         return ofNullable(Schema.create(Schema.Type.LONG), type.isNullable());
     }
 
     @Override
-    public @NonNull Schema createSchema(@NonNull TimeType type) {
+    public Schema visitTimeType(@NonNull TimeType type, Void obj) {
         return ofNullable(Schema.create(Schema.Type.LONG), type.isNullable());
     }
 
     @Override
-    public @NonNull Schema createSchema(@NonNull TimestampType type) {
+    public Schema visitTimestampType(@NonNull TimestampType type, Void obj) {
         return ofNullable(Schema.create(Schema.Type.LONG), type.isNullable());
     }
 
     @Override
-    public @NonNull Schema createSchema(@NonNull ObjectType type) {
+    public Schema visitObjectType(@NonNull ObjectType type, Void obj) {
         return ofNullable(Schema.create(Schema.Type.BYTES), type.isNullable());
     }
 
     @Override
-    public @NonNull Schema createSchema(@NonNull TupleType type) {
+    public Schema visitListType(@NonNull ListType type, Void obj) {
+        return ofNullable(Schema.createArray(visit(type.getElementType())), type.isNullable());
+    }
+
+    @Override
+    public Schema visitMapType(@NonNull MapType type, Void obj) {
+        // TODO: keys can only be STRING.
+        return ofNullable(Schema.createMap(visit(type.getValueType())), type.isNullable());
+    }
+
+    @Override
+    public Schema visitTupleType(@NonNull TupleType type, Void obj) {
         return Schema.createRecord(
             type.getClass().getSimpleName(),
             null,
             type.getClass().getPackage().getName(),
             false,
             IntStream.range(0, type.fieldCount())
-                .mapToObj(i -> new Schema.Field("_" + i, type.getChild(i).toSchema(this)))
+                .mapToObj(i -> new Schema.Field("_" + i, visit(type.getChild(i))))
                 .collect(Collectors.toList())
         );
-    }
-
-    @Override
-    public @NonNull Schema createSchema(@NonNull ArrayType type) {
-        return ofNullable(Schema.createArray(type.getElementType().toSchema(this)), type.isNullable());
-    }
-
-    @Override
-    public @NonNull Schema createSchema(@NonNull ListType type) {
-        return ofNullable(Schema.createArray(type.getElementType().toSchema(this)), type.isNullable());
-    }
-
-    @Override
-    public @NonNull Schema createSchema(@NonNull MapType type) {
-        return ofNullable(Schema.createMap(type.getValueType().toSchema(this)), type.isNullable());
     }
 }

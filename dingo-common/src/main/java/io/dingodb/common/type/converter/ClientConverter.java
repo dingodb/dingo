@@ -16,10 +16,6 @@
 
 package io.dingodb.common.type.converter;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
-
-import java.math.BigDecimal;
-
 public class ClientConverter implements DataConverter {
     public static final ClientConverter INSTANCE = new ClientConverter();
 

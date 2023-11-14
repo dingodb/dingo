@@ -17,37 +17,51 @@
 package io.dingodb.exec.fun.vector;
 
 import io.dingodb.exec.restful.VectorExtract;
-import io.dingodb.expr.core.TypeCode;
-import io.dingodb.expr.runtime.RtExpr;
-import io.dingodb.expr.runtime.op.RtFun;
+import io.dingodb.expr.runtime.ExprConfig;
+import io.dingodb.expr.runtime.op.BinaryOp;
+import io.dingodb.expr.runtime.type.ListType;
+import io.dingodb.expr.runtime.type.Type;
+import io.dingodb.expr.runtime.type.Types;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
 
-public class VectorTextFun extends RtFun {
+public class VectorTextFun extends BinaryOp {
+    public static final VectorTextFun INSTANCE = new VectorTextFun();
+
     public static final String NAME = "txt2vec";
 
     private static final long serialVersionUID = 8043535092918925720L;
 
-    public VectorTextFun(@NonNull RtExpr[] paras) {
-        super(paras);
+    private VectorTextFun() {
     }
 
     @Override
-    public int typeCode() {
-        return TypeCode.ARRAY;
+    public Type getType() {
+        return Types.LIST_FLOAT;
     }
 
     @Override
-    protected @Nullable Object fun(@NonNull Object @NonNull [] values) {
-        if (values.length < 2) {
-            throw new RuntimeException("vector load param error");
-        }
-        if (!(values[0] instanceof String) || !(values[1] instanceof String)) {
-            throw new RuntimeException("vector load param error");
-        }
-        Float[] vector = VectorExtract.getTxtVector(VectorTextFun.NAME, (String) values[0], values[1]);
+    public @NonNull String getName() {
+        return NAME;
+    }
+
+    @Override
+    protected Object evalNonNullValue(@NonNull Object value0, @NonNull Object value1, ExprConfig config) {
+        Float[] vector = VectorExtract.getTxtVector(VectorTextFun.NAME, (String) value0, value1);
         return Arrays.asList(vector);
+    }
+
+    @Override
+    public Object keyOf(@NonNull Type type0, @NonNull Type type1) {
+        if (type0.equals(Types.STRING) && type1.equals(Types.STRING)) {
+            return Types.STRING;
+        }
+        return null;
+    }
+
+    @Override
+    public BinaryOp getOp(Object key) {
+        return (key != null && key.equals(Types.STRING)) ? INSTANCE : null;
     }
 }

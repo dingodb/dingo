@@ -62,7 +62,7 @@ public class KeyValueCodec implements io.dingodb.sdk.common.codec.KeyValueCodec 
     }
 
     private static DingoType getDingoType(Column column) {
-        return DingoTypeFactory.fromName(column.getType(), column.getElementType(), column.isNullable());
+        return DingoTypeFactory.INSTANCE.fromName(column.getType(), column.getElementType(), column.isNullable());
     }
 
     public Object[] decode(KeyValue keyValue) throws IOException {

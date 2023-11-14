@@ -19,9 +19,9 @@ package io.dingodb.calcite;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.exception.DingoSqlException;
-import io.dingodb.exec.utils.DingoDateTimeUtils;
-import io.dingodb.expr.parser.Expr;
-import io.dingodb.expr.parser.exception.ExprCompileException;
+import io.dingodb.expr.runtime.ExprCompiler;
+import io.dingodb.expr.runtime.expr.Expr;
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.cases.RexCasesJUnit5;
 import lombok.extern.slf4j.Slf4j;
@@ -66,25 +66,15 @@ public class TestRex {
     @Nonnull
     private static Stream<Arguments> getParametersExprException() {
         return Stream.of(
-            arguments("abs(" + Integer.MIN_VALUE + ")", ArithmeticException.class),
-            arguments("abs(" + Long.MIN_VALUE + ")", ArithmeticException.class),
-            arguments("substring('abc', 4, 1)", StringIndexOutOfBoundsException.class),
-            arguments("substring('abc', 0, 1)", StringIndexOutOfBoundsException.class),
-            arguments("mid('ABC', 4, 1)", StringIndexOutOfBoundsException.class),
-            arguments("mid('ABC', 10, 3)", StringIndexOutOfBoundsException.class),
             arguments("concat('a', 'b', 'c')", CalciteContextException.class),
-            arguments("throw(null)", DingoSqlException.class)
+            arguments("throw()", DingoSqlException.class)
         );
     }
 
     @Nonnull
     private static Stream<Arguments> getParametersTemp() {
         return Stream.of(
-            arguments(
-                "array[1, 2, 3][2]",
-                "item(LIST(1, 2, 3), 2)",
-                2
-            )
+            arguments("123 like 'abc|\\%\\_'", "MATCHES_NC(STRING(123), $CP('abc|\\\\%\\\\_'))", false)
         );
     }
 
@@ -119,18 +109,18 @@ public class TestRex {
     @ParameterizedTest
     @MethodSource({"getParametersTemp"})
     public void testTemp(String rex, String exprStr, Object expected)
-        throws SqlParseException, ExprCompileException {
+        throws SqlParseException {
         test(rex, exprStr, expected);
     }
 
     @ParameterizedTest
     @ArgumentsSource(RexCasesJUnit5.class)
     public void test(String rex, String exprStr, Object expected)
-        throws SqlParseException, ExprCompileException {
+        throws SqlParseException {
         RexNode rexNode = getRexNode(rex);
         Expr expr = RexConverter.convert(rexNode);
         assertThat(expr.toString()).isEqualTo(exprStr);
-        Assert.of(expr.compileIn(null).eval(null)).isEqualTo(expected);
+        Assert.of(ExprCompiler.ADVANCED.visit(expr).eval()).isEqualTo(expected);
     }
 
     @ParameterizedTest
@@ -142,18 +132,17 @@ public class TestRex {
     public void testNow(String str) throws Exception {
         RexNode rexNode = getRexNode(str);
         Expr expr = RexConverter.convert(rexNode);
-        assertThat(expr.toString()).isEqualTo("current_timestamp()");
-        assertThat((Timestamp) expr.compileIn(null).eval(null))
-            .isCloseTo(DingoDateTimeUtils.currentTimestamp(), 3L * 1000L);
+        assertThat((Timestamp) ExprCompiler.ADVANCED.visit(expr).eval())
+            .isCloseTo(DateTimeUtils.currentTimestamp(), 3L * 1000L);
     }
 
     @ParameterizedTest
     @MethodSource("getParametersExprException")
     public void testExprException(String str, Class<? extends Exception> exceptionClass) {
-        Exception exception = assertThrows(exceptionClass, () -> {
+        assertThrows(exceptionClass, () -> {
             RexNode rexNode = getRexNode(str);
             Expr expr = RexConverter.convert(rexNode);
-            expr.compileIn(null).eval(null);
+            ExprCompiler.ADVANCED.visit(expr).eval();
         });
     }
 }

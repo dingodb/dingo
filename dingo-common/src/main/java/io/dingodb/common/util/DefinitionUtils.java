@@ -134,7 +134,7 @@ public final class DefinitionUtils {
         Object ob = operand[0];
         DataConverter fromConverter = StrParseConverter.INSTANCE;
         DataConverter toConverter = DingoConverter.INSTANCE;
-        DingoType type = DingoTypeFactory.fromName("INT", null, false);
+        DingoType type = DingoTypeFactory.INSTANCE.scalar("INT");
         ob = mapOrNull(
             ob,
             v -> type.convertTo(type.convertFrom(v.toString(), fromConverter), toConverter)

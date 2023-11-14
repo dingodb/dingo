@@ -348,9 +348,9 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                 " select pow(age, id) pai from {table}",
                 csv(
                     "pai",
-                    "DECIMAL",
-                    "10",
-                    "625"
+                    "DOUBLE",
+                    "10.0",
+                    "625.0"
                 )
             );
 

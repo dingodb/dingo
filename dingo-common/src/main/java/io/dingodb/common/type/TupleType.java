@@ -20,7 +20,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.converter.DataConverter;
-import io.dingodb.expr.core.TypeCode;
+import io.dingodb.expr.runtime.type.Type;
+import io.dingodb.expr.runtime.type.Types;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -39,13 +40,17 @@ public class TupleType extends AbstractDingoType {
     @Getter
     private final DingoType[] fields;
 
+    @Getter
+    private final Type type;
+
     @JsonCreator
     TupleType(
         @JsonProperty("fields") DingoType[] fields
     ) {
-        super(TypeCode.TUPLE);
+        super();
         this.fields = fields;
         setElementIds();
+        type = Types.tuple(Arrays.stream(fields).map(DingoType::getType).toArray(Type[]::new));
     }
 
     private void setElementIds() {
@@ -111,11 +116,6 @@ public class TupleType extends AbstractDingoType {
     }
 
     @Override
-    public <S> @NonNull S toSchema(@NonNull SchemaConverter<S> converter) {
-        return converter.createSchema(this);
-    }
-
-    @Override
     public @NonNull String format(@Nullable Object value) {
         if (value != null) {
             Object[] tuple = (Object[]) value;
@@ -132,6 +132,11 @@ public class TupleType extends AbstractDingoType {
             return b.toString();
         }
         return NullType.NULL.format(null);
+    }
+
+    @Override
+    public <R, T> R accept(@NonNull DingoTypeVisitor<R, T> visitor, T obj) {
+        return visitor.visitTupleType(this, obj);
     }
 
     @Override

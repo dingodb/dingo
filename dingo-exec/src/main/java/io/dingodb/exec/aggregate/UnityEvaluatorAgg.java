@@ -18,9 +18,8 @@ package io.dingodb.exec.aggregate;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.expr.core.evaluator.Evaluator;
-import io.dingodb.expr.core.evaluator.EvaluatorFactory;
-import io.dingodb.expr.core.evaluator.EvaluatorKey;
+import io.dingodb.expr.runtime.expr.Exprs;
+import io.dingodb.expr.runtime.op.BinaryOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -28,20 +27,19 @@ public abstract class UnityEvaluatorAgg extends UnityAgg {
     @JsonProperty("type")
     protected final DingoType type;
 
-    private Evaluator evaluator;
+    private BinaryOp op;
 
     protected UnityEvaluatorAgg(Integer index, @NonNull DingoType type) {
         super(index);
         this.type = type;
     }
 
-    protected void setEvaluator(@NonNull EvaluatorFactory factory) {
-        EvaluatorKey evaluatorKey = EvaluatorKey.of(type.getTypeCode(), type.getTypeCode());
-        evaluator = factory.getEvaluator(evaluatorKey);
+    protected void setOp(@NonNull BinaryOp op) {
+        this.op = op;
     }
 
     protected Object eval(Object v0, Object v1) {
-        return evaluator.eval(new Object[]{v0, v1});
+        return op.eval(Exprs.val(v0), Exprs.val(v1), null, null);
     }
 
     @Override
