@@ -18,6 +18,8 @@ package io.dingodb.exec.restful;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dingodb.common.restful.RestfulClient;
+import io.dingodb.common.restful.RestfulRequest;
 import io.dingodb.exec.fun.vector.VectorImageFun;
 import io.dingodb.exec.fun.vector.VectorTextFun;
 
@@ -25,7 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class VectorExtract {
-    private static final RestfulConnection connection = new RestfulConnection();
+    private static final RestfulClient client = new RestfulClient();
     private static final Map<String, RestfulRequest> vectorInterface = new HashMap<>();
 
     private static final String VECTOR_IMG_URL = "http://host:port/img2vec";
@@ -80,7 +82,7 @@ public class VectorExtract {
             throw new RuntimeException(e);
         }
         request.setHost(host);
-        String response = connection.getVal(request);
+        String response = client.put(request.getUrl(), request.getParam());
         if (response == null) {
             throw new RuntimeException("vector load error");
         }

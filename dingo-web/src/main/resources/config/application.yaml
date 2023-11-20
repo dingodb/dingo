@@ -1,21 +1,24 @@
 spring:
     application:
-        name: dingodb-manager
+        name: dingodb-monitor
+    cache:
+        type: ehcache
+        ehcache:
+          config: classpath:ehcache.xml
 server:
   compression:
     enabled: true
     mime-types: text/html,text/xml,text/plain,text/css, application/javascript, application/json
     min-response-size: 1024
   host: 127.0.0.1
-  port: 13000
+  port: 13001
   coordinatorExchangeSvrList: node1:22001,node1:22002,node1:22003
-  grpc:
-    port: 9999
-security:
-    cipher:
-        keyPath: /opt/dingo/conf/dingodb.jks
-        keyPass: dingodb
-        storePass: dingodb
-        alias: dingodb
-        issuer: dingo
-    verify: true
+  prometheus: PROMETHEUS_URL
+  monitor:
+    executor:
+      heapAlarmThreshold: 80
+    instance:
+      nodeExportPort: 19100
+      cpuAlarmThreshold: 70
+      memAlarmThreshold: 70
+      diskAlarmThreshold: 90

@@ -1,0 +1,9 @@
+spring:
+    application:
+        name: dingodb-web
+    profiles:
+        active: dev
+    cache:
+        type: ehcache
+        ehcache:
+            config: classpath:ehcache.xml

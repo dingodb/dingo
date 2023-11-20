@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.Utils.buildKeyStr;
+
 public class ShowTableDistributionOperation implements QueryOperation {
 
     @Setter
@@ -80,10 +82,10 @@ public class ShowTableDistributionOperation implements QueryOperation {
         List<List<String>> regionList = new ArrayList<>();
 
         List<Integer> keyColumnIndices = tableDefinition.getKeyColumnIndices();
-        List<RangeDistribution> ranges = rangeDistribution.values().stream().collect(Collectors.toList());
+        List<RangeDistribution> ranges = new ArrayList<>(rangeDistribution.values());
         String partName = Optional.ofNullable(tableDefinition.getPartDefinition().getFuncName())
             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME);
-        boolean hashPartition = partName.toLowerCase().equals("hash");
+        boolean hashPartition = partName.equalsIgnoreCase("hash");
         for (int i = 0; i < ranges.size(); i++) {
             RangeDistribution range = ranges.get(i);
             List<String> rangeValues = new ArrayList<>();
@@ -121,29 +123,4 @@ public class ShowTableDistributionOperation implements QueryOperation {
         return regionList;
     }
 
-    private String buildKeyStr(List<Integer> keyColumnIndices, Object[] start) {
-        if (start == null) {
-            return "Infinity";
-        }
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; ; i++) {
-            Object object;
-            if (i >= keyColumnIndices.size() || (object = start[keyColumnIndices.get(i)]) == null) {
-                if (i == 0) {
-                    builder.append("Infinity");
-                } else {
-                    builder.append(")");
-                }
-                break;
-            }
-
-            if (i == 0) {
-                builder.append("Key(");
-            } else {
-                builder.append(", ");
-            }
-            builder.append(object);
-        }
-        return builder.toString();
-    }
 }

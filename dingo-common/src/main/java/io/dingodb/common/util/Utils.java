@@ -168,5 +168,31 @@ public final class Utils {
         return characterSet;
     }
 
+    public static String buildKeyStr(List<Integer> keyColumnIndices, Object[] start) {
+        if (start == null) {
+            return "Infinity";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; ; i++) {
+            Object object;
+            if (i >= keyColumnIndices.size() || (object = start[keyColumnIndices.get(i)]) == null) {
+                if (i == 0) {
+                    builder.append("Infinity");
+                } else {
+                    builder.append(")");
+                }
+                break;
+            }
+
+            if (i == 0) {
+                builder.append("Key(");
+            } else {
+                builder.append(", ");
+            }
+            builder.append(object);
+        }
+        return builder.toString();
+    }
+
     public static final int INTEGER_LEN_IN_BYTES = 4;
 }

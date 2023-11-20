@@ -138,7 +138,7 @@ services:
       INDEX_SERVER_START_PORT: 21003
       INDEX_INSTANCE_START_ID: 1103
       <<: *shared-env
-  
+
   executor:
     image: dingodatabase/dingo:latest
     hostname: executor
@@ -153,14 +153,27 @@ services:
        DINGO_HOSTNAME: executor
        DINGO_COORDINATORS: ${DINGO_HOST_IP}:22001,${DINGO_HOST_IP}:22002,${DINGO_HOST_IP}:22003
        DINGO_MYSQL_COORDINATORS: ${DINGO_HOST_IP}:22001
-   
+
+  proxy:
+    image: dingodatabase/dingo:latest
+    hostname: proxy
+    container_name: proxy
+    ports:
+      - 13000:13000
+      - 9999:9999
+    networks:
+      - dingo_net
+    environment:
+      DINGO_ROLE: proxy
+      DINGO_HOSTNAME: proxy
+      DINGO_COORDINATORS: ${DINGO_HOST_IP}:22001,${DINGO_HOST_IP}:22002,${DINGO_HOST_IP}:22003
+
   web:
     image: dingodatabase/dingo:latest
     hostname: web
     container_name: web
     ports:
-      - 13000:13000
-      - 9999:9999
+      - 13001:13001
     networks:
       - dingo_net
     environment:

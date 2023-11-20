@@ -23,5 +23,5 @@ JAVA_OPTS="-Xms1g -Xmx1g -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFul
 nohup java ${JAVA_OPTS} \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback-web.xml \
      -jar ${JAR_PATH} \
-     --spring.config.location=${ROOT}/conf/application.yaml \
+     --spring.config.location=${ROOT}/conf/application-web.yaml \
      > ${ROOT}/log/web.out &

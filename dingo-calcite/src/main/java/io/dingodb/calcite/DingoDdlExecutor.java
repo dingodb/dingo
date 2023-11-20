@@ -536,15 +536,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 if (e.getPartDefinition() == null) {
                     return e;
                 }
-                e.getPartDefinition().getDetails().forEach(detail -> {
-                    transformOperand(detail);
-                });
+                e.getPartDefinition().getDetails().forEach(DingoDdlExecutor::transformOperand);
                 return e;
             }).collect(Collectors.toList());
         if (tableDefinition.getPartDefinition() != null) {
-            tableDefinition.getPartDefinition().getDetails().forEach(detail -> {
-                transformOperand(detail);
-            });
+            tableDefinition.getPartDefinition().getDetails().forEach(DingoDdlExecutor::transformOperand);
         }
         schema.createTables(tableDefinition, indexTableDefinitions);
     }

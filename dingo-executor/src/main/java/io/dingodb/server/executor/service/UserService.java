@@ -543,7 +543,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
         for (String privilege : grantPrivList) {
             index = PrivilegeDict.privilegeIndexDict.get(privilege);
             if (!userDefinition.getPrivileges()[index]) {
-               return privilege;
+                return privilege;
             }
         }
         return null;
