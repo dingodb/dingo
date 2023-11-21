@@ -55,23 +55,33 @@ public class MysqlPacketFactory {
      */
     @NonNull
     public OKPacket getOkEofPacket(int affected, AtomicLong packetId, int serverStatus) {
-        OKPacket okPacket = newOkPacket(affected, packetId, serverStatus);
+        OKPacket okPacket = newOkPacket(affected, packetId, serverStatus, 0);
         okPacket.header = (byte) NativeConstants.TYPE_ID_EOF;
         return okPacket;
     }
 
     public OKPacket getOkPacket(int affected, AtomicLong packetId) {
-        return getOkPacket(affected, packetId, 0);
+        return getOkPacket(affected, packetId, 0, 0);
+    }
+
+    public OKPacket getOkPacket(int affected, AtomicLong packetId, int serverStatus) {
+        return getOkPacket(affected, packetId, serverStatus, 0);
     }
 
     @NonNull
-    public OKPacket getOkPacket(int affected, AtomicLong packetId, int serverStatus) {
-        OKPacket okPacket = newOkPacket(affected, packetId, serverStatus);
+    public OKPacket getOkPacket(int affected,
+                                AtomicLong packetId,
+                                int serverStatus,
+                                int lastInsertId) {
+        OKPacket okPacket = newOkPacket(affected, packetId, serverStatus, lastInsertId);
         okPacket.header = NativeConstants.TYPE_ID_OK;
         return okPacket;
     }
 
-    private OKPacket newOkPacket(int affected, AtomicLong packetId, int serverStatus) {
+    private OKPacket newOkPacket(int affected,
+                                 AtomicLong packetId,
+                                 int serverStatus,
+                                 int lastInsertId) {
         OKPacket okPacket = new OKPacket();
         okPacket.capabilities = MysqlServer.getServerCapabilities();
         okPacket.affectedRows = affected;
@@ -81,7 +91,7 @@ public class MysqlPacketFactory {
             status |= serverStatus;
         }
         okPacket.serverStatus = status;
-        okPacket.insertId = 0;
+        okPacket.insertId = lastInsertId;
         return okPacket;
     }
 

@@ -22,6 +22,8 @@ import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.operation.DdlOperation;
 import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.QueryOperation;
+import io.dingodb.calcite.rel.AutoIncrementShuttle;
+import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
@@ -57,6 +59,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.DatabaseMetaData;
+import java.sql.SQLClientInfoException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -269,6 +272,7 @@ public final class DingoDriverParser extends DingoParser {
 
         final RelRoot relRoot = convert(sqlNode, false);
         final RelNode relNode = optimize(relRoot.rel);
+        extractAutoIncrement(relNode, jobIdPrefix);
         Location currentLocation = MetaService.root().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
         // get start_ts for jobSeqId, if transaction is not null ,transaction start_ts is jobDomainId
@@ -301,5 +305,27 @@ public final class DingoDriverParser extends DingoParser {
             statementType,
             job.getJobId()
         );
+    }
+
+    /**
+     * Determine if it is an insert statement and if there is an autoincrement primary key in the table.
+     * @param relNode dingo relNode
+     * @param jobIdPrefix Used to distinguish between different SQL statements in the same session
+     */
+    private void extractAutoIncrement(RelNode relNode, String jobIdPrefix) {
+        try {
+            RelNode relVal = relNode.accept(AutoIncrementShuttle.INSTANCE);
+            if (relVal instanceof DingoValues) {
+                DingoValues dingoValues = (DingoValues) relVal;
+                if (!dingoValues.isHasAutoIncrement()) {
+                    return;
+                }
+                Object autoValue = dingoValues.getTuples().get(0)[0];
+                connection.setClientInfo("last_insert_id", autoValue.toString());
+                connection.setClientInfo(jobIdPrefix, autoValue.toString());
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
     }
 }

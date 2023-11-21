@@ -17,6 +17,8 @@
 package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -30,6 +32,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.List;
 
 public class DingoValues extends LogicalDingoValues implements DingoRel {
+    @Setter
+    @Getter
+    private boolean hasAutoIncrement;
+
     public DingoValues(
         RelOptCluster cluster,
         RelTraitSet traits,

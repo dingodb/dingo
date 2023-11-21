@@ -37,24 +37,19 @@ import org.apache.calcite.avatica.util.ArrayImpl;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Array;
-import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.operation.SetOptionOperation.CONNECTION_CHARSET;
 import static io.dingodb.common.util.Utils.getCharacterSet;
 import static io.dingodb.common.util.Utils.getDateByTimezone;
 
 @Slf4j
-public class MysqlResponseHandler {
+public final class MysqlResponseHandler {
 
     static MysqlPacketFactory factory = MysqlPacketFactory.getInstance();
 
@@ -94,11 +89,8 @@ public class MysqlResponseHandler {
         // 3. eof packet
         // 4. rows packet
         // 5. eof packet
-        boolean deprecateEof = false;
-        if ((mysqlConnection.authPacket.extendClientFlags
-            & ExtendedClientCapabilities.CLIENT_DEPRECATE_EOF) != 0) {
-            deprecateEof = true;
-        }
+        boolean deprecateEof = (mysqlConnection.authPacket.extendClientFlags
+            & ExtendedClientCapabilities.CLIENT_DEPRECATE_EOF) != 0;
         try {
             ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
             ResultSetMetaData metaData = resultSet.getMetaData();
@@ -281,11 +273,8 @@ public class MysqlResponseHandler {
         // 3. eof packet
         // 4. rows packet
         // 5. eof packet
-        boolean deprecateEof = false;
-        if ((mysqlConnection.authPacket.extendClientFlags
-            & ExtendedClientCapabilities.CLIENT_DEPRECATE_EOF) != 0) {
-            deprecateEof = true;
-        }
+        boolean deprecateEof = (mysqlConnection.authPacket.extendClientFlags
+            & ExtendedClientCapabilities.CLIENT_DEPRECATE_EOF) != 0;
         try {
             ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
             ResultSetMetaData metaData = resultSet.getMetaData();

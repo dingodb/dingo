@@ -44,6 +44,7 @@ public class ScopeVariables {
         immutableVariables.add("have_openssl");
         immutableVariables.add("have_ssl");
         immutableVariables.add("have_statement_timeout");
+        immutableVariables.add("last_insert_id");
 
         characterSet.add("utf8mb4");
         characterSet.add("utf8");

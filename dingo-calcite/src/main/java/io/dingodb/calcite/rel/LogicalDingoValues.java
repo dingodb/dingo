@@ -19,6 +19,7 @@ package io.dingodb.calcite.rel;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.type.DingoType;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
