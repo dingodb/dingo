@@ -25,7 +25,6 @@ import io.dingodb.calcite.operation.QueryOperation;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
-import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.impl.LocalTimestampOracle;

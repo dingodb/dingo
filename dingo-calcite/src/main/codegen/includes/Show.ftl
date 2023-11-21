@@ -41,6 +41,8 @@ SqlShow SqlShow(): {
     show = SqlShowColumns(s)
     |
     show = SqlShowTable(s)
+    |
+    show = SqlShowLocks(s)
   )
   {
     return show;
@@ -161,4 +163,12 @@ SqlShow SqlShowGlobalVariables(Span s): {
   {
     return new SqlShowVariables(s.end(this), pattern, isGlobal);
   }
+}
+
+SqlShow SqlShowLocks(Span s): {
+  SqlNode condition = null;
+}{
+  <LOCKS> 
+  [ condition = Where() ]
+  {return new SqlShowLocks(s.end(this), condition); }
 }

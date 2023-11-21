@@ -29,6 +29,8 @@ data: {
       "io.dingodb.common.partition.PartitionDetailDefinition"
       "io.dingodb.common.partition.PartitionDefinition"
       "io.dingodb.calcite.grammar.ddl.DingoSqlDdlNodes"
+      "io.dingodb.calcite.grammar.ddl.SqlBeginTx"
+      "io.dingodb.calcite.grammar.ddl.SqlBlock"
       "io.dingodb.calcite.grammar.ddl.SqlCommit"
       "io.dingodb.calcite.grammar.ddl.SqlRollback"
       "io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex"
@@ -41,20 +43,28 @@ data: {
       "io.dingodb.calcite.grammar.dql.SqlDesc"
       "io.dingodb.calcite.grammar.ddl.SqlDropUser"
       "io.dingodb.calcite.grammar.ddl.SqlDropIndex"
+      "io.dingodb.calcite.grammar.ddl.SqlEnd"
       "io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges"
       "io.dingodb.calcite.grammar.ddl.SqlGrant"
       "io.dingodb.calcite.grammar.ddl.SqlIndexDeclaration"
+      "io.dingodb.calcite.grammar.ddl.SqlLock"
+      "io.dingodb.calcite.grammar.ddl.SqlLockBlock"
+      "io.dingodb.calcite.grammar.ddl.SqlLockTable"
       "io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement"
       "io.dingodb.calcite.grammar.ddl.SqlRevoke"
       "io.dingodb.calcite.grammar.ddl.SqlSetPassword"
       "io.dingodb.calcite.grammar.ddl.SqlTruncate"
       "io.dingodb.calcite.grammar.ddl.SqlUseSchema"
+      "io.dingodb.calcite.grammar.ddl.SqlUnLock"
+      "io.dingodb.calcite.grammar.ddl.SqlUnLockTable"
+      "io.dingodb.calcite.grammar.ddl.SqlUnLockBlock"
       "io.dingodb.calcite.grammar.dql.SqlShow"
       "io.dingodb.calcite.grammar.dql.SqlShowColumns"
       "io.dingodb.calcite.grammar.dql.SqlShowCreateTable"
       "io.dingodb.calcite.grammar.dql.SqlShowCreateUser"
       "io.dingodb.calcite.grammar.dql.SqlShowDatabases"
       "io.dingodb.calcite.grammar.dql.SqlShowGrants"
+      "io.dingodb.calcite.grammar.dql.SqlShowLocks"
       "io.dingodb.calcite.grammar.dql.SqlShowTableDistribution"
       "io.dingodb.calcite.grammar.dql.SqlShowTables"
       "io.dingodb.calcite.grammar.dql.SqlShowTableStatus"
@@ -131,6 +141,10 @@ data: {
       "CMSKETCH"
       "SAMPLES"
       "SAMPLERATE"
+      "PESSIMISTIC"
+      "BLOCKS"
+      "HASH"
+      "LOCKS"
     ]
 
     # List of non-reserved keywords to add;
@@ -192,6 +206,11 @@ data: {
         "SqlPrepare"
         "SqlExecute"
         "SqlAnalyze"
+        "SqlStartTx"
+        "SqlBegin"
+        "SqlLock"
+        "SqlEnd"
+        "SqlUnLock"
     ]
 
     sqlTypeNameMethods: [
@@ -213,6 +232,7 @@ data: {
       "Show.ftl"
       "Analyze.ftl"
       "Grant.ftl"
+      "Transaction.ftl"
     ]
 
     includePosixOperators: false

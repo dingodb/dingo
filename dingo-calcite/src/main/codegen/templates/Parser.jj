@@ -4135,7 +4135,7 @@ SqlSetOption SqlSetOption(Span s, String scope) :
 {
     SqlIdentifier name;
     SqlIdentifier identifier;
-    final SqlNode val;
+    SqlNode val = null;
     String user = null;
     String host = "%";
     String password = null;
@@ -4176,8 +4176,20 @@ SqlSetOption SqlSetOption(Span s, String scope) :
             return new SqlSetOption(s.end(this), scope, name, val);
          }
         |
-         <QUOTED_STRING> <COLLATE> <QUOTED_STRING>{
-           val = new SqlIdentifier(token.image, s.end(this));
+         (<QUOTED_STRING> <COLLATE> <QUOTED_STRING>
+         |
+         <ISOLATION> <LEVEL>
+         [<READ> <MINUS> [ <COMMITTED> { val = new SqlIdentifier("read-committed", s.end(this)); } ] [<UNCOMMITTED> { val = new SqlIdentifier("read-uncommitted", s.end(this)); }]  ]
+         [<REPEATABLE> <MINUS> <READ> { val = new SqlIdentifier("repeatable-read", s.end(this)); } ]
+         [<SERIALIZABLE> { val = new SqlIdentifier(token.image, s.end(this)); }]
+         ){
+            if (name.names.size() != 1 || !name.names.get(0).equalsIgnoreCase("transaction")) {
+               throw new RuntimeException("Syntax error");
+            }
+            if (val == null) {
+               val = new SqlIdentifier(token.image, s.end(this));
+            }
+            name = new SqlIdentifier("transaction_isolation", name.getParserPosition());
             return new SqlSetOption(s.end(this), scope, name, val);
          }
         |
