@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.grammar.ddl;
 
+import lombok.Getter;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
@@ -26,6 +27,7 @@ import java.util.List;
 
 public class SqlUnLockBlock extends SqlUnLock {
 
+    @Getter
     List<SqlBlock> sqlUnBlockList;
 
     private static final SqlOperator OPERATOR =

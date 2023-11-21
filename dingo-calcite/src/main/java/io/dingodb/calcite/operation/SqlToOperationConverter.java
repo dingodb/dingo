@@ -20,7 +20,11 @@ import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
 import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
+import io.dingodb.calcite.grammar.ddl.SqlLockBlock;
+import io.dingodb.calcite.grammar.ddl.SqlLockTable;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
+import io.dingodb.calcite.grammar.ddl.SqlUnLockBlock;
+import io.dingodb.calcite.grammar.ddl.SqlUnLockTable;
 import io.dingodb.calcite.grammar.dql.SqlDesc;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
 import io.dingodb.calcite.grammar.dql.SqlShowColumns;
@@ -132,6 +136,18 @@ public class SqlToOperationConverter {
         } else if (sqlNode instanceof SqlBeginTx) {
             SqlBeginTx sqlBeginTx = (SqlBeginTx) sqlNode;
             return Optional.of(new StartTransactionOperation(connection, sqlBeginTx.pessimistic));
+        } else if (sqlNode instanceof SqlLockTable) {
+            SqlLockTable sqlLockTable = (SqlLockTable) sqlNode;
+            return Optional.of(new LockTableOperation(connection, sqlLockTable.tableList));
+        } else if (sqlNode instanceof SqlLockBlock) {
+            SqlLockBlock sqlLockBlock = (SqlLockBlock) sqlNode;
+            return Optional.of(new LockBlockOperation(connection, sqlLockBlock.getSqlBlockList()));
+        } else if (sqlNode instanceof SqlUnLockTable) {
+            SqlUnLockTable sqlUnLockTable = (SqlUnLockTable) sqlNode;
+            return Optional.of(new UnlockTableOperation(connection, sqlUnLockTable.tableList));
+        } else if (sqlNode instanceof SqlUnLockBlock) {
+            SqlUnLockBlock sqlUnLockBlock = (SqlUnLockBlock) sqlNode;
+            return Optional.of(new UnlockBlockOperation(connection, sqlUnLockBlock.getSqlUnBlockList()));
         } else {
             return Optional.empty();
         }

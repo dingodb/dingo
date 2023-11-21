@@ -16,7 +16,7 @@
 
 package io.dingodb.calcite.grammar.ddl;
 
-import org.apache.calcite.sql.SqlDdl;
+import lombok.Getter;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
@@ -28,7 +28,8 @@ import java.util.List;
 
 public class SqlLockBlock extends SqlLock {
 
-    List<SqlBlock> sqlBlockList;
+    @Getter
+    private List<SqlBlock> sqlBlockList;
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("LOCK BLOCK", SqlKind.OTHER_DDL);
