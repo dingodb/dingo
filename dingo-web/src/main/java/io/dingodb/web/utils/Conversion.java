@@ -238,21 +238,21 @@ public class Conversion {
 
     public static VectorSearchParameter mapping(ProxyCommon.VectorSearchParameter parameter) {
         Search search = null;
-        if (parameter.getIvfPq() != null) {
+        if (parameter.hasIvfPq()) {
             ProxyCommon.SearchIvfPqParam ivfPq = parameter.getIvfPq();
             search = new Search(new SearchIvfPqParam(ivfPq.getNprobe(), ivfPq.getParallelOnQueries(), ivfPq.getRecallNum()));
         }
-        if (parameter.getIvfFlat() != null) {
+        if (parameter.hasIvfFlat()) {
             ProxyCommon.SearchIvfFlatParam ivfFlat = parameter.getIvfFlat();
             search = new Search(new SearchIvfFlatParam(ivfFlat.getNprobe(), ivfFlat.getParallelOnQueries()));
         }
-        if (parameter.getHnsw() != null) {
+        if (parameter.hasHnsw()) {
             search = new Search(new SearchHnswParam(parameter.getHnsw().getEfSearch()));
         }
-        if (parameter.getFlat() != null) {
+        if (parameter.hasFlat()) {
             search = new Search(new SearchFlatParam(parameter.getFlat().getParallelOnQueries()));
         }
-        if (parameter.getDiskann() != null) {
+        if (parameter.hasDiskann()) {
             search = new Search(new SearchDiskAnnParam());
         }
         return new VectorSearchParameter(
