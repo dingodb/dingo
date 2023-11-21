@@ -20,6 +20,7 @@ import io.dingodb.common.mysql.MysqlByteUtil;
 import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.DingoPreparedStatement;
+import io.dingodb.driver.DingoStatement;
 import io.dingodb.driver.mysql.MysqlConnection;
 import io.dingodb.driver.mysql.MysqlType;
 import io.dingodb.driver.mysql.packet.ColumnPacket;
@@ -31,6 +32,7 @@ import io.dingodb.driver.mysql.packet.PreparePacket;
 import io.dingodb.driver.mysql.packet.QueryPacket;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.Meta;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
@@ -175,8 +177,19 @@ public class MysqlCommands {
             } else {
                 // update insert delete
                 int count = statement.getUpdateCount();
-                OKPacket okPacket = MysqlPacketFactory.getInstance()
-                    .getOkPacket(count, packetId);
+                DingoStatement dingoStatement = (DingoStatement) statement;
+                String jobIdPrefix = dingoStatement.handle.toString();
+                OKPacket okPacket;
+                if (mysqlConnection.getConnection().getClientInfo().containsKey(jobIdPrefix)) {
+                    String lastInsertId = mysqlConnection.getConnection()
+                        .getClientInfo().getProperty(jobIdPrefix, "0");
+                    okPacket = MysqlPacketFactory.getInstance()
+                        .getOkPacket(count, packetId, 0, Integer.parseInt(lastInsertId));
+                    mysqlConnection.getConnection().getClientInfo().remove(jobIdPrefix);
+                } else {
+                    okPacket = MysqlPacketFactory.getInstance()
+                        .getOkPacket(count, packetId);
+                }
                 MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
             }
         } catch (SQLException sqlException) {
@@ -302,7 +315,17 @@ public class MysqlCommands {
                 }
             } else {
                 int affected = preparedStatement.executeUpdate();
-                OKPacket okPacket = mysqlPacketFactory.getOkPacket(affected, packetId);
+                String jobIdPrefix = preparedStatement.handle.toString();
+                OKPacket okPacket;
+                if (mysqlConnection.getConnection().getClientInfo().containsKey(jobIdPrefix)) {
+                    String lastInsertId = mysqlConnection.getConnection()
+                        .getClientInfo().getProperty(jobIdPrefix, "0");
+                    okPacket = MysqlPacketFactory.getInstance()
+                        .getOkPacket(affected, packetId, 0, Integer.parseInt(lastInsertId));
+                    mysqlConnection.getConnection().getClientInfo().remove(jobIdPrefix);
+                } else {
+                    okPacket = mysqlPacketFactory.getOkPacket(affected, packetId);
+                }
                 MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
             }
         } catch (SQLException e) {

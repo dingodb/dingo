@@ -71,6 +71,9 @@ public class ExecuteStatementPacket extends MysqlPacket {
             nullBitmapBuilder.append(BufferUtil.getBinaryStrFromByte(message.read()));
         }
         nullBitMap = nullBitmapBuilder.toString();
+        if (!message.hasRemaining()) {
+            return;
+        }
 
         newParamBoundFlag = message.read();
         Integer[] types = new Integer[paramCount];
