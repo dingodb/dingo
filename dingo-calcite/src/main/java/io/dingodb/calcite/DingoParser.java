@@ -19,9 +19,14 @@ package io.dingodb.calcite;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
 import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
+import io.dingodb.calcite.grammar.ddl.SqlBlock;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
+import io.dingodb.calcite.grammar.ddl.SqlLockBlock;
+import io.dingodb.calcite.grammar.ddl.SqlLockTable;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
+import io.dingodb.calcite.grammar.ddl.SqlUnLockBlock;
+import io.dingodb.calcite.grammar.ddl.SqlUnLockTable;
 import io.dingodb.calcite.grammar.dml.SqlExecute;
 import io.dingodb.calcite.grammar.dml.SqlPrepare;
 import io.dingodb.calcite.grammar.dql.SqlDesc;
@@ -76,6 +81,7 @@ import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,6 +94,7 @@ import static io.dingodb.calcite.rule.DingoRules.DINGO_AGGREGATE_SCAN_RULE;
 @Slf4j
 public class DingoParser {
     private static Map<String, String> sensitiveKey = new HashMap();
+
     static {
         sensitiveKey.put(".\"USER\"", ".USER");
     }
@@ -241,17 +248,16 @@ public class DingoParser {
             return false;
         } else if (sqlNode instanceof SqlSetOption && !(sqlNode instanceof SqlSetPassword)) {
             return true;
-        } else if (sqlNode instanceof SqlPrepare) {
-            return true;
-        } else if (sqlNode instanceof SqlExecute) {
-            return true;
-        } else if (sqlNode instanceof SqlAnalyze) {
-            return true;
-        } else if (sqlNode instanceof SqlBeginTx) {
-            return true;
-        } else if (sqlNode instanceof SqlCommit) {
-            return true;
-        } else if (sqlNode instanceof SqlRollback) {
+        } else if (sqlNode instanceof SqlPrepare
+            || sqlNode instanceof SqlExecute
+            || sqlNode instanceof SqlAnalyze
+            || sqlNode instanceof SqlBeginTx
+            || sqlNode instanceof SqlCommit
+            || sqlNode instanceof SqlRollback
+            || sqlNode instanceof SqlLockTable
+            || sqlNode instanceof SqlLockBlock
+            || sqlNode instanceof SqlUnLockTable
+            || sqlNode instanceof SqlUnLockBlock) {
             return true;
         }
         return false;
