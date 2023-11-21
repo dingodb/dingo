@@ -18,6 +18,9 @@ package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
+import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
+import io.dingodb.calcite.grammar.ddl.SqlCommit;
+import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.dql.SqlDesc;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
 import io.dingodb.calcite.grammar.dql.SqlShowColumns;
@@ -122,6 +125,13 @@ public class SqlToOperationConverter {
                 analyze.setSchemaName(getSchemaName(context));
             }
             return Optional.of(new AnalyzeTableOperation(analyze));
+        } else if (sqlNode instanceof SqlCommit) {
+            return Optional.of(new CommitTxOperation(connection));
+        } else if (sqlNode instanceof SqlRollback) {
+            return Optional.of(new RollbackTxOperation(connection));
+        } else if (sqlNode instanceof SqlBeginTx) {
+            SqlBeginTx sqlBeginTx = (SqlBeginTx) sqlNode;
+            return Optional.of(new StartTransactionOperation(connection, sqlBeginTx.pessimistic));
         } else {
             return Optional.empty();
         }

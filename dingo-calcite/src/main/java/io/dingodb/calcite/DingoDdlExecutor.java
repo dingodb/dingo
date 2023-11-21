@@ -703,14 +703,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         log.info("sql set option");
     }
 
-    public void execute(@NonNull SqlCommit sqlCommit, CalcitePrepare.Context context) {
-        log.info("commit");
-    }
-
-    public void execute(@NonNull SqlRollback sqlRollback, CalcitePrepare.Context context) {
-        log.info("rollback");
-    }
-
     public void execute(@NonNull SqlUseSchema sqlUseSchema, CalcitePrepare.Context context) {
         log.info("use schema");
     }

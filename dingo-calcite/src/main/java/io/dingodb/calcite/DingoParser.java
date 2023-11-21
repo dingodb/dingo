@@ -18,6 +18,9 @@ package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
+import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
+import io.dingodb.calcite.grammar.ddl.SqlCommit;
+import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.dml.SqlExecute;
 import io.dingodb.calcite.grammar.dml.SqlPrepare;
@@ -33,6 +36,8 @@ import io.dingodb.calcite.rule.DingoRules;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.traits.DingoRelStreamingDef;
+import io.dingodb.common.error.DingoError;
+import io.dingodb.common.error.DingoException;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -242,12 +247,19 @@ public class DingoParser {
             return true;
         } else if (sqlNode instanceof SqlAnalyze) {
             return true;
+        } else if (sqlNode instanceof SqlBeginTx) {
+            return true;
+        } else if (sqlNode instanceof SqlCommit) {
+            return true;
+        } else if (sqlNode instanceof SqlRollback) {
+            return true;
         }
         return false;
     }
 
-    public Operation convertToOperation(SqlNode sqlNode, Connection connection, DingoParserContext context) {
-        return SqlToOperationConverter.convert(sqlNode, connection, context).get();
+    public static Operation convertToOperation(SqlNode sqlNode, Connection connection, DingoParserContext context) {
+        return SqlToOperationConverter.convert(sqlNode, connection, context)
+            .orElseThrow(() -> DingoException.from(DingoError.UNKNOWN));
     }
 
     private String processKeyWords(String sql) {
