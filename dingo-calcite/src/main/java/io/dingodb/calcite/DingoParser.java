@@ -19,8 +19,9 @@ package io.dingodb.calcite;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
 import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
-import io.dingodb.calcite.grammar.ddl.SqlBlock;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
+import io.dingodb.calcite.grammar.ddl.SqlKillConnection;
+import io.dingodb.calcite.grammar.ddl.SqlKillQuery;
 import io.dingodb.calcite.grammar.ddl.SqlLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlLockTable;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
@@ -81,7 +82,6 @@ import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.Connection;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -119,6 +119,16 @@ public class DingoParser {
                 return true;
             }
 
+            /**
+             * Whether to allow INSERT (or UPSERT) with no column list but fewer values than the target table.
+             * If a table does not have a primary key but has a hidden primary key _rowid,
+             * then it is necessary to support insert into table values ('value ')
+             * @return true
+             */
+            @Override
+            public boolean isInsertSubsetColumnsAllowed() {
+                return true;
+            }
         });
 
     @Getter
@@ -242,8 +252,17 @@ public class DingoParser {
             if (selectItem1 instanceof SqlBasicCall) {
                 SqlBasicCall sqlBasicCall = (SqlBasicCall) selectItem1;
                 String operatorName = sqlBasicCall.getOperator().getName();
-                return operatorName.equalsIgnoreCase("database")
-                    || operatorName.equalsIgnoreCase("@");
+                if (operatorName.equalsIgnoreCase("AS")) {
+                    SqlNode sqlNode1 = sqlBasicCall.getOperandList().get(0);
+                    if (sqlNode1 instanceof SqlBasicCall) {
+                        operatorName = ((SqlBasicCall) sqlNode1).getOperator().getName();
+                        return operatorName.equalsIgnoreCase("database")
+                            || operatorName.equalsIgnoreCase("@");
+                    }
+                } else {
+                    return operatorName.equalsIgnoreCase("database")
+                        || operatorName.equalsIgnoreCase("@");
+                }
             }
             return false;
         } else if (sqlNode instanceof SqlSetOption && !(sqlNode instanceof SqlSetPassword)) {
@@ -257,7 +276,10 @@ public class DingoParser {
             || sqlNode instanceof SqlLockTable
             || sqlNode instanceof SqlLockBlock
             || sqlNode instanceof SqlUnLockTable
-            || sqlNode instanceof SqlUnLockBlock) {
+            || sqlNode instanceof SqlUnLockBlock
+            || sqlNode instanceof SqlKillQuery
+            || sqlNode instanceof SqlKillConnection
+        ) {
             return true;
         }
         return false;

@@ -25,6 +25,7 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.ddl.DingoSqlColumn;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
+import org.apache.calcite.sql.ddl.SqlDdlNodes;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -46,7 +47,10 @@ public class DingoSqlDdlNodes {
         int replica,
         String engine,
         Properties properties,
-        int autoIncrement
+        int autoIncrement,
+        String comment,
+        String charset,
+        String collate
     ) {
         return new DingoSqlCreateTable(
             pos,
@@ -60,11 +64,14 @@ public class DingoSqlDdlNodes {
             replica,
             engine,
             properties,
-            autoIncrement
+            autoIncrement,
+            comment,
+            charset,
+            collate
         );
     }
 
-    public static SqlColumnDeclaration createColumn(
+    public static DingoSqlColumn createColumn(
         SqlParserPos pos,
         SqlIdentifier name,
         SqlDataTypeSpec dataType,

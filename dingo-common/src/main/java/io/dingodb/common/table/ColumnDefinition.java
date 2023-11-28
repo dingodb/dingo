@@ -26,6 +26,7 @@ import io.dingodb.common.type.DingoTypeFactory;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -36,6 +37,10 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 public class ColumnDefinition {
     public static final int DEFAULT_PRECISION = -1;
     public static final int DEFAULT_SCALE = Integer.MIN_VALUE;
+
+    public static final int NORMAL_STATE = 1;
+    public static final int HIDE_STATE = 2;
+    public static final int DELETE_STATE = -1;
 
     @JsonProperty(value = "name", required = true)
     @Getter
@@ -87,6 +92,17 @@ public class ColumnDefinition {
     @Builder.Default
     private final boolean autoIncrement = false;
 
+    @JsonProperty("state")
+    @Getter
+    @Setter
+    @Builder.Default
+    private int state = NORMAL_STATE;
+
+    @JsonProperty("comment")
+    @Getter
+    @Builder.Default
+    private final String comment = "";
+
     @JsonCreator
     public static ColumnDefinition getInstance(
         @JsonProperty("name") String name,
@@ -97,7 +113,8 @@ public class ColumnDefinition {
         @JsonProperty("nullable") boolean nullable,
         @JsonProperty("primary") int primary,
         @JsonProperty("default") String defaultValue,
-        @JsonProperty("autoIncrement") boolean autoIncrement
+        @JsonProperty("autoIncrement") boolean autoIncrement,
+        @JsonProperty("state") int state
     ) {
         return builder()
             .name(name)
@@ -109,6 +126,7 @@ public class ColumnDefinition {
             .primary(primary)
             .defaultValue(defaultValue)
             .autoIncrement(autoIncrement)
+            .state(state)
             .build();
     }
 

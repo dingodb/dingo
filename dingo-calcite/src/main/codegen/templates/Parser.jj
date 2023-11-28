@@ -1759,6 +1759,7 @@ SqlNode SqlDelete() :
     final SqlIdentifier alias;
     final SqlNode where;
     final Span s;
+    SqlNode[] offsetFetch = {null, null};
 }
 {
     <DELETE> {
@@ -1769,9 +1770,10 @@ SqlNode SqlDelete() :
     [ tableRef = ExtendTable(tableRef) ]
     ( [ <AS> ] alias = SimpleIdentifier() | { alias = null; } )
     ( where = Where() | { where = null; } )
+    [ LimitClause(s, offsetFetch) ]
     {
-        return new SqlDelete(s.add(tableRef).addIf(alias).addIf(where).pos(),
-            tableRef, where, null, alias);
+        return new io.dingodb.calcite.grammar.dml.SqlDelete(s.add(tableRef).addIf(alias).addIf(where).pos(),
+            tableRef, where, null, alias, offsetFetch);
     }
 }
 
@@ -4204,6 +4206,10 @@ SqlSetOption SqlSetOption(Span s, String scope) :
                 val = new SqlIdentifier(token.image.toUpperCase(Locale.ROOT),
                     getPos());
             }
+        |
+           <DEFAULT_> {
+             val = new SqlIdentifier(token.image.toUpperCase(Locale.ROOT), getPos());
+           }
         )
         {
             if (scope == null) {
@@ -5330,11 +5336,11 @@ void AddSimpleIdentifiers(List<SqlNode> list) :
     SqlIdentifier id;
 }
 {
-    id = SimpleIdentifier() {list.add(id);}
+    id = SimpleIdentifier() {list.add(id);} [<ASC>] [<DESC>]
     (
         <COMMA> id = SimpleIdentifier() {
             list.add(id);
-        }
+        } [<ASC>] [<DESC>]
     )*
 }
 
@@ -5608,6 +5614,8 @@ SqlTypeNameSpec SqlTypeName(Span s) :
 SqlTypeNameSpec SqlTypeName1(Span s) :
 {
     final SqlTypeName sqlTypeName;
+    int precision = -1;
+    int scale = -1;
 }
 {
     (
@@ -5621,13 +5629,39 @@ SqlTypeNameSpec SqlTypeName1(Span s) :
     |
         <BOOLEAN> { s.add(this); sqlTypeName = SqlTypeName.BOOLEAN; }
     |
-        ( <INTEGER> | <INT> ) { s.add(this); sqlTypeName = SqlTypeName.INTEGER; }
+        <INTEGER> { s.add(this); sqlTypeName = SqlTypeName.INTEGER; } [
+                         <LPAREN>
+                         precision = UnsignedIntLiteral()
+                         [
+                             <COMMA>
+                             scale = UnsignedIntLiteral()
+                         ]
+                         <RPAREN>
+                     ] [<UNSIGNED>]
+    |
+        <INT>  [
+                   <LPAREN>
+                         precision = UnsignedIntLiteral()
+                         [
+                             <COMMA>
+                             scale = UnsignedIntLiteral()
+                         ]
+                         <RPAREN>
+                     ] [<UNSIGNED>] { s.add(this); sqlTypeName = SqlTypeName.INTEGER; }
     |
         <TINYINT> { s.add(this); sqlTypeName = SqlTypeName.TINYINT; }
     |
         <SMALLINT> { s.add(this); sqlTypeName = SqlTypeName.SMALLINT; }
     |
-        <BIGINT> { s.add(this); sqlTypeName = SqlTypeName.BIGINT; }
+        <BIGINT>    [
+                         <LPAREN>
+                         precision = UnsignedIntLiteral()
+                         [
+                             <COMMA>
+                             scale = UnsignedIntLiteral()
+                         ]
+                         <RPAREN>
+                     ] { s.add(this); sqlTypeName = SqlTypeName.BIGINT; } [<UNSIGNED>]
     |
         <REAL> { s.add(this); sqlTypeName = SqlTypeName.REAL; }
     |
@@ -5903,7 +5937,7 @@ SqlTypeNameSpec DateTimeTypeName() :
         return new SqlBasicTypeNameSpec(typeName, precision, s.end(this));
     }
 |
-    <TIMESTAMP> { s = span(); }
+    <TIMESTAMP>  { s = span(); }
     precision = PrecisionOpt()
     withLocalTimeZone = TimeZoneOpt()
     {

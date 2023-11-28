@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.rule;
 
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.common.type.TupleMapping;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -113,7 +114,13 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
             .operandSupplier(b0 ->
                 b0.operand(LogicalProject.class).oneInput(b1 ->
                     b1.operand(LogicalDingoTableScan.class)
-                        .predicate(rel -> rel.getSelection() == null)
+                        .predicate(rel -> {
+                            if (rel.getRealSelection() == null) {
+                               return true;
+                            }
+                            DingoTable dingoTable = rel.getTable().unwrap(DingoTable.class);
+                            return rel.getRealSelection().size() == dingoTable.getTableDefinition().getColumns().size();
+                        } )
                         .noInputs()
                 )
             )

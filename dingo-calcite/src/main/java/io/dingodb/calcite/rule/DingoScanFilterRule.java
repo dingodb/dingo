@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.rule;
 
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
@@ -41,7 +42,7 @@ public class DingoScanFilterRule extends RelRule<DingoScanFilterRule.Config> imp
                 scan.getHints(),
                 scan.getTable(),
                 filter.getCondition(),
-                scan.getSelection(),
+                scan.getRealSelection(),
                 scan.getAggCalls(),
                 scan.getGroupSet(),
                 scan.getGroupSets(),
@@ -61,7 +62,15 @@ public class DingoScanFilterRule extends RelRule<DingoScanFilterRule.Config> imp
             .operandSupplier(b0 ->
                 b0.operand(LogicalFilter.class).oneInput(b1 ->
                     b1.operand(LogicalDingoTableScan.class)
-                        .predicate(rel -> rel.getSelection() == null && rel.getFilter() == null)
+                        .predicate(rel -> {
+                            boolean isFullSelection = rel.getRealSelection() == null;
+                            if (!isFullSelection) {
+                                DingoTable dingoTable = rel.getTable().unwrap(DingoTable.class);
+                                isFullSelection = rel.getRealSelection().size()
+                                    == dingoTable.getTableDefinition().getColumns().size();
+                            }
+                            return isFullSelection && rel.getFilter() == null;
+                        })
                         .noInputs()
                 )
             )

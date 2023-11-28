@@ -17,14 +17,17 @@
 package io.dingodb.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.utils.RelDataTypeUtils;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.type.TupleMapping;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -79,6 +82,29 @@ public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
             groupSet,
             groupSets,
             pushDown
+        );
+    }
+
+    public RelDataType getNormalRowType() {
+        RelDataType selected = getNormalSelectedType();
+        if (aggCalls != null) {
+            return Aggregate.deriveRowType(
+                getCluster().getTypeFactory(),
+                selected,
+                false,
+                groupSet,
+                groupSets,
+                aggCalls
+            );
+        }
+        return selected;
+    }
+
+    private RelDataType getNormalSelectedType() {
+        return RelDataTypeUtils.mapType(
+            getCluster().getTypeFactory(),
+            getTableType(),
+            selection
         );
     }
 }

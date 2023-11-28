@@ -81,6 +81,9 @@ public class ShowColumnsOperation implements QueryOperation {
         List<List<String>> columnList = new ArrayList<>();
         boolean haveLike = !StringUtils.isBlank(sqlLikePattern);
         for (ColumnDefinition column : columns) {
+            if (column.getState() != 1) {
+                continue;
+            }
             List<String> columnValues = new ArrayList<>();
 
             String columnName = column.getName();

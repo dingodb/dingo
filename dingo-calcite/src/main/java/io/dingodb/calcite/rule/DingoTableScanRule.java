@@ -51,7 +51,7 @@ public class DingoTableScanRule extends ConverterRule {
             scan.getHints(),
             scan.getTable(),
             scan.getFilter(),
-            scan.getSelection(),
+            scan.getRealSelection(),
             scan.getAggCalls(),
             scan.getGroupSet(),
             scan.getGroupSets(),

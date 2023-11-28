@@ -225,7 +225,8 @@ public class RangeUtils {
             column.isNullable(),
             column.getPrimary(),
             column.getDefaultValue(),
-            column.isAutoIncrement());
+            column.isAutoIncrement(),
+            column.getState());
     }
 
     public static Column mapping(ColumnDefinition definition) {

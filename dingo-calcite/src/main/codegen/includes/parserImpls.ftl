@@ -117,6 +117,7 @@ SqlNodeList TableElementList() :
 
 void TableElement(List<SqlNode> list) :
 {
+    DingoSqlColumn columnDec;
     final SqlIdentifier id;
     final SqlDataTypeSpec type;
     final boolean nullable;
@@ -126,7 +127,7 @@ void TableElement(List<SqlNode> list) :
     final SqlNodeList columnList;
     SqlNodeList withColumnList = null;
     final Span s = Span.of();
-    final ColumnStrategy strategy;
+    ColumnStrategy strategy = null;
     final String index;
     Boolean autoIncrement = false;
     Properties properties = null;
@@ -152,9 +153,7 @@ void TableElement(List<SqlNode> list) :
                 { strategy = ColumnStrategy.VIRTUAL; }
             )
         |
-            <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY) {
-                strategy = ColumnStrategy.DEFAULT;
-            }
+          <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY) { strategy = ColumnStrategy.DEFAULT;}
         |
             {
                 e = null;
@@ -163,11 +162,11 @@ void TableElement(List<SqlNode> list) :
             }
         )
         {
-            list.add(
-                DingoSqlDdlNodes.createColumn(
-                s.add(id).end(this), id, type.withNullable(nullable), e, strategy, autoIncrement)
-                );
+            columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), id, type.withNullable(nullable), e, strategy, autoIncrement);
+            list.add(columnDec);
         }
+        [ <PRIMARY> <KEY> { columnDec.setPrimaryKey(true); }]
+        [ <COMMENT> (<IDENTIFIER>|<QUOTED_STRING>) { columnDec.setComment(token.image); } ]
     |
         { list.add(id); }
     )
@@ -212,10 +211,19 @@ void TableElement(List<SqlNode> list) :
             partitionDefinition, replica, indexType));
         }
     |
-        <UNIQUE> { s.add(this); } name = SimpleIdentifier()
+        <KEY> { s.add(this); } name = SimpleIdentifier()
         columnList = ParenthesizedSimpleIdentifierList() {
-            list.add(SqlDdlNodes.unique(s.end(columnList), name, columnList));
+            index = name.getSimple();
+            list.add(new SqlIndexDeclaration(s.end(this), index, columnList, withColumnList, properties,
+            partitionDefinition, replica, indexType));
+            }
+    |
+        <UNIQUE> { s.add(this); }
+        [<KEY>] [<INDEX>] name = SimpleIdentifier()
+        columnList = ParenthesizedSimpleIdentifierList() {
+              list.add(SqlDdlNodes.unique(s.end(columnList), name, columnList));
         }
+        [<USING> <IDENTIFIER> ]
     |
         <PRIMARY>  { s.add(this); } <KEY>
         columnList = ParenthesizedSimpleIdentifierList() {
@@ -317,11 +325,14 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     String engine = null;
     Properties properties = null;
     int autoIncrement = 1;
+    String charset = "utf8";
+    String collate = "utf8_bin";
+    String comment = "";
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     [ tableElementList = TableElementList() ]
-    [ <ENGINE> <EQ> { engine = getNextToken().image; } ]
+    [ <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "ENG_ROCKSDB";} } ]
     [ <TTL> <EQ> [ <MINUS> {ttl = positiveInteger("-" + getNextToken().image, "ttl");} ]
         { ttl = positiveInteger(getNextToken().image, "ttl"); }
     ]
@@ -340,10 +351,14 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     [ <WITH> properties = readProperties() ]
     [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
     [ <AUTO_INCREMENT> <EQ> {autoIncrement = positiveInteger(getNextToken().image, "auto_increment"); }]
+    [ <DEFAULT_> ]
+    [ <CHARSET> <EQ> { charset = getNextToken().image; } ]
+    [ <COLLATE> <EQ> { collate = getNextToken().image; } ]
+    [ <COMMENT> <EQ> { comment = getNextToken().image; }]
     {
         return DingoSqlDdlNodes.createTable(
             s.end(this), replace, ifNotExists, id, tableElementList, query, ttl, partitionDefinition, replica,
-            engine, properties, autoIncrement
+            engine, properties, autoIncrement, comment, charset, collate
         );
     }
 }
@@ -952,28 +967,6 @@ SqlNode SqlTruncate() :
     ]
     id = CompoundIdentifier() {
         return new SqlTruncate(getPos(), id);
-    }
-}
-
-SqlTypeNameSpec SqlFloatTypeName(Span s) :
-{
-    final SqlTypeNameSpec sqlTypeNameSpec;
-}
-{
-    <FLOAT>
-    {
-        s.add(this);
-        SqlTypeName sqlTypeName = SqlTypeName.FLOAT;
-        int precision = -1;
-    }
-        [
-            <LPAREN>
-                precision = UnsignedIntLiteral()
-            <RPAREN>
-        ]
-    {
-        sqlTypeNameSpec = new SqlFloatTypeNameSpec(sqlTypeName, precision, s.end(this));
-        return sqlTypeNameSpec;
     }
 }
 

@@ -134,9 +134,11 @@ public class AutoIncrementShuttle implements RelShuttle {
             if (modify.isInsert()) {
                 DingoTable table = modify.getTable().unwrap(DingoTable.class);
                 boolean hasAutoIncrement = false;
+                int autoIncrementColIndex = 0;
                 for (ColumnDefinition columnDefinition : table.getTableDefinition().getColumns()) {
                     if (columnDefinition.isAutoIncrement()) {
                         hasAutoIncrement = true;
+                        autoIncrementColIndex = table.getTableDefinition().getColumnIndex(columnDefinition.getName());
                     }
                 }
                 if (hasAutoIncrement && other.getInputs().size() > 0) {
@@ -144,6 +146,7 @@ public class AutoIncrementShuttle implements RelShuttle {
                     if (values instanceof DingoValues) {
                         DingoValues dingoValues = (DingoValues) values;
                         dingoValues.setHasAutoIncrement(true);
+                        dingoValues.setAutoIncrementColIndex(autoIncrementColIndex);
                         return dingoValues;
                     }
                 }
@@ -168,7 +171,9 @@ public class AutoIncrementShuttle implements RelShuttle {
     }
 
     protected RelNode visitChild(RelNode parent, RelNode child) {
-        stack.push(parent);
+        if (parent != null) {
+            stack.push(parent);
+        }
         try {
             RelNode child2 = child.accept(this);
             if (child2 instanceof DingoValues) {
@@ -176,7 +181,9 @@ public class AutoIncrementShuttle implements RelShuttle {
             }
             return null;
         } finally {
-            stack.pop();
+            if (parent != null) {
+                stack.pop();
+            }
         }
     }
 }

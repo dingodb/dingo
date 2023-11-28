@@ -103,6 +103,16 @@ public class TableDefinition {
     @Getter
     @Setter
     private String createSql;
+    @Getter
+    @Setter
+    private String comment;
+    @Setter
+    @Getter
+    private String charset;
+    @Getter
+    @Setter
+    private String collate;
+
     @JsonCreator
     public TableDefinition(@JsonProperty("name") String name) {
         this.name = name;
@@ -113,7 +123,11 @@ public class TableDefinition {
     }
 
     public static TableDefinition readJson(InputStream is) throws IOException {
-        return PARSER.parse(is, TableDefinition.class);
+        TableDefinition tableDefinition = PARSER.parse(is, TableDefinition.class);
+        tableDefinition.getColumns().forEach(columnDefinition -> {
+            columnDefinition.setState(1);
+        });
+        return tableDefinition;
     }
 
     public String getName() {
@@ -172,6 +186,25 @@ public class TableDefinition {
         return result;
     }
 
+    private @NonNull List<Integer> getColumnIndices(boolean keyOrValue) {
+        List<Integer> indices = new LinkedList<>();
+        int index = 0;
+        for (ColumnDefinition column : columns) {
+            if (column.isPrimary() == keyOrValue) {
+                indices.add(index);
+            }
+            ++index;
+        }
+        if (keyOrValue) {
+            Integer[] pkIndices = new Integer[indices.size()];
+            for (int i = 0; i < indices.size(); i++) {
+                pkIndices[columns.get(indices.get(i)).getPrimary()] = indices.get(i);
+            }
+            return Arrays.asList(pkIndices);
+        }
+        return indices;
+    }
+
     public int getPrimaryKeyCount() {
         int count = 0;
         for (ColumnDefinition column : columns) {
@@ -215,25 +248,6 @@ public class TableDefinition {
 
     private @NonNull TupleMapping getColumnMapping(boolean keyOrValue) {
         return TupleMapping.of(getColumnIndices(keyOrValue));
-    }
-
-    private @NonNull List<Integer> getColumnIndices(boolean keyOrValue) {
-        List<Integer> indices = new LinkedList<>();
-        int index = 0;
-        for (ColumnDefinition column : columns) {
-            if (column.isPrimary() == keyOrValue) {
-                indices.add(index);
-            }
-            ++index;
-        }
-        if (keyOrValue) {
-            Integer[] pkIndices = new Integer[indices.size()];
-            for (int i = 0; i < indices.size(); i++) {
-                pkIndices[columns.get(indices.get(i)).getPrimary()] = indices.get(i);
-            }
-            return Arrays.asList(pkIndices);
-        }
-        return indices;
     }
 
     public @NonNull List<Integer> getKeyColumnIndices() {
@@ -479,7 +493,10 @@ public class TableDefinition {
             this.properties,
             this.autoIncrement,
             this.replica,
-            null
+            null,
+            this.comment,
+            this.charset,
+            this.collate
         );
         return tableDefinition;
     }

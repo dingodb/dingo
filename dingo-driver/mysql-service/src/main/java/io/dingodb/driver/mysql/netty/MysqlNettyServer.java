@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 public class MysqlNettyServer {
     public final String host;
     public final int port;
-    public static final Map<String, MysqlConnection> connections = new ConcurrentHashMap<>();
+    public static final Map<Integer, MysqlConnection> connections = new ConcurrentHashMap<>();
 
     private EventLoopGroup eventLoopGroup;
     private ServerBootstrap server;

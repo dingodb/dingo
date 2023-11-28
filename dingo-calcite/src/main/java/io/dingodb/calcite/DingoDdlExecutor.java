@@ -20,7 +20,6 @@ import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
 import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
-import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
 import io.dingodb.calcite.grammar.ddl.SqlDropIndex;
@@ -29,10 +28,8 @@ import io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlIndexDeclaration;
 import io.dingodb.calcite.grammar.ddl.SqlRevoke;
-import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
-import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
 import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.common.CommonId;
@@ -62,12 +59,13 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.server.DdlExecutorImpl;
+import org.apache.calcite.sql.SqlBasicTypeNameSpec;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.SqlSetOption;
+import org.apache.calcite.sql.SqlTypeNameSpec;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.ddl.DingoSqlColumn;
 import org.apache.calcite.sql.ddl.SqlCreateSchema;
@@ -76,6 +74,7 @@ import org.apache.calcite.sql.ddl.SqlDropSchema;
 import org.apache.calcite.sql.ddl.SqlDropTable;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.dialect.AnsiSqlDialect;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.Pair;
@@ -105,9 +104,9 @@ import static org.apache.calcite.util.Static.RESOURCE;
 public class DingoDdlExecutor extends DdlExecutorImpl {
     public static final DingoDdlExecutor INSTANCE = new DingoDdlExecutor();
 
-    private static Pattern namePattern = Pattern.compile("^[A-Z_][A-Z\\d_]+$");
+    private static final Pattern namePattern = Pattern.compile("^[A-Z_][A-Z\\d_]+$");
 
-    private ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+    private final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
     public UserService userService;
 
@@ -116,23 +115,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     private List<TableDefinition> getIndexDefinitions(DingoSqlCreateTable create, TableDefinition tableDefinition) {
-        List<TableDefinition> indexTableDefinitions = create.columnList.stream()
+        assert create.columnList != null;
+        return create.columnList.stream()
             .filter(col -> col.getKind() == SqlKind.CREATE_INDEX)
             .map(col -> fromSqlIndexDeclaration((SqlIndexDeclaration) col, tableDefinition))
             .collect(Collectors.toCollection(ArrayList::new));
-        return indexTableDefinitions;
-    }
-
-    private static Index fromSqlKeyConstraint(SqlKeyConstraint sqlKeyConstraint) {
-        SqlNodeList columnList = (SqlNodeList) sqlKeyConstraint.getOperandList().get(1);
-        String[] columns = columnList.getList().stream()
-            .filter(Objects::nonNull)
-            .map(SqlIdentifier.class::cast)
-            .map(SqlIdentifier::getSimple)
-            .map(String::toUpperCase)
-            .toArray(String[]::new);
-        SqlIdentifier name = (SqlIdentifier) sqlKeyConstraint.getOperandList().get(0);
-        return new Index(name.names.get(0).toUpperCase(), columns, true);
     }
 
     private @Nullable TableDefinition fromSqlIndexDeclaration(
@@ -164,7 +151,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
 
         List<ColumnDefinition> indexColumnDefinitions = new ArrayList<>();
-        if (indexDeclaration.getIndexType().equals("scalar")) {
+        if (indexDeclaration.getIndexType().equalsIgnoreCase("scalar")) {
             properties.put("indexType", "scalar");
             for (int i = 0; i < columns.size(); i++) {
                 String columnName = columns.get(i);
@@ -337,6 +324,37 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .primary(primary)
             .defaultValue(defaultValue)
             .autoIncrement(scd.isAutoIncrement())
+            .comment(scd.getComment())
+            .build();
+    }
+
+    private static @Nullable ColumnDefinition createRowIdColDef(
+        SqlValidator validator
+    ) {
+        SqlTypeNameSpec sqlTypeNameSpec = new SqlBasicTypeNameSpec(SqlTypeName.BIGINT, -1,
+            new SqlParserPos(0, 0));
+        SqlDataTypeSpec typeSpec = new SqlDataTypeSpec(sqlTypeNameSpec, new SqlParserPos(10, 1));
+        RelDataType dataType = typeSpec.deriveType(validator, true);
+        SqlTypeName typeName = dataType.getSqlTypeName();
+
+        String name = "_ROWID";
+
+        String defaultValue = "";
+
+        int scale = typeName.allowsScale() ? dataType.getScale() : RelDataType.SCALE_NOT_SPECIFIED;
+        RelDataType elementType = dataType.getComponentType();
+        SqlTypeName elementTypeName = elementType != null ? elementType.getSqlTypeName() : null;
+        return ColumnDefinition.builder()
+            .name(name)
+            .type(typeName.getName())
+            .elementType(mapOrNull(elementTypeName, SqlTypeName::getName))
+            .precision(-1)
+            .scale(scale)
+            .nullable(false)
+            .primary(0)
+            .defaultValue(defaultValue)
+            .autoIncrement(true)
+            .state(0)
             .build();
     }
 
@@ -424,9 +442,13 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 .map(SqlIdentifier::getSimple)
                 .map(String::toUpperCase)
                 .collect(Collectors.toCollection(ArrayList::new))
-            ).filter(ks -> !ks.isEmpty())
-            .orElseThrow(() -> DINGO_RESOURCE.primaryKeyRequired(tableName).ex());
-
+            ).filter(ks -> !ks.isEmpty()).orElseGet(() -> create.columnList.stream()
+                .filter(DingoSqlColumn.class::isInstance)
+                .map(DingoSqlColumn.class::cast)
+                .filter(DingoSqlColumn::isPrimaryKey)
+                .map(column -> column.name.getSimple())
+                .map(String::toUpperCase)
+                .collect(Collectors.toCollection(ArrayList::new)));
 
         SqlValidator validator = new ContextSqlValidator(context, true);
 
@@ -435,6 +457,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .filter(col -> col.getKind() == SqlKind.COLUMN_DECL)
             .map(col -> fromSqlColumnDeclaration((DingoSqlColumn) col, validator, pks))
             .collect(Collectors.toCollection(ArrayList::new));
+        // If it is a table without a primary key, create an invisible column _rowid is a self increasing primary key
+        if (pks.size() == 0) {
+            pks.add("_ROWID");
+            columns.add(createRowIdColDef(validator));
+        }
 
         // Check if specified primary keys are in column list.
         List<String> cols = columns.stream().map(ColumnDefinition::getName).collect(Collectors.toList());
@@ -478,7 +505,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             create.getProperties(),
             create.getAutoIncrement(),
             create.getReplica(),
-            create.getOriginalCreateSql()
+            create.getOriginalCreateSql(),
+            create.getComment(),
+            create.getCharset(),
+            create.getCollate()
         );
         List<TableDefinition> indexTableDefinitions = getIndexDefinitions(create, tableDefinition);
 
@@ -536,15 +566,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 if (e.getPartDefinition() == null) {
                     return e;
                 }
-                e.getPartDefinition().getDetails().forEach(detail -> {
-                    transformOperand(detail);
-                });
+                e.getPartDefinition().getDetails().forEach(DingoDdlExecutor::transformOperand);
                 return e;
             }).collect(Collectors.toList());
         if (tableDefinition.getPartDefinition() != null) {
-            tableDefinition.getPartDefinition().getDetails().forEach(detail -> {
-                transformOperand(detail);
-            });
+            tableDefinition.getPartDefinition().getDetails().forEach(DingoDdlExecutor::transformOperand);
         }
         schema.createTables(tableDefinition, indexTableDefinitions);
     }
@@ -699,14 +725,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
     }
 
-    public void execute(@NonNull SqlSetOption sqlSetOption, CalcitePrepare.Context context) {
-        log.info("sql set option");
-    }
-
-    public void execute(@NonNull SqlUseSchema sqlUseSchema, CalcitePrepare.Context context) {
-        log.info("use schema");
-    }
-
     public void validateDropIndex(DingoSchema schema, String tableName, String indexName) {
         if (schema.getTable(tableName) == null) {
             throw new IllegalArgumentException("table " + tableName + " does not exist ");
@@ -753,7 +771,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     @NonNull
-    private PrivilegeDefinition getPrivilegeDefinition(
+    private static PrivilegeDefinition getPrivilegeDefinition(
         @NonNull SqlGrant sqlGrant, CalcitePrepare.@NonNull Context context
     ) {
         String tableName = sqlGrant.table;

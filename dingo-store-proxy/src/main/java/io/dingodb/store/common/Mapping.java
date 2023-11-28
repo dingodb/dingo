@@ -54,6 +54,7 @@ public final class Mapping {
             .nullable(definition.isNullable())
             .primary(definition.getPrimary())
             .defaultValue(definition.getDefaultValue())
+            .state(definition.getState())
             .build();
     }
 
@@ -75,7 +76,10 @@ public final class Mapping {
             properties,
             table.getAutoIncrement(),
             table.getReplica(),
-            table.getCreateSql());
+            table.getCreateSql(),
+            table.getComment(),
+            table.getCharset(),
+            table.getCollate());
     }
 
     public static io.dingodb.store.common.TableDefinition mapping(TableDefinition tableDefinition) {
@@ -148,7 +152,8 @@ public final class Mapping {
             column.isNullable(),
             column.getPrimary(),
             column.getDefaultValue(),
-            column.isAutoIncrement());
+            column.isAutoIncrement(),
+            column.getState());
     }
 
     public static DingoCommonId mapping(CommonId commonId) {

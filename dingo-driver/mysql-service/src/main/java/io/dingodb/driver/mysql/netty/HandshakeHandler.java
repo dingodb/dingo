@@ -56,6 +56,7 @@ import java.sql.Statement;
 import java.util.Properties;
 import java.util.Random;
 import java.util.TimeZone;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.net.ssl.SSLEngine;
 
@@ -66,6 +67,7 @@ import static io.dingodb.common.mysql.constant.ServerStatus.SERVER_STATUS_AUTOCO
 @Slf4j
 public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
     ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+    private static volatile AtomicInteger threadId = new AtomicInteger(0);
 
     public MysqlConnection mysqlConnection;
 
@@ -81,6 +83,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
         HandshakePacket handshakePacket = createHandShakePacket();
+        mysqlConnection.setId(handshakePacket.threadId);
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
         handshakePacket.write(buf);
         ctx.writeAndFlush(buf);
@@ -197,7 +200,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         mysqlConnection.setConnection(dingoConnection);
                         PrivilegeGather privilegeGather = userService.getPrivilegeDef(user, ip);
                         env.getPrivilegeGatherMap().put(privilegeGather.key(), privilegeGather);
-                        MysqlNettyServer.connections.put(dingoConnection.id, mysqlConnection);
+                        MysqlNettyServer.connections.put(mysqlConnection.getId(), mysqlConnection);
 
                         loadGlobalVariables(dingoConnection);
                         if (StringUtils.isNotBlank(authPacket.database)) {
@@ -307,9 +310,9 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         HandshakePacket handshakePacket = new HandshakePacket();
         handshakePacket.protocolVersion = PROTOCOL_VERSION;
         handshakePacket.serverVersion = Versions.SERVER_VERSION;
-        handshakePacket.threadId = 15;
+        handshakePacket.threadId = threadId.get();
+        threadId.incrementAndGet();
         handshakePacket.seed = createRandomString(8).getBytes();
-
         handshakePacket.serverCapabilities = MysqlServer.getServerCapabilities();
         handshakePacket.serverCharsetIndex = 0x08;
         handshakePacket.serverStatus = SERVER_STATUS_AUTOCOMMIT;

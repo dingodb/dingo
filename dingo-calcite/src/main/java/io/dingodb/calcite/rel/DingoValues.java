@@ -35,6 +35,9 @@ public class DingoValues extends LogicalDingoValues implements DingoRel {
     @Setter
     @Getter
     private boolean hasAutoIncrement;
+    @Getter
+    @Setter
+    private int autoIncrementColIndex;
 
     public DingoValues(
         RelOptCluster cluster,
