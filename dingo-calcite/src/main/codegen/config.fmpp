@@ -47,6 +47,9 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges"
       "io.dingodb.calcite.grammar.ddl.SqlGrant"
       "io.dingodb.calcite.grammar.ddl.SqlIndexDeclaration"
+      "io.dingodb.calcite.grammar.ddl.SqlKill"
+      "io.dingodb.calcite.grammar.ddl.SqlKillConnection"
+      "io.dingodb.calcite.grammar.ddl.SqlKillQuery"
       "io.dingodb.calcite.grammar.ddl.SqlLock"
       "io.dingodb.calcite.grammar.ddl.SqlLockBlock"
       "io.dingodb.calcite.grammar.ddl.SqlLockTable"
@@ -84,6 +87,7 @@ data: {
       "org.apache.calcite.sql.SqlTimeLiteral"
       "org.apache.calcite.sql.SqlTimestampLiteral"
       "org.apache.calcite.sql.ddl.SqlDdlNodes"
+      "org.apache.calcite.sql.ddl.DingoSqlColumn"
       "org.apache.calcite.sql.ddl.SqlFloatTypeNameSpec"
       "org.apache.calcite.sql2rel.SqlLikeBinaryOperator"
       "org.apache.calcite.sql2rel.SqlFunctionScanOperator"
@@ -145,6 +149,13 @@ data: {
       "BLOCKS"
       "HASH"
       "LOCKS"
+      "COMMENT"
+      "CHARSET"
+      "KILL"
+      "QUERY"
+      "UNSIGNED"
+      "TEXT"
+      "LONGTEXT"
     ]
 
     # List of non-reserved keywords to add;
@@ -211,10 +222,14 @@ data: {
         "SqlLock"
         "SqlEnd"
         "SqlUnLock"
+        "SqlKill"
     ]
 
     sqlTypeNameMethods: [
         "SqlFloatTypeName"
+        "SqlDateTimeTypeName"
+        "SqlTextTypeName"
+        "SqlLongTextTypeName"
     ]
 
     functionCallMethods: [
@@ -233,6 +248,8 @@ data: {
       "Analyze.ftl"
       "Grant.ftl"
       "Transaction.ftl"
+      "SqlType.ftl"
+      "Kill.ftl"
     ]
 
     includePosixOperators: false
@@ -366,7 +383,6 @@ data: {
     "JAVA"
     "JSON"
     "K"
-    "KEY"
     "KEY_MEMBER"
     "KEY_TYPE"
     "LABEL"
@@ -418,6 +434,7 @@ data: {
     "PASCAL"
     "PASSING"
     "PASSTHROUGH"
+    "PASSWORD"
     "PAST"
     "PATH"
     "PIVOT"

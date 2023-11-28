@@ -169,7 +169,7 @@ public class DingoCostModelV1 extends DingoCostModel {
 
     @NonNull
     private static List<ColumnDefinition> getSelectionCdList(LogicalDingoTableScan tableScan, DingoTable dingoTable) {
-        if (tableScan.getSelection() == null) {
+        if (tableScan.getRealSelection() == null) {
             return dingoTable.getTableDefinition().getColumns();
         }
         int[] selections = tableScan.getSelection().getMappings();

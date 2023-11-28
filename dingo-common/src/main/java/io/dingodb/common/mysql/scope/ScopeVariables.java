@@ -34,6 +34,7 @@ public class ScopeVariables {
         // used to client connection
         sessionVariables.put("transaction_read_only", "0");
         sessionVariables.put("auto_increment_increment", "1");
+        sessionVariables.put("transaction_isolation", "READ-COMMITTED");
 
         immutableVariables.add("version_comment");
         immutableVariables.add("version");

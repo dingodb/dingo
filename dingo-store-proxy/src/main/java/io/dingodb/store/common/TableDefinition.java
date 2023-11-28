@@ -157,7 +157,7 @@ public class TableDefinition implements Table {
                         )
                     );
                     break;
-                case "IVFFLAT":{
+                case "IVFFLAT": {
                     int ncentroids2 = Integer.valueOf(properties.getOrDefault("ncentroids", "0"));
                     vectorIndexParameter = new VectorIndexParameter(
                         VectorIndexParameter.VectorIndexType.VECTOR_INDEX_TYPE_IVF_FLAT,
@@ -179,6 +179,21 @@ public class TableDefinition implements Table {
 
             return new IndexParameter(IndexParameter.IndexType.INDEX_TYPE_VECTOR, vectorIndexParameter);
         }
+    }
+
+    @Override
+    public String getComment() {
+        return tableDefinition.getComment();
+    }
+
+    @Override
+    public String getCharset() {
+        return tableDefinition.getCharset();
+    }
+
+    @Override
+    public String getCollate() {
+        return tableDefinition.getCollate();
     }
 
     private VectorIndexParameter.MetricType getMetricType(String metricType) {

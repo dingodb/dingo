@@ -49,6 +49,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -60,6 +61,8 @@ public class LogicalDingoTableScan extends TableScan {
     protected final RexNode filter;
     @Getter
     protected final TupleMapping selection;
+    @Getter
+    protected TupleMapping realSelection;
     @Getter
     protected final List<AggregateCall> aggCalls;
     @Getter
@@ -99,13 +102,34 @@ public class LogicalDingoTableScan extends TableScan {
     ) {
         super(cluster, traitSet, hints, table);
         this.filter = filter;
-        this.selection = selection;
         this.aggCalls = aggCalls;
         this.groupSet = groupSet;
         this.groupSets = groupSets;
         this.pushDown = pushDown;
+        DingoTable dingoTable = table.unwrap(DingoTable.class);
+        assert dingoTable != null;
+        this.realSelection = selection;
+        // If the columns of the table contain hide and delete, the data shows that they need to be deleted
+        if (selection != null) {
+            List<Integer> mappingList = new ArrayList<>();
+            for (int index : selection.getMappings()) {
+                if (dingoTable.getTableDefinition().getColumn(index).getState() == 1) {
+                    mappingList.add(index);
+                }
+            }
+            this.selection = TupleMapping.of(mappingList);
+        } else {
+            List<Integer> mapping = dingoTable.getTableDefinition()
+                .getColumns()
+                .stream()
+                .filter(col -> col.getState() == 1)
+                .map(col -> dingoTable.getTableDefinition().getColumnIndex(col.getName()))
+                .collect(Collectors.toList());
+            this.selection = TupleMapping.of(mapping);
+        }
+        // The vector distance function adapts to the corresponding function based on the table vector type
+        // such as L2_ Distance, ip_ Distance, cosine_ Distance, etc
         if (filter != null) {
-            DingoTable dingoTable = table.unwrap(DingoTable.class);
             dispatchDistanceCondition(filter, selection, dingoTable);
         }
     }
@@ -177,7 +201,7 @@ public class LogicalDingoTableScan extends TableScan {
         return RelDataTypeUtils.mapType(
             getCluster().getTypeFactory(),
             getTableType(),
-            selection
+            realSelection
         );
     }
 
@@ -197,7 +221,18 @@ public class LogicalDingoTableScan extends TableScan {
         return pw;
     }
 
-    public static void dispatchDistanceCondition(RexNode rexPredicate, TupleMapping tupleMapping, DingoTable dingoTable) {
+    /**
+     * The vector distance function adapts to the corresponding function based on the table vector type.
+     * such as L2_ Distance, ip_ Distance, cosine_ Distance, etc.
+     * @param rexPredicate condition
+     * @param tupleMapping tupleMapping
+     * @param dingoTable table
+     */
+    public static void dispatchDistanceCondition(
+        RexNode rexPredicate,
+        TupleMapping tupleMapping,
+        DingoTable dingoTable
+    ) {
         if (tupleMapping == null) {
             tupleMapping = getDefaultSelection(dingoTable);
         }

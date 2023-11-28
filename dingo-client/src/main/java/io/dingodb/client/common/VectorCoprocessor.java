@@ -85,6 +85,8 @@ public class VectorCoprocessor implements Coprocessor {
         private int primary = -1;
         private String defaultValue;
         private boolean isAutoIncrement;
+        private int state;
+        private String comment;
 
     }
 }

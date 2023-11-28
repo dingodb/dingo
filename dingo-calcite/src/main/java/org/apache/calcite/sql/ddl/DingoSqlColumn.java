@@ -17,6 +17,7 @@
 package org.apache.calcite.sql.ddl;
 
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -26,6 +27,14 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class DingoSqlColumn extends SqlColumnDeclaration {
     @Getter boolean autoIncrement;
+
+    @Getter
+    @Setter
+    boolean primaryKey;
+
+    @Getter
+    @Setter
+    String comment = "";
 
     public DingoSqlColumn(
         SqlParserPos pos,

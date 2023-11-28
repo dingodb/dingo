@@ -20,6 +20,8 @@ import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
 import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
+import io.dingodb.calcite.grammar.ddl.SqlKillConnection;
+import io.dingodb.calcite.grammar.ddl.SqlKillQuery;
 import io.dingodb.calcite.grammar.ddl.SqlLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlLockTable;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
@@ -82,11 +84,19 @@ public class SqlToOperationConverter {
             if (selectItem1 instanceof SqlBasicCall) {
                 SqlBasicCall sqlBasicCall = (SqlBasicCall) selectItem1;
                 String operatorName = sqlBasicCall.getOperator().getName();
-                if (operatorName.equalsIgnoreCase("database")) {
-                    return Optional.of(new ShowCurrentDatabase(context));
-                } else if (operatorName.equalsIgnoreCase("@")) {
-                    sqlBasicCall.getOperandList().get(0).toString();
-                    return Optional.of(new ShowUserVariableOperation(sqlBasicCall, connection));
+                Optional select = adaptorSelect(operatorName, sqlBasicCall, connection, context);
+                if (select.isPresent()) {
+                    return select;
+                }
+                if (operatorName.equalsIgnoreCase("AS")) {
+                    SqlNode sqlNode1 = sqlBasicCall.getOperandList().get(0);
+                    if (sqlNode1 instanceof SqlBasicCall) {
+                        operatorName = ((SqlBasicCall) sqlNode1).getOperator().getName();
+                        select = adaptorSelect(operatorName, (SqlBasicCall) sqlNode1, connection, context);
+                        if (select.isPresent()) {
+                            return select;
+                        }
+                    }
                 }
             }
             return Optional.empty();
@@ -148,6 +158,12 @@ public class SqlToOperationConverter {
         } else if (sqlNode instanceof SqlUnLockBlock) {
             SqlUnLockBlock sqlUnLockBlock = (SqlUnLockBlock) sqlNode;
             return Optional.of(new UnlockBlockOperation(connection, sqlUnLockBlock.getSqlUnBlockList()));
+        } else if (sqlNode instanceof SqlKillQuery) {
+            SqlKillQuery killQuery = (SqlKillQuery) sqlNode;
+            return Optional.of(new KillQuery(killQuery.getThreadId()));
+        } else if (sqlNode instanceof SqlKillConnection) {
+            SqlKillConnection killConnection = (SqlKillConnection) sqlNode;
+            return Optional.of(new KillConnection(killConnection.getThreadId()));
         } else {
             return Optional.empty();
         }
@@ -160,4 +176,16 @@ public class SqlToOperationConverter {
         return context.getUsedSchema().getName();
     }
 
+    private static Optional adaptorSelect(String operatorName,
+                                          SqlBasicCall sqlBasicCall,
+                                          Connection connection,
+                                          DingoParserContext context) {
+        if (operatorName.equalsIgnoreCase("database")) {
+            return Optional.of(new ShowCurrentDatabase(context));
+        } else if (operatorName.equalsIgnoreCase("@")) {
+            return Optional.of(new ShowUserVariableOperation(sqlBasicCall, connection));
+        } else {
+            return Optional.empty();
+        }
+    }
 }

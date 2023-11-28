@@ -150,7 +150,8 @@ public class ScanCoprocessorOperation implements Operation {
             column.isNullable(),
             primary,
             column.getDefaultValue(),
-            column.isAutoIncrement());
+            column.isAutoIncrement(),
+            column.getState());
     }
 
     @Override

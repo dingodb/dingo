@@ -29,7 +29,8 @@ import java.util.Set;
 
 public class MysqlConnection {
     @Getter
-    private String id;
+    @Setter
+    private Integer id;
 
     public SocketChannel channel;
 
@@ -50,7 +51,6 @@ public class MysqlConnection {
 
     public void setConnection(DingoConnection dingoConnection) {
         connection = dingoConnection;
-        this.id = dingoConnection.id;
     }
 
     public void close() {

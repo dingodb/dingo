@@ -46,6 +46,16 @@ public class DingoSqlCreateTable extends SqlCreateTable {
     @Setter
     private String originalCreateSql;
 
+    @Getter
+    @Setter
+    private String comment;
+    @Getter
+    @Setter
+    private String charset;
+    @Getter
+    @Setter
+    private String collate;
+
     /**
      * Creates a SqlCreateTable.
      *
@@ -68,7 +78,10 @@ public class DingoSqlCreateTable extends SqlCreateTable {
         int replica,
         String engine,
         Properties properties,
-        int autoIncrement
+        int autoIncrement,
+        String comment,
+        String charset,
+        String collate
     ) {
         super(pos, replace, ifNotExists, name, columnList, query);
         this.properties = properties;
@@ -77,5 +90,8 @@ public class DingoSqlCreateTable extends SqlCreateTable {
         this.ttl = ttl;
         this.engine = engine;
         this.autoIncrement = autoIncrement;
+        this.comment = comment;
+        this.charset = charset;
+        this.collate = collate;
     }
 }

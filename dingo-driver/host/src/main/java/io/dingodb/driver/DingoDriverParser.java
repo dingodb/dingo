@@ -93,6 +93,9 @@ public final class DingoDriverParser extends DingoParser {
         final List<ColumnMetaData> columns = new ArrayList<>(fieldList.size());
         for (int i = 0; i < fieldList.size(); ++i) {
             RelDataTypeField field = fieldList.get(i);
+            if (field.getName().equalsIgnoreCase("_rowid")) {
+                continue;
+            }
             columns.add(metaData(
                 typeFactory,
                 columns.size(),
@@ -320,7 +323,7 @@ public final class DingoDriverParser extends DingoParser {
                 if (!dingoValues.isHasAutoIncrement()) {
                     return;
                 }
-                Object autoValue = dingoValues.getTuples().get(0)[0];
+                Object autoValue = dingoValues.getTuples().get(0)[dingoValues.getAutoIncrementColIndex()];
                 connection.setClientInfo("last_insert_id", autoValue.toString());
                 connection.setClientInfo(jobIdPrefix, autoValue.toString());
             }

@@ -73,7 +73,10 @@ public final class Mapping {
             properties,
             table.getAutoIncrement(),
             table.getReplica(),
-            table.getCreateSql());
+            table.getCreateSql(),
+            table.getComment(),
+            table.getCharset(),
+            table.getCollate());
     }
 
     public static ColumnDefinition mapping(Column column) {
@@ -86,7 +89,8 @@ public final class Mapping {
             column.isNullable(),
             column.getPrimary(),
             column.getDefaultValue(),
-            column.isAutoIncrement());
+            column.isAutoIncrement(),
+            column.getState());
     }
 
     public static Column mapping(ColumnDefinition definition) {
@@ -99,6 +103,7 @@ public final class Mapping {
             .nullable(definition.isNullable())
             .primary(definition.getPrimary())
             .defaultValue(definition.getDefaultValue())
+            .state(definition.getState())
             .build();
     }
 

@@ -67,10 +67,6 @@ public class ExceptionCases extends SqlTestCaseJavaBuilder {
                 exception(sql(1050, "42S01"))
             );
 
-        // Validation error
-        test("Create without primary key")
-            .step("create table {table} (id int)", exception(sql(1001, CUSTOM_ERROR_STATE)));
-
         test("Non exist primary key")
             .step(
                 "create table test2(uuid varchar, phone varchar, birthday date, primary key(id))",

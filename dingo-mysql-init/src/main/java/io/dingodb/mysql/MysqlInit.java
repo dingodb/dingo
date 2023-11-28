@@ -257,7 +257,7 @@ public final class MysqlInit {
         values.add(new Object[]{"max_execution_time", "0"});
         values.add(new Object[]{"autocommit", "on"});
         values.add(new Object[]{"lock_wait_timeout", "31536000"});
-        values.add(new Object[]{"transaction_isolation", "REPEATABLE-READ"});
+        values.add(new Object[]{"transaction_isolation", "READ-COMMITTED"});
         values.add(new Object[]{"transaction_read_only", "off"});
         values.add(new Object[]{"txn_mode", "optimistic"});
         values.add(new Object[]{"collect_txn", "true"});
@@ -273,6 +273,9 @@ public final class MysqlInit {
             .columns(columns)
             .version(1)
             .engine(Common.Engine.ENG_ROCKSDB.name())
+            .comment("")
+            .charset("utf8")
+            .collate("utf8_bin")
             .build();
     }
 
@@ -339,9 +342,13 @@ public final class MysqlInit {
         is.read(bytes);
         is.close();
         List<ColumnDefinition> definitions =  JSON.parseArray(new String(bytes), ColumnDefinition.class);
-        return definitions.stream().map(columnDefinition -> {
-            return (Column)columnDefinition;
-        }).collect(Collectors.toList());
+        return definitions
+            .stream()
+            .map(columnDefinition -> {
+                columnDefinition.setState(1);
+                columnDefinition.setComment("");
+                return (Column)columnDefinition; })
+            .collect(Collectors.toList());
     }
 
     private static Map<String, Object> getUserObjectMap(String tableName) {

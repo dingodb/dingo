@@ -114,7 +114,7 @@ public final class DingoTableScanVisitFun {
                     : AggFactory.getAggKeys(rel.getGroupSet()),
                 rel.getAggCalls() == null ? null
                     : AggFactory.getAggList(rel.getAggCalls(), DefinitionMapper.mapToDingoType(rel.getSelectedType())),
-                DefinitionMapper.mapToDingoType(rel.getRowType()),
+                DefinitionMapper.mapToDingoType(rel.getNormalRowType()),
                 rel.isPushDown()
             );
             Task task = job.getOrCreate(currentLocation, idGenerator);
@@ -125,4 +125,5 @@ public final class DingoTableScanVisitFun {
 
         return outputs;
     }
+
 }
