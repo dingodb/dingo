@@ -30,7 +30,7 @@ public class MysqlServer {
         flag |= CapabilityFlags.CLIENT_PROTOCOL_41.getCode();
         flag |= CapabilityFlags.CLIENT_INTERACTIVE.getCode();
         flag |= CapabilityFlags.CLIENT_IGNORE_SIGPIPE.getCode();
-        //flag |= CapabilityFlags.CLIENT_TRANSACTIONS.getCode();
+        flag |= CapabilityFlags.CLIENT_TRANSACTIONS.getCode();
         flag |= CapabilityFlags.CLIENT_SECURE_CONNECTION.getCode();
         flag |= CapabilityFlags.CLIENT_SSL.getCode();
         //upper

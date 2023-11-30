@@ -323,9 +323,12 @@ public final class DingoDriverParser extends DingoParser {
                 if (!dingoValues.isHasAutoIncrement()) {
                     return;
                 }
-                Object autoValue = dingoValues.getTuples().get(0)[dingoValues.getAutoIncrementColIndex()];
-                connection.setClientInfo("last_insert_id", autoValue.toString());
-                connection.setClientInfo(jobIdPrefix, autoValue.toString());
+                if (dingoValues.getTuples().size() >= 1 &&
+                    dingoValues.getAutoIncrementColIndex() < dingoValues.getTuples().get(0).length) {
+                    Object autoValue = dingoValues.getTuples().get(0)[dingoValues.getAutoIncrementColIndex()];
+                    connection.setClientInfo("last_insert_id", autoValue.toString());
+                    connection.setClientInfo(jobIdPrefix, autoValue.toString());
+                }
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);

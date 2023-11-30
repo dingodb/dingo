@@ -127,7 +127,7 @@ public class DingoParser {
              */
             @Override
             public boolean isInsertSubsetColumnsAllowed() {
-                return true;
+                return false;
             }
         });
 
