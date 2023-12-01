@@ -185,7 +185,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
         registerFunction(
             FromUnixTimeFunFactory.NAME,
             ReturnTypes.TIMESTAMP,
-            InferTypes.VARCHAR_1024,
+            DingoInferTypes.DECIMAL,
             OperandTypes.NUMERIC,
             SqlFunctionCategory.STRING
         );

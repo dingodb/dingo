@@ -248,6 +248,7 @@ public final class RexCasesJUnit5 implements ArgumentsProvider {
             fromUnixTimeCase("2022-04-14 00:00:00"),
             arguments("from_unixtime(0)", "FROM_UNIXTIME(0)", new Timestamp(0)),
             arguments("from_unixtime(1649770110)", "FROM_UNIXTIME(1649770110)", new Timestamp(1649770110000L)),
+            arguments("from_unixtime(null)", "FROM_UNIXTIME(DECIMAL(NULL))", null),
             arguments("date_format('2022/7/2')", "DATE_FORMAT(DATE('2022\\/7\\/2'))", "2022-07-02"),
             arguments("date_format('', '%Y-%m-%d')", "DATE_FORMAT(DATE(''), $CTF('%Y-%m-%d'))", null),
             arguments(
