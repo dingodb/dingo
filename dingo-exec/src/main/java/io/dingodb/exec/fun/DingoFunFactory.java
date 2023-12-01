@@ -25,27 +25,19 @@ import io.dingodb.exec.fun.vector.VectorImageFun;
 import io.dingodb.exec.fun.vector.VectorL2DistanceFun;
 import io.dingodb.exec.fun.vector.VectorTextFun;
 import io.dingodb.expr.parser.DefaultFunFactory;
+import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.expr.Exprs;
-import io.dingodb.expr.runtime.op.mathematical.AbsCheckFunFactory;
-import io.dingodb.expr.runtime.type.IntType;
-import io.dingodb.expr.runtime.type.LongType;
 
 public class DingoFunFactory extends DefaultFunFactory {
     public static final String SUBSTRING = "SUBSTRING";
-    // special function
-    public static final String ITEM = "item";
-    public static final String UNIX_TIMESTAMP = "unix_timestamp";
-    // special
 
     private static DingoFunFactory instance;
 
     private DingoFunFactory() {
-        super();
-        registerUnaryFun(IntType.NAME, Exprs.TO_INT_C);
-        registerUnaryFun(LongType.NAME, Exprs.TO_LONG_C);
-        registerUnaryFun(AbsCheckFunFactory.NAME, Exprs.ABS_C);
+        super(ExprConfig.ADVANCED);
         registerBinaryFun(SUBSTRING, Exprs.MID2);
         registerTertiaryFun(SUBSTRING, Exprs.MID3);
+        registerBinaryFun(PowFunFactory.NAME, PowFunFactory.INSTANCE);
         registerNullaryFun(ThrowFun.NAME, ThrowFun.INSTANCE);
 
         registerUnaryFun(GlobalVariableFun.NAME, GlobalVariableFun.INSTANCE);
@@ -57,15 +49,6 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerBinaryFun(VectorIPDistanceFun.NAME, VectorIPDistanceFun.INSTANCE);
         registerBinaryFun(VectorCosineDistanceFun.NAME, VectorCosineDistanceFun.INSTANCE);
         registerNullaryFun(VersionFun.NAME, VersionFun.INSTANCE);
-//        // like
-//        registerUdf(LikeBinaryOp.NAME, LikeBinaryOp::new);
-//        registerUdf(LikeOp.NAME, LikeOp::new);
-//        // number
-//        registerUdf(FormatFun.NAME, FormatFun::new);
-//        registerUdf(PowFun.NAME, PowFun::new);
-//        registerEvaluator(ROUND, RoundEvaluatorsFactory.INSTANCE);
-        // special
-//        funSuppliers.put(CaseOp.NAME, CaseOp::fun);
     }
 
     public static synchronized DingoFunFactory getInstance() {

@@ -348,9 +348,9 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                 " select pow(age, id) pai from {table}",
                 csv(
                     "pai",
-                    "DOUBLE",
-                    "10.0",
-                    "625.0"
+                    "INT",
+                    "10",
+                    "625"
                 )
             );
 
@@ -796,6 +796,22 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                     "STRING, STRING, STRING, TIMESTAMP",
                     "472.16, 6610.31, 17:30:15, 1952-12-31 12:12:12.0"
                 )
+            );
+
+        test("Select filtered by not in list of >= 19 elements")
+            .use("table", "i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0")
+            .step(
+                "select id, name from {table}"
+                    + " where name not in ("
+                    + "'zhangsan','lisi','123','456','yamaha',777,'',' ','R','M','Z','1.5',"
+                    + "'op ','a','b','c','d','e','f','g','lisi2','yamaha2')",
+                is(
+                    new String[]{"id", "name"},
+                    ImmutableList.of(
+                        new Object[]{5, "awJDs"},
+                        new Object[]{4, "HAHA"},
+                        new Object[]{3, "l3"}
+                    ))
             );
     }
 }
