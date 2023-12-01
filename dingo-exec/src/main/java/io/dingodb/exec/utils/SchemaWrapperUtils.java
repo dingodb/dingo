@@ -36,16 +36,16 @@ public final class SchemaWrapperUtils {
     }
 
     private static ColumnDefinition mapDingoType(@NonNull NullableType type, int primary) {
-        String typeName = type.getType().toString();
-        if (type instanceof  ListType) {
+        if (type instanceof ListType) {
+            // TODO: type name used in sdk for ListType is 'ARRAY'.
             return ColumnDefinition.builder()
-                .type(typeName)
+                .type("ARRAY")
                 .elementType((((ListType) type).getElementType().toString()))
                 .primary(primary)
                 .nullable(type.isNullable())
                 .build();
         }
-
+        String typeName = type.getType().toString();
         return ColumnDefinition.builder()
             .type(typeName)
             .primary(primary)
