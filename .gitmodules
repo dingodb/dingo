@@ -1,3 +1,3 @@
-[submodule "dingo-web/src/main/dingo-proto"]
-	path = dingo-web/src/main/dingo-proto
+[submodule "dingo-proxy/src/main/dingo-proto"]
+	path = dingo-proxy/src/main/dingo-proto
 	url = https://github.com/dingodb/dingo-proto

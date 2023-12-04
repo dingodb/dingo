@@ -17,7 +17,7 @@
 
 ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 #EXECUTOR_JAR_PATH=$(find $ROOT -name dingo-*-executor-*.jar)
-WEB_JAR_PATH=$(find $ROOT -name dingo-web*.jar)
+PROXY_JAR_PATH=$(find $ROOT -name dingo-proxy*.jar)
 #NET_JAR_PATH=$(find $ROOT -name dingo-net-*.jar)
 
 ROLE=$DINGO_ROLE
@@ -31,23 +31,23 @@ fi
 
 sed -i 's/HOSTNAME/'"$HOSTNAME"'/g' ${ROOT}/conf/executor.yaml
 sed -i 's/HOSTNAME/'"$HOSTNAME"'/g' ${ROOT}/conf/client.yaml
-sed -i 's/HOSTNAME/'"$HOSTNAME"'/g' ${ROOT}/conf/application-dev.yaml
+sed -i 's/HOSTNAME/'"$HOSTNAME"'/g' ${ROOT}/conf/application-proxy-dev.yaml
 
 sed -i 's/COORDINATORS/'"$COORDINATORS"'/g' ${ROOT}/conf/executor.yaml
 sed -i 's/COORDINATORS/'"$COORDINATORS"'/g' ${ROOT}/conf/client.yaml
-sed -i 's/COORDINATORS/'"$COORDINATORS"'/g' ${ROOT}/conf/application-dev.yaml
+sed -i 's/COORDINATORS/'"$COORDINATORS"'/g' ${ROOT}/conf/application-proxy-dev.yaml
 
 if [[ $ROLE == "executor" ]]
 then
-    ./bin/mysql_init.sh 
-    ./bin/start-executor.sh  
-elif [[ $ROLE == "web" ]]
+    ./bin/mysql_init.sh
+    ./bin/start-executor.sh
+elif [[ $ROLE == "proxy" ]]
 then
     java ${JAVA_OPTS} \
-     -Dlogback.configurationFile=file:${ROOT}/conf/logback-web.xml \
-     -jar ${WEB_JAR_PATH} \
-     --spring.config.location=${ROOT}/conf/application.yaml \
-     > ${ROOT}/log/web.out
+     -Dlogback.configurationFile=file:${ROOT}/conf/logback-proxy.xml \
+     -jar ${PROXY_JAR_PATH} \
+     --spring.config.location=${ROOT}/conf/application-proxy.yaml \
+     > ${ROOT}/log/proxy.out
 else
     echo -e "Invalid DingoDB cluster roles"
 fi
