@@ -167,6 +167,7 @@ public final class MysqlInit {
         }
 
         try {
+            assert tableId != null;
             KeyValueCodec codec = DingoKeyValueCodec.of(tableId.entityId(), tableDefinition);
             List<Object[]> values = initGlobalVariables();
 

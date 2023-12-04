@@ -1,0 +1,17 @@
+server:
+    compression:
+        enabled: true
+        mime-types: text/html,text/xml,text/plain,text/css, application/javascript, application/json
+        min-response-size: 1024
+    host: 127.0.0.1
+    port: 13001
+    coordinatorExchangeSvrList: node1:22001,node1:22002,node1:22003
+    prometheus: PROMETHEUS_URL
+    monitor:
+      executor:
+        heapAlarmThreshold: 80
+      instance:
+        nodeExportPort: 19100
+        cpuAlarmThreshold: 70
+        memAlarmThreshold: 70
+        diskAlarmThreshold: 90
