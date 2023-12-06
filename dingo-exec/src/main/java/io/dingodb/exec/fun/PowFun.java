@@ -24,6 +24,7 @@ import io.dingodb.expr.runtime.type.Types;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Operators
 abstract class PowFun extends BinaryOp {
@@ -42,7 +43,14 @@ abstract class PowFun extends BinaryOp {
     static @NonNull BigDecimal pow(@NonNull BigDecimal value0, @NonNull BigDecimal value1) {
         if (value1.scale() == 0) {
             try {
-                return value0.pow(value1.intValue());
+                BigDecimal result = value0.pow(value1.intValue());
+                if (result.scale() > 0) {
+                    result = result.stripTrailingZeros();
+                }
+                if (result.scale() < 0) {
+                    result = result.setScale(0, RoundingMode.HALF_UP);
+                }
+                return result;
             } catch (ArithmeticException ignored) {
             }
         }
