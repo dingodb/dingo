@@ -9,6 +9,6 @@
   </component>
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/dingo-web/src/main/dingo-proto" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/dingo-proxy/src/main/dingo-proto" vcs="Git" />
   </component>
 </project>

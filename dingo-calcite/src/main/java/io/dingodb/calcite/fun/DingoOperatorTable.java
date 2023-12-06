@@ -107,7 +107,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
         );
         registerFunction(
             PowFunFactory.NAME,
-            ReturnTypes.ARG0_NULLABLE_IF_EMPTY,
+            DingoReturnTypes.DECIMAL_NULLABLE,
             DingoInferTypes.DOUBLE,
             OperandTypes.NUMERIC_NUMERIC,
             SqlFunctionCategory.STRING

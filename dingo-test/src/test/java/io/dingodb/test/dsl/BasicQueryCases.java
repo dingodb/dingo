@@ -310,6 +310,17 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                 csv(file("i4k_vs_i40_f80_vs0_l0/data.csv"))
             );
 
+        test("Select const from table").skip()
+            .use("table", "i4k_vs_f80")
+            .step(
+                "select 1 from {table}",
+                csv(
+                    "EXPR$0",
+                    "INT",
+                    "1", "1", "1", "1", "1", "1", "1", "1", "1"
+                )
+            );
+
         test("Cast double to int")
             .use("table", "i4k_vs_f80")
             .step("select id, name, cast(amount as int) as amount from {table}",
@@ -348,7 +359,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                 " select pow(age, id) pai from {table}",
                 csv(
                     "pai",
-                    "INT",
+                    "DECIMAL",
                     "10",
                     "625"
                 )
