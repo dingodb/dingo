@@ -18,9 +18,11 @@ package io.dingodb.calcite;
 
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterConvertCharset;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
 import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
+import io.dingodb.calcite.grammar.ddl.SqlCreateSchema;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
 import io.dingodb.calcite.grammar.ddl.SqlDropIndex;
 import io.dingodb.calcite.grammar.ddl.SqlDropUser;
@@ -34,6 +36,7 @@ import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.environment.ExecutionEnvironment;
+import io.dingodb.common.mysql.SchemataDefinition;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.privilege.PrivilegeDefinition;
@@ -49,6 +52,8 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
+import io.dingodb.verify.service.InformationService;
+import io.dingodb.verify.service.InformationServiceProvider;
 import io.dingodb.verify.service.UserService;
 import io.dingodb.verify.service.UserServiceProvider;
 import lombok.extern.slf4j.Slf4j;
@@ -68,7 +73,6 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlTypeNameSpec;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.ddl.DingoSqlColumn;
-import org.apache.calcite.sql.ddl.SqlCreateSchema;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.ddl.SqlDropSchema;
 import org.apache.calcite.sql.ddl.SqlDropTable;
@@ -109,9 +113,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     private final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
     public UserService userService;
+    public InformationService informationService;
 
     private DingoDdlExecutor() {
         this.userService = UserServiceProvider.getRoot();
+        this.informationService = InformationServiceProvider.getRoot();
     }
 
     private List<TableDefinition> getIndexDefinitions(DingoSqlCreateTable create, TableDefinition tableDefinition) {
@@ -294,7 +300,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
         String name = scd.name.getSimple().toUpperCase();
         if (!namePattern.matcher(name).matches()) {
-            throw new RuntimeException("Invalid column value for" + name);
+            throw DINGO_RESOURCE.invalidColumn().ex();
         }
 
         // Obtaining id from method
@@ -397,7 +403,12 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void execute(SqlCreateSchema schema, CalcitePrepare.Context context) {
         DingoRootSchema rootSchema = (DingoRootSchema) context.getMutableRootSchema().schema;
-        rootSchema.createSubSchema(schema.name.names.get(0));
+        String schemaName = schema.name.names.get(0);
+        rootSchema.createSubSchema(schemaName);
+        // character default utf8, collate default val:utf8_bin
+        informationService.saveSchemata(
+            new SchemataDefinition("def", schemaName, schema.charset, schema.collate, null)
+        );
     }
 
     public void execute(SqlDropSchema schema, CalcitePrepare.Context context) {
@@ -412,6 +423,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         if (subSchema.getTableNames().isEmpty()) {
             rootSchema.dropSubSchema(schemaName);
+            informationService.dropSchemata(schemaName);
         } else {
             throw new RuntimeException("Schema not empty.");
         }
@@ -517,6 +529,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         Optional.ifPresent(create.getPartDefinition(), __ -> validatePartitionBy(pks, tableDefinition, __));
 
         schema.createTables(tableDefinition, indexTableDefinitions);
+        informationService.saveTableMeta(schema.name(), tableDefinition);
     }
 
     @SuppressWarnings({"unused", "MethodMayBeStatic"})
@@ -540,6 +553,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             return v;
         });
         userService.dropTablePrivilege(schema.name(), tableName);
+        informationService.dropTableMeta(schema.name(), tableName);
     }
 
     public void execute(@NonNull SqlTruncate truncate, CalcitePrepare.Context context) {
@@ -724,6 +738,17 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else {
             throw DINGO_RESOURCE.alterUserFailed(sqlAlterUser.user, sqlAlterUser.host).ex();
         }
+    }
+
+    public void execute(SqlAlterConvertCharset sqlAlterConvert, CalcitePrepare.Context context) {
+        final Pair<DingoSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlAlterConvert.table, context);
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        TableDefinition tableDefinition = new TableDefinition(tableName, null, null,
+            0, 0, null, "ENG_ROCKSDB", null, 1, 3,
+            null, null, sqlAlterConvert.getCharset(), sqlAlterConvert.getCollate());
+        informationService.updateTableMeta(schema.name(), tableDefinition);
     }
 
     public void validateDropIndex(DingoSchema schema, String tableName, String indexName) {

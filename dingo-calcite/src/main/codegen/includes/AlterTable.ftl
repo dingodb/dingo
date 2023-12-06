@@ -20,11 +20,16 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
     SqlAlterTable alterTable;
 } {
     <TABLE> id = CompoundIdentifier()
-    <ADD>
     (
-        alterTable = addPartition(s, scope, id)
+	    <ADD>
+	    (
+	        alterTable = addPartition(s, scope, id)
+	    |
+	        alterTable = addIndex(s, scope, id)
+	    )
     |
-        alterTable = addIndex(s, scope, id)
+      <CONVERT> <TO>
+      alterTable = convertCharset(s, id)
     )
     { return alterTable; }
 }
@@ -53,4 +58,12 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
         )*
     <RPAREN>
     { return new SqlAlterAddIndex(s.end(this), id, index, columns, isUnique); }
+}
+
+SqlAlterTable convertCharset(Span s, SqlIdentifier id): {
+    final String charset;
+    final String collate;
+} {
+  <CHARACTER> <SET> { charset = this.getNextToken().image; } <COLLATE> { collate = this.getNextToken().image; }
+  { return new SqlAlterConvertCharset(s.end(this), id, charset, collate); }
 }

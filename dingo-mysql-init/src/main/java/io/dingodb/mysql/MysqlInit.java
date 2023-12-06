@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -63,6 +64,9 @@ public final class MysqlInit {
     private static final Long retryInterval = 6000L;
     private static final int maxRetries = 20;
 
+    private MysqlInit() {
+    }
+
 
     public static void main(String[] args) throws IOException {
         if (args.length < 1) {
@@ -72,10 +76,10 @@ public final class MysqlInit {
         String coordinatorSvr = args[0];
         initMetaStore(coordinatorSvr);
         System.out.println("init meta store success");
-        initUser(USER);
+        createAndInitTable(MYSQL, USER);
         initTableByTemplate(MYSQL, DB);
         initTableByTemplate(MYSQL, TABLES_PRIV);
-        initGlobalVariables(GLOBAL_VARIABLES);
+        createAndInitTable(INFORMATION_SCHEMA, GLOBAL_VARIABLES);
         initTableByTemplate(INFORMATION_SCHEMA, "COLUMNS");
         initTableByTemplate(INFORMATION_SCHEMA, "PARTITIONS");
         initTableByTemplate(INFORMATION_SCHEMA, "EVENTS");
@@ -83,8 +87,8 @@ public final class MysqlInit {
         initTableByTemplate(INFORMATION_SCHEMA, "STATISTICS");
         initTableByTemplate(INFORMATION_SCHEMA, "ROUTINES");
         initTableByTemplate(INFORMATION_SCHEMA, "KEY_COLUMN_USAGE");
-        initTableByTemplate(INFORMATION_SCHEMA, "SCHEMATA");
-        initTableByTemplate(INFORMATION_SCHEMA, "TABLES");
+        createAndInitTable(INFORMATION_SCHEMA, "SCHEMATA");
+        createAndInitTable(INFORMATION_SCHEMA, "TABLES");
         initTableByTemplate(MYSQL, "ANALYZE_TASK");
         initTableByTemplate(MYSQL, "CM_SKETCH");
         initTableByTemplate(MYSQL, "TABLE_STATS");
@@ -93,45 +97,6 @@ public final class MysqlInit {
         close();
         System.out.println("code:" + code);
         System.exit(code);
-    }
-
-    public static void initUser(String tableName) throws IOException {
-        TableDefinition tableDefinition = getTableDefinition(tableName);
-        MetaServiceClient mysqlMetaClient = rootMeta.getSubMetaService(MYSQL);
-        DingoCommonId tableId = mysqlMetaClient.getTableId(tableName);
-        try {
-            if (tableId == null) {
-                mysqlMetaClient.createTable(tableName, tableDefinition);
-                tableId = mysqlMetaClient.getTableId(tableName);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        System.out.println("create user table success");
-        try {
-            Map<String, Object> userValuesMap = getUserObjectMap(tableName);
-            Object[] userValues = userValuesMap.values().toArray();
-            KeyValueCodec codec = DingoKeyValueCodec.of(tableId.entityId(), tableDefinition);
-            KeyValue keyValue = codec.encode(userValues);
-
-            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
-                = mysqlMetaClient.getRangeDistribution(tableId);
-            if (rangeDistribution == null) {
-                return;
-            }
-            DingoCommonId regionId = rangeDistribution.firstEntry().getValue().getId();
-            keyValue.setKey(codec.resetPrefix(keyValue.getKey(), regionId.parentId()));
-            storeServiceClient.kvPut(tableId, regionId, keyValue);
-        } catch (Exception e) {
-            if (e instanceof DingoClientException.InvalidRouteTableException) {
-                if (!continueRetry()) {
-                   return;
-                }
-                initUser(tableName);
-            }
-        }
-        exceptionRetries = 0;
-        System.out.println("init user success");
     }
 
     private static boolean continueRetry() {
@@ -153,49 +118,6 @@ public final class MysqlInit {
         storeServiceClient = new StoreServiceClient(rootMeta);
     }
 
-    public static void initGlobalVariables(String tableName) throws IOException {
-        TableDefinition tableDefinition = getTableDefinition(tableName);
-        MetaServiceClient informationMetaClient = rootMeta.getSubMetaService(INFORMATION_SCHEMA);
-        DingoCommonId tableId = informationMetaClient.getTableId(tableName);
-        try {
-            if (tableId == null) {
-                informationMetaClient.createTable(tableName, tableDefinition);
-                tableId = informationMetaClient.getTableId(tableName);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        try {
-            assert tableId != null;
-            KeyValueCodec codec = DingoKeyValueCodec.of(tableId.entityId(), tableDefinition);
-            List<Object[]> values = initGlobalVariables();
-
-            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
-                = informationMetaClient.getRangeDistribution(tableId);
-            if (rangeDistribution == null) {
-                return;
-            }
-            DingoCommonId regionId = rangeDistribution.firstEntry().getValue().getId();
-
-            List<KeyValue> keyValueList = values.stream()
-                .map(NoBreakFunctions.wrap(codec::encode, NoBreakFunctions.throwException()))
-                .peek(__ -> __.setKey(codec.resetPrefix(__.getKey(), regionId.parentId())))
-                .collect(Collectors.toList());
-
-            storeServiceClient.kvBatchPut(tableId, regionId, keyValueList);
-        } catch (Exception e) {
-            if (e instanceof DingoClientException.InvalidRouteTableException) {
-                if (!continueRetry()) {
-                    return;
-                }
-                initGlobalVariables(tableName);
-            }
-        }
-        exceptionRetries = 0;
-        System.out.println("init global variables success");
-    }
-
     public static void initTableByTemplate(String schema, String tableName) throws IOException {
         TableDefinition tableDefinition = getTableDefinition(tableName);
         MetaServiceClient mysqlMetaClient = rootMeta.getSubMetaService(schema);
@@ -205,7 +127,7 @@ public final class MysqlInit {
             e.printStackTrace();
         }
         String log = "init %s.%s success";
-        System.out.println(String.format(log, schema, tableName));
+        System.out.printf((log) + "%n", schema, tableName);
     }
 
     public static List<Object[]> initGlobalVariables() {
@@ -266,6 +188,69 @@ public final class MysqlInit {
         return values;
     }
 
+    private static List<Object[]> initInformationTables() {
+        List<Object[]> values = new ArrayList<>();
+        values.add(new Object[]{"def", "mysql", "DB", "BASE TABLE", Common.Engine.ENG_ROCKSDB.name(), 10L,
+            "Fixed", 0L, 0L, 0L, 0L, 5120L, 488L, null, System.currentTimeMillis(), null, null, "utf8_bin",
+            null, "", "Database privileges"});
+        values.add(new Object[]{"def", "mysql", "USER", "BASE TABLE", Common.Engine.ENG_ROCKSDB.name(), 10L,
+            "Dynamic", 1L, 123L, 1236L, 0L, 4096L, 488L, null, System.currentTimeMillis(), null, null,
+            "utf8_bin", null, "", "Users and global privileges"});
+        values.add(new Object[]{"def", "mysql", "TABLES_PRIV", "BASE TABLE", Common.Engine.ENG_ROCKSDB.name(), 10L,
+            "Fixed", 0L, 947L, 5682L, 0L, 9216L, 488L, null, System.currentTimeMillis(), null, null,
+            "utf8_bin", null, "", "Table privileges"});
+        values.add(new Object[]{"def", "information_schema", "GLOBAL_VARIABLES", "SYSTEM VIEW", "MEMORY", 10L, "Fixed",
+            null, 3268L, 0L, 0L, 9216L, 488L, null, System.currentTimeMillis(), null, null, "utf8_bin",
+            null, "max_rows=5133", ""});
+        values.add(new Object[]{"def", "information_schema", "COLUMNS", "SYSTEM VIEW",
+            Common.Engine.ENG_ROCKSDB.name(), 10L, "Dynamic", null, 0L, 16384L, 0L, 0L, 488L, null,
+            System.currentTimeMillis(), null, null, "utf8_bin", null, "max_rows=2789", ""});
+        values.add(new Object[]{"def", "information_schema", "PARTITIONS", "SYSTEM VIEW",
+            Common.Engine.ENG_ROCKSDB.name(), 10L, "Dynamic", null, 0L, 16384L, 0L, 0L, 488L, null,
+            System.currentTimeMillis(), null, null, "utf8_bin", null, "max_rows=5596", ""});
+        values.add(new Object[]{"def", "information_schema", "EVENTS", "SYSTEM VIEW",
+            Common.Engine.ENG_ROCKSDB.name(), 10L, "Dynamic", null, 0L, 16384L, 0L, 0L, 488L, null,
+            System.currentTimeMillis(), null, null, "utf8_bin", null, "max_rows=618", ""});
+        values.add(new Object[]{"def", "information_schema", "TRIGGERS", "SYSTEM VIEW",
+            Common.Engine.ENG_ROCKSDB.name(), 10L, "Dynamic", null, 0L, 16384L, 0L, 0L, 488L, null, null, null, null,
+            "utf8_bin", null, "max_rows=568", ""});
+        values.add(new Object[]{"def", "information_schema", "STATISTICS", "SYSTEM VIEW", "MEMORY", 10L, "Fixed",
+            null, 0L, 16384L, 0L, 0L, 488L, null, System.currentTimeMillis(), null, null, "utf8_bin",
+            null, "max_rows=568", ""});
+        values.add(new Object[]{"def", "information_schema", "ROUTINES", "SYSTEM VIEW",
+            Common.Engine.ENG_ROCKSDB.name(), 10L, "Dynamic", null, 0L, 16384L, 0L, 0L, 0L,
+            null, System.currentTimeMillis(), null, null, "utf8_bin", null, "max_rows=582", ""});
+        values.add(new Object[]{"def", "information_schema", "KEY_COLUMN_USAGE", "SYSTEM VIEW", "MEMORY", 10L, "Fixed",
+            null, 4637L, 0L, 0L, 0L, 0L, null, System.currentTimeMillis(),
+            null, null, "utf8_bin", null, "max_rows=3618", ""});
+        values.add(new Object[]{"def", "information_schema", "SCHEMATA", "SYSTEM VIEW", "MEMORY", 10L, "Fixed", null,
+            3464L, 0L, 0L, 0L, 0L, null, System.currentTimeMillis(),
+            null, null, "utf8_bin", null, "max_rows=4843", ""});
+        values.add(new Object[]{"def", "information_schema", "TABLES", "SYSTEM VIEW", "MEMORY", 10L, "Fixed", null,
+            9441L, 0L, 0L, 0L, 0L, null, System.currentTimeMillis(),
+            null, null, "utf8_bin", null, "max_rows=1777", ""});
+        values.add(new Object[]{"def", "mysql", "ANALYZE_TASK", "BASE TABLE", Common.Engine.ENG_ROCKSDB.name(), 10L,
+            "Dynamic", null, 9441L, 0L, 0L, 0L, 0L, null, System.currentTimeMillis(), null, null, "utf8_bin", null,
+            "max_rows=1777", ""});
+        values.add(new Object[]{"def", "mysql", "CM_SKETCH", "BASE TABLE", Common.Engine.ENG_ROCKSDB.name(), 10L,
+            "Dynamic", null, 8131L, 0L, 0L, 0L, 0L, null, System.currentTimeMillis(), null, null, "utf8_bin", null,
+            "max_rows=1777", ""});
+        values.add(new Object[]{"def", "mysql", "TABLE_STATS", "BASE TABLE", Common.Engine.ENG_ROCKSDB.name(), 10L,
+            "Dynamic", null, 9831L, 0L, 0L, 0L, 0L, null, System.currentTimeMillis(), null, null, "utf8_bin", null,
+            "max_rows=1777", ""});
+        values.add(new Object[]{"def", "mysql", "TABLE_BUCKETS", "BASE TABLE", Common.Engine.ENG_ROCKSDB.name(),
+            10L, "Dynamic", null, 9923L, 0L, 0L, 0L, 0L, null, System.currentTimeMillis(), null, null,
+            "utf8_bin", null, "max_rows=1777", ""});
+        return values;
+    }
+
+    private static List<Object[]> initInformationSchemata() {
+        List<Object[]> values = new ArrayList<>();
+        values.add(new Object[]{"def", "information_schema", "utf8", "utf8_bin", null});
+        values.add(new Object[]{"def", "dingo", "utf8", "utf8_bin", null});
+        values.add(new Object[]{"def", "mysql", "utf8", "utf8_bin", null});
+        return values;
+    }
 
     private static TableDefinition getTableDefinition(String tableName) throws IOException {
         List<Column> columns = getColumnList(tableName);
@@ -352,6 +337,67 @@ public final class MysqlInit {
             .collect(Collectors.toList());
     }
 
+    public static void createAndInitTable(String schemaName, String tableName) throws IOException {
+        TableDefinition tableDefinition = getTableDefinition(tableName);
+        MetaServiceClient metaClient = rootMeta.getSubMetaService(schemaName);
+        DingoCommonId tableId = metaClient.getTableId(tableName);
+        try {
+            if (tableId == null) {
+                metaClient.createTable(tableName, tableDefinition);
+                tableId = metaClient.getTableId(tableName);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            assert tableId != null;
+            KeyValueCodec codec = DingoKeyValueCodec.of(tableId.entityId(), tableDefinition);
+            List<Object[]> values;
+            switch (tableName) {
+                case "GLOBAL_VARIABLES":
+                    values = initGlobalVariables();
+                    break;
+                case "USER":
+                    Map<String, Object> userValuesMap = getUserObjectMap(tableName);
+                    values = Collections.singletonList(userValuesMap.values().toArray());
+                    break;
+                case "SCHEMATA":
+                    values = initInformationSchemata();
+                    break;
+                case "TABLES":
+                    values = initInformationTables();
+                    break;
+                default:
+                    return;
+            }
+
+            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
+                = metaClient.getRangeDistribution(tableId);
+            if (rangeDistribution == null) {
+                return;
+            }
+            DingoCommonId regionId = rangeDistribution.firstEntry().getValue().getId();
+
+            List<KeyValue> keyValueList = values.stream()
+                .map(NoBreakFunctions.wrap(codec::encode, NoBreakFunctions.throwException()))
+                .peek(__ -> __.setKey(codec.resetPrefix(__.getKey(), regionId.parentId())))
+                .collect(Collectors.toList());
+
+            storeServiceClient.kvBatchPut(tableId, regionId, keyValueList);
+        } catch (Exception e) {
+            if (e instanceof DingoClientException.InvalidRouteTableException) {
+                if (!continueRetry()) {
+                    return;
+                }
+                createAndInitTable(schemaName, tableName);
+            }
+        }
+        exceptionRetries = 0;
+        String log = "init %s.%s success";
+        System.out.printf((log) + "%n", schemaName, tableName);
+    }
+
     private static Map<String, Object> getUserObjectMap(String tableName) {
         MetaServiceClient mysqlMetaClient = rootMeta.getSubMetaService(MYSQL);
         Table table = mysqlMetaClient.getTableDefinition(tableName);
@@ -434,7 +480,8 @@ public final class MysqlInit {
         }
 
         MetaServiceClient informationMetaClient = rootMeta.getSubMetaService(INFORMATION_SCHEMA);
-        boolean informationSchemaCheck = informationMetaClient.getTableDefinitionsBySchema().get("GLOBAL_VARIABLES") != null;
+        boolean informationSchemaCheck
+            = informationMetaClient.getTableDefinitionsBySchema().get("GLOBAL_VARIABLES") != null;
         boolean check = mysqlCheck && informationSchemaCheck;
         return check ? 0 : 1;
     }
