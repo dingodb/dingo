@@ -294,7 +294,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
         String name = scd.name.getSimple().toUpperCase();
         if (!namePattern.matcher(name).matches()) {
-            throw new RuntimeException("Invalid column value for" + name);
+            throw DINGO_RESOURCE.invalidColumn().ex();
         }
 
         // Obtaining id from method
