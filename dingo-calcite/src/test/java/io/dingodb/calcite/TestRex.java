@@ -42,6 +42,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -74,7 +75,7 @@ public class TestRex {
     @Nonnull
     private static Stream<Arguments> getParametersTemp() {
         return Stream.of(
-            arguments("123 like 'abc|\\%\\_'", "MATCHES_NC(STRING(123), $CP('abc|\\\\%\\\\_'))", false)
+            arguments("pow('10', -2)", "POW(DECIMAL('10'), -2)", BigDecimal.valueOf(0.01))
         );
     }
 

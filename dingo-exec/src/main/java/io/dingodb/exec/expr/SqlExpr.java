@@ -19,6 +19,7 @@ package io.dingodb.exec.expr;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.exec.fun.DingoFunFactory;
 import io.dingodb.exec.type.converter.ExprConverter;
 import io.dingodb.expr.coding.ExprCoder;
 import io.dingodb.expr.parser.ExprParser;
@@ -33,6 +34,8 @@ import lombok.Getter;
 import java.io.ByteArrayOutputStream;
 
 public class SqlExpr {
+    private static final ExprParser EXPR_PARSER = new ExprParser(DingoFunFactory.getInstance());
+
     @JsonProperty("expr")
     @Getter
     private final String exprString;
@@ -53,7 +56,7 @@ public class SqlExpr {
     }
 
     private Expr getExpr() throws ExprParseException {
-        return ExprParser.DEFAULT.parse(exprString);
+        return EXPR_PARSER.parse(exprString);
     }
 
     public byte[] getCoding(DingoType tupleType, DingoType parasType) {

@@ -31,18 +31,6 @@ abstract class PowFun extends BinaryOp {
 
     private static final long serialVersionUID = 6371448137108545795L;
 
-    static int pow(int value0, @NonNull BigDecimal value1) {
-        return pow(BigDecimal.valueOf(value0), value1).intValue();
-    }
-
-    static long pow(long value0, @NonNull BigDecimal value1) {
-        return pow(BigDecimal.valueOf(value0), value1).longValue();
-    }
-
-    static float pow(float value0, double value1) {
-        return (float) pow((double) value0, value1);
-    }
-
     static double pow(double value0, double value1) {
         double result = Math.pow(value0, value1);
         if (!Double.isNaN(result)) {
@@ -68,14 +56,8 @@ abstract class PowFun extends BinaryOp {
 
     @Override
     public Object keyOf(@NonNull Type type0, @NonNull Type type1) {
-        if (Types.INT.matches(type0) || Types.LONG.matches(type0) || Types.DECIMAL.matches(type0)) {
-            if (Types.DECIMAL.matches(type1)) {
-                return type0;
-            }
-        } else if (Types.FLOAT.matches(type0) || Types.DOUBLE.matches(type0)) {
-            if (Types.DOUBLE.matches(type1)) {
-                return type0;
-            }
+        if (Types.DECIMAL.matches(type1) || Types.DOUBLE.matches(type1)) {
+            return type0;
         }
         return null;
     }
@@ -83,9 +65,11 @@ abstract class PowFun extends BinaryOp {
     @Override
     public Object bestKeyOf(@NonNull Type @NonNull [] types) {
         if (Types.INT.matches(types[0]) || Types.LONG.matches(types[0]) || Types.DECIMAL.matches(types[0])) {
+            types[0] = Types.DECIMAL;
             types[1] = Types.DECIMAL;
             return types[0];
         } else if (Types.FLOAT.matches(types[0]) || Types.DOUBLE.matches(types[0])) {
+            types[0] = Types.DOUBLE;
             types[1] = Types.DOUBLE;
             return types[0];
         }
