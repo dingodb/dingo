@@ -74,6 +74,10 @@ public final class DingoVectorVisitFun {
         Float[] floatArray;
         floatArray = getVectorFloats(operandsList);
 
+        if (!(operandsList.get(3) instanceof SqlNumericLiteral)) {
+            throw new IllegalArgumentException("Top n not number.");
+        }
+
         int topN = ((Number) Objects.requireNonNull(((SqlNumericLiteral) operandsList.get(3)).getValue())).intValue();
 
         List<Output> outputs = new ArrayList<>();
