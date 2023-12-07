@@ -63,4 +63,5 @@ include 'dingo-partition-base'
 include 'dingo-tool-service'
 include 'dingo-tool-api'
 include 'dingo-web'
+include 'dingo-transaction-api'
 

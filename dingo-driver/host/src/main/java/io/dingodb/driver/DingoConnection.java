@@ -21,6 +21,8 @@ import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.common.mysql.client.SessionVariableChange;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
+import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.exec.transaction.impl.TransactionManager;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.DataContext;
@@ -29,6 +31,7 @@ import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.AvaticaFactory;
 import org.apache.calcite.avatica.AvaticaResultSet;
 import org.apache.calcite.avatica.AvaticaStatement;
+import org.apache.calcite.avatica.ConnectionPropertiesImpl;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
@@ -50,11 +53,16 @@ import java.util.Properties;
 import java.util.TimeZone;
 
 @Slf4j
-public class DingoConnection extends AvaticaConnection implements CalcitePrepare.Context {
+public class DingoConnection extends AvaticaConnection implements CalcitePrepare.Context{
     @Getter
     private final DingoParserContext context;
 
     private final Properties sessionVariables;
+
+    private boolean autoCommit = true;
+
+    @Getter
+    private ITransaction transaction;
 
     protected DingoConnection(
         DingoDriver driver,
@@ -76,6 +84,60 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
 
     public DingoMeta getMeta() {
         return (DingoMeta) meta;
+    }
+
+    public void beginTransaction(boolean pessimistic) throws SQLException{
+        try {
+            if(this.transaction != null) {
+                // commit
+                this.transaction.commit(getMeta().getJobManager());
+            }
+        } catch (Exception e) {
+            log.info(e.getMessage(), e);
+            throw new SQLException(e);
+        } finally {
+            if(this.transaction != null) {
+                this.transaction.close();
+            }
+        }
+        long startTs = TransactionManager.getStart_ts();
+        this.transaction = TransactionManager.createTransaction(pessimistic, startTs);
+        this.autoCommit = false;
+    }
+
+    @Override
+    public void setAutoCommit(boolean autoCommit) throws SQLException {
+        this.checkOpen();
+        this.meta.connectionSync(this.handle, (new ConnectionPropertiesImpl()).setAutoCommit(autoCommit));
+        if (this.autoCommit == autoCommit) {
+            // true==true and false == false: nothing
+            return;
+        }
+        this.autoCommit = autoCommit;
+        try {
+            if(this.transaction != null) {
+                // commit
+                this.transaction.commit(getMeta().getJobManager());
+            }
+        } catch (Exception e) {
+            log.info(e.getMessage(), e);
+            throw new SQLException(e);
+        } finally {
+            if(this.transaction != null) {
+                this.transaction.close();
+            }
+        }
+        if(autoCommit == false) {
+            long startTs = TransactionManager.getStart_ts();
+            this.transaction = TransactionManager.createTransaction(false, startTs);
+            this.autoCommit = false;
+        }
+
+    }
+
+    @Override
+    public boolean getAutoCommit() {
+        return autoCommit;
     }
 
     @NonNull

@@ -30,6 +30,8 @@ public interface Task {
 
     CommonId getJobId();
 
+    CommonId getTxnId();
+
     Location getLocation();
 
     Operator getRoot();

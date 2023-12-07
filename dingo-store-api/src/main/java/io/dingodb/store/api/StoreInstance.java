@@ -19,13 +19,20 @@ package io.dingodb.store.api;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.vector.VectorCalcDistance;
 import io.dingodb.common.vector.VectorSearchResponse;
+import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatus;
+import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatusResult;
+import io.dingodb.store.api.transaction.data.commit.TxnCommit;
+import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
+import io.dingodb.store.api.transaction.data.resolvelock.TxnResolveLock;
+import io.dingodb.store.api.transaction.data.resolvelock.TxnResolveLockResult;
+import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
 import lombok.AllArgsConstructor;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 public interface StoreInstance {
 
@@ -110,4 +117,16 @@ public interface StoreInstance {
     default boolean deleteIndex(Object[] newRecord, Object[] oldRecord) {
         throw new UnsupportedOperationException();
     }
+
+    default boolean txnPreWrite(TxnPreWrite txnPreWrite) {throw new UnsupportedOperationException();}
+
+    default Future txnPreWritePrimaryKey(TxnPreWrite txnPreWrite) {throw new UnsupportedOperationException();}
+
+    default boolean txnCommit(TxnCommit txnCommit) {throw new UnsupportedOperationException();}
+
+    default TxnCheckStatusResult txnCheckTxnStatus(TxnCheckStatus txnCheckStatus) {throw new UnsupportedOperationException();}
+
+    default TxnResolveLockResult txnResolveLock(TxnResolveLock txnResolveLock) {throw new UnsupportedOperationException();}
+
+    default boolean txnBatchRollback(TxnBatchRollBack txnBatchRollBack) {throw new UnsupportedOperationException();}
 }

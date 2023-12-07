@@ -26,6 +26,7 @@ import io.dingodb.calcite.rel.AutoIncrementShuttle;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
@@ -279,8 +280,17 @@ public final class DingoDriverParser extends DingoParser {
         Location currentLocation = MetaService.root().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
         // get start_ts for jobSeqId, if transaction is not null ,transaction start_ts is jobDomainId
+        long start_ts = 0l;
         long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
-        Job job = jobManager.createJob(jobSeqId, jobSeqId, DefinitionMapper.mapToDingoType(parasType));
+        CommonId txn_Id;
+        if (connection.getTransaction() != null) {
+            start_ts = connection.getTransaction().getStart_ts();
+            txn_Id = connection.getTransaction().getTxnId();
+        } else {
+            start_ts = jobSeqId;
+            txn_Id = CommonId.EMPTY_TRANSACTION;
+        }
+        Job job = jobManager.createJob(start_ts, jobSeqId, txn_Id, DefinitionMapper.mapToDingoType(parasType));
         DingoJobVisitor.renderJob(job, relNode, currentLocation, true);
         if (explain != null) {
             statementType = Meta.StatementType.CALL;

@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestTaskImpl {
     @Test
     public void testValues() {
-        Task task = new TaskImpl(CommonId.EMPTY_TASK, CommonId.EMPTY_JOB, Mockito.mock(Location.class), null);
+        Task task = new TaskImpl(CommonId.EMPTY_TASK, CommonId.EMPTY_JOB, CommonId.EMPTY_TRANSACTION, Mockito.mock(Location.class), null);
         ValuesOperator values = new ValuesOperator(
             ImmutableList.of(
                 new Object[]{1, "Alice", 1.0},
@@ -60,7 +60,7 @@ public class TestTaskImpl {
     @Test
     public void testParas() {
         DingoType parasType = DingoTypeFactory.INSTANCE.tuple("INT", "STRING");
-        Task task = new TaskImpl(CommonId.EMPTY_TASK, CommonId.EMPTY_JOB, Mockito.mock(Location.class), parasType);
+        Task task = new TaskImpl(CommonId.EMPTY_TASK, CommonId.EMPTY_JOB, CommonId.EMPTY_TRANSACTION, Mockito.mock(Location.class), parasType);
         ValuesOperator values = new ValuesOperator(
             ImmutableList.of(new Object[]{0}),
             DingoTypeFactory.INSTANCE.tuple("INT")

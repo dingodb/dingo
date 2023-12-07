@@ -26,4 +26,5 @@ dependencies {
     implementation project(':dingo-calcite')
     implementation project(':dingo-verify')
     implementation project(':dingo-meta-api')
+    implementation project(':dingo-transaction-api')
 }

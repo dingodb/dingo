@@ -32,6 +32,7 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.driver.type.converter.AvaticaResultSetConverter;
 import io.dingodb.exec.base.JobManager;
+import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.verify.privilege.PrivilegeVerify;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -467,10 +468,38 @@ public class DingoMeta extends MetaImpl {
 
     @Override
     public void commit(ConnectionHandle ch) {
+        ITransaction transaction = null;
+        try {
+            transaction = ((DingoConnection) connection).getTransaction();
+            if (transaction != null) {
+                transaction.commit(jobManager);
+            }
+        } catch (Throwable e) {
+            log.error(e.getMessage(), e);
+            throw new RuntimeException(e);
+        } finally {
+            if (transaction != null) {
+                transaction.close();
+            }
+        }
     }
 
     @Override
     public void rollback(ConnectionHandle ch) {
+        ITransaction transaction = null;
+        try {
+            transaction = ((DingoConnection) connection).getTransaction();
+            if (transaction != null) {
+                transaction.rollback(jobManager);
+            }
+        } catch (Throwable e) {
+            log.error(e.getMessage(), e);
+            throw new RuntimeException(e);
+        } finally {
+            if (transaction != null) {
+                transaction.close();
+            }
+        }
     }
 
     @Override

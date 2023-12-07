@@ -30,9 +30,13 @@ public class TaskStatus {
     @JsonProperty("errorMsg")
     String errorMsg;
 
+    @JsonProperty("errorType")
+    ErrorType errorType;
+
     public String detail() {
         return "TaskId:" + taskId + ":"
             + ",Status: " + (status ? "OK" : "Failed")
+            + ",ErrorType: " + errorType
             + ",ErrorMsg: " + errorMsg;
     }
 }
