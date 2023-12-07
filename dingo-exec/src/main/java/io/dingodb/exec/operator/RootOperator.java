@@ -24,6 +24,7 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.base.Status;
 import io.dingodb.exec.exception.TaskFinException;
+import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.utils.QueueUtils;
@@ -102,7 +103,11 @@ public final class RootOperator extends SinkOperator {
     public void checkError() {
         if (errorFin != null) {
             String errorMsg = errorFin.detail();
-            throw new TaskFinException(errorMsg, getTask().getJobId());
+            if (errorFin instanceof FinWithException) {
+                throw new TaskFinException(((FinWithException) errorFin).getTaskStatus().getErrorType(), errorMsg, getTask().getJobId());
+            } else {
+                throw new TaskFinException(ErrorType.Unknown, errorMsg, getTask().getJobId());
+            }
         }
     }
 }

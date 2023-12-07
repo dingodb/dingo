@@ -16,7 +16,10 @@
 
 package io.dingodb.calcite.operation;
 
+import io.dingodb.transaction.api.TransactionService;
+
 import java.sql.Connection;
+import java.sql.SQLException;
 
 public class CommitTxOperation implements DdlOperation {
 
@@ -28,6 +31,10 @@ public class CommitTxOperation implements DdlOperation {
 
     @Override
     public void execute() {
-
+        try {
+            TransactionService.getDefault().commit(connection);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

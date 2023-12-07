@@ -30,11 +30,13 @@ import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Status;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.TaskStatus;
 import io.dingodb.exec.operator.AbstractOperator;
 import io.dingodb.exec.operator.RootOperator;
 import io.dingodb.exec.operator.SourceOperator;
+import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -48,7 +50,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
-@JsonPropertyOrder({"jobId", "location", "operators", "runList", "parasType"})
+@JsonPropertyOrder({"txnId" ,"jobId", "location", "operators", "runList", "parasType"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public final class TaskImpl implements Task {
     @JsonProperty("id")
@@ -61,6 +63,11 @@ public final class TaskImpl implements Task {
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     private final CommonId jobId;
+    @JsonProperty("txnId")
+    @Getter
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    private final CommonId txnId;
     @JsonProperty("location")
     @Getter
     private final Location location;
@@ -87,11 +94,13 @@ public final class TaskImpl implements Task {
     public TaskImpl(
         @JsonProperty("id") CommonId id,
         @JsonProperty("jobId") CommonId jobId,
+        @JsonProperty("txnId") CommonId txnId,
         @JsonProperty("location") Location location,
         @JsonProperty("parasType") DingoType parasType
     ) {
         this.id = id;
         this.jobId = jobId;
+        this.txnId = txnId;
         this.location = location;
         this.parasType = parasType;
         this.operators = new HashMap<>();
@@ -194,6 +203,11 @@ public final class TaskImpl implements Task {
                     taskStatus.setStatus(false);
                     taskStatus.setTaskId(operator.getTask().getId().toString());
                     taskStatus.setErrorMsg(e.toString());
+                    if (e instanceof WriteConflictException) {
+                        taskStatus.setErrorType(ErrorType.WriteConflict);
+                    } else {
+                        taskStatus.setErrorType(ErrorType.TaskFin);
+                    }
                     operator.fin(0, FinWithException.of(taskStatus));
                 } finally {
                     if (log.isDebugEnabled()) {

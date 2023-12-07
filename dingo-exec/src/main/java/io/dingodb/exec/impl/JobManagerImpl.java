@@ -34,6 +34,9 @@ import io.dingodb.exec.impl.message.DestroyTaskMessage;
 import io.dingodb.exec.impl.message.RunTaskMessage;
 import io.dingodb.exec.impl.message.TaskMessage;
 import io.dingodb.exec.operator.RootOperator;
+import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.meta.MetaService;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
@@ -63,8 +66,8 @@ public final class JobManagerImpl implements JobManager {
     }
 
     @Override
-    public @NonNull Job createJob(long start_ts,long jobSeqId, DingoType parasType) {
-        Job job = new JobImpl(idGenerator.getJobId(start_ts, jobSeqId), parasType);
+    public @NonNull Job createJob(long start_ts,long jobSeqId, CommonId txnId, DingoType parasType) {
+        Job job = new JobImpl(idGenerator.getJobId(start_ts, jobSeqId), txnId, parasType);
         CommonId jobId = job.getJobId();
         jobMap.put(jobId, job);
         if (log.isDebugEnabled()) {
@@ -177,6 +180,12 @@ public final class JobManagerImpl implements JobManager {
         final long startTime = System.currentTimeMillis();
         try {
             Task task = cmd.getTask();
+            // 1、cross node need add transaction
+            // 2、check whether the current node can execute transactions
+            ITransaction transaction = TransactionManager.getTransaction(task.getTxnId() == null ? CommonId.EMPTY_TRANSACTION : task.getTxnId());
+            if(transaction == null) {
+                TransactionManager.createTransaction(TransactionType.OPTIMISTIC, task.getTxnId() == null ? CommonId.EMPTY_TRANSACTION : task.getTxnId());
+            }
             taskManager.addTask(task);
         } finally {
             final long cost = System.currentTimeMillis() - startTime;

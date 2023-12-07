@@ -17,6 +17,7 @@
 package io.dingodb.exec.exception;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.exec.fin.ErrorType;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,9 +28,13 @@ public class TaskFinException extends RuntimeException {
     @Getter
     private final CommonId jobId;
 
-    public TaskFinException(String message, CommonId jobId) {
+    @Getter
+    private final ErrorType errorType;
+
+    public TaskFinException(ErrorType errorType, String message, CommonId jobId) {
         super(message);
+        this.errorType = errorType;
         this.jobId = jobId;
-        log.warn("Job \"{}\" failed with error message: {}", jobId, message);
+        log.warn("Job \"{}\" failed errorType is {} with error message: {}", jobId, errorType, message);
     }
 }

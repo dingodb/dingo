@@ -16,7 +16,10 @@
 
 package io.dingodb.calcite.operation;
 
+import io.dingodb.transaction.api.TransactionService;
+
 import java.sql.Connection;
+import java.sql.SQLException;
 
 public class StartTransactionOperation implements DdlOperation {
 
@@ -31,6 +34,10 @@ public class StartTransactionOperation implements DdlOperation {
 
     @Override
     public void execute() {
-
+        try {
+            TransactionService.getDefault().begin(connection, pessimistic);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

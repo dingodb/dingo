@@ -25,6 +25,11 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.transaction.operator.CommitOperator;
+import io.dingodb.exec.transaction.operator.PreWriteOperator;
+import io.dingodb.exec.transaction.operator.RollBackOperator;
+import io.dingodb.exec.transaction.operator.ScanCacheOperator;
+import io.dingodb.exec.transaction.operator.TransactionOperator;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -58,6 +63,11 @@ import lombok.Setter;
     @JsonSubTypes.Type(SumUpOperator.class),
     @JsonSubTypes.Type(ValuesOperator.class),
     @JsonSubTypes.Type(RemovePartOperator.class),
+    @JsonSubTypes.Type(TransactionOperator.class),
+    @JsonSubTypes.Type(ScanCacheOperator.class),
+    @JsonSubTypes.Type(PreWriteOperator.class),
+    @JsonSubTypes.Type(CommitOperator.class),
+    @JsonSubTypes.Type(RollBackOperator.class)
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class AbstractOperator implements Operator {

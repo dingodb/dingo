@@ -18,12 +18,20 @@ package io.dingodb.exec.table;
 
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatus;
+import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatusResult;
+import io.dingodb.store.api.transaction.data.commit.TxnCommit;
+import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
+import io.dingodb.store.api.transaction.data.resolvelock.TxnResolveLock;
+import io.dingodb.store.api.transaction.data.resolvelock.TxnResolveLockResult;
+import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 public interface Part {
@@ -73,4 +81,15 @@ public interface Part {
             .collect(Collectors.toList());
     }
 
+    public boolean txnPreWrite(@NonNull TxnPreWrite txnPreWrite);
+
+    public Future txnPreWritePrimaryKey(@NonNull TxnPreWrite txnPreWrite);
+
+    public @NonNull TxnCheckStatusResult txnCheckTxnStatus(@NonNull TxnCheckStatus txnCheckStatus);
+
+    public @NonNull TxnResolveLockResult txnResolveLock(@NonNull TxnResolveLock resolveLockRequest);
+
+    public boolean txnCommit(@NonNull TxnCommit commitRequest);
+
+    public boolean txnBatchRollBack(@NonNull TxnBatchRollBack rollBackRequest);
 }

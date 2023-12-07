@@ -53,11 +53,11 @@ public class CommonId implements Comparable<CommonId>, Serializable {
 
     public static final CommonId EMPTY_TABLE = new CommonId(CommonType.TABLE, 0, 0);
     public static final CommonId EMPTY_DISTRIBUTE = new CommonId(CommonType.DISTRIBUTION, 0, 0);
-    public static final CommonId EMPTY_CONNECTION = new CommonId(CommonType.CONNECTION, 0, 0);
+    public static final CommonId EMPTY_TRANSACTION = new CommonId(CommonType.TRANSACTION, 0, 0);
     public static final CommonId EMPTY_JOB = new CommonId(CommonType.JOB, 0, 0);
 
     public static final CommonId EMPTY_TASK = new CommonId(CommonType.TASK, 0, 0);
-    public static final CommonId EMPTY_TRANSACTION = new CommonId(CommonType.TRANSACTION, 0, 0);
+    public static final CommonId EMPTY_TXN_INSTANCE = new CommonId(CommonType.TXN_INSTANCE, 0, 0);
 
     // data 0 -> 19, op 20 -> 59 , exec 60 -> 79
     public enum CommonType {
@@ -66,8 +66,8 @@ public class CommonId implements Comparable<CommonId>, Serializable {
         DISTRIBUTION(2),
         PARTITION(3),
         OP(20),
-        CONNECTION(60),
-        TRANSACTION(61),
+        TRANSACTION(60),
+        TXN_INSTANCE(61),
         JOB(62),
         TASK(63);
 
@@ -88,8 +88,8 @@ public class CommonId implements Comparable<CommonId>, Serializable {
                 case 2: return DISTRIBUTION;
                 case 3: return PARTITION;
                 case 20: return OP;
-                case 60: return CONNECTION;
-                case 61: return TRANSACTION;
+                case 60: return TRANSACTION;
+                case 61: return TXN_INSTANCE;
                 case 62: return JOB;
                 case 63: return TASK;
                 default:

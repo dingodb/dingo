@@ -47,6 +47,12 @@ public final class JobImpl implements Job {
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     private final CommonId jobId;
 
+    @JsonProperty("txnId")
+    @Getter
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    private final CommonId txnId;
+
     @Getter
     @JsonProperty("tasks")
     @JsonSerialize(keyUsing = CommonId.JacksonKeySerializer.class, contentAs = TaskImpl.class)
@@ -59,12 +65,13 @@ public final class JobImpl implements Job {
     private CommonId rootTaskId = null;
 
     @JsonCreator
-    public JobImpl(@JsonProperty("jobId") CommonId jobId) {
-        this(jobId, null);
+    public JobImpl(@JsonProperty("jobId") CommonId jobId, @JsonProperty("jobId") CommonId txnId) {
+        this(jobId, txnId,null);
     }
 
-    public JobImpl(@JsonProperty("jobId") CommonId jobId, @Nullable DingoType parasType) {
+    public JobImpl(@JsonProperty("jobId") CommonId jobId, @JsonProperty("jobId") CommonId txnId, @Nullable DingoType parasType) {
         this.jobId = jobId;
+        this.txnId = txnId;
         this.tasks = new HashMap<>();
         this.parasType = parasType;
     }
@@ -74,7 +81,7 @@ public final class JobImpl implements Job {
         if (tasks.containsKey(id)) {
             throw new IllegalArgumentException("The task \"" + id + "\" already exists in job \"" + jobId + "\".");
         }
-        Task task = new TaskImpl(id, jobId, location, parasType);
+        Task task = new TaskImpl(id, jobId, txnId, location, parasType);
         tasks.put(id, task);
         return task;
     }
