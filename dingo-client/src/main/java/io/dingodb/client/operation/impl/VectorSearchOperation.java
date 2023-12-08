@@ -122,7 +122,9 @@ public class VectorSearchOperation implements Operation {
                 vectorSearch.getParameter().getVectorFilter(),
                 vectorSearch.getParameter().getVectorFilterType(),
                 vectorSearch.getParameter().getCoprocessor(),
-                vectorSearch.getParameter().getVectorIds())
+                vectorSearch.getParameter().getVectorIds(),
+                vectorSearch.getParameter().isUseBruteForce()
+            )
         );
         for (int i = 0; i < results.size(); i++) {
             VectorWithDistanceResult result = results.get(i);

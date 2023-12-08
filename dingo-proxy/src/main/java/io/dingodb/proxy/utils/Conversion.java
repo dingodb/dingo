@@ -266,7 +266,9 @@ public class Conversion {
             io.dingodb.sdk.common.vector.VectorSearchParameter.VectorFilter.valueOf(parameter.getVectorFilter().name()),
             io.dingodb.sdk.common.vector.VectorSearchParameter.VectorFilterType.valueOf(parameter.getVectorFilterType().name()),
             mapping(parameter.getVectorCoprocessor()),
-            parameter.getVectorIdsList());
+            parameter.getVectorIdsList(),
+            parameter.getUseBruteForce()
+        );
     }
 
     public static VectorCoprocessor mapping(ProxyCommon.VectorCoprocessor coprocessor) {

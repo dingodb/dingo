@@ -154,7 +154,7 @@ public class OperationService {
                 .storeService(storeService)
                 .seq(i++)
                 .parameters(subTask.getParameters())
-                .result(Any.wrap(fork.result()))
+                .result(fork.getResultRef())
                 .build()
             );
         }

@@ -42,4 +42,6 @@ public class VectorSearchParameter {
     private io.dingodb.sdk.common.vector.VectorSearchParameter.VectorFilterType vectorFilterType;
     private VectorCoprocessor coprocessor;
     private List<Long> vectorIds;
+
+    private boolean useBruteForce;
 }

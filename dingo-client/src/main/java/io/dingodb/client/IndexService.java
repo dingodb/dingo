@@ -132,13 +132,11 @@ public class IndexService {
                             IndexInfo newIndexInfo = getRouteTable(
                                 indexInfo.schemaName.toUpperCase(),
                                 indexInfo.indexName,
-                                true);
+                                true
+                            );
                             Operation.Fork newFork = operation.fork(context, newIndexInfo);
                             if (newFork == null) {
                                 return exec(newIndexInfo, operation, newFork, 0, vectorContext).orNull();
-                            }
-                            if (fork.result() != newFork.result()) {
-                                fork.setResult(newFork.result());
                             }
                             return exec(newIndexInfo, operation, newFork, retry - 1, vectorContext).orNull();
                         } else {
@@ -170,7 +168,7 @@ public class IndexService {
                 .indexService(indexService)
                 .seq(i++)
                 .parameters(subTask.getParameters())
-                .result(Any.wrap(fork.result()))
+                .result(fork.getResultRef())
                 .vectorContext(vectorContext)
                 .build());
         }
