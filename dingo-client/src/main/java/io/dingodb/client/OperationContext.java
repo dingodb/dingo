@@ -26,6 +26,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 @Builder
 @Getter
 @AllArgsConstructor
@@ -44,14 +46,14 @@ public class OperationContext {
 
     private final int seq;
     private final Any parameters;
-    private final Any result;
+    private final AtomicReference<Object> result;
 
     public <P> P parameters() {
         return parameters.getValue();
     }
 
     public <R> R result() {
-        return result.getValue();
+        return (R) result.get();
     }
 
 }

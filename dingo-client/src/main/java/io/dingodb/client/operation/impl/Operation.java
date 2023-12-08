@@ -25,9 +25,9 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 
 import java.util.NavigableSet;
+import java.util.concurrent.atomic.AtomicReference;
 
 public interface Operation {
 
@@ -47,13 +47,18 @@ public interface Operation {
     @Getter
     @AllArgsConstructor
     class Fork {
-        @Setter
-        private Object result;
         private final NavigableSet<Task> subTasks;
         private final boolean ignoreError;
+        private final AtomicReference<Object> resultRef;
+
+        public Fork(Object result, NavigableSet<Task> subTasks, boolean ignoreError) {
+            this.resultRef = new AtomicReference<>(result);
+            this.subTasks = subTasks;
+            this.ignoreError = ignoreError;
+        }
 
         public <R> R result() {
-            return (R) result;
+            return (R) resultRef.get();
         }
     }
 

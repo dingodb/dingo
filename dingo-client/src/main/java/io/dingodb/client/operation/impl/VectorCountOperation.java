@@ -18,6 +18,7 @@ package io.dingodb.client.operation.impl;
 
 import io.dingodb.client.OperationContext;
 import io.dingodb.client.common.IndexInfo;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.table.RangeDistribution;
 import io.dingodb.sdk.common.utils.Any;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class VectorCountOperation implements Operation {
 
@@ -73,7 +75,10 @@ public class VectorCountOperation implements Operation {
             regionParam.put(distribution.getId(), i);
         }
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
-        return new Fork(new long[subTasks.size()], subTasks, false);
+
+        AtomicReference<Object> result = context.getResult();
+        result.set(new long[subTasks.size()]);
+        return new Fork(subTasks, false, result);
     }
 
     @Override
