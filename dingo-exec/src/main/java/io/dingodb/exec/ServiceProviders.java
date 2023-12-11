@@ -27,6 +27,8 @@ import java.util.ServiceLoader;
 public final class ServiceProviders<T> implements Iterable<T> {
     public static final ServiceProviders<StoreServiceProvider> KV_STORE_PROVIDER
         = new ServiceProviders<>(StoreServiceProvider.class);
+    public static final ServiceProviders<StoreServiceProvider> LOCAL_STORE_PROVIDER
+        = new ServiceProviders<>(StoreServiceProvider.class); // TODO
     public static final ServiceProviders<NetServiceProvider> NET_PROVIDER
         = new ServiceProviders<>(NetServiceProvider.class);
 

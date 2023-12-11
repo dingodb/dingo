@@ -20,33 +20,39 @@ import io.dingodb.common.Location;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.transaction.base.ITransaction;
-import io.dingodb.exec.transaction.operator.CommitOperator;
-import io.dingodb.exec.transaction.operator.PreWriteOperator;
+import io.dingodb.exec.transaction.params.CommitParam;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
 import io.dingodb.exec.transaction.visitor.data.CommitLeaf;
-import io.dingodb.exec.transaction.visitor.data.PreWriteLeaf;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static io.dingodb.exec.utils.OperatorCodeUtils.COMMIT;
+
 public class DingoCommitVisitFun {
-    public static Collection<Output> visit(
+    public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction, DingoTransactionRenderJob visitor, CommitLeaf commitLeaf) {
-        Collection<Output> inputs = commitLeaf.getData().accept(visitor);
-        List<Output> outputs = new ArrayList<>();
-        for (Output input : inputs) {
-            CommitOperator operator = new CommitOperator(new BooleanType(true), transaction.getIsolationLevel(),
-                transaction.getStart_ts(), transaction.getCommit_ts(), transaction.getPrimaryKey());
+        Collection<Vertex> inputs = commitLeaf.getData().accept(visitor);
+        List<Vertex> outputs = new ArrayList<>();
+        for (Vertex input : inputs) {
+            CommitParam param = new CommitParam(
+                new BooleanType(true), transaction.getIsolationLevel(),
+                transaction.getStart_ts(), transaction.getCommit_ts(), transaction.getPrimaryKey()
+            );
+            Vertex vertex = new Vertex(COMMIT, param);
             Task task = input.getTask();
-            operator.setId(idGenerator.getOperatorId(task.getId()));
-            task.putOperator(operator);
-            input.setLink(operator.getInput(0));
-            operator.getSoleOutput().copyHint(input);
-            outputs.addAll(operator.getOutputs());
+            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            task.putVertex(vertex);
+            vertex.setHint(input.getHint());
+            Edge edge = new Edge(input, vertex);
+            input.addEdge(edge);
+            vertex.addIn(edge);
+            outputs.add(vertex);
         }
         return outputs;
     }

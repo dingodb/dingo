@@ -16,72 +16,12 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Operator;
-import io.dingodb.exec.base.Task;
-import io.dingodb.exec.transaction.operator.CommitOperator;
-import io.dingodb.exec.transaction.operator.PreWriteOperator;
-import io.dingodb.exec.transaction.operator.RollBackOperator;
-import io.dingodb.exec.transaction.operator.ScanCacheOperator;
-import io.dingodb.exec.transaction.operator.TransactionOperator;
-import lombok.Getter;
-import lombok.Setter;
 
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    property = "type"
-)
-@JsonSubTypes({
-    @JsonSubTypes.Type(AggregateOperator.class),
-    @JsonSubTypes.Type(EmptySourceOperator.class),
-    @JsonSubTypes.Type(CoalesceOperator.class),
-    @JsonSubTypes.Type(FilterOperator.class),
-    @JsonSubTypes.Type(GetByIndexOperator.class),
-    @JsonSubTypes.Type(GetByKeysOperator.class),
-    @JsonSubTypes.Type(HashJoinOperator.class),
-    @JsonSubTypes.Type(HashOperator.class),
-    @JsonSubTypes.Type(LikeScanOperator.class),
-    @JsonSubTypes.Type(PartCountOperator.class),
-    @JsonSubTypes.Type(PartDeleteOperator.class),
-    @JsonSubTypes.Type(PartInsertOperator.class),
-    @JsonSubTypes.Type(PartitionOperator.class),
-    @JsonSubTypes.Type(PartRangeDeleteOperator.class),
-    @JsonSubTypes.Type(PartRangeScanOperator.class),
-    @JsonSubTypes.Type(PartUpdateOperator.class),
-    @JsonSubTypes.Type(ProjectOperator.class),
-    @JsonSubTypes.Type(ReceiveOperator.class),
-    @JsonSubTypes.Type(ReduceOperator.class),
-    @JsonSubTypes.Type(RootOperator.class),
-    @JsonSubTypes.Type(SendOperator.class),
-    @JsonSubTypes.Type(SortOperator.class),
-    @JsonSubTypes.Type(SumUpOperator.class),
-    @JsonSubTypes.Type(ValuesOperator.class),
-    @JsonSubTypes.Type(RemovePartOperator.class),
-    @JsonSubTypes.Type(TransactionOperator.class),
-    @JsonSubTypes.Type(ScanCacheOperator.class),
-    @JsonSubTypes.Type(PreWriteOperator.class),
-    @JsonSubTypes.Type(CommitOperator.class),
-    @JsonSubTypes.Type(RollBackOperator.class)
-})
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class AbstractOperator implements Operator {
-    @Getter
-    @Setter
-    @JsonProperty("id")
-    @JsonSerialize(using = CommonId.JacksonSerializer.class)
-    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    protected CommonId id;
-    @Getter
-    @Setter
-    protected Task task;
 
     @Override
     public void setParas(Object[] paras) {
     }
+
 }

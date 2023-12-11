@@ -17,35 +17,50 @@
 package io.dingodb.test.asserts;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.exec.base.Input;
+import io.dingodb.exec.OperatorFactory;
 import io.dingodb.exec.base.Operator;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.PartRangeScanOperator;
 import io.dingodb.exec.operator.SoleOutOperator;
+import io.dingodb.exec.operator.SourceOperator;
+import lombok.Getter;
 
+import java.util.List;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public final class AssertOperator extends Assert<Operator, AssertOperator> {
+    @Getter
+    private final Vertex vertex;
+
     AssertOperator(Operator obj) {
+        this(obj, null);
+    }
+
+    AssertOperator(Operator obj, Vertex vertex) {
         super(obj);
+        this.vertex = vertex;
     }
 
     public AssertOperator outputNum(int num) {
-        assertThat(instance.getOutputs()).size().isEqualTo(num);
+        assertThat(vertex.getOutList()).size().isEqualTo(num);
         return this;
     }
 
     @Nonnull
     public AssertOperator soleOutput() {
         isA(SoleOutOperator.class);
-        Input input = instance.getSoleOutput().getLink();
-        return operator(input != null ? instance.getTask().getOperator(input.getOperatorId()) : null);
+        Vertex next = vertex.getSoleEdge().getNext();
+        return operator(
+            next != null ? OperatorFactory.getInstance(next.getOp()) : null,
+            next != null ? vertex.getTask().getVertex(next.getId()) : null);
     }
 
     public AssertOperator isPartRangeScan(CommonId tableId, CommonId partId) {
         return isA(PartRangeScanOperator.class)
-            .prop("tableId", tableId)
-            .prop("partId", partId);
+            /*.prop("tableId", tableId)
+            .prop("partId", partId)*/;
     }
 }

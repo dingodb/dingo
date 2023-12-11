@@ -16,30 +16,11 @@
 
 package io.dingodb.exec.base;
 
-import io.dingodb.common.CommonId;
-import io.dingodb.common.type.DingoType;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Collection;
-
-import static io.dingodb.common.util.Utils.sole;
-
 public interface Operator {
-    CommonId getId();
-
-    void setId(CommonId id);
-
-    Task getTask();
-
-    void setTask(Task task);
-
-    default void init() {
-        getOutputs().forEach(o -> {
-            o.setOperator(this);
-            o.init();
-        });
-    }
 
     /**
      * Push a new tuple to the operator. Need to be synchronized for there may be multiple thread call on the same
@@ -49,33 +30,11 @@ public interface Operator {
      * @param tuple the tuple pushed in
      * @return `true` means another push needed, `false` means the task is canceled or finished
      */
-    boolean push(int pin, @Nullable Object[] tuple);
 
-    void fin(int pin, @Nullable Fin fin);
+    boolean push(int pin, @Nullable Object[] tuple, Vertex vertex);
 
-    default void destroy() {
-    }
+    void fin(int pin, @Nullable Fin fin, Vertex vertex);
 
     void setParas(Object[] paras);
 
-    default Input getInput(int pin) {
-        Input input = new Input(getId(), pin);
-        input.setOperator(this);
-        return input;
-    }
-
-    Collection<Output> getOutputs();
-
-    /**
-     * Get the only output of the operator. Exception is thrown if there are more than one outputs.
-     *
-     * @return the only output
-     */
-    default Output getSoleOutput() {
-        return sole(getOutputs());
-    }
-
-    default DingoType getParasType() {
-        return getTask().getParasType();
-    }
 }

@@ -30,10 +30,11 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.RangeUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.operator.PartRangeDeleteOperator;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.PartRangeDeleteParam;
+import io.dingodb.exec.operator.params.TxnPartRangeDeleteParam;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 
@@ -44,13 +45,17 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 
+import static io.dingodb.exec.utils.OperatorCodeUtils.PART_RANGE_DELETE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_RANGE_DELETE;
+
 public final class DingoRangeDeleteVisitFun {
 
     private DingoRangeDeleteVisitFun() {
     }
 
-    public static Collection<Output> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, DingoPartRangeDelete rel
+    public static Collection<Vertex> visit(
+        Job job, IdGenerator idGenerator, Location currentLocation,
+        boolean isTxn, DingoJobVisitor visitor, DingoPartRangeDelete rel
     ) {
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
@@ -70,26 +75,40 @@ public final class DingoRangeDeleteVisitFun {
             );
         }
 
-        List<Output> outputs = new ArrayList<Output>();
+        List<Vertex> outputs = new ArrayList<>();
 
         for (RangeDistribution rd : distributions) {
-            PartRangeDeleteOperator operator = new PartRangeDeleteOperator(
-                tableInfo.getId(),
-                rd.id(),
-                td.getDingoType(),
-                td.getKeyMapping(),
-                rd.getStartKey(),
-                rd.getEndKey(),
-                rd.isWithStart(),
-                rd.isWithEnd()
-            );
+            Vertex vertex;
+            if (isTxn) {
+                TxnPartRangeDeleteParam param = new TxnPartRangeDeleteParam(
+                    tableInfo.getId(),
+                    rd.id(),
+                    td.getDingoType(),
+                    td.getKeyMapping(),
+                    rd.getStartKey(),
+                    rd.getEndKey(),
+                    rd.isWithStart(),
+                    rd.isWithEnd());
+                vertex = new Vertex(TXN_PART_RANGE_DELETE, param);
+            } else {
+                PartRangeDeleteParam param = new PartRangeDeleteParam(
+                    tableInfo.getId(),
+                    rd.id(),
+                    td.getDingoType(),
+                    td.getKeyMapping(),
+                    rd.getStartKey(),
+                    rd.getEndKey(),
+                    rd.isWithStart(),
+                    rd.isWithEnd());
+                vertex = new Vertex(PART_RANGE_DELETE, param);
+            }
             Task task = job.getOrCreate(currentLocation, idGenerator);
-            operator.setId(idGenerator.getOperatorId(task.getId()));
-            task.putOperator(operator);
+            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            task.putVertex(vertex);
             OutputHint outputHint = new OutputHint();
             outputHint.setToSumUp(true);
-            operator.getSoleOutput().setHint(outputHint);
-            outputs.addAll(operator.getOutputs());
+            vertex.setHint(outputHint);
+            outputs.add(vertex);
         }
 
         return outputs;

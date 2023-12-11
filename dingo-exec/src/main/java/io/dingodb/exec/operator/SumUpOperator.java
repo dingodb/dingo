@@ -16,34 +16,32 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.operator.params.SumUpParam;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-@JsonTypeName("sumUp")
-@JsonPropertyOrder({"inputNum"})
 @Slf4j
 public class SumUpOperator extends SoleOutOperator {
-    private long sum;
+    public static final SumUpOperator INSTANCE = new SumUpOperator();
 
     @Override
-    public void init() {
-        super.init();
-    }
-
-    @Override
-    public synchronized boolean push(int pin, Object @NonNull [] tuple) {
-        sum += (long) tuple[0];
+    public synchronized boolean push(int pin, Object @NonNull [] tuple, Vertex vertex) {
+        SumUpParam param = vertex.getParam();
+        param.accumulate((long) tuple[0]);
         return true;
     }
 
     @Override
-    public synchronized void fin(int pin, Fin fin) {
-        output.push(new Object[]{sum});
-        output.fin(fin);
+    public synchronized void fin(int pin, Fin fin, Vertex vertex) {
+        SumUpParam param = vertex.getParam();
+        Edge edge = vertex.getSoleEdge();
+        edge.transformToNext(new Object[]{param.getSum()});
+        vertex.getSoleEdge().transformToNext(new Object[]{param.getSum()});
+        edge.fin(fin);
         // Reset
-        sum = 0;
+        param.setSum(0);
     }
 }

@@ -16,51 +16,39 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.Optional;
+import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.operator.params.PartUpdateParam;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
+import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 import java.util.List;
 
+import static io.dingodb.common.util.NoBreakFunctions.wrap;
+
 @Slf4j
-@JsonTypeName("update")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "mapping", "updates", "output"})
 public final class PartUpdateOperator extends PartModifyOperator {
-    @JsonProperty("mapping")
-    private final TupleMapping mapping;
-    @JsonProperty("updates")
-    private final List<SqlExpr> updates;
+    public static final PartUpdateOperator INSTANCE = new PartUpdateOperator();
 
-    @JsonCreator
-    public PartUpdateOperator(
-        @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") CommonId partId,
-        @JsonProperty("schema") DingoType schema,
-        @JsonProperty("keyMapping") TupleMapping keyMapping,
-        @JsonProperty("mapping") TupleMapping mapping,
-        @JsonProperty("updates") List<SqlExpr> updates
-    ) {
-        super(tableId, partId, schema, keyMapping);
-        this.mapping = mapping;
-        this.updates = updates;
+    private PartUpdateOperator() {
     }
 
     @Override
-    public void init() {
-        super.init();
-        updates.forEach(expr -> expr.compileIn(schema, getParasType()));
-    }
-
-    @Override
-    public boolean pushTuple(Object[] tuple) {
+    public boolean pushTuple(Object[] tuple, Vertex vertex) {
+        PartUpdateParam param = vertex.getParam();
+        DingoType schema = param.getSchema();
+        TupleMapping mapping = param.getMapping();
+        List<SqlExpr> updates = param.getUpdates();
         // The input tuple contains all old values and the new values, so make a new tuple for updating.
         // The new values are not converted to correct type, so are useless.
         int tupleSize = schema.fieldCount();
@@ -79,12 +67,22 @@ public final class PartUpdateOperator extends PartModifyOperator {
                     updated = true;
                 }
             }
-            updated = updated && part.update(
-                (Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE),
-                Arrays.copyOf(tuple, tupleSize)
-            );
+            CommonId partId = PartitionService.getService(
+                    Optional.ofNullable(param.getTableDefinition().getPartDefinition())
+                        .map(PartitionDefinition::getFuncName)
+                        .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
+                    .calcPartId(newTuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
+            Object[] newTuple2 = (Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE);
+            Object[] oldTuple = Arrays.copyOf(tuple, tupleSize);
+            StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), partId);
+            if (store.insertIndex(newTuple2)) {
+                if (store.updateWithIndex(newTuple2, oldTuple)) {
+                    store.deleteIndex(newTuple2, oldTuple);
+                    updated = updated && store.deleteIndex(newTuple2, oldTuple);
+                }
+            }
             if (updated) {
-                count++;
+                param.inc();
             }
         } catch (Exception ex) {
             log.error("update operator with expr:{}, exception:{}",
@@ -95,9 +93,4 @@ public final class PartUpdateOperator extends PartModifyOperator {
         return true;
     }
 
-    @Override
-    public void setParas(Object[] paras) {
-        super.setParas(paras);
-        updates.forEach(e -> e.setParas(paras));
-    }
 }

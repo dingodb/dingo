@@ -16,61 +16,36 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.dingodb.common.type.TupleMapping;
-import io.dingodb.exec.aggregate.AbstractAgg;
-import io.dingodb.exec.aggregate.Agg;
-import io.dingodb.exec.aggregate.AggCache;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.operator.params.ReduceParam;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
-
-@JsonTypeName("reduce")
-@JsonPropertyOrder({"inputNum", "keys", "aggregates", "output"})
+@Slf4j
 public final class ReduceOperator extends SoleOutOperator {
-    @JsonProperty("keys")
-    private final TupleMapping keys;
-    @JsonProperty("aggregates")
-    @JsonSerialize(contentAs = AbstractAgg.class)
-    @JsonDeserialize(contentAs = AbstractAgg.class)
-    private final List<Agg> aggList;
+    public static final ReduceOperator INSTANCE = new ReduceOperator();
 
-    private AggCache cache;
+    private ReduceOperator() {
 
-    @JsonCreator
-    public ReduceOperator(
-        @JsonProperty("keys") TupleMapping keys,
-        @JsonProperty("aggregates") List<Agg> aggList
-    ) {
-        super();
-        this.keys = keys;
-        this.aggList = aggList;
     }
 
     @Override
-    public void init() {
-        super.init();
-        cache = new AggCache(keys, aggList);
-    }
-
-    @Override
-    public synchronized boolean push(int pin, Object[] tuple) {
-        cache.reduce(tuple);
+    public  boolean push(int pin, Object[] tuple, Vertex vertex) {
+        ReduceParam param = vertex.getParam();
+        param.reduce(tuple);
         return true;
     }
 
     @Override
-    public synchronized void fin(int pin, Fin fin) {
-        for (Object[] t : cache) {
-            if (!output.push(t)) {
+    public  void fin(int pin, Fin fin, Vertex vertex) {
+        ReduceParam param = vertex.getParam();
+        Edge edge = vertex.getSoleEdge();
+        for (Object[] t : param.getCache()) {
+            if (!edge.transformToNext(t)) {
                 break;
             }
         }
-        output.fin(fin);
+        edge.fin(fin);
     }
 }

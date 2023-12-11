@@ -16,78 +16,60 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
-import io.dingodb.exec.fin.OperatorProfile;
+import io.dingodb.exec.operator.params.CoalesceParam;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-
 @Slf4j
-@JsonTypeName("coalesce")
-@JsonPropertyOrder({"inputNum", "output"})
 public final class CoalesceOperator extends SoleOutOperator {
-    @JsonProperty("inputNum")
-    private final int inputNum;
 
-    private final List<OperatorProfile> profiles = new LinkedList<>();
-    private boolean[] finFlags;
+    public static final CoalesceOperator INSTANCE = new CoalesceOperator();
 
-    @JsonCreator
-    public CoalesceOperator(
-        @JsonProperty("inputNum") int inputNum
-    ) {
-        this.inputNum = inputNum;
+    public CoalesceOperator() {
     }
 
     @Override
-    public void init() {
-        super.init();
-        finFlags = new boolean[inputNum];
-    }
-
-    @Override
-    public synchronized boolean push(int pin, Object[] tuple) {
+    public  boolean push(int pin, Object[] tuple, Vertex vertex) {
         if (log.isDebugEnabled()) {
             log.debug("Got tuple from pin {}.", pin);
         }
-        return output.push(tuple);
+        return vertex.getSoleEdge().transformToNext(tuple);
     }
 
     @Override
-    public synchronized void fin(int pin, Fin fin) {
+    public void fin(int pin, Fin fin, Vertex vertex) {
+        CoalesceParam param = vertex.getParam();
         if (log.isDebugEnabled()) {
             log.debug("Got FIN from pin {}.", pin);
         }
+        Edge edge = vertex.getSoleEdge();
         if (fin instanceof FinWithException) {
-            output.fin(fin);
+            edge.fin(fin);
             return;
         }
-        setFin(pin, fin);
-        if (isAllFin()) {
-            output.fin(new FinWithProfiles(profiles));
-            profiles.clear();
+        setFin(pin, fin, param);
+        if (isAllFin(param)) {
+            edge.fin(new FinWithProfiles(param.getProfiles()));
+            param.clear();
         }
     }
 
-    private void setFin(int pin, Fin fin) {
+    private void setFin(int pin, Fin fin, CoalesceParam param) {
+        int inputNum = param.getInputNum();
         assert pin < inputNum : "Pin no is greater than the max (" + inputNum + ").";
-        assert !finFlags[pin] : "Input on pin (" + pin + ") is already finished.";
-        finFlags[pin] = true;
+        assert !param.getFinFlags()[pin] : "Input on pin (" + pin + ") is already finished.";
+        param.setFinFlags(pin);
         if (fin instanceof FinWithProfiles) {
-            profiles.addAll(((FinWithProfiles) fin).getProfiles());
+            param.addProfiles(((FinWithProfiles) fin).getProfiles());
         }
     }
 
-    private boolean isAllFin() {
-        for (boolean b : finFlags) {
+    private boolean isAllFin(CoalesceParam param) {
+        for (boolean b : param.getFinFlags()) {
             if (!b) {
                 return false;
             }
@@ -95,9 +77,4 @@ public final class CoalesceOperator extends SoleOutOperator {
         return true;
     }
 
-    @Override
-    public void setParas(Object[] paras) {
-        Arrays.fill(finFlags, false);
-        super.setParas(paras);
-    }
 }

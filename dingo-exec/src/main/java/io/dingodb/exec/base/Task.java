@@ -19,6 +19,7 @@ package io.dingodb.exec.base;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.exec.dag.Vertex;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -34,11 +35,11 @@ public interface Task {
 
     Location getLocation();
 
-    Operator getRoot();
+    Vertex getRoot();
 
     void markRoot(CommonId operatorId);
 
-    Map<CommonId, Operator> getOperators();
+    Map<CommonId, Vertex> getVertexes();
 
     int getStatus();
 
@@ -46,15 +47,9 @@ public interface Task {
         return getLocation().getHost();
     }
 
-    /**
-     * Put an operator into the task. The implementation must make `operator.getTask().equals(this)` after the method is
-     * called.
-     *
-     * @param operator the operator
-     */
-    void putOperator(@NonNull Operator operator);
-
     List<CommonId> getRunList();
+
+    void putVertex(@NonNull Vertex vertex);
 
     void init();
 
@@ -69,16 +64,16 @@ public interface Task {
 
     default void destroy() {
         cancel(); // stop the task.
-        getOperators().values().forEach(Operator::destroy);
+        getVertexes().values().forEach(Vertex::destroy);
     }
 
-    default @Nullable Operator getOperator(CommonId id) {
-        return getOperators().get(id);
+    default @Nullable Vertex getVertex(CommonId id) {
+        return getVertexes().get(id);
     }
 
     DingoType getParasType();
 
     default void setParas(Object[] paras) {
-        getOperators().values().forEach(o -> o.setParas(paras));
+        getVertexes().values().forEach(v -> v.setParas(paras));
     }
 }

@@ -16,36 +16,37 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.partition.PartitionDefinition;
+import io.dingodb.common.util.Optional;
+import io.dingodb.exec.Services;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.PartDeleteParam;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
+import io.dingodb.store.api.StoreInstance;
 
-@JsonTypeName("delete")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "output"})
+import static io.dingodb.common.util.NoBreakFunctions.wrap;
+
 public final class PartDeleteOperator extends PartModifyOperator {
-    @JsonCreator
-    public PartDeleteOperator(
-        @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") CommonId partId,
-        @JsonProperty("schema") DingoType schema,
-        @JsonProperty("keyMapping") TupleMapping keyMapping
-    ) {
-        super(tableId, partId, schema, keyMapping);
+    public static final PartDeleteOperator INSTANCE = new PartDeleteOperator();
+
+    private PartDeleteOperator() {
     }
 
     @Override
-    public void init() {
-        super.init();
-    }
-
-    @Override
-    protected boolean pushTuple(Object[] tuple) {
-        if (part.remove(tuple)) {
-            count++;
+    protected boolean pushTuple(Object[] tuple, Vertex vertex) {
+        PartDeleteParam param = vertex.getParam();
+        CommonId partId = PartitionService.getService(
+                Optional.ofNullable(param.getTableDefinition().getPartDefinition())
+                    .map(PartitionDefinition::getFuncName)
+                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
+                .calcPartId(tuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
+        StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), partId);
+        if (store.deleteWithIndex(tuple)) {
+            if (store.deleteIndex(tuple)) {
+                param.inc();
+            }
         }
         return true;
     }

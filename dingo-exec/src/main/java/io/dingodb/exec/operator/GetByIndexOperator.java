@@ -16,28 +16,16 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.dingodb.codec.CodecService;
-import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.PartitionDefinition;
-import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
-import io.dingodb.exec.codec.RawJsonDeserializer;
-import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.GetByIndexParam;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
-import io.dingodb.exec.table.PartInKvStore;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreService;
 import lombok.extern.slf4j.Slf4j;
@@ -48,150 +36,43 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NavigableMap;
 
 import static io.dingodb.common.util.Utils.calculatePrefixCount;
 
 @Slf4j
-@JsonTypeName("index")
-@JsonPropertyOrder({"indexTableId", "schema", "indices", "indexValues", "filter", "selection", "output"})
-public final class GetByIndexOperator extends PartIteratorSourceOperator {
-    @JsonProperty("indexTableId")
-    @JsonSerialize(using = CommonId.JacksonSerializer.class)
-    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    private final CommonId indexTableId;
+public final class GetByIndexOperator extends FilterProjectSourceOperator {
+    public static final GetByIndexOperator INSTANCE = new GetByIndexOperator();
 
-    @JsonProperty("part")
-    @JsonSerialize(using = CommonId.JacksonSerializer.class)
-    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    private final CommonId partId;
-
-    @JsonProperty("tableId")
-    @JsonSerialize(using = CommonId.JacksonSerializer.class)
-    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    private final CommonId tableId;
-
-    @JsonProperty("indices")
-    private final TupleMapping indices;
-    @JsonProperty("indexValues")
-    private final List<Object[]> indexValues;
-
-    @JsonProperty("isLookup")
-    private final boolean isLookup;
-
-    @JsonProperty("isUnique")
-    private final boolean isUnique;
-
-    @JsonProperty("indexDefinition")
-    private final TableDefinition indexDefinition;
-    private final TableDefinition tableDefinition;
-
-    private final KeyValueCodec codec;
-
-    private KeyValueCodec lookupCodec;
-
-    private NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges;
-
-    public GetByIndexOperator(
-        CommonId indexTableId,
-        CommonId partId,
-        CommonId tableId,
-        TupleMapping indices,
-        List<Object[]> indexValues,
-        SqlExpr filter,
-        TupleMapping selection,
-        Boolean isUnique,
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges,
-        KeyValueCodec codec,
-        TableDefinition indexDefinition,
-        TableDefinition tableDefinition,
-        boolean isLookup
-    ) {
-        super(indexTableId, partId, tableDefinition.getDingoType(), indices, filter, selection);
-        this.indexTableId = indexTableId;
-        this.partId = partId;
-        this.tableId = tableId;
-        this.indices = indices;
-        this.indexValues = indexValues;
-        this.isUnique = isUnique;
-        // Determine if it is necessary : lookup table
-        this.ranges = ranges;
-        this.codec = codec;
-        this.indexDefinition = indexDefinition;
-        this.tableDefinition = tableDefinition;
-        this.isLookup = isLookup;
-    }
-
-    @JsonCreator
-    public static @NonNull GetByIndexOperator fromJson(
-        @JsonProperty("indexTableId") CommonId indexTableId,
-        @JsonProperty("partId") CommonId partId,
-        @JsonProperty("tableId") CommonId tableId,
-        @JsonProperty("indices") TupleMapping indices,
-        @JsonDeserialize(using = RawJsonDeserializer.class)
-        @JsonProperty("indexValues") JsonNode jsonNode,
-        @JsonProperty("filter") SqlExpr filter,
-        @JsonProperty("selection") TupleMapping selection,
-        @JsonProperty("isUnique") Boolean isUnique,
-        @JsonProperty("strategy") NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges,
-        @JsonProperty("codec") KeyValueCodec codec,
-        @JsonProperty("indexDefinition") TableDefinition indexDefinition,
-        @JsonProperty("tableDefinition") TableDefinition tableDefinition,
-        @JsonProperty("isLookup") boolean isLookup
-    ) {
-        return new GetByIndexOperator(
-            tableId,
-            partId,
-            tableId,
-            indices,
-            RawJsonDeserializer.convertBySchema(jsonNode, tableDefinition.getDingoType().select(indices)),
-            filter,
-            selection,
-            isUnique,
-            ranges,
-            codec,
-            indexDefinition,
-            tableDefinition,
-            isLookup
-        );
+    private GetByIndexOperator() {
     }
 
     @Override
-    protected @NonNull Iterator<Object[]> createSourceIterator() {
-        List<Iterator<Object[]>> iteratorList = scan();
+    protected @NonNull Iterator<Object[]> createSourceIterator(Vertex vertex) {
+        GetByIndexParam param = vertex.getParam();
+        List<Iterator<Object[]>> iteratorList = scan(param);
         List<Object[]> objectList = new ArrayList<>();
         for (Iterator<Object[]> iterator : iteratorList) {
             while (iterator.hasNext()) {
                 Object[] objects = iterator.next();
-                if (isLookup) {
-                    Object[] val = lookUp(objects);
+                if (param.isLookup()) {
+                    Object[] val = lookUp(objects, param);
                     if (val != null) {
                         objectList.add(val);
                     }
                 } else {
-                    objectList.add(transformTuple(objects));
+                    objectList.add(transformTuple(objects, param));
                 }
             }
         }
         return objectList.iterator();
     }
 
-    @Override
-    public void init() {
-        super.init();
-        part = new PartInKvStore(
-            StoreService.getDefault().getInstance(indexTableId, partId, indexDefinition),
-            codec
-        );
-        lookupCodec = CodecService.getDefault().createKeyValueCodec(tableDefinition.getColumns());
-    }
-
-    private List<Iterator<Object[]>> scan() {
+    private List<Iterator<Object[]>> scan(GetByIndexParam param) {
         try {
             List<Iterator<Object[]>> iteratorList = new ArrayList<>();
-            for (Object[] tuple : indexValues) {
-                byte[] keys = codec.encodeKeyPrefix(tuple, calculatePrefixCount(tuple));
-                iteratorList.add(part.scan(keys));
+            for (Object[] tuple : param.getIndexValues()) {
+                byte[] keys = param.getCodec().encodeKeyPrefix(tuple, calculatePrefixCount(tuple));
+                iteratorList.add(param.getPart().scan(keys));
             }
             return iteratorList;
         } catch (IOException e) {
@@ -199,26 +80,31 @@ public final class GetByIndexOperator extends PartIteratorSourceOperator {
         }
     }
 
-    private Object[] lookUp(Object[] tuples) {
+    private Object[] lookUp(Object[] tuples, GetByIndexParam param) {
+        TupleMapping indices = param.getKeyMapping();
+        TableDefinition tableDefinition = param.getTableDefinition();
         Object[] keyTuples = new Object[tableDefinition.getColumnsCount()];
         for (int i = 0; i < indices.getMappings().length; i ++) {
             keyTuples[indices.get(i)] = tuples[i];
         }
         try {
-            byte[] keys = lookupCodec.encodeKey(keyTuples);
+            byte[] keys = param.getLookupCodec().encodeKey(keyTuples);
             CommonId regionId = PartitionService.getService(
                     Optional.ofNullable(tableDefinition.getPartDefinition())
                         .map(PartitionDefinition::getFuncName)
-                        .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME)).
-                calcPartId(keys, ranges);
-            StoreInstance storeInstance = StoreService.getDefault().getInstance(tableId, regionId);
-            return lookupCodec.decode(storeInstance.get(keys));
+                        .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
+                    .calcPartId(keys, param.getRanges());
+            StoreInstance storeInstance = StoreService.getDefault().getInstance(param.getTableId(), regionId);
+            return param.getLookupCodec().decode(storeInstance.get(keys));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private Object[] transformTuple(Object[] tuple) {
+    private Object[] transformTuple(Object[] tuple, GetByIndexParam param) {
+        TupleMapping selection = param.getSelection();
+        TableDefinition indexDefinition = param.getIndexDefinition();
+        TableDefinition tableDefinition = param.getTableDefinition();
         Object[] response = new Object[tableDefinition.getColumnsCount()];
         List<Integer> selectedColumns = mapping(selection, tableDefinition, indexDefinition);
         for (int i = 0; i < selection.size(); i ++) {

@@ -291,7 +291,7 @@ public final class DingoDriverParser extends DingoParser {
             txn_Id = CommonId.EMPTY_TRANSACTION;
         }
         Job job = jobManager.createJob(start_ts, jobSeqId, txn_Id, DefinitionMapper.mapToDingoType(parasType));
-        DingoJobVisitor.renderJob(job, relNode, currentLocation, true);
+        DingoJobVisitor.renderJob(job, relNode, currentLocation, true, connection.getTransaction() != null);
         if (explain != null) {
             statementType = Meta.StatementType.CALL;
             String logicalPlan = RelOptUtil.dumpPlan("", relNode, SqlExplainFormat.TEXT,

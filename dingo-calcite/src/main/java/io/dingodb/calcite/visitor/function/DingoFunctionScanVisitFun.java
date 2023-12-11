@@ -27,17 +27,19 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Output;
+import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.operator.PartRangeScanOperator;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.PartRangeScanParam;
 import io.dingodb.meta.MetaService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.rex.RexCall;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
+
+import static io.dingodb.exec.utils.OperatorCodeUtils.PART_RANGE_SCAN;
 
 @Slf4j
 public final class DingoFunctionScanVisitFun {
@@ -45,7 +47,7 @@ public final class DingoFunctionScanVisitFun {
     private DingoFunctionScanVisitFun() {
     }
 
-    public static Collection<Output> visit(
+    public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, DingoFunctionScan rel
     ) {
         DingoRelOptTable relTable = rel.getTable();
@@ -56,10 +58,10 @@ public final class DingoFunctionScanVisitFun {
         TableDefinition td = dingoTable.getTableDefinition();
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = metaService.getRangeDistribution(tableId);
 
-        List<Output> outputs = new ArrayList<>();
+        List<Vertex> outputs = new ArrayList<>();
 
         for (RangeDistribution rd : ranges.values()) {
-            PartRangeScanOperator operator = new PartRangeScanOperator(
+            PartRangeScanParam param = new PartRangeScanParam(
                 tableId,
                 rd.id(),
                 td.getDingoType(),
@@ -76,9 +78,13 @@ public final class DingoFunctionScanVisitFun {
                 false
             );
             Task task = job.getOrCreate(currentLocation, idGenerator);
-            operator.setId(idGenerator.getOperatorId(task.getId()));
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
+            Vertex vertex = new Vertex(PART_RANGE_SCAN, param);
+            OutputHint hint = new OutputHint();
+            hint.setPartId(rd.id());
+            vertex.setHint(hint);
+            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            task.putVertex(vertex);
+            outputs.add(vertex);
         }
 
         return outputs;

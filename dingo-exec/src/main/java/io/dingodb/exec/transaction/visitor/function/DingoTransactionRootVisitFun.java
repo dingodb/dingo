@@ -25,10 +25,10 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Operator;
-import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.operator.RootOperator;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.RootParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
 import io.dingodb.exec.transaction.visitor.data.RootLeaf;
@@ -37,25 +37,29 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.Collection;
 
 import static io.dingodb.common.util.Utils.sole;
+import static io.dingodb.exec.utils.OperatorCodeUtils.ROOT;
 
 public class DingoTransactionRootVisitFun {
     @NonNull
-    public static Collection<Output> visit(
+    public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction, DingoTransactionRenderJob visitor, RootLeaf rootLeaf) {
-        Collection<Output> inputs = rootLeaf.getData().accept(visitor);
+        Collection<Vertex> inputs = rootLeaf.getData().accept(visitor);
         if (inputs.size() != 1) {
             throw new IllegalStateException("There must be one input to job root.");
         }
-        Output input = sole(inputs);
+        Vertex input = sole(inputs);
         int[] mappings = new int[]{0};
         TupleMapping selection = TupleMapping.of(mappings);
         DingoType dingoType = DingoTypeFactory.tuple(new DingoType[]{new BooleanType(true)});
-        Operator operator = new RootOperator(dingoType, selection);
+        RootParam param = new RootParam(dingoType, selection);
+        Vertex vertex = new Vertex(ROOT, param);
         Task task = input.getTask();
         CommonId id = idGenerator.getOperatorId(task.getId());
-        operator.setId(id);
-        task.putOperator(operator);
-        input.setLink(operator.getInput(0));
+        vertex.setId(id);
+        Edge edge = new Edge(input, vertex);
+        input.addEdge(edge);
+        vertex.addIn(edge);
+        task.putVertex(vertex);
         task.markRoot(id);
         job.markRoot(task.getId());
         return ImmutableList.of();

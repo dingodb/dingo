@@ -29,24 +29,26 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Operator;
-import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.operator.PartCountOperator;
-import io.dingodb.exec.operator.RemovePartOperator;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.PartCountParam;
+import io.dingodb.exec.operator.params.RemovePartParam;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NavigableMap;
 
+import static io.dingodb.exec.utils.OperatorCodeUtils.PART_COUNT;
+import static io.dingodb.exec.utils.OperatorCodeUtils.REMOVE_PART;
+
 public final class DingoCountDeleteVisitFun {
     private DingoCountDeleteVisitFun() {
     }
 
     @NonNull
-    public static List<Output> visit(
+    public static List<Vertex> visit(
         Job job,
         IdGenerator idGenerator,
         Location currentLocation,
@@ -59,18 +61,25 @@ public final class DingoCountDeleteVisitFun {
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
             = tableInfo.getRangeDistributions();
 
-        List<Output> outputs = new ArrayList<>(distributions.size());
+        List<Vertex> outputs = new ArrayList<>(distributions.size());
         for (Distribution distribution : distributions.values()) {
-            Operator operator = rel.isDoDeleting() ? new RemovePartOperator(tableId, distribution.id(),
-                td.getDingoType(), td.getKeyMapping()
-            ) : new PartCountOperator(tableId, distribution.id(), td.getDingoType(), td.getKeyMapping());
             Task task = job.getOrCreate(currentLocation, idGenerator);
-            operator.setId(idGenerator.getOperatorId(task.getId().seq));
-            task.putOperator(operator);
+            Vertex vertex;
+            if (rel.isDoDeleting()) {
+                RemovePartParam param = new RemovePartParam(
+                    tableId, distribution.id(), td.getDingoType(), td.getKeyMapping());
+                vertex = new Vertex(REMOVE_PART, param);
+            } else {
+                PartCountParam param = new PartCountParam(
+                    tableId, distribution.id(), td.getDingoType(), td.getKeyMapping());
+                vertex = new Vertex(PART_COUNT, param);
+            }
+            vertex.setId(idGenerator.getOperatorId(task.getId().seq));
+            task.putVertex(vertex);
             OutputHint hint = new OutputHint();
             hint.setToSumUp(true);
-            operator.getSoleOutput().setHint(hint);
-            outputs.addAll(operator.getOutputs());
+            vertex.setHint(hint);
+            outputs.add(vertex);
         }
         return outputs;
     }

@@ -20,6 +20,7 @@ import io.dingodb.common.Location;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Output;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.impl.IdGeneratorImpl;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.visitor.data.CommitLeaf;
@@ -47,7 +48,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 @Slf4j
-public class DingoTransactionRenderJob implements Visitor<Collection<Output>> {
+public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
 
     private final IdGenerator idGenerator;
     private final Location currentLocation;
@@ -71,7 +72,7 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Output>> {
         } else {
             element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_PRE_WRITE);
         }
-        Collection<Output> outputs = element.accept(visitor);
+        Collection<Vertex> outputs = element.accept(visitor);
         if (checkRoot && outputs.size() > 0) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
@@ -89,7 +90,7 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Output>> {
         } else {
             element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_COMMIT);
         }
-        Collection<Output> outputs = element.accept(visitor);
+        Collection<Vertex> outputs = element.accept(visitor);
         if (checkRoot && outputs.size() > 0) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
@@ -107,7 +108,7 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Output>> {
         } else {
             element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_ROLLBACK);
         }
-        Collection<Output> outputs = element.accept(visitor);
+        Collection<Vertex> outputs = element.accept(visitor);
         if (checkRoot && outputs.size() > 0) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
@@ -117,42 +118,42 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(Leaf leaf) {
+    public Collection<Vertex> visit(Leaf leaf) {
         return Collections.emptyList();
     }
 
     @Override
-    public Collection<Output> visit(RootLeaf rootLeaf) {
+    public Collection<Vertex> visit(RootLeaf rootLeaf) {
         return DingoTransactionRootVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rootLeaf);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull ScanCacheLeaf scanCacheLeaf) {
+    public Collection<Vertex> visit(@NonNull ScanCacheLeaf scanCacheLeaf) {
         return DingoScanCacheVisitFun.visit(job, idGenerator, currentLocation, transaction, this, scanCacheLeaf);
     }
 
     @Override
-    public Collection<Output> visit(PreWriteLeaf preWriteLeaf) {
+    public Collection<Vertex> visit(PreWriteLeaf preWriteLeaf) {
         return DingoPreWriteVisitFun.visit(job, idGenerator, currentLocation, transaction, this, preWriteLeaf);
     }
 
     @Override
-    public Collection<Output> visit(StreamConverterLeaf streamConverterLeaf) {
+    public Collection<Vertex> visit(StreamConverterLeaf streamConverterLeaf) {
         return DingoStreamConverterVisitFun.visit(job, idGenerator, currentLocation, transaction, this, streamConverterLeaf);
     }
 
     @Override
-    public Collection<Output> visit(CommitLeaf commitLeaf) {
+    public Collection<Vertex> visit(CommitLeaf commitLeaf) {
         return DingoCommitVisitFun.visit(job, idGenerator, currentLocation, transaction, this, commitLeaf);
     }
 
     @Override
-    public Collection<Output> visit(RollBackLeaf rollBackLeaf) {
+    public Collection<Vertex> visit(RollBackLeaf rollBackLeaf) {
         return DingoRollBackVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rollBackLeaf);
     }
 
     @Override
-    public Collection<Output> visit(Composite composite) {
+    public Collection<Vertex> visit(Composite composite) {
         return null;
     }
 

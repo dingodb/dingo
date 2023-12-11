@@ -18,11 +18,11 @@ package io.dingodb.exec.impl;
 
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.Services;
-import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
@@ -33,7 +33,6 @@ import io.dingodb.exec.impl.message.CreateTaskMessage;
 import io.dingodb.exec.impl.message.DestroyTaskMessage;
 import io.dingodb.exec.impl.message.RunTaskMessage;
 import io.dingodb.exec.impl.message.TaskMessage;
-import io.dingodb.exec.operator.RootOperator;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.impl.TransactionManager;
@@ -108,7 +107,7 @@ public final class JobManagerImpl implements JobManager {
         }
         run(job, paras);
         Task root = job.getRoot();
-        return new JobIteratorImpl(job, (RootOperator) root.getRoot());
+        return new JobIteratorImpl(job, root.getRoot());
     }
 
     @Override

@@ -20,15 +20,15 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Operator;
-import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.operator.RootOperator;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.RootParam;
 import org.apache.calcite.rel.type.RelDataType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -36,28 +36,32 @@ import java.util.Collection;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
 import static io.dingodb.common.util.Utils.sole;
+import static io.dingodb.exec.utils.OperatorCodeUtils.ROOT;
 
 public class DingoRootVisitFun {
     @NonNull
-    public static Collection<Output> visit(
+    public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, @NonNull DingoRoot rel
     ) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(visitor);
+        Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
         if (inputs.size() != 1) {
             throw new IllegalStateException("There must be one input to job root.");
         }
-        Output input = sole(inputs);
+        Vertex input = sole(inputs);
         RelDataType rowType = rel.getRowType();
         TupleMapping selection = rel.getSelection();
         if (selection != null && selection.size() == rowType.getFieldCount() && selection.isIdentity()) {
             selection = null;
         }
-        Operator operator = new RootOperator(DefinitionMapper.mapToDingoType(rel.getRowType()), selection);
+        RootParam param = new RootParam(DefinitionMapper.mapToDingoType(rel.getRowType()), selection);
+        Vertex vertex = new Vertex(ROOT, param);
         Task task = input.getTask();
         CommonId id = idGenerator.getOperatorId(task.getId());
-        operator.setId(id);
-        task.putOperator(operator);
-        input.setLink(operator.getInput(0));
+        vertex.setId(id);
+        Edge edge = new Edge(input, vertex);
+        input.addEdge(edge);
+        vertex.addIn(edge);
+        task.putVertex(vertex);
         task.markRoot(id);
         job.markRoot(task.getId());
         return ImmutableList.of();

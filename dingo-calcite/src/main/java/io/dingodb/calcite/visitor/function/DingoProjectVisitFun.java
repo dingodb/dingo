@@ -23,9 +23,8 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Operator;
-import io.dingodb.exec.base.Output;
-import io.dingodb.exec.operator.ProjectOperator;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.ProjectParam;
 import lombok.AllArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -33,27 +32,29 @@ import java.util.Collection;
 import java.util.function.Supplier;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PROJECT;
 
 public class DingoProjectVisitFun {
     @NonNull
-    public static Collection<Output> visit(
+    public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, DingoProject rel
     ) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(visitor);
+        Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
         return DingoBridge.bridge(idGenerator, inputs, new OperatorSupplier(rel));
     }
 
     @AllArgsConstructor
-    static class OperatorSupplier implements Supplier<Operator> {
+    static class OperatorSupplier implements Supplier<Vertex> {
 
         final DingoProject rel;
 
         @Override
-        public Operator get() {
-            return new ProjectOperator(
+        public Vertex get() {
+            ProjectParam param = new ProjectParam(
                 SqlExprUtils.toSqlExprList(rel.getProjects(), rel.getRowType()),
                 DefinitionMapper.mapToDingoType(rel.getInput().getRowType())
             );
+            return new Vertex(PROJECT, param);
         }
     }
 

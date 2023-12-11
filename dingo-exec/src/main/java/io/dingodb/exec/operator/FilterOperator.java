@@ -16,56 +16,30 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.operator.params.FilterParam;
 
-@JsonTypeName("filter")
-@JsonPropertyOrder({"filter", "schema", "output"})
 public final class FilterOperator extends SoleOutOperator {
-    @JsonProperty("filter")
-    private final SqlExpr filter;
-    @JsonProperty("schema")
-    private final DingoType schema;
+    public static final FilterOperator INSTANCE = new FilterOperator();
 
-    @JsonCreator
-    public FilterOperator(
-        @JsonProperty("filter") SqlExpr filter,
-        @JsonProperty("schema") DingoType schema
-    ) {
-        super();
-        this.filter = filter;
-        this.schema = schema;
+    public FilterOperator() {
     }
 
     @Override
-    public void init() {
-        super.init();
-        filter.compileIn(schema, getParasType());
-    }
-
-    @Override
-    public synchronized boolean push(int pin, Object[] tuple) {
+    public  boolean push(int pin, Object[] tuple, Vertex vertex) {
+        FilterParam params = vertex.getParam();
         // The eval result may be `null`
-        Boolean v = (Boolean) filter.eval(tuple);
+        Boolean v = (Boolean) params.getFilter().eval(tuple);
         if (v != null && v) {
-            return output.push(tuple);
+            return vertex.getSoleEdge().transformToNext(tuple);
         }
         return true;
     }
 
     @Override
-    public synchronized void fin(int pin, Fin fin) {
-        output.fin(fin);
+    public  void fin(int pin, Fin fin, Vertex vertex) {
+        vertex.getSoleEdge().fin(fin);
     }
 
-    @Override
-    public void setParas(Object[] paras) {
-        super.setParas(paras);
-        filter.setParas(paras);
-    }
 }

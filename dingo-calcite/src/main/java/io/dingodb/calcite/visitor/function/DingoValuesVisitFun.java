@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.visitor.function;
 
+import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.traits.DingoRelPartition;
 import io.dingodb.calcite.traits.DingoRelPartitionByTable;
@@ -35,10 +36,10 @@ import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.operator.ValuesOperator;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.ValuesParam;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -50,27 +51,29 @@ import java.util.NavigableMap;
 import java.util.Objects;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
+import static io.dingodb.exec.utils.OperatorCodeUtils.VALUES;
 
 public final class DingoValuesVisitFun {
     private DingoValuesVisitFun() {
     }
 
-    public static List<Output> visit(
+    public static List<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, @NonNull DingoValues rel
     ) {
         DingoRelStreaming streaming = rel.getStreaming();
         if (streaming.equals(DingoRelStreaming.ROOT)) {
             Task task = job.getOrCreate(currentLocation, idGenerator);
-            ValuesOperator operator = new ValuesOperator(rel.getTuples(),
+            ValuesParam param = new ValuesParam(rel.getTuples(),
                 Objects.requireNonNull(DefinitionMapper.mapToDingoType(rel.getRowType()))
             );
-            operator.setId(idGenerator.getOperatorId(task.getId()));
-            task.putOperator(operator);
-            return operator.getOutputs();
+            Vertex vertex = new Vertex(VALUES, param);
+            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            task.putVertex(vertex);
+            return ImmutableList.of(vertex);
         }
         DingoRelPartition distribution = streaming.getDistribution();
         if (distribution instanceof DingoRelPartitionByTable) {
-            List<Output> outputs = new LinkedList<>();
+            List<Vertex> outputs = new LinkedList<>();
             final TableInfo tableInfo = MetaServiceUtils.getTableInfo(
                 ((DingoRelPartitionByTable) distribution).getTable());
             final TableDefinition td = TableUtils.getTableDefinition(
@@ -82,20 +85,22 @@ public final class DingoValuesVisitFun {
                 Optional.ofNullable(td.getPartDefinition())
                     .map(PartitionDefinition::getFuncName)
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-            Map<CommonId, List<Object[]>> partMap = ps.partTuples(rel.getTuples(), wrap(keyValueCodec::encodeKey), distributions);
+            Map<CommonId, List<Object[]>> partMap =
+                ps.partTuples(rel.getTuples(), wrap(keyValueCodec::encodeKey), distributions);
             for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
-                ValuesOperator operator = new ValuesOperator(entry.getValue(),
+                ValuesParam param = new ValuesParam(
+                    entry.getValue(),
                     Objects.requireNonNull(DefinitionMapper.mapToDingoType(rel.getRowType()))
                 );
-                Location location = currentLocation;
-                Task task = job.getOrCreate(location, idGenerator);
-                operator.setId(idGenerator.getOperatorId(task.getId()));
+                Vertex vertex = new Vertex(VALUES, param);
+                Task task = job.getOrCreate(currentLocation, idGenerator);
+                vertex.setId(idGenerator.getOperatorId(task.getId()));
                 OutputHint hint = new OutputHint();
                 hint.setPartId(entry.getKey());
-                hint.setLocation(location);
-                operator.getSoleOutput().setHint(hint);
-                task.putOperator(operator);
-                outputs.addAll(operator.getOutputs());
+                hint.setLocation(currentLocation);
+                vertex.setHint(hint);
+                task.putVertex(vertex);
+                outputs.add(vertex);
             }
             return outputs;
         }

@@ -16,33 +16,25 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Iterators;
-import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.operator.params.FilterProjectSourceParam;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Iterator;
 
 public abstract class FilterProjectSourceOperator extends IteratorSourceOperator {
-    @JsonProperty("schema")
-    protected final DingoType schema;
-    @JsonProperty("filter")
-    protected SqlExpr filter;
-    @JsonProperty("selection")
-    protected TupleMapping selection;
-
-    public FilterProjectSourceOperator(DingoType schema, SqlExpr filter, TupleMapping selection) {
-        super();
-        this.schema = schema;
-        this.filter = filter;
-        this.selection = selection;
+    public FilterProjectSourceOperator() {
     }
 
     @Override
-    protected @NonNull Iterator<Object[]> createIterator() {
-        Iterator<Object[]> iterator = createSourceIterator();
+    protected @NonNull Iterator<Object[]> createIterator(Vertex vertex) {
+        FilterProjectSourceParam param = vertex.getParam();
+        Iterator<Object[]> iterator = createSourceIterator(vertex);
+        SqlExpr filter = param.getFilter();
+        TupleMapping selection = param.getSelection();
         if (selection != null) {
             iterator = Iterators.transform(iterator, selection::revMap);
         }
@@ -58,25 +50,6 @@ public abstract class FilterProjectSourceOperator extends IteratorSourceOperator
         return iterator;
     }
 
-    protected abstract @NonNull Iterator<Object[]> createSourceIterator();
+    protected abstract @NonNull Iterator<Object[]> createSourceIterator(Vertex vertex);
 
-    @Override
-    public void init() {
-        super.init();
-        if (filter != null) {
-            if (selection != null) {
-                filter.compileIn(schema.select(selection), getParasType());
-            } else {
-                filter.compileIn(schema, getParasType());
-            }
-        }
-    }
-
-    @Override
-    public void setParas(Object[] paras) {
-        super.setParas(paras);
-        if (filter != null) {
-            filter.setParas(paras);
-        }
-    }
 }

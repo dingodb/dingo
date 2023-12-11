@@ -16,23 +16,27 @@
 
 package io.dingodb.calcite.visitor.function;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.operator.ReceiveOperator;
-import io.dingodb.exec.operator.SendOperator;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.ReceiveParam;
+import io.dingodb.exec.operator.params.SendParam;
 import org.checkerframework.checker.nullness.qual.NonNull;
+
+import static io.dingodb.exec.utils.OperatorCodeUtils.RECEIVE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.SEND;
 
 public final class DingoExchangeFun {
     private DingoExchangeFun() {
     }
 
-    public static Output exchange(
-        Job job, IdGenerator idGenerator, @NonNull Output input, @NonNull Location target, DingoType schema
+    public static Vertex exchange(
+        Job job, IdGenerator idGenerator, @NonNull Vertex input, @NonNull Location target, DingoType schema
     ) {
         Task task = input.getTask();
         if (target.equals(task.getLocation())) {
@@ -41,14 +45,22 @@ public final class DingoExchangeFun {
         CommonId id = idGenerator.getOperatorId(task.getId());
         Task rcvTask = job.getOrCreate(target, idGenerator);
         CommonId receiveId = idGenerator.getOperatorId(rcvTask.getId());
-        SendOperator send = new SendOperator(target.getHost(), target.getPort(), receiveId, schema);
+        SendParam sendParam = new SendParam(target.getHost(), target.getPort(), receiveId, schema);
+        Vertex send = new Vertex(SEND, sendParam);
         send.setId(id);
-        input.setLink(send.getInput(0));
-        task.putOperator(send);
-        ReceiveOperator receive = new ReceiveOperator(task.getHost(), task.getLocation().getPort(), schema);
+        input.setPin(0);
+        Edge edge = new Edge(input, send);
+        input.addEdge(edge);
+        send.addIn(edge);
+        task.putVertex(send);
+        ReceiveParam receiveParam = new ReceiveParam(task.getHost(), task.getLocation().getPort(), schema);
+        Vertex receive = new Vertex(RECEIVE, receiveParam);
         receive.setId(receiveId);
-        receive.getSoleOutput().copyHint(input);
-        rcvTask.putOperator(receive);
-        return receive.getSoleOutput();
+        receive.copyHint(input);
+        Edge sendEdge = new Edge(send, receive);
+        send.addEdge(sendEdge);
+        receive.addIn(sendEdge);
+        rcvTask.putVertex(receive);
+        return receive;
     }
 }

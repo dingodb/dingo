@@ -16,90 +16,33 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.CommonId;
 import io.dingodb.exec.channel.SendEndpoint;
-import io.dingodb.exec.codec.TxRxCodec;
-import io.dingodb.exec.codec.TxRxCodecImpl;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
-import io.dingodb.exec.utils.TagUtils;
+import io.dingodb.exec.operator.params.SendParam;
 import io.dingodb.net.BufferOutputStream;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.List;
 
 @Slf4j
-@JsonPropertyOrder({"host", "port", "tag", "schema"})
-@JsonTypeName("send")
 public final class SendOperator extends SinkOperator {
+    public static final SendOperator INSTANCE = new SendOperator();
     public static final int SEND_BATCH_SIZE = 256;
 
-    @JsonProperty("host")
-    private final String host;
-    @JsonProperty("port")
-    private final int port;
-    @JsonProperty("receiveId")
-    @JsonSerialize(using = CommonId.JacksonSerializer.class)
-    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    private final CommonId receiveId;
-    @JsonProperty("schema")
-    private final DingoType schema;
-    private final List<Object[]> tupleList;
-    private TxRxCodec codec;
-    private SendEndpoint endpoint;
+    private SendOperator() {
 
-    private transient int maxBufferSize;
-
-    @JsonCreator
-    public SendOperator(
-        @JsonProperty("host") String host,
-        @JsonProperty("port") int port,
-        @JsonProperty("receiveId") CommonId receiveId,
-        @JsonProperty("schema") DingoType schema
-    ) {
-        super();
-        this.host = host;
-        this.port = port;
-        this.receiveId = receiveId;
-        this.schema = schema;
-        this.tupleList = new LinkedList<>();
-        this.maxBufferSize = 4096;
     }
 
     @Override
-    public void init() {
-        super.init();
-        codec = new TxRxCodecImpl(schema);
-        endpoint = new SendEndpoint(host, port, TagUtils.tag(getTask().getJobId(), receiveId));
-        endpoint.init();
-    }
-
-    @Override
-    public void destroy() {
-        safeCloseEndpoint();
-    }
-
-    private void safeCloseEndpoint() {
-        if (endpoint != null) {
-            endpoint.close();
-        }
-    }
-
-    @Override
-    public boolean push(Object[] tuple) {
+    public boolean push(Object[] tuple, Vertex vertex) {
         try {
-            tupleList.add(tuple);
-            if (tupleList.size() >= SEND_BATCH_SIZE) {
-                return sendTupleList();
+            SendParam param = vertex.getParam();
+            param.getTupleList().add(tuple);
+            if (param.getTupleList().size() >= SEND_BATCH_SIZE) {
+                return sendTupleList(param);
             }
             return true;
         } catch (IOException e) {
@@ -108,12 +51,14 @@ public final class SendOperator extends SinkOperator {
     }
 
     @Override
-    public void fin(Fin fin) {
+    public void fin(Fin fin, Vertex vertex) {
         try {
-            BufferOutputStream bos = endpoint.getOutputStream(maxBufferSize);
-            codec.encodeFin(bos, fin);
+            SendParam param = vertex.getParam();
+            SendEndpoint endpoint = param.getEndpoint();
+            BufferOutputStream bos = endpoint.getOutputStream(param.getMaxBufferSize());
+            param.getCodec().encodeFin(bos, fin);
             if (!(fin instanceof FinWithException)) {
-                sendTupleList();
+                sendTupleList(param);
             }
             if (log.isDebugEnabled()) {
                 log.debug("Send FIN with detail:\n{}", fin.detail());
@@ -124,12 +69,15 @@ public final class SendOperator extends SinkOperator {
         }
     }
 
-    private boolean sendTupleList() throws IOException {
+    private boolean sendTupleList(SendParam param) throws IOException {
+        SendEndpoint endpoint = param.getEndpoint();
+        int maxBufferSize = param.getMaxBufferSize();
+        List<Object[]> tupleList = param.getTupleList();
         if (!tupleList.isEmpty()) {
             BufferOutputStream bos = endpoint.getOutputStream(maxBufferSize);
-            codec.encodeTuples(bos, tupleList);
+            param.getCodec().encodeTuples(bos, tupleList);
             if (bos.bytes() > maxBufferSize) {
-                maxBufferSize = bos.bytes();
+                param.setMaxBufferSize(bos.bytes());
             }
             boolean result = endpoint.send(bos);
             tupleList.clear();

@@ -1,0 +1,102 @@
+/*
+ * Copyright 2021 DataCanvas
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.dingodb.exec.operator.params;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.dingodb.common.CommonId;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.table.Part;
+import io.dingodb.exec.transaction.params.CommitParam;
+import io.dingodb.exec.transaction.params.PreWriteParam;
+import io.dingodb.exec.transaction.params.RollBackParam;
+import io.dingodb.exec.transaction.params.ScanCacheParam;
+import lombok.Getter;
+
+@Getter
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    property = "type"
+)
+@JsonSubTypes({
+    @JsonSubTypes.Type(AggregateParams.class),
+    @JsonSubTypes.Type(EmptySourceParam.class),
+    @JsonSubTypes.Type(CoalesceParam.class),
+    @JsonSubTypes.Type(FilterParam.class),
+    @JsonSubTypes.Type(GetByIndexParam.class),
+    @JsonSubTypes.Type(GetByKeysParam.class),
+    @JsonSubTypes.Type(HashJoinParam.class),
+    @JsonSubTypes.Type(HashParam.class),
+    @JsonSubTypes.Type(LikeScanParam.class),
+    @JsonSubTypes.Type(IndexMergeParam.class),
+    @JsonSubTypes.Type(PartCountParam.class),
+    @JsonSubTypes.Type(PartDeleteParam.class),
+    @JsonSubTypes.Type(PartInsertParam.class),
+    @JsonSubTypes.Type(PartitionParam.class),
+    @JsonSubTypes.Type(PartRangeDeleteParam.class),
+    @JsonSubTypes.Type(PartRangeScanParam.class),
+    @JsonSubTypes.Type(PartUpdateParam.class),
+    @JsonSubTypes.Type(ProjectParam.class),
+    @JsonSubTypes.Type(ReceiveParam.class),
+    @JsonSubTypes.Type(ReduceParam.class),
+    @JsonSubTypes.Type(RootParam.class),
+    @JsonSubTypes.Type(SendParam.class),
+    @JsonSubTypes.Type(SortParam.class),
+    @JsonSubTypes.Type(SumUpParam.class),
+    @JsonSubTypes.Type(ValuesParam.class),
+    @JsonSubTypes.Type(RemovePartParam.class),
+    @JsonSubTypes.Type(PartVectorParam.class),
+    @JsonSubTypes.Type(VectorPartitionParam.class),
+    @JsonSubTypes.Type(VectorPointDistanceParam.class),
+    @JsonSubTypes.Type(TxnPartInsertParam.class),
+    @JsonSubTypes.Type(TxnPartUpdateParam.class),
+    @JsonSubTypes.Type(TxnPartDeleteParam.class),
+    @JsonSubTypes.Type(TxnLikeScanParam.class),
+    @JsonSubTypes.Type(TxnPartRangeDeleteParam.class),
+    @JsonSubTypes.Type(TxnPartRangeScanParam.class),
+    @JsonSubTypes.Type(CommitParam.class),
+    @JsonSubTypes.Type(PreWriteParam.class),
+    @JsonSubTypes.Type(RollBackParam.class),
+    @JsonSubTypes.Type(ScanCacheParam.class)
+})
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public abstract class AbstractParams {
+
+    protected CommonId partId;
+
+    protected Part part = null;
+
+    public AbstractParams() {
+    }
+
+    public AbstractParams(CommonId partId, Part part) {
+        this.partId = partId;
+        this.part = part;
+    }
+
+    public void init(Vertex vertex) {
+
+    }
+
+    public void setParas(Object[] paras) {
+    }
+
+    public void destroy() {
+
+    }
+}

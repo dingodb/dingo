@@ -35,16 +35,19 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Output;
+import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.operator.HashOperator;
-import io.dingodb.exec.operator.PartitionOperator;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.hash.HashStrategy;
 import io.dingodb.exec.operator.hash.SimpleHashStrategy;
-import io.dingodb.partition.DingoPartitionServiceProvider;
-import io.dingodb.partition.PartitionService;
+import io.dingodb.exec.operator.params.HashParam;
+import io.dingodb.exec.operator.params.PartitionParam;
+import io.dingodb.meta.MetaService;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -54,11 +57,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
+import static io.dingodb.exec.utils.OperatorCodeUtils.HASH;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PARTITION;
 
-
+@Slf4j
 public class DingoStreamingConverterVisitFun {
     @NonNull
-    public static Collection<Output> visit(
+    public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, DingoStreamingConverter rel
     ) {
         return convertStreaming(
@@ -70,9 +75,9 @@ public class DingoStreamingConverterVisitFun {
         );
     }
 
-    public static @NonNull Collection<Output> convertStreaming(
+    public static @NonNull Collection<Vertex> convertStreaming(
         Job job, IdGenerator idGenerator, Location currentLocation,
-        @NonNull Collection<Output> inputs,
+        @NonNull Collection<Vertex> inputs,
         @NonNull DingoRelStreaming srcStreaming,
         @NonNull DingoRelStreaming dstStreaming,
         DingoType schema
@@ -84,7 +89,7 @@ public class DingoStreamingConverterVisitFun {
         final DingoRelPartition srcDistribution = srcStreaming.getDistribution();
         DingoRelStreaming media = dstStreaming.withPartitions(srcPartitions);
         assert media.getPartitions() != null;
-        Collection<Output> outputs = inputs;
+        Collection<Vertex> outputs = inputs;
         if (media.getPartitions().size() > srcPartitions.size()) {
             for (DingoRelPartition partition : media.getPartitions()) {
                 if (!srcPartitions.contains(partition)) {
@@ -111,43 +116,53 @@ public class DingoStreamingConverterVisitFun {
         return outputs;
     }
 
-    private static @NonNull Collection<Output> partition(
+    private static @NonNull Collection<Vertex> partition(
         IdGenerator idGenerator,
-        @NonNull Collection<Output> inputs,
+        @NonNull Collection<Vertex> inputs,
         @NonNull DingoRelPartitionByTable partition
     ) {
-        List<Output> outputs = new LinkedList<>();
+        List<Vertex> outputs = new LinkedList<>();
         final TableInfo tableInfo = MetaServiceUtils.getTableInfo(partition.getTable());
         final TableDefinition td = TableUtils.getTableDefinition(partition.getTable());
         NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
-        for (Output input : inputs) {
+        for (Vertex input : inputs) {
             Task task = input.getTask();
-            PartitionOperator operator = new PartitionOperator(distributions, td);
-            operator.setId(idGenerator.getOperatorId(task.getId()));
-            operator.createOutputs(distributions);
-            task.putOperator(operator);
-            input.setLink(operator.getInput(0));
-            outputs.addAll(operator.getOutputs());
+            PartitionParam param = new PartitionParam(distributions, td);
+            Vertex vertex = new Vertex(PARTITION, param);
+            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            OutputHint hint = new OutputHint();
+            hint.setLocation(MetaService.root().currentLocation());
+            vertex.setHint(hint);
+            Edge edge = new Edge(input, vertex);
+            vertex.addIn(edge);
+            task.putVertex(vertex);
+            input.addEdge(edge);
+            outputs.add(vertex);
         }
         return outputs;
     }
 
-    private static @NonNull Collection<Output> hash(
+    private static @NonNull Collection<Vertex> hash(
         IdGenerator idGenerator,
-        @NonNull Collection<Output> inputs,
+        @NonNull Collection<Vertex> inputs,
         @NonNull DingoRelPartitionByKeys hash
     ) {
-        List<Output> outputs = new LinkedList<>();
-        final Collection<Location> locations = ClusterService.getDefault().getComputingLocations();
+        List<Vertex> outputs = new LinkedList<>();
+        final List<Location> locations = new ArrayList<>(ClusterService.getDefault().getComputingLocations());
         final HashStrategy hs = new SimpleHashStrategy();
-        for (Output input : inputs) {
+        for (Vertex input : inputs) {
             Task task = input.getTask();
-            HashOperator operator = new HashOperator(hs, TupleMapping.of(hash.getKeys()));
-            operator.setId(idGenerator.getOperatorId(task.getId()));
-            operator.createOutputs(locations);
-            task.putOperator(operator);
-            input.setLink(operator.getInput(0));
-            outputs.addAll(operator.getOutputs());
+            HashParam param = new HashParam(hs, TupleMapping.of(hash.getKeys()));
+            Vertex vertex = new Vertex(HASH, param);
+            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            OutputHint hint = new OutputHint();
+            hint.setLocation(locations.get(0));
+            vertex.setHint(hint);
+            Edge edge = new Edge(input, vertex);
+            vertex.addIn(edge);
+            task.putVertex(vertex);
+            input.addEdge(edge);
+            outputs.add(vertex);
         }
         return outputs;
     }

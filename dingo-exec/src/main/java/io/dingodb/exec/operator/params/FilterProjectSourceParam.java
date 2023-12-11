@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.operator;
+package io.dingodb.exec.operator.params;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -22,38 +22,55 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.exec.base.OutputHint;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.table.Part;
+import lombok.Getter;
 
-public abstract class PartIteratorSourceOperator extends FilterProjectSourceOperator {
-    @JsonProperty("table")
+@Getter
+public abstract class FilterProjectSourceParam extends SourceParam {
+
+    @JsonProperty("tableId")
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     protected final CommonId tableId;
-    @JsonProperty("part")
-    @JsonSerialize(using = CommonId.JacksonSerializer.class)
-    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    protected final CommonId partId;
+    protected final DingoType schema;
+    protected SqlExpr filter;
+    protected TupleMapping selection;
     @JsonProperty("keyMapping")
     protected final TupleMapping keyMapping;
 
-    protected Part part;
-
-    protected PartIteratorSourceOperator(
+    public FilterProjectSourceParam(
         CommonId tableId,
         CommonId partId,
         DingoType schema,
-        TupleMapping keyMapping,
         SqlExpr filter,
-        TupleMapping selection
+        TupleMapping selection,
+        TupleMapping keyMapping
     ) {
-        super(schema, filter, selection);
+        super(partId, null);
         this.tableId = tableId;
-        this.partId = partId;
+        this.schema = schema;
+        this.filter = filter;
+        this.selection = selection;
         this.keyMapping = keyMapping;
-        OutputHint hint = new OutputHint();
-        hint.setPartId(partId);
-        output.setHint(hint);
+    }
+
+    @Override
+    public void init(Vertex vertex) {
+        if (filter != null) {
+            if (selection != null) {
+                filter.compileIn(schema.select(selection), vertex.getParasType());
+            } else {
+                filter.compileIn(schema, vertex.getParasType());
+            }
+        }
+    }
+
+    @Override
+    public void setParas(Object[] paras) {
+        super.setParas(paras);
+        if (filter != null) {
+            filter.setParas(paras);
+        }
     }
 }

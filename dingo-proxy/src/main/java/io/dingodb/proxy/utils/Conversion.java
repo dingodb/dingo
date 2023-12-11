@@ -26,6 +26,7 @@ import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.proxy.common.ProxyCommon;
 import io.dingodb.proxy.meta.ProxyMeta;
+import io.dingodb.sdk.common.index.BruteForceParam;
 import io.dingodb.sdk.common.index.DiskAnnParam;
 import io.dingodb.sdk.common.index.FlatParam;
 import io.dingodb.sdk.common.index.HnswParam;
@@ -165,6 +166,16 @@ public class Conversion {
                     )
                 );
                 break;
+            case VECTOR_INDEX_TYPE_BRUTEFORCE:
+                ProxyCommon.CreateBruteForceParam forceParam = vectorIndexParameter.getBruteforceParameter();
+                vectorParameter = new VectorIndexParameter(
+                    vectorIndexType,
+                    new BruteForceParam(
+                        forceParam.getDimension(),
+                        VectorIndexParameter.MetricType.valueOf(forceParam.getMetricType().name())
+                    )
+                );
+                break;
             default:
                 throw new IllegalStateException("Unexpected value: " + vectorIndexParameter.getVectorIndexType());
         }
@@ -223,6 +234,12 @@ public class Conversion {
                         .setMetricType(ProxyCommon.MetricType.valueOf(diskAnnParam.getMetricType().name()))
                         .build());
                     break;
+                case VECTOR_INDEX_TYPE_BRUTEFORCE:
+                    BruteForceParam forceParam = vectorParameter.getBruteForceParam();
+                    vectorBuilder.setBruteforceParameter(ProxyCommon.CreateBruteForceParam.newBuilder()
+                        .setDimension(forceParam.getDimension())
+                        .setMetricType(ProxyCommon.MetricType.valueOf(forceParam.getMetricType().name()))
+                        .build());
             }
             builder.setVectorIndexParameter(vectorBuilder.build());
         } else {

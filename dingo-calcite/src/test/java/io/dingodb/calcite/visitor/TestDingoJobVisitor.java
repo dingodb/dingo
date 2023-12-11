@@ -32,10 +32,12 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.impl.JobManagerImpl;
 import io.dingodb.exec.impl.LocalTimestampOracle;
 import io.dingodb.exec.operator.CoalesceOperator;
 import io.dingodb.exec.operator.ValuesOperator;
+import io.dingodb.exec.operator.params.ValuesParam;
 import io.dingodb.meta.MetaService;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.asserts.AssertJob;
@@ -207,11 +209,13 @@ public class TestDingoJobVisitor {
         long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, values, currentLocation);
-        ValuesOperator operator = (ValuesOperator) Assert.job(job)
+        Vertex vertex = Assert.job(job)
             .soleTask().location(MockMetaServiceProvider.LOC_0).operatorNum(1)
             .soleSource().isA(ValuesOperator.class)
-            .getInstance();
-        List<Object[]> tuples = operator.getTuples();
+            .getVertex();
+        ValuesParam param = (ValuesParam) vertex.getData();
+
+        List<Object[]> tuples = param.getTuples();
         assertThat(tuples).element(0).satisfies(obj -> {
             assertThat(obj[0]).isEqualTo(1);
             assertThat(obj[1]).isEqualTo("Alice");

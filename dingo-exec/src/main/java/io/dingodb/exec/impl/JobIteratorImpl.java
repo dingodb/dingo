@@ -16,8 +16,10 @@
 
 package io.dingodb.exec.impl;
 
+import io.dingodb.exec.OperatorFactory;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobIterator;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.RootOperator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -25,11 +27,13 @@ public class JobIteratorImpl extends JobIterator {
     private final RootOperator operator;
 
     private transient Object[] current;
+    private final transient Vertex vertex;
 
-    JobIteratorImpl(Job job, @NonNull RootOperator operator) {
+    JobIteratorImpl(Job job, @NonNull Vertex vertex) {
         super(job);
-        this.operator = operator;
-        current = operator.popValue();
+        this.operator = (RootOperator) OperatorFactory.getInstance(vertex.getOp());
+        this.vertex = vertex;
+        current = operator.popValue(vertex);
     }
 
     @Override
@@ -37,14 +41,14 @@ public class JobIteratorImpl extends JobIterator {
         if (current != RootOperator.FIN) {
             return true;
         }
-        operator.checkError();
+        operator.checkError(vertex);
         return false;
     }
 
     @Override
     public Object[] next() {
         Object[] result = current;
-        current = operator.popValue();
+        current = operator.popValue(vertex);
         return result;
     }
 }

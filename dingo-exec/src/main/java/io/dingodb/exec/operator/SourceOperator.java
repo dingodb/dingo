@@ -16,48 +16,37 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
-import io.dingodb.exec.fin.OperatorProfile;
+import io.dingodb.exec.operator.params.SourceParam;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Source operator has no inputs and only one output.
  */
 @Slf4j
 public abstract class SourceOperator extends SoleOutOperator {
-    protected List<OperatorProfile> profiles = new LinkedList<>();
 
     @Override
-    public void init() {
-        super.init();
+    public  boolean push(int pin, Object[] tuple, Vertex vertex) {
+        return push(vertex);
     }
 
-    @Override
-    public synchronized boolean push(int pin, Object[] tuple) {
-        return push();
-    }
+    public abstract boolean push(Vertex vertex);
 
     @Override
-    public synchronized void fin(int pin, Fin fin) {
+    public  void fin(int pin, Fin fin, Vertex vertex) {
+        Edge edge = vertex.getSoleEdge();
+        SourceParam param = (SourceParam) vertex.getData();
         if (fin instanceof FinWithException) {
-            output.fin(fin);
+            edge.fin(fin);
         } else {
-            output.fin(new FinWithProfiles(profiles));
+            edge.fin(new FinWithProfiles(param.getProfiles()));
         }
-        profiles.clear();
+        param.clear();
     }
 
-    public abstract boolean push();
-
-    public OperatorProfile getProfile() {
-        OperatorProfile profile = new OperatorProfile();
-        profile.setOperatorId(id);
-        profiles.add(profile);
-        return profile;
-    }
 }

@@ -46,7 +46,11 @@ public class OutputIml implements Output {
     }
 
     @JsonCreator
-    public OutputIml(@JsonSerialize(using = CommonId.JacksonSerializer.class) @JsonDeserialize(using = CommonId.JacksonDeserializer.class) @JsonProperty("operator") CommonId operatorId, @JsonProperty("pin") int pin) {
+    public OutputIml(
+        @JsonSerialize(using = CommonId.JacksonSerializer.class)
+        @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+        @JsonProperty("operator") CommonId operatorId,
+        @JsonProperty("pin") int pin) {
         this.link = new Input(operatorId, pin);
     }
 

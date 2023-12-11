@@ -35,12 +35,13 @@ import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Output;
+import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.operator.GetByIndexOperator;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.GetByIndexParam;
+import io.dingodb.meta.MetaService;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
-import io.dingodb.meta.MetaService;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
@@ -53,6 +54,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.Utils.calculatePrefixCount;
+import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_INDEX;
 
 public final class DingoGetByIndexVisitFun {
 
@@ -60,14 +62,14 @@ public final class DingoGetByIndexVisitFun {
     }
 
     @NonNull
-    public static LinkedList<Output> visit(
+    public static LinkedList<Vertex> visit(
         Job job,
         IdGenerator idGenerator,
         Location currentLocation,
         DingoJobVisitor visitor,
         @NonNull DingoGetByIndex rel
     ) {
-        final LinkedList<Output> outputs = new LinkedList<>();
+        final LinkedList<Vertex> outputs = new LinkedList<>();
         MetaService metaService = MetaServiceUtils.getMetaService(rel.getTable());
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         Map<CommonId, Set> indexSetMap = rel.getIndexSetMap();
@@ -83,7 +85,7 @@ public final class DingoGetByIndexVisitFun {
                 = metaService.getIndexRangeDistribution(indexValSet.getKey(),
                 indexTd);
 
-            PartitionService ps =PartitionService.getService(
+            PartitionService ps = PartitionService.getService(
                 Optional.ofNullable(indexTd.getPartDefinition())
                     .map(PartitionDefinition::getFuncName)
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
@@ -98,6 +100,8 @@ public final class DingoGetByIndexVisitFun {
                     CommonId partId = ps.calcPartId(keys, indexRanges);
                     partMap.putIfAbsent(partId, new LinkedList<>());
                     partMap.get(partId).add(tuple);
+
+
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -110,10 +114,9 @@ public final class DingoGetByIndexVisitFun {
                 needLookup = isNeedLookUp(rel.getSelection(), tupleMapping);
             }
             for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
-                GetByIndexOperator operator = new GetByIndexOperator(
-                    indexValSet.getKey(),
+                GetByIndexParam param = new GetByIndexParam(
                     entry.getKey(),
-                    tableInfo.getId(),
+                    indexValSet.getKey(),
                     tupleMapping,
                     entry.getValue(),
                     SqlExprUtils.toSqlExpr(rel.getFilter()),
@@ -126,9 +129,13 @@ public final class DingoGetByIndexVisitFun {
                     needLookup
                 );
                 Task task = job.getOrCreate(currentLocation, idGenerator);
-                operator.setId(idGenerator.getOperatorId(task.getId()));
-                task.putOperator(operator);
-                outputs.addAll(operator.getOutputs());
+                Vertex vertex = new Vertex(GET_BY_INDEX, param);
+                OutputHint hint = new OutputHint();
+                hint.setPartId(entry.getKey());
+                vertex.setHint(hint);
+                vertex.setId(idGenerator.getOperatorId(task.getId()));
+                task.putVertex(vertex);
+                outputs.add(vertex);
             }
         }
         return outputs;

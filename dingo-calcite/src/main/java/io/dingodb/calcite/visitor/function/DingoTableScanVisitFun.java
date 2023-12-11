@@ -26,7 +26,6 @@ import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
@@ -35,10 +34,12 @@ import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Output;
+import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.operator.PartRangeScanOperator;
+import io.dingodb.exec.operator.params.PartRangeScanParam;
+import io.dingodb.exec.operator.params.TxnPartRangeScanParam;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import lombok.extern.slf4j.Slf4j;
@@ -52,14 +53,18 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 
+import static io.dingodb.exec.utils.OperatorCodeUtils.PART_RANGE_SCAN;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_RANGE_SCAN;
+
 @Slf4j
 public final class DingoTableScanVisitFun {
 
     private DingoTableScanVisitFun() {
     }
 
-    public static @NonNull Collection<Output> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, @NonNull DingoTableScan rel
+    public static @NonNull Collection<Vertex> visit(
+        Job job, IdGenerator idGenerator, Location currentLocation,
+        boolean isTxn, DingoJobVisitor visitor, @NonNull DingoTableScan rel
     ) {
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
@@ -96,31 +101,59 @@ public final class DingoTableScanVisitFun {
             distributions = ps.calcPartitionRange(startKey, endKey, withStart, withEnd, ranges);
         }
 
-        List<Output> outputs = new ArrayList<>();
+        List<Vertex> outputs = new ArrayList<>();
 
+        // TODO
         for (RangeDistribution rd : distributions) {
-            PartRangeScanOperator operator = new PartRangeScanOperator(
-                tableInfo.getId(),
-                rd.id(),
-                td.getDingoType(),
-                td.getKeyMapping(),
-                Optional.mapOrNull(filter, SqlExpr::copy),
-                rel.getSelection(),
-                rd.getStartKey(),
-                rd.getEndKey(),
-                rd.isWithStart(),
-                rd.isWithEnd(),
-                rel.getGroupSet() == null ? null
-                    : AggFactory.getAggKeys(rel.getGroupSet()),
-                rel.getAggCalls() == null ? null
-                    : AggFactory.getAggList(rel.getAggCalls(), DefinitionMapper.mapToDingoType(rel.getSelectedType())),
-                DefinitionMapper.mapToDingoType(rel.getNormalRowType()),
-                rel.isPushDown()
-            );
             Task task = job.getOrCreate(currentLocation, idGenerator);
-            operator.setId(idGenerator.getOperatorId(task.getId()));
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
+            Vertex vertex;
+            if (isTxn) {
+                TxnPartRangeScanParam param = new TxnPartRangeScanParam(
+                    tableInfo.getId(),
+                    rd.id(),
+                    td.getDingoType(),
+                    td.getKeyMapping(),
+                    Optional.mapOrNull(filter, SqlExpr::copy),
+                    rel.getSelection(),
+                    rd.getStartKey(),
+                    rd.getEndKey(),
+                    rd.isWithStart(),
+                    rd.isWithEnd(),
+                    rel.getGroupSet() == null ? null
+                        : AggFactory.getAggKeys(rel.getGroupSet()),
+                    rel.getAggCalls() == null ? null : AggFactory.getAggList(
+                        rel.getAggCalls(), DefinitionMapper.mapToDingoType(rel.getSelectedType())),
+                    DefinitionMapper.mapToDingoType(rel.getNormalRowType()),
+                    rel.isPushDown()
+                );
+                vertex = new Vertex(TXN_PART_RANGE_SCAN, param);
+            } else {
+                PartRangeScanParam param = new PartRangeScanParam(
+                    tableInfo.getId(),
+                    rd.id(),
+                    td.getDingoType(),
+                    td.getKeyMapping(),
+                    Optional.mapOrNull(filter, SqlExpr::copy),
+                    rel.getSelection(),
+                    rd.getStartKey(),
+                    rd.getEndKey(),
+                    rd.isWithStart(),
+                    rd.isWithEnd(),
+                    rel.getGroupSet() == null ? null
+                        : AggFactory.getAggKeys(rel.getGroupSet()),
+                    rel.getAggCalls() == null ? null : AggFactory.getAggList(
+                        rel.getAggCalls(), DefinitionMapper.mapToDingoType(rel.getSelectedType())),
+                    DefinitionMapper.mapToDingoType(rel.getNormalRowType()),
+                    rel.isPushDown()
+                );
+                vertex = new Vertex(PART_RANGE_SCAN, param);
+            }
+            OutputHint hint = new OutputHint();
+            hint.setPartId(rd.id());
+            vertex.setHint(hint);
+            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            task.putVertex(vertex);
+            outputs.add(vertex);
         }
 
         return outputs;

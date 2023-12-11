@@ -16,7 +16,9 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.OperatorProfile;
+import io.dingodb.exec.operator.params.SourceParam;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -25,16 +27,17 @@ import java.util.Iterator;
 @Slf4j
 public abstract class IteratorSourceOperator extends SourceOperator {
     @Override
-    public boolean push() {
+    public boolean push(Vertex vertex) {
         long count = 0;
         long startTime = System.currentTimeMillis();
-        OperatorProfile profile = getProfile();
+        SourceParam param = vertex.getParam();
+        OperatorProfile profile = param.getProfile(vertex.getId());
         profile.setStartTimeStamp(startTime);
-        Iterator<Object[]> iterator = createIterator();
+        Iterator<Object[]> iterator = createIterator(vertex);
         while (iterator.hasNext()) {
             Object[] tuple = iterator.next();
             ++count;
-            if (!output.push(tuple)) {
+            if (!vertex.getSoleEdge().transformToNext(tuple)) {
                 break;
             }
         }
@@ -47,5 +50,5 @@ public abstract class IteratorSourceOperator extends SourceOperator {
         return false;
     }
 
-    protected abstract @NonNull Iterator<Object[]> createIterator();
+    protected abstract @NonNull Iterator<Object[]> createIterator(Vertex vertex);
 }

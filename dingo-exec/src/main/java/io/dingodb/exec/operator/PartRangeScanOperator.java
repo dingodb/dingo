@@ -16,153 +16,46 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.dingodb.codec.CodecService;
-import io.dingodb.common.AggregationOperator;
-import io.dingodb.common.CommonId;
+import com.google.common.collect.Iterators;
 import io.dingodb.common.Coprocessor;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.Services;
-import io.dingodb.exec.aggregate.AbstractAgg;
-import io.dingodb.exec.aggregate.Agg;
-import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.table.PartInKvStore;
-import io.dingodb.exec.utils.SchemaWrapperUtils;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.PartRangeScanParam;
+import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+
+import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 @Slf4j
-@JsonTypeName("scan")
-@JsonPropertyOrder({
-    "table", "part", "schema", "keyMapping", "filter", "selection", "output",
-    "startKey", "endKey", "includeStart", "includeEnd", "prefixScan"
-})
-public final class PartRangeScanOperator extends PartIteratorSourceOperator {
-    @JsonProperty("startKey")
-    private final byte[] startKey;
-    @JsonProperty("endKey")
-    private final byte[] endKey;
-    @JsonProperty("includeStart")
-    private final boolean includeStart;
-    @JsonProperty("includeEnd")
-    private final boolean includeEnd;
-    @JsonProperty("aggKeys")
-    private final TupleMapping aggKeys;
-    @JsonProperty("aggList")
-    @JsonSerialize(contentAs = AbstractAgg.class)
-    private final List<Agg> aggList;
-    @JsonProperty("outSchema")
-    private final DingoType outputSchema;
-    @JsonProperty("pushDown")
-    private final boolean pushDown;
+public final class PartRangeScanOperator extends FilterProjectSourceOperator {
+    public static final PartRangeScanOperator INSTANCE = new PartRangeScanOperator();
 
-    private Coprocessor coprocessor = null;
-
-    @JsonCreator
-    public PartRangeScanOperator(
-        @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") CommonId partId,
-        @JsonProperty("schema") DingoType schema,
-        @JsonProperty("keyMapping") TupleMapping keyMapping,
-        @JsonProperty("filter") SqlExpr filter,
-        @JsonProperty("selection") TupleMapping selection,
-        @JsonProperty("startKey") byte[] startKey,
-        @JsonProperty("endKey") byte[] endKey,
-        @JsonProperty("includeStart") boolean includeStart,
-        @JsonProperty("includeEnd") boolean includeEnd,
-        @JsonProperty("aggKeys") TupleMapping aggKeys,
-        @JsonProperty("aggList") @JsonDeserialize(contentAs = AbstractAgg.class) List<Agg> aggList,
-        @JsonProperty("outSchema") DingoType outSchema,
-        @JsonProperty("pushDown") boolean pushDown
-    ) {
-        super(tableId, partId, schema, keyMapping, filter, selection);
-        this.startKey = startKey;
-        this.endKey = endKey;
-        this.includeStart = includeStart;
-        this.includeEnd = includeEnd;
-        this.aggKeys = aggKeys;
-        this.aggList = aggList;
-        this.outputSchema = outSchema;
-        this.pushDown = pushDown;
+    private PartRangeScanOperator() {
     }
 
     @Override
-    protected @NonNull Iterator<Object[]> createSourceIterator() {
+    protected @NonNull Iterator<Object[]> createSourceIterator(Vertex vertex) {
+        PartRangeScanParam param = vertex.getParam();
+        byte[] startKey = param.getStartKey();
+        byte[] endKey = param.getEndKey();
+        boolean includeStart = param.isIncludeStart();
+        boolean includeEnd = param.isIncludeEnd();
+        Coprocessor coprocessor = param.getCoprocessor();
         Iterator<Object[]> iterator;
+        StoreInstance storeInstance = Services.KV_STORE.getInstance(param.getTableId(), param.getPartId());
         if (coprocessor == null) {
-            iterator = part.scan(startKey, endKey, includeStart, includeEnd);
+            iterator = Iterators.transform(
+                storeInstance.scan(new StoreInstance.Range(startKey, endKey, includeStart, includeEnd)),
+                wrap(param.getCodec()::decode)::apply);
         } else {
-            iterator = part.scan(startKey, endKey, includeStart, includeEnd, coprocessor);
+            iterator = Iterators.transform(
+                storeInstance.scan(new StoreInstance.Range(startKey, endKey, includeStart, includeEnd), coprocessor),
+                wrap(param.getCodec()::decode)::apply);
         }
         return iterator;
     }
 
-    @Override
-    public void init() {
-        super.init();
-        if (pushDown) {
-            TupleMapping outputKeyMapping = keyMapping;
-            Coprocessor.CoprocessorBuilder builder = Coprocessor.builder();
-            DingoType filterInputSchema;
-            if (selection != null) {
-                builder.selection(selection.stream().boxed().collect(Collectors.toList()));
-                filterInputSchema = schema.select(selection);
-                selection = null;
-                outputKeyMapping = TupleMapping.of(new int[]{});
-            } else {
-                filterInputSchema = schema;
-            }
-            if (filter != null) {
-                byte[] code = filter.getCoding(filterInputSchema, getParasType());
-                if (code != null) {
-                    builder.expression(code);
-                    filter = null;
-                }
-            }
-            if (aggList != null && !aggList.isEmpty()) {
-                builder.groupBy(
-                    aggKeys.stream()
-                        .boxed()
-                        .collect(Collectors.toList())
-                );
-                builder.aggregations(aggList.stream().map(
-                    agg -> {
-                        AggregationOperator.AggregationOperatorBuilder operatorBuilder = AggregationOperator.builder();
-                        operatorBuilder.operation(agg.getAggregationType());
-                        operatorBuilder.indexOfColumn(agg.getIndex());
-                        return operatorBuilder.build();
-                    }
-                ).collect(Collectors.toList()));
-                // Do not put group keys to codec key, for there may be null value.
-                outputKeyMapping = TupleMapping.of(
-                    IntStream.range(0, aggKeys.size()).boxed().collect(Collectors.toList())
-                );
-            }
-            builder.originalSchema(SchemaWrapperUtils.buildSchemaWrapper(schema, keyMapping, tableId.seq));
-            builder.resultSchema(SchemaWrapperUtils.buildSchemaWrapper(
-                outputSchema, outputKeyMapping, tableId.seq
-            ));
-            coprocessor = builder.build();
-            part = new PartInKvStore(
-                Services.KV_STORE.getInstance(tableId, partId),
-                CodecService.getDefault().createKeyValueCodec(outputSchema, outputKeyMapping)
-            );
-            return;
-        }
-        part = new PartInKvStore(
-            Services.KV_STORE.getInstance(tableId, partId),
-            CodecService.getDefault().createKeyValueCodec(schema, keyMapping)
-        );
-    }
 }

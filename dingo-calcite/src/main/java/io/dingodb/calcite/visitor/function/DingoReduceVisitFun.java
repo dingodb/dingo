@@ -16,39 +16,44 @@
 
 package io.dingodb.calcite.visitor.function;
 
+import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Operator;
-import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.operator.ReduceOperator;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.ReduceParam;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
 import static io.dingodb.common.util.Utils.sole;
+import static io.dingodb.exec.utils.OperatorCodeUtils.REDUCE;
 
 public class DingoReduceVisitFun {
-    public static Collection<Output> visit(
+    public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, @NonNull DingoReduce rel
     ) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(visitor);
-        Operator operator;
-        operator = new ReduceOperator(AggFactory.getAggKeys(rel.getGroupSet()),
+        Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
+        ReduceParam param = new ReduceParam(AggFactory.getAggKeys(rel.getGroupSet()),
             AggFactory.getAggList(rel.getAggregateCallList(),
                 DefinitionMapper.mapToDingoType(rel.getOriginalInputType())
             )
         );
-        Output input = sole(inputs);
+        Vertex vertex = new Vertex(REDUCE, param);
+        Vertex input = sole(inputs);
         Task task = input.getTask();
-        operator.setId(idGenerator.getOperatorId(task.getId()));
-        task.putOperator(operator);
-        input.setLink(operator.getInput(0));
-        return operator.getOutputs();
+        vertex.setId(idGenerator.getOperatorId(task.getId()));
+        task.putVertex(vertex);
+        input.setPin(0);
+        Edge edge = new Edge(input, vertex);
+        input.addEdge(edge);
+        vertex.addIn(edge);
+        return ImmutableList.of(vertex);
     }
 }

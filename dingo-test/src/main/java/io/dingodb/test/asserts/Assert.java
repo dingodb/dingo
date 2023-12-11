@@ -19,6 +19,7 @@ package io.dingodb.test.asserts;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.dag.Vertex;
 import lombok.Getter;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlNode;
@@ -67,6 +68,10 @@ public class Assert<T, A extends Assert<T, A>> {
     @Nonnull
     public static AssertOperator operator(Operator operator) {
         return new AssertOperator(operator);
+    }
+
+    public static AssertOperator operator(Operator operator, Vertex vertex) {
+        return new AssertOperator(operator, vertex);
     }
 
     @Nonnull

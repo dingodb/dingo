@@ -16,138 +16,75 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.exec.channel.ReceiveEndpoint;
-import io.dingodb.exec.codec.TxRxCodec;
-import io.dingodb.exec.codec.TxRxCodecImpl;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.fin.OperatorProfile;
+import io.dingodb.exec.operator.params.ReceiveParam;
 import io.dingodb.exec.utils.QueueUtils;
-import io.dingodb.exec.utils.TagUtils;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-
 @Slf4j
-@JsonPropertyOrder({"host", "port", "schema", "output"})
-@JsonTypeName("receive")
 public final class ReceiveOperator extends SourceOperator {
-    private static final int QUEUE_CAPACITY = 1024;
+    public static final ReceiveOperator INSTANCE = new ReceiveOperator();
 
-    @JsonProperty("host")
-    private final String host;
-    @JsonProperty("port")
-    private final int port;
-    @JsonProperty("schema")
-    private final DingoType schema;
+    private ReceiveOperator() {
 
-    private String tag;
-    private TxRxCodec codec;
-    private BlockingQueue<Object[]> tupleQueue;
-    private ReceiveEndpoint endpoint;
-    private Fin finObj;
-
-    @JsonCreator
-    public ReceiveOperator(
-        @JsonProperty("host") String host,
-        @JsonProperty("port") int port,
-        @JsonProperty("schema") DingoType schema
-    ) {
-        super();
-        this.host = host;
-        this.port = port;
-        this.schema = schema;
     }
 
     @Override
-    public void init() {
-        super.init();
-        codec = new TxRxCodecImpl(schema);
-        tupleQueue = new LinkedBlockingDeque<>(QUEUE_CAPACITY);
-        tag = TagUtils.tag(getTask().getJobId(), getId());
-        endpoint = new ReceiveEndpoint(host, port, tag, (byte[] content) -> {
-            try {
-                List<Object[]> tuples = codec.decode(content);
-                for (Object[] tuple : tuples) {
-                    if (!endpoint.isStopped() || tuple[0] instanceof Fin) {
-                        QueueUtils.forcePut(tupleQueue, tuple);
-                    }
-                }
-            } catch (IOException e) {
-                log.error("Exception in receive handler:", e);
-            }
-        });
-        endpoint.init();
-        if (log.isDebugEnabled()) {
-            log.debug("ReceiveOperator initialized with host={} port={} tag={}", host, port, tag);
-        }
-    }
-
-    @Override
-    public void fin(int pin, Fin fin) {
+    public void fin(int pin, Fin fin, Vertex vertex) {
         /*
           when the upstream operator('sender') has failed,
           then the current operator('receiver') should fail too
           so the `Fin` should use FinWithException
          */
-        if (finObj != null && finObj instanceof FinWithException) {
-            super.fin(pin, finObj);
+        ReceiveParam param = vertex.getParam();
+        Fin finObj = param.getFinObj();
+        if (finObj instanceof FinWithException) {
+            super.fin(pin, finObj, vertex);
         } else {
-            super.fin(pin, fin);
+            super.fin(pin, fin, vertex);
         }
     }
 
     @Override
-    public boolean push() {
+    public boolean push(Vertex vertex) {
+        ReceiveParam param = vertex.getParam();
+
         long count = 0;
-        OperatorProfile profile = getProfile();
+        OperatorProfile profile = param.getProfile(vertex.getId());
         profile.setStartTimeStamp(System.currentTimeMillis());
         while (true) {
-            Object[] tuple = QueueUtils.forceTake(tupleQueue);
+            Object[] tuple = QueueUtils.forceTake(param.getTupleQueue());
             if (!(tuple[0] instanceof Fin)) {
                 ++count;
                 if (log.isDebugEnabled()) {
-                    log.debug("(tag = {}) Take out tuple {} from receiving queue.", tag, schema.format(tuple));
+                    log.debug("(tag = {}) Take out tuple {} from receiving queue.",
+                        param.getTag(),
+                        param.getSchema().format(tuple)
+                    );
                 }
-                if (!output.push(tuple)) {
-                    endpoint.stop();
+                if (!vertex.getSoleEdge().transformToNext(tuple)) {
+                    param.getEndpoint().stop();
                     // Stay in loop to receive FIN.
                 }
             } else {
                 if (log.isDebugEnabled()) {
-                    log.debug("(tag = {}) Take out FIN.", tag);
+                    log.debug("(tag = {}) Take out FIN.", param.getTag());
                 }
                 profile.setEndTimeStamp(System.currentTimeMillis());
                 profile.setProcessedTupleCount(count);
                 Fin fin = (Fin) tuple[0];
                 if (fin instanceof FinWithProfiles) {
-                    profiles.addAll(((FinWithProfiles) fin).getProfiles());
+                    param.addAll(((FinWithProfiles) fin).getProfiles());
                 } else if (fin instanceof FinWithException) {
-                    finObj = fin;
+                    param.setFinObj(fin);
                 }
                 break;
             }
         }
         return false;
-    }
-
-    @Override
-    public void destroy() {
-        safeCloseEndpoint();
-    }
-
-    private void safeCloseEndpoint() {
-        if (endpoint != null) {
-            endpoint.close();
-        }
     }
 }
