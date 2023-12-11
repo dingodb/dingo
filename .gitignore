@@ -1,2 +1,6 @@
 target
 build
+index_path
+log
+temp
+examples/wiki_560w.json

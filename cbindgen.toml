@@ -1,7 +1,7 @@
 header = "// SPDX-License-Identifier: Apache-2.0"
 sys_includes = ["stddef.h", "stdint.h", "stdlib.h"]
 no_includes = true
-include_guard = "TANTIVYSEARCH_H"
+include_guard = "TANTIVY_SEARCH_H"
 tab_width = 4
 style = "Type"
 # language = "C"
@@ -9,7 +9,7 @@ cpp_compat = true
 
 [parse]
 parse_deps = true
-include = ['tantivysearch']
+include = ['tantivy_search']
 
 [export]
 prefix = "TantivySearch"

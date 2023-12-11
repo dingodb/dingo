@@ -1,0 +1,9 @@
+[submodule "contrib/json"]
+	path = contrib/json
+	url = git@github.com:nlohmann/json.git
+[submodule "contrib/thread_pool"]
+	path = contrib/thread_pool
+	url = git@github.com:MochiXu/ThreadPool.git
+[submodule "contrib/easylogging"]
+	path = contrib/easylogging
+	url = git@github.com:abumq/easyloggingpp.git

@@ -1,8 +1,8 @@
 use std::borrow::Borrow;
 use std::fmt::{self, Debug, Formatter};
 use std::hash::{BuildHasher, Hash};
+use std::sync::Arc;
 use std::time::Instant;
-
 use once_cell::sync::OnceCell;
 use flurry::{HashMap, DefaultHashBuilder};
 
@@ -12,10 +12,17 @@ pub struct ConcurrentCache<K, V, S = DefaultHashBuilder> {
     items: HashMap<K, (Instant, OnceCell<V>), S>
 }
 
-impl<K, V> ConcurrentCache <K, V, DefaultHashBuilder>
+// 对于任何类型 K 和 V 都有一个 ConcurrentCache 的实现, 其中 S 被指定为 DefaultHashBuilder
+// where 指定了 K 和 V 必须实现的 trait: 'static 表示类型中不包含任何非静态引用
+// Hash：类型可以被哈希，这是 HashMap 的键类型所必需的。
+// Ord：类型可以被排序，这通常是为了在哈希冲突时能够以一致的顺序存储和检索键。
+// Clone：类型可以被克隆，这意味着可以创建其值的副本。
+// Send：类型的所有权可以跨线程传递。
+// Sync：类型可以安全地被多个线程引用。
+impl<K, V> ConcurrentCache <K, Arc<V>, DefaultHashBuilder>
 where
     K: 'static + Hash + Ord + Clone + Send + Sync,
-    V: 'static + Clone + Send + Sync
+    V: 'static + Send + Sync
 {
     /// Constructs a new `ConcurrentCache` with the default hashing algorithm and an
     /// initial capacity of 0.
@@ -33,10 +40,10 @@ where
 }
 
 
-impl<K, V, S> ConcurrentCache <K, V, S>
+impl<K, V, S> ConcurrentCache <K, Arc<V>, S>
 where
     K: 'static + Hash + Ord + Clone + Send + Sync,
-    V: 'static + Clone + Send + Sync,
+    V: 'static + Send + Sync,
     S: BuildHasher + Clone
 {
     /// Constructs a new `ConcurrentCache` with the specified hasher and an initial
@@ -84,42 +91,50 @@ where
     /// resolved. You may need to provide a copy of this value to the closure.
     /// This is done to allow for maximum concurrency, as it permits the key
     /// to be accessed by other threads during the resolution process.
-    pub fn resolve<F: FnOnce() -> V>(&self, key: K, init: F) -> V {
+    pub fn resolve<F: FnOnce() -> V>(&self, key: K, init: F) -> Arc<V> {
         let pinned = self.items.pin();
 
         if let Some(val_ref) = pinned.get(&key) {
             if val_ref.0.elapsed().as_secs() <= self.seconds {
-                let result_ref = val_ref.1.get_or_init(init);
-                let result = result_ref.clone();
-                return result;
+                let result_ref = val_ref.1.get_or_init(|| Arc::new(init()));
+                return Arc::clone(result_ref);
             }
         }
 
-        match pinned.try_insert(key.clone(), (Instant::now(), OnceCell::new())) {
-            Ok(val_ref) => {
-                let result = val_ref.1.get_or_init(init).clone();
+        match pinned.try_insert(
+            key.clone(),
+            (Instant::now(), OnceCell::new())
+        ) {
+            // key 不存在并已经成功插入新的 k-v inserted_ref
+            Ok(inserted_ref) => {
+                let result = inserted_ref.1.get_or_init(|| Arc::new(init()));
                 if pinned.len() > self.size {
-                    let mut count = 0;
+                    // let mut count = 0;
                     // Max size reached, try to evict expired items or random valid item
-                    pinned.retain(|k, v| {
-                        let valid = v.0.elapsed().as_secs() <= self.seconds;
-                        if valid {
-                            count += 1;
-                            count <= self.size
-                        } else {
-                            false
-                        }
-                    });
+                    // 遍历缓存中所有项, 移除过期的项, 直到缓存的大小不超过最大值 self.size
+                    // TODO 后续可以使用更加公平的 LRU 进行缓存, 增加过期时间
+                    // pinned.retain(|_k, v| {
+                    //     let valid = v.0.elapsed().as_secs() <= self.seconds;
+                    //     if valid {
+                    //         count += 1;
+                    //         count <= self.size
+                    //     } else {
+                    //         false
+                    //     }
+                    // });
+                    pinned.clear();
                 }
-                result
+                Arc::clone(result)
             }
+            // key 已经存在或者已经过期
             Err(e) => {
                 let val_ref = e.current;
                 if val_ref.0.elapsed().as_secs() <= self.seconds {
-                    val_ref.1.get_or_init(init).clone()
+                    Arc::clone(val_ref.1.get_or_init(|| Arc::new(init())))
                 } else {
-                    pinned.insert(key.clone(), e.not_inserted);
-                    pinned.get(&key).expect("this should not happen").1.get_or_init(init).clone()
+                    pinned.insert(key.clone(), e.not_inserted); // e.not_inserted 包含了新的 (Instant, OnceCell<V>), 表示尝试插入但未成功的值
+                    let re = pinned.get(&key).unwrap().1.get_or_init(|| Arc::new(init()));
+                    Arc::clone(re)
                 }
             }
         }
