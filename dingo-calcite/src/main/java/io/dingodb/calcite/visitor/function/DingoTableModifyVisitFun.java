@@ -19,67 +19,119 @@ package io.dingodb.calcite.visitor.function;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
+import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Operator;
-import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.operator.PartDeleteOperator;
-import io.dingodb.exec.operator.PartInsertOperator;
-import io.dingodb.exec.operator.PartUpdateOperator;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.PartDeleteParam;
+import io.dingodb.exec.operator.params.PartInsertParam;
+import io.dingodb.exec.operator.params.PartUpdateParam;
+import io.dingodb.exec.operator.params.TxnPartDeleteParam;
+import io.dingodb.exec.operator.params.TxnPartInsertParam;
+import io.dingodb.exec.operator.params.TxnPartUpdateParam;
 
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NavigableMap;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PART_DELETE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PART_INSERT;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PART_UPDATE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_DELETE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_INSERT;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_UPDATE;
 
 public class DingoTableModifyVisitFun {
-    public static Collection<Output> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, DingoTableModify rel
+    public static Collection<Vertex> visit(Job job, IdGenerator idGenerator, Location currentLocation,
+                                           boolean isTxn, DingoJobVisitor visitor, DingoTableModify rel
     ) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(visitor);
-        List<Output> outputs = new LinkedList<>();
+        Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
+        List<Vertex> outputs = new LinkedList<>();
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
+        TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final CommonId tableId = MetaServiceUtils.getTableId(rel.getTable());
-        for (Output input : inputs) {
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions =
+            tableInfo.getRangeDistributions();
+        // TODO calc distribute
+        for (Vertex input : inputs) {
+
             Task task = input.getTask();
-            Operator operator;
+            Vertex vertex;
             switch (rel.getOperation()) {
                 case INSERT:
-                    operator = new PartInsertOperator(tableId, input.getHint().getPartId(), td.getDingoType(),
-                        td.getKeyMapping()
-                    );
+                    if (isTxn) {
+                        vertex = new Vertex(TXN_PART_INSERT,
+                            new TxnPartInsertParam(tableId, input.getHint().getPartId(), td.getDingoType(),
+                                td.getKeyMapping(), td, distributions));
+                    } else {
+                        vertex = new Vertex(PART_INSERT,
+                            new PartInsertParam(tableId, input.getHint().getPartId(), td.getDingoType(),
+                                td.getKeyMapping(), td, distributions));
+                    }
                     break;
                 case UPDATE:
-                    operator = new PartUpdateOperator(tableId, input.getHint().getPartId(), td.getDingoType(),
-                        td.getKeyMapping(), TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
-                        rel.getSourceExpressionList().stream().map(SqlExprUtils::toSqlExpr).collect(Collectors.toList())
-                    );
+                    if (isTxn) {
+                        vertex = new Vertex(TXN_PART_UPDATE,
+                            new TxnPartUpdateParam(tableId, input.getHint().getPartId(), td.getDingoType(),
+                                td.getKeyMapping(), TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
+                                rel.getSourceExpressionList().stream()
+                                    .map(SqlExprUtils::toSqlExpr)
+                                    .collect(Collectors.toList()),
+                                td, distributions
+                            )
+                        );
+                    } else {
+                        vertex = new Vertex(PART_UPDATE,
+                            new PartUpdateParam(tableId, input.getHint().getPartId(), td.getDingoType(),
+                                td.getKeyMapping(), TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
+                                rel.getSourceExpressionList().stream()
+                                    .map(SqlExprUtils::toSqlExpr)
+                                    .collect(Collectors.toList()),
+                                td, distributions
+                            )
+                        );
+                    }
                     break;
                 case DELETE:
-                    operator = new PartDeleteOperator(tableId, input.getHint().getPartId(), td.getDingoType(),
-                        td.getKeyMapping()
-                    );
+                    if (isTxn) {
+                        vertex = new Vertex(TXN_PART_DELETE,
+                            new TxnPartDeleteParam(tableId, input.getHint().getPartId(), td.getDingoType(),
+                                td.getKeyMapping(), td, distributions)
+                        );
+                    } else {
+                        vertex = new Vertex(PART_DELETE,
+                            new PartDeleteParam(tableId, input.getHint().getPartId(), td.getDingoType(),
+                                td.getKeyMapping(), td, distributions)
+                        );
+                    }
                     break;
                 default:
                     throw new IllegalStateException("Operation \"" + rel.getOperation() + "\" is not supported.");
             }
-            operator.setId(idGenerator.getOperatorId(task.getId()));
-            task.putOperator(operator);
-            input.setLink(operator.getInput(0));
+            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            task.putVertex(vertex);
+            input.setPin(0);
             OutputHint hint = new OutputHint();
             hint.setToSumUp(true);
-            operator.getSoleOutput().setHint(hint);
-            outputs.addAll(operator.getOutputs());
+            vertex.setHint(hint);
+            Edge edge = new Edge(input, vertex);
+            input.addEdge(edge);
+            vertex.addIn(edge);
+            outputs.add(vertex);
         }
         return outputs;
     }

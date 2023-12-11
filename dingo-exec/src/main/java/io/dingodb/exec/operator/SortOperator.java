@@ -16,68 +16,47 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.operator.data.SortCollation;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import io.dingodb.exec.operator.params.SortParam;
 
 import java.util.Comparator;
-import java.util.LinkedList;
 import java.util.List;
 
-@JsonTypeName("sort")
-@JsonPropertyOrder({"collations", "limit", "offset", "output"})
 public class SortOperator extends SoleOutOperator {
-    @JsonProperty("collations")
-    private final List<SortCollation> collations;
-    @JsonProperty("limit")
-    private final int limit;
-    @JsonProperty("offset")
-    private final int offset;
+    public static final SortOperator INSTANCE = new SortOperator();
 
-    private final List<Object[]> cache;
-    private final Comparator<Object[]> comparator;
-
-    @JsonCreator
-    public SortOperator(
-        @JsonProperty("collations") @NonNull List<SortCollation> collations,
-        @JsonProperty("limit") int limit,
-        @JsonProperty("offset") int offset
-    ) {
-        this.limit = limit;
-        this.offset = offset;
-        this.collations = collations;
-        this.cache = new LinkedList<>();
-        if (!collations.isEmpty()) {
-            Comparator<Object[]> c = collations.get(0).makeComparator();
-            for (int i = 1; i < collations.size(); ++i) {
-                c = c.thenComparing(collations.get(i).makeComparator());
-            }
-            comparator = c;
-        } else {
-            comparator = null;
-        }
+    private SortOperator() {
     }
 
     @Override
-    public synchronized boolean push(int pin, Object[] tuple) {
+    public synchronized boolean push(int pin, Object[] tuple, Vertex vertex) {
+        SortParam param = vertex.getParam();
+        int limit = param.getLimit();
+        int offset = param.getOffset();
+        List<SortCollation> collations = param.getCollations();
         if (limit == 0) {
             return false;
         }
-        cache.add(tuple);
-        return collations.size() > 0 || limit < 0 || cache.size() < offset + limit;
+        param.getCache().add(tuple);
+        return collations.size() > 0 || limit < 0 || param.getCache().size() < offset + limit;
     }
 
     @Override
-    public synchronized void fin(int pin, Fin fin) {
+    public synchronized void fin(int pin, Fin fin, Vertex vertex) {
+        SortParam param = vertex.getParam();
+        int limit = param.getLimit();
+        int offset = param.getOffset();
+        List<Object[]> cache = param.getCache();
+        Comparator<Object[]> comparator = param.getComparator();
         if (comparator != null) {
             cache.sort(comparator);
         }
         int o = 0;
         int c = 0;
+        Edge edge = vertex.getSoleEdge();
         for (Object[] tuple : cache) {
             if (o < offset) {
                 ++o;
@@ -86,13 +65,13 @@ public class SortOperator extends SoleOutOperator {
             if (limit >= 0 && c >= limit) {
                 break;
             }
-            if (!output.push(tuple)) {
+            if (!edge.transformToNext(tuple)) {
                 break;
             }
             ++c;
         }
-        output.fin(fin);
+        edge.fin(fin);
         // Reset
-        cache.clear();
+        param.clear();
     }
 }

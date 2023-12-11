@@ -16,56 +16,21 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.exec.codec.RawJsonDeserializer;
-import io.dingodb.exec.converter.JsonConverter;
-import lombok.Getter;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.ValuesParam;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
 
-@JsonTypeName("values")
-@JsonPropertyOrder({"tuples", "output"})
 public final class ValuesOperator extends IteratorSourceOperator {
-    @Getter
-    private final List<Object[]> tuples;
-    @JsonProperty("schema")
-    @Getter
-    private final DingoType schema;
+    public static final ValuesOperator INSTANCE = new ValuesOperator();
 
-    public ValuesOperator(@NonNull List<Object[]> tuples, @NonNull DingoType schema) {
-        super();
-        this.tuples = tuples;
-        this.schema = schema;
-    }
-
-    @JsonCreator
-    public static @NonNull ValuesOperator fromJson(
-        @JsonDeserialize(using = RawJsonDeserializer.class)
-        @JsonProperty("tuples") JsonNode jsonNode,
-        @JsonProperty("schema") DingoType schema
-    ) {
-        return new ValuesOperator(RawJsonDeserializer.convertBySchema(jsonNode, schema), schema);
-    }
-
-    // This method is only used by json serialization.
-    @JsonProperty("tuples")
-    public List<Object[]> getJsonTuples() {
-        return tuples.stream()
-            .map(i -> (Object[]) schema.convertTo(i, JsonConverter.INSTANCE))
-            .collect(Collectors.toList());
+    private ValuesOperator() {
     }
 
     @Override
-    protected @NonNull Iterator<Object[]> createIterator() {
-        return tuples.iterator();
+    protected @NonNull Iterator<Object[]> createIterator(Vertex vertex) {
+        ValuesParam param = vertex.getParam();
+        return param.getTuples().iterator();
     }
 }

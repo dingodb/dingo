@@ -21,7 +21,7 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Output;
+import io.dingodb.exec.dag.Vertex;
 import org.apache.calcite.rel.RelNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -33,14 +33,14 @@ import static io.dingodb.calcite.rel.DingoRel.dingo;
 
 public class DingoUnionVisitFun {
     @NonNull
-    public static List<Output> visit(
+    public static List<Vertex> visit(
         Job job,
         IdGenerator idGenerator,
         Location currentLocation,
         DingoJobVisitor visitor,
         @NonNull DingoUnion rel
     ) {
-        Collection<Output> inputs = new LinkedList<>();
+        Collection<Vertex> inputs = new LinkedList<>();
         for (RelNode node : rel.getInputs()) {
             inputs.addAll(dingo(node).accept(visitor));
         }

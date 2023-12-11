@@ -16,80 +16,33 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.dingodb.codec.CodecService;
-import io.dingodb.common.CommonId;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.TupleMapping;
-import io.dingodb.exec.Services;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
-import io.dingodb.exec.table.Part;
-import io.dingodb.exec.table.PartInKvStore;
+import io.dingodb.exec.operator.params.PartModifyParam;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public abstract class PartModifyOperator extends SoleOutOperator {
-    @JsonProperty("table")
-    @JsonSerialize(using = CommonId.JacksonSerializer.class)
-    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    protected final CommonId tableId;
-    @JsonProperty("part")
-    @JsonSerialize(using = CommonId.JacksonSerializer.class)
-    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    protected final CommonId partId;
-    @JsonProperty("schema")
-    protected final DingoType schema;
-    @JsonProperty("keyMapping")
-    protected final TupleMapping keyMapping;
-
-    protected Part part = null;
-    protected long count;
-
-    protected PartModifyOperator(
-        CommonId tableId,
-        CommonId partId,
-        DingoType schema,
-        TupleMapping keyMapping
-    ) {
-        super();
-        this.tableId = tableId;
-        this.partId = partId;
-        this.schema = schema;
-        this.keyMapping = keyMapping;
-    }
-
-    protected Part getPart() {
-        return new PartInKvStore(
-            Services.KV_STORE.getInstance(tableId, partId),
-            CodecService.getDefault().createKeyValueCodec(schema, keyMapping)
-        );
+    protected PartModifyOperator() {
     }
 
     @Override
-    public void init() {
-        super.init();
-        count = 0;
+    public synchronized boolean push(int pin, @Nullable Object[] tuple, Vertex vertex) {
+        return pushTuple(tuple, vertex);
     }
 
     @Override
-    public synchronized boolean push(int pin, @Nullable Object[] tuple) {
-        if (part == null) {
-            part = getPart();
-        }
-        return pushTuple(tuple);
-    }
-
-    @Override
-    public synchronized void fin(int pin, Fin fin) {
+    public synchronized void fin(int pin, Fin fin, Vertex vertex) {
+        PartModifyParam param = vertex.getParam();
+        Edge edge = vertex.getSoleEdge();
         if (!(fin instanceof FinWithException)) {
-            output.push(new Object[]{count});
+            edge.transformToNext(new Object[]{param.getCount()});
         }
-        output.fin(fin);
+        edge.fin(fin);
         // Reset
-        count = 0;
+        param.setCount(0);
     }
 
-    protected abstract boolean pushTuple(@Nullable Object[] tuple);
+    protected abstract boolean pushTuple(@Nullable Object[] tuple, Vertex vertex);
 }

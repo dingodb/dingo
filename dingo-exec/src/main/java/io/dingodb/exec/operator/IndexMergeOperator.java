@@ -16,9 +16,11 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.operator.params.IndexMergeParam;
 import io.dingodb.exec.tuple.TupleKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -27,43 +29,32 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class IndexMergeOperator extends SoleOutOperator {
-    @JsonProperty("keys")
-    private final TupleMapping keyMapping;
+    public static final IndexMergeOperator INSTANCE = new IndexMergeOperator();
 
-    @JsonProperty
-    private final TupleMapping selection;
-
-    private ConcurrentHashMap<TupleKey, Object[]> hashMap;
-
-    public IndexMergeOperator(TupleMapping keyMapping, TupleMapping selection) {
-        this.keyMapping = keyMapping;
-        this.selection = transformSelection(selection);
+    private IndexMergeOperator() {
     }
 
     @Override
-    public void init() {
-        super.init();
-        hashMap = new ConcurrentHashMap<>();
-    }
-
-    @Override
-    public boolean push(int pin, @Nullable Object[] tuple) {
-        Object[] keyTuple = keyMapping.revMap(tuple);
-        hashMap.put(new TupleKey(keyTuple), selection.revMap(tuple));
+    public boolean push(int pin, @Nullable Object[] tuple, Vertex vertex) {
+        IndexMergeParam params = vertex.getParam();
+        Object[] keyTuple = params.getKeyMapping().revMap(tuple);
+        params.getHashMap().put(new TupleKey(keyTuple), params.getSelection().revMap(tuple));
         return true;
     }
 
-
     @Override
-    public void fin(int pin, @Nullable Fin fin) {
-        hashMap.values().forEach(objects -> output.push(objects));
-        output.fin(fin);
+    public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
+        Edge edge = vertex.getSoleEdge();
+        IndexMergeParam params = vertex.getParam();
+        ConcurrentHashMap<TupleKey, Object[]> hashMap = params.getHashMap();
+        hashMap.values().forEach(edge::transformToNext);
+        edge.fin(fin);
         // Reset
         hashMap.clear();
     }
 
     private TupleMapping transformSelection(TupleMapping selection) {
-        List<Integer> mappings = new ArrayList();
+        List<Integer> mappings = new ArrayList<>();
         for (int i = 0; i < selection.size(); i ++) {
             mappings.add(i);
         }

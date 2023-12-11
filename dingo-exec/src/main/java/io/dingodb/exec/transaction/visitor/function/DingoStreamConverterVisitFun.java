@@ -21,6 +21,7 @@ import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Output;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
 import io.dingodb.exec.transaction.visitor.data.StreamConverterLeaf;
@@ -29,10 +30,10 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 public class DingoStreamConverterVisitFun {
-    public static Collection<Output> visit(
+    public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction, DingoTransactionRenderJob visitor, StreamConverterLeaf streamConverterLeaf) {
-        Collection<Output> inputs = streamConverterLeaf.getData().accept(visitor);
-        Collection<Output> outputs = inputs;
+        Collection<Vertex> inputs = streamConverterLeaf.getData().accept(visitor);
+        Collection<Vertex> outputs = inputs;
         if (transaction.getChannelMap().size() > 0) {
             outputs = outputs.stream().map(input -> {
                 Location targetLocation = currentLocation;

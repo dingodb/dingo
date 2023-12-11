@@ -16,133 +16,102 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.TupleWithJoinFlag;
+import io.dingodb.exec.operator.params.HashJoinParam;
 import io.dingodb.exec.tuple.TupleKey;
 
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
-@JsonTypeName("hashJoin")
-@JsonPropertyOrder({"joinType", "leftMapping", "rightMapping"})
-public class  HashJoinOperator extends SoleOutOperator {
-    @JsonProperty("leftMapping")
-    private final TupleMapping leftMapping;
-    @JsonProperty("rightMapping")
-    private final TupleMapping rightMapping;
-    // For OUTER join, there may be no input tuples, so the length of tuple cannot be achieved.
-    @JsonProperty("leftLength")
-    private final int leftLength;
-    @JsonProperty("rightLength")
-    private final int rightLength;
-    @JsonProperty("leftRequired")
-    private final boolean leftRequired;
-    @JsonProperty("rightRequired")
-    private final boolean rightRequired;
+public class HashJoinOperator extends SoleOutOperator {
+    public static final HashJoinOperator INSTANCE = new HashJoinOperator();
 
-    boolean rightFinFlag;
-    private ConcurrentHashMap<TupleKey, List<TupleWithJoinFlag>> hashMap;
-
-    @JsonCreator
-    public HashJoinOperator(
-        @JsonProperty("leftMapping") TupleMapping leftMapping,
-        @JsonProperty("rightMapping") TupleMapping rightMapping,
-        @JsonProperty("leftLength") int leftLength,
-        @JsonProperty("rightLength") int rightLength,
-        @JsonProperty("leftRequired") boolean leftRequired,
-        @JsonProperty("rightRequired") boolean rightRequired
-    ) {
-        this.leftMapping = leftMapping;
-        this.rightMapping = rightMapping;
-        this.leftLength = leftLength;
-        this.rightLength = rightLength;
-        this.leftRequired = leftRequired;
-        this.rightRequired = rightRequired;
-        rightFinFlag = false;
+    private HashJoinOperator() {
     }
 
     @Override
-    public void init() {
-        super.init();
-        hashMap = new ConcurrentHashMap<>();
-    }
-
-    @Override
-    public synchronized boolean push(int pin, Object[] tuple) {
+    public boolean push(int pin, Object[] tuple, Vertex vertex) {
+        Edge edge = vertex.getSoleEdge();
+        HashJoinParam param = vertex.getParam();
+        TupleMapping leftMapping = param.getLeftMapping();
+        TupleMapping rightMapping = param.getRightMapping();
+        int leftLength = param.getLeftLength();
+        int rightLength = param.getRightLength();
+        boolean leftRequired = param.isLeftRequired();
         if (pin == 0) { // left
-            waitRightFinFlag();
+            waitRightFinFlag(param);
             TupleKey leftKey = new TupleKey(leftMapping.revMap(tuple));
-            List<TupleWithJoinFlag> rightList = hashMap.get(leftKey);
+            List<TupleWithJoinFlag> rightList = param.getHashMap().get(leftKey);
             if (rightList != null) {
                 for (TupleWithJoinFlag t : rightList) {
                     Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
                     System.arraycopy(t.getTuple(), 0, newTuple, leftLength, rightLength);
                     t.setJoined(true);
-                    if (!output.push(newTuple)) {
+                    if (!edge.transformToNext(newTuple)) {
                         return false;
                     }
                 }
             } else if (leftRequired) {
                 Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
                 Arrays.fill(newTuple, leftLength, leftLength + rightLength, null);
-                return output.push(newTuple);
+                return edge.transformToNext(newTuple);
             }
         } else if (pin == 1) { //right
             TupleKey rightKey = new TupleKey(rightMapping.revMap(tuple));
-            List<TupleWithJoinFlag> list = hashMap.computeIfAbsent(rightKey, k -> new LinkedList<>());
+            List<TupleWithJoinFlag> list = param.getHashMap().computeIfAbsent(rightKey, k -> new LinkedList<>());
             list.add(new TupleWithJoinFlag(tuple));
         }
         return true;
     }
 
     @Override
-    public synchronized void fin(int pin, Fin fin) {
+    public void fin(int pin, Fin fin, Vertex vertex) {
+        Edge edge = vertex.getSoleEdge();
         if (fin instanceof FinWithException) {
-            output.fin(fin);
+            edge.fin(fin);
             return;
         }
-
+        HashJoinParam param = vertex.getParam();
+        boolean rightRequired = param.isRightRequired();
+        int leftLength = param.getLeftLength();
+        int rightLength = param.getRightLength();
         if (pin == 0) { // left
             if (rightRequired) {
                 // should wait in case of no data push to left.
-                waitRightFinFlag();
+                waitRightFinFlag(param);
                 outer:
-                for (List<TupleWithJoinFlag> tList : hashMap.values()) {
+                for (List<TupleWithJoinFlag> tList : param.getHashMap().values()) {
                     for (TupleWithJoinFlag t : tList) {
                         if (!t.isJoined()) {
                             Object[] newTuple = new Object[leftLength + rightLength];
                             Arrays.fill(newTuple, 0, leftLength, null);
                             System.arraycopy(t.getTuple(), 0, newTuple, leftLength, rightLength);
-                            if (!output.push(newTuple)) {
+                            if (!edge.transformToNext(newTuple)) {
                                 break outer;
                             }
                         }
                     }
                 }
             }
-            output.fin(fin);
+            edge.fin(fin);
             // Reset
-            hashMap.clear();
+            param.clear();
         } else if (pin == 1) { //right
-            rightFinFlag = true;
-            notify();
+            param.setRightFinFlag(true);
+            param.getFuture().complete(null);
         }
     }
 
-    private void waitRightFinFlag() {
-        while (!rightFinFlag) {
-            try {
-                wait();
-            } catch (InterruptedException ignored) {
-            }
+    private void waitRightFinFlag(HashJoinParam param) {
+        param.getFuture().join();
+        if (!param.isRightFinFlag()) {
+            throw new RuntimeException();
         }
     }
 }

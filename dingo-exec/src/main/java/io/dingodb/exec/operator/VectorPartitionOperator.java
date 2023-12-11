@@ -16,117 +16,44 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.codec.CodecService;
-import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.PartitionDefinition;
-import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.type.TupleType;
-import io.dingodb.common.type.scalar.LongType;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
-import io.dingodb.exec.base.Output;
-import io.dingodb.exec.base.OutputHint;
-import io.dingodb.exec.impl.OutputIml;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.VectorPartitionParam;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
-import io.dingodb.meta.MetaService;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.NavigableMap;
 
 public class VectorPartitionOperator extends FanOutOperator {
-    @JsonProperty("tableId")
-    @JsonSerialize(using = CommonId.JacksonSerializer.class)
-    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    private final CommonId tableId;
-    @JsonProperty("distributions")
-    @JsonSerialize(keyUsing = ByteArrayUtils.ComparableByteArray.JacksonKeySerializer.class)
-    @JsonDeserialize(keyUsing = ByteArrayUtils.ComparableByteArray.JacksonKeyDeserializer.class)
-    private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
+    public static final VectorPartitionOperator INSTANCE = new VectorPartitionOperator();
 
-    @JsonProperty("partIndices")
-    @JsonSerialize(keyUsing = CommonId.JacksonKeySerializer.class)
-    @JsonDeserialize(keyUsing = CommonId.JacksonKeyDeserializer.class)
-    private Map<CommonId, Integer> partIndices;
-
-    private Integer index;
-
-    private final KeyValueCodec codec;
-
-    @JsonProperty("indexTableDefinition")
-    private final TableDefinition tableDefinition;
-
-    @JsonCreator
-    public VectorPartitionOperator(
-        @JsonProperty("tableId") CommonId tableId,
-        @JsonProperty("distributions") NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
-        @JsonProperty("indexId") CommonId indexId,
-        @JsonProperty("index") Integer index,
-        @JsonProperty("indexTableDefinition") TableDefinition td
-    ) {
-        super();
-        this.tableId = tableId;
-        this.distributions = distributions;
-        this.index = index;
-        DingoType dingoType = new LongType(false);
-        TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
-        TupleMapping outputKeyMapping = TupleMapping.of(
-            new int[] {0}
-        );
-        this.codec = CodecService.getDefault().createKeyValueCodec(indexId, tupleType, outputKeyMapping);
-        this.tableDefinition = td;
+    private VectorPartitionOperator() {
     }
 
-
     @Override
-    protected int calcOutputIndex(int pin, Object @NonNull [] tuple) {
+    protected int calcOutputIndex(int pin, Object @NonNull [] tuple, Vertex vertex) {
+        VectorPartitionParam param = vertex.getParam();
         // extract vector id from tuple
-        Long vectorId = (Long) tuple[index];
+        Long vectorId = (Long) tuple[param.getIndex()];
         Object[] record = new Object[] {vectorId};
         byte[] key = null;
         try {
-            key = codec.encodeKey(record);
+            key = param.getCodec().encodeKey(record);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         CodecService.getDefault().setId(key, CommonId.EMPTY_TABLE);
         CommonId partId = PartitionService.getService(
-                Optional.ofNullable(tableDefinition.getPartDefinition())
+                Optional.ofNullable(param.getTableDefinition().getPartDefinition())
                     .map(PartitionDefinition::getFuncName)
-                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME)).
-            calcPartId(key, distributions);
+                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
+            .calcPartId(key, param.getDistributions());
 
-        return partIndices.get(partId);
+        return param.getPartIndices().get(partId);
     }
 
-    public void createOutputs(
-        @NonNull NavigableMap<ByteArrayUtils.ComparableByteArray,
-        RangeDistribution> distributions
-    ) {
-        int size = distributions.size();
-        outputs = new ArrayList<>(size);
-        partIndices = new HashMap<>(size);
-        for (RangeDistribution distribution : distributions.values()) {
-            Output output = OutputIml.of(this);
-            OutputHint hint = new OutputHint();
-            hint.setLocation(MetaService.root().currentLocation());
-            hint.setPartId(distribution.id());
-            output.setHint(hint);
-            outputs.add(output);
-            partIndices.put(distribution.id(), outputs.size() - 1);
-        }
-    }
 }

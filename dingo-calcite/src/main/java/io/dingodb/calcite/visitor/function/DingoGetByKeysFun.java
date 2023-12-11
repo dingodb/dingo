@@ -32,10 +32,11 @@ import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Output;
+import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.operator.EmptySourceOperator;
-import io.dingodb.exec.operator.GetByKeysOperator;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.EmptySourceParam;
+import io.dingodb.exec.operator.params.GetByKeysParam;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -46,13 +47,15 @@ import java.util.Map;
 import java.util.NavigableMap;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
+import static io.dingodb.exec.utils.OperatorCodeUtils.EMPTY_SOURCE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_KEYS;
 
 public final class DingoGetByKeysFun {
     private DingoGetByKeysFun() {
     }
 
     @NonNull
-    public static List<Output> visit(
+    public static List<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, @NonNull DingoGetByKeys rel
     ) {
         final TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
@@ -63,26 +66,34 @@ public final class DingoGetByKeysFun {
             Optional.ofNullable(td.getPartDefinition())
                 .map(PartitionDefinition::getFuncName)
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-        final List<Output> outputs = new LinkedList<>();
+        final List<Vertex> outputs = new LinkedList<>();
         KeyValueCodec codec = TableUtils.getKeyValueCodecForTable(td);
         List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(rel.getPoints(), td);
         if (keyTuples.isEmpty()) {
-            EmptySourceOperator operator = new EmptySourceOperator();
             Task task = job.getOrCreate(currentLocation, idGenerator);
-            operator.setId(idGenerator.getOperatorId(task.getId()));
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
+            EmptySourceParam param = new EmptySourceParam();
+            Vertex vertex = new Vertex(EMPTY_SOURCE, param);
+            OutputHint hint = new OutputHint();
+            hint.setPartId(null);
+            vertex.setHint(hint);
+            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            task.putVertex(vertex);
+            outputs.add(vertex);
             return outputs;
         }
         Map<CommonId, List<Object[]>> partMap = ps.partTuples(keyTuples, wrap(codec::encodeKey), distributions);
         for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
-            GetByKeysOperator operator = new GetByKeysOperator(tableInfo.getId(), entry.getKey(), td.getDingoType(),
+            GetByKeysParam param = new GetByKeysParam(tableInfo.getId(), entry.getKey(), td.getDingoType(),
                 td.getKeyMapping(), entry.getValue(), SqlExprUtils.toSqlExpr(rel.getFilter()), rel.getSelection()
             );
             Task task = job.getOrCreate(currentLocation, idGenerator);
-            operator.setId(idGenerator.getOperatorId(task.getId()));
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
+            Vertex vertex = new Vertex(GET_BY_KEYS, param);
+            OutputHint hint = new OutputHint();
+            hint.setPartId(entry.getKey());
+            vertex.setHint(hint);
+            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            task.putVertex(vertex);
+            outputs.add(vertex);
         }
         return outputs;
     }

@@ -16,64 +16,37 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.dingodb.common.type.TupleMapping;
-import io.dingodb.exec.aggregate.AbstractAgg;
-import io.dingodb.exec.aggregate.Agg;
-import io.dingodb.exec.aggregate.AggCache;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.operator.params.AggregateParams;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
-
 @Slf4j
-@JsonTypeName("aggregate")
-@JsonPropertyOrder({"keys", "aggregates", "output"})
 public final class AggregateOperator extends SoleOutOperator {
-    @JsonProperty("keys")
-    private final TupleMapping keyMapping;
-    @JsonProperty("aggregates")
-    @JsonSerialize(contentAs = AbstractAgg.class)
-    @JsonDeserialize(contentAs = AbstractAgg.class)
-    private final List<Agg> aggList;
-    private AggCache cache;
+    public static final AggregateOperator INSTANCE = new AggregateOperator();
 
-    @JsonCreator
-    public AggregateOperator(
-        @JsonProperty("keys") TupleMapping keyMapping,
-        @JsonProperty("aggregates") List<Agg> aggList
-    ) {
-        super();
-        this.keyMapping = keyMapping;
-        this.aggList = aggList;
+    private AggregateOperator() {
     }
 
     @Override
-    public void init() {
-        super.init();
-        cache = new AggCache(keyMapping, aggList);
-    }
-
-    @Override
-    public synchronized boolean push(int pin, Object[] tuple) {
-        cache.addTuple(tuple);
+    public  boolean push(int pin, Object[] tuple, Vertex vertex) {
+        AggregateParams params = vertex.getParam();
+        params.addTuple(tuple);
         return true;
     }
 
     @Override
-    public synchronized void fin(int pin, Fin fin) {
-        for (Object[] t : cache) {
-            if (!output.push(t)) {
+    public  void fin(int pin, Fin fin, Vertex vertex) {
+        AggregateParams params = vertex.getParam();
+        Edge edge = vertex.getSoleEdge();
+        for (Object[] t : params.getCache()) {
+            if (!edge.transformToNext(t)) {
                 break;
             }
         }
-        output.fin(fin);
+        edge.fin(fin);
         // Reset
-        cache.clear();
+        params.clear();
     }
 }

@@ -16,48 +16,34 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.dingodb.exec.base.Output;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.exec.impl.OutputIml;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Collection;
-import java.util.List;
-
 @Slf4j
 public abstract class FanOutOperator extends AbstractOperator {
-    @JsonProperty("outputs")
-    @JsonSerialize(contentAs = OutputIml.class)
-    @JsonDeserialize(contentAs = OutputIml.class)
-    protected List<Output> outputs;
 
-    protected abstract int calcOutputIndex(int pin, Object @NonNull [] tuple);
+    protected abstract int calcOutputIndex(int pin, Object @NonNull [] tuple, Vertex vertex);
 
     @Override
-    public synchronized boolean push(int pin, Object @NonNull [] tuple) {
-        int index = calcOutputIndex(pin, tuple);
+    public  boolean push(int pin, Object @NonNull [] tuple, Vertex vertex) {
+        /*int index = calcOutputIndex(pin, tuple, vertex);
         if (log.isDebugEnabled()) {
             log.debug("Tuple is pushing to output {}.", index);
-        }
-        return outputs.get(index).push(tuple);
+        }*/
+        return vertex.getOutList().get(0).transformToNext(tuple);
     }
 
     @Override
-    public synchronized void fin(int pin, Fin fin) {
+    public  void fin(int pin, Fin fin, Vertex vertex) {
         if (log.isDebugEnabled()) {
-            log.debug("Got FIN, push it to {} outputs", outputs.size());
+            log.debug("Got FIN, push it to {} outputs", vertex.getOutList().size());
         }
-        for (Output output : outputs) {
-            output.fin(fin);
+        for (Edge edge : vertex.getOutList()) {
+            edge.fin(fin);
         }
     }
 
-    @Override
-    public @NonNull Collection<Output> getOutputs() {
-        return outputs;
-    }
 }

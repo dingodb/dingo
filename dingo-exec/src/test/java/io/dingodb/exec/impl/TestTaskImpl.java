@@ -21,77 +21,102 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.exec.OperatorFactory;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.operator.ProjectOperator;
 import io.dingodb.exec.operator.RootOperator;
-import io.dingodb.exec.operator.ValuesOperator;
+import io.dingodb.exec.operator.params.ProjectParam;
+import io.dingodb.exec.operator.params.RootParam;
+import io.dingodb.exec.operator.params.ValuesParam;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
 
+import static io.dingodb.exec.utils.OperatorCodeUtils.PROJECT;
+import static io.dingodb.exec.utils.OperatorCodeUtils.ROOT;
+import static io.dingodb.exec.utils.OperatorCodeUtils.VALUES;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestTaskImpl {
     @Test
     public void testValues() {
         Task task = new TaskImpl(CommonId.EMPTY_TASK, CommonId.EMPTY_JOB, CommonId.EMPTY_TRANSACTION, Mockito.mock(Location.class), null);
-        ValuesOperator values = new ValuesOperator(
+        ValuesParam param = new ValuesParam(
             ImmutableList.of(
                 new Object[]{1, "Alice", 1.0},
                 new Object[]{2, "Betty", 2.0}
             ),
             DingoTypeFactory.INSTANCE.tuple("INTEGER", "STRING", "DOUBLE")
         );
+        Vertex values = new Vertex(VALUES, param);
         IdGeneratorImpl idGenerator = new IdGeneratorImpl(CommonId.EMPTY_JOB.seq);
         values.setId(idGenerator.getOperatorId(CommonId.EMPTY_TASK.seq));
-        task.putOperator(values);
-        RootOperator root = new RootOperator(DingoTypeFactory.INSTANCE.tuple("INTEGER", "STRING", "DOUBLE"), null);
-        root.setId(idGenerator.getOperatorId(CommonId.EMPTY_TASK.seq));
-        task.putOperator(root);
-        values.getOutputs().get(0).setLink(root.getInput(0));
+        task.putVertex(values);
+        RootParam rootParam = new RootParam(DingoTypeFactory.INSTANCE.tuple("INTEGER", "STRING", "DOUBLE"), null);
+        Vertex root = new Vertex(ROOT, rootParam);
+        CommonId id = idGenerator.getOperatorId(CommonId.EMPTY_TASK.seq);
+        root.setId(id);
+        task.putVertex(root);
+        task.markRoot(id);
+        Edge edge = new Edge(values, root);
+        values.addEdge(edge);
+        root.addIn(edge);
         task.init();
         task.run(null);
-        assertThat(root.popValue()).containsExactly(1, "Alice", 1.0);
-        assertThat(root.popValue()).containsExactly(2, "Betty", 2.0);
+
+        RootOperator rootOperator = (RootOperator) OperatorFactory.getInstance(task.getRoot().getOp());
+        assertThat(rootOperator.popValue(root)).containsExactly(1, "Alice", 1.0);
+        assertThat(rootOperator.popValue(root)).containsExactly(2, "Betty", 2.0);
     }
 
     @Test
     public void testParas() {
         DingoType parasType = DingoTypeFactory.INSTANCE.tuple("INT", "STRING");
         Task task = new TaskImpl(CommonId.EMPTY_TASK, CommonId.EMPTY_JOB, CommonId.EMPTY_TRANSACTION, Mockito.mock(Location.class), parasType);
-        ValuesOperator values = new ValuesOperator(
+        ValuesParam valuesParam = new ValuesParam(
             ImmutableList.of(new Object[]{0}),
             DingoTypeFactory.INSTANCE.tuple("INT")
         );
+        Vertex values = new Vertex(VALUES, valuesParam);
         IdGeneratorImpl idGenerator = new IdGeneratorImpl(CommonId.EMPTY_JOB.seq);
         values.setId(idGenerator.getOperatorId(CommonId.EMPTY_TASK.seq));
-        task.putOperator(values);
-        ProjectOperator project = new ProjectOperator(
+        task.putVertex(values);
+        ProjectParam projectParam = new ProjectParam(
             Arrays.asList(
                 new SqlExpr("_P[0]", DingoTypeFactory.INSTANCE.scalar("INT")),
                 new SqlExpr("_P[1]", DingoTypeFactory.INSTANCE.scalar("STRING"))
             ),
             DingoTypeFactory.INSTANCE.tuple("INT")
         );
+        Vertex project = new Vertex(PROJECT, projectParam);
         project.setId(idGenerator.getOperatorId(CommonId.EMPTY_TASK.seq));
-        task.putOperator(project);
-        RootOperator root = new RootOperator(DingoTypeFactory.INSTANCE.tuple("INTEGER", "STRING"), null);
-        root.setId(idGenerator.getOperatorId(CommonId.EMPTY_TASK.seq));
-        task.putOperator(root);
-        values.getSoleOutput().setLink(project.getInput(0));
-        project.getSoleOutput().setLink(root.getInput(0));
+        task.putVertex(project);
+        Edge valuesEdge = new Edge(values, project);
+        values.addEdge(valuesEdge);
+        project.addIn(valuesEdge);
+        RootParam rootParam = new RootParam(DingoTypeFactory.INSTANCE.tuple("INTEGER", "STRING"), null);
+        Vertex root = new Vertex(ROOT, rootParam);
+        CommonId id = idGenerator.getOperatorId(CommonId.EMPTY_TASK.seq);
+        root.setId(id);
+        task.putVertex(root);
+        task.markRoot(id);
+        Edge projectEdge = new Edge(project, root);
+        project.addEdge(projectEdge);
+        root.addIn(projectEdge);
         task.init();
         task.run(new Object[]{1, "Alice"});
-        assertThat(root.popValue()).containsExactly(1, "Alice");
-        while (root.popValue() != RootOperator.FIN) {
-            root.popValue();
+        RootOperator rootOperator = (RootOperator) OperatorFactory.getInstance(task.getRoot().getOp());
+        assertThat(rootOperator.popValue(root)).containsExactly(1, "Alice");
+        while (rootOperator.popValue(root) != RootOperator.FIN) {
+            rootOperator.popValue(root);
         }
         task.run(new Object[]{2, "Betty"});
-        assertThat(root.popValue()).containsExactly(2, "Betty");
-        while (root.popValue() != RootOperator.FIN) {
-            root.popValue();
+        assertThat(rootOperator.popValue(root)).containsExactly(2, "Betty");
+        while (rootOperator.popValue(root) != RootOperator.FIN) {
+            rootOperator.popValue(root);
         }
     }
 }

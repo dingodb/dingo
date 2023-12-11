@@ -17,9 +17,9 @@
 package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.exec.base.IdGenerator;
-import io.dingodb.exec.base.Operator;
-import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
@@ -31,18 +31,21 @@ public final class DingoBridge {
     private DingoBridge() {
     }
 
-    public static @NonNull Collection<Output> bridge(
-        IdGenerator idGenerator, @NonNull Collection<Output> inputs, Supplier<Operator> operatorSupplier
+    public static @NonNull Collection<Vertex> bridge(
+        IdGenerator idGenerator, @NonNull Collection<Vertex> inputs, Supplier<Vertex> operatorSupplier
     ) {
-        List<Output> outputs = new LinkedList<>();
-        for (Output input : inputs) {
-            Operator operator = operatorSupplier.get();
+        List<Vertex> outputs = new LinkedList<>();
+
+        for (Vertex input : inputs) {
+            Vertex vertex = operatorSupplier.get();
             Task task = input.getTask();
-            operator.setId(idGenerator.getOperatorId(task.getId()));
-            task.putOperator(operator);
-            input.setLink(operator.getInput(0));
-            operator.getSoleOutput().copyHint(input);
-            outputs.addAll(operator.getOutputs());
+            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            task.putVertex(vertex);
+            Edge edge = new Edge(input, vertex);
+            vertex.setHint(input.getHint());
+            input.addEdge(edge);
+            vertex.addIn(edge);
+            outputs.add(vertex);
         }
         return outputs;
     }

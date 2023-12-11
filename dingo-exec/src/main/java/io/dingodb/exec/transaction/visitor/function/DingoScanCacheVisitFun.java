@@ -23,12 +23,11 @@ import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.transaction.base.ITransaction;
-import io.dingodb.exec.transaction.operator.ScanCacheOperator;
+import io.dingodb.exec.transaction.params.ScanCacheParam;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
-import io.dingodb.exec.transaction.visitor.data.Element;
 import io.dingodb.exec.transaction.visitor.data.ScanCacheLeaf;
 import io.dingodb.net.Channel;
 
@@ -37,13 +36,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import static io.dingodb.common.util.Utils.sole;
+import static io.dingodb.exec.utils.OperatorCodeUtils.SCAN_CACHE;
 
 public class DingoScanCacheVisitFun {
 
-    public static Collection<Output> visit(
+    public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction, DingoTransactionRenderJob visitor, ScanCacheLeaf scanCacheLeaf) {
-        List<Output> outputs = new ArrayList<>();
+        List<Vertex> outputs = new ArrayList<>();
 //        if(scanCacheLeaf.getData() instanceof Element) {
 //            ScanCacheOperator operator = new ScanCacheOperator(transaction.getCache());
 //            Collection<Output> inputs = scanCacheLeaf.getData().accept(visitor);
@@ -65,17 +64,19 @@ public class DingoScanCacheVisitFun {
 //            }
         for (Map.Entry<CommonId, Channel> channelEntry : channelMap.entrySet()) {
             Location remoteLocation = channelEntry.getValue().remoteLocation();
-            ScanCacheOperator operator = new ScanCacheOperator(dingoType);
+            ScanCacheParam param = new ScanCacheParam(dingoType);
+            Vertex vertex = new Vertex(SCAN_CACHE, param);
             Task task = job.getOrCreate(remoteLocation, idGenerator);
-            operator.setId(idGenerator.getOperatorId(task.getId()));
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
+            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            task.putVertex(vertex);
+            outputs.add(vertex);
         }
-        ScanCacheOperator operator = new ScanCacheOperator(transaction.getCache(), dingoType);
+        ScanCacheParam param = new ScanCacheParam(dingoType, transaction.getCache());
+        Vertex vertex = new Vertex(SCAN_CACHE, param);
         Task task = job.getOrCreate(currentLocation, idGenerator);
-        operator.setId(idGenerator.getOperatorId(task.getId()));
-        task.putOperator(operator);
-        outputs.addAll(operator.getOutputs());
+        vertex.setId(idGenerator.getOperatorId(task.getId()));
+        task.putVertex(vertex);
+        outputs.add(vertex);
 //        }
         return outputs;
     }

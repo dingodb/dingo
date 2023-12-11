@@ -16,31 +16,13 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.common.collect.ImmutableList;
-import io.dingodb.exec.base.Output;
-import io.dingodb.exec.impl.OutputIml;
-
-import java.util.List;
-
 /**
  * Sole out operator has only one output.
  */
 public abstract class SoleOutOperator extends AbstractOperator {
-    @JsonProperty("output")
-    @JsonSerialize(as = OutputIml.class)
-    @JsonDeserialize(as = OutputIml.class)
-    protected Output output;
 
     protected SoleOutOperator() {
         super();
-        output = OutputIml.of(this);
     }
 
-    @Override
-    public List<Output> getOutputs() {
-        return ImmutableList.of(output);
-    }
 }

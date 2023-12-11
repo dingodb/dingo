@@ -64,6 +64,7 @@ import io.dingodb.common.Location;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Output;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.impl.IdGeneratorImpl;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -75,26 +76,28 @@ import java.util.Collection;
 import static io.dingodb.calcite.rel.DingoRel.dingo;
 
 @Slf4j
-public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
+public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     private final IdGenerator idGenerator;
     private final Location currentLocation;
     @Getter
     private final Job job;
+    private final boolean isTxn;
 
-    private DingoJobVisitor(Job job, IdGenerator idGenerator, Location currentLocation) {
+    private DingoJobVisitor(Job job, IdGenerator idGenerator, Location currentLocation, boolean isTxn) {
         this.job = job;
         this.idGenerator = idGenerator;
         this.currentLocation = currentLocation;
+        this.isTxn = isTxn;
     }
 
     public static void renderJob(Job job, RelNode input, Location currentLocation) {
-        renderJob(job, input, currentLocation, false);
+        renderJob(job, input, currentLocation, false, false);
     }
 
-    public static void renderJob(Job job, RelNode input, Location currentLocation, boolean checkRoot) {
+    public static void renderJob(Job job, RelNode input, Location currentLocation, boolean checkRoot, boolean isTxn) {
         IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
-        DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation);
-        Collection<Output> outputs = dingo(input).accept(visitor);
+        DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation, isTxn);
+        Collection<Vertex> outputs = dingo(input).accept(visitor);
         if (checkRoot && outputs.size() > 0) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
@@ -104,113 +107,113 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoStreamingConverter rel) {
+    public Collection<Vertex> visit(@NonNull DingoStreamingConverter rel) {
         return DingoStreamingConverterVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoAggregate rel) {
+    public Collection<Vertex> visit(@NonNull DingoAggregate rel) {
         return DingoAggregateVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoFilter rel) {
+    public Collection<Vertex> visit(@NonNull DingoFilter rel) {
         return DingoFilterVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoHashJoin rel) {
+    public Collection<Vertex> visit(@NonNull DingoHashJoin rel) {
         return DingoHashJoinVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoTableModify rel) {
-        return DingoTableModifyVisitFun.visit(job, idGenerator, currentLocation, this, rel);
+    public Collection<Vertex> visit(@NonNull DingoTableModify rel) {
+        return DingoTableModifyVisitFun.visit(job, idGenerator, currentLocation, isTxn, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoProject rel) {
+    public Collection<Vertex> visit(@NonNull DingoProject rel) {
         return DingoProjectVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoReduce rel) {
+    public Collection<Vertex> visit(@NonNull DingoReduce rel) {
         return DingoReduceVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoRoot rel) {
+    public Collection<Vertex> visit(@NonNull DingoRoot rel) {
         return DingoRootVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoGetByIndex rel) {
+    public Collection<Vertex> visit(@NonNull DingoGetByIndex rel) {
         return DingoGetByIndexVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoGetByKeys rel) {
+    public Collection<Vertex> visit(@NonNull DingoGetByKeys rel) {
         return DingoGetByKeysFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoSort rel) {
+    public Collection<Vertex> visit(@NonNull DingoSort rel) {
         return DingoSortVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoTableScan rel) {
+    public Collection<Vertex> visit(@NonNull DingoTableScan rel) {
         // current version scan must have range
-        return DingoTableScanVisitFun.visit(job, idGenerator, currentLocation, this, rel);
+        return DingoTableScanVisitFun.visit(job, idGenerator, currentLocation, isTxn, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoUnion rel) {
+    public Collection<Vertex> visit(@NonNull DingoUnion rel) {
         return DingoUnionVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoValues rel) {
+    public Collection<Vertex> visit(@NonNull DingoValues rel) {
         return DingoValuesVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoPartCountDelete rel) {
+    public Collection<Vertex> visit(@NonNull DingoPartCountDelete rel) {
         return DingoCountDeleteVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoPartRangeDelete rel) {
-        return DingoRangeDeleteVisitFun.visit(job, idGenerator, currentLocation, this, rel);
+    public Collection<Vertex> visit(@NonNull DingoPartRangeDelete rel) {
+        return DingoRangeDeleteVisitFun.visit(job, idGenerator, currentLocation, isTxn, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoLikeScan rel) {
-        return DingoLikeScanVisitFun.visit(job, idGenerator, currentLocation, this, rel);
+    public Collection<Vertex> visit(@NonNull DingoLikeScan rel) {
+        return DingoLikeScanVisitFun.visit(job, idGenerator, currentLocation, isTxn, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoFunctionScan rel) {
+    public Collection<Vertex> visit(@NonNull DingoFunctionScan rel) {
         return DingoFunctionScanVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoVector rel) {
+    public Collection<Vertex> visit(@NonNull DingoVector rel) {
         return DingoVectorVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
 
-    public Collection<Output> visit(@NonNull DingoGetVectorByDistance rel) {
+    public Collection<Vertex> visit(@NonNull DingoGetVectorByDistance rel) {
         return DingoGetVectorByDistanceVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull VectorStreamConvertor rel) {
+    public Collection<Vertex> visit(@NonNull VectorStreamConvertor rel) {
         return DingoVectorStreamingVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override
-    public Collection<Output> visit(@NonNull DingoGetByIndexMerge rel) {
+    public Collection<Vertex> visit(@NonNull DingoGetByIndexMerge rel) {
         return DingoGetByIndexMergeVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 }

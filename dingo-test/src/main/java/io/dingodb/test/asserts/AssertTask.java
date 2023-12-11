@@ -18,7 +18,10 @@ package io.dingodb.test.asserts;
 
 import io.dingodb.common.Location;
 import io.dingodb.common.CommonId;
+import io.dingodb.exec.OperatorFactory;
+import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.SourceOperator;
 
 import java.util.List;
@@ -38,7 +41,7 @@ public final class AssertTask extends Assert<Task, AssertTask> {
     }
 
     public AssertTask operatorNum(int num) {
-        assertThat(instance.getOperators()).size().isEqualTo(num);
+        assertThat(instance.getVertexes()).size().isEqualTo(num);
         return this;
     }
 
@@ -52,14 +55,18 @@ public final class AssertTask extends Assert<Task, AssertTask> {
     public AssertOperator soleSource() {
         List<CommonId> runList = instance.getRunList();
         assertThat(runList).size().isEqualTo(1);
-        return Assert.operator(instance.getOperator(sole(runList)));
+        Vertex vertex = instance.getVertex(sole(runList));
+        Operator operator = OperatorFactory.getInstance(vertex.getOp());
+        return Assert.operator(operator, vertex);
     }
 
     @Nonnull
     public AssertOperator source(int index) {
         List<CommonId> runList = instance.getRunList();
         assertThat(runList).size().isGreaterThan(index);
-        return Assert.operator(instance.getOperator(runList.get(index)))
+        Vertex vertex = instance.getVertex(runList.get(index));
+        Operator operator = OperatorFactory.getInstance(vertex.getOp());
+        return Assert.operator(operator, vertex)
             .isA(SourceOperator.class);
     }
 }

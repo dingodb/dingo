@@ -16,9 +16,7 @@
 
 package io.dingodb.exec.base;
 
-import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.exec.fin.Fin;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public interface Output {
@@ -30,39 +28,12 @@ public interface Output {
 
     void setOperator(Operator operator);
 
-    default boolean push(Object[] tuple) {
-        Input link = getLink();
-        return link.getOperator().push(link.getPin(), tuple);
-    }
-
-    default void fin(Fin fin) {
-        Input link = getLink();
-        link.getOperator().fin(link.getPin(), fin);
-    }
-
-    default Task getTask() {
-        return getOperator().getTask();
-    }
-
-    default CommonId getTaskId() {
-        return getTask().getId();
-    }
-
-    default Location getLocation() {
-        return getTask().getLocation();
-    }
-
     OutputHint getHint();
 
     void setHint(OutputHint hint);
 
     default void copyHint(@NonNull Output output) {
         setHint(output.getHint());
-    }
-
-    default void init() {
-        Input link = getLink();
-        link.setOperator(getTask().getOperator(link.getOperatorId()));
     }
 
     default Location getTargetLocation() {

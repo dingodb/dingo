@@ -18,15 +18,15 @@ package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.calcite.rel.DingoHashJoin;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Operator;
-import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.operator.HashJoinOperator;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.HashJoinParam;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -38,37 +38,43 @@ import java.util.List;
 import java.util.Map;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
+import static io.dingodb.exec.utils.OperatorCodeUtils.HASH_JOIN;
 
 public class DingoHashJoinVisitFun {
     @NonNull
-    public static List<Output> visit(
+    public static List<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, @NonNull DingoHashJoin rel
     ) {
-        Collection<Output> leftInputs = dingo(rel.getLeft()).accept(visitor);
-        Collection<Output> rightInputs = dingo(rel.getRight()).accept(visitor);
-        Map<CommonId, Output> leftInputsMap = new HashMap<>(leftInputs.size());
-        Map<CommonId, Output> rightInputsMap = new HashMap<>(rightInputs.size());
+        Collection<Vertex> leftInputs = dingo(rel.getLeft()).accept(visitor);
+        Collection<Vertex> rightInputs = dingo(rel.getRight()).accept(visitor);
+        Map<CommonId, Vertex> leftInputsMap = new HashMap<>(leftInputs.size());
+        Map<CommonId, Vertex> rightInputsMap = new HashMap<>(rightInputs.size());
         // Only one left input in each task, because of coalescing.
         leftInputs.forEach(i -> leftInputsMap.put(i.getTaskId(), i));
         rightInputs.forEach(i -> rightInputsMap.put(i.getTaskId(), i));
-        List<Output> outputs = new LinkedList<>();
-        for (Map.Entry<CommonId, Output> entry : leftInputsMap.entrySet()) {
+        List<Vertex> outputs = new LinkedList<>();
+        for (Map.Entry<CommonId, Vertex> entry : leftInputsMap.entrySet()) {
             CommonId taskId = entry.getKey();
-            Output left = entry.getValue();
-            Output right = rightInputsMap.get(taskId);
+            Vertex left = entry.getValue();
+            Vertex right = rightInputsMap.get(taskId);
             JoinInfo joinInfo = rel.analyzeCondition();
-            Operator operator = new HashJoinOperator(TupleMapping.of(joinInfo.leftKeys),
+            HashJoinParam param = new HashJoinParam(TupleMapping.of(joinInfo.leftKeys),
                 TupleMapping.of(joinInfo.rightKeys), rel.getLeft().getRowType().getFieldCount(),
                 rel.getRight().getRowType().getFieldCount(),
                 rel.getJoinType() == JoinRelType.LEFT || rel.getJoinType() == JoinRelType.FULL,
                 rel.getJoinType() == JoinRelType.RIGHT || rel.getJoinType() == JoinRelType.FULL
             );
-            operator.setId(idGenerator.getOperatorId(taskId));
-            left.setLink(operator.getInput(0));
-            right.setLink(operator.getInput(1));
+            Vertex vertex = new Vertex(HASH_JOIN, param);
+            vertex.setId(idGenerator.getOperatorId(taskId));
+            left.setPin(0);
+            right.setPin(1);
+            left.addEdge(new Edge(left, vertex));
+            right.addEdge(new Edge(right, vertex));
+            vertex.addIn(new Edge(left, vertex));
+            vertex.addIn(new Edge(right, vertex));
             Task task = job.getTask(taskId);
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
+            task.putVertex(vertex);
+            outputs.add(vertex);
         }
         return outputs;
     }

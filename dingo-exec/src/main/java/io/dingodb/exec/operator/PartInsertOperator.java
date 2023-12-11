@@ -16,38 +16,43 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.Optional;
+import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.PartInsertParam;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
+import io.dingodb.store.api.StoreInstance;
 
-@JsonTypeName("insert")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "output"})
+import static io.dingodb.common.util.NoBreakFunctions.wrap;
+
 public final class PartInsertOperator extends PartModifyOperator {
-    @JsonCreator
-    public PartInsertOperator(
-        @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") CommonId partId,
-        @JsonProperty("schema") DingoType schema,
-        @JsonProperty("keyMapping") TupleMapping keyMapping
-    ) {
-        super(tableId, partId, schema, keyMapping);
-    }
+    public static final PartInsertOperator INSTANCE = new PartInsertOperator();
 
-    @Override
-    public void init() {
-        super.init();
+    private PartInsertOperator() {
     }
 
     @SuppressWarnings("ConstantConditions")
     @Override
-    public boolean pushTuple(Object[] tuple) {
-        if (part.insert((Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE))) {
-            count++;
+    public boolean pushTuple(Object[] tuple, Vertex vertex) {
+        PartInsertParam param = vertex.getParam();
+        DingoType schema = param.getSchema();
+        CommonId partId = PartitionService.getService(
+                Optional.ofNullable(param.getTableDefinition().getPartDefinition())
+                    .map(PartitionDefinition::getFuncName)
+                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
+            .calcPartId(tuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
+        StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), partId);
+        Object[] keyValue = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
+        boolean insert = store.insertIndex(keyValue);
+        if (insert) {
+            if (store.insertWithIndex(keyValue)) {
+                param.inc();
+            }
         }
         return true;
     }

@@ -22,22 +22,19 @@ import io.dingodb.calcite.traits.DingoRelPartition;
 import io.dingodb.calcite.traits.DingoRelPartitionByTable;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.TableInfo;
-import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Operator;
-import io.dingodb.exec.base.Output;
+import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.operator.CoalesceOperator;
-import io.dingodb.exec.operator.VectorPartitionOperator;
-import io.dingodb.partition.DingoPartitionServiceProvider;
-import io.dingodb.partition.PartitionService;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.CoalesceParam;
+import io.dingodb.exec.operator.params.VectorPartitionParam;
 import io.dingodb.meta.MetaService;
 
 import java.util.Collection;
@@ -50,14 +47,16 @@ import java.util.Optional;
 import java.util.Set;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
+import static io.dingodb.exec.utils.OperatorCodeUtils.COALESCE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.VECTOR_PARTITION;
 
 public final class DingoVectorStreamingVisitFun {
 
-    public static Collection<Output> visit(
+    public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, VectorStreamConvertor rel
     ) {
-        List<Output> outputs = new LinkedList<>();
-        Collection<Output> inputs = dingo(rel.getInput()).accept(visitor);
+        List<Vertex> outputs = new LinkedList<>();
+        Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
         if (!rel.isNeedRoute()) {
             outputs = DingoCoalesce.coalesce(idGenerator, inputs);
             return outputs;
@@ -75,7 +74,6 @@ public final class DingoVectorStreamingVisitFun {
         DingoRelPartitionByTable partition = (DingoRelPartitionByTable) found.get();
         DingoRelOptTable dingoRelOptTable = (DingoRelOptTable)partition.getTable();
         final TableInfo tableInfo = MetaServiceUtils.getTableInfo(dingoRelOptTable);
-        TableDefinition td = TableUtils.getTableDefinition(partition.getTable());
 
         String schemaName = dingoRelOptTable.getSchemaName();
         MetaService metaService = MetaService.root().getSubMetaService(schemaName);
@@ -83,52 +81,60 @@ public final class DingoVectorStreamingVisitFun {
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
             = metaService.getIndexRangeDistribution(rel.getIndexId());
 
-        for (Output input : inputs) {
+        for (Vertex input : inputs) {
             Task task = input.getTask();
-            VectorPartitionOperator operator = new VectorPartitionOperator(
+            VectorPartitionParam param = new VectorPartitionParam(
                 tableInfo.getId(),
                 distributions,
                 indexId,
                 rel.getVectorIdIndex(),
                 rel.getIndexTableDefinition());
-            operator.setId(idGenerator.getOperatorId(task.getId()));
-            operator.createOutputs(distributions);
-            task.putOperator(operator);
-            input.setLink(operator.getInput(0));
-            outputs.addAll(operator.getOutputs());
+            Vertex vertex = new Vertex(VECTOR_PARTITION, param);
+            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            OutputHint hint = new OutputHint();
+            hint.setLocation(MetaService.root().currentLocation());
+            vertex.setHint(hint);
+            input.setPin(0);
+            Edge edge = new Edge(input, vertex);
+            input.addEdge(edge);
+            vertex.addIn(edge);
+            task.putVertex(vertex);
+            input.setPin(0);
+            outputs.add(vertex);
         }
         // coalesce
         outputs = coalesce(idGenerator, outputs);
         return outputs;
     }
 
-    public static List<Output> coalesce(IdGenerator idGenerator, List<Output> inputList) {
-        Map<CommonId, List<Output>> inputsMap = new LinkedHashMap<>();
-        for (Output input : inputList) {
-            List<Output> list = inputsMap.computeIfAbsent(input.getHint().getPartId(), k -> new LinkedList<>());
+    public static List<Vertex> coalesce(IdGenerator idGenerator, List<Vertex> inputList) {
+        Map<CommonId, List<Vertex>> inputsMap = new LinkedHashMap<>();
+        for (Vertex input : inputList) {
+            List<Vertex> list = inputsMap.computeIfAbsent(input.getHint().getPartId(), k -> new LinkedList<>());
             list.add(input);
         }
-        List<Output> outputs = new LinkedList<>();
-        for (Map.Entry<CommonId, List<Output>> entry : inputsMap.entrySet()) {
-            List<Output> list = entry.getValue();
+        List<Vertex> outputs = new LinkedList<>();
+        for (Map.Entry<CommonId, List<Vertex>> entry : inputsMap.entrySet()) {
+            List<Vertex> list = entry.getValue();
             int size = list.size();
             if (list.size() <= 1) {
                 // Need no coalescing.
                 outputs.addAll(list);
             } else {
-                Output one = list.get(0);
+                Vertex one = list.get(0);
                 Task task = one.getTask();
-                Operator operator = new CoalesceOperator(size);
-                operator.setId(idGenerator.getOperatorId(task.getId()));
-                task.putOperator(operator);
+                Vertex vertex = new Vertex(COALESCE, new CoalesceParam(size));
+                vertex.setId(idGenerator.getOperatorId(task.getId()));
+                task.putVertex(vertex);
                 int i = 0;
-                for (Output input : list) {
-                    input.setLink(operator.getInput(i));
+                for (Vertex input : list) {
+                    input.addEdge(new Edge(input, vertex));
+                    input.setPin(i);
                     ++i;
                 }
-                Output newOutput = operator.getSoleOutput();
-                newOutput.copyHint(one);
-                outputs.add(newOutput);
+                vertex.addIn(new Edge(one, vertex));
+                vertex.copyHint(one);
+                outputs.add(vertex);
             }
         }
         return outputs;

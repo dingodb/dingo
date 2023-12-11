@@ -16,63 +16,21 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.Location;
-import io.dingodb.common.type.TupleMapping;
-import io.dingodb.exec.base.Output;
-import io.dingodb.exec.base.OutputHint;
-import io.dingodb.exec.impl.OutputIml;
-import io.dingodb.exec.operator.hash.HashStrategy;
-import io.dingodb.exec.operator.hash.SimpleHashStrategy;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.HashParam;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
-@JsonTypeName("hash")
-@JsonPropertyOrder({"strategy", "keyMapping", "outputs"})
 public class HashOperator extends FanOutOperator {
-    @JsonProperty("strategy")
-    private final HashStrategy strategy;
-    @JsonProperty("keyMapping")
-    private final TupleMapping keyMapping;
+    public static final HashOperator INSTANCE = new HashOperator();
 
-    @JsonCreator
-    public HashOperator(
-        @JsonProperty("strategy") HashStrategy strategy,
-        @JsonProperty("keyMapping") TupleMapping keyMapping
-    ) {
-        super();
-        this.strategy = strategy;
-        this.keyMapping = keyMapping;
+    private HashOperator() {
+
     }
 
     @Override
-    public void init() {
-        super.init();
-        if (strategy instanceof SimpleHashStrategy) {
-            ((SimpleHashStrategy) strategy).setOutputNum(outputs.size());
-        } else {
-            throw new IllegalArgumentException("Unsupported hash strategy \"" + strategy + "\".");
-        }
+    protected int calcOutputIndex(int pin, Object @NonNull [] tuple, Vertex vertex) {
+        HashParam param = vertex.getParam();
+        return param.getStrategy().selectOutput(param.getKeyMapping().revMap(tuple));
     }
 
-    @Override
-    protected int calcOutputIndex(int pin, Object @NonNull [] tuple) {
-        return strategy.selectOutput(keyMapping.revMap(tuple));
-    }
-
-    public void createOutputs(@NonNull Collection<Location> locations) {
-        outputs = new ArrayList<>(locations.size());
-        for (Location location : locations) {
-            OutputHint hint = new OutputHint();
-            hint.setLocation(location);
-            Output output = OutputIml.of(this);
-            output.setHint(hint);
-            outputs.add(output);
-        }
-    }
 }

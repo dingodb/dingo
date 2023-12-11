@@ -22,9 +22,8 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Operator;
-import io.dingodb.exec.base.Output;
-import io.dingodb.exec.operator.AggregateOperator;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.AggregateParams;
 import lombok.AllArgsConstructor;
 import org.apache.calcite.rel.RelNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -33,29 +32,31 @@ import java.util.Collection;
 import java.util.function.Supplier;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
+import static io.dingodb.exec.utils.OperatorCodeUtils.AGGREGATE;
 
 public class DingoAggregateVisitFun {
     @NonNull
-    public static Collection<Output> visit(
+    public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, DingoAggregate rel
     ) {
         RelNode input = rel.getInput();
-        Collection<Output> inputs = dingo(input).accept(visitor);
+        Collection<Vertex> inputs = dingo(input).accept(visitor);
         return DingoBridge.bridge(idGenerator, inputs, new OperatorSupplier(rel, input));
     }
 
     @AllArgsConstructor
-    static class OperatorSupplier implements Supplier<Operator> {
+    static class OperatorSupplier implements Supplier<Vertex> {
 
         final DingoAggregate rel;
         final RelNode input;
 
         @Override
-        public Operator get() {
-            return new AggregateOperator(
+        public Vertex get() {
+            AggregateParams params = new AggregateParams(
                 AggFactory.getAggKeys(rel.getGroupSet()),
                 AggFactory.getAggList(rel.getAggCallList(), DefinitionMapper.mapToDingoType(input.getRowType()))
             );
+            return new Vertex(AGGREGATE, params);
         }
     }
 

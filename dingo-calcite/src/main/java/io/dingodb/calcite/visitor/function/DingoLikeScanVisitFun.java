@@ -22,7 +22,6 @@ import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
@@ -31,10 +30,11 @@ import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Output;
+import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.operator.LikeScanOperator;
+import io.dingodb.exec.operator.params.LikeScanParam;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 
@@ -43,13 +43,16 @@ import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
 
+import static io.dingodb.exec.utils.OperatorCodeUtils.LIKE_SCAN;
+
 public final class DingoLikeScanVisitFun {
 
     private DingoLikeScanVisitFun() {
     }
 
-    public static Collection<Output> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, DingoLikeScan rel
+    public static Collection<Vertex> visit(
+        Job job, IdGenerator idGenerator, Location currentLocation,
+        boolean isTxn, DingoJobVisitor visitor, DingoLikeScan rel
     ) {
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         SqlExpr filter = null;
@@ -62,10 +65,15 @@ public final class DingoLikeScanVisitFun {
             Optional.ofNullable(td.getPartDefinition())
                 .map(PartitionDefinition::getFuncName)
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-        List<Output> outputs = new ArrayList<>();
+        List<Vertex> outputs = new ArrayList<>();
 
-        for (RangeDistribution distribution : ps.calcPartitionRange(rel.getPrefix(), rel.getPrefix(), true, true, distributions)) {
-            LikeScanOperator operator = new LikeScanOperator(
+        for (RangeDistribution distribution
+            : ps.calcPartitionRange(rel.getPrefix(), rel.getPrefix(), true, true, distributions)) {
+            Task task = job.getOrCreate(currentLocation, idGenerator);
+            if (isTxn) {
+
+            }
+            LikeScanParam param = new LikeScanParam(
                 tableInfo.getId(),
                 distribution.id(),
                 td.getDingoType(),
@@ -74,10 +82,13 @@ public final class DingoLikeScanVisitFun {
                 rel.getSelection(),
                 rel.getPrefix()
             );
-            Task task = job.getOrCreate(currentLocation, idGenerator);
-            operator.setId(idGenerator.getOperatorId(task.getId()));
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
+            Vertex vertex = new Vertex(LIKE_SCAN, param);
+            OutputHint hint = new OutputHint();
+            hint.setPartId(distribution.id());
+            vertex.setHint(hint);
+            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            task.putVertex(vertex);
+            outputs.add(vertex);
         }
 
         return outputs;

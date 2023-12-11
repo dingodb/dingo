@@ -28,11 +28,12 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Output;
+import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fun.vector.VectorImageFun;
 import io.dingodb.exec.fun.vector.VectorTextFun;
-import io.dingodb.exec.operator.PartVectorOperator;
+import io.dingodb.exec.operator.params.PartVectorParam;
 import io.dingodb.exec.restful.VectorExtract;
 import io.dingodb.meta.MetaService;
 import lombok.extern.slf4j.Slf4j;
@@ -52,13 +53,15 @@ import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static io.dingodb.exec.utils.OperatorCodeUtils.PART_VECTOR;
+
 @Slf4j
 public final class DingoVectorVisitFun {
 
     private DingoVectorVisitFun() {
     }
 
-    public static Collection<Output> visit(
+    public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, DingoVector rel
     ) {
         DingoRelOptTable relTable = rel.getTable();
@@ -80,7 +83,7 @@ public final class DingoVectorVisitFun {
 
         int topN = ((Number) Objects.requireNonNull(((SqlNumericLiteral) operandsList.get(3)).getValue())).intValue();
 
-        List<Output> outputs = new ArrayList<>();
+        List<Vertex> outputs = new ArrayList<>();
 
         // Get all index table distributions
         NavigableMap<ComparableByteArray, RangeDistribution> indexRangeDistribution =
@@ -98,7 +101,7 @@ public final class DingoVectorVisitFun {
 
         // Create tasks based on partitions
         for (RangeDistribution rangeDistribution : indexRangeDistribution.values()) {
-            PartVectorOperator operator = new PartVectorOperator(
+            PartVectorParam param = new PartVectorParam(
                 tableId,
                 rangeDistribution.id(),
                 td.getDingoType(),
@@ -114,9 +117,13 @@ public final class DingoVectorVisitFun {
                 parameterMap
             );
             Task task = job.getOrCreate(currentLocation, idGenerator);
-            operator.setId(idGenerator.getOperatorId(task.getId()));
-            task.putOperator(operator);
-            outputs.addAll(operator.getOutputs());
+            Vertex vertex = new Vertex(PART_VECTOR, param);
+            OutputHint hint = new OutputHint();
+            hint.setPartId(rangeDistribution.id());
+            vertex.setHint(hint);
+            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            task.putVertex(vertex);
+            outputs.add(vertex);
         }
 
         return outputs;

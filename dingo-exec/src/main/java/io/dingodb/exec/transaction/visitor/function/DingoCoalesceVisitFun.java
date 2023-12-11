@@ -18,15 +18,13 @@ package io.dingodb.exec.transaction.visitor.function;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Operator;
-import io.dingodb.exec.base.Output;
-import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.operator.CoalesceOperator;
-import io.dingodb.exec.operator.SumUpOperator;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.CoalesceParam;
+import io.dingodb.exec.operator.params.SumUpParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
 import io.dingodb.exec.transaction.visitor.data.StreamConverterLeaf;
@@ -37,48 +35,57 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+
+import static io.dingodb.exec.utils.OperatorCodeUtils.COALESCE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.SUM_UP;
 
 public class DingoCoalesceVisitFun {
-    public static Collection<Output> visit(
+    public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction,
-        DingoTransactionRenderJob visitor, @NonNull Collection<Output> inputs, StreamConverterLeaf streamConverterLeaf) {
+        DingoTransactionRenderJob visitor, @NonNull Collection<Vertex> inputs, StreamConverterLeaf streamConverterLeaf
+    ) {
         // Coalesce inputs from the same task. taskId --> list of inputs
-        Map<CommonId, List<Output>> inputsMap = new HashMap<>();
-        for (Output input : inputs) {
+        Map<CommonId, List<Vertex>> inputsMap = new HashMap<>();
+        for (Vertex input : inputs) {
             CommonId taskId = input.getTaskId();
-            List<Output> list = inputsMap.computeIfAbsent(taskId, k -> new LinkedList<>());
+            List<Vertex> list = inputsMap.computeIfAbsent(taskId, k -> new LinkedList<>());
             list.add(input);
         }
-        List<Output> outputs = new LinkedList<>();
-        for (Map.Entry<CommonId, List<Output>> entry : inputsMap.entrySet()) {
-            List<Output> list = entry.getValue();
+        List<Vertex> outputs = new LinkedList<>();
+        for (Map.Entry<CommonId, List<Vertex>> entry : inputsMap.entrySet()) {
+            List<Vertex> list = entry.getValue();
             int size = list.size();
             if (size <= 1) {
                 // Need no coalescing.
                 outputs.addAll(list);
             } else {
-                Output one = list.get(0);
+                Vertex one = list.get(0);
                 Task task = one.getTask();
-                Operator operator = new CoalesceOperator(size);
-                operator.setId(idGenerator.getOperatorId(task.getId()));
-                task.putOperator(operator);
+                CoalesceParam coalesceParam = new CoalesceParam(size);
+                Vertex coalesce = new Vertex(COALESCE, coalesceParam);
+                coalesce.setId(idGenerator.getOperatorId(task.getId()));
+                task.putVertex(coalesce);
                 int i = 0;
-                for (Output input : list) {
-                    input.setLink(operator.getInput(i));
+                for (Vertex input : list) {
+                    input.addEdge(new Edge(input, coalesce));
+                    input.setPin(i);
                     ++i;
                 }
-                Output newOutput = operator.getSoleOutput();
-                newOutput.copyHint(one);
+                coalesce.copyHint(one);
+                Edge edge = new Edge(one, coalesce);
+                coalesce.addIn(edge);
                 if (one.isToSumUp()) {
-                    Operator sumUpOperator = new SumUpOperator();
-                    sumUpOperator.setId(idGenerator.getOperatorId(task.getId()));
-                    task.putOperator(sumUpOperator);
-                    operator.getSoleOutput().setLink(sumUpOperator.getInput(0));
-                    sumUpOperator.getSoleOutput().copyHint(newOutput);
-                    outputs.add(sumUpOperator.getSoleOutput());
+                    SumUpParam sumUpParam = new SumUpParam();
+                    Vertex sumUp = new Vertex(SUM_UP, sumUpParam);
+                    sumUp.setId(idGenerator.getOperatorId(task.getId()));
+                    task.putVertex(sumUp);
+                    sumUp.copyHint(coalesce);
+                    Edge sumUpEdge = new Edge(coalesce, sumUp);
+                    coalesce.addEdge(sumUpEdge);
+                    sumUp.addIn(sumUpEdge);
+                    outputs.add(sumUp);
                 } else {
-                    outputs.add(newOutput);
+                    outputs.add(coalesce);
                 }
             }
         }

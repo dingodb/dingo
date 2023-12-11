@@ -16,92 +16,30 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.dingodb.codec.CodecService;
-import io.dingodb.common.CommonId;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.Services;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.OperatorProfile;
-import io.dingodb.exec.table.Part;
-import io.dingodb.exec.table.PartInKvStore;
+import io.dingodb.exec.operator.params.PartRangeDeleteParam;
+import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@JsonTypeName("rangeDelete")
-@JsonPropertyOrder({
-    "table", "part", "schema", "keyMapping", "filter", "selection", "output",
-    "startKey", "endKey", "includeStart", "includeEnd"})
 public final class PartRangeDeleteOperator extends SourceOperator {
-    @JsonProperty("table")
-    @JsonSerialize(using = CommonId.JacksonSerializer.class)
-    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    private final CommonId tableId;
+    public static final PartRangeDeleteOperator INSTANCE = new PartRangeDeleteOperator();
 
-    @JsonProperty("part")
-    @JsonSerialize(using = CommonId.JacksonSerializer.class)
-    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    private final CommonId partId;
-
-    @JsonProperty("schema")
-    private final DingoType schema;
-    @JsonProperty("keyMapping")
-    private final TupleMapping keyMapping;
-
-    @JsonProperty("startKey")
-    private final byte[] startKey;
-    @JsonProperty("endKey")
-    private final byte[] endKey;
-
-    @JsonProperty("includeStart")
-    private final boolean includeStart;
-    @JsonProperty("includeEnd")
-    private final boolean includeEnd;
-
-    private Part part;
-
-    @JsonCreator
-    public PartRangeDeleteOperator(
-        @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") CommonId partId,
-        @JsonProperty("schema") DingoType schema,
-        @JsonProperty("keyMapping") TupleMapping keyMapping,
-        @JsonProperty("startKey") byte[] startKey,
-        @JsonProperty("endKey") byte[] endKey,
-        @JsonProperty("includeStart") boolean includeStart,
-        @JsonProperty("includeEnd") boolean includeEnd
-    ) {
-        this.tableId = tableId;
-        this.partId = partId;
-        this.schema = schema;
-        this.keyMapping = keyMapping;
-        this.startKey = startKey;
-        this.endKey = endKey;
-        this.includeStart = includeStart;
-        this.includeEnd = includeEnd;
+    private PartRangeDeleteOperator() {
     }
 
     @Override
-    public void init() {
-        super.init();
-        part = new PartInKvStore(
-            Services.KV_STORE.getInstance(tableId, partId),
-            CodecService.getDefault().createKeyValueCodec(schema, keyMapping)
-        );
-    }
-
-    @Override
-    public boolean push() {
-        OperatorProfile profile = getProfile();
+    public boolean push(Vertex vertex) {
+        PartRangeDeleteParam param = vertex.getParam();
+        OperatorProfile profile = param.getProfile(vertex.getId());
         profile.setStartTimeStamp(System.currentTimeMillis());
+        StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), param.getPartId());
         final long startTime = System.currentTimeMillis();
-        long count = part.delete(startKey, endKey, includeStart, includeEnd);
-        output.push(new Object[]{count});
+        long count = store.delete(new StoreInstance.Range(
+            param.getStartKey(), param.getEndKey(), param.isIncludeStart(), param.isIncludeEnd()));
+        vertex.getSoleEdge().transformToNext(new Object[]{count});
         if (log.isDebugEnabled()) {
             log.debug("Delete data by range, delete count: {}, cost: {} ms.",
                 count, System.currentTimeMillis() - startTime);

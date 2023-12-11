@@ -20,10 +20,11 @@ import io.dingodb.common.Location;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.transaction.base.ITransaction;
-import io.dingodb.exec.transaction.operator.RollBackOperator;
+import io.dingodb.exec.transaction.params.RollBackParam;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
 import io.dingodb.exec.transaction.visitor.data.RollBackLeaf;
 
@@ -31,19 +32,29 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static io.dingodb.exec.utils.OperatorCodeUtils.ROLL_BACK;
+
 public class DingoRollBackVisitFun {
-    public static Collection<Output> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction, DingoTransactionRenderJob visitor, RollBackLeaf rollBackLeaf) {
-        Collection<Output> inputs = rollBackLeaf.getData().accept(visitor);
-        List<Output> outputs = new ArrayList<>();
-        for (Output input : inputs) {
-            RollBackOperator operator = new RollBackOperator(new BooleanType(true), transaction.getIsolationLevel(), transaction.getStart_ts());
+    public static Collection<Vertex> visit(
+        Job job, IdGenerator idGenerator, Location currentLocation,
+        ITransaction transaction, DingoTransactionRenderJob visitor, RollBackLeaf rollBackLeaf) {
+        Collection<Vertex> inputs = rollBackLeaf.getData().accept(visitor);
+        List<Vertex> outputs = new ArrayList<>();
+        for (Vertex input : inputs) {
+            RollBackParam param = new RollBackParam(
+                new BooleanType(true),
+                transaction.getIsolationLevel(),
+                transaction.getStart_ts()
+            );
+            Vertex vertex = new Vertex(ROLL_BACK, param);
             Task task = input.getTask();
-            operator.setId(idGenerator.getOperatorId(task.getId()));
-            task.putOperator(operator);
-            input.setLink(operator.getInput(0));
-            operator.getSoleOutput().copyHint(input);
-            outputs.addAll(operator.getOutputs());
+            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            task.putVertex(vertex);
+            vertex.setHint(input.getHint());
+            Edge edge = new Edge(input, vertex);
+            input.addEdge(edge);
+            vertex.addIn(edge);
+            outputs.add(vertex);
         }
         return outputs;
     }

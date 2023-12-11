@@ -35,14 +35,14 @@ import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Operator;
-import io.dingodb.exec.base.Output;
+import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.operator.GetByIndexOperator;
-import io.dingodb.exec.operator.IndexMergeOperator;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.GetByIndexParam;
+import io.dingodb.exec.operator.params.IndexMergeParam;
+import io.dingodb.meta.MetaService;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
-import io.dingodb.meta.MetaService;
 import lombok.AllArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -59,10 +59,12 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.Utils.calculatePrefixCount;
+import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_INDEX;
+import static io.dingodb.exec.utils.OperatorCodeUtils.INDEX_MERGE;
 
 public final class DingoGetByIndexMergeVisitFun {
     @NonNull
-    public static Collection<Output> visit(
+    public static Collection<Vertex> visit(
         Job job,
         IdGenerator idGenerator,
         Location currentLocation,
@@ -72,7 +74,7 @@ public final class DingoGetByIndexMergeVisitFun {
         //List<Output> outputs = DingoGetByIndexVisitFun.visit(job, idGenerator, currentLocation, visitor, rel);
         //List<Output> inputs = DingoCoalesce.coalesce(idGenerator, outputs);
         //return DingoBridge.bridge(idGenerator, inputs, new DingoGetByIndexMergeVisitFun.OperatorSupplier(rel));
-        final LinkedList<Output> outputs = new LinkedList<>();
+        final LinkedList<Vertex> outputs = new LinkedList<>();
         MetaService metaService = MetaServiceUtils.getMetaService(rel.getTable());
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         Map<CommonId, Set> indexSetMap = rel.getIndexSetMap();
@@ -109,10 +111,9 @@ public final class DingoGetByIndexMergeVisitFun {
             TupleMapping lookupKeyMapping = indexMergeMapping(td.getKeyMapping(), rel.getSelection());
 
             for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
-                GetByIndexOperator operator = new GetByIndexOperator(
-                    indexValSet.getKey(),
+                GetByIndexParam param = new GetByIndexParam(
                     entry.getKey(),
-                    tableInfo.getId(),
+                    indexValSet.getKey(),
                     tupleMapping,
                     entry.getValue(),
                     SqlExprUtils.toSqlExpr(rel.getFilter()),
@@ -125,32 +126,34 @@ public final class DingoGetByIndexMergeVisitFun {
                     needLookup
                 );
                 Task task = job.getOrCreate(currentLocation, idGenerator);
-                operator.setId(idGenerator.getOperatorId(task.getId()));
-                task.putOperator(operator);
-                outputs.addAll(operator.getOutputs());
+                Vertex vertex = new Vertex(GET_BY_INDEX, param);
+                OutputHint hint = new OutputHint();
+                hint.setPartId(entry.getKey());
+                vertex.setHint(hint);
+                vertex.setId(idGenerator.getOperatorId(task.getId()));
+                task.putVertex(vertex);
+                outputs.add(vertex);
             }
         }
 
-        List<Output> inputs = DingoCoalesce.coalesce(idGenerator, outputs);
+        List<Vertex> inputs = DingoCoalesce.coalesce(idGenerator, outputs);
         return DingoBridge.bridge(idGenerator, inputs, new DingoGetByIndexMergeVisitFun.OperatorSupplier(rel));
     }
 
     @AllArgsConstructor
-    static class OperatorSupplier implements Supplier<Operator> {
+    static class OperatorSupplier implements Supplier<Vertex> {
 
         final DingoGetByIndexMerge relNode;
 
         @Override
-        public Operator get() {
-            return new IndexMergeOperator(
-                relNode.getKeyMapping(),
-                relNode.getSelection()
-            );
+        public Vertex get() {
+            IndexMergeParam params = new IndexMergeParam(relNode.getKeyMapping(), relNode.getSelection());
+            return new Vertex(INDEX_MERGE, params);
         }
     }
 
     private static TupleMapping indexMergeMapping(TupleMapping keyMapping, TupleMapping selection) {
-        List<Integer> mappings = new ArrayList();
+        List<Integer> mappings = new ArrayList<>();
         for (int i : selection.getMappings()) {
             mappings.add(i);
         }

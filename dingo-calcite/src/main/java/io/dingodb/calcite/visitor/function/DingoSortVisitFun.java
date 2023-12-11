@@ -21,12 +21,11 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Operator;
-import io.dingodb.exec.base.Output;
-import io.dingodb.exec.operator.SortOperator;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.SortCollation;
 import io.dingodb.exec.operator.data.SortDirection;
 import io.dingodb.exec.operator.data.SortNullDirection;
+import io.dingodb.exec.operator.params.SortParam;
 import lombok.AllArgsConstructor;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rex.RexLiteral;
@@ -38,32 +37,33 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
+import static io.dingodb.exec.utils.OperatorCodeUtils.SORT;
 
 public class DingoSortVisitFun {
     @NonNull
-    public static Collection<Output> visit(
+    public static Collection<Vertex> visit(
         Job job,
         IdGenerator idGenerator,
         Location currentLocation,
         DingoJobVisitor dingoJobVisitor,
         @NonNull DingoSort rel
     ) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(dingoJobVisitor);
+        Collection<Vertex> inputs = dingo(rel.getInput()).accept(dingoJobVisitor);
         return DingoBridge.bridge(idGenerator, inputs, new OperatorSupplier(rel));
     }
 
     @AllArgsConstructor
-    static class OperatorSupplier implements Supplier<Operator> {
+    static class OperatorSupplier implements Supplier<Vertex> {
 
         final DingoSort rel;
 
         @Override
-        public Operator get() {
-            return new SortOperator(
+        public Vertex get() {
+            SortParam param = new SortParam(
                 toSortCollation(rel.getCollation().getFieldCollations()),
                 rel.fetch == null ? -1 : RexLiteral.intValue(rel.fetch),
-                rel.offset == null ? 0 : RexLiteral.intValue(rel.offset)
-            );
+                rel.offset == null ? 0 : RexLiteral.intValue(rel.offset));
+            return new Vertex(SORT, param);
         }
     }
 

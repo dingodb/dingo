@@ -16,83 +16,48 @@
 
 package io.dingodb.exec.transaction.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.type.DingoType;
+import io.dingodb.common.CommonId;
+import io.dingodb.exec.Services;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
+import io.dingodb.exec.transaction.params.CommitParam;
+import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Slf4j
-@JsonTypeName("commit")
 public class CommitOperator extends TransactionOperator {
-    @JsonProperty("isolationLevel")
-    @Getter
-    @Setter
-    private int isolationLevel = 2;
-    @JsonProperty("start_ts")
-    @Getter
-    @Setter
-    private long start_ts;
-    @JsonProperty("commit_ts")
-    @Getter
-    @Setter
-    private long commit_ts;
-    @JsonProperty("primaryKey")
-    @Getter
-    @Setter
-    private byte[] primaryKey;
-    private List<byte[]> key;
+    public static final CommitOperator INSTANCE = new CommitOperator();
 
-    @JsonCreator
-    public CommitOperator(
-        @JsonProperty("schema") DingoType schema,
-        @JsonProperty("isolationLevel") int isolationLevel,
-        @JsonProperty("start_ts") long start_ts,
-        @JsonProperty("commit_ts") long commit_ts,
-        @JsonProperty("primaryKey") byte[] primaryKey) {
-        super(schema);
-        this.isolationLevel = isolationLevel;
-        this.start_ts = start_ts;
-        this.commit_ts = commit_ts;
-        this.primaryKey = primaryKey;
+    private CommitOperator() {
     }
 
     @Override
-    public void init() {
-        super.init();
-        key = new ArrayList<>();
-    }
-
-    @Override
-    public boolean push(int pin, @Nullable Object[] tuple) {
+    public boolean push(int pin, @Nullable Object[] tuple, Vertex vertex) {
         // key.add();
         return true;
     }
 
     @Override
-    public void fin(int pin, @Nullable Fin fin) {
+    public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
+        CommitParam param = vertex.getParam();
         if (!(fin instanceof FinWithException)) {
             // 1、Async call sdk TxnCommit
             TxnCommit commitRequest = TxnCommit.builder().
-                isolationLevel(IsolationLevel.of(isolationLevel)).
-                start_ts(start_ts).
-                commit_ts(commit_ts).
-                keys(key).
+                isolationLevel(IsolationLevel.of(param.getIsolationLevel())).
+                start_ts(param.getStart_ts()).
+                commit_ts(param.getCommit_ts()).
+                keys(param.getKey()).
                 build();
-            boolean result = part.txnCommit(commitRequest);
-            output.push(new Object[]{result});
+            // TODO
+            StoreInstance store = Services.KV_STORE.getInstance(new CommonId(CommonId.CommonType.TABLE, 2, 74438), new CommonId(CommonId.CommonType.DISTRIBUTION, 74440, 86127));
+            boolean result = store.txnCommit(commitRequest);
+            vertex.getSoleEdge().transformToNext(new Object[]{result});
         }
-        output.fin(fin);
+        vertex.getSoleEdge().fin(fin);
     }
 
 }

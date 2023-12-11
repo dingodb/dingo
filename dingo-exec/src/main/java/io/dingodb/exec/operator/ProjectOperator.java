@@ -16,57 +16,33 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.type.DingoType;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.operator.params.ProjectParam;
 
 import java.util.List;
 
-@JsonTypeName("project")
-@JsonPropertyOrder({"projects", "schema", "output"})
 public final class ProjectOperator extends SoleOutOperator {
-    @JsonProperty("projects")
-    private final List<SqlExpr> projects;
-    @JsonProperty("schema")
-    private final DingoType schema;
+    public static final ProjectOperator INSTANCE = new ProjectOperator();
 
-    @JsonCreator
-    public ProjectOperator(
-        @JsonProperty("projects") List<SqlExpr> projects,
-        @JsonProperty("schema") DingoType schema
-    ) {
-        super();
-        this.projects = projects;
-        this.schema = schema;
+    private ProjectOperator() {
     }
 
     @Override
-    public void init() {
-        super.init();
-        projects.forEach(expr -> expr.compileIn(schema, getParasType()));
-    }
-
-    @Override
-    public synchronized boolean push(int pin, Object[] tuple) {
+    public  boolean push(int pin, Object[] tuple, Vertex vertex) {
+        ProjectParam param = vertex.getParam();
+        List<SqlExpr> projects = param.getProjects();
         Object[] newTuple = new Object[projects.size()];
         for (int i = 0; i < newTuple.length; ++i) {
             newTuple[i] = projects.get(i).eval(tuple);
         }
-        return output.push(newTuple);
+        return vertex.getSoleEdge().transformToNext(newTuple);
     }
 
     @Override
-    public synchronized void fin(int pin, Fin fin) {
-        output.fin(fin);
+    public  void fin(int pin, Fin fin, Vertex vertex) {
+        vertex.getSoleEdge().fin(fin);
     }
 
-    @Override
-    public void setParas(Object[] paras) {
-        super.setParas(paras);
-        projects.forEach(e -> e.setParas(paras));
-    }
 }

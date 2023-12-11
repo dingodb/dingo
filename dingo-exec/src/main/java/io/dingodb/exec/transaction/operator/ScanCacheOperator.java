@@ -16,83 +16,25 @@
 
 package io.dingodb.exec.transaction.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.CommonId;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.exec.fin.OperatorProfile;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.IteratorSourceOperator;
-import io.dingodb.exec.transaction.base.ITransaction;
-import io.dingodb.exec.transaction.impl.TransactionCache;
-import io.dingodb.exec.transaction.impl.TransactionManager;
-import lombok.Getter;
-import lombok.Setter;
+import io.dingodb.exec.transaction.params.ScanCacheParam;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Iterator;
 
 @Slf4j
-@JsonTypeName("scanCache")
 public final class ScanCacheOperator extends IteratorSourceOperator {
-    @Getter
-    @Setter
-    private TransactionCache cache;
+    public static final ScanCacheOperator INSTANCE = new ScanCacheOperator();
 
-    @JsonProperty("schema")
-    @Getter
-    protected final DingoType schema;
-
-    @JsonCreator
-    public ScanCacheOperator(@JsonProperty("schema") DingoType schema) {
-        super();
-        this.schema = schema;
-    }
-
-    public ScanCacheOperator(TransactionCache cache, DingoType schema) {
-        super();
-        this.cache = cache;
-        this.schema = schema;
+    private ScanCacheOperator() {
     }
 
     @Override
-    public boolean push() {
-        long count = 0;
-        long startTime = System.currentTimeMillis();
-        OperatorProfile profile = getProfile();
-        profile.setStartTimeStamp(startTime);
-        Iterator<Object[]> iterator = createIterator();
-        while (iterator.hasNext()) {
-            Object[] tuple = iterator.next();
-            ++count;
-            if (!output.push(tuple)) {
-                break;
-            }
-        }
-        if (log.isDebugEnabled()) {
-            log.debug("ScanCache push,  count: {}, cost: {}ms.", count,
-                System.currentTimeMillis() - startTime);
-        }
-        profile.setProcessedTupleCount(count);
-        profile.setEndTimeStamp(System.currentTimeMillis());
-        return false;
+    protected @NonNull Iterator<Object[]> createIterator(Vertex vertex) {
+        ScanCacheParam param = vertex.getParam();
+        return param.getCache().iterator();
     }
 
-    @Override
-    protected @NonNull Iterator<Object[]> createIterator() {
-        Iterator<Object[]> iterator = cache.iterator();
-        return iterator;
-    }
-
-    @Override
-    public void init() {
-        super.init();
-        // cross node transaction
-        if (cache == null) {
-            CommonId txnId = getTask().getTxnId();
-            ITransaction transaction = TransactionManager.getTransaction(txnId);
-            cache = transaction.getCache();
-        }
-    }
 }

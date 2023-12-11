@@ -16,70 +16,46 @@
 
 package io.dingodb.exec.transaction.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.type.DingoType;
+import io.dingodb.common.CommonId;
+import io.dingodb.exec.Services;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
+import io.dingodb.exec.transaction.params.RollBackParam;
+import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Slf4j
-@JsonTypeName("rollback")
 public class RollBackOperator extends TransactionOperator {
-    @JsonProperty("start_ts")
-    @Getter
-    @Setter
-    private long start_ts;
-    @JsonProperty("isolationLevel")
-    @Getter
-    @Setter
-    private int isolationLevel = 2;
-    private List<byte[]> key;
+    public static final RollBackOperator INSTANCE = new RollBackOperator();
 
-    @JsonCreator
-    public RollBackOperator(
-        @JsonProperty("schema") DingoType schema,
-        @JsonProperty("isolationLevel") int isolationLevel,
-        @JsonProperty("start_ts") long start_ts) {
-        super(schema);
-        this.isolationLevel = isolationLevel;
-        this.start_ts = start_ts;
+    private RollBackOperator() {
     }
 
     @Override
-    public void init() {
-        super.init();
-        key = new ArrayList<>();
-    }
-
-    @Override
-    public boolean push(int pin, @Nullable Object[] tuple) {
+    public boolean push(int pin, @Nullable Object[] tuple, Vertex vertex) {
         // key.add();
         return true;
     }
 
     @Override
-    public void fin(int pin, @Nullable Fin fin) {
+    public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
         if (!(fin instanceof FinWithException)) {
+            RollBackParam param = vertex.getParam();
             // 1、call sdk TxnRollBack
             TxnBatchRollBack rollBackRequest = TxnBatchRollBack.builder().
-                isolationLevel(IsolationLevel.of(isolationLevel)).
-                start_ts(start_ts).
-                keys(key).
-                build();
-            boolean result = part.txnBatchRollBack(rollBackRequest);
-            output.push(new Object[]{result});
+                isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
+                    .start_ts(param.getStart_ts())
+                    .keys(param.getKey())
+                    .build();
+            StoreInstance store = Services.KV_STORE.getInstance(new CommonId(CommonId.CommonType.TABLE, 2, 74438), new CommonId(CommonId.CommonType.DISTRIBUTION, 74440, 86127));
+            boolean result = store.txnBatchRollback(rollBackRequest);
+            vertex.getSoleEdge().transformToNext(new Object[]{result});
         }
-        output.fin(fin);
+        vertex.getSoleEdge().fin(fin);
     }
 
 }

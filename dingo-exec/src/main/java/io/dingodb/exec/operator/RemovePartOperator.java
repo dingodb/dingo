@@ -16,73 +16,29 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.dingodb.codec.CodecService;
-import io.dingodb.common.CommonId;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.TupleMapping;
-import io.dingodb.exec.Services;
+import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.OperatorProfile;
-import io.dingodb.exec.table.Part;
-import io.dingodb.exec.table.PartInKvStore;
+import io.dingodb.exec.operator.params.RemovePartParam;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@JsonTypeName("removePart")
-@JsonPropertyOrder({"table", "partStartKey", "schema", "keyMapping", "output"})
 public final class RemovePartOperator extends SourceOperator {
-    @JsonProperty("table")
-    @JsonSerialize(using = CommonId.JacksonSerializer.class)
-    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    private final CommonId tableId;
+    public static final RemovePartOperator INSTANCE = new RemovePartOperator();
 
-    @JsonProperty("part")
-    @JsonSerialize(using = CommonId.JacksonSerializer.class)
-    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    private final CommonId partId;
+    private RemovePartOperator() {
 
-    @JsonProperty("schema")
-    private final DingoType schema;
-
-    @JsonProperty("keyMapping")
-    private final TupleMapping keyMapping;
-
-    private Part part;
-
-    @JsonCreator
-    public RemovePartOperator(
-        @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") CommonId partId,
-        @JsonProperty("schema") DingoType schema,
-        @JsonProperty("keyMapping") TupleMapping keyMapping
-    ) {
-        this.tableId = tableId;
-        this.partId = partId;
-        this.keyMapping = keyMapping;
-        this.schema = schema;
     }
 
     @Override
-    public void init() {
-        super.init();
-        part = new PartInKvStore(
-            Services.KV_STORE.getInstance(tableId, partId),
-            CodecService.getDefault().createKeyValueCodec(schema, keyMapping)
-        );
-    }
-
-    @Override
-    public boolean push() {
-        OperatorProfile profile = getProfile();
+    public boolean push(Vertex vertex) {
+        RemovePartParam param = vertex.getParam();
+        Edge edge = vertex.getSoleEdge();
+        OperatorProfile profile = param.getProfile(vertex.getId());
         profile.setStartTimeStamp(System.currentTimeMillis());
         final long startTime = System.currentTimeMillis();
         long count = 0;// todo must have range
-        output.push(new Object[]{count});
+        edge.transformToNext(new Object[]{count});
         if (log.isDebugEnabled()) {
             log.debug("delete table by partition, get count: {}, cost: {} ms.",
                 count, System.currentTimeMillis() - startTime);

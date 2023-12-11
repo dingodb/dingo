@@ -16,22 +16,20 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.exec.base.OutputHint;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.OperatorProfile;
+import io.dingodb.exec.operator.params.EmptySourceParam;
 
-@JsonTypeName("empty")
 public class EmptySourceOperator extends SourceOperator {
-    public EmptySourceOperator() {
-        super();
-        OutputHint hint = new OutputHint();
-        hint.setPartId(null);
-        output.setHint(hint);
+    public static final EmptySourceOperator INSTANCE = new EmptySourceOperator();
+
+    private EmptySourceOperator() {
     }
 
     @Override
-    public boolean push() {
-        OperatorProfile profile = getProfile();
+    public boolean push(Vertex vertex) {
+        EmptySourceParam param = vertex.getParam();
+        OperatorProfile profile = param.getProfile(vertex.getId());
         profile.setStartTimeStamp(System.currentTimeMillis());
         profile.setProcessedTupleCount(0);
         profile.setEndTimeStamp(System.currentTimeMillis());

@@ -23,9 +23,8 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Operator;
-import io.dingodb.exec.base.Output;
-import io.dingodb.exec.operator.FilterOperator;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.FilterParam;
 import lombok.AllArgsConstructor;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -34,28 +33,30 @@ import java.util.Collection;
 import java.util.function.Supplier;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
+import static io.dingodb.exec.utils.OperatorCodeUtils.FILTER;
 
 public class DingoFilterVisitFun {
     @NonNull
-    public static Collection<Output> visit(
+    public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, DingoFilter rel
     ) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(visitor);
+        Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
         RexNode condition = rel.getCondition();
         return DingoBridge.bridge(idGenerator, inputs, new OperatorSupplier(condition, rel));
     }
 
     @AllArgsConstructor
-    static class OperatorSupplier implements Supplier<Operator> {
+    static class OperatorSupplier implements Supplier<Vertex> {
 
         final RexNode condition;
         final DingoFilter rel;
 
         @Override
-        public Operator get() {
-            return new FilterOperator(
-                SqlExprUtils.toSqlExpr(condition), DefinitionMapper.mapToDingoType(rel.getInput().getRowType())
-            );
+        public Vertex get() {
+            FilterParam params = new FilterParam(
+                SqlExprUtils.toSqlExpr(condition), DefinitionMapper.mapToDingoType(rel.getInput().getRowType()));
+
+            return new Vertex(FILTER, params);
         }
     }
 

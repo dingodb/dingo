@@ -16,82 +16,58 @@
 
 package io.dingodb.exec.operator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.base.Status;
+import io.dingodb.exec.base.Task;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.exception.TaskFinException;
 import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
-import io.dingodb.exec.utils.QueueUtils;
+import io.dingodb.exec.operator.params.RootParam;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
-
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
 
 @Slf4j
-@JsonTypeName("root")
-@JsonPropertyOrder({"schema"})
 public final class RootOperator extends SinkOperator {
-    public static final int TUPLE_QUEUE_SIZE = 512;
+    public static final RootOperator INSTANCE = new RootOperator();
     public static final Object[] FIN = new Object[0];
 
-    @JsonProperty("schema")
-    private final DingoType schema;
-    @JsonProperty("selection")
-    private final @Nullable TupleMapping selection;
-    private Fin errorFin;
-    private BlockingQueue<Object[]> tupleQueue;
+    private RootOperator() {
 
-    @JsonCreator
-    public RootOperator(
-        @JsonProperty("schema") DingoType schema,
-        @JsonProperty("selection") @Nullable TupleMapping selection
-    ) {
-        super();
-        this.schema = schema;
-        this.selection = selection;
     }
 
     @Override
-    public void init() {
-        super.init();
-        tupleQueue = new LinkedBlockingDeque<>(TUPLE_QUEUE_SIZE);
-    }
-
-    @Override
-    public boolean push(Object[] tuple) {
-        if (getTask().getStatus() != Status.RUNNING) {
+    public boolean push(Object[] tuple, Vertex vertex) {
+        RootParam param = vertex.getParam();
+        if (vertex.getTask().getStatus() != Status.RUNNING) {
             return false;
         }
         if (log.isDebugEnabled()) {
-            log.debug("Put tuple {} into root queue.", schema.format(tuple));
+            log.debug("Put tuple {} into root queue.", param.getSchema().format(tuple));
         }
-        QueueUtils.forcePut(tupleQueue, tuple);
+        param.forcePut(tuple);
         return true;
     }
 
     @Override
-    public void fin(Fin fin) {
+    public void fin(Fin fin, Vertex vertex) {
+        RootParam param = vertex.getParam();
         if (fin instanceof FinWithException) {
-            errorFin = fin;
+            param.setErrorFin(fin);
             log.warn("Got FIN with exception: {}", fin.detail());
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("Got FIN with detail:\n{}", fin.detail());
             }
         }
-        QueueUtils.forcePut(tupleQueue, FIN);
+        param.forcePut(FIN);
     }
 
-    public Object @NonNull [] popValue() {
-        Object[] tuple = QueueUtils.forceTake(tupleQueue);
+    public Object @NonNull [] popValue(Vertex vertex) {
+        RootParam param = vertex.getParam();
+        Object[] tuple = param.forceTake();
+        TupleMapping selection = param.getSelection();
         if (tuple != FIN && selection != null) {
             Object[] tuple1 = new Object[selection.size()];
             selection.revMap(tuple1, tuple);
@@ -100,13 +76,17 @@ public final class RootOperator extends SinkOperator {
         return tuple;
     }
 
-    public void checkError() {
+    public void checkError(Vertex vertex) {
+        RootParam param = vertex.getParam();
+        Fin errorFin = param.getErrorFin();
         if (errorFin != null) {
             String errorMsg = errorFin.detail();
+            Task task = vertex.getTask();
             if (errorFin instanceof FinWithException) {
-                throw new TaskFinException(((FinWithException) errorFin).getTaskStatus().getErrorType(), errorMsg, getTask().getJobId());
+                throw new TaskFinException(
+                    ((FinWithException) errorFin).getTaskStatus().getErrorType(), errorMsg, task.getJobId());
             } else {
-                throw new TaskFinException(ErrorType.Unknown, errorMsg, getTask().getJobId());
+                throw new TaskFinException(ErrorType.Unknown, errorMsg, task.getJobId());
             }
         }
     }

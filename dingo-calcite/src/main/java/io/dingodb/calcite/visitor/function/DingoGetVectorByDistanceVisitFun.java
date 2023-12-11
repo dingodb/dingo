@@ -19,8 +19,6 @@ package io.dingodb.calcite.visitor.function;
 import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoGetVectorByDistance;
-import io.dingodb.calcite.utils.MetaServiceUtils;
-import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
@@ -29,47 +27,43 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Operator;
-import io.dingodb.exec.base.Output;
-import io.dingodb.exec.operator.VectorPointDistanceOperator;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.VectorPointDistanceParam;
 import io.dingodb.meta.MetaService;
 import lombok.AllArgsConstructor;
-import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNumericLiteral;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.function.Supplier;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
 import static io.dingodb.calcite.visitor.function.DingoVectorVisitFun.getVectorFloats;
+import static io.dingodb.exec.utils.OperatorCodeUtils.VECTOR_POINT_DISTANCE;
 
 public final class DingoGetVectorByDistanceVisitFun {
 
-    public static Collection<Output> visit(
+    public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator,
         Location currentLocation,
         DingoJobVisitor visitor,
         DingoGetVectorByDistance rel
     ) {
-        Collection<Output> inputs = dingo(rel.getInput()).accept(visitor);
+        Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
         return DingoBridge.bridge(idGenerator, inputs, new OperatorSupplier(rel));
     }
 
     @AllArgsConstructor
-    static class OperatorSupplier implements Supplier<Operator> {
+    static class OperatorSupplier implements Supplier<Vertex> {
 
         final DingoGetVectorByDistance rel;
 
         @Override
-        public Operator get() {
+        public Vertex get() {
             DingoRelOptTable dingoRelOptTable = (DingoRelOptTable) rel.getTable();
             List<Float> targetVector = getTargetVector(rel.getOperands());
             Properties properties = getVectorProperties(dingoRelOptTable, targetVector.size());
@@ -81,15 +75,17 @@ public final class DingoGetVectorByDistanceVisitFun {
                 = metaService.getIndexRangeDistribution(rel.getIndexTableId());
 
             int dimension = Integer.parseInt(properties.getOrDefault("dimension", targetVector.size()).toString());
-            VectorPointDistanceOperator operator = new VectorPointDistanceOperator(
+            VectorPointDistanceParam param = new VectorPointDistanceParam(
                 distributions.firstEntry().getValue(),
                 rel.getVectorIndex(),
                 rel.getIndexTableId(),
                 targetVector,
                 dimension,
                 properties.getProperty("type"),
-                properties.getProperty("metricType"));
-            return operator;
+                properties.getProperty("metricType")
+            );
+
+            return new Vertex(VECTOR_POINT_DISTANCE, param);
         }
     }
 

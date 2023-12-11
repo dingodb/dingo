@@ -16,34 +16,26 @@
 
 package io.dingodb.exec.operator;
 
-import com.google.common.collect.ImmutableList;
-import io.dingodb.exec.base.Output;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
-import org.checkerframework.checker.nullness.qual.NonNull;
-
-import java.util.List;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Sink operator has only one input and no output.
  */
 public abstract class SinkOperator extends AbstractOperator {
-    protected abstract boolean push(Object[] tuple);
+    protected abstract boolean push(Object[] tuple, Vertex vertex);
 
     @Override
-    public synchronized boolean push(int pin, Object @NonNull [] tuple) {
-        return push(tuple);
+    public synchronized boolean push(int pin, @Nullable Object[] tuple, Vertex vertex) {
+        return push(tuple, vertex);
     }
 
     @Override
-    public synchronized void fin(int pin, Fin fin) {
-        fin(fin);
+    public synchronized void fin(int pin, @Nullable Fin fin, Vertex vertex) {
+        fin(fin, vertex);
     }
 
-    @Override
-    public List<Output> getOutputs() {
-        return ImmutableList.of();
-    }
-
-    protected abstract void fin(Fin fin);
+    protected abstract void fin(Fin fin, Vertex vertex);
 
 }
