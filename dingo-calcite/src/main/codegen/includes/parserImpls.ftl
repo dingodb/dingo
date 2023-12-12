@@ -37,11 +37,15 @@ SqlCreate SqlCreateSchema(Span s, boolean replace) :
 {
     final boolean ifNotExists;
     final SqlIdentifier id;
+    String charset = "utf8";
+    String collate = "utf8_bin";
 }
 {
     ( <SCHEMA> | <DATABASE> ) ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
+    [ <CHARACTER> <SET> { charset = getNextToken().image; }]
+    [ <COLLATE> { collate = getNextToken().image; } ]
     {
-        return SqlDdlNodes.createSchema(s.end(this), replace, ifNotExists, id);
+        return new io.dingodb.calcite.grammar.ddl.SqlCreateSchema(s.end(this), replace, ifNotExists, id, charset, collate);
     }
 }
 

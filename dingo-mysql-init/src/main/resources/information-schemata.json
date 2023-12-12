@@ -12,7 +12,7 @@
       "type": "varchar",
       "precision": 64,
       "scale": -2147483648,
-      "primary": -1,
+      "primary": 1,
       "nullable": true
     },
    {

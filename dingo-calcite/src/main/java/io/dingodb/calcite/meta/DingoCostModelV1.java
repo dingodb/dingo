@@ -160,7 +160,12 @@ public class DingoCostModelV1 extends DingoCostModel {
     }
 
     private double getScanCost(double rowCount, double rowSize) {
-        return rowCount * (Math.log(rowSize) / Math.log(2)) * scanFactor;
+        Double cost = rowCount * (Math.log(rowSize) / Math.log(2)) * scanFactor;
+        if (cost.isInfinite()) {
+            return 0;
+        } else {
+            return cost;
+        }
     }
 
     private double getNetCost(double rowCount, double rowSize) {

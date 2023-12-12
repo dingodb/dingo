@@ -76,7 +76,12 @@ public final class Mapping {
             table.getCreateSql(),
             table.getComment(),
             table.getCharset(),
-            table.getCollate());
+            table.getCollate(),
+            table.getTableType(),
+            table.getRowFormat(),
+            table.getCreateTime(),
+            table.getUpdateTime()
+            );
     }
 
     public static ColumnDefinition mapping(Column column) {

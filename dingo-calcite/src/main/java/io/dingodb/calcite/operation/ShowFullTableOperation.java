@@ -32,8 +32,6 @@ public class ShowFullTableOperation implements QueryOperation {
     private String sqlLikePattern;
     private Connection connection;
 
-    private static final String BASE_TABLE = "BASE TABLE";
-
     public ShowFullTableOperation(String schemaName, String pattern, Connection connection) {
         this.schemaName = schemaName;
         this.sqlLikePattern = pattern;
@@ -48,8 +46,9 @@ public class ShowFullTableOperation implements QueryOperation {
                 null, null);
             while (rs.next()) {
                 String tableName = rs.getString("TABLE_NAME");
+                String tableType = rs.getString("TABLE_TYPE");
                 if (StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(tableName, sqlLikePattern)) {
-                    tables.add(new Object[]{tableName.toLowerCase(), BASE_TABLE});
+                    tables.add(new Object[]{tableName.toLowerCase(), tableType});
                 }
             }
             return tables.iterator();

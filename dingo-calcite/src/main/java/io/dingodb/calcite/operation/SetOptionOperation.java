@@ -17,6 +17,7 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.common.mysql.scope.ScopeVariables;
+import io.dingodb.meta.InfoSchemaService;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
@@ -28,9 +29,6 @@ import java.sql.SQLClientInfoException;
 import java.util.Objects;
 
 public class SetOptionOperation implements DdlOperation {
-
-    private static final String TEMPLATE = "UPDATE INFORMATION_SCHEMA.GLOBAL_VARIABLES "
-        + "SET VARIABLE_VALUE = 'tmpValue' WHERE VARIABLE_NAME = 'tmpName'";
 
     public static final String CONNECTION_CHARSET = "character_set_connection";
     private static final String CLIENT_CHARSET = "character_set_client";
@@ -83,8 +81,7 @@ public class SetOptionOperation implements DdlOperation {
                     connection.setClientInfo(name, value);
                 }
             } else if ("SYSTEM".equals(scope)) {
-                String sql = TEMPLATE.replace("tmpValue", value).replace("tmpName", name);
-                internalExecute(connection, sql);
+                putGlobalVariable(name, value);
                 ScopeVariables.globalVariables.put(name, value);
             }
         } catch (SQLClientInfoException e) {
@@ -110,6 +107,11 @@ public class SetOptionOperation implements DdlOperation {
             return true;
         }
         return false;
+    }
+
+    public static void putGlobalVariable(String key, String value) {
+        InfoSchemaService infoSchemaService = InfoSchemaService.root();
+        infoSchemaService.putGlobalVariable(key, value);
     }
 
 }
