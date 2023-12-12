@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.operation;
+package io.dingodb.common.mysql;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
-
-public interface Operation {
-
+public class InformationSchemaConstant {
+    public static final String GLOBAL_VAR_PREFIX_BEGIN = "global_variables|0|";
+    public static final String GLOBAL_VAR_PREFIX_END = "global_variables|1|";
 }

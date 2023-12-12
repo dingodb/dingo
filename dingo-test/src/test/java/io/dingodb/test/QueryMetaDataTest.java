@@ -92,8 +92,8 @@ public class QueryMetaDataTest {
                     new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"}
                 )
                 .isRecords(Arrays.asList(
-                    new Object[]{null, SCHEMA_NAME, "TEST", "TABLE"},
-                    new Object[]{null, SCHEMA_NAME, "TEST1", "TABLE"}
+                    new Object[]{null, SCHEMA_NAME, "TEST", "BASE TABLE"},
+                    new Object[]{null, SCHEMA_NAME, "TEST1", "BASE TABLE"}
                 ));
         }
     }
@@ -107,7 +107,7 @@ public class QueryMetaDataTest {
                     new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"}
                 )
                 .isRecords(Collections.singletonList(
-                    new Object[]{null, SCHEMA_NAME, "TEST1", "TABLE"}
+                    new Object[]{null, SCHEMA_NAME, "TEST1", "BASE TABLE"}
                 ));
         }
     }
@@ -121,8 +121,8 @@ public class QueryMetaDataTest {
                     new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"}
                 )
                 .isRecords(Arrays.asList(
-                    new Object[]{null, SCHEMA_NAME, "TEST", "TABLE"},
-                    new Object[]{null, SCHEMA_NAME, "TEST1", "TABLE"}
+                    new Object[]{null, SCHEMA_NAME, "TEST", "BASE TABLE"},
+                    new Object[]{null, SCHEMA_NAME, "TEST1", "BASE TABLE"}
                 ));
         }
     }

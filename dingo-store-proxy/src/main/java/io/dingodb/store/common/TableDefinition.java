@@ -196,6 +196,26 @@ public class TableDefinition implements Table {
         return tableDefinition.getCollate();
     }
 
+    @Override
+    public String getTableType() {
+        return tableDefinition.getTableType();
+    }
+
+    @Override
+    public String getRowFormat() {
+        return tableDefinition.getRowFormat();
+    }
+
+    @Override
+    public long getCreateTime() {
+        return tableDefinition.getCreateTime();
+    }
+
+    @Override
+    public long getUpdateTime() {
+        return tableDefinition.getUpdateTime();
+    }
+
     private VectorIndexParameter.MetricType getMetricType(String metricType) {
         switch (metricType.toUpperCase()) {
             case "INNER_PRODUCT":

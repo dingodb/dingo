@@ -27,6 +27,7 @@ import io.dingodb.exec.operator.GetByKeysOperator;
 import io.dingodb.exec.operator.HashJoinOperator;
 import io.dingodb.exec.operator.HashOperator;
 import io.dingodb.exec.operator.IndexMergeOperator;
+import io.dingodb.exec.operator.InfoSchemaScanOperator;
 import io.dingodb.exec.operator.LikeScanOperator;
 import io.dingodb.exec.operator.PartCountOperator;
 import io.dingodb.exec.operator.PartDeleteOperator;
@@ -70,6 +71,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_KEYS;
 import static io.dingodb.exec.utils.OperatorCodeUtils.HASH;
 import static io.dingodb.exec.utils.OperatorCodeUtils.HASH_JOIN;
 import static io.dingodb.exec.utils.OperatorCodeUtils.INDEX_MERGE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.INFO_SCHEMA_SCAN;
 import static io.dingodb.exec.utils.OperatorCodeUtils.LIKE_SCAN;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PARTITION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_COUNT;
@@ -144,6 +146,7 @@ public final class OperatorFactory {
         OPERATORS.put(PRE_WRITE, PreWriteOperator.INSTANCE);
         OPERATORS.put(ROLL_BACK, RollBackOperator.INSTANCE);
         OPERATORS.put(SCAN_CACHE, ScanCacheOperator.INSTANCE);
+        OPERATORS.put(INFO_SCHEMA_SCAN, InfoSchemaScanOperator.INSTANCE);
     }
 
     private OperatorFactory() {

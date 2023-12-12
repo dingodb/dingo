@@ -113,6 +113,22 @@ public class TableDefinition {
     @Setter
     private String collate;
 
+    @Getter
+    @Setter
+    private String tableType;
+
+    @Getter
+    @Setter
+    private String rowFormat;
+
+    @Getter
+    @Setter
+    private long createTime;
+
+    @Getter
+    @Setter
+    private long updateTime;
+
     @JsonCreator
     public TableDefinition(@JsonProperty("name") String name) {
         this.name = name;
@@ -496,7 +512,11 @@ public class TableDefinition {
             null,
             this.comment,
             this.charset,
-            this.collate
+            this.collate,
+            this.tableType,
+            this.rowFormat,
+            this.createTime,
+            this.updateTime
         );
         return tableDefinition;
     }

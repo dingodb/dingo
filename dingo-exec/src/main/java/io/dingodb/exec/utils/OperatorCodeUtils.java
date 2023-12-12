@@ -41,6 +41,7 @@ public final class OperatorCodeUtils {
     public static final CommonId TXN_PART_RANGE_DELETE = new CommonId(CommonId.CommonType.OP, SOURCE, 13);
     public static final CommonId TXN_LIKE_SCAN = new CommonId(CommonId.CommonType.OP, SOURCE, 14);
     public static final CommonId SCAN_CACHE = new CommonId(CommonId.CommonType.OP, SOURCE, 15);
+    public static final CommonId INFO_SCHEMA_SCAN = new CommonId(CommonId.CommonType.OP, SOURCE, 16);
 
     // op
     public static final CommonId PROJECT = new CommonId(CommonId.CommonType.OP, OP, 20);

@@ -519,12 +519,21 @@ public class DingoMeta extends MetaImpl {
         );
         return createArrayResultSet(
             Linq4j.asEnumerable(tables)
-                .select(t -> new Object[]{
+                .select(t -> {
+                    String tableType;
+                    if (t.getTable() instanceof DingoTable) {
+                        DingoTable table = (DingoTable) t.getTable();
+                        tableType = table.getTableDefinition().getTableType();
+                    } else {
+                        tableType = t.getTable().getJdbcTableType().jdbcName;
+                    }
+                    return new Object[]{
                     catalog,
                     t.schema.name,
                     t.name,
-                    t.getTable().getJdbcTableType().jdbcName
-                    }),
+                    tableType
+                    };
+                }),
             new Class[] {String.class, String.class, String.class, String.class},
             "TABLE_CAT",
             "TABLE_SCHEM",
