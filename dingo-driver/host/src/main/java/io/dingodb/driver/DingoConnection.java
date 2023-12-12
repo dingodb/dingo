@@ -196,6 +196,18 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     @Override
     public void setClientInfo(Properties properties) {
         sessionVariables.putAll(properties);
+        if (properties.containsKey("wait_timeout")) {
+            String value = (String) properties.get("wait_timeout");
+            SessionVariableWatched.getInstance().notifyObservers(
+                SessionVariableChange.builder().id(id).name("wait_timeout").value(value).build()
+            );
+        }
+        if (properties.containsKey("interactive_timeout")) {
+            String value = (String) properties.get("interactive_timeout");
+            SessionVariableWatched.getInstance().notifyObservers(
+                SessionVariableChange.builder().id(id).name("interactive_timeout").value(value).build()
+            );
+        }
     }
 
     static class DingoDataContext implements DataContext {

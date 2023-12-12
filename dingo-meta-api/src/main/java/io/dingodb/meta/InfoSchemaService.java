@@ -14,12 +14,22 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.operation;
+package io.dingodb.meta;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.Map;
 
-public interface Operation {
+public interface InfoSchemaService {
+
+    static InfoSchemaService root() {
+        return InfoSchemaServiceProvider.getDefault().root();
+    }
+
+    /**
+     * get global variables.
+     * @return all global variables
+     */
+    Map<String, String> getGlobalVariables();
+
+    void putGlobalVariable(String key, Object val);
 
 }

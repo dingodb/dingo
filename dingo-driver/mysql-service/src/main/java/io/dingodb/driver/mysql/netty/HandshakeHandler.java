@@ -34,6 +34,7 @@ import io.dingodb.driver.mysql.facotry.SecureChatSslContextFactory;
 import io.dingodb.driver.mysql.packet.AuthPacket;
 import io.dingodb.driver.mysql.packet.HandshakePacket;
 import io.dingodb.driver.mysql.packet.OKPacket;
+import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.verify.service.UserService;
 import io.dingodb.verify.service.UserServiceProvider;
 import io.netty.buffer.ByteBuf;
@@ -49,10 +50,9 @@ import org.apache.commons.lang3.StringUtils;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.TimeZone;
@@ -359,50 +359,14 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         }
     }
 
-    public static void loadGlobalVariables(DingoConnection dingoConnection) {
+    public synchronized static void loadGlobalVariables(DingoConnection dingoConnection) {
         if (ScopeVariables.globalVariables.size() > 0) {
-            String waitTimeout = ScopeVariables.globalVariables.getProperty("wait_timeout");
-            String interactiveTimeout = ScopeVariables.globalVariables.getProperty("interactive_timeout");
-            try {
-                dingoConnection.setClientInfo("wait_timeout", waitTimeout);
-                dingoConnection.setClientInfo("interactive_timeout", interactiveTimeout);
-                dingoConnection.setClientInfo(ScopeVariables.globalVariables);
-            } catch (SQLClientInfoException e) {
-                log.error(e.getMessage(), e);
-            }
+            dingoConnection.setClientInfo(ScopeVariables.globalVariables);
             return;
         }
-        Statement statement = null;
-        ResultSet resultSet = null;
-        try {
-            statement = dingoConnection.createStatement();
-            resultSet = statement
-                .executeQuery("select variable_name, variable_value from information_schema.global_variables");
-            while (resultSet.next()) {
-                String variableName = resultSet.getString("variable_name");
-                String variableValue = resultSet.getString("variable_value");
-                ScopeVariables.globalVariables.put(variableName, variableValue);
-                if ("wait_timeout".equalsIgnoreCase(variableName)
-                    || "interactive_timeout".equalsIgnoreCase(variableName)
-                    || "time_zone".equalsIgnoreCase(variableName)
-                ) {
-                    dingoConnection.setClientInfo(variableName, variableValue);
-                }
-            }
-            dingoConnection.setClientInfo(ScopeVariables.globalVariables);
-        } catch (Exception e) {
-            log.info("load global variables:" + e.getMessage());
-        } finally {
-            try {
-                if (resultSet != null) {
-                    resultSet.close();
-                }
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (Exception e) {
-                log.error(e.getMessage(),  e);
-            }
-        }
+        InfoSchemaService infoSchemaService = InfoSchemaService.root();
+        Map<String, String> globalVariableMap = infoSchemaService.getGlobalVariables();
+        ScopeVariables.globalVariables.putAll(globalVariableMap);
+        dingoConnection.setClientInfo(ScopeVariables.globalVariables);
     }
 }
