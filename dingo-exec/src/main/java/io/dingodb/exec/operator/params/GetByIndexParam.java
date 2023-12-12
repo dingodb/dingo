@@ -19,6 +19,8 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
@@ -37,9 +39,13 @@ import java.util.NavigableMap;
 
 @Getter
 @JsonTypeName("index")
-@JsonPropertyOrder({"schema", "keyMapping", "indexValues", "filter", "selection"})
+@JsonPropertyOrder({"indexTableId", "schema", "keyMapping", "indexValues", "filter", "selection"})
 public class GetByIndexParam extends FilterProjectSourceParam {
 
+    @JsonProperty("indexTableId")
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    private final CommonId indexTableId;
     @JsonProperty("indexValues")
     private final List<Object[]> indexValues;
     @JsonProperty("isLookup")
@@ -54,6 +60,7 @@ public class GetByIndexParam extends FilterProjectSourceParam {
     private NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges;
 
     public GetByIndexParam(
+        CommonId indexTableId,
         CommonId partId,
         CommonId tableId,
         TupleMapping keyMapping,
@@ -68,6 +75,7 @@ public class GetByIndexParam extends FilterProjectSourceParam {
         boolean isLookup
     ) {
         super(tableId, partId, tableDefinition.getDingoType(), filter, selection, keyMapping);
+        this.indexTableId = indexTableId;
         this.indexValues = indexValues;
         this.isLookup = isLookup;
         this.isUnique = isUnique;
@@ -81,7 +89,7 @@ public class GetByIndexParam extends FilterProjectSourceParam {
     public void init(Vertex vertex) {
         super.init(vertex);
         part = new PartInKvStore(
-            StoreService.getDefault().getInstance(tableId, partId, indexDefinition),
+            StoreService.getDefault().getInstance(indexTableId, partId, indexDefinition),
             codec
         );
         lookupCodec = CodecService.getDefault().createKeyValueCodec(tableDefinition.getColumns());

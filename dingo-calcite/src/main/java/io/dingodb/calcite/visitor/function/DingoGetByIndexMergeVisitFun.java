@@ -112,8 +112,9 @@ public final class DingoGetByIndexMergeVisitFun {
 
             for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
                 GetByIndexParam param = new GetByIndexParam(
-                    entry.getKey(),
                     indexValSet.getKey(),
+                    entry.getKey(),
+                    tableInfo.getId(),
                     tupleMapping,
                     entry.getValue(),
                     SqlExprUtils.toSqlExpr(rel.getFilter()),
