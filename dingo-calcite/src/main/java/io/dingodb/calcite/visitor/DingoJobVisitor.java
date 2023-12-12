@@ -24,6 +24,7 @@ import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoGetVectorByDistance;
 import io.dingodb.calcite.rel.DingoHashJoin;
+import io.dingodb.calcite.rel.DingoInfoSchemaScan;
 import io.dingodb.calcite.rel.DingoLikeScan;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.DingoPartRangeDelete;
@@ -47,6 +48,7 @@ import io.dingodb.calcite.visitor.function.DingoGetByIndexVisitFun;
 import io.dingodb.calcite.visitor.function.DingoGetByKeysFun;
 import io.dingodb.calcite.visitor.function.DingoGetVectorByDistanceVisitFun;
 import io.dingodb.calcite.visitor.function.DingoHashJoinVisitFun;
+import io.dingodb.calcite.visitor.function.DingoInfoSchemaScanVisitFun;
 import io.dingodb.calcite.visitor.function.DingoLikeScanVisitFun;
 import io.dingodb.calcite.visitor.function.DingoProjectVisitFun;
 import io.dingodb.calcite.visitor.function.DingoRangeDeleteVisitFun;
@@ -212,5 +214,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     @Override
     public Collection<Output> visit(@NonNull DingoGetByIndexMerge rel) {
         return DingoGetByIndexMergeVisitFun.visit(job, idGenerator, currentLocation, this, rel);
+    }
+
+    @Override
+    public Collection<Vertex> visit(@NonNull DingoInfoSchemaScan rel) {
+        return DingoInfoSchemaScanVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 }

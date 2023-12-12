@@ -28,6 +28,7 @@ dependencies {
     implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
     implementation group: 'com.alibaba', name: 'fastjson', version: 'fastjson'.v()
     implementation group: 'org.slf4j', name: 'slf4j-simple', version: 'slf4j'.v()
+    implementation project(":dingo-common")
 }
 
 task fatJar(type: Jar) {

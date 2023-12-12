@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.rule;
 
+import io.dingodb.calcite.rel.DingoInfoSchemaScan;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.traits.DingoConvention;
@@ -25,7 +26,13 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class DingoTableScanRule extends ConverterRule {
+
+    private static final List<String> metaSchemaList = new ArrayList<>();
+
     public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
             LogicalDingoTableScan.class,
@@ -37,6 +44,7 @@ public class DingoTableScanRule extends ConverterRule {
 
     protected DingoTableScanRule(Config config) {
         super(config);
+        metaSchemaList.add("INFORMATION_SCHEMA");
     }
 
     @Override
@@ -45,17 +53,29 @@ public class DingoTableScanRule extends ConverterRule {
         RelTraitSet traits = scan.getTraitSet()
             .replace(DingoConvention.INSTANCE)
             .replace(DingoRelStreaming.of(scan.getTable()));
-        return new DingoTableScan(
-            scan.getCluster(),
-            traits,
-            scan.getHints(),
-            scan.getTable(),
-            scan.getFilter(),
-            scan.getRealSelection(),
-            scan.getAggCalls(),
-            scan.getGroupSet(),
-            scan.getGroupSets(),
-            scan.isPushDown()
-        );
+        List<String> fullNameList = scan.getTable().getQualifiedName();
+        if (metaSchemaList.contains(fullNameList.get(1))) {
+            return new DingoInfoSchemaScan(
+                scan.getCluster(),
+                traits,
+                scan.getHints(),
+                scan.getTable(),
+                scan.getFilter(),
+                scan.getRealSelection()
+            );
+        } else {
+            return new DingoTableScan(
+                scan.getCluster(),
+                traits,
+                scan.getHints(),
+                scan.getTable(),
+                scan.getFilter(),
+                scan.getRealSelection(),
+                scan.getAggCalls(),
+                scan.getGroupSet(),
+                scan.getGroupSets(),
+                scan.isPushDown()
+            );
+        }
     }
 }

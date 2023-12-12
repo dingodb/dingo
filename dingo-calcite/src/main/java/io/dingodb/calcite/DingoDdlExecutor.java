@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterConvertCharset;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
 import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
@@ -509,7 +510,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             create.getOriginalCreateSql(),
             create.getComment(),
             create.getCharset(),
-            create.getCollate()
+            create.getCollate(),
+            "BASE TABLE",
+            "Dynamic",
+            System.currentTimeMillis(),
+            0
         );
         List<TableDefinition> indexTableDefinitions = getIndexDefinitions(create, tableDefinition);
 
@@ -724,6 +729,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else {
             throw DINGO_RESOURCE.alterUserFailed(sqlAlterUser.user, sqlAlterUser.host).ex();
         }
+    }
+
+    public void execute(SqlAlterConvertCharset sqlAlterConvert, CalcitePrepare.Context context) {
+        // alter table charset collate
     }
 
     public void validateDropIndex(DingoSchema schema, String tableName, String indexName) {
