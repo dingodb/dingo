@@ -78,7 +78,6 @@ public final class PartUpdateOperator extends PartModifyOperator {
             if (store.insertIndex(newTuple2)) {
                 if (store.updateWithIndex(newTuple2, oldTuple)) {
                     store.deleteIndex(newTuple2, oldTuple);
-                    updated = updated && store.deleteIndex(newTuple2, oldTuple);
                 }
             }
             if (updated) {

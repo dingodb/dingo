@@ -27,7 +27,7 @@ public final class FilterOperator extends SoleOutOperator {
     }
 
     @Override
-    public  boolean push(int pin, Object[] tuple, Vertex vertex) {
+    public synchronized boolean push(int pin, Object[] tuple, Vertex vertex) {
         FilterParam params = vertex.getParam();
         // The eval result may be `null`
         Boolean v = (Boolean) params.getFilter().eval(tuple);
