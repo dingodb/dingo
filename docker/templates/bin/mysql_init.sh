@@ -49,7 +49,7 @@ if [ "${DINGODB_SCHEMA_MYSQL}" -ne 0 ]; then
     echo "mysql init has been completed"
 else
     # run Java start mysql_init 
-    java -cp ${JAR_PATH} io.dingodb.mysql.MysqlInit ${DINGO_MYSQL_COORDINATORS}
+    java -cp ${JAR_PATH} io.dingodb.mysql.MysqlInit ${DINGO_COORDINATORS}
 
     # check status
     if [ $? -eq 0 ]
