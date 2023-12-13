@@ -75,16 +75,13 @@ public abstract class StatsOperator {
 
     public void upsert(StoreInstance store, KeyValueCodec codec, List<Object[]> rowList) {
         rowList.forEach(row -> {
-            try {
-                KeyValue old = store.get(codec.encodeKey(row));
-                if (old == null) {
-                    store.insert(codec.encode(row));
-                } else {
-                    store.update(codec.encode(row), old);
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            KeyValue old = store.get(codec.encodeKey(row));
+            if (old == null) {
+                store.insert(codec.encode(row));
+            } else {
+                store.update(codec.encode(row), old);
             }
+
         });
     }
 

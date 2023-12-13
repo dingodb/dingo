@@ -56,11 +56,19 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
+    default boolean put(KeyValue row) {
+        throw new UnsupportedOperationException();
+    }
+
     default boolean delete(byte[] key) {
         throw new UnsupportedOperationException();
     }
 
     default long delete(Range range) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void deletePrefix(byte[] prefix) {
         throw new UnsupportedOperationException();
     }
 
@@ -118,15 +126,27 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default boolean txnPreWrite(TxnPreWrite txnPreWrite) {throw new UnsupportedOperationException();}
+    default boolean txnPreWrite(TxnPreWrite txnPreWrite) {
+        throw new UnsupportedOperationException();
+    }
 
-    default Future txnPreWritePrimaryKey(TxnPreWrite txnPreWrite) {throw new UnsupportedOperationException();}
+    default Future txnPreWritePrimaryKey(TxnPreWrite txnPreWrite) {
+        throw new UnsupportedOperationException();
+    }
 
-    default boolean txnCommit(TxnCommit txnCommit) {throw new UnsupportedOperationException();}
+    default boolean txnCommit(TxnCommit txnCommit) {
+        throw new UnsupportedOperationException();
+    }
 
-    default TxnCheckStatusResult txnCheckTxnStatus(TxnCheckStatus txnCheckStatus) {throw new UnsupportedOperationException();}
+    default TxnCheckStatusResult txnCheckTxnStatus(TxnCheckStatus txnCheckStatus) {
+        throw new UnsupportedOperationException();
+    }
 
-    default TxnResolveLockResult txnResolveLock(TxnResolveLock txnResolveLock) {throw new UnsupportedOperationException();}
+    default TxnResolveLockResult txnResolveLock(TxnResolveLock txnResolveLock) {
+        throw new UnsupportedOperationException();
+    }
 
-    default boolean txnBatchRollback(TxnBatchRollBack txnBatchRollBack) {throw new UnsupportedOperationException();}
+    default boolean txnBatchRollback(TxnBatchRollBack txnBatchRollBack) {
+        throw new UnsupportedOperationException();
+    }
 }

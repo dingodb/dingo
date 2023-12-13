@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.store;
+package io.dingodb.store.proxy;
 
 import io.dingodb.common.config.DingoConfiguration;
 import lombok.AllArgsConstructor;
@@ -32,17 +32,8 @@ import lombok.ToString;
 @EqualsAndHashCode
 public class Configuration {
 
-    private static final Configuration INSTANCE;
-
-    static {
-        try {
-            DingoConfiguration.instance().setStore(Configuration.class);
-            INSTANCE = DingoConfiguration.instance().getStore();
-            DingoConfiguration.instance().getStoreOrigin().put("coordinators", INSTANCE.coordinators);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+    public static final String KEY = "store";
+    private static final Configuration INSTANCE = DingoConfiguration.instance().getConfig(KEY, Configuration.class);
 
     public static Configuration instance() {
         return INSTANCE;
@@ -51,6 +42,9 @@ public class Configuration {
     private String coordinators;
 
     public static String coordinators() {
+        if (INSTANCE.coordinators == null) {
+            INSTANCE.coordinators = DingoConfiguration.instance().find("coordinators", String.class);
+        }
         return INSTANCE.coordinators;
     }
 }

@@ -48,8 +48,8 @@ public class CommitOperator extends TransactionOperator {
             // 1、Async call sdk TxnCommit
             TxnCommit commitRequest = TxnCommit.builder().
                 isolationLevel(IsolationLevel.of(param.getIsolationLevel())).
-                start_ts(param.getStart_ts()).
-                commit_ts(param.getCommit_ts()).
+                startTs(param.getStart_ts()).
+                commitTs(param.getCommit_ts()).
                 keys(param.getKey()).
                 build();
             // TODO

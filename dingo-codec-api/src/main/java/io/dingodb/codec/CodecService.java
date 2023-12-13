@@ -31,6 +31,11 @@ public interface CodecService {
         return CodecServiceProvider.getDefault().get();
     }
 
+    //  [namespace(1)|id(8)]
+    default byte[] empty() {
+        return new byte[9];
+    }
+
     default byte[] setId(byte[] key, CommonId id) {
         return key;
     }

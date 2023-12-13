@@ -18,7 +18,9 @@ package io.dingodb.store.api;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.ServiceLoader;
 
 public interface StoreServiceProvider {
@@ -27,19 +29,29 @@ public interface StoreServiceProvider {
     class Impl {
         private static final Impl INSTANCE = new Impl();
 
+        private final Map<String, StoreServiceProvider> services = new HashMap<>();
         private final StoreServiceProvider serviceProvider;
 
         private Impl() {
-            Iterator<StoreServiceProvider> iterator = ServiceLoader.load(StoreServiceProvider.class).iterator();
-            this.serviceProvider = iterator.next();
-            if (iterator.hasNext()) {
-                log.warn("Load multi cluster service provider, use {}.", serviceProvider.getClass().getName());
+            for (StoreServiceProvider provider : ServiceLoader.load(StoreServiceProvider.class)) {
+                services.put(provider.key(), provider);
             }
+            this.serviceProvider = services.get(DEFAULT);
         }
     }
 
     static StoreServiceProvider getDefault() {
         return Impl.INSTANCE.serviceProvider;
+    }
+
+    static StoreServiceProvider get(String key) {
+        return Impl.INSTANCE.services.get(key);
+    }
+
+    String DEFAULT = "default";
+
+    default String key() {
+        return DEFAULT;
     }
 
     StoreService get();

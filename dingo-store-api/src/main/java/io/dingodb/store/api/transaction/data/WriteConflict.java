@@ -32,12 +32,12 @@ public class WriteConflict {
         Unknown, Optimistic, PessimisticRetry, SelfRolledBack, RcCheckTs
     }
     private Reason reason;
-    private long start_ts;
+    private long startTs;
     // the lock_ts conflicted with start_ts
-    private long conflict_ts;
+    private long conflictTs;
     // the commit_ts of the transaction which meets read conflict
-    private long conflict_commit_ts;
+    private long conflictCommitTs;
     private byte[] key;
     // the conflict lock's primary key
-    private byte[] primary_key;
+    private byte[] primaryKey;
 }

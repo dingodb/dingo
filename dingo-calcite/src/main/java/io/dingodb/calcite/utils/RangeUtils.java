@@ -122,10 +122,6 @@ public final class RangeUtils {
         }
         Object[] tuple = new Object[columnCount];
         tuple[pkIndex] = value;
-        try {
-            return codec.encodeKeyPrefix(tuple, 1);
-        } catch (IOException ignore) {
-            return null;
-        }
+        return codec.encodeKeyPrefix(tuple, 1);
     }
 }

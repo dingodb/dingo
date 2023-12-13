@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.service;
+package io.dingodb.store.proxy.service;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.codec.CodecService;
@@ -31,9 +31,9 @@ import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.TableStatistic;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
-import io.dingodb.store.Configuration;
-import io.dingodb.store.common.Mapping;
-import io.dingodb.store.common.PartitionDetailDefinition;
+import io.dingodb.store.proxy.Configuration;
+import io.dingodb.store.proxy.common.Mapping;
+import io.dingodb.store.proxy.common.PartitionDetailDefinition;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
@@ -47,7 +47,7 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.CommonId.CommonType.SCHEMA;
-import static io.dingodb.store.common.Mapping.mapping;
+import static io.dingodb.store.proxy.common.Mapping.mapping;
 
 public class MetaService implements io.dingodb.meta.MetaService {
 
@@ -75,6 +75,21 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     protected final MetaServiceClient metaServiceClient;
+
+    @Override
+    public io.dingodb.meta.Table getTable(String tableName) {
+        return null;
+    }
+
+    @Override
+    public io.dingodb.meta.Table getTable(CommonId tableId) {
+        return null;
+    }
+
+    @Override
+    public io.dingodb.meta.Table getTables() {
+        return null;
+    }
 
     @Override
     public CommonId id() {
@@ -125,8 +140,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
                              @NonNull List<TableDefinition> indexTableDefinitions) {
         List<Table> indexTables = indexTableDefinitions.stream().map(Mapping::mapping).collect(Collectors.toList());
         indexTables.forEach(__ -> {
-            io.dingodb.store.common.TableDefinition table =
-                (io.dingodb.store.common.TableDefinition) __;
+            io.dingodb.store.proxy.common.TableDefinition table =
+                (io.dingodb.store.proxy.common.TableDefinition) __;
             table.setProperties(__.getProperties());
             table.setName(tableDefinition.getName() + "." + __.getName());
         });

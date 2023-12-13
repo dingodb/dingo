@@ -112,11 +112,7 @@ public final class PartInKvStore implements Part {
 
     @Override
     public boolean update(@NonNull Object[] keyValue) {
-        try {
-            return update(codec.encode(keyValue));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return update(codec.encode(keyValue));
     }
 
     @Override
@@ -181,11 +177,7 @@ public final class PartInKvStore implements Part {
 
     @Override
     public Object @Nullable [] get(Object @NonNull [] key) {
-        try {
-            return get(codec.encodeKey(key));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return get(codec.encodeKey(key));
     }
 
     @Override

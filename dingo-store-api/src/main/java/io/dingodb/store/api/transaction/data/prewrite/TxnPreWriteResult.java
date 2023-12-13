@@ -38,9 +38,9 @@ public class TxnPreWriteResult {
     // for success prewrite, txn_result is empty
     // for failure prewrite, txn_result is not empty
     // if there is a WriteConflict in txn_result, client should backoff or cleanup the lock then retry
-    private List<TxnResultInfo> txn_result;
+    private List<TxnResultInfo> txnResult;
     // if there is PutIfAbsent in mutation, and if there is key conflict, the conflict key will be returned
-    private List<AlreadyExist> keys_already_exist;
+    private List<AlreadyExist> keysAlreadyExist;
     // When the transaction is successfully committed with 1PC protocol, this
     // field will be set to the commit ts of the transaction. Otherwise, if dingo-store
     // failed to commit it with 1PC or the transaction is not 1PC, the value will be 0.

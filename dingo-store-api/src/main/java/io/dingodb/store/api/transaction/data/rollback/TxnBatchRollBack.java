@@ -29,7 +29,7 @@ import java.util.List;
 public class TxnBatchRollBack {
     private IsolationLevel isolationLevel;
     // Identify the transaction to be rolled back.
-    private long start_ts;
+    private long startTs;
     // The keys to rollback.
     private List<byte[]> keys;
 }

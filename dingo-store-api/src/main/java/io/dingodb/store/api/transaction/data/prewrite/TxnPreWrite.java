@@ -36,32 +36,32 @@ public class TxnPreWrite {
     // The data to be written to the database.
     private List<Mutation> mutations;
     // The primary lock of the transaction is setup by client
-    private byte[] primary_lock;
+    private byte[] primaryLock;
     // Identifies the transaction being written.
-    private long start_ts;
+    private long startTs;
     // the lock's ttl is timestamp in milisecond.
     @Builder.Default
-    private long lock_ttl = 1000l;
+    private long lockTtl = 1000l;
     // the number of keys involved in the transaction
-    private long txn_size;
+    private long txnSize;
     // When the transaction involves only one region, it's possible to commit the
     // transaction directly with 1PC protocol.
     @Builder.Default
-    boolean try_one_pc = false;  // NOT IMPLEMENTED
+    boolean tryOnePc = false;  // NOT IMPLEMENTED
     // The max commit ts is reserved for limiting the commit ts of 1PC, which can be used to avoid inconsistency with
     // schema change. This field is unused now.
     @Builder.Default
-    private long max_commit_ts = 0l;  // NOT IMPLEMENTED
+    private long maxCommitTs = 0l;  // NOT IMPLEMENTED
     // for pessimistic transaction
     // check if the keys is locked by pessimistic transaction
     @Builder.Default
-    List<PessimisticCheck> pessimistic_checks = Collections.emptyList();;
+    List<PessimisticCheck> pessimisticChecks = Collections.emptyList();
     // fo pessimistic transaction
     // for_update_ts constriants that should be checked when prewriting a pessimistic transaction.
     @Builder.Default
-    List<ForUpdateTsCheck> for_update_ts_checks = Collections.emptyList();;
+    List<ForUpdateTsCheck> forUpdateTsChecks = Collections.emptyList();;
     // for both pessimistic and optimistic transaction
     // the extra_data executor want to store in lock
     @Builder.Default
-    List<LockExtraData> lock_extra_datas = Collections.emptyList();;
+    List<LockExtraData> lockExtraDatas = Collections.emptyList();;
 }

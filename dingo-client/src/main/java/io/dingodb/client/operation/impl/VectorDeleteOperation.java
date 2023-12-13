@@ -94,7 +94,7 @@ public class VectorDeleteOperation implements Operation {
     public void exec(OperationContext context) {
         Map<Long, Integer> parameters = context.parameters();
         List<Long> ids = new ArrayList<>(parameters.keySet());
-        List<Boolean> result = context.getIndexService().vectorDelete(
+        List<Boolean> result = context.getIndexServiceClient().vectorDelete(
             context.getIndexId(),
             context.getRegionId(),
             new ArrayList<>(parameters.keySet())

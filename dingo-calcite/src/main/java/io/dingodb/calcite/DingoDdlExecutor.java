@@ -84,14 +84,11 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -499,7 +496,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         TableDefinition tableDefinition = new TableDefinition(
             tableName,
             columns,
-            new ConcurrentHashMap<>(),
             1,
             create.getTtl(),
             create.getPartDefinition(),
@@ -692,8 +688,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
         final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         Index index = new Index(sqlAlterAddIndex.index, sqlAlterAddIndex.getColumnNames(), sqlAlterAddIndex.isUnique);
-        validateIndex(schema, tableName, index);
-        schema.createIndex(tableName, Collections.singletonList(index));
+        // TODO support create index and add validate method
     }
 
     public void execute(@NonNull SqlCreateIndex sqlCreateIndex, CalcitePrepare.Context context) {
@@ -702,8 +697,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
         final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         Index index = new Index(sqlCreateIndex.index, sqlCreateIndex.getColumnNames(), sqlCreateIndex.isUnique);
-        validateIndex(schema, tableName, index);
-        schema.createIndex(tableName, Arrays.asList(index));
+        // TODO support create index and add validate method
     }
 
     public void execute(@NonNull SqlDropIndex sqlDropIndex, CalcitePrepare.Context context) {
@@ -711,8 +705,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             = getSchemaAndTableName(sqlDropIndex.table, context);
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
         final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
-        validateDropIndex(schema, tableName, sqlDropIndex.index);
-        schema.dropIndex(tableName, sqlDropIndex.index);
+        // TODO support drop index and add validate method
     }
 
     public void execute(@NonNull SqlAlterUser sqlAlterUser, CalcitePrepare.Context context) {
@@ -733,33 +726,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void execute(SqlAlterConvertCharset sqlAlterConvert, CalcitePrepare.Context context) {
         // alter table charset collate
-    }
-
-    public void validateDropIndex(DingoSchema schema, String tableName, String indexName) {
-        if (schema.getTable(tableName) == null) {
-            throw new IllegalArgumentException("table " + tableName + " does not exist ");
-        }
-        TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
-        if (tableDefinition != null) {
-            if (tableDefinition.getIndexes() == null) {
-                throw new IllegalArgumentException("index " + indexName + " does not exist ");
-            } else {
-                if (!tableDefinition.getIndexes().containsKey(indexName)) {
-                    throw new IllegalArgumentException("index " + indexName + " does not exist ");
-                }
-            }
-
-        }
-    }
-
-    public void validateIndex(DingoSchema schema, String tableName, Index newIndex) {
-        if (schema.getTable(tableName) == null) {
-            throw new IllegalArgumentException("table " + tableName + " does not exist ");
-        }
-        TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
-        if (tableDefinition != null) {
-            tableDefinition.validationIndex(newIndex);
-        }
     }
 
     public void validatePartitionBy(

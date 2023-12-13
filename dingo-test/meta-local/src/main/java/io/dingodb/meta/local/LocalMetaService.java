@@ -31,6 +31,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
+import io.dingodb.meta.Table;
 import io.dingodb.meta.TableStatistic;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -206,6 +207,21 @@ public class LocalMetaService implements MetaService {
     }
 
     @Override
+    public Table getTable(String tableName) {
+        return null;
+    }
+
+    @Override
+    public Table getTable(CommonId tableId) {
+        return null;
+    }
+
+    @Override
+    public Table getTables() {
+        return null;
+    }
+
+    @Override
     public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id) {
         //TODO:
         Map<CommonId, TableDefinition> map = new HashMap<>();
@@ -244,7 +260,6 @@ public class LocalMetaService implements MetaService {
     @Override
     public void createIndex(String tableName, @NonNull List<Index> indexList) {
         TableDefinition td = getTableDefinition(tableName);
-        indexList.forEach(td::addIndex);
     }
 
     @Override
@@ -260,20 +275,12 @@ public class LocalMetaService implements MetaService {
         if (start == null) {
             startKey = ByteArrayUtils.EMPTY_BYTES;
         } else {
-            try {
-                startKey = codec.encodeKeyPrefix(start.getOperand(), start.getOperand().length);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            startKey = codec.encodeKeyPrefix(start.getOperand(), start.getOperand().length);
         }
         if (end == null) {
             endKey = ByteArrayUtils.MAX;
         } else {
-            try {
-                endKey = codec.encodeKeyPrefix(end.getOperand(), end.getOperand().length);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            endKey = codec.encodeKeyPrefix(end.getOperand(), end.getOperand().length);
         }
         addRangeDistributions(
             tableId,

@@ -103,13 +103,10 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     @Override
     public void createUser(UserDefinition userDefinition) {
-        try {
-            Object[] userRow = createUserRow(userDefinition);
-            userStore.insert(userCodec.encode(userRow));
-            log.info("create user: {}", userDefinition);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        Object[] userRow = createUserRow(userDefinition);
+        userStore.insert(userCodec.encode(userRow));
+        log.info("create user: {}", userDefinition);
+
     }
 
     @Override
@@ -373,29 +370,26 @@ public class UserService implements io.dingodb.verify.service.UserService {
     }
 
     private void grantUser(UserDefinition userDefinition) {
-        try {
-            String illegality = validUserGrantorPriv(
+        String illegality = validUserGrantorPriv(
+            userDefinition.getGrantorUser(),
+            userDefinition.getGrantorHost(),
+            userDefinition.getPrivilegeList());
+        if (illegality != null) {
+            throw DINGO_RESOURCE.accessDeniedToUser(
                 userDefinition.getGrantorUser(),
-                userDefinition.getGrantorHost(),
-                userDefinition.getPrivilegeList());
-            if (illegality != null) {
-                throw DINGO_RESOURCE.accessDeniedToUser(
-                    userDefinition.getGrantorUser(),
-                    userDefinition.getGrantorHost()).ex();
-            }
-            KeyValue old = userStore.get(userCodec.encodeKey(getUserKeys(userDefinition)));
-            Object[] userValues = userCodec.decode(old);
-            userDefinition.getPrivilegeList().forEach(privilege -> {
-                Integer index = PrivilegeDict.userPrivilegeIndex.get(privilege.toLowerCase());
-                if (index != null) {
-                    userValues[index] = "Y";
-                }
-            });
-            KeyValue row = userCodec.encode(userValues);
-            userStore.update(row, old);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+                userDefinition.getGrantorHost()).ex();
         }
+        KeyValue old = userStore.get(userCodec.encodeKey(getUserKeys(userDefinition)));
+        Object[] userValues = userCodec.decode(old);
+        userDefinition.getPrivilegeList().forEach(privilege -> {
+            Integer index = PrivilegeDict.userPrivilegeIndex.get(privilege.toLowerCase());
+            if (index != null) {
+                userValues[index] = "Y";
+            }
+        });
+        KeyValue row = userCodec.encode(userValues);
+        userStore.update(row, old);
+
     }
 
     private void grantDbPrivilege(SchemaPrivDefinition schemaPrivDefinition) {
@@ -562,12 +556,9 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     private List<Object[]> getTablePrivilegeList(UserDefinition user) {
         Object[] keys = getTablePrivilegeKeys(user, "", "");
-        try {
-            byte[] prefix = tablePrivCodec.encodeKeyPrefix(keys, 2);
-            return scan(tablePrivStore, tablePrivCodec, prefix, prefix, true, true);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        byte[] prefix = tablePrivCodec.encodeKeyPrefix(keys, 2);
+        return scan(tablePrivStore, tablePrivCodec, prefix, prefix, true, true);
+
     }
 
     private Object[] getTablePrivilege(String user,
@@ -651,12 +642,8 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     private List<Object[]> getSchemaPrivilegeList(PrivilegeDefinition user) {
         Object[] keys = getDbPrivilegeKeys(user, "");
-        try {
-            byte[] prefix = dbPrivCodec.encodeKeyPrefix(keys, 2);
-            return scan(dbPrivStore, dbPrivCodec, prefix, prefix, true, true);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        byte[] prefix = dbPrivCodec.encodeKeyPrefix(keys, 2);
+        return scan(dbPrivStore, dbPrivCodec, prefix, prefix, true, true);
     }
 
     private static Boolean[] tpMapping(Object[] tpValues) {
@@ -713,20 +700,12 @@ public class UserService implements io.dingodb.verify.service.UserService {
     }
 
     private static void insert(StoreInstance store, KeyValueCodec codec, Object[] row) {
-        try {
-            store.insert(codec.encode(row));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        store.insert(codec.encode(row));
     }
 
     private static void update(StoreInstance store, KeyValueCodec codec, Object[] row, KeyValue old) {
-        try {
-            KeyValue keyValue = codec.encode(row);
-            store.update(keyValue, old);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        KeyValue keyValue = codec.encode(row);
+        store.update(keyValue, old);
     }
 
     private static List<Object[]> scan(StoreInstance store,
@@ -753,26 +732,18 @@ public class UserService implements io.dingodb.verify.service.UserService {
     }
 
     public static Object[] get(StoreInstance store, KeyValueCodec codec, Object[] key) {
-        try {
-            KeyValue keyValue = store.get(codec.encodeKey(key));
-            if (keyValue.getValue() == null || keyValue.getValue().length == 0) {
-                return null;
-            }
-            return codec.decode(keyValue);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        KeyValue keyValue = store.get(codec.encodeKey(key));
+        if (keyValue.getValue() == null || keyValue.getValue().length == 0) {
+            return null;
         }
+        return codec.decode(keyValue);
     }
 
     public static Object[] decode(KeyValueCodec codec, KeyValue keyValue) {
-        try {
-            if (keyValue.getValue() == null || keyValue.getValue().length == 0) {
-                return null;
-            }
-            return codec.decode(keyValue);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if (keyValue.getValue() == null || keyValue.getValue().length == 0) {
+            return null;
         }
+        return codec.decode(keyValue);
     }
 
     public static KeyValue getKeyValue(StoreInstance store, KeyValueCodec codec, Object[] key) {

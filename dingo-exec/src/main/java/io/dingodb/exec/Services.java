@@ -34,8 +34,9 @@ import java.util.Objects;
 public final class Services {
     public static final StoreService KV_STORE = Optional.ofNullable(ServiceProviders.KV_STORE_PROVIDER.provider())
         .map(StoreServiceProvider::get).orNull();
-    public static final StoreService LOCAL_STORE = Optional.ofNullable(ServiceProviders.LOCAL_STORE_PROVIDER.provider())
-        .map(StoreServiceProvider::get).orNull();
+    public static final StoreService LOCAL_STORE = Optional.mapOrNull(
+        StoreServiceProvider.get("local"), StoreServiceProvider::get
+    );
     public static final NetService NET = Objects.requireNonNull(
         ServiceProviders.NET_PROVIDER.provider(),
         "No channel service provider was found."

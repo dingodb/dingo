@@ -82,7 +82,7 @@ public class IndexOperationService {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        DingoConfiguration.instance().getStoreOrigin().put("coordinators", coordinatorSvr);
+        DingoConfiguration.instance().getConfigMap("store").put("coordinators", coordinatorSvr);
         this.rootMetaService = new MetaServiceClient(coordinatorSvr);
         this.metaServiceConnector = (MetaServiceConnector) rootMetaService.getMetaConnector();
         this.storeService = new StoreServiceClient(rootMetaService, retryTimes);

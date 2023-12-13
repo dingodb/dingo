@@ -105,7 +105,7 @@ public class VectorSearchOperation implements Operation {
         Map<DingoCommonId, RegionSearchTuple> parameters = context.parameters();
         RegionSearchTuple tuple = parameters.get(context.getRegionId());
         VectorSearch vectorSearch = tuple.vs.get(0).value;
-        List<io.dingodb.sdk.common.vector.VectorWithDistanceResult> results = context.getIndexService().vectorSearch(
+        List<io.dingodb.sdk.common.vector.VectorWithDistanceResult> results = context.getIndexServiceClient().vectorSearch(
             context.getIndexId(),
             context.getRegionId(),
             vectorSearch.getVectors().stream().map(v -> new VectorWithId(

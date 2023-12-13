@@ -23,6 +23,9 @@ dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
 
+    compileOnly group: 'org.mapstruct', name: 'mapstruct-processor', version: 'mapstruct'.v()
+    annotationProcessor group: 'org.mapstruct', name: 'mapstruct-processor', version: 'mapstruct'.v()
+
     implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
     implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
@@ -32,6 +35,9 @@ dependencies {
     implementation project(":dingo-meta-api")
     implementation project(":dingo-codec-api")
     implementation project(":dingo-partition-api")
+    implementation project(":dingo-tso-api")
+
+    implementation group: 'org.mapstruct', name: 'mapstruct', version: 'mapstruct'.v()
 
 }
 

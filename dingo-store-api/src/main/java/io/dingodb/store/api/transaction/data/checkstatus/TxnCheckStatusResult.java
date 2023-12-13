@@ -39,10 +39,10 @@ public class TxnCheckStatusResult {
     //   locked: lock_ttl > 0
     //   committed: commit_ts > 0
     //   rollbacked: lock_ttl = 0 && commit_ts = 0
-    private long lock_ttl = 3;
+    private long lockTtl = 3;
     // if the transaction of the lock is committed, the commit_ts is returned
-    private long commit_ts = 4;
+    private long commitTs = 4;
     // The action performed by dingo-store (and why if the action is to rollback).
     private Action action;
-    private LockInfo lock_info;
+    private LockInfo lockInfo;
 }

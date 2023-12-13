@@ -49,18 +49,18 @@ public class TransactionUtil {
                 long current_ts = TransactionManager.nextTimestamp();
                 TxnCheckStatus txnCheckStatus = TxnCheckStatus.builder().
                     isolationLevel(IsolationLevel.of(isolationLevel)).
-                    primary_key(lockInfo.getPrimaryKey()).
-                    lock_ts(lockInfo.getLock_ts()).
-                    caller_start_ts(start_ts).
-                    current_ts(current_ts).
+                    primaryKey(lockInfo.getPrimaryKey()).
+                    lockTs(lockInfo.getLockTs()).
+                    callerStartTs(start_ts).
+                    currentTs(current_ts).
                     build();
                 TxnCheckStatusResult statusResponse = part.txnCheckTxnStatus(txnCheckStatus);
                 log.info("txnPreWrite txnCheckStatus :" + statusResponse);
                 TxnResultInfo resultInfo = statusResponse.getTxnResultInfo();
                 // success
                 if (resultInfo == null) {
-                    long lockTtl = statusResponse.getLock_ttl();
-                    long commitTs = statusResponse.getCommit_ts();
+                    long lockTtl = statusResponse.getLockTtl();
+                    long commitTs = statusResponse.getCommitTs();
                     if (lockTtl > 0) {
                         // wait
                         try {
@@ -73,8 +73,8 @@ public class TransactionUtil {
                         // resolveLock store commit
                         TxnResolveLock resolveLockRequest = TxnResolveLock.builder().
                             isolationLevel(IsolationLevel.of(isolationLevel)).
-                            start_ts(lockInfo.getLock_ts()).
-                            commit_ts(commitTs).
+                            startTs(lockInfo.getLockTs()).
+                            commitTs(commitTs).
                             keys(Collections.singletonList(lockInfo.getKey())).
                             build();
                         TxnResolveLockResult txnResolveLockResult = part.txnResolveLock(resolveLockRequest);
@@ -83,8 +83,8 @@ public class TransactionUtil {
                         // resolveLock store rollback
                         TxnResolveLock resolveLockRequest = TxnResolveLock.builder().
                             isolationLevel(IsolationLevel.of(isolationLevel)).
-                            start_ts(lockInfo.getLock_ts()).
-                            commit_ts(commitTs).
+                            startTs(lockInfo.getLockTs()).
+                            commitTs(commitTs).
                             keys(Collections.singletonList(lockInfo.getKey())).
                             build();
                         TxnResolveLockResult txnResolveLockResult = part.txnResolveLock(resolveLockRequest);
@@ -92,14 +92,14 @@ public class TransactionUtil {
                     }
                 } else {
                     // 1、PrimaryMismatch  or  TxnNotFound
-                    if (resultInfo.getPrimary_mismatch() != null) {
-                        throw new PrimaryMismatchException(resultInfo.getPrimary_mismatch().toString());
-                    } else if (resultInfo.getTxn_not_found() != null) {
-                        throw new RuntimeException(resultInfo.getTxn_not_found().toString());
+                    if (resultInfo.getPrimaryMismatch() != null) {
+                        throw new PrimaryMismatchException(resultInfo.getPrimaryMismatch().toString());
+                    } else if (resultInfo.getTxnNotFound() != null) {
+                        throw new RuntimeException(resultInfo.getTxnNotFound().toString());
                     }
                 }
             } else {
-                WriteConflict writeConflict = txnResultInfo.getWrite_conflict();
+                WriteConflict writeConflict = txnResultInfo.getWriteConflict();
                 log.info("txnPreWrite writeConflict :" + writeConflict);
                 if (writeConflict != null) {
                     throw new WriteConflictException(writeConflict.toString());

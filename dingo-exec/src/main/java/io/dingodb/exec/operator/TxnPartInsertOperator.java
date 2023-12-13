@@ -20,6 +20,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;

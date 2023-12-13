@@ -31,9 +31,9 @@ public class TxnResultInfo {
     // Client should backoff or cleanup the lock then retry, this error occurs in get phase.
     private LockInfo locked;
     // Write conflict with key which is locked by another transaction, this error occurs in prewrite phase.
-    private WriteConflict write_conflict;
+    private WriteConflict writeConflict;
     // Txn not found when checking txn status.
-    private TxnNotFound txn_not_found;
+    private TxnNotFound txnNotFound;
     // CheckTxnStatus is sent to a lock that's not the primary.
-    private PrimaryMismatch primary_mismatch;
+    private PrimaryMismatch primaryMismatch;
 }

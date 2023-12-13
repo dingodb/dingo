@@ -32,17 +32,8 @@ import lombok.ToString;
 @EqualsAndHashCode
 public class Configuration {
 
-    private static final Configuration INSTANCE;
-
-    static {
-        try {
-            DingoConfiguration.instance().setServer(Configuration.class);
-            INSTANCE = DingoConfiguration.instance().getServer();
-            DingoConfiguration.instance().getStoreOrigin().put("coordinators", INSTANCE.coordinators);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+    public static final String KEY = "server";
+    private static final Configuration INSTANCE = DingoConfiguration.instance().getConfig(KEY, Configuration.class);
 
     public static Configuration instance() {
         return INSTANCE;

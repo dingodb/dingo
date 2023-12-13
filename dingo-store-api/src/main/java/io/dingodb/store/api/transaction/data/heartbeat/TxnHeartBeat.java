@@ -27,10 +27,10 @@ import lombok.Setter;
 public class TxnHeartBeat {
     private IsolationLevel isolationLevel;
     // The key of the lock to update.
-    private byte[] primary_lock;
+    private byte[] primaryLock;
     // Start timestamp oracle of the large transaction.
-    private long start_ts;
+    private long startTs;
     // The new TTL the sender would like.
     // The advise_lock_ttl is the timestamp of milisecond.
-    private long advise_lock_ttl;
+    private long adviseLockTtl;
 }

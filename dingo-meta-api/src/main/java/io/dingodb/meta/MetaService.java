@@ -72,7 +72,7 @@ public interface MetaService {
      *
      * @return all sub meta services
      */
-    Map<String, MetaService> getSubMetaServices();
+    <M extends MetaService> Map<String, M> getSubMetaServices();
 
     /**
      * Get sub meta service by name.
@@ -99,6 +99,7 @@ public interface MetaService {
      * @param tableName       table name
      * @param tableDefinition table definition
      */
+    @Deprecated
     void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition);
 
     void createTables(@NonNull TableDefinition tableDefinition, @NonNull List<TableDefinition> indexTableDefinitions);
@@ -110,9 +111,16 @@ public interface MetaService {
      * @param tableName table name
      * @return true if success
      */
+    @Deprecated
     boolean dropTable(@NonNull String tableName);
 
     boolean dropTables(@NonNull Collection<CommonId> tableIds);
+
+    Table getTable(String tableName);
+
+    Table getTable(CommonId tableId);
+
+    Table getTables();
 
     /**
      * Get table id by table name.
@@ -121,6 +129,7 @@ public interface MetaService {
      * @param tableName table name
      * @return table id or null if not found
      */
+    @Deprecated
     CommonId getTableId(@NonNull String tableName);
 
     /**
@@ -128,6 +137,7 @@ public interface MetaService {
      *
      * @return all table definition
      */
+    @Deprecated
     Map<String, TableDefinition> getTableDefinitions();
 
     /**
@@ -137,6 +147,7 @@ public interface MetaService {
      * @param name table name
      * @return table definition or null if not found.
      */
+    @Deprecated
     TableDefinition getTableDefinition(@NonNull String name);
 
     /**
@@ -145,10 +156,13 @@ public interface MetaService {
      * @param id table id
      * @return table definition or null if not found.
      */
+    @Deprecated
     TableDefinition getTableDefinition(@NonNull CommonId id);
 
+    @Deprecated
     List<TableDefinition> getTableDefinitions(@NonNull String name);
 
+    @Deprecated
     Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull String name);
 
     Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id);

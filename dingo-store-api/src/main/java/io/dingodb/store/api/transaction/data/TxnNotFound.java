@@ -28,7 +28,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @ToString
 public class TxnNotFound {
-    private long start_ts;
-    private byte[] primary_key;
+    private long startTs;
+    private byte[] primaryKey;
     private byte[] key;
 }

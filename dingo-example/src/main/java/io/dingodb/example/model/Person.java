@@ -26,7 +26,8 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString
-public class Person {
+public class
+Person {
     @DingoKey
     private String id;
     private String name;

@@ -196,12 +196,7 @@ public class MemoryStoreInstance implements StoreInstance {
 
     private KeyValue convertRow(Object[] row) {
         KeyValue keyValue = null;
-        try {
-            keyValue = codec.encode(row);
-            return keyValue;
-        } catch (IOException e) {
-            log.error("Encode data error: {}", e.getMessage(), e);
-        }
-        return null;
+        keyValue = codec.encode(row);
+        return keyValue;
     }
 }

@@ -32,5 +32,5 @@ public class TxnBatchRollBackResult {
     // the txn_result is one of the following:
     // 1. LockInfo: Commit meets a lock and can't proceed, the lock is returned
     // 2. otherwise, txn_result is empty
-    private TxnResultInfo txn_result;
+    private TxnResultInfo txnResult;
 }

@@ -68,16 +68,12 @@ public final class GetByIndexOperator extends FilterProjectSourceOperator {
     }
 
     private List<Iterator<Object[]>> scan(GetByIndexParam param) {
-        try {
-            List<Iterator<Object[]>> iteratorList = new ArrayList<>();
-            for (Object[] tuple : param.getIndexValues()) {
-                byte[] keys = param.getCodec().encodeKeyPrefix(tuple, calculatePrefixCount(tuple));
-                iteratorList.add(param.getPart().scan(keys));
-            }
-            return iteratorList;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        List<Iterator<Object[]>> iteratorList = new ArrayList<>();
+        for (Object[] tuple : param.getIndexValues()) {
+            byte[] keys = param.getCodec().encodeKeyPrefix(tuple, calculatePrefixCount(tuple));
+            iteratorList.add(param.getPart().scan(keys));
         }
+        return iteratorList;
     }
 
     private Object[] lookUp(Object[] tuples, GetByIndexParam param) {
@@ -87,18 +83,14 @@ public final class GetByIndexOperator extends FilterProjectSourceOperator {
         for (int i = 0; i < indices.getMappings().length; i ++) {
             keyTuples[indices.get(i)] = tuples[i];
         }
-        try {
-            byte[] keys = param.getLookupCodec().encodeKey(keyTuples);
-            CommonId regionId = PartitionService.getService(
-                    Optional.ofNullable(tableDefinition.getPartDefinition())
-                        .map(PartitionDefinition::getFuncName)
-                        .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-                    .calcPartId(keys, param.getRanges());
-            StoreInstance storeInstance = StoreService.getDefault().getInstance(param.getTableId(), regionId);
-            return param.getLookupCodec().decode(storeInstance.get(keys));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        byte[] keys = param.getLookupCodec().encodeKey(keyTuples);
+        CommonId regionId = PartitionService.getService(
+                Optional.ofNullable(tableDefinition.getPartDefinition())
+                    .map(PartitionDefinition::getFuncName)
+                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
+                .calcPartId(keys, param.getRanges());
+        StoreInstance storeInstance = StoreService.getDefault().getInstance(param.getTableId(), regionId);
+        return param.getLookupCodec().decode(storeInstance.get(keys));
     }
 
     private Object[] transformTuple(Object[] tuple, GetByIndexParam param) {

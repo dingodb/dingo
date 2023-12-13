@@ -22,6 +22,7 @@ import lombok.Getter;
 @Getter
 public class NetConfiguration {
 
+    public static final String KEY = "net";
     public static final int MIN_HEARTBEAT = 3;
 
     public static final NetConfiguration INSTANCE;
@@ -29,15 +30,9 @@ public class NetConfiguration {
     static {
         try {
             DingoConfiguration dingoConfiguration = DingoConfiguration.instance();
-            if (dingoConfiguration == null) {
-                INSTANCE = new NetConfiguration();
-                INSTANCE.host = "127.0.0.1";
-            } else {
-                dingoConfiguration.setNet(NetConfiguration.class);
-                INSTANCE = dingoConfiguration.getNet();
-                if (INSTANCE.host == null) {
-                    INSTANCE.host = dingoConfiguration.getHost();
-                }
+            INSTANCE = dingoConfiguration.getConfig(KEY, NetConfiguration.class);
+            if (INSTANCE.host == null) {
+                INSTANCE.host = dingoConfiguration.getHost();
             }
             if (INSTANCE.heartbeat == null || INSTANCE.heartbeat < MIN_HEARTBEAT) {
                 INSTANCE.heartbeat = MIN_HEARTBEAT;

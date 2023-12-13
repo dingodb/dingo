@@ -20,6 +20,7 @@ import io.dingodb.client.common.KeyValueCodec;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
+import io.dingodb.sdk.service.IndexService;
 import io.dingodb.sdk.service.index.IndexServiceClient;
 import io.dingodb.sdk.service.store.StoreServiceClient;
 import lombok.AllArgsConstructor;
@@ -33,6 +34,8 @@ import java.util.concurrent.atomic.AtomicReference;
 @AllArgsConstructor
 public class OperationContext {
 
+    private final long requestId;
+
     private final DingoCommonId tableId;
     private final DingoCommonId indexId;
     private final DingoCommonId regionId;
@@ -40,8 +43,8 @@ public class OperationContext {
     private final KeyValueCodec codec;
 
     private final StoreServiceClient storeService;
-    private final IndexServiceClient indexService;
-
+    private final IndexServiceClient indexServiceClient;
+    private final IndexService indexService;
     private final VectorContext vectorContext;
 
     private final int seq;

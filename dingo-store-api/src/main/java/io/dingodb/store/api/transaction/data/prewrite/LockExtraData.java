@@ -29,5 +29,5 @@ public class LockExtraData {
     // The index of key in the prewrite request that will store extra_data to lock
     private long index;
     // The extra_data to store in lock
-    private byte[] extra_data;
+    private byte[] extraData;
 }

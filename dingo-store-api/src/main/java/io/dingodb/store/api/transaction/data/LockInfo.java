@@ -33,18 +33,18 @@ public class LockInfo {
     // the key of the lock
     private byte[] key;
     // the start_ts of the transaction
-    private long lock_ts;
+    private long lockTs;
     // the for_update_ts of the pessimistic lock
-    private long for_update_ts;
+    private long forUpdateTs;
     // the lock ttl timestamp in milisecond
-    private long lock_ttl;
+    private long lockTtl;
     // the number of keys involved in the transaction
-    private long txn_size;
+    private long txnSize;
     // the type of the lock, it can be put, delete, lock
-    private Op lock_type;
+    private Op lockType;
     // the short value will persist to lock_info, and do not write data, commit will set it to
     // write_info.short_value
-    private byte[] short_value;
+    private byte[] shortValue;
     // the extra_data executor want to store in lock
-    private byte[] extra_data;
+    private byte[] extraData;
 }

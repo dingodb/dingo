@@ -687,24 +687,7 @@ public class DingoMeta extends MetaImpl {
                 throw ExceptionUtils.toRuntime(new IllegalArgumentException("schema does not exist"));
             }
             DingoSchema schema  = (DingoSchema) calciteSchema.schema;
-            if (schema != null && schema.getTable(tableName) != null) {
-                Collection<Index> indices = schema.getIndex(tableName);
-
-                indexScanList = indices.stream().flatMap(index -> {
-                    String[] columns = index.getColumns();
-                    IndexScan[] indexScans = new IndexScan[columns.length];
-                    for (int i = 0; i < columns.length; i ++) {
-                        String columnName = columns[i];
-                        short p = (short) i;
-                        IndexScan indexScan = new IndexScan(null, schemaName, tableName, index.isUnique(),
-                            null, index.getName(), p, p, columnName, "asc", null, 1, null);
-                        indexScans[i] = indexScan;
-                    }
-                    return Arrays.stream(indexScans);
-                }).collect(Collectors.toList());
-            } else {
-                throw ExceptionUtils.toRuntime(new IllegalArgumentException("table does not exist"));
-            }
+            // TODO scan index for {{schema}}
         }
 
         return createArrayResultSet(

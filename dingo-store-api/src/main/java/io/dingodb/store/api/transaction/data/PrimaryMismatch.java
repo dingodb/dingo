@@ -28,5 +28,5 @@ import lombok.ToString;
 @AllArgsConstructor
 @ToString
 public class PrimaryMismatch {
-    private LockInfo lock_info;
+    private LockInfo lockInfo;
 }

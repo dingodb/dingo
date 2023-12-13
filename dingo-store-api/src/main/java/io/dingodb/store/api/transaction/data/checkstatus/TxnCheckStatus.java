@@ -27,12 +27,12 @@ import lombok.Setter;
 public class TxnCheckStatus {
     private IsolationLevel isolationLevel;
     // Primary key and lock ts together to locate the primary lock of a transaction.
-    private byte[] primary_key ;
+    private byte[] primaryKey;
     // Starting timestamp oracle of the transaction being checked.
-    private long lock_ts;
+    private long lockTs;
     // The start timestamp oracle of the transaction which this request is part of.
-    private long caller_start_ts;
+    private long callerStartTs;
     // The client must specify the current time to dingo-store using this timestamp oracle.
     // It is used to check TTL timeouts. It may be inaccurate.
-    private long current_ts;
+    private long currentTs;
 }
