@@ -104,7 +104,7 @@ public final class DefinitionUtils {
         keyColumns.sort(Comparator.comparingInt(ColumnDefinition::getPrimary));
         checkAndConvertRangePartition(
             keyColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
-            partDefinition.getCols(),
+            partDefinition.getColumns(),
             keyColumns.stream().map(ColumnDefinition::getType).collect(Collectors.toList()),
             partDefinition.getDetails().stream().map(PartitionDetailDefinition::getOperand).collect(Collectors.toList())
         );
@@ -116,7 +116,7 @@ public final class DefinitionUtils {
         keyColumns.sort(Comparator.comparingInt(ColumnDefinition::getPrimary));
         checkAndConvertHashRangePartition(
             keyColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
-            partDefinition.getCols()
+            partDefinition.getColumns()
         );
         List<PartitionDetailDefinition> details = partDefinition.getDetails();
         if(details.size() != 1) {

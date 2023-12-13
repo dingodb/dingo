@@ -28,10 +28,10 @@ import java.util.List;
 @Builder
 public class TxnResolveLock {
     private IsolationLevel isolationLevel;
-    private long start_ts;
+    private long startTs;
     // `commit_ts == 0` means the transaction was rolled back.
     // `commit_ts > 0` means the transaction was committed at the given timestamp oracle.
-    private long commit_ts;
+    private long commitTs;
     // Only resolve specified keys.
     private List<byte[]> keys;
 }

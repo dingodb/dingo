@@ -41,11 +41,7 @@ public class VectorPartitionOperator extends FanOutOperator {
         Long vectorId = (Long) tuple[param.getIndex()];
         Object[] record = new Object[] {vectorId};
         byte[] key = null;
-        try {
-            key = param.getCodec().encodeKey(record);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        key = param.getCodec().encodeKey(record);
         CodecService.getDefault().setId(key, CommonId.EMPTY_TABLE);
         CommonId partId = PartitionService.getService(
                 Optional.ofNullable(param.getTableDefinition().getPartDefinition())

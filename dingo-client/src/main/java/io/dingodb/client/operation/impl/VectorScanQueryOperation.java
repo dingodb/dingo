@@ -89,7 +89,7 @@ public class VectorScanQueryOperation implements Operation {
     public void exec(OperationContext context) {
         Map<DingoCommonId, VectorTuple<VectorScanQuery>> parameters = context.parameters();
         VectorScanQuery scanQuery = parameters.get(context.getRegionId()).value;
-        List<io.dingodb.sdk.common.vector.VectorWithId> withIdList = context.getIndexService().vectorScanQuery(
+        List<io.dingodb.sdk.common.vector.VectorWithId> withIdList = context.getIndexServiceClient().vectorScanQuery(
             context.getIndexId(),
             context.getRegionId(),
             scanQuery

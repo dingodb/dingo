@@ -95,16 +95,13 @@ public final class DingoGetByIndexMergeVisitFun {
             List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(indexValSet.getValue(), indexTd);
 
             Map<CommonId, List<Object[]>> partMap = new LinkedHashMap<>();
-            try {
-                for (Object[] tuple : keyTuples) {
-                    byte[] keys = codec.encodeKeyPrefix(tuple, calculatePrefixCount(tuple));
-                    CommonId partId = lookupPs.calcPartId(keys, indexRanges);
-                    partMap.putIfAbsent(partId, new LinkedList<>());
-                    partMap.get(partId).add(tuple);
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            for (Object[] tuple : keyTuples) {
+                byte[] keys = codec.encodeKeyPrefix(tuple, calculatePrefixCount(tuple));
+                CommonId partId = lookupPs.calcPartId(keys, indexRanges);
+                partMap.putIfAbsent(partId, new LinkedList<>());
+                partMap.get(partId).add(tuple);
             }
+
             List<String> columnNames = indexTd.getColumns()
                 .stream().map(ColumnDefinition::getName).collect(Collectors.toList());
             TupleMapping tupleMapping = TupleMapping.of(td.getColumnIndices(columnNames));

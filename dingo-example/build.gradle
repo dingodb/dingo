@@ -29,6 +29,8 @@ task fatJar(type: Jar) {
     exclude "META-INF/*.SF"
     exclude "META-INF/*.DSA"
     exclude "META-INF/*.RSA"
+
+    zip64 true
 }
 
 fatJar.dependsOn([

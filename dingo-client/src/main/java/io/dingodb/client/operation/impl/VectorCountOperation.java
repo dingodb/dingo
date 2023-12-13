@@ -18,10 +18,10 @@ package io.dingodb.client.operation.impl;
 
 import io.dingodb.client.OperationContext;
 import io.dingodb.client.common.IndexInfo;
-import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.table.RangeDistribution;
 import io.dingodb.sdk.common.utils.Any;
+import io.dingodb.sdk.service.entity.index.VectorCountRequest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -84,8 +84,7 @@ public class VectorCountOperation implements Operation {
     @Override
     public void exec(OperationContext context) {
         Map<DingoCommonId, Integer> parameters = context.parameters();
-        Long currentCount = context.getIndexService().vectorCount(context.getIndexId(), context.getRegionId());
-
+        Long currentCount = context.getIndexService().vectorCount(VectorCountRequest.builder().build()).getCount();
         context.<long[]>result()[parameters.get(context.getRegionId())] = currentCount;
     }
 

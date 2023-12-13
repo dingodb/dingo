@@ -26,17 +26,14 @@ import io.dingodb.exec.transaction.base.BaseTransaction;
 import io.dingodb.exec.transaction.base.TransactionConfig;
 import io.dingodb.exec.transaction.base.TransactionStatus;
 import io.dingodb.exec.transaction.base.TransactionType;
-import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
-import io.dingodb.store.api.transaction.data.Mutation;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.Future;
 
 @Slf4j
@@ -93,12 +90,12 @@ public class OptimisticTransaction extends BaseTransaction {
                 isolationLevel
             )).
             mutations(Collections.singletonList(TransactionCacheToMutation.cacheToMutation(new Object[]{primaryKey}))).
-            primary_lock(primaryKey).
-            start_ts(start_ts).
-            lock_ttl(lockTtl).
-            txn_size(1l).
-            try_one_pc(false).
-            max_commit_ts(0l).
+            primaryLock(primaryKey).
+            startTs(start_ts).
+            lockTtl(lockTtl).
+            txnSize(1l).
+            tryOnePc(false).
+            maxCommitTs(0l).
             build();
         Future future = part.txnPreWritePrimaryKey(txnPreWrite);
         this.future = future;

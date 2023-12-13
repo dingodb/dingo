@@ -29,5 +29,5 @@ public class ForUpdateTsCheck {
     // The index of key in the prewrite request that should be checked.
     private long index;
     // The expected for_update_ts of the pessimistic lock of the key.
-    private long expected_for_update_ts;
+    private long expectedForUpdateTs;
 }

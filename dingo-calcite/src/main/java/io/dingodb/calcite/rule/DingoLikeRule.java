@@ -113,15 +113,10 @@ public class DingoLikeRule extends RelRule<DingoLikeRule.Config> {
         Object[] tuple = new Object[td.getColumnsCount()];
 
         byte[] prefixBytes;
-        try {
-            tuple[firstPrimaryColumnIndex] = RexLiteralUtils.convertFromRexLiteral(
-                prefix, DefinitionMapper.mapToDingoType(prefix.getType())
-            );
-            prefixBytes = codec.encodeKeyPrefix(tuple, 1);
-        } catch (IOException e) {
-            log.error("Some errors occurred in encodeKeyForRangeScan: ", e);
-            throw new RuntimeException(e);
-        }
+        tuple[firstPrimaryColumnIndex] = RexLiteralUtils.convertFromRexLiteral(
+            prefix, DefinitionMapper.mapToDingoType(prefix.getType())
+        );
+        prefixBytes = codec.encodeKeyPrefix(tuple, 1);
 
         if (prefix.getTypeName() == SqlTypeName.CHAR) {
             byte lastByte = prefixBytes[prefixBytes.length - 1];

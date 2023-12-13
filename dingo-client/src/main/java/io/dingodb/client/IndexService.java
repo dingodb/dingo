@@ -35,6 +35,9 @@ import io.dingodb.sdk.common.table.RangeDistribution;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.ByteArrayUtils;
 import io.dingodb.sdk.common.utils.Parameters;
+import io.dingodb.sdk.service.Services;
+import io.dingodb.sdk.service.entity.common.Location;
+import io.dingodb.sdk.service.entity.meta.EntityType;
 import io.dingodb.sdk.service.index.IndexServiceClient;
 import io.dingodb.sdk.service.meta.AutoIncrementService;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
@@ -45,6 +48,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -64,7 +68,10 @@ public class IndexService {
     private final DingoSchema<Long> schema = new LongSchema(0);
     private final DingoType dingoType = new LongType(false);
 
+    private final Set<Location> coordinators;
+
     public IndexService(String coordinatorSvr, AutoIncrementService autoIncrementService, int retryTimes) {
+        this.coordinators = Services.parse(coordinatorSvr);
         this.rootMetaService = new MetaServiceClient(coordinatorSvr);
         this.indexService = new IndexServiceClient(rootMetaService, retryTimes);
         this.autoIncrementService = autoIncrementService;
@@ -160,12 +167,22 @@ public class IndexService {
         VectorContext vectorContext
     ) {
         int i = 0;
+        long id = System.identityHashCode(fork);
         List<OperationContext> contexts = new ArrayList<>(fork.getSubTasks().size());
+        DingoCommonId indexId = indexInfo.indexId;
         for (Operation.Task subTask : fork.getSubTasks()) {
+            DingoCommonId regionId = subTask.getRegionId();
             contexts.add(OperationContext.builder()
-                .indexId(indexInfo.indexId)
-                .regionId(subTask.getRegionId())
-                .indexService(indexService)
+                .requestId(id)
+                .indexId(indexId)
+                .regionId(regionId)
+                .indexServiceClient(indexService)
+                .indexService(Services.indexRegionService(
+                    coordinators,
+                    new io.dingodb.sdk.service.entity.meta.DingoCommonId(EntityType.ENTITY_TYPE_INDEX, indexId.entityId(), indexId.parentId()),
+                    new io.dingodb.sdk.service.entity.meta.DingoCommonId(EntityType.ENTITY_TYPE_PART, regionId.entityId(), regionId.parentId()),
+                    retryTimes
+                ))
                 .seq(i++)
                 .parameters(subTask.getParameters())
                 .result(fork.getResultRef())

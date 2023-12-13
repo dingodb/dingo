@@ -38,7 +38,7 @@ public class PartitionRule implements Partition {
 
     @Override
     public List<String> getCols() {
-        return partitionDefinition.getCols();
+        return partitionDefinition.getColumns();
     }
 
     @Override

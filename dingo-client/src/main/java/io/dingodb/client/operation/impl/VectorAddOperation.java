@@ -106,7 +106,7 @@ public class VectorAddOperation implements Operation {
     public void exec(OperationContext context) {
         Map<VectorWithId, Integer> parameters = context.parameters();
         List<VectorWithId> vectors = new ArrayList<>(parameters.keySet());
-        List<Boolean> result = context.getIndexService().vectorAdd(
+        List<Boolean> result = context.getIndexServiceClient().vectorAdd(
             context.getIndexId(),
             context.getRegionId(),
             parameters.keySet().stream()

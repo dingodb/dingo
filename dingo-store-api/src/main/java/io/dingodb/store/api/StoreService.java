@@ -34,6 +34,8 @@ public interface StoreService {
         return null;
     }
 
-    void deleteInstance(CommonId id);
+    default void deleteInstance(CommonId id) {
+
+    }
 
 }

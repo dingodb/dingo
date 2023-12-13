@@ -80,7 +80,7 @@ public class VectorGetRegionMetricsOperation implements Operation {
     @Override
     public void exec(OperationContext context) {
         Map<DingoCommonId, Integer> parameters = context.parameters();
-        VectorIndexMetrics vectorIndexMetrics = context.getIndexService().vectorGetRegionMetrics(
+        VectorIndexMetrics vectorIndexMetrics = context.getIndexServiceClient().vectorGetRegionMetrics(
             context.getIndexId(),
             context.getRegionId()
         );

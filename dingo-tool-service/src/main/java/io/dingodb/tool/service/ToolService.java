@@ -49,7 +49,7 @@ public class ToolService implements io.dingodb.tool.api.ToolService {
     private final UtilServiceClient utilService;
 
     private ToolService() {
-        String coordinators = DingoConfiguration.instance().getStoreOrigin().get("coordinators").toString();
+        String coordinators = DingoConfiguration.instance().find("coordinators", String.class);
         metaService = new MetaServiceClient(coordinators);
         utilService = new UtilServiceClient(metaService);
     }

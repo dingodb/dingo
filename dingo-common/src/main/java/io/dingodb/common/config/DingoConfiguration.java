@@ -17,17 +17,10 @@
 package io.dingodb.common.config;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.util.Optional;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -36,16 +29,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static io.dingodb.common.util.ReflectionUtils.convert;
 
 @Getter
 @Setter
@@ -54,49 +41,39 @@ import java.util.concurrent.ConcurrentHashMap;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class DingoConfiguration {
 
-    private static DingoConfiguration INSTANCE;
+    private static final ObjectMapper PARSER = YAMLMapper.builder().build();
+    private static final DingoConfiguration INSTANCE = new DingoConfiguration();
 
-    private ClusterConfiguration cluster;
+    private final Map<String, Object> config = new ConcurrentHashMap<>();
+
     private CommonId serverId;
     @Delegate
     private ExchangeConfiguration exchange;
     private SecurityConfiguration security;
     private VariableConfiguration variable;
-    private List<String> servicePkgs;
-    private Map<String, Object> server;
-    private Map<String, Object> store = new ConcurrentHashMap<>();
-    private Map<String, Object> net;
-    private Map<String, Object> client;
-    @JsonIgnore
-    private Object serverConfiguration;
-    @JsonIgnore
-    private Object storeConfiguration;
-    @JsonIgnore
-    private Object netConfiguration;
-    @JsonIgnore
-    private Object clientConfiguration;
-
-    public static synchronized <T> T parse(InputStream is, Class<T> clazz) throws IOException {
-        YAMLFactory yamlFactory = new YAMLFactory()
-            .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES);
-        final ObjectMapper mapper = JsonMapper.builder(yamlFactory)
-            .addModule(new AfterburnerModule())
-            .build();
-        mapper.disable(MapperFeature.AUTO_DETECT_FIELDS);
-        mapper.disable(MapperFeature.AUTO_DETECT_GETTERS);
-        mapper.disable(MapperFeature.AUTO_DETECT_IS_GETTERS);
-        mapper.disable(MapperFeature.AUTO_DETECT_SETTERS);
-        mapper.disable(MapperFeature.AUTO_DETECT_CREATORS);
-        mapper.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
-        mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        return mapper.readValue(is, clazz);
-    }
 
     public static synchronized void parse(final String configPath) throws Exception {
-        INSTANCE = configPath == null ? new DingoConfiguration() : parse(new FileInputStream(configPath), DingoConfiguration.class);
+        if (configPath != null) {
+            INSTANCE.copyConfig(PARSER.readValue(new FileInputStream(configPath), Map.class), INSTANCE.config);
+        }
+        INSTANCE.exchange = INSTANCE.getConfig("exchange", ExchangeConfiguration.class);
+        INSTANCE.security = INSTANCE.getConfig("security", SecurityConfiguration.class);
+        INSTANCE.variable = INSTANCE.getConfig("variable", VariableConfiguration.class);
     }
 
-    public static DingoConfiguration instance() {
+    private static void copyConfig(Map<String, Object> from, Map<String, Object> to) {
+        for (Map.Entry<String, Object> entry : from.entrySet()) {
+            if (entry.getValue() instanceof Map) {
+                copyConfig(
+                    (Map<String, Object>) entry.getValue(),
+                    (Map<String, Object>) to.computeIfAbsent(entry.getKey(), k -> new ConcurrentHashMap<>())
+                );
+            }
+            to.put(entry.getKey(), entry.getValue());
+        }
+    }
+
+    public static @NonNull DingoConfiguration instance() {
         return INSTANCE;
     }
 
@@ -116,128 +93,33 @@ public class DingoConfiguration {
         return new Location(host(), port());
     }
 
-    public static List<String> servicePkgs() {
-        return Optional.ofNullable(INSTANCE).map(DingoConfiguration::getServicePkgs).orElseGet(Collections::emptyList);
+    public <T> T find(String key, Class<T> targetType) {
+        return find(key, targetType, config);
     }
 
-    public static <T> T mapToBean(Map<String, Object> map, Class<T> cls) throws Exception {
-        if (map == null) {
-            return null;
-        }
-
-        T obj = newInstance(cls);
-
-        Field[] fields = cls.getDeclaredFields();
-        for (Field field : fields) {
-            try {
-                Object value;
-                if ((value = map.get(field.getName())) == null) {
-                    continue;
+    private <T> T find(String key, Class<T> targetType, Map<String, Object> config) {
+        for (Map.Entry<String, Object> entry : config.entrySet()) {
+            if (entry.getKey().equals(key)) {
+                if (targetType.isInstance(entry.getValue())) {
+                    return (T) entry.getValue();
                 }
-                if (value instanceof Map && !field.getType().equals(Map.class)) {
-                    value = mapToBean((Map<String, Object>) value, field.getType());
+            }
+            if (entry.getValue() instanceof Map) {
+                T target = find(key, targetType, (Map<String, Object>) entry.getValue());
+                if (target != null) {
+                    return target;
                 }
-                if (!field.getType().equals(value.getClass())) {
-                    value = tryConvertValue(value, field.getType());
-                }
-                field.setAccessible(true);
-                field.set(obj, value);
-            } catch (Exception e) {
-                log.error("parse property name: {}. class name: {};", field.getName(), cls.getName(), e);
-                throw e;
             }
         }
-        return obj;
+        return null;
     }
 
-    private static <T> @NonNull T newInstance(@NonNull Class<T> cls)
-        throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        Constructor<T> constructor = cls.getDeclaredConstructor();
-        constructor.setAccessible(true);
-        T obj = constructor.newInstance();
-        return obj;
+    public <T> T getConfig(String key, Class<T> configType) {
+        return convert(getConfigMap(key), configType);
     }
 
-    private static Object tryConvertValue(@NonNull Object obj, @NonNull Class<?> type) {
-        String str = obj.toString();
-        if (type.equals(String.class)) {
-            return str;
-        }
-        if (type.equals(Integer.class)) {
-            return Integer.parseInt(str);
-        }
-        if (type.equals(Double.class)) {
-            return Double.parseDouble(str);
-        }
-        if (type.equals(Float.class)) {
-            return Float.parseFloat(str);
-        }
-        if (type.equals(Long.class)) {
-            return Long.parseLong(str);
-        }
-        if (type.equals(Boolean.class)) {
-            if (str.matches("[0-1]")) {
-                return Integer.parseInt(str) != 0;
-            }
-            if ("true".equalsIgnoreCase(str)) {
-                return true;
-            }
-            if ("false".equalsIgnoreCase(str)) {
-                return false;
-            }
-        }
-        if (type.equals(byte[].class)) {
-            return str.getBytes(StandardCharsets.UTF_8);
-        }
-        return obj;
-    }
-
-    public <T> T getServer() {
-        return (T) serverConfiguration;
-    }
-
-    public void setServer(Class<?> cls) throws Exception {
-        serverConfiguration = mapToBean(server, cls);
-        if (serverConfiguration == null) {
-            serverConfiguration = newInstance(cls);
-        }
-    }
-
-    public <T> T getNet() {
-        return (T) netConfiguration;
-    }
-
-    public void setNet(Class<?> cls) throws Exception {
-        netConfiguration = mapToBean(net, cls);
-        if (netConfiguration == null) {
-            netConfiguration = newInstance(cls);
-        }
-    }
-
-    public Map<String, Object> getStoreOrigin() {
-        return store;
-    }
-
-    public <T> T getStore() {
-        return (T) storeConfiguration;
-    }
-
-    public void setStore(Class<?> cls) throws Exception {
-        storeConfiguration = mapToBean(store, cls);
-        if (storeConfiguration == null) {
-            storeConfiguration = newInstance(cls);
-        }
-    }
-
-    public <T> T getClient() {
-        return (T) clientConfiguration;
-    }
-
-    public void setClient(Class<?> cls) throws Exception {
-        clientConfiguration = mapToBean(client, cls);
-        if (clientConfiguration == null) {
-            clientConfiguration = newInstance(cls);
-        }
+    public Map<String, Object> getConfigMap(String key) {
+        return (Map<String, Object>) INSTANCE.config.computeIfAbsent(key, k -> new ConcurrentHashMap<>());
     }
 
 }

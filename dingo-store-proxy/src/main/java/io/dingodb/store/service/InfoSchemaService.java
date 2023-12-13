@@ -25,7 +25,7 @@ import io.dingodb.sdk.service.entity.version.Kv;
 import io.dingodb.sdk.service.entity.version.PutRequest;
 import io.dingodb.sdk.service.entity.version.RangeRequest;
 import io.dingodb.sdk.service.entity.version.RangeResponse;
-import io.dingodb.store.Configuration;
+import io.dingodb.store.proxy.Configuration;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.LinkedHashMap;

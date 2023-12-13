@@ -36,11 +36,6 @@ public class DingoSchema extends AbstractSchema {
         super(metaService, context, parent);
     }
 
-    public void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
-        metaService.createTable(tableName, tableDefinition);
-        addTableCache(tableName, tableDefinition, Collections.emptyMap());
-    }
-
     public void createTables(@NonNull TableDefinition tableDefinition,
                              @NonNull List<TableDefinition> indexTableDefinitions) {
         metaService.createTables(tableDefinition, indexTableDefinitions);
@@ -62,23 +57,6 @@ public class DingoSchema extends AbstractSchema {
             return true;
         }
         return false;
-    }
-
-    public void createIndex(@NonNull String tableName, @NonNull List<Index> indexList) {
-        metaService.createIndex(tableName, indexList);
-    }
-
-    public void dropIndex(@NonNull String tableName, @NonNull String index) {
-        metaService.dropIndex(tableName, index);
-    }
-
-    public Collection<Index> getIndex(@NonNull String tableName) {
-        TableDefinition tableDefinition = metaService.getTableDefinition(tableName);
-        if (tableDefinition != null && tableDefinition.getIndexes() != null) {
-            return tableDefinition.getIndexes().values();
-        } else {
-            return Collections.emptyList();
-        }
     }
 
     public void addDistribution(String tableName, PartitionDetailDefinition partitionDetail) {

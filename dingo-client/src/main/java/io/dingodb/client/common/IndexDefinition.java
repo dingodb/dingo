@@ -55,7 +55,7 @@ public class IndexDefinition implements Index {
     public Partition getIndexPartition() {
         return new PartitionRule(
             indexPartition.getFuncName(),
-            indexPartition.getCols(),
+            indexPartition.getColumns(),
             Optional.mapOrGet(indexPartition.getDetails(), __ -> indexPartition.getDetails().stream().map(d ->
                     new PartitionDetailDefinition(
                         d.getPartName(),

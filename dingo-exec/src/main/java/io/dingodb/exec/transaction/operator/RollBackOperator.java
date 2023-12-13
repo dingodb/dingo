@@ -48,7 +48,7 @@ public class RollBackOperator extends TransactionOperator {
             // 1、call sdk TxnRollBack
             TxnBatchRollBack rollBackRequest = TxnBatchRollBack.builder().
                 isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
-                    .start_ts(param.getStart_ts())
+                    .startTs(param.getStart_ts())
                     .keys(param.getKey())
                     .build();
             StoreInstance store = Services.KV_STORE.getInstance(new CommonId(CommonId.CommonType.TABLE, 2, 74438), new CommonId(CommonId.CommonType.DISTRIBUTION, 74440, 86127));

@@ -14,22 +14,19 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.common;
+package io.dingodb.meta;
 
-import io.dingodb.sdk.common.table.Column;
-import lombok.experimental.Delegate;
+import io.dingodb.common.CommonId;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.ToString;
 
-public class ColumnDefinition implements Column {
+@Builder
+@ToString
+@AllArgsConstructor
+public class Partition {
 
-    @Delegate
-    private final io.dingodb.common.table.ColumnDefinition columnDefinition;
+    public final CommonId id;
+    public final Object[] operand;
 
-    public ColumnDefinition(io.dingodb.common.table.ColumnDefinition columnDefinition) {
-        this.columnDefinition = columnDefinition;
-    }
-
-    @Override
-    public String getType() {
-        return columnDefinition.getTypeName();
-    }
 }

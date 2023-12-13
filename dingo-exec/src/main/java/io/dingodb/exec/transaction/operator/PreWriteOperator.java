@@ -63,12 +63,12 @@ public final class PreWriteOperator extends TransactionOperator {
                 TxnPreWrite txnPreWrite = TxnPreWrite.builder().
                     isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
                         .mutations(subList)
-                        .primary_lock(param.getPrimaryKey())
-                        .start_ts(param.getStart_ts())
-                        .lock_ttl(param.getLock_ttl())
-                        .txn_size(param.getTxn_size())
-                        .try_one_pc(param.isTry_one_pc())
-                        .max_commit_ts(param.getMax_commit_ts())
+                        .primaryLock(param.getPrimaryKey())
+                        .startTs(param.getStart_ts())
+                        .lockTtl(param.getLock_ttl())
+                        .txnSize(param.getTxn_size())
+                        .tryOnePc(param.isTry_one_pc())
+                        .maxCommitTs(param.getMax_commit_ts())
                         .build();
                 // TODO
                 StoreInstance store = Services.KV_STORE.getInstance(new CommonId(CommonId.CommonType.TABLE, 2, 74438), new CommonId(CommonId.CommonType.DISTRIBUTION, 74440, 86127));

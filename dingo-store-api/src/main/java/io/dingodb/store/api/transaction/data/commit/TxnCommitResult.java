@@ -37,7 +37,7 @@ public class TxnCommitResult {
     // Executor can think its lock is resolved, and continue to commit.
     // 3. WriteConflict: SelfRolledBack: the transaction itself has been rolled back when it tries to commit.
     // 4. otherwise, txn_result is empty
-    private TxnResultInfo txn_result;
+    private TxnResultInfo txnResult;
     // The commit_ts of the transaction.
-    private long commit_ts;
+    private long commitTs;
 }

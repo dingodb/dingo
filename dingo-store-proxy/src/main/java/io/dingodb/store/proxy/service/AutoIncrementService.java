@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.service;
+package io.dingodb.store.proxy.service;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.config.VariableConfiguration;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.util.Optional;
-import io.dingodb.store.Configuration;
+import io.dingodb.store.proxy.Configuration;
 import lombok.experimental.Delegate;
 
-import static io.dingodb.store.common.Mapping.mapping;
+import static io.dingodb.store.proxy.common.Mapping.mapping;
 
 public class AutoIncrementService {
     public static final AutoIncrementService INSTANCE = new AutoIncrementService();

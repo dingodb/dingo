@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.common;
+package io.dingodb.store.proxy.common;
 
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
@@ -33,7 +33,6 @@ import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.store.api.StoreInstance;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
@@ -68,7 +67,6 @@ public final class Mapping {
         return new TableDefinition(
             table.getName(),
             table.getColumns().stream().map(Mapping::mapping).collect(Collectors.toList()),
-            null,
             table.getVersion(),
             table.getTtl(),
             mapping(table.getPartition()),
@@ -86,8 +84,8 @@ public final class Mapping {
             table.getUpdateTime());
     }
 
-    public static io.dingodb.store.common.TableDefinition mapping(TableDefinition tableDefinition) {
-        return new io.dingodb.store.common.TableDefinition(tableDefinition);
+    public static io.dingodb.store.proxy.common.TableDefinition mapping(TableDefinition tableDefinition) {
+        return new io.dingodb.store.proxy.common.TableDefinition(tableDefinition);
     }
 
     public static PartitionDefinition mapping(Partition partition) {
@@ -104,19 +102,15 @@ public final class Mapping {
         io.dingodb.sdk.common.table.RangeDistribution rangeDistribution,
         KeyValueCodec codec, boolean isOriginalKey
     ) {
-        try {
-            byte[] startKey = rangeDistribution.getRange().getStartKey();
-            byte[] endKey = rangeDistribution.getRange().getEndKey();
-            return RangeDistribution.builder()
-                .id(mapping(rangeDistribution.getId()))
-                .startKey(startKey)
-                .endKey(endKey)
-                .start(codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(startKey, startKey.length) : startKey))
-                .end(codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(endKey, endKey.length) : endKey))
-                .build();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        byte[] startKey = rangeDistribution.getRange().getStartKey();
+        byte[] endKey = rangeDistribution.getRange().getEndKey();
+        return RangeDistribution.builder()
+            .id(mapping(rangeDistribution.getId()))
+            .startKey(startKey)
+            .endKey(endKey)
+            .start(codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(startKey, startKey.length) : startKey))
+            .end(codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(endKey, endKey.length) : endKey))
+            .build();
     }
 
     public static io.dingodb.common.partition.PartitionDetailDefinition mapping(PartitionDetail partitionDetail) {
@@ -131,19 +125,15 @@ public final class Mapping {
         io.dingodb.sdk.common.table.RangeDistribution rangeDistribution,
         KeyValueCodec codec
     ) {
-        try {
-            byte[] startKey = rangeDistribution.getRange().getStartKey();
-            byte[] endKey = rangeDistribution.getRange().getEndKey();
-            return RangeDistribution.builder()
-                .id(mapping(rangeDistribution.getId()))
-                .startKey(startKey)
-                .endKey(endKey)
-                .start(codec.decodeKeyPrefix(startKey))
-                .end(codec.decodeKeyPrefix(endKey))
-                .build();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        byte[] startKey = rangeDistribution.getRange().getStartKey();
+        byte[] endKey = rangeDistribution.getRange().getEndKey();
+        return RangeDistribution.builder()
+            .id(mapping(rangeDistribution.getId()))
+            .startKey(startKey)
+            .endKey(endKey)
+            .start(codec.decodeKeyPrefix(startKey))
+            .end(codec.decodeKeyPrefix(endKey))
+            .build();
     }
 
     public static ColumnDefinition mapping(Column column) {

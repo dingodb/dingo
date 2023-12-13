@@ -32,12 +32,12 @@ import lombok.ToString;
 @EqualsAndHashCode
 public class Configuration {
 
+    public static final String KEY = "client";
     private static final Configuration INSTANCE;
 
     static {
         try {
-            DingoConfiguration.instance().setClient(Configuration.class);
-            INSTANCE = DingoConfiguration.instance().getClient();
+            INSTANCE = DingoConfiguration.instance().getConfig(KEY, Configuration.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

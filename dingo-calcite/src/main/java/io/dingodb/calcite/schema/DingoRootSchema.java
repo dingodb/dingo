@@ -63,7 +63,7 @@ public class DingoRootSchema extends AbstractSchema {
     }
 
     @Override
-    public Schema getSubSchema(String name) {
+    public DingoSchema getSubSchema(String name) {
         return Optional.mapOrNull(
             metaService.getSubMetaService(name),
             __ -> new DingoSchema(__, context, ImmutableList.of(ROOT_SCHEMA_NAME, __.name()))
@@ -76,7 +76,7 @@ public class DingoRootSchema extends AbstractSchema {
     }
 
     @Override
-    public Schema snapshot(SchemaVersion version) {
+    public DingoSchema snapshot(SchemaVersion version) {
         return new DingoSchema(ROOT_META_SERVICE, context, ImmutableList.of(ROOT_SCHEMA_NAME));
     }
 }

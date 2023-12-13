@@ -82,7 +82,7 @@ public class VectorGetIdOperation implements Operation {
     @Override
     public void exec(OperationContext context) {
         Map<DingoCommonId, VectorTuple<Boolean>> parameters = context.parameters();
-        Long result = context.getIndexService().vectorGetBoderId(
+        Long result = context.getIndexServiceClient().vectorGetBoderId(
             context.getIndexId(),
             context.getRegionId(),
             parameters.get(context.getRegionId()).value

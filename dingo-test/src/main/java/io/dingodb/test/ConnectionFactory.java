@@ -48,11 +48,9 @@ public final class ConnectionFactory {
         env.setInfo("password", "");
 
         // Configure for local test.
-        if (DingoConfiguration.instance() == null) {
-            DingoConfiguration.parse(
-                Objects.requireNonNull(ConnectionFactory.class.getResource("/config.yaml")).getPath()
-            );
-        }
+        DingoConfiguration.parse(
+            Objects.requireNonNull(ConnectionFactory.class.getResource("/config.yaml")).getPath()
+        );
 
         Services.initNetService();
         Services.NET.listenPort(DingoConfiguration.port());

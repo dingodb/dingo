@@ -31,7 +31,7 @@ public class TxnHeartBeatResult {
     // 1. PrimaryMismatch: Heartbeat is sent to a lock that's not the primary.
     // 2. TxnNotFound: Txn not found when heartbeat.
     // 3. otherwise, txn_result is empty
-    private TxnResultInfo txn_result;
+    private TxnResultInfo txnResult;
     // The TTL actually set on the requested lock.
-    private long lock_ttl;
+    private long lockTtl;
 }

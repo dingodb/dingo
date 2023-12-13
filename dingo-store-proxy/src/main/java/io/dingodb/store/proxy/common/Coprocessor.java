@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.common;
+package io.dingodb.store.proxy.common;
 
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.service.store.AggregationOperator;
@@ -68,7 +68,7 @@ public class Coprocessor implements io.dingodb.sdk.service.store.Coprocessor {
     @Override
     public List<AggregationOperator> getAggregations() {
         return coprocessor.getAggregations().stream()
-            .map(io.dingodb.store.common.AggregationOperator::new)
+            .map(io.dingodb.store.proxy.common.AggregationOperator::new)
             .collect(Collectors.toList());
     }
 

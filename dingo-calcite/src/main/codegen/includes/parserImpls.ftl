@@ -202,7 +202,7 @@ void TableElement(List<SqlNode> list) :
            {
                partitionDefinition = new PartitionDefinition();
                partitionDefinition.setFuncName(getNextToken().image);
-               partitionDefinition.setCols(readNames());
+               partitionDefinition.setColumns(readNames());
                partitionDefinition.setDetails(readPartitionDetails());
            }
         ]
@@ -345,7 +345,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
        {
            partitionDefinition = new PartitionDefinition();
            partitionDefinition.setFuncName(getNextToken().image);
-           partitionDefinition.setCols(readNames());
+           partitionDefinition.setColumns(readNames());
            partitionDefinition.setDetails(readPartitionDetails());
        }
     ]

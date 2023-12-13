@@ -98,7 +98,7 @@ public class VectorBatchQueryOperation implements Operation {
         Map<Long, io.dingodb.sdk.common.vector.VectorWithId> result = new HashMap<>();
         Map<Long, Integer> parameters = context.parameters();
         List<Long> ids = new ArrayList<>(parameters.keySet());
-        context.getIndexService().vectorBatchQuery(
+        context.getIndexServiceClient().vectorBatchQuery(
             context.getIndexId(),
             context.getRegionId(),
             ids,

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.common;
+package io.dingodb.store.proxy.common;
 
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;

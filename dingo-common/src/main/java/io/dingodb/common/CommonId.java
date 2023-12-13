@@ -63,8 +63,10 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     public enum CommonType {
         SCHEMA(0),
         TABLE(1),
+        PARTITION(2),
+        INDEX(3),
+        // TODO
         DISTRIBUTION(2),
-        PARTITION(3),
         OP(20),
         TRANSACTION(60),
         TXN_INSTANCE(61),
@@ -86,7 +88,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
                 case 0: return SCHEMA;
                 case 1: return TABLE;
                 case 2: return DISTRIBUTION;
-                case 3: return PARTITION;
+                case 3: return INDEX;
                 case 20: return OP;
                 case 60: return TRANSACTION;
                 case 61: return TXN_INSTANCE;

@@ -29,9 +29,9 @@ import java.util.List;
 public class TxnCommit {
     private IsolationLevel isolationLevel;
     // The start_ts of the transaction.
-    private long start_ts;
+    private long startTs;
     // The commit_ts of transaction. Must be greater than `start_ts`.
-    private long commit_ts;
+    private long commitTs;
     // All keys in the transaction to be committed.
     private List<byte[]> keys;
 }

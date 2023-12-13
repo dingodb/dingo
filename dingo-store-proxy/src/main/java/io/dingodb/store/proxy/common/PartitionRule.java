@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.common;
+package io.dingodb.store.proxy.common;
 
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.sdk.common.partition.Partition;
@@ -38,7 +38,7 @@ public class PartitionRule implements Partition {
 
     @Override
     public List<String> getCols() {
-        return partitionDefinition.getCols();
+        return partitionDefinition.getColumns();
     }
 
     @Override

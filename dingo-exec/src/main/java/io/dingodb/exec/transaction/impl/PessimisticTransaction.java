@@ -60,12 +60,12 @@ public class PessimisticTransaction extends BaseTransaction {
                 isolationLevel
             )).
             mutations(Collections.singletonList(TransactionCacheToMutation.cacheToMutation(new Object[]{primaryKey}))).
-            primary_lock(primaryKey).
-            start_ts(start_ts).
-            lock_ttl(lockTtl).
-            txn_size(1l).
-            try_one_pc(false).
-            max_commit_ts(0l).
+            primaryLock(primaryKey).
+            startTs(start_ts).
+            lockTtl(lockTtl).
+            txnSize(1l).
+            tryOnePc(false).
+            maxCommitTs(0l).
             build();
         part.txnPreWrite(txnPreWrite);
     }

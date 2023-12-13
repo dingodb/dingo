@@ -65,7 +65,6 @@ public final class Mapping {
         return new TableDefinition(
             table.getName(),
             table.getColumns().stream().map(Mapping::mapping).collect(Collectors.toList()),
-            null,
             table.getVersion(),
             table.getTtl(),
             mapping(table.getPartition()),
@@ -126,19 +125,16 @@ public final class Mapping {
         io.dingodb.sdk.common.table.RangeDistribution rangeDistribution,
         KeyValueCodec codec, boolean isOriginalKey
     ) {
-        try {
-            byte[] startKey = rangeDistribution.getRange().getStartKey();
-            byte[] endKey = rangeDistribution.getRange().getEndKey();
-            return RangeDistribution.builder()
-                .id(mapping(rangeDistribution.getId()))
-                .startKey(startKey)
-                .endKey(endKey)
-                .start(codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(startKey, startKey.length) : startKey))
-                .end(codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(endKey, endKey.length) : endKey))
-                .build();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        byte[] startKey = rangeDistribution.getRange().getStartKey();
+        byte[] endKey = rangeDistribution.getRange().getEndKey();
+        return RangeDistribution.builder()
+            .id(mapping(rangeDistribution.getId()))
+            .startKey(startKey)
+            .endKey(endKey)
+            .start(codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(startKey, startKey.length) : startKey))
+            .end(codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(endKey, endKey.length) : endKey))
+            .build();
+
     }
 
     public static io.dingodb.common.partition.PartitionDetailDefinition mapping(PartitionDetail partitionDetail) {

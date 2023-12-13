@@ -28,5 +28,5 @@ import lombok.Setter;
 @AllArgsConstructor
 public class TxnResolveLockResult {
     // now the txn_result is not used, maybe used in the future
-    private TxnResultInfo txn_result;
+    private TxnResultInfo txnResult;
 }

@@ -14,28 +14,28 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.service;
+package io.dingodb.store.proxy.service;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.codec.CodecServiceProvider;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.NullableType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.converter.DingoConverter;
-import io.dingodb.expr.runtime.type.Type;
 import io.dingodb.sdk.common.codec.CodecUtils;
 import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
 import io.dingodb.sdk.common.serial.BufImpl;
 import io.dingodb.sdk.common.serial.schema.DingoSchema;
-import io.dingodb.store.common.Mapping;
+import io.dingodb.store.proxy.common.Mapping;
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,7 +43,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.type.DingoTypeFactory.tuple;
-import static io.dingodb.store.common.Mapping.mapping;
+import static io.dingodb.store.proxy.common.Mapping.mapping;
 
 public final class CodecService implements io.dingodb.codec.CodecService {
 
@@ -71,39 +71,46 @@ public final class CodecService implements io.dingodb.codec.CodecService {
         public final DingoType type;
 
         @Override
-        public Object[] decode(KeyValue keyValue) throws IOException {
+        @SneakyThrows
+        public Object[] decode(KeyValue keyValue) {
             return (Object[]) type.convertFrom(
                 delegate.decode(mapping(CodecService.INSTANCE.setId(keyValue, id))), DingoConverter.INSTANCE
             );
         }
 
         @Override
-        public Object[] decodeKey(byte @NonNull [] bytes) throws IOException {
+        @SneakyThrows
+        public Object[] decodeKey(byte @NonNull [] bytes) {
             throw new UnsupportedEncodingException();
         }
 
         @Override
-        public KeyValue encode(Object @NonNull [] tuple) throws IOException {
+        @SneakyThrows
+        public KeyValue encode(Object @NonNull [] tuple) {
             return mapping(delegate.encode((Object[]) type.convertTo(tuple, DingoConverter.INSTANCE)));
         }
 
         @Override
-        public byte[] encodeKey(Object[] keys) throws IOException {
+        @SneakyThrows
+        public byte[] encodeKey(Object[] keys) {
             return delegate.encodeKey((Object[]) type.convertTo(keys, DingoConverter.INSTANCE));
         }
 
         @Override
-        public Object[] mapKeyAndDecodeValue(Object[] keys, byte[] bytes) throws IOException {
+        @SneakyThrows
+        public Object[] mapKeyAndDecodeValue(Object[] keys, byte[] bytes) {
             throw new UnsupportedEncodingException();
         }
 
         @Override
-        public byte[] encodeKeyPrefix(Object[] record, int columnCount) throws IOException {
+        @SneakyThrows
+        public byte[] encodeKeyPrefix(Object[] record, int columnCount) {
             return delegate.encodeKeyPrefix((Object[]) type.convertTo(record, DingoConverter.INSTANCE), columnCount);
         }
 
         @Override
-        public Object[] decodeKeyPrefix(byte[] keyPrefix) throws IOException {
+        @SneakyThrows
+        public Object[] decodeKeyPrefix(byte[] keyPrefix) {
             return (Object[]) type.convertFrom(
                 delegate.decodeKeyPrefix(CodecService.INSTANCE.setId(keyPrefix, id)), DingoConverter.INSTANCE
             );
@@ -113,21 +120,24 @@ public final class CodecService implements io.dingodb.codec.CodecService {
 
     @Override
     public byte[] setId(byte[] key, CommonId id) {
+        return setId(key, id.seq);
+    }
+
+    public byte[] setId(byte[] key, long id) {
         BufImpl buf = new BufImpl(key);
         // skip namespace
         buf.skip(1);
         // reset id
-        buf.writeLong(id.seq);
+        buf.writeLong(id);
         return key;
     }
 
     @Override
-    public KeyValueCodec createKeyValueCodec(CommonId id, List<io.dingodb.common.table.ColumnDefinition> columns
-    ) {
+    public KeyValueCodec createKeyValueCodec(CommonId id, List<io.dingodb.common.table.ColumnDefinition> columns) {
         return new KeyValueCodec(
             id,
             DingoKeyValueCodec.of(id.seq, columns.stream().map(Mapping::mapping).collect(Collectors.toList())),
-            tuple(columns.stream().map(io.dingodb.common.table.ColumnDefinition::getType).toArray(DingoType[]::new))
+            tuple(columns.stream().map(ColumnDefinition::getType).toArray(DingoType[]::new))
         );
     }
 
@@ -136,7 +146,7 @@ public final class CodecService implements io.dingodb.codec.CodecService {
         return new KeyValueCodec(id, new DingoKeyValueCodec(id.seq, createSchemasForType(type, keyMapping)), type);
     }
 
-    private static List<DingoSchema> createSchemasForType(DingoType type, TupleMapping keyMapping) {
+    public static List<DingoSchema> createSchemasForType(DingoType type, TupleMapping keyMapping) {
         if (type instanceof TupleType) {
             TupleType tupleType = (TupleType) type;
             DingoType[] fields = tupleType.getFields();

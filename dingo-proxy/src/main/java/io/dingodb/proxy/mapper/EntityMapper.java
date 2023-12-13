@@ -29,7 +29,6 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -51,7 +50,7 @@ public interface EntityMapper {
     default PartitionRule mapping(PartitionDefinition definition) {
         return new PartitionRule(
             definition.getFuncName(),
-            definition.getCols(),
+            definition.getColumns(),
             definition.getDetails().stream().map(this::mapping).collect(Collectors.toList()));
     }
 

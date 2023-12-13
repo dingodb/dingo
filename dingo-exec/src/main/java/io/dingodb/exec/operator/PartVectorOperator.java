@@ -63,14 +63,10 @@ public final class PartVectorOperator extends FilterProjectSourceOperator {
                 .calcPartId(response.getKey(), param.getDistributions());
             StoreInstance storeInstance = StoreService.getDefault().getInstance(param.getTableId(), regionId);
             KeyValue keyValue = storeInstance.get(response.getKey());
-            try {
-                Object[] decode = param.getCodec().decode(keyValue);
-                Object[] result = Arrays.copyOf(decode, decode.length + 1);
-                result[decode.length] = response.getDistance();
-                results.add(result);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            Object[] decode = param.getCodec().decode(keyValue);
+            Object[] result = Arrays.copyOf(decode, decode.length + 1);
+            result[decode.length] = response.getDistance();
+            results.add(result);
         }
         return results.iterator();
     }

@@ -118,8 +118,8 @@ public abstract class BaseTransaction implements ITransaction{
         // 1、call sdk commitPrimaryKey
         TxnCommit commitRequest = TxnCommit.builder().
             isolationLevel(IsolationLevel.of(isolationLevel)).
-            start_ts(start_ts).
-            commit_ts(commit_ts).
+            startTs(start_ts).
+            commitTs(commit_ts).
             keys(Collections.singletonList(primaryKey)).
             build();
         return part.txnCommit(commitRequest);

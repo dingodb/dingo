@@ -36,15 +36,15 @@ public class PartitionDefinition implements Serializable {
     @JsonProperty("funcName")
     String funcName;
 
-    @JsonProperty("cols")
-    List<String> cols;
+    @JsonProperty("columns")
+    List<String> columns;
 
     @JsonProperty("details")
     List<PartitionDetailDefinition> details;
 
-    public PartitionDefinition(String funcName, List<String> cols) {
+    public PartitionDefinition(String funcName, List<String> columns) {
         this.funcName = funcName;
-        this.cols = cols;
+        this.columns = columns;
     }
 
     public PartitionDefinition() {
