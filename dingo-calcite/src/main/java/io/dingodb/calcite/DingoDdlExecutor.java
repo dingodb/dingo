@@ -22,6 +22,7 @@ import io.dingodb.calcite.grammar.ddl.SqlAlterConvertCharset;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
 import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
+import io.dingodb.calcite.grammar.ddl.SqlCreateSchema;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
 import io.dingodb.calcite.grammar.ddl.SqlDropIndex;
 import io.dingodb.calcite.grammar.ddl.SqlDropUser;
@@ -31,6 +32,7 @@ import io.dingodb.calcite.grammar.ddl.SqlIndexDeclaration;
 import io.dingodb.calcite.grammar.ddl.SqlRevoke;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
+import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
 import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.common.CommonId;
@@ -69,7 +71,6 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlTypeNameSpec;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.ddl.DingoSqlColumn;
-import org.apache.calcite.sql.ddl.SqlCreateSchema;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.ddl.SqlDropSchema;
 import org.apache.calcite.sql.ddl.SqlDropTable;
@@ -726,6 +727,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void execute(SqlAlterConvertCharset sqlAlterConvert, CalcitePrepare.Context context) {
         // alter table charset collate
+    }
+
+    public void execute(SqlUseSchema sqlUseSchema, CalcitePrepare.Context context) {
+        // use database / use schema
     }
 
     public void validatePartitionBy(
