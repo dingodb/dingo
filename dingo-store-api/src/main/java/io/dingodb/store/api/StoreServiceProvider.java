@@ -19,7 +19,6 @@ package io.dingodb.store.api;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.ServiceLoader;
 
