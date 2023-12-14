@@ -31,13 +31,15 @@ public final class ProjectOperator extends SoleOutOperator {
 
     @Override
     public  boolean push(int pin, Object[] tuple, Vertex vertex) {
-        ProjectParam param = vertex.getParam();
-        List<SqlExpr> projects = param.getProjects();
-        Object[] newTuple = new Object[projects.size()];
-        for (int i = 0; i < newTuple.length; ++i) {
-            newTuple[i] = projects.get(i).eval(tuple);
+        synchronized (vertex) {
+            ProjectParam param = vertex.getParam();
+            List<SqlExpr> projects = param.getProjects();
+            Object[] newTuple = new Object[projects.size()];
+            for (int i = 0; i < newTuple.length; ++i) {
+                newTuple[i] = projects.get(i).eval(tuple);
+            }
+            return vertex.getSoleEdge().transformToNext(newTuple);
         }
-        return vertex.getSoleEdge().transformToNext(newTuple);
     }
 
     @Override

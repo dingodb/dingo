@@ -47,6 +47,7 @@ import io.dingodb.exec.operator.SortOperator;
 import io.dingodb.exec.operator.SumUpOperator;
 import io.dingodb.exec.operator.TxnLikeScanOperator;
 import io.dingodb.exec.operator.TxnPartDeleteOperator;
+import io.dingodb.exec.operator.TxnPartInsertOperator;
 import io.dingodb.exec.operator.TxnPartRangeDeleteOperator;
 import io.dingodb.exec.operator.TxnPartRangeScanOperator;
 import io.dingodb.exec.operator.TxnPartUpdateOperator;
@@ -140,7 +141,7 @@ public final class OperatorFactory {
         OPERATORS.put(TXN_PART_RANGE_SCAN, TxnPartRangeScanOperator.INSTANCE);
         OPERATORS.put(TXN_PART_RANGE_DELETE, TxnPartRangeDeleteOperator.INSTANCE);
         OPERATORS.put(TXN_PART_UPDATE, TxnPartUpdateOperator.INSTANCE);
-        OPERATORS.put(TXN_PART_INSERT, TxnPartUpdateOperator.INSTANCE);
+        OPERATORS.put(TXN_PART_INSERT, TxnPartInsertOperator.INSTANCE);
         OPERATORS.put(TXN_PART_DELETE, TxnPartDeleteOperator.INSTANCE);
         OPERATORS.put(COMMIT, CommitOperator.INSTANCE);
         OPERATORS.put(PRE_WRITE, PreWriteOperator.INSTANCE);

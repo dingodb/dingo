@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.tuple.TupleKey;
 import lombok.Getter;
 
@@ -41,8 +42,7 @@ public class IndexMergeParam extends AbstractParams {
         this.selection = selection;
     }
 
-    public IndexMergeParam init() {
+    public void init(Vertex vertex) {
         hashMap = new ConcurrentHashMap<>();
-        return this;
     }
 }

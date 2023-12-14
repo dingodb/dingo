@@ -26,9 +26,11 @@ import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.params.TxnPartUpdateParam;
+import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.api.transaction.data.Op;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
@@ -68,15 +70,22 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             }
             Object[] newTuple2 = (Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE);
             KeyValue keyValue = wrap(param.getCodec()::encode).apply(newTuple2);
+            CommonId tableId = param.getTableId();
             CommonId partId = PartitionService.getService(
                     Optional.ofNullable(param.getTableDefinition().getPartDefinition())
                         .map(PartitionDefinition::getFuncName)
                         .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-                .calcPartId(keyValue.getKey(), param.getDistributions()); // TODO Set flag in front of the byte key
-            StoreInstance store = Services.LOCAL_STORE.getInstance(param.getTableId(), partId);
-            updated = updated && store.update(
-                keyValue,
-                wrap(param.getCodec()::encode).apply(Arrays.copyOf(tuple, tupleSize)));
+                .calcPartId(keyValue.getKey(), param.getDistributions());
+            StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, partId);
+            byte[] txnIdBytes = vertex.getTask().getTxnId().encode();
+            byte[] tableIdBytes = tableId.encode();
+            byte[] partIdBytes = partId.encode();
+            keyValue.setKey(ByteUtils.encode(
+                keyValue.getKey(),
+                Op.PUT.getCode(),
+                (txnIdBytes.length + tableIdBytes.length + partIdBytes.length),
+                txnIdBytes, tableIdBytes, partIdBytes));
+            updated = updated && store.put(keyValue);
             if (updated) {
                 param.inc();
             }
