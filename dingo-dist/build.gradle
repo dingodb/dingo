@@ -63,6 +63,12 @@ task copyDepends(type: Copy) {
     }
     into layout.projectDirectory.dir("dingo")
 
+    from(project(':dingo-store-local').layout.buildDirectory) {
+        include("libs/dingo-store-local-*.jar")
+        exclude("libs/dingo-store-local-*-plain.jar")
+    }
+    into layout.projectDirectory.dir("dingo")
+
     rename { fileName ->
         fileName.replace("-$project.version", "")
     }
@@ -83,7 +89,8 @@ copyDepends.dependsOn([
     ':dingo-proxy:build',
     ':dingo-net-netty:fatJar',
     ':dingo-executor:fatJar',
-    ':dingo-mysql-init:fatJar'
+    ':dingo-mysql-init:fatJar',
+    ':dingo-store-local:fatJar'
 ])
 
 packageDistribution.mustRunAfter(copyDepends)
