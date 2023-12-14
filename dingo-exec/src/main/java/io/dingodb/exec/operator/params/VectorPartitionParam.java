@@ -16,6 +16,11 @@
 
 package io.dingodb.exec.operator.params;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
@@ -35,8 +40,13 @@ import java.util.Map;
 import java.util.NavigableMap;
 
 @Getter
+@JsonTypeName("vectorPartition")
+@JsonPropertyOrder({"tableId"})
 public class VectorPartitionParam extends AbstractParams {
 
+    @JsonProperty("tableId")
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     private final CommonId tableId;
     private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     @Setter

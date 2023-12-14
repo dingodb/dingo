@@ -33,7 +33,7 @@ public abstract class FanOutOperator extends AbstractOperator {
         if (log.isDebugEnabled()) {
             log.debug("Tuple is pushing to output {}.", index);
         }*/
-        return vertex.getOutList().get(0).transformToNext(tuple);
+        return vertex.getSoleEdge().transformToNext(tuple);
     }
 
     @Override

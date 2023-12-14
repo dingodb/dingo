@@ -20,15 +20,16 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.TxnPartInsertParam;
+import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.api.transaction.data.Op;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
@@ -44,13 +45,23 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         DingoType schema = param.getSchema();
         Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
         KeyValue keyValue = wrap(param.getCodec()::encode).apply(newTuple);
+        CommonId txnId = vertex.getTask().getTxnId();
+        CommonId tableId = param.getTableId();
         CommonId partId = PartitionService.getService(
                 Optional.ofNullable(param.getTableDefinition().getPartDefinition())
                     .map(PartitionDefinition::getFuncName)
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-            .calcPartId(keyValue.getKey(), param.getDistributions()); // TODO Set flag in front of the byte key
-        StoreInstance store = Services.LOCAL_STORE.getInstance(param.getTableId(), partId);
-        if (store.insert(keyValue)) {
+            .calcPartId(keyValue.getKey(), param.getDistributions());
+        StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, partId);
+        byte[] txnIdByte = txnId.encode();
+        byte[] tableIdByte = tableId.encode();
+        byte[] partIdByte = partId.encode();
+        keyValue.setKey(ByteUtils.encode(
+            keyValue.getKey(),
+            Op.PUT.getCode(),
+            (txnIdByte.length + tableIdByte.length + partIdByte.length),
+            txnIdByte, tableIdByte, partIdByte));
+        if (store.put(keyValue)) {
             param.inc();
         }
         return true;

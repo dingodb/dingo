@@ -16,6 +16,9 @@
 
 package io.dingodb.exec.operator.params;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.tool.api.ToolService;
@@ -25,6 +28,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 @Getter
+@JsonTypeName("vectorPoint")
+@JsonPropertyOrder({"dimension"})
 public class VectorPointDistanceParam extends AbstractParams {
 
     private final RangeDistribution rangeDistribution;
@@ -32,7 +37,7 @@ public class VectorPointDistanceParam extends AbstractParams {
     private final Integer vectorIndex;
 
     private final List<Float> targetVector;
-
+    @JsonProperty("dimension")
     private final Integer dimension;
 
     private final String algType;
