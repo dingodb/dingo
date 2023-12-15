@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.util.Optional;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -48,9 +49,9 @@ public class DingoConfiguration {
 
     private CommonId serverId;
     @Delegate
-    private ExchangeConfiguration exchange;
-    private SecurityConfiguration security;
-    private VariableConfiguration variable;
+    private ExchangeConfiguration exchange = new ExchangeConfiguration();
+    private SecurityConfiguration security = new SecurityConfiguration();
+    private VariableConfiguration variable = new VariableConfiguration();
 
     public static synchronized void parse(final String configPath) throws Exception {
         if (configPath != null) {
@@ -78,11 +79,11 @@ public class DingoConfiguration {
     }
 
     public static String host() {
-        return INSTANCE == null ? null : INSTANCE.getHost();
+        return Optional.mapOrNull(INSTANCE.exchange, ExchangeConfiguration::getHost);
     }
 
     public static int port() {
-        return INSTANCE == null ? 0 : INSTANCE.getPort();
+        return Optional.mapOrGet(INSTANCE.exchange, ExchangeConfiguration::getPort, () -> 0);
     }
 
     public static CommonId serverId() {
