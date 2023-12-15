@@ -19,8 +19,9 @@ package io.dingodb.exec.operator;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.params.InfoSchemaScanParam;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -34,15 +35,15 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
-    public static final InfoSchemaScanOperator INSTANCE = new InfoSchemaScanOperator();
+    private String target;
 
-    private InfoSchemaScanOperator() {
+    public InfoSchemaScanOperator(DingoType schema, SqlExpr filter, TupleMapping selection, String target) {
+        super(schema, filter, selection);
+        this.target = target;
     }
 
     @Override
-    protected @NonNull Iterator<Object[]> createSourceIterator(Vertex vertex) {
-        InfoSchemaScanParam param = vertex.getParam();
-        String target = param.getTarget();
+    protected @NonNull Iterator<Object[]> createSourceIterator() {
         MetaService metaService = MetaService.root();
         switch (target.toUpperCase()) {
             case "GLOBAL_VARIABLES":

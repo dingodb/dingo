@@ -79,6 +79,7 @@ import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.Pair;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.Connection;
@@ -292,6 +293,9 @@ public class DingoParser {
     }
 
     private String processKeyWords(String sql) {
+        if (sql.contains("\\r\\n")) {
+            sql = StringEscapeUtils.unescapeJson(sql);
+        }
         for (Map.Entry<String, String> entry : sensitiveKey.entrySet()) {
             if (sql.contains(entry.getKey())) {
                 sql = sql.replace(entry.getKey(), entry.getValue());
