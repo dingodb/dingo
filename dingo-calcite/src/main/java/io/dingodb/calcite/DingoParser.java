@@ -293,7 +293,7 @@ public class DingoParser {
     }
 
     private String processKeyWords(String sql) {
-        if (sql.contains("\\r\\n")) {
+        if (sql.contains("\\r\\n") || sql.contains("\\n")) {
             sql = StringEscapeUtils.unescapeJson(sql);
         }
         for (Map.Entry<String, String> entry : sensitiveKey.entrySet()) {
