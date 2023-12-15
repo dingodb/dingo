@@ -17,6 +17,7 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.common.util.SqlLikeUtils;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.commons.lang3.StringUtils;
 
 import java.sql.Connection;
@@ -28,14 +29,18 @@ import java.util.List;
 
 public class ShowFullTableOperation implements QueryOperation {
     private String schemaName;
-
     private String sqlLikePattern;
+    private SqlNode condition;
     private Connection connection;
 
-    public ShowFullTableOperation(String schemaName, String pattern, Connection connection) {
+    public ShowFullTableOperation(String schemaName,
+                                  String pattern,
+                                  Connection connection,
+                                  SqlNode condition) {
         this.schemaName = schemaName;
         this.sqlLikePattern = pattern;
         this.connection = connection;
+        this.condition = condition;
     }
 
     @Override

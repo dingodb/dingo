@@ -21,10 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
-import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 

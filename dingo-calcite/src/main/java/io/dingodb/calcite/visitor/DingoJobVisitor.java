@@ -217,7 +217,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Output>> {
     }
 
     @Override
-    public Collection<Vertex> visit(@NonNull DingoInfoSchemaScan rel) {
+    public Collection<Output> visit(@NonNull DingoInfoSchemaScan rel) {
         return DingoInfoSchemaScanVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 }

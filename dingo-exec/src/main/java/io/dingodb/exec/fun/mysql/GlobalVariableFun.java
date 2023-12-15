@@ -39,6 +39,9 @@ public class GlobalVariableFun extends UnaryOp {
         if (str.startsWith("session.")) {
             str = str.substring(8);
             return ScopeVariables.sessionVariables.getOrDefault(str, "");
+        } else if (str.startsWith("global.")) {
+            str = str.substring(7);
+            return ScopeVariables.globalVariables.getOrDefault(str, "");
         } else {
             return ScopeVariables.globalVariables.getOrDefault(str, "");
         }

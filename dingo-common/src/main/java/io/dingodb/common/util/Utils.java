@@ -141,17 +141,11 @@ public final class Utils {
         return objectList.stream().map(e -> {
             if (e instanceof Time) {
                 Time date  = (Time) e;
-                if (date == null) {
-                    return null;
-                }
                 long v = date.getTime();
                 v -= timeZone.getOffset(v);
                 return new Time(v);
             } else if (e instanceof Date) {
-                java.sql.Date date = (Date) e;
-                if (date == null) {
-                    return null;
-                }
+                Date date = (Date) e;
                 long v = date.getTime();
                 v -= timeZone.getOffset(v);
                 return new Date(v);
@@ -162,7 +156,10 @@ public final class Utils {
     }
 
     public static String getCharacterSet(String characterSet) {
-        if (characterSet.equalsIgnoreCase("utf8mb4")) {
+        if (characterSet == null) {
+            return "utf8";
+        }
+        if ("utf8mb4".equalsIgnoreCase(characterSet)) {
             return "utf8";
         }
         return characterSet;

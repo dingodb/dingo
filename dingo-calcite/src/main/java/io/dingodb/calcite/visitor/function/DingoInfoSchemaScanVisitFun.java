@@ -24,23 +24,21 @@ import io.dingodb.common.Location;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
+import io.dingodb.exec.base.Output;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.operator.params.InfoSchemaScanParam;
+import io.dingodb.exec.operator.InfoSchemaScanOperator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static io.dingodb.exec.utils.OperatorCodeUtils.INFO_SCHEMA_SCAN;
 
 public final class DingoInfoSchemaScanVisitFun {
 
     private DingoInfoSchemaScanVisitFun() {
     }
 
-    public static List<Vertex> visit(
+    public static List<Output> visit(
         Job job,
         IdGenerator idGenerator,
         Location currentLocation,
@@ -58,20 +56,16 @@ public final class DingoInfoSchemaScanVisitFun {
         } else {
             tableName = td.getName();
         }
-        InfoSchemaScanParam param = new InfoSchemaScanParam(
+        InfoSchemaScanOperator operator = new InfoSchemaScanOperator(
             td.getDingoType(),
             filter,
             rel.getSelection(),
             tableName
         );
-
         Task task = job.getOrCreate(currentLocation, idGenerator);
-        Vertex vertex = new Vertex(INFO_SCHEMA_SCAN, param);
-        vertex.setId(idGenerator.getOperatorId(task.getId()));
-        task.putVertex(vertex);
+        operator.setId(idGenerator.getOperatorId(task.getId()));
+        task.putOperator(operator);
 
-        List<Vertex> outputs = new ArrayList<>();
-        outputs.add(vertex);
-        return outputs;
+        return new ArrayList<>(operator.getOutputs());
     }
 }
