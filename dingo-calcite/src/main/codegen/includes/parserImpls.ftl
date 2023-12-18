@@ -223,7 +223,7 @@ void TableElement(List<SqlNode> list) :
             }
     |
         <UNIQUE> { s.add(this); }
-        [<KEY>] [<INDEX>] name = SimpleIdentifier()
+        [ [<KEY>] [<INDEX>] name = SimpleIdentifier() ]
         columnList = ParenthesizedSimpleIdentifierList() {
               list.add(SqlDdlNodes.unique(s.end(columnList), name, columnList));
         }
@@ -607,7 +607,7 @@ SqlCreate SqlCreateIndex(Span s, boolean replace) :
 {
     [ <UNIQUE> { isUnique = true;}]
     <INDEX> ifNotExists = IfNotExistsOpt()
-    ( <QUOTED_STRING> | <IDENTIFIER> )
+    ( <QUOTED_STRING> | <IDENTIFIER> | <BACK_QUOTED_IDENTIFIER> )
      { index = token.image.toUpperCase(); }
     <ON> table = CompoundIdentifier()
     <LPAREN> column = SimpleIdentifier() { columns = new ArrayList<SqlIdentifier>(); columns.add(column); }
