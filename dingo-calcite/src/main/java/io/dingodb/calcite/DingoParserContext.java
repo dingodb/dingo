@@ -204,7 +204,7 @@ public final class DingoParserContext implements Context {
         return options != null ? options.getOrDefault(field, "").toString() : "";
     }
 
-    public void setUsedSchema(CalciteSchema schema) {
+    public synchronized void setUsedSchema(CalciteSchema schema) {
         this.usedSchema = schema;
         this.defaultSchemaName = schema.getName();
         boolean exists = false;
@@ -215,9 +215,12 @@ public final class DingoParserContext implements Context {
         }
         if (!exists) {
             int size = catalogReader.getSchemaPaths().size();
-            List<String> array = catalogReader.getSchemaPaths().get(size - 1);
-            array.add(schema.getName());
-            catalogReader.getSchemaPaths().add(new ArrayList<>());
+            if (size == 2) {
+                catalogReader.getSchemaPaths().remove(0);
+                List<String> array = catalogReader.getSchemaPaths().get(0);
+                array.add(schema.getName());
+                catalogReader.getSchemaPaths().add(new ArrayList<>());
+            }
         }
     }
 }

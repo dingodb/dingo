@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite;
 
+import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -169,6 +170,49 @@ public class TestCreateTable {
             System.out.println(sqlSetPassword.user + ", host:" + sqlSetPassword.host
                 + ",pwd" + sqlSetPassword.password);
             System.out.println("---> sqlNode:" + sqlNode);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void createIndex() {
+        String sql = "CREATE INDEX `ix_REL_PGROUP_PERMISSION_permission_id` ON `REL_PGROUP_PERMISSION` (permission_id)";
+        SqlParser.Config config = DingoParser.PARSER_CONFIG.withParserFactory(DingoSqlParserImpl::new);
+        SqlParser parser = SqlParser.create(sql, config);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlCreateIndex;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void createTableWithComment() {
+        String sql = "CREATE TABLE `RESOURCE` (\n" +
+            "        create_time BIGINT NOT NULL, \n" +
+            "        update_time BIGINT NOT NULL, \n" +
+            "        id INTEGER NOT NULL AUTO_INCREMENT, \n" +
+            "        parent_id INTEGER, \n" +
+            "        name VARCHAR(255), \n" +
+            "        type VARCHAR(255) NOT NULL, \n" +
+            "        rel_id INTEGER, \n" +
+            "        `key` VARCHAR(255), \n" +
+            "        remark VARCHAR(255), \n" +
+            "        status INTEGER NOT NULL, \n" +
+            "        PRIMARY KEY (id), \n" +
+            "        UNIQUE (id, parent_id), \n" +
+            "        UNIQUE (name), \n" +
+            "        UNIQUE (`key`)\n" +
+            ")COMMENT='资源信息表'";
+        SqlParser.Config config = DingoParser.PARSER_CONFIG.withParserFactory(DingoSqlParserImpl::new);
+        SqlParser parser = SqlParser.create(sql, config);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlCreateTable;
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
