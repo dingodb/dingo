@@ -73,8 +73,8 @@ public final class MysqlInit {
     private static final String BASE_TABLE = "BASE TABLE";
     private static final String SYSTEM_VIEW = "SYSTEM VIEW";
     // for format
-    private static final String DYNAMIC = "DYNAMIC";
-    private static final String FIXED = "FIXED";
+    private static final String DYNAMIC = "Dynamic";
+    private static final String FIXED = "Fixed";
     // engine
     private static final String END_ROCKSDB = Common.Engine.ENG_ROCKSDB.name();
 
