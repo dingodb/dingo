@@ -52,6 +52,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static io.dingodb.sdk.common.utils.EntityConversion.mapping;
 import static io.dingodb.sdk.common.utils.Parameters.cleanNull;
@@ -145,6 +147,7 @@ public class IndexService {
                             if (newFork == null) {
                                 return exec(newIndexInfo, operation, newFork, 0, vectorContext).orNull();
                             }
+                            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
                             return exec(newIndexInfo, operation, newFork, retry - 1, vectorContext).orNull();
                         } else {
                             return err;

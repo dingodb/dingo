@@ -20,7 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.calcite.stats.task.RefreshStatsTask;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.scheduler.SchedulerServiceProvider;
-import io.dingodb.sdk.service.lock.LockService;
+import io.dingodb.sdk.service.LockService;
 import io.dingodb.server.executor.Configuration;
 import io.dingodb.server.executor.schedule.stats.AnalyzeScanTask;
 import io.dingodb.server.executor.schedule.stats.TableModifyMonitorTask;

@@ -618,7 +618,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             }
             VectorTableData tableData;
             KeyValue keyValue = tableCodec.encode(record);
-            tableData = new VectorTableData(keyValue.getKey(), keyValue.getValue());
+            tableData = VectorTableData.builder().tableKey(keyValue.getKey()).build();
             VectorWithId vectorWithId = VectorWithId.builder().id(longId).vector(vector).tableData(tableData).build();
             indexService(indexId, regionId).vectorAdd(
                 VectorAddRequest.builder().vectors(singletonList(vectorWithId)).build()
