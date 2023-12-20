@@ -23,6 +23,8 @@ import io.dingodb.sdk.common.codec.CodecUtils;
 import io.dingodb.sdk.service.entity.meta.ColumnDefinition;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.EntityType;
+import io.dingodb.sdk.service.entity.store.AggregationOperator;
+import io.dingodb.sdk.service.entity.store.AggregationType;
 import io.dingodb.sdk.service.entity.store.Coprocessor;
 import io.dingodb.sdk.service.entity.store.Schema;
 import io.dingodb.sdk.service.entity.store.SchemaWrapper;
@@ -74,7 +76,8 @@ public interface EntityMapper {
 
     @Mappings({
         @Mapping(target = "selectionColumns", source = "selection"),
-        @Mapping(target = "groupByColumns", source = "groupBy")
+        @Mapping(target = "groupByColumns", source = "groupBy"),
+        @Mapping(target = "aggregationOperators", source = "aggregations")
     })
     Coprocessor coprocessorTo(io.dingodb.common.Coprocessor coprocessor);
 
@@ -82,6 +85,13 @@ public interface EntityMapper {
         return SchemaWrapper.builder()
             .schema(schemaTo(MAPPER.columnsTo(schemaWrapper.getSchemas())))
             .commonId(schemaWrapper.getCommonId())
+            .build();
+    }
+
+    default AggregationOperator aggregationOperatorTo(io.dingodb.common.AggregationOperator aggregationOperator) {
+        return AggregationOperator.builder()
+            .oper(AggregationType.forNumber(aggregationOperator.operation.getCode()))
+            .indexOfColumn(aggregationOperator.indexOfColumn)
             .build();
     }
 

@@ -17,6 +17,7 @@
 package io.dingodb.exec.utils;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.store.KeyValue;
 
 import java.util.Arrays;
 
@@ -30,17 +31,37 @@ public final class ByteUtils {
             destPos += idByte.length;
         }
         System.arraycopy(key, 0, result, destPos, key.length);
-        result[result.length -2] = (byte) code;
+        if (code != 0) {
+            result[result.length -2] = (byte) code;
+        }
         return result;
     }
 
-    public static Object[] decode(byte[] bytes) {
-        Object[] result = new Object[4];
+    public static Object[] decode(KeyValue keyValue) {
+        byte[] bytes = keyValue.getKey();
+        Object[] result = new Object[6];
         int from = 0;
         result[0] = CommonId.decode(Arrays.copyOfRange(bytes, from, from += CommonId.LEN));
         result[1] = CommonId.decode(Arrays.copyOfRange(bytes, from, from += CommonId.LEN));
-        result[2] = CommonId.decode(Arrays.copyOfRange(bytes, from, from + CommonId.LEN));
+        result[2] = CommonId.decode(Arrays.copyOfRange(bytes, from, from += CommonId.LEN));
         result[3] = bytes[bytes.length - 2];
+        byte[] destKey = new byte[bytes.length - from];
+        System.arraycopy(bytes, from , destKey, 0, destKey.length);
+        destKey[destKey.length - 2] = (byte) 0;
+        result[4] = destKey;
+        result[5] = keyValue.getValue();
         return result;
     }
+
+    public static KeyValue mapping(KeyValue keyValue) {
+        byte[] bytes = keyValue.getKey();
+        int from = 0;
+        CommonId.decode(Arrays.copyOfRange(bytes, from, from += CommonId.LEN));
+        CommonId.decode(Arrays.copyOfRange(bytes, from, from += CommonId.LEN));
+        CommonId.decode(Arrays.copyOfRange(bytes, from, from += CommonId.LEN));
+        byte[] destKey = new byte[bytes.length - from];
+        System.arraycopy(bytes, from , destKey, 0, destKey.length);
+        return new KeyValue(destKey, keyValue.getValue());
+    }
+
 }

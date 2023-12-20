@@ -122,12 +122,33 @@ public class ByteArrayUtils {
         return ignoreLen ? 0 : bytes1.length - bytes2.length;
     }
 
+    public static int compare(byte[] bytes1, byte[] bytes2, boolean ignoreLen, int pos, int ignoredBitsMark) {
+        if (bytes1 == bytes2) {
+            return 0;
+        }
+        int n = Math.min(bytes1.length, bytes2.length);
+        for (int i = pos; i < n; i++) {
+            if (i == ignoredBitsMark) {
+                continue;
+            }
+            if (bytes1[i] == bytes2[i]) {
+                continue;
+            }
+            return (bytes1[i] & 0xFF) - (bytes2[i] & 0xFF);
+        }
+        return ignoreLen ? 0 : bytes1.length - bytes2.length;
+    }
+
     public static int compare(byte[] bytes1, byte[] bytes2) {
         return compare(bytes1, bytes2, false);
     }
 
     public static int compare(byte[] bytes1, byte[] bytes2, int pos) {
         return compare(bytes1, bytes2, false, pos);
+    }
+
+    public static int compare(byte[] bytes1, byte[] bytes2, int pos, int ignoredBitsMark) {
+        return compare(bytes1, bytes2, false, pos, ignoredBitsMark);
     }
 
     public static int compareWithoutLen(byte[] bytes1, byte[] bytes2) {
@@ -150,12 +171,20 @@ public class ByteArrayUtils {
         return compare(bytes1, bytes2, pos) < 0;
     }
 
+    public static boolean lessThan(byte[] bytes1, byte[] bytes2, int pos, int ignoredBitsMark) {
+        return compare(bytes1, bytes2, pos, ignoredBitsMark) < 0;
+    }
+
     public static boolean greatThan(byte[] bytes1, byte[] bytes2) {
         return greatThan(bytes1, bytes2, 0);
     }
 
     public static boolean greatThan(byte[] bytes1, byte[] bytes2, int pos) {
         return compare(bytes1, bytes2, false, pos) > 0;
+    }
+
+    public static boolean greatThan(byte[] bytes1, byte[] bytes2, int pos, int ignoredBitsMark) {
+        return compare(bytes1, bytes2, pos, ignoredBitsMark) > 0;
     }
 
     public static boolean lessThanOrEqual(byte[] bytes1, byte[] bytes2) {

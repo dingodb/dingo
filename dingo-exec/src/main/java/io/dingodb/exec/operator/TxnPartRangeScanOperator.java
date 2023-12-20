@@ -16,15 +16,24 @@
 
 package io.dingodb.exec.operator;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.Iterators;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
+import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.TxnPartRangeScanParam;
+import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.api.transaction.data.Op;
+import lombok.AllArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
@@ -42,18 +51,123 @@ public class TxnPartRangeScanOperator extends FilterProjectSourceOperator {
         boolean includeStart = param.isIncludeStart();
         boolean includeEnd = param.isIncludeEnd();
         Coprocessor coprocessor = param.getCoprocessor();
-        Iterator<Object[]> iterator;
-        StoreInstance storeInstance = Services.LOCAL_STORE.getInstance(param.getTableId(), param.getPartId());
-        // TODO Set flag in front of the byte key
+        CommonId txnId = vertex.getTask().getTxnId();
+        CommonId tableId = param.getTableId();
+        CommonId partId = param.getPartId();
+        StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
+        StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
+
+        byte[] txnIdByte = txnId.encode();
+        byte[] tableIdByte = tableId.encode();
+        byte[] partIdByte = partId.encode();
+        byte[] encodeStart = ByteUtils.encode(startKey, Op.NONE.getCode(),
+            (txnIdByte.length + tableIdByte.length + partIdByte.length), txnIdByte, tableIdByte, partIdByte);
+        byte[] encodeEnd = ByteUtils.encode(endKey, Op.NONE.getCode(),
+            (txnIdByte.length + tableIdByte.length + partIdByte.length), txnIdByte, tableIdByte, partIdByte);
+        Iterator<KeyValue> localKVIterator;
+        Iterator<KeyValue> kvKVIterator;
         if (coprocessor == null) {
-            iterator = Iterators.transform(
-                storeInstance.scan(new StoreInstance.Range(startKey, endKey, includeStart, includeEnd)),
-                wrap(param.getCodec()::decode)::apply);
+            localKVIterator = Iterators.transform(
+                localStore.scan(new StoreInstance.Range(encodeStart, encodeEnd, includeStart, includeEnd)),
+                wrap(ByteUtils::mapping)::apply);
+            kvKVIterator = kvStore.scan(new StoreInstance.Range(startKey, endKey, includeStart, includeEnd));
         } else {
-            iterator = Iterators.transform(
-                storeInstance.scan(new StoreInstance.Range(startKey, endKey, includeStart, includeEnd), coprocessor),
-                wrap(param.getCodec()::decode)::apply);
+            localKVIterator = Iterators.transform(
+                localStore.scan(new StoreInstance.Range(encodeStart, encodeEnd, includeStart, includeEnd), coprocessor),
+                wrap(ByteUtils::mapping)::apply);
+            kvKVIterator = kvStore.scan(new StoreInstance.Range(startKey, endKey, includeStart, includeEnd), coprocessor);
         }
-        return iterator;
+
+        KeyValue kv1 = getNextValue(localKVIterator);
+        KeyValue kv2 = getNextValue(kvKVIterator);
+
+        final int pos = 9;
+        List<KeyValue> mergedList = new ArrayList<>();
+        List<KeyBytes> deletedList = new ArrayList<>();
+
+        while (kv1 != null && kv2 != null) {
+            byte[] key1 = kv1.getKey();
+            byte[] key2 = kv2.getKey();
+            int code = key1[key1.length - 2];
+            if (ByteArrayUtils.lessThan(key1, key2, pos, key1.length - 2)) {
+                if (code == Op.PUT.getCode() && !deletedList.contains(new KeyBytes(key2))) {
+                    mergedList.add(kv1);
+                    kv1 = getNextValue(localKVIterator);
+                    continue;
+                } else if (code == Op.DELETE.getCode()) {
+                    deletedList.add(new KeyBytes(key1));
+                    kv1 = getNextValue(localKVIterator);
+                    continue;
+                }
+            }
+            if (ByteArrayUtils.greatThan(key1, key2, pos, key1.length - 2)) {
+                if (code == Op.PUT.getCode() && !deletedList.contains(new KeyBytes(key2))) {
+                    mergedList.add(kv2);
+                    kv2 = getNextValue(kvKVIterator);
+                    continue;
+                }
+                if (code == Op.DELETE.getCode()) {
+                    deletedList.add(new KeyBytes(key1));
+                    kv1 = getNextValue(localKVIterator);
+                    continue;
+                }
+            }
+            if (ByteArrayUtils.compare(key1, key2, pos, key1.length - 2) == 0) {
+                if (code == Op.DELETE.getCode()) {
+                    kv1 = getNextValue(localKVIterator);
+                    kv2 = getNextValue(kvKVIterator);
+                    continue;
+                }
+                if (code == Op.PUT.getCode()) {
+                    mergedList.add(kv1);
+                    kv1 = getNextValue(localKVIterator);
+                    kv2 = getNextValue(kvKVIterator);
+                }
+            }
+        }
+        while (kv1 != null) {
+            if (!mergedList.contains(kv1)) {
+                mergedList.add(kv1);
+            }
+            kv1 = getNextValue(localKVIterator);
+        }
+        while (kv2 != null) {
+            byte[] key = kv2.getKey();
+            if (!mergedList.contains(kv2) && !deletedList.contains(new KeyBytes(key))) {
+                mergedList.add(kv2);
+            }
+            kv2 = getNextValue(kvKVIterator);
+        }
+
+        return Iterators.transform(mergedList.iterator(), wrap(param.getCodec()::decode)::apply);
+    }
+
+    private KeyValue getNextValue(Iterator<KeyValue> iterator) {
+        if (iterator.hasNext()) {
+            return iterator.next();
+        }
+        return null;
+    }
+
+    @AllArgsConstructor
+    public static class KeyBytes {
+        private final byte[] key;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            KeyBytes keyBytes = (KeyBytes) o;
+            return ByteArrayUtils.compare(this.key, keyBytes.key, 9, this.key.length - 2) == 0;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(key);
+        }
     }
 }
