@@ -17,55 +17,29 @@
 package io.dingodb.calcite.grammar.dql;
 
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.commons.lang3.StringUtils;
 
-import java.util.List;
+public class SqlShowCollation extends SqlShow {
 
-public class SqlShowFullTables extends SqlShow {
-
-    public String schema;
-
-    public String pattern;
-
-    public SqlNode condition;
-
+    public String sqlLikePattern;
     private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("SHOW FULL TABLES", SqlKind.SELECT);
+        new SqlSpecialOperator("SHOW COLLATION", SqlKind.SELECT);
 
     /**
      * Creates a SqlDdl.
      *
      * @param pos      pos
      */
-    public SqlShowFullTables(SqlParserPos pos,
-                             String schema,
-                             String pattern,
-                             SqlNode condition) {
+    public SqlShowCollation(SqlParserPos pos, String sqlLikePattern) {
         super(OPERATOR, pos);
-        if (StringUtils.isNotBlank(schema)) {
-            this.schema = schema.replace("`", "");
-        }
-        this.pattern = pattern;
-        this.condition = condition;
-    }
-
-
-    @Override
-    public List<SqlNode> getOperandList() {
-        return super.getOperandList();
+        this.sqlLikePattern = sqlLikePattern;
     }
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.keyword("SHOW FULL TABLES");
-        if (schema != null) {
-            writer.keyword("FROM");
-            writer.keyword(schema);
-        }
+        writer.keyword("SHOW COLLATION");
     }
 }

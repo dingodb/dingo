@@ -26,36 +26,36 @@ import java.util.Calendar;
 
 public class BufferUtil {
 
-    public static final void writeUB2(ByteBuf buffer, int operand) {
+    public static void writeUB2(ByteBuf buffer, int operand) {
         buffer.writeByte(operand & 0xff);
         buffer.writeByte((byte) (operand >>> 8));
     }
 
-    public static final void writeUB3(ByteBuf buffer, int operand) {
+    public static void writeUB3(ByteBuf buffer, int operand) {
         buffer.writeByte((byte) (operand & 0xff));
         buffer.writeByte((byte) (operand >>> 8));
         buffer.writeByte((byte) (operand >>> 16));
     }
 
-    public static final void writeInt(ByteBuf buffer, int operand) {
+    public static void writeInt(ByteBuf buffer, int operand) {
         buffer.writeByte((byte) (operand & 0xff));
         buffer.writeByte((byte) (operand >>> 8));
         buffer.writeByte((byte) (operand >>> 16));
         buffer.writeByte((byte) (operand >>> 24));
     }
 
-    public static final void writeFloat(ByteBuf buffer, float operand) {
+    public static void writeFloat(ByteBuf buffer, float operand) {
         writeInt(buffer, Float.floatToIntBits(operand));
     }
 
-    public static final void writeUB4(ByteBuf buffer, long operand) {
+    public static void writeUB4(ByteBuf buffer, long operand) {
         buffer.writeByte((byte) (operand & 0xff));
         buffer.writeByte((byte) (operand >>> 8));
         buffer.writeByte((byte) (operand >>> 16));
         buffer.writeByte((byte) (operand >>> 24));
     }
 
-    public static final void writeLong(ByteBuf buffer, long operand) {
+    public static void writeLong(ByteBuf buffer, long operand) {
         buffer.writeByte((byte) (operand & 0xff));
         buffer.writeByte((byte) (operand >>> 8));
         buffer.writeByte((byte) (operand >>> 16));
@@ -66,11 +66,11 @@ public class BufferUtil {
         buffer.writeByte((byte) (operand >>> 56));
     }
 
-    public static final void writeDouble(ByteBuf buffer, double operand) {
+    public static void writeDouble(ByteBuf buffer, double operand) {
         writeLong(buffer, Double.doubleToLongBits(operand));
     }
 
-    public static final void writeLength(ByteBuf buffer, long operand) {
+    public static void writeLength(ByteBuf buffer, long operand) {
         if (operand < 251) {
             buffer.writeByte((byte) operand);
         } else if (operand < 0x10000L) {
@@ -85,12 +85,12 @@ public class BufferUtil {
         }
     }
 
-    public static final void writeWithNull(ByteBuf buffer, byte[] src) {
+    public static void writeWithNull(ByteBuf buffer, byte[] src) {
         buffer.writeBytes(src);
         buffer.writeByte((byte) 0);
     }
 
-    public static final void writeWithLength(ByteBuf buffer, byte[] src) {
+    public static void writeWithLength(ByteBuf buffer, byte[] src) {
         int length = src.length;
         if (length < 251) {
             buffer.writeByte((byte) length);
@@ -107,16 +107,7 @@ public class BufferUtil {
         buffer.writeBytes(src);
     }
 
-    public static final void writeWithLength(ByteBuf buffer, byte[] src,
-                                             byte nullValue) {
-        if (src == null) {
-            buffer.writeByte(nullValue);
-        } else {
-            writeWithLength(buffer, src);
-        }
-    }
-
-    public static final int getLength(long length) {
+    public static int getLength(long length) {
         if (length < 251) {
             return 1;
         } else if (length < 0x10000L) {
@@ -128,7 +119,7 @@ public class BufferUtil {
         }
     }
 
-    public static final int getLength(byte[] src) {
+    public static int getLength(byte[] src) {
         int length = src.length;
         if (length < 251) {
             return 1 + length;

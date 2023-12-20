@@ -73,8 +73,8 @@ public final class MysqlInit {
     private static final String BASE_TABLE = "BASE TABLE";
     private static final String SYSTEM_VIEW = "SYSTEM VIEW";
     // for format
-    private static final String DYNAMIC = "DYNAMIC";
-    private static final String FIXED = "FIXED";
+    private static final String DYNAMIC = "Dynamic";
+    private static final String FIXED = "Fixed";
     // engine
     private static final String END_ROCKSDB = Common.Engine.ENG_ROCKSDB.name();
 
@@ -158,7 +158,7 @@ public final class MysqlInit {
         for (Object[] objects : globalVariablesList) {
             versionService.kvPut(putRequest(objects[0], objects[1]));
         }
-        System.out.println("init global variable values");
+        System.out.println("INIT GLOBAL VARIABLE VALUES");
     }
 
     private static PutRequest putRequest(Object resourceKey, Object valObj) {

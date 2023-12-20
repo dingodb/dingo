@@ -18,6 +18,7 @@ package io.dingodb.calcite.rule;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.rel.rules.CoreRules;
 
 import java.util.List;
@@ -88,6 +89,25 @@ public final class DingoRules {
     public static final DingoModifyIndexRule DINGO_MODIFY_INDEX_RULE
         = DingoModifyIndexRule.Config.DEFAULT.toRule();
 
+    public static final SubQueryRemoveRule PROJECT_SUB_QUERY_TO_CORRELATE =
+        SubQueryRemoveRule.Config.PROJECT.toRule();
+
+    /** Rule that converts a sub-queries from filter expressions into
+     * {@link Correlate} instances.
+     *
+     * @see #PROJECT_SUB_QUERY_TO_CORRELATE
+     * @see #JOIN_SUB_QUERY_TO_CORRELATE */
+    public static final SubQueryRemoveRule FILTER_SUB_QUERY_TO_CORRELATE =
+        SubQueryRemoveRule.Config.FILTER.toRule();
+
+    /** Rule that converts sub-queries from join expressions into
+     * {@link Correlate} instances.
+     *
+     * @see #PROJECT_SUB_QUERY_TO_CORRELATE
+     * @see #FILTER_SUB_QUERY_TO_CORRELATE */
+    public static final SubQueryRemoveRule JOIN_SUB_QUERY_TO_CORRELATE =
+        SubQueryRemoveRule.Config.JOIN.toRule();
+
     private static final List<RelOptRule> rules = ImmutableList.of(
         CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN,
         // CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES,
@@ -123,7 +143,10 @@ public final class DingoRules {
         DINGO_FUNCTION_SCAN_RULE,
         DINGO_VECTOR_INDEX_RULE,
         DINGO_VECTOR_JOIN_RULE,
-        DINGO_MODIFY_INDEX_RULE
+        DINGO_MODIFY_INDEX_RULE,
+        PROJECT_SUB_QUERY_TO_CORRELATE,
+        FILTER_SUB_QUERY_TO_CORRELATE,
+        JOIN_SUB_QUERY_TO_CORRELATE
     );
 
     private DingoRules() {

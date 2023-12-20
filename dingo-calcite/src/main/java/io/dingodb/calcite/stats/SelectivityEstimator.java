@@ -78,7 +78,8 @@ public class SelectivityEstimator extends RexVisitorImpl<Double> {
         if (inputRef.getType().getSqlTypeName() == SqlTypeName.BOOLEAN) {
             return 0.5;
         }
-        return null;
+        // If it is an embedded sub query, input ref is null
+        return 0.1;
     }
 
     public Double visitCall(RexCall rexCall) {
