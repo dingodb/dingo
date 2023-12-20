@@ -91,6 +91,11 @@ public final class DingoParserContext implements Context {
 
         RelProtoDataType mapType = (RelDataTypeFactory factory) -> factory.createSqlType(SqlTypeName.ANY);
         rootSchema.add("map", mapType);
+        RelProtoDataType blobType = (RelDataTypeFactory factory) -> factory.createSqlType(SqlTypeName.VARBINARY);
+        rootSchema.add("blob", blobType);
+        rootSchema.add("longblob", blobType);
+        rootSchema.add("mediumblob", blobType);
+        rootSchema.add("tinyblob", blobType);
 
         CalciteConnectionConfigImpl config;
         if (options != null) {
@@ -204,7 +209,7 @@ public final class DingoParserContext implements Context {
         return options != null ? options.getOrDefault(field, "").toString() : "";
     }
 
-    public void setUsedSchema(CalciteSchema schema) {
+    public synchronized void setUsedSchema(CalciteSchema schema) {
         this.usedSchema = schema;
         this.defaultSchemaName = schema.getName();
         boolean exists = false;
@@ -215,9 +220,10 @@ public final class DingoParserContext implements Context {
         }
         if (!exists) {
             int size = catalogReader.getSchemaPaths().size();
-            List<String> array = catalogReader.getSchemaPaths().get(size - 1);
-            array.add(schema.getName());
-            catalogReader.getSchemaPaths().add(new ArrayList<>());
+            if (size == 2) {
+                List<String> array = catalogReader.getSchemaPaths().get(0);
+                array.set(0, schema.getName());
+            }
         }
     }
 }

@@ -43,6 +43,14 @@ SqlShow SqlShow(): {
     show = SqlShowTable(s)
     |
     show = SqlShowLocks(s)
+    |
+    show = SqlShowEngines(s) 
+    |
+    show = SqlShowCollation(s)
+    |
+    show = SqlShowCharset(s)
+    |
+    show = SqlShowPlugins(s)
   )
   {
     return show;
@@ -108,12 +116,15 @@ SqlShow SqlShowTables(Span s): {
 }
 
 SqlShow SqlShowFullTables(Span s): {
-   String schema = null; String pattern = null;
+   String schema = null;
+   String pattern = null;
+   SqlNode condition = null;
 } {
   <FULL>
   <TABLES> [ <FROM> (<BACK_QUOTED_IDENTIFIER> { schema = token.image; } | <IDENTIFIER> { schema = token.image; })]
   [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); }  ]
-  { return new SqlShowFullTables(s.end(this), schema, pattern); }
+  [ condition = Where() ]
+  { return new SqlShowFullTables(s.end(this), schema, pattern, condition); }
 }
 
 SqlShow SqlShowWarnings(Span s): {
@@ -168,7 +179,35 @@ SqlShow SqlShowGlobalVariables(Span s): {
 SqlShow SqlShowLocks(Span s): {
   SqlNode condition = null;
 }{
-  <LOCKS> 
+  <LOCKS>
   [ condition = Where() ]
   {return new SqlShowLocks(s.end(this), condition); }
+}
+
+SqlShow SqlShowEngines(Span s): {
+  String pattern = null;
+} {
+  <ENGINES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  { return new SqlShowEngines(s.end(this), pattern); }
+}
+
+SqlShow SqlShowCollation(Span s): {
+  String pattern = null;
+} {
+  <COLLATION> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  { return new SqlShowCollation(s.end(this), pattern); }
+}
+
+SqlShow SqlShowCharset(Span s): {
+  String pattern = null;
+} {
+  <CHARSET> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  { return new SqlShowCharset(s.end(this), pattern); }
+}
+
+SqlShow SqlShowPlugins(Span s): {
+  String pattern = null;
+} {
+  <PLUGINS> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  { return new SqlShowPlugins(s.end(this), pattern); }
 }

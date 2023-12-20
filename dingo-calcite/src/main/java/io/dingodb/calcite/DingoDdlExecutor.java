@@ -729,8 +729,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         // alter table charset collate
     }
 
-    public void execute(SqlUseSchema sqlUseSchema, CalcitePrepare.Context context) {
-        // use database / use schema
+    public void execute(@NonNull SqlUseSchema sqlUseSchema, CalcitePrepare.Context context) {
+        // for example use mysql
     }
 
     public void validatePartitionBy(

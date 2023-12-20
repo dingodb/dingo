@@ -29,12 +29,16 @@ import io.dingodb.calcite.grammar.ddl.SqlUnLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockTable;
 import io.dingodb.calcite.grammar.dql.SqlDesc;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
+import io.dingodb.calcite.grammar.dql.SqlShowCharset;
+import io.dingodb.calcite.grammar.dql.SqlShowCollation;
 import io.dingodb.calcite.grammar.dql.SqlShowColumns;
 import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
 import io.dingodb.calcite.grammar.dql.SqlShowCreateUser;
 import io.dingodb.calcite.grammar.dql.SqlShowDatabases;
+import io.dingodb.calcite.grammar.dql.SqlShowEngines;
 import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
+import io.dingodb.calcite.grammar.dql.SqlShowPlugins;
 import io.dingodb.calcite.grammar.dql.SqlShowTableDistribution;
 import io.dingodb.calcite.grammar.dql.SqlShowTableStatus;
 import io.dingodb.calcite.grammar.dql.SqlShowTables;
@@ -70,7 +74,13 @@ public class SqlToOperationConverter {
             return Optional.of(new ShowTableOperation(usedSchema, connection, pattern));
         } else if (sqlNode instanceof SqlShowFullTables) {
             SqlShowFullTables showFullTables = (SqlShowFullTables) sqlNode;
-            return Optional.of(new ShowFullTableOperation(showFullTables.schema, showFullTables.pattern, connection));
+            return Optional.of(
+                new ShowFullTableOperation(
+                    showFullTables.schema,
+                    showFullTables.pattern,
+                    connection,
+                    showFullTables.condition)
+            );
         } else if (sqlNode instanceof SqlNextAutoIncrement) {
             SqlNextAutoIncrement sqlNextAutoIncrement = (SqlNextAutoIncrement) sqlNode;
             if (StringUtils.isEmpty(sqlNextAutoIncrement.schemaName)) {
@@ -164,6 +174,18 @@ public class SqlToOperationConverter {
         } else if (sqlNode instanceof SqlKillConnection) {
             SqlKillConnection killConnection = (SqlKillConnection) sqlNode;
             return Optional.of(new KillConnection(killConnection.getThreadId()));
+        } else if (sqlNode instanceof SqlShowEngines) {
+            SqlShowEngines sqlShowEngines = (SqlShowEngines) sqlNode;
+            return Optional.of(new ShowEnginesOperation(sqlShowEngines.sqlLikePattern));
+        } else if (sqlNode instanceof SqlShowPlugins) {
+            SqlShowPlugins sqlShowPlugins = (SqlShowPlugins) sqlNode;
+            return Optional.of(new ShowPluginsOperation(sqlShowPlugins.sqlLikePattern));
+        } else if (sqlNode instanceof SqlShowCollation) {
+            SqlShowCollation sqlShowCollation = (SqlShowCollation) sqlNode;
+            return Optional.of(new ShowCollationOperation(sqlShowCollation.sqlLikePattern));
+        } else if (sqlNode instanceof SqlShowCharset) {
+            SqlShowCharset sqlShowCharset = (SqlShowCharset) sqlNode;
+            return Optional.of(new ShowCharsetOperation(sqlShowCharset.sqlLikePattern));
         } else {
             return Optional.empty();
         }

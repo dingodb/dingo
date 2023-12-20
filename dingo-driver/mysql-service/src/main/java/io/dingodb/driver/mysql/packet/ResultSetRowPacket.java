@@ -21,7 +21,6 @@ import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lombok.Setter;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -32,7 +31,7 @@ public class ResultSetRowPacket extends MysqlPacket {
     @Setter
     private String characterSet;
 
-    public List<String> values = new ArrayList<>();
+    public List<byte[]> values = new ArrayList<>();
     private static final byte NULL_MARK = (byte) 251;
 
     public long columnCount;
@@ -43,7 +42,11 @@ public class ResultSetRowPacket extends MysqlPacket {
         //packetLength = message.readUB3();
         packetId = message.read();
         for (int i = 0; i < columnCount; i++) {
-            values.add(message.readStringWithLength());
+            try {
+                values.add(message.readStringWithLength().getBytes(characterSet));
+            } catch (UnsupportedEncodingException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -55,7 +58,7 @@ public class ResultSetRowPacket extends MysqlPacket {
             ByteBuf buf = Unpooled.buffer(size, size);
             writeItem(buf);
 
-            int mod = 0;
+            int mod;
             int loop = mod = size % max == 0 ? size / max : size / max + 1;
             while (loop > 0) {
                 if (loop == 1) {
@@ -79,20 +82,12 @@ public class ResultSetRowPacket extends MysqlPacket {
     }
 
     private void writeItem(ByteBuf buf) {
-        Object val;
-        for (int i = 0; i < values.size(); i++) {
-            val = values.get(i);
+        for (byte[] val : values) {
             if (val == null) {
                 buf.writeByte(NULL_MARK);
             } else {
-                byte[] fv = new byte[0];
-                try {
-                    fv = values.get(i).getBytes(characterSet);
-                } catch (UnsupportedEncodingException e) {
-                    throw new RuntimeException(e);
-                }
-                BufferUtil.writeLength(buf, fv.length);
-                buf.writeBytes(fv);
+                BufferUtil.writeLength(buf, val.length);
+                buf.writeBytes(val);
             }
         }
     }
@@ -101,17 +96,11 @@ public class ResultSetRowPacket extends MysqlPacket {
     @Override
     public int calcPacketSize() {
         int size = 0;
-        Object val;
-        for (int i = 0; i < values.size(); i++) {
-            val = values.get(i);
+        for (byte[] val : values) {
             if (val == null) {
                 size += 1;
             } else {
-                try {
-                    size += BufferUtil.getLength(val.toString().getBytes(characterSet));
-                } catch (UnsupportedEncodingException e) {
-                    throw new RuntimeException(e);
-                }
+                size += BufferUtil.getLength(val);
             }
         }
         return size;
@@ -135,7 +124,15 @@ public class ResultSetRowPacket extends MysqlPacket {
         if (val == null) {
             values.add(null);
         } else {
-            values.add(val.toString());
+            if (val instanceof byte[]) {
+                values.add((byte[]) val);
+                return;
+            }
+            try {
+                values.add(val.toString().getBytes(characterSet));
+            } catch (UnsupportedEncodingException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

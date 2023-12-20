@@ -20,7 +20,6 @@ import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.constant.ColumnStatus;
 import io.dingodb.common.mysql.constant.ColumnType;
 import io.dingodb.driver.mysql.NativeConstants;
-import org.apache.calcite.avatica.ColumnMetaData;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.ResultSet;
@@ -95,19 +94,6 @@ public class MysqlPacketFactory {
         return okPacket;
     }
 
-    public short getColumnFlags(ColumnMetaData columnMetaData) {
-        try {
-            int columnFlags = 0;
-            // 0 not null  1 nullable
-            int isNullable = columnMetaData.nullable;
-            columnFlags |= isNullable;
-            String columnTypeName = columnMetaData.type.getName();
-            return (short) combineColumnFlags(columnFlags, columnTypeName);
-        } catch (Exception e) {
-            return 0;
-        }
-    }
-
     public short getColumnFlags(ResultSetMetaData metaData, int column) {
         try {
             int columnFlags = 0;
@@ -122,7 +108,7 @@ public class MysqlPacketFactory {
         }
     }
 
-    public short getColumnFlags(ResultSet resultSet) {
+    public static short getColumnFlags(ResultSet resultSet) {
         try {
             int columnFlags = 0;
             // 0 not null  1 nullable
@@ -136,19 +122,42 @@ public class MysqlPacketFactory {
         }
     }
 
-    private int combineColumnFlags(int columnFlags, String columnTypeName) {
-        if (columnTypeName.equals("BLOB")) {
-            columnFlags |= ColumnStatus.COLUMN_BLOB;
-        } else if (columnTypeName.equals("TIMESTAMP")) {
-            columnFlags |= ColumnStatus.COLUMN_TIMESTAMP;
-        } else if (columnTypeName.equals("ARRAY") || columnTypeName.equals("MULTISET")) {
-            columnFlags |= ColumnStatus.COLUMN_SET;
+    private static int combineColumnFlags(int columnFlags,
+                                          String columnTypeName) {
+        return combineColumnFlags(columnFlags, columnTypeName, false, false, false);
+    }
+
+    private static int combineColumnFlags(int columnFlags,
+                                          String columnTypeName,
+                                          boolean isPrimary,
+                                          boolean isUnique,
+                                          boolean autoIncrement) {
+        switch (columnTypeName) {
+            case "VARBINARY":
+                columnFlags |= ColumnStatus.COLUMN_BLOB;
+                break;
+            case "TIMESTAMP":
+                columnFlags |= ColumnStatus.COLUMN_TIMESTAMP;
+                break;
+            case "ARRAY":
+            case "MULTISET":
+                columnFlags |= ColumnStatus.COLUMN_SET;
+                break;
+        }
+        if (isPrimary) {
+            columnFlags |= ColumnStatus.COLUMN_PRIMARY;
+        }
+        if (isUnique) {
+            columnFlags |= ColumnStatus.COLUMN_UNIQUE;
+        }
+        if (autoIncrement) {
+            columnFlags |= ColumnStatus.COLUMN_AUTOINCREMENT;
         }
 
         return columnFlags;
     }
 
-    public byte getColumnType(String typeName) {
+    public static byte getColumnType(String typeName) {
         try {
             return (byte) (ColumnType.typeMapping.get(typeName) & 0xff);
         } catch (Exception e) {
@@ -270,9 +279,9 @@ public class MysqlPacketFactory {
         return responseEof;
     }
 
-    public PrepareOkPacket getPrepareOkPacket(AtomicLong packetId,
-                                              int statementId, int numberFields,
-                                              int numberParams, int warnings) {
+    public static PrepareOkPacket getPrepareOkPacket(AtomicLong packetId,
+                                                     int statementId, int numberFields,
+                                                     int numberParams, int warnings) {
         PrepareOkPacket packet = new PrepareOkPacket();
         packet.header = NativeConstants.TYPE_ID_OK;
         packet.packetId = (byte) packetId.getAndIncrement();

@@ -106,6 +106,8 @@ public final class DingoTypeFactory {
                 return "TIMESTAMP";
             case Types.BINARY:
                 return "BINARY";
+            case Types.VARBINARY:
+                return "VARBINARY";
             case Types.JAVA_OBJECT:
                 return "OBJECT";
             default:
