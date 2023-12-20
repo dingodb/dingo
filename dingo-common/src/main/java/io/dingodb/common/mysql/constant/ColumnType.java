@@ -64,6 +64,7 @@ public class ColumnType {
         typeMapping.put("ARRAY", FIELD_TYPE_VAR_STRING);
         typeMapping.put("MULTISET", FIELD_TYPE_SET);
         typeMapping.put("BOOLEAN", FIELD_TYPE_TINY);
+        typeMapping.put("VARBINARY", FIELD_TYPE_BLOB);
     }
 
 }

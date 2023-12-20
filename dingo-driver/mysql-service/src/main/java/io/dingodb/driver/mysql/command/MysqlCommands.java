@@ -32,7 +32,6 @@ import io.dingodb.driver.mysql.packet.PreparePacket;
 import io.dingodb.driver.mysql.packet.QueryPacket;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.Meta;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
@@ -143,7 +142,7 @@ public class MysqlCommands {
                     fieldColumnPackets, "def");
             }
 
-            PrepareOkPacket prepareOkPacket = mysqlPacketFactory
+            PrepareOkPacket prepareOkPacket = MysqlPacketFactory
                 .getPrepareOkPacket(new AtomicLong(1),
                     statementHandle.id, numberFields, numberParams, 0);
 

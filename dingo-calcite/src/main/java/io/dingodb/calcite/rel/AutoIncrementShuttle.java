@@ -38,14 +38,9 @@ import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.logical.LogicalValues;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-
 public class AutoIncrementShuttle implements RelShuttle {
 
     public static AutoIncrementShuttle INSTANCE = new AutoIncrementShuttle();
-
-    protected final Deque<RelNode> stack = new ArrayDeque<>();
 
     @Override
     public RelNode visit(TableScan scan) {
@@ -171,19 +166,10 @@ public class AutoIncrementShuttle implements RelShuttle {
     }
 
     protected RelNode visitChild(RelNode parent, RelNode child) {
-        if (parent != null) {
-            stack.push(parent);
+        RelNode child2 = child.accept(this);
+        if (child2 instanceof DingoValues) {
+            return child2;
         }
-        try {
-            RelNode child2 = child.accept(this);
-            if (child2 instanceof DingoValues) {
-                return child2;
-            }
-            return null;
-        } finally {
-            if (parent != null) {
-                stack.pop();
-            }
-        }
+        return null;
     }
 }
