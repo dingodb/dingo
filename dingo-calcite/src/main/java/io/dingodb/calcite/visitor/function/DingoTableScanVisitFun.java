@@ -124,7 +124,7 @@ public final class DingoTableScanVisitFun {
                     rel.getAggCalls() == null ? null : AggFactory.getAggList(
                         rel.getAggCalls(), DefinitionMapper.mapToDingoType(rel.getSelectedType())),
                     DefinitionMapper.mapToDingoType(rel.getNormalRowType()),
-                    rel.isPushDown()
+                    false
                 );
                 vertex = new Vertex(TXN_PART_RANGE_SCAN, param);
             } else {
