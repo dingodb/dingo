@@ -64,6 +64,7 @@ import io.dingodb.sdk.service.entity.store.KvGetRequest;
 import io.dingodb.sdk.service.entity.store.KvPutIfAbsentRequest;
 import io.dingodb.sdk.service.entity.store.KvPutRequest;
 import io.dingodb.store.proxy.service.CodecService.KeyValueCodec;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -463,11 +464,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             return Iterators.transform(new ScanIterator(
                 regionId,
                 channelProvider,
-                RangeWithOptions.builder()
-                    .withStart(range.withStart)
-                    .withEnd(range.withEnd)
-                    .range(new io.dingodb.sdk.service.entity.common.Range(setId(range.start), setId(range.end)))
-                    .build(),
+                MAPPER.rangeTo(partitionId.seq, range),
                 null,
                 30
             ), MAPPER::kvFrom);
@@ -481,11 +478,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             return Iterators.transform(new ScanIterator(
                 regionId,
                 channelProvider,
-                RangeWithOptions.builder()
-                    .withStart(range.withStart)
-                    .withEnd(range.withEnd)
-                    .range(new io.dingodb.sdk.service.entity.common.Range(setId(range.start), setId(range.end)))
-                    .build(),
+                MAPPER.rangeTo(partitionId.seq, range),
                 MAPPER.coprocessorTo(coprocessor),
                 30
             ), MAPPER::kvFrom);

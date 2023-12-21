@@ -18,9 +18,12 @@ package io.dingodb.store.proxy.service;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.MetaService;
 import io.dingodb.sdk.service.StoreService;
+import io.dingodb.sdk.service.entity.common.KeyValue;
 import io.dingodb.sdk.service.entity.store.LockInfo;
+import io.dingodb.sdk.service.entity.store.TxnBatchGetResponse;
 import io.dingodb.sdk.service.entity.store.TxnBatchRollbackResponse;
 import io.dingodb.sdk.service.entity.store.TxnCheckTxnStatusResponse;
 import io.dingodb.sdk.service.entity.store.TxnCommitResponse;
@@ -28,7 +31,9 @@ import io.dingodb.sdk.service.entity.store.TxnHeartBeatRequest;
 import io.dingodb.sdk.service.entity.store.TxnPrewriteResponse;
 import io.dingodb.sdk.service.entity.store.TxnResolveLockResponse;
 import io.dingodb.sdk.service.entity.store.TxnResultInfo;
+import io.dingodb.sdk.service.entity.store.TxnScanResponse;
 import io.dingodb.sdk.service.entity.store.WriteConflict;
+import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatus;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
@@ -39,7 +44,10 @@ import io.dingodb.store.api.transaction.exception.PrimaryMismatchException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.Future;
 
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
@@ -91,6 +99,22 @@ public class TransactionStoreService {
         txnCommit.getKeys().forEach($ -> $[0] = 't');
         TxnCommitResponse response = storeService.txnCommit(MAPPER.commitTo(txnCommit));
         return response.getTxnResult() == null;
+    }
+
+    public Iterator<KeyValue> txnScan(long ts, IsolationLevel isolationLevel, StoreInstance.Range range) {
+        return new ScanIterator(ts, isolationLevel, range);
+    }
+
+    List<KeyValue> txnGet(long startTs, IsolationLevel isolationLevel, List<byte[]> keys) {
+        int retry = 30;
+        while (retry-- > 0) {
+            TxnBatchGetResponse response = storeService.txnBatchGet(MAPPER.batchGetTo(startTs, isolationLevel, keys));
+            if (response.getTxnResult() == null) {
+                return response.getKvs();
+            }
+            resolveConflict(singletonList(response.getTxnResult()), isolationLevel.getCode(), startTs);
+        }
+        throw new RuntimeException("Txn get conflict.");
     }
 
     public boolean txnBatchRollback(StoreService storeService, TxnBatchRollBack txnBatchRollBack) {
@@ -175,6 +199,70 @@ public class TransactionStoreService {
                     throw new WriteConflictException(writeConflict.toString());
                 }
             }
+        }
+    }
+
+    public class ScanIterator implements Iterator<KeyValue> {
+        private final long startTs;
+        private final IsolationLevel isolationLevel;
+        private final StoreInstance.Range range;
+
+        private boolean withStart;
+        private boolean hasMore = false;
+        private StoreInstance.Range current;
+        private Iterator<KeyValue> keyValues;
+
+        public ScanIterator(long startTs, IsolationLevel isolationLevel, StoreInstance.Range range) {
+            this.startTs = startTs;
+            this.isolationLevel = isolationLevel;
+            this.range = range;
+            this.current = range;
+            this.withStart = range.withStart;
+            fetch();
+        }
+
+        private void fetch() {
+            if (hasMore) {
+                return;
+            }
+            int retry = 30;
+            while (retry-- > 0) {
+                TxnScanResponse txnScanResponse = storeService.txnScan(MAPPER.scanTo(startTs, isolationLevel, current));
+                if (txnScanResponse.getTxnResult() != null) {
+                    resolveConflict(singletonList(txnScanResponse.getTxnResult()), isolationLevel.getCode(), startTs);
+                    continue;
+                }
+                keyValues = Optional.ofNullable(txnScanResponse.getKvs()).map(List::iterator).orElseGet(Collections::emptyIterator);
+                hasMore = txnScanResponse.isHasMore();
+                if (hasMore) {
+                    current = new StoreInstance.Range(txnScanResponse.getEndKey(), range.end, withStart, range.withEnd);
+                }
+                withStart = false;
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (keyValues.hasNext()) {
+                return true;
+            }
+            if (hasMore) {
+                fetch();
+                return keyValues.hasNext();
+            }
+            return false;
+        }
+
+        @Override
+        public KeyValue next() {
+            if (keyValues.hasNext()) {
+                return keyValues.next();
+            }
+            if (hasMore) {
+                fetch();
+                return keyValues.next();
+            }
+            throw new NoSuchElementException();
         }
     }
 
