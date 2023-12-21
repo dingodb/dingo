@@ -47,8 +47,7 @@ dependencies {
     implementation project(":dingo-scheduler-api")
     implementation project(":dingo-tool-api")
     implementation project(':dingo-store-proxy')
-//    TODO SPI load
-//    implementation project(':dingo-store-local')
+
     implementation project(":dingo-partition-base")
     implementation project(":dingo-tool-service")
 

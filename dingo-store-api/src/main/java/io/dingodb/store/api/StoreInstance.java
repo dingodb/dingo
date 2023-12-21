@@ -20,6 +20,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.vector.VectorSearchResponse;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatus;
 import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatusResult;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
@@ -29,6 +30,7 @@ import io.dingodb.store.api.transaction.data.resolvelock.TxnResolveLockResult;
 import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
 import lombok.AllArgsConstructor;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -123,6 +125,18 @@ public interface StoreInstance {
 
     // TODO Temporary way, to be optimized
     default boolean deleteIndex(Object[] newRecord, Object[] oldRecord) {
+        throw new UnsupportedOperationException();
+    }
+
+    default Iterator<KeyValue> txnScan(long startTs, IsolationLevel isolationLevel, Range range) {
+        throw new UnsupportedOperationException();
+    }
+
+    default KeyValue txnGet(long startTs, IsolationLevel isolationLevel, byte[] key) {
+        return txnGet(startTs, isolationLevel, Collections.singletonList(key)).get(0);
+    }
+
+    default List<KeyValue> txnGet(long startTs, IsolationLevel isolationLevel, List<byte[]> keys) {
         throw new UnsupportedOperationException();
     }
 

@@ -20,6 +20,8 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.CommonId.CommonType;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.sdk.common.codec.CodecUtils;
+import io.dingodb.sdk.service.entity.common.Range;
+import io.dingodb.sdk.service.entity.common.RangeWithOptions;
 import io.dingodb.sdk.service.entity.meta.ColumnDefinition;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.EntityType;
@@ -29,6 +31,8 @@ import io.dingodb.sdk.service.entity.store.Coprocessor;
 import io.dingodb.sdk.service.entity.store.Schema;
 import io.dingodb.sdk.service.entity.store.SchemaWrapper;
 import io.dingodb.sdk.service.entity.store.Type;
+import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.proxy.service.CodecService;
 import org.mapstruct.Mapping;
 import org.mapstruct.Mappings;
 
@@ -73,6 +77,19 @@ public interface EntityMapper {
     io.dingodb.sdk.service.entity.common.KeyValue kvTo(KeyValue keyValue);
 
     KeyValue kvFrom(io.dingodb.sdk.service.entity.common.KeyValue keyValue);
+
+    Range copyRange(StoreInstance.Range range);
+
+    default RangeWithOptions rangeTo(long id, StoreInstance.Range range) {
+        return RangeWithOptions.builder()
+            .withStart(range.withStart)
+            .withEnd(range.withEnd)
+            .range(new io.dingodb.sdk.service.entity.common.Range(
+                CodecService.INSTANCE.setId(range.start, id),
+                CodecService.INSTANCE.setId(range.end, id)
+            ))
+            .build();
+    }
 
     @Mappings({
         @Mapping(target = "selectionColumns", source = "selection"),

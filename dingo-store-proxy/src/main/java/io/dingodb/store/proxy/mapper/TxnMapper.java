@@ -17,13 +17,19 @@
 package io.dingodb.store.proxy.mapper;
 
 import io.dingodb.sdk.service.entity.store.Op;
+import io.dingodb.sdk.service.entity.store.TxnBatchGetRequest;
 import io.dingodb.sdk.service.entity.store.TxnBatchRollbackRequest;
 import io.dingodb.sdk.service.entity.store.TxnCommitRequest;
 import io.dingodb.sdk.service.entity.store.TxnPrewriteRequest;
+import io.dingodb.sdk.service.entity.store.TxnScanRequest;
+import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
 import org.mapstruct.Mapping;
+
+import java.util.List;
 
 public interface TxnMapper {
 
@@ -35,6 +41,13 @@ public interface TxnMapper {
 
     @Mapping(source = "isolationLevel", target = "context.isolationLevel")
     TxnBatchRollbackRequest rollbackTo(TxnBatchRollBack rollBack);
+
+    @Mapping(source = "isolationLevel", target = "context.isolationLevel")
+    TxnScanRequest scanTo(long startTs, IsolationLevel isolationLevel, StoreInstance.Range range);
+
+    @Mapping(source = "isolationLevel", target = "context.isolationLevel")
+    TxnBatchGetRequest batchGetTo(long startTs, IsolationLevel isolationLevel, List<byte[]> keys);
+
 
     default Op opTo(io.dingodb.store.api.transaction.data.Op op) {
         return Op.forNumber(op.getCode());

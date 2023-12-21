@@ -18,12 +18,12 @@
 
 ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 JAR_PATH=$(find $ROOT -name dingo-executor-*.jar)
-#STORE_JAR_PATH=$(find $ROOT -name dingo-store*.jar)
+LOCAL_STORE_JAR_PATH=$(find $ROOT -name dingo-store-local*.jar)
 NET_JAR_PATH=$(find $ROOT -name dingo-net-*.jar)
 
 java ${JAVA_OPTS} \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback-executor.xml \
-     -classpath ${JAR_PATH}:${NET_JAR_PATH}  \
+     -classpath ${JAR_PATH}:${NET_JAR_PATH}:${LOCAL_STORE_JAR_PATH}  \
      io.dingodb.server.executor.Starter \
      --config ${ROOT}/conf/executor.yaml \
      > ${ROOT}/log/executor.out

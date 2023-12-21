@@ -64,8 +64,7 @@ task copyDepends(type: Copy) {
     into layout.projectDirectory.dir("dingo")
 
     from(project(':dingo-store-local').layout.buildDirectory) {
-        include("libs/dingo-store-local-*.jar")
-        exclude("libs/dingo-store-local-*-plain.jar")
+        include("libs/dingo-store-local-*-all.jar")
     }
     into layout.projectDirectory.dir("dingo")
 
