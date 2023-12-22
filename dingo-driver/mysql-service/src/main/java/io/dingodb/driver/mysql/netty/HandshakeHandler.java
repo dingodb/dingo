@@ -50,7 +50,6 @@ import org.apache.commons.lang3.StringUtils;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.DriverManager;
-import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Properties;
@@ -83,7 +82,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
         HandshakePacket handshakePacket = createHandShakePacket();
-        mysqlConnection.setId(handshakePacket.threadId);
+        mysqlConnection.setThreadId(handshakePacket.threadId);
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
         handshakePacket.write(buf);
         ctx.writeAndFlush(buf);

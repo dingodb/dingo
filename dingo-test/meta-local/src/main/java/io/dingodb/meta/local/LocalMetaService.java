@@ -334,4 +334,9 @@ public class LocalMetaService implements MetaService {
         return 1L;
     }
 
+    @Override
+    public void updateAutoIncrement(CommonId tableId, long autoIncrementId) {
+
+    }
+
 }

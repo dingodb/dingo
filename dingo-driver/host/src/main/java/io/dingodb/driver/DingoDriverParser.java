@@ -59,7 +59,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.DatabaseMetaData;
-import java.sql.SQLClientInfoException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -326,8 +325,14 @@ public final class DingoDriverParser extends DingoParser {
                 if (dingoValues.getTuples().size() >= 1 &&
                     dingoValues.getAutoIncrementColIndex() < dingoValues.getTuples().get(0).length) {
                     Object autoValue = dingoValues.getTuples().get(0)[dingoValues.getAutoIncrementColIndex()];
-                    connection.setClientInfo("last_insert_id", autoValue.toString());
-                    connection.setClientInfo(jobIdPrefix, autoValue.toString());
+                    if (autoValue != null) {
+                        String autoValueStr = autoValue.toString();
+                        connection.setClientInfo("last_insert_id", autoValueStr);
+                        connection.setClientInfo(jobIdPrefix, autoValueStr);
+
+                        MetaService metaService = MetaService.root();
+                        metaService.updateAutoIncrement(dingoValues.getCommonId(), Long.parseLong(autoValueStr));
+                    }
                 }
             }
         } catch (Exception e) {

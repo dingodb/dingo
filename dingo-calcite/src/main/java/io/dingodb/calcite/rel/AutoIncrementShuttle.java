@@ -143,6 +143,7 @@ public class AutoIncrementShuttle implements RelShuttle {
                         DingoValues dingoValues = (DingoValues) values;
                         dingoValues.setHasAutoIncrement(true);
                         dingoValues.setAutoIncrementColIndex(autoIncrementColIndex);
+                        dingoValues.setCommonId(table.getTableId());
                         return dingoValues;
                     }
                 }
