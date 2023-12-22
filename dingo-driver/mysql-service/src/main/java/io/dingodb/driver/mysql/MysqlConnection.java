@@ -24,13 +24,16 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Set;
 
 public class MysqlConnection {
     @Getter
     @Setter
-    private Integer id;
+    private String id;
+
+    @Getter
+    @Setter
+    private int threadId;
 
     public SocketChannel channel;
 
@@ -51,6 +54,7 @@ public class MysqlConnection {
 
     public void setConnection(DingoConnection dingoConnection) {
         connection = dingoConnection;
+        this.id = dingoConnection.id;
     }
 
     public void close() {

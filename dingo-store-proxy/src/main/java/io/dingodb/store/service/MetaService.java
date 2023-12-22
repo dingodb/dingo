@@ -317,4 +317,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
         return AutoIncrementService.INSTANCE.getNextAutoIncrement(tableId);
     }
 
+    @Override
+    public void updateAutoIncrement(CommonId tableId, long autoIncrementId) {
+        AutoIncrementService.INSTANCE.updateAutoIncrementId(tableId, autoIncrementId);
+    }
+
 }

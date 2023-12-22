@@ -17,6 +17,7 @@
 package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
+import io.dingodb.common.CommonId;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.plan.RelOptCluster;
@@ -38,6 +39,10 @@ public class DingoValues extends LogicalDingoValues implements DingoRel {
     @Getter
     @Setter
     private int autoIncrementColIndex;
+
+    @Getter
+    @Setter
+    private CommonId commonId;
 
     public DingoValues(
         RelOptCluster cluster,
