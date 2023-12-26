@@ -1,18 +1,17 @@
 [package]
-name = "tantivy_search" # tantivy_search 是 Rust 项目的包名, 项目中将会存在一个与包名相同的顶级模块
+name = "tantivy_search" # repo package name
 version = "0.1.0"
-authors = ["André Guedes <andre.guedes@neoway.com.br>"]
-edition = "2018"
+authors = ["MochiXu <mochix@myscale.com>"]
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "tantivy_search" # 指定编译出来库的名字
-crate-type = ["cdylib", "staticlib"] # staticlib 为静态库，cdylib 为动态库，两种类型的库都创建
+name = "tantivy_search" # library name
+crate-type = ["cdylib", "staticlib", "lib"]
 
 [dependencies]
 libc = "0.2.82"
-# tantivy = { git = "https://github.com/MochiXu/tantivy.git", branch = "mochix/0.21.1"}
 tantivy = "0.21.1"
 rayon = "1.5"
 once_cell = "1.7"
@@ -27,3 +26,26 @@ serde_json = "1.0"
 env_logger = "0.10.0"
 log = "0.4.16"
 log4rs = "1.2.0"
+threadpool = "1.8.1"
+rand = "0.8.4"
+clap = "2.33"
+
+
+[features]
+use-flurry-cache = []
+
+[profile.release]
+debug = true
+
+
+[[bin]]
+name = "tantivy_search_benchmark"
+path = "tests/benchmark.rs"
+
+[[bin]]
+name = "loop_search"
+path = "tests/loop_search.rs"
+
+[[bin]]
+name = "regrex_search"
+path = "tests/regrex_search.rs"

@@ -1,3 +1,5 @@
+use crate::commons::LogCallback;
+use crate::commons::LOG_CALLBACK;
 use log::LevelFilter;
 use log4rs::{
     append::console::ConsoleAppender,
@@ -13,15 +15,11 @@ use log4rs::{
 };
 use once_cell::sync::OnceCell;
 use std::ffi::{c_int, CString};
-use std::os::raw::c_char;
 use std::thread;
 
-pub type LogCallback = extern "C" fn(i32, *const c_char, *const c_char, *const c_char);
 
 // Store log4rs handle for runtime update.
 static LOG4RS_HANDLE: OnceCell<log4rs::Handle> = OnceCell::new();
-// Store callback function from caller.
-pub static LOG_CALLBACK: OnceCell<LogCallback> = OnceCell::new();
 
 
 #[derive(Debug)]

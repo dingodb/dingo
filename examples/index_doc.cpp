@@ -2,41 +2,12 @@
 #include <vector>
 #include <tantivy_search.h>
 #include <filesystem>
+#include <utils.h>
 
 namespace fs = std::filesystem;
 
+using namespace Utils;
 using namespace std;
-
-extern "C" void tantivy_log_callback(int level, const char* thread_id, const char* thread_name, const char* message)
-{
-    string threadId(thread_id);
-    string threadName(thread_name);
-    string msg(message);
-    
-    switch(level) {
-        case -2: // -2 -> fatal
-            cout << "C++: FATAL [" + threadId + ":" + threadName + "] " + msg << endl;
-            break;
-        case -1: // -1 -> error
-            cout << "C++: ERROR [" + threadId + ":" + threadName + "] " + msg << endl;
-            break;
-        case 0: // 0 -> warning
-            cout << "C++: WARNING [" + threadId + ":" + threadName + "] " + msg << endl;
-            break;
-        case 1: // 1 -> info
-            cout << "C++: INFO [" + threadId + ":" + threadName + "] " + msg << endl;
-            break;
-        case 2: // 2 -> debug
-            cout << "C++: DEBUG [" + threadId + ":" + threadName + "] " + msg << endl;
-            break;
-        case 3: // 3 -> tracing
-            cout << "C++: TRACING [" + threadId + ":" + threadName + "] " + msg << endl;
-            break;
-        default:
-            cout << "C++: DEBUG [" + threadId + ":" + threadName + "] " + msg << endl;
-    }
-}
-
 
 void test_default_create()
 {
@@ -69,7 +40,7 @@ void test_default_create()
     // search
     TantivySearchIndexR * indexR = tantivy_load_index("./temp");
     // int searched = tantivy_count_in_rowid_range(indexR, "The cat sleeps as the sun sets.", 0, 14);
-    int searched = tantivy_count_in_rowid_range(indexR, "redefi*", 0, 19);
+    int searched = tantivy_count_in_rowid_range(indexR, "redefi*", 0, 19, false);
     cout << "searched:" << searched << endl;
 
     tantivy_reader_free(indexR);
@@ -99,16 +70,17 @@ void test_regx_create()
     tantivy_index_doc(indexW, 16, "Physics theories delve into the universe's mysteries.");
     tantivy_index_doc(indexW, 17, "Chemical compounds play crucial roles in medical breakthroughs.");
     tantivy_index_doc(indexW, 18, "Philosophers debate ethics in the age of artificial intelligence.");
-    tantivy_index_doc(indexW, 19, "Wedding ceremonies across cultures symbolize lifelong commitment.");
-    tantivy_index_doc(indexW, 20, "commitment");
+    tantivy_index_doc(indexW, 19, "Wedding ceremonies acro%ss cultures symbolize lifelong commitment.");
+    tantivy_index_doc(indexW, 20, "cultures");
+    // tantivy_index_doc(indexW, 20, "commitment");
 
     tantivy_writer_commit(indexW);
     tantivy_writer_free(indexW);
     // search
     TantivySearchIndexR * indexR = tantivy_load_index("./temp");
-    // int searched = tantivy_count_in_rowid_range(indexR, "The cat sleeps as the sun sets.", 0, 14);
+    int searched = tantivy_count_in_rowid_range(indexR, "%\\%%", 19, 19, true);
     // bool searched = tantivy_regex_count_in_rowid_range(indexR, ".*me.*", 20, 20);
-    // cout << "searched:" << searched << endl;
+    cout << "searched:" << searched << endl;
 
     tantivy_reader_free(indexR);
 }
@@ -144,7 +116,7 @@ void test_tokenizer_create()
     tantivy_writer_free(indexW);
     // search
     TantivySearchIndexR * indexR = tantivy_load_index("./temp");
-    int searched_for_chinese = tantivy_count_in_rowid_range(indexR, "影响深远", 0, 19);
+    int searched_for_chinese = tantivy_count_in_rowid_range(indexR, "影响深远", 0, 19, false);
     cout << "searched_for_chinese:" << searched_for_chinese << endl;
 
     tantivy_reader_free(indexR);
@@ -154,8 +126,8 @@ void test_tokenizer_create()
 
 int main(){
     // test_default_create();
-    // test_regx_create();
-    test_tokenizer_create();
+    test_regx_create();
+    // test_tokenizer_create();
     return 0;
 }
 

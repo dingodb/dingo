@@ -1,16 +1,24 @@
+use crate::LOG_CALLBACK;
+use crate::logger::ffi_logger::callback_with_thread_info;
+
 use std::{path::Path, fs::{self, File}, io::{Write, Read}};
 
 use serde::{Serialize, Deserialize};
 use tantivy::{Index, IndexReader, IndexWriter};
 
-use crate::{commons::{CUSTOM_INDEX_SETTING_FILE_NAME, LOGGER_TARGET}, logger, WARNING};
+use crate::{commons::{CUSTOM_INDEX_SETTING_FILE_NAME, LOGGER_TARGET}, WARNING};
 
-use logger::ffi_logger::*;
 
 pub struct IndexR {
     pub path: String,
     pub index: Index,
     pub reader: IndexReader,
+}
+
+impl Drop for IndexR {
+    fn drop(&mut self) {
+        //
+    }
 }
 
 pub struct IndexW {
@@ -64,4 +72,88 @@ pub fn load_custom_index_setting(index_file_path: &Path) -> Result<CustomIndexSe
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
     serde_json::from_str(&contents).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+}
+
+// Convert Clickhouse like pattern to Rust regex pattern.
+pub fn like_to_regex(like_pattern: &str) -> String {
+    let mut regex_pattern = String::new();
+    let mut escape = false;
+
+    for c in like_pattern.chars() {
+        match c {
+            // got r'\', if not escape currently, need escape.
+            '\\' if !escape => {escape = true;},
+
+            // got r'\', if escaped currently, need push r'\\'
+            '\\' if escape => {
+                regex_pattern.push_str("\\\\");
+                escape = false;
+            },
+
+            // In not escape mode, convert '%' to '.*'
+            '%' if !escape => regex_pattern.push_str(".*"),
+
+            // In not escape mode, convert '_' to '.'
+            '_' if !escape => regex_pattern.push('.'),
+
+            // In escape mode, handle '%'、'_'
+            '%' | '_' if escape => {
+                regex_pattern.push(c);
+                escape = false;
+            },
+
+            // Handle regex special chars.
+            _ => {
+                if ".+*?^$()[]{}|".contains(c) {
+                    regex_pattern.push('\\');
+                }
+                regex_pattern.push(c);
+                escape = false;
+            },
+        }
+    }
+
+    regex_pattern
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_like_to_regex() {
+        // testing normal strings
+        assert_eq!(r"a\bc", "a\\bc");
+        assert_eq!(like_to_regex("abc"), "abc");
+        assert_eq!(like_to_regex(r"ab\\c"), "ab\\\\c");
+
+        // testing '%' conversion to '.*'
+        assert_eq!(like_to_regex(r"a%b%c"), "a.*b.*c");
+
+        // testing '_' conversion to '.'
+        assert_eq!(like_to_regex(r"a_b_c"), "a.b.c");
+
+        // testing conversion: '%' and '_'
+        assert_eq!(like_to_regex("a\\%b\\_c"), "a%b_c");
+
+        // testing consecutive '%' and '_'
+        assert_eq!(like_to_regex(r"%%__"), ".*.*..");
+
+        // testing escape sequences
+        assert_eq!(like_to_regex("a\\%b%c\\_d"), "a%b.*c_d");
+
+        // testing escaped '\'
+        assert_eq!(like_to_regex("%\\\\%"), ".*\\\\.*");
+
+        // testing special cases such as empty strings
+        assert_eq!(like_to_regex(""), "");
+
+        // testing special characters in regular expressions
+        assert_eq!(like_to_regex("%a.b[c]%"), ".*a\\.b\\[c\\].*");
+
+        // testing combinations of escaped and unescaped characters.
+        assert_eq!(like_to_regex("a%b_c\\%d\\_e\\\\"), "a.*b.c%d_e\\\\");
+    }
 }

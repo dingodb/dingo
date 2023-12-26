@@ -65,9 +65,20 @@
         "valarray": "cpp",
         "semaphore": "cpp",
         "unordered_set": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "condition_variable": "cpp",
+        "future": "cpp",
+        "mutex": "cpp",
+        "shared_mutex": "cpp",
+        "variant": "cpp",
+        "complex": "cpp"
     },
     "rust-analyzer.linkedProjects": [
         "./Cargo.toml"
-    ]
+    ],
+    // "cmake.buildDirectory": "${workspaceFolder}/build-${buildType}",
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.configureArgs": [
+        // "-DENABLE_JEMALLOC=ON",
+    ],
 }

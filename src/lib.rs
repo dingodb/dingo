@@ -7,23 +7,27 @@ use tantivy::schema::{Schema, FAST, INDEXED};
 use utils::{CustomIndexSetting, SearchError};
 use utils::{IndexR, IndexW};
 
-use tantivy::query::QueryParser;
+use tantivy::query::{QueryParser, RegexQuery};
 use tantivy::{Document, Index, ReloadPolicy};
 
 mod commons;
 mod furry_cache;
-mod logger;
+pub mod logger;
 mod row_id_bitmap_collector;
 mod third_party;
-mod utils;
+pub mod utils;
 
 use commons::*;
 use logger::ffi_logger::*;
 use row_id_bitmap_collector::RowIdRoaringCollector;
 use third_party::third_party_tokenizer::*;
 
-use crate::utils::{load_custom_index_setting, prepare_index_directory, save_custom_index_setting};
+use crate::utils::{load_custom_index_setting, prepare_index_directory, save_custom_index_setting, like_to_regex};
 
+
+pub fn add2(left: usize, right: usize) -> usize {
+    left + right
+}
 /// Initializes the logger configuration for the tantivy search library.
 ///
 /// Arguments:
@@ -168,7 +172,7 @@ pub extern "C" fn tantivy_create_index_with_language(
     }
 
     // Create the writer with a specified buffer size (e.g., 1 GB).
-    let writer = match index.writer(1024 * 1024 * 1024) {
+    let writer = match index.writer_with_num_threads(2, 1024 * 1024 * 64) {
         // 1 GB
         Ok(w) => w,
         Err(e) => {
@@ -179,8 +183,11 @@ pub extern "C" fn tantivy_create_index_with_language(
 
     // Configure and set the merge policy.
     let mut merge_policy = tantivy::merge_policy::LogMergePolicy::default();
-    merge_policy.set_max_docs_before_merge(100_000); // 设置在考虑合并前段可以有的最大文档数量为10w // Maximum document count threshold before merge.
-    merge_policy.set_min_num_segments(4); // 设置合并操作中至少应该包含多少个段 // Minimum number of segments to include in a merge.
+    merge_policy.set_min_num_segments(5); // 设置合并操作中至少应该包含多少个段 // Minimum number of segments to include in a merge.
+    merge_policy.set_max_docs_before_merge(500000); // 设置在考虑合并前段可以有的最大文档数量为10w // Maximum document count threshold before merge.
+    merge_policy.set_min_layer_size(10000);
+    merge_policy.set_level_log_size(0.75);
+    // merge_policy.set_min_num_segments(4); // 设置合并操作中至少应该包含多少个段 // Minimum number of segments to include in a merge.
                                           // policy.set_max_merge_size(3_000_000);
     writer.set_merge_policy(Box::new(merge_policy));
 
@@ -313,6 +320,74 @@ pub extern "C" fn tantivy_load_index(dir_ptr: *const c_char) -> *mut IndexR {
     }))
 }
 
+fn compute_bitmap(indexr: &IndexR, query_str: &str, function_name: &str, use_regrex: bool) -> Arc<RoaringBitmap> {
+    // in compute_bitmap, any exception will generate an empty bitmap
+    // index 可能已经被释放？使用与 searcher 关联的 index 重新尝试一下
+    // let schema = indexr.index.schema();
+
+    let schema = indexr.reader.searcher().index().schema();
+    let text = match schema.get_field("text") {
+        Ok(str) => str,
+        Err(_) => {
+            WARNING!(target: LOGGER_TARGET, function: function_name, "Missing text field.");
+            return Arc::new(RoaringBitmap::new());
+        }
+    };
+    let searcher = indexr.reader.searcher();
+    // index 可能已经被释放？使用与 searcher 关联的 index 重新尝试一下
+    // let query_parser = QueryParser::for_index(&indexr.index, vec![text]);
+
+    if  use_regrex  {
+        let regex_query = match RegexQuery::from_pattern(&like_to_regex(query_str), text) {
+            Ok(parsed_query) => parsed_query,
+            Err(e) => {
+                WARNING!(target: LOGGER_TARGET, function: function_name, "Can't parse regrex query: {}, {}", like_to_regex(query_str), e);
+                return Arc::new(RoaringBitmap::new());
+            }
+        };
+        // TODO 优化这部分重复的代码
+        let searched_bitmap = match searcher.search(
+            &regex_query,
+            &RowIdRoaringCollector::with_field("row_id".to_string()),
+        ) {
+            Ok(result_bitmap) => result_bitmap,
+            Err(e) => {
+                WARNING!(target: LOGGER_TARGET, function: function_name, "Can't execute search in text_query: {}", e);
+                return Arc::new(RoaringBitmap::new());
+            }
+        };
+        searched_bitmap
+    } else {
+        let query_parser = QueryParser::for_index(indexr.reader.searcher().index(), vec![text]);
+        let text_query = match query_parser.parse_query(query_str) {
+            Ok(parsed_query) => parsed_query,
+            Err(_) => {
+                WARNING!(target: LOGGER_TARGET, function: function_name, "Can't parse query: {}", query_str);
+                return Arc::new(RoaringBitmap::new());
+            }
+        };
+        let searched_bitmap = match searcher.search(
+            &text_query,
+            &RowIdRoaringCollector::with_field("row_id".to_string()),
+        ) {
+            Ok(result_bitmap) => result_bitmap,
+            Err(e) => {
+                WARNING!(target: LOGGER_TARGET, function: function_name, "Can't execute search in text_query: {}", e);
+                return Arc::new(RoaringBitmap::new());
+            }
+        };
+        searched_bitmap
+    }
+
+    
+}
+
+fn intersect_and_return(row_id_roaring_bitmap: Arc<RoaringBitmap>, lrange: u64, rrange: u64) -> Result<Arc<RoaringBitmap>, SearchError> {
+    let mut row_id_range = RoaringBitmap::new();
+    row_id_range.insert_range(lrange as u32..(rrange + 1) as u32);
+    row_id_range &= Arc::as_ref(&row_id_roaring_bitmap);
+    Ok(Arc::new(row_id_range))
+}
 /// Performs a search operation using the given index reader, query, and range.
 ///
 /// Arguments:
@@ -331,7 +406,8 @@ fn perform_search(
     lrange: u64,
     rrange: u64,
     function_name: &str,
-) -> Result<RoaringBitmap, SearchError> {
+    use_regrex: bool
+) -> Result<Arc<RoaringBitmap>, SearchError> {
     // Check for null pointers.
     let indexr = unsafe {
         if ir.is_null() {
@@ -351,52 +427,23 @@ fn perform_search(
             .map_err(|_| SearchError::InvalidQueryStr)?
     };
 
-    let index_path = &indexr.path;
 
-    // Resolve cache or compute the roaring bitmap for the given query.
-    let row_id_roaring_bitmap = CACHE_FOR_SKIP_INDEX.resolve(
-        (ir as usize, query_str.to_string(), index_path.to_string()),
-        || {
-            // in closure, any exception will generate an empty bitmap
-            let schema = indexr.index.schema();
-            let text = match schema.get_field("text") {
-                Ok(str) => str,
-                Err(_) => {
-                    WARNING!(target: LOGGER_TARGET, function: function_name, "Missing text field.");
-                    return Arc::new(RoaringBitmap::new());
-                }
-            };
-            let searcher = indexr.reader.searcher();
-            let query_parser = QueryParser::for_index(&indexr.index, vec![text]);
+    #[cfg(feature = "use-flurry-cache")]
+    {
+        // Resolve cache or compute the roaring bitmap for the given query.
+        let row_id_roaring_bitmap = CACHE_FOR_SKIP_INDEX.resolve(
+            (ir as usize, query_str.to_string(), indexr.path.to_string()),
+            || compute_bitmap(&indexr, query_str, function_name, use_regrex),
+        );
+        intersect_and_return(row_id_roaring_bitmap, lrange, rrange)
+    }
+    #[cfg(not(feature = "use-flurry-cache"))]
+    {
+        // not use cache
+        let row_id_roaring_bitmap = compute_bitmap(&indexr, query_str, function_name, use_regrex);
+        intersect_and_return(row_id_roaring_bitmap, lrange, rrange)
+    }
 
-            let text_query = match query_parser.parse_query(query_str) {
-                Ok(parsed_query) => parsed_query,
-                Err(_) => {
-                    WARNING!(target: LOGGER_TARGET, function: function_name, "Can't parse query: {}", query_str);
-                    return Arc::new(RoaringBitmap::new());
-                }
-            };
-
-            let searched_bitmap = match searcher.search(
-                &text_query,
-                &RowIdRoaringCollector::with_field("row_id".to_string()),
-            ) {
-                Ok(result_bitmap) => result_bitmap,
-                Err(e) => {
-                    WARNING!(target: LOGGER_TARGET, function: function_name, "Can't execute search in text_query: {}", e);
-                    return Arc::new(RoaringBitmap::new());
-                }
-            };
-            searched_bitmap
-        },
-    );
-
-    // Create a row ID range and intersect it with the roaring bitmap.
-    let mut row_id_range = RoaringBitmap::new();
-    row_id_range.insert_range(lrange as u32..(rrange + 1) as u32);
-    row_id_range &= Arc::as_ref(&row_id_roaring_bitmap);
-
-    Ok(row_id_range)
 }
 
 /// Determines if a query string appears within a specified row ID range.
@@ -415,6 +462,7 @@ pub extern "C" fn tantivy_search_in_rowid_range(
     query_ptr: *const c_char,
     lrange: u64,
     rrange: u64,
+    use_regrex: bool,
 ) -> bool {
     match perform_search(
         ir,
@@ -422,6 +470,7 @@ pub extern "C" fn tantivy_search_in_rowid_range(
         lrange,
         rrange,
         TANTIVY_SEARCH_IN_ROWID_RANGE_NAME,
+        use_regrex,
     ) {
         Ok(row_id_range) => !row_id_range.is_empty(),
         Err(e) => {
@@ -447,6 +496,7 @@ pub extern "C" fn tantivy_count_in_rowid_range(
     query_ptr: *const c_char,
     lrange: u64,
     rrange: u64,
+    use_regex: bool,
 ) -> c_uint {
     match perform_search(
         ir,
@@ -454,6 +504,7 @@ pub extern "C" fn tantivy_count_in_rowid_range(
         lrange,
         rrange,
         TANTIVY_COUNT_IN_ROWID_RANGE_NAME,
+        use_regex,
     ) {
         Ok(row_id_range) => row_id_range.len() as u32,
         Err(e) => {

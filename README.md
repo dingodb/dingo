@@ -1,11 +1,13 @@
 ## Note
 
-本 library 用于 Clickhouse
+This library is designed for `ClickHouse`.
 
-## build
+## Build
 
-所有的 FFI 函数会放在 lib.rs 内对外暴露。开发人员在修改相关的代码之后需要重新生成头文件:
+All FFI (Foreign Function Interface) functions are exposed in `lib.rs`. Developers need to regenerate the header file after making any changes to the relevant code:
+
 ```bash
 cbindgen . -o include/tantivy_search.h --config cbindgen.toml 
 ```
-如果开发人员没有对 FFI 函数进行新增/删除/修改 FFI 名称, 则无需执行上述命令
+
+If developers do not add, delete, or modify the names of FFI functions, there is no need to execute the above command.

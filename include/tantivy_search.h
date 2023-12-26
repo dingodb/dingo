@@ -78,7 +78,8 @@ TantivySearchIndexR *tantivy_load_index(const char *dir_ptr);
 bool tantivy_search_in_rowid_range(TantivySearchIndexR *ir,
                                    const char *query_ptr,
                                    uint64_t lrange,
-                                   uint64_t rrange);
+                                   uint64_t rrange,
+                                   bool use_regrex);
 
 /// Counts the occurrences of a query string within a specified row ID range.
 ///
@@ -93,7 +94,8 @@ bool tantivy_search_in_rowid_range(TantivySearchIndexR *ir,
 unsigned int tantivy_count_in_rowid_range(TantivySearchIndexR *ir,
                                           const char *query_ptr,
                                           uint64_t lrange,
-                                          uint64_t rrange);
+                                          uint64_t rrange,
+                                          bool use_regex);
 
 /// Indexes a document.
 ///

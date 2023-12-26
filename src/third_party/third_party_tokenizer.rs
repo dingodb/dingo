@@ -58,6 +58,7 @@ pub fn register_tokenizer_to_index(
                 // Add processing logic for other types of tokenizers
                 // ThirdPartyTokenizer::Japanese(japanese_tokenizer) => { ... }
                 // ...
+                _ => {}
             }
         } else {
             return Err("ThirdPartyTokenizer object is missing".to_string());
