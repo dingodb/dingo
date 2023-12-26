@@ -354,7 +354,12 @@ public final class DingoDriverParser extends DingoParser {
             return false;
         }
         for (RelOptTable table : tables) {
-            String engine = ((DingoTable) ((RelOptTableImpl) table).table()).getTableDefinition().getEngine();
+            String engine = null;
+            if (table instanceof RelOptTableImpl) {
+                engine = ((DingoTable) ((RelOptTableImpl) table).table()).getTableDefinition().getEngine();
+            } else if (table instanceof DingoRelOptTable) {
+                engine = ((DingoTable) ((DingoRelOptTable) table).table()).getTableDefinition().getEngine();
+            }
             if (engine == null || (!engine.equalsIgnoreCase("TXN_LSM") && !engine.equalsIgnoreCase("TXN_BDB"))) {
                 isTxn = false;
             } else {
