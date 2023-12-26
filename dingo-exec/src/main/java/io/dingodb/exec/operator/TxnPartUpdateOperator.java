@@ -85,6 +85,10 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 Op.PUT.getCode(),
                 (txnIdBytes.length + tableIdBytes.length + partIdBytes.length),
                 txnIdBytes, tableIdBytes, partIdBytes));
+            byte[] insertKey = Arrays.copyOf(keyValue.getKey(), keyValue.getKey().length);
+            insertKey[insertKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
+            store.delete(insertKey);
+            store.delete(keyValue.getKey());
             updated = updated && store.put(keyValue);
             if (updated) {
                 param.inc();

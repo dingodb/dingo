@@ -31,13 +31,14 @@ dependencies {
     api project(':dingo-net-api')
     api project(':dingo-store-api')
     api project(':dingo-tool-api')
+    api project(':dingo-tso-api')
 
     implementation project(':dingo-partition-api')
-
     implementation group: 'io.dingodb.expr', name: 'dingo-expr-coding', version: 'dingo-expr'.v()
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: 'jackson'.v()
     implementation group: 'org.apache.avro', name: 'avro', version: 'avro'.v()
 
     testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()
+    testImplementation project(':dingo-test:dingo-meta-local')
 
 }

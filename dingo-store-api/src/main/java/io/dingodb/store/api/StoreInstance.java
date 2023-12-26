@@ -152,13 +152,13 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default TxnCheckStatusResult txnCheckTxnStatus(TxnCheckStatus txnCheckStatus) {
-        throw new UnsupportedOperationException();
-    }
-
-    default TxnResolveLockResult txnResolveLock(TxnResolveLock txnResolveLock) {
-        throw new UnsupportedOperationException();
-    }
+//    default TxnCheckStatusResult txnCheckTxnStatus(TxnCheckStatus txnCheckStatus) {
+//        throw new UnsupportedOperationException();
+//    }
+//
+//    default TxnResolveLockResult txnResolveLock(TxnResolveLock txnResolveLock) {
+//        throw new UnsupportedOperationException();
+//    }
 
     default boolean txnBatchRollback(TxnBatchRollBack txnBatchRollBack) {
         throw new UnsupportedOperationException();

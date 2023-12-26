@@ -18,13 +18,17 @@ package io.dingodb.exec.transaction.params;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.AbstractParams;
+import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.store.api.transaction.data.Mutation;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @JsonTypeName("preWrite")
@@ -33,21 +37,21 @@ public class PreWriteParam extends AbstractParams {
     @JsonProperty("schema")
     private final DingoType schema;
     @JsonProperty("primaryKey")
-    @Setter
-    private byte[] primaryKey;
-    @Setter
-    private Set<Mutation> mutations;
+    private final byte[] primaryKey;
     @JsonProperty("start_ts")
-    @Setter
-    private long start_ts;
-    @JsonProperty("lock_ttl")
-    @Setter
-    private long lock_ttl;
+    private final long start_ts;
     @JsonProperty("isolationLevel")
+    private final int isolationLevel;
+    @JsonProperty("txnType")
+    private final TransactionType transactionType;
     @Setter
-    private int isolationLevel = 2;
+    private List<Mutation> mutations;
     @Setter
     private long txn_size;
+    @Setter
+    private CommonId tableId;
+    @Setter
+    private CommonId partId;
     private boolean try_one_pc = false;
     private long max_commit_ts = 0l;
 
@@ -55,14 +59,20 @@ public class PreWriteParam extends AbstractParams {
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("primaryKey") byte[] primaryKey,
         @JsonProperty("start_ts") long start_ts,
-        @JsonProperty("lock_ttl") long lock_ttl,
-        @JsonProperty("isolationLevel") int isolationLevel
+        @JsonProperty("isolationLevel") int isolationLevel,
+        @JsonProperty("txnType") TransactionType transactionType
     ) {
         this.schema = schema;
         this.primaryKey = primaryKey;
         this.start_ts = start_ts;
-        this.lock_ttl = lock_ttl;
         this.isolationLevel = isolationLevel;
+        this.transactionType = transactionType;
+    }
+
+    @Override
+    public void init(Vertex vertex) {
+        super.init(vertex);
+        mutations = new ArrayList<>();
     }
 
     public void addMutation(Mutation mutation) {

@@ -65,9 +65,9 @@ import io.dingodb.calcite.visitor.function.DingoVectorVisitFun;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Output;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.impl.IdGeneratorImpl;
+import io.dingodb.exec.transaction.base.ITransaction;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelNode;
@@ -83,22 +83,22 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     private final Location currentLocation;
     @Getter
     private final Job job;
-    private final boolean isTxn;
+    private final ITransaction transaction;
 
-    private DingoJobVisitor(Job job, IdGenerator idGenerator, Location currentLocation, boolean isTxn) {
+    private DingoJobVisitor(Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction) {
         this.job = job;
         this.idGenerator = idGenerator;
         this.currentLocation = currentLocation;
-        this.isTxn = isTxn;
+        this.transaction = transaction;
     }
 
     public static void renderJob(Job job, RelNode input, Location currentLocation) {
-        renderJob(job, input, currentLocation, false, false);
+        renderJob(job, input, currentLocation, false, null);
     }
 
-    public static void renderJob(Job job, RelNode input, Location currentLocation, boolean checkRoot, boolean isTxn) {
+    public static void renderJob(Job job, RelNode input, Location currentLocation, boolean checkRoot, ITransaction transaction) {
         IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
-        DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation, isTxn);
+        DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation, transaction);
         Collection<Vertex> outputs = dingo(input).accept(visitor);
         if (checkRoot && outputs.size() > 0) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
@@ -130,7 +130,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
 
     @Override
     public Collection<Vertex> visit(@NonNull DingoTableModify rel) {
-        return DingoTableModifyVisitFun.visit(job, idGenerator, currentLocation, isTxn, this, rel);
+        return DingoTableModifyVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel);
     }
 
     @Override
@@ -145,7 +145,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
 
     @Override
     public Collection<Vertex> visit(@NonNull DingoRoot rel) {
-        return DingoRootVisitFun.visit(job, idGenerator, currentLocation, this, rel);
+        return DingoRootVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel);
     }
 
     @Override
@@ -166,7 +166,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     @Override
     public Collection<Vertex> visit(@NonNull DingoTableScan rel) {
         // current version scan must have range
-        return DingoTableScanVisitFun.visit(job, idGenerator, currentLocation, isTxn, this, rel);
+        return DingoTableScanVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel);
     }
 
     @Override
@@ -186,12 +186,12 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
 
     @Override
     public Collection<Vertex> visit(@NonNull DingoPartRangeDelete rel) {
-        return DingoRangeDeleteVisitFun.visit(job, idGenerator, currentLocation, isTxn, this, rel);
+        return DingoRangeDeleteVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel);
     }
 
     @Override
     public Collection<Vertex> visit(@NonNull DingoLikeScan rel) {
-        return DingoLikeScanVisitFun.visit(job, idGenerator, currentLocation, isTxn, this, rel);
+        return DingoLikeScanVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel);
     }
 
     @Override

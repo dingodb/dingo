@@ -18,29 +18,39 @@ package io.dingodb.exec.transaction.base;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.concurrent.Executors;
+import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.exception.TaskFinException;
 import io.dingodb.exec.fin.ErrorType;
-import io.dingodb.exec.table.Part;
 import io.dingodb.exec.transaction.impl.TransactionCache;
 import io.dingodb.exec.transaction.impl.TransactionManager;
+import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
 import io.dingodb.meta.MetaService;
 import io.dingodb.net.Channel;
+import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
+import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
+import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @Getter
@@ -53,16 +63,16 @@ public abstract class BaseTransaction implements ITransaction{
     protected CommonId txnId;
     protected CommonId txnInstanceId;
     protected boolean closed = false;
-    protected boolean isCrossRange = true;
+    protected boolean isCrossNode = false;
     protected TransactionStatus status;
-    protected TransactionCache cache = new TransactionCache();
+    protected TransactionCache cache;
     protected Map<CommonId, Channel> channelMap;
     protected byte[] primaryKey;
     protected long commit_ts;
-    protected long lockTtl = TransactionConfig.lock_ttl;
     protected Job job;
-    protected Part part;
     protected Future future;
+    protected List<String> sqlList;
+    protected boolean autoCommit;
 
     public BaseTransaction(@NonNull CommonId txnId) {
         this.txnId = txnId;
@@ -70,6 +80,8 @@ public abstract class BaseTransaction implements ITransaction{
         this.txnInstanceId = new CommonId(CommonId.CommonType.TXN_INSTANCE, txnId.seq, 0l);
         this.status = TransactionStatus.START;
         this.channelMap = new ConcurrentHashMap<>();
+        this.cache = new TransactionCache(txnId);
+        this.sqlList = new ArrayList<>();
         TransactionManager.register(txnId, this);
     }
 
@@ -79,16 +91,21 @@ public abstract class BaseTransaction implements ITransaction{
         this.txnId = new CommonId(CommonId.CommonType.TRANSACTION, TransactionManager.getServerId().seq, start_ts);
         this.status = TransactionStatus.START;
         this.channelMap = new ConcurrentHashMap<>();
+        this.cache = new TransactionCache(txnId);
+        this.sqlList = new ArrayList<>();
         TransactionManager.register(txnId, this);
     }
 
-    public abstract TransactionType getType();
+    @Override
+    public void addSql(String sql) {
+        sqlList.add(sql);
+    }
 
     public abstract void cleanUp();
 
-    public abstract void resolveWriteConflict(JobManager jobManager, Location currentLocation, TaskFinException e);
+    public abstract void resolveWriteConflict(JobManager jobManager, Location currentLocation, RuntimeException e);
 
-    public abstract void preWritePrimaryKey();
+    public abstract CacheToObject preWritePrimaryKey();
 
     public String transactionOf() {
         TransactionType type = getType();
@@ -114,7 +131,7 @@ public abstract class BaseTransaction implements ITransaction{
     }
 
     @Override
-    public boolean commitPrimaryKey() {
+    public boolean commitPrimaryKey(CacheToObject cacheToObject) {
         // 1、call sdk commitPrimaryKey
         TxnCommit commitRequest = TxnCommit.builder().
             isolationLevel(IsolationLevel.of(isolationLevel)).
@@ -122,29 +139,43 @@ public abstract class BaseTransaction implements ITransaction{
             commitTs(commit_ts).
             keys(Collections.singletonList(primaryKey)).
             build();
-        return part.txnCommit(commitRequest);
+        try{
+            StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
+            return store.txnCommit(commitRequest);
+        } catch (RuntimeException e) {
+            log.error(e.getMessage(), e);
+            // 2、regin split
+            CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, primaryKey);
+            StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
+            return store.txnCommit(commitRequest);
+        }
     }
 
     @Override
-    public void commit(JobManager jobManager) {
-        long preWriteStart = System.nanoTime();
+    public synchronized void commit(JobManager jobManager) {
+        long preWriteStart = System.currentTimeMillis();
         // begin
         // nothing
         // commit
-        if(status == TransactionStatus.START) {
+        if(status != TransactionStatus.START) {
+            throw new RuntimeException(txnId + ":" + transactionOf() + " unavailable status is " + status);
+        }
+        if(getSqlList().size() == 0 || !cache.checkContinue()) {
+            log.warn("{} The current {} has no data to commit",txnId, transactionOf());
             return;
         }
         Location currentLocation = MetaService.root().currentLocation();
-        CommonId jobId = CommonId.EMPTY_JOB;
+        AtomicReference<CommonId> jobId = new AtomicReference<>(CommonId.EMPTY_JOB);
         this.status= TransactionStatus.PRE_WRITE_START;
+        CacheToObject cacheToObject = null;
         try {
             log.info("{} {} Start PreWritePrimaryKey", txnId, transactionOf());
             // 1、PreWritePrimaryKey 、heartBeat
-            preWritePrimaryKey();
+            cacheToObject = preWritePrimaryKey();
             // 2、generator job、task、PreWriteOperator
             long jobSeqId = TransactionManager.nextTimestamp();
             job = jobManager.createJob(start_ts, jobSeqId, txnId, null);
-            jobId = job.getJobId();
+            jobId.set(job.getJobId());
             DingoTransactionRenderJob.renderPreWriteJob(job, currentLocation, this, true);
             // 3、run PreWrite
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
@@ -152,12 +183,26 @@ public abstract class BaseTransaction implements ITransaction{
                 Object[] next = iterator.next();
             }
             this.status = TransactionStatus.PRE_WRITE;
+        } catch (WriteConflictException e){
+            log.info(e.getMessage(), e);
+            // rollback or retry
+            this.status = TransactionStatus.PRE_WRITE_FAIL;
+            resolveWriteConflict(jobManager, currentLocation, e);
+        } catch (DuplicateEntryException e){
+            log.info(e.getMessage(), e);
+            // rollback
+            this.status = TransactionStatus.PRE_WRITE_FAIL;
+            rollback(jobManager);
+            throw e;
         } catch (TaskFinException e){
             log.info(e.getMessage(), e);
             // rollback or retry
             this.status = TransactionStatus.PRE_WRITE_FAIL;
             if(e.getErrorType().equals(ErrorType.WriteConflict)) {
                 resolveWriteConflict(jobManager, currentLocation, e);
+            } else if (e.getErrorType().equals(ErrorType.DuplicateEntry)) {
+                rollback(jobManager);
+                throw e;
             } else {
                 throw e;
             }
@@ -170,39 +215,59 @@ public abstract class BaseTransaction implements ITransaction{
             this.status = TransactionStatus.PRE_WRITE_FAIL;
             throw new RuntimeException(t);
         } finally {
-            log.info("{} {} PreWrite End, Cost:{}ns", txnId, transactionOf(), (System.nanoTime() - preWriteStart));
-            jobManager.removeJob(jobId);
+            log.info("{} {} PreWrite End Status:{}, Cost:{}ms", txnId, transactionOf(), status, (System.currentTimeMillis() - preWriteStart));
+            jobManager.removeJob(jobId.get());
         }
 
         try {
             log.info("{} {} Start CommitPrimaryKey", txnId, transactionOf());
             // 4、get commit_ts 、CommitPrimaryKey
             this.commit_ts = TransactionManager.getCommit_ts();
-            commitPrimaryKey();
-            // 5、generator job、task、CommitOperator
-            job = jobManager.createJob(start_ts, commit_ts, txnId, null);
-            jobId = job.getJobId();
-            DingoTransactionRenderJob.renderCommitJob(job, currentLocation, this, true);
-            // 6、run Commit
-            Iterator<Object[]> iterator = jobManager.createIterator(job, null);
-            if (iterator.hasNext()) {
-                Object[] next = iterator.next();
+            boolean result = commitPrimaryKey(cacheToObject);
+            if (!result) {
+                throw new RuntimeException(txnId + " " + cacheToObject.getPartId() + ",txnCommitPrimaryKey false,commit_ts:"+ commit_ts +",PrimaryKey:" + primaryKey);
             }
+            CompletableFuture<Void> commit_future = CompletableFuture.runAsync(() ->
+                commitJobRun(jobManager, currentLocation, jobId), Executors.executor("exec-txnCommit")
+            ).exceptionally(
+                ex -> {
+                    ex.printStackTrace();
+                    log.error(ex.toString(), ex);
+                    return null;
+                }
+            );
+//            commit_future.get();
             this.status = TransactionStatus.COMMIT;
         } catch (Throwable t) {
             log.info(t.getMessage(), t);
             this.status = TransactionStatus.COMMIT_FAIL;
             throw new RuntimeException(t);
         } finally {
-            log.info("{} {} Commit End, Cost:{}ns", txnId, transactionOf(), (System.nanoTime() - preWriteStart));
-            jobManager.removeJob(jobId);
+            log.info("{} {} Commit End Status:{}, Cost:{}ms", txnId, transactionOf(), status, (System.currentTimeMillis() - preWriteStart));
+            jobManager.removeJob(jobId.get());
             cleanUp();
         }
     }
 
+    private void commitJobRun(JobManager jobManager, Location currentLocation, AtomicReference<CommonId> jobId) {
+        // 5、generator job、task、CommitOperator
+        job = jobManager.createJob(start_ts, commit_ts, txnId, null);
+        jobId.set(job.getJobId());
+        DingoTransactionRenderJob.renderCommitJob(job, currentLocation, this, true);
+        // 6、run Commit
+        Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+        if (iterator.hasNext()) {
+            Object[] next = iterator.next();
+        }
+    }
+
     @Override
-    public void rollback(JobManager jobManager) {
-        long rollBackStart = System.nanoTime();
+    public synchronized void rollback(JobManager jobManager) {
+        long rollBackStart = System.currentTimeMillis();
+        if(getSqlList().size() == 0 || !cache.checkContinue()) {
+            log.warn("{} The current {} has no data to rollback",txnId, transactionOf());
+            return;
+        }
         log.info("{} {} RollBack Start", txnId, transactionOf());
         Location currentLocation = MetaService.root().currentLocation();
         CommonId jobId = CommonId.EMPTY_JOB;
@@ -221,7 +286,7 @@ public abstract class BaseTransaction implements ITransaction{
             this.status = TransactionStatus.ROLLBACK_FAIL;
             throw new RuntimeException(t);
         } finally {
-            log.info("{} {} RollBack End, Cost:{}ns", txnId, transactionOf(), (System.nanoTime() - rollBackStart));
+            log.info("{} {} RollBack End Status:{}, Cost:{}ms", txnId, transactionOf(), status, (System.currentTimeMillis() - rollBackStart));
             jobManager.removeJob(jobId);
             cleanUp();
         }

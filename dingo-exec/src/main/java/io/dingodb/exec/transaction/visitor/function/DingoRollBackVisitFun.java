@@ -44,7 +44,8 @@ public class DingoRollBackVisitFun {
             RollBackParam param = new RollBackParam(
                 new BooleanType(true),
                 transaction.getIsolationLevel(),
-                transaction.getStart_ts()
+                transaction.getStart_ts(),
+                transaction.getType()
             );
             Vertex vertex = new Vertex(ROLL_BACK, param);
             Task task = input.getTask();

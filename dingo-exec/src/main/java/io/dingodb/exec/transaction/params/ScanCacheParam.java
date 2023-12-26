@@ -18,40 +18,35 @@ package io.dingodb.exec.transaction.params;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.AbstractParams;
-import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.exec.operator.params.SourceParam;
+import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.impl.TransactionCache;
-import io.dingodb.exec.transaction.impl.TransactionManager;
 import lombok.Getter;
 
 @Getter
 @JsonTypeName("scanCache")
-public class ScanCacheParam extends AbstractParams {
+public class ScanCacheParam extends SourceParam {
 
     @JsonProperty("schema")
     private final DingoType schema;
+    @JsonProperty("txnType")
+    private final TransactionType transactionType;
     private TransactionCache cache;
 
-    public ScanCacheParam(DingoType schema) {
+    public ScanCacheParam(
+        @JsonProperty("schema") DingoType schema,
+        @JsonProperty("txnType") TransactionType transactionType
+    ) {
         this.schema = schema;
-    }
-
-    public ScanCacheParam(DingoType schema, TransactionCache cache) {
-        this.schema = schema;
-        this.cache = cache;
+        this.transactionType = transactionType;
     }
 
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
-        // cross node transaction
-        if (cache == null) {
-            CommonId txnId = vertex.getTask().getTxnId();
-            ITransaction transaction = TransactionManager.getTransaction(txnId);
-            cache = transaction.getCache();
-        }
+        cache = new TransactionCache(vertex.getTask().getTxnId());
     }
 }

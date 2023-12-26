@@ -94,9 +94,9 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
         if (checkRoot && outputs.size() > 0) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
-        if (log.isDebugEnabled()) {
+//        if (log.isDebugEnabled()) {
             log.info("job = {}", job);
-        }
+//        }
     }
 
     public static void renderRollBackJob(Job job, Location currentLocation, ITransaction transaction, boolean checkRoot) {

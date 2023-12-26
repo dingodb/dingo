@@ -14,8 +14,29 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.base;
+package io.dingodb.store.api.transaction.data;
 
-public interface ITimestampOracle {
-    long nextTimestamp();
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+import java.util.List;
+
+@Getter
+@Setter
+@Builder
+@EqualsAndHashCode
+@ToString
+public class Vector {
+    private int dimension;
+    private ValueType valueType;
+    private List<Float> floatValues;
+    private List<byte[]> binaryValues;
+
+    public enum ValueType {
+        FLOAT,
+        UINT8
+    }
 }

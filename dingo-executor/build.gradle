@@ -47,7 +47,6 @@ dependencies {
     implementation project(":dingo-scheduler-api")
     implementation project(":dingo-tool-api")
     implementation project(':dingo-store-proxy')
-
     implementation project(":dingo-partition-base")
     implementation project(":dingo-tool-service")
 
@@ -55,6 +54,7 @@ dependencies {
 
     implementation project(':dingo-driver:dingo-driver-host')
     implementation project(':dingo-driver:dingo-driver-client')
+//    testImplementation project(":dingo-store-local")
 }
 
 task fatJar(type: Jar) {

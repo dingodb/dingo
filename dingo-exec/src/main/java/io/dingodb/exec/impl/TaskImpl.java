@@ -36,6 +36,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.TaskStatus;
 import io.dingodb.exec.operator.SourceOperator;
+import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -211,6 +212,8 @@ public final class TaskImpl implements Task {
                     taskStatus.setErrorMsg(e.toString());
                     if (e instanceof WriteConflictException) {
                         taskStatus.setErrorType(ErrorType.WriteConflict);
+                    } else if (e instanceof DuplicateEntryException) {
+                        taskStatus.setErrorType(ErrorType.DuplicateEntry);
                     } else {
                         taskStatus.setErrorType(ErrorType.TaskFin);
                     }

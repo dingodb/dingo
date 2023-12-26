@@ -55,6 +55,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Field;
 import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -400,6 +401,13 @@ public class DingoMeta extends MetaImpl {
                 rows.add(dingoType.convertTo(iterator.next(), converter));
             }
             boolean done = fetchMaxRowCount == 0 || !iterator.hasNext();
+            ITransaction transaction = ((DingoConnection) connection).getTransaction();
+            if (transaction !=null) {
+                transaction.addSql(signature.sql);
+                if (connection.getAutoCommit()) {
+                    connection.commit();
+                }
+            }
             return new Frame(offset, done, rows);
         } catch (Throwable e) {
             log.error("Fetch catch exception:{}", e, e);
@@ -480,6 +488,11 @@ public class DingoMeta extends MetaImpl {
         } finally {
             if (transaction != null) {
                 transaction.close();
+                try {
+                    ((DingoConnection) connection).cleanTransaction();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
@@ -498,6 +511,11 @@ public class DingoMeta extends MetaImpl {
         } finally {
             if (transaction != null) {
                 transaction.close();
+                try {
+                    ((DingoConnection) connection).cleanTransaction();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }

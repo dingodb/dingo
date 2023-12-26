@@ -18,6 +18,8 @@ package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParser;
+import io.dingodb.calcite.DingoRelOptTable;
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.operation.DdlOperation;
 import io.dingodb.calcite.operation.Operation;
@@ -30,15 +32,19 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
-import io.dingodb.exec.impl.LocalTimestampOracle;
+import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.meta.MetaService;
+import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.SqlType;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.type.RelDataType;
@@ -60,11 +66,11 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.DatabaseMetaData;
-import java.sql.SQLClientInfoException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
@@ -279,19 +285,28 @@ public final class DingoDriverParser extends DingoParser {
         extractAutoIncrement(relNode, jobIdPrefix);
         Location currentLocation = MetaService.root().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
+        boolean isTxn = checkEngine(relNode, sqlNode, connection.getAutoCommit());
         // get start_ts for jobSeqId, if transaction is not null ,transaction start_ts is jobDomainId
         long start_ts = 0l;
-        long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        long jobSeqId = TsoService.getDefault().tso();
         CommonId txn_Id;
         if (connection.getTransaction() != null) {
             start_ts = connection.getTransaction().getStart_ts();
             txn_Id = connection.getTransaction().getTxnId();
         } else {
-            start_ts = jobSeqId;
-            txn_Id = CommonId.EMPTY_TRANSACTION;
+            if (isTxn) {
+                start_ts = TransactionManager.getStart_ts();
+                ITransaction transaction = TransactionManager.createTransaction(false, start_ts);
+                transaction.setAutoCommit(true);
+                connection.setTransaction(transaction);
+                txn_Id = transaction.getTxnId();
+            } else {
+                start_ts = jobSeqId;
+                txn_Id = CommonId.EMPTY_TRANSACTION;
+            }
         }
         Job job = jobManager.createJob(start_ts, jobSeqId, txn_Id, DefinitionMapper.mapToDingoType(parasType));
-        DingoJobVisitor.renderJob(job, relNode, currentLocation, true, connection.getTransaction() != null);
+        DingoJobVisitor.renderJob(job, relNode, currentLocation, true, connection.getTransaction());
         if (explain != null) {
             statementType = Meta.StatementType.CALL;
             String logicalPlan = RelOptUtil.dumpPlan("", relNode, SqlExplainFormat.TEXT,
@@ -320,6 +335,39 @@ public final class DingoDriverParser extends DingoParser {
         );
     }
 
+    private boolean checkEngine(RelNode relNode, SqlNode sqlNode, boolean isAutoCommit) {
+        boolean isTxn = true;
+        Set<RelOptTable> tables = RelOptUtil.findTables(relNode);
+        if (sqlNode.getKind() == SqlKind.INSERT) {
+            RelNode input = relNode.getInput(0).getInput(0);
+            RelOptTable table = input.getTable();
+            String engine = ((DingoTable) ((DingoRelOptTable) table).table()).getTableDefinition().getEngine();
+            if (engine == null || (!engine.equalsIgnoreCase("TXN_LSM") && !engine.equalsIgnoreCase("TXN_BDB"))) {
+                isTxn = false;
+            }
+            if (!isAutoCommit && !isTxn) {
+                throw new RuntimeException("Non-transaction tables cannot be used in transactions");
+            }
+        }
+        // for UT test
+        if ((sqlNode.getKind() == SqlKind.SELECT || sqlNode.getKind() == SqlKind.DELETE) && tables.size() == 0) {
+            return false;
+        }
+        for (RelOptTable table : tables) {
+            String engine = ((DingoTable) ((RelOptTableImpl) table).table()).getTableDefinition().getEngine();
+            if (engine == null || (!engine.equalsIgnoreCase("TXN_LSM") && !engine.equalsIgnoreCase("TXN_BDB"))) {
+                isTxn = false;
+            } else {
+                if (!isTxn) {
+                    throw new RuntimeException("Transactional tables cannot be mixed with non-transactional tables");
+                }
+            }
+            if (!isAutoCommit && !isTxn) {
+                throw new RuntimeException("Non-transaction tables cannot be used in transactions");
+            }
+        }
+        return isTxn;
+    }
     /**
      * Determine if it is an insert statement and if there is an autoincrement primary key in the table.
      * @param relNode dingo relNode

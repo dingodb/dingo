@@ -40,6 +40,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.params.PartRangeScanParam;
 import io.dingodb.exec.operator.params.TxnPartRangeScanParam;
+import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +65,7 @@ public final class DingoTableScanVisitFun {
 
     public static @NonNull Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation,
-        boolean isTxn, DingoJobVisitor visitor, @NonNull DingoTableScan rel
+        ITransaction transaction, DingoJobVisitor visitor, @NonNull DingoTableScan rel
     ) {
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
@@ -107,7 +108,7 @@ public final class DingoTableScanVisitFun {
         for (RangeDistribution rd : distributions) {
             Task task = job.getOrCreate(currentLocation, idGenerator);
             Vertex vertex;
-            if (isTxn) {
+            if (transaction != null) {
                 TxnPartRangeScanParam param = new TxnPartRangeScanParam(
                     tableInfo.getId(),
                     rd.id(),
@@ -124,6 +125,8 @@ public final class DingoTableScanVisitFun {
                     rel.getAggCalls() == null ? null : AggFactory.getAggList(
                         rel.getAggCalls(), DefinitionMapper.mapToDingoType(rel.getSelectedType())),
                     DefinitionMapper.mapToDingoType(rel.getNormalRowType()),
+                    transaction.getStart_ts(),
+                    transaction.getIsolationLevel(),
                     false
                 );
                 vertex = new Vertex(TXN_PART_RANGE_SCAN, param);

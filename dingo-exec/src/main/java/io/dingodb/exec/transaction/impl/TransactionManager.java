@@ -19,10 +19,10 @@ package io.dingodb.exec.transaction.impl;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.util.Optional;
-import io.dingodb.exec.impl.LocalTimestampOracle;
 import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.exec.transaction.base.TransactionConfig;
 import io.dingodb.exec.transaction.base.TransactionType;
-import io.dingodb.net.Channel;
+import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -84,15 +84,15 @@ public class TransactionManager {
     }
 
     public static long getStart_ts() {
-        return LocalTimestampOracle.INSTANCE.nextTimestamp();
+        return TsoService.getDefault().tso();
     }
 
     public static long getCommit_ts() {
-        return LocalTimestampOracle.INSTANCE.nextTimestamp();
+        return TsoService.getDefault().tso();
     }
 
     public static long nextTimestamp() {
-        return LocalTimestampOracle.INSTANCE.nextTimestamp();
+        return TsoService.getDefault().tso();
     }
 
     public static void register(@NonNull CommonId txnId, @NonNull ITransaction transaction) {
@@ -114,5 +114,9 @@ public class TransactionManager {
 
     public static CommonId getServerId() {
         return DingoConfiguration.serverId() == null ? new CommonId(CommonId.CommonType.SCHEMA, 0l, 0l) : DingoConfiguration.serverId();
+    }
+
+    public static long lockTtlTm() {
+        return TsoService.getDefault().timestamp() + TransactionConfig.lock_ttl;
     }
 }

@@ -22,18 +22,13 @@ import io.dingodb.common.Coprocessor;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.Optional;
 import io.dingodb.store.api.StoreInstance;
-import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatus;
-import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatusResult;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
-import io.dingodb.store.api.transaction.data.resolvelock.TxnResolveLock;
-import io.dingodb.store.api.transaction.data.resolvelock.TxnResolveLockResult;
 import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.concurrent.Future;
 
@@ -211,30 +206,6 @@ public final class PartInKvStore implements Part {
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("PartInKvStore txnPreWritePrimaryKey cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
-        }
-    }
-
-    @Override
-    public @NonNull TxnCheckStatusResult txnCheckTxnStatus(@NonNull TxnCheckStatus txnCheckStatus) {
-        final long startTime = System.currentTimeMillis();
-        try {
-            return store.txnCheckTxnStatus(txnCheckStatus);
-        } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore txnCheckTxnStatus cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
-        }
-    }
-
-    @Override
-    public @NonNull TxnResolveLockResult txnResolveLock(@NonNull TxnResolveLock resolveLockRequest) {
-        final long startTime = System.currentTimeMillis();
-        try {
-            return store.txnResolveLock(resolveLockRequest);
-        } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore txnResolveLock cost: {}ms.", System.currentTimeMillis() - startTime);
             }
         }
     }

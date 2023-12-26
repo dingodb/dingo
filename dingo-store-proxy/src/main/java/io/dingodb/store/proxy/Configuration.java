@@ -17,12 +17,16 @@
 package io.dingodb.store.proxy;
 
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.sdk.service.Services;
+import io.dingodb.sdk.service.entity.common.Location;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+
+import java.util.Set;
 
 @Getter
 @Setter
@@ -40,11 +44,19 @@ public class Configuration {
     }
 
     private String coordinators;
+    private Set<Location> coordinatorSet;
 
     public static String coordinators() {
         if (INSTANCE.coordinators == null) {
             INSTANCE.coordinators = DingoConfiguration.instance().find("coordinators", String.class);
         }
         return INSTANCE.coordinators;
+    }
+
+    public static Set<Location> coordinatorSet() {
+        if (INSTANCE.coordinatorSet == null) {
+            INSTANCE.coordinatorSet = Services.parse(coordinators());
+        }
+        return INSTANCE.coordinatorSet;
     }
 }

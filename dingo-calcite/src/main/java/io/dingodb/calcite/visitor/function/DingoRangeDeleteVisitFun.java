@@ -35,6 +35,7 @@ import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.PartRangeDeleteParam;
 import io.dingodb.exec.operator.params.TxnPartRangeDeleteParam;
+import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 
@@ -55,7 +56,7 @@ public final class DingoRangeDeleteVisitFun {
 
     public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation,
-        boolean isTxn, DingoJobVisitor visitor, DingoPartRangeDelete rel
+        ITransaction transaction, DingoJobVisitor visitor, DingoPartRangeDelete rel
     ) {
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
@@ -79,7 +80,7 @@ public final class DingoRangeDeleteVisitFun {
 
         for (RangeDistribution rd : distributions) {
             Vertex vertex;
-            if (isTxn) {
+            if (transaction != null) {
                 TxnPartRangeDeleteParam param = new TxnPartRangeDeleteParam(
                     tableInfo.getId(),
                     rd.id(),

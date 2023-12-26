@@ -154,6 +154,10 @@ public final class JobManagerImpl implements JobManager {
         );
         channel.setCloseListener(__ -> channelMap.remove(location));
         channel.send(message);
+        ITransaction transaction = TransactionManager.getTransaction(task.getTxnId());
+        if (transaction !=null) {
+            transaction.registerChannel(task.getId(), channel);
+        }
     }
 
     public void processMessage(@NonNull Message message) {

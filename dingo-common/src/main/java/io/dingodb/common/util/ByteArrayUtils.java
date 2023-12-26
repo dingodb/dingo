@@ -54,8 +54,15 @@ public class ByteArrayUtils {
         @JsonProperty
         private boolean ignoreLen = false;
 
+        @JsonProperty
+        private int pos = 0;
         public ComparableByteArray(byte[] bytes) {
             this.bytes = bytes;
+        }
+
+        public ComparableByteArray(byte[] bytes, int pos) {
+            this.bytes = bytes;
+            this.pos = pos;
         }
 
         public String encodeToString() {
@@ -68,15 +75,15 @@ public class ByteArrayUtils {
         public static ComparableByteArray decode(String key) {
             Base64Variant base64Variant = Base64Variants.getDefaultVariant();
             byte[] tmp = base64Variant.decode(key);
-            return new ComparableByteArray(slice(tmp, 1, tmp.length - 1), tmp[0] != 0);
+            return new ComparableByteArray(slice(tmp, 1, tmp.length - 1), tmp[0] != 0, 0);
         }
 
         @Override
         public int compareTo(@NonNull ComparableByteArray other) {
             if (!ignoreLen) {
-                return compare(bytes, other.bytes);
+                return compare(bytes, other.bytes, pos);
             } else {
-                return compareWithoutLen(bytes, other.bytes);
+                return compareWithoutLen(bytes, other.bytes, pos);
             }
         }
 

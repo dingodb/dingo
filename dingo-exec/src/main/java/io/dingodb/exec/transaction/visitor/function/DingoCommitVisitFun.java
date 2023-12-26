@@ -42,7 +42,8 @@ public class DingoCommitVisitFun {
         for (Vertex input : inputs) {
             CommitParam param = new CommitParam(
                 new BooleanType(true), transaction.getIsolationLevel(),
-                transaction.getStart_ts(), transaction.getCommit_ts(), transaction.getPrimaryKey()
+                transaction.getStart_ts(), transaction.getCommit_ts(), transaction.getPrimaryKey(),
+                transaction.getType()
             );
             Vertex vertex = new Vertex(COMMIT, param);
             Task task = input.getTask();

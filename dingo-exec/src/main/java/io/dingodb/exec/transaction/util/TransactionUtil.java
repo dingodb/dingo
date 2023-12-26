@@ -16,97 +16,33 @@
 
 package io.dingodb.exec.transaction.util;
 
-import io.dingodb.exec.table.Part;
-import io.dingodb.store.api.transaction.exception.PrimaryMismatchException;
-import io.dingodb.store.api.transaction.exception.WriteConflictException;
+import io.dingodb.common.CommonId;
+import io.dingodb.common.partition.PartitionDefinition;
+import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.transaction.impl.TransactionManager;
-import io.dingodb.store.api.transaction.data.IsolationLevel;
-import io.dingodb.store.api.transaction.data.LockInfo;
-import io.dingodb.store.api.transaction.data.TxnResultInfo;
-import io.dingodb.store.api.transaction.data.WriteConflict;
-import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatus;
-import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatusResult;
-import io.dingodb.store.api.transaction.data.resolvelock.TxnResolveLock;
-import io.dingodb.store.api.transaction.data.resolvelock.TxnResolveLockResult;
+import io.dingodb.meta.MetaService;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
+import io.dingodb.store.api.transaction.data.Mutation;
+import io.dingodb.store.api.transaction.data.prewrite.LockExtraData;
+import io.dingodb.store.api.transaction.data.prewrite.LockExtraDataList;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 
 @Slf4j
 public class TransactionUtil {
-    public static void resolveConflict(@NonNull List<TxnResultInfo> txnResult, int isolationLevel, long start_ts, @NonNull Part part) {
-        for (TxnResultInfo txnResultInfo : txnResult) {
-            log.info("txnPreWrite txnResultInfo :" + txnResultInfo);
-            LockInfo lockInfo = txnResultInfo.getLocked();
-            if (lockInfo != null) {
-                // CheckTxnStatus
-                log.info("txnPreWrite lockInfo :" + lockInfo);
-                long current_ts = TransactionManager.nextTimestamp();
-                TxnCheckStatus txnCheckStatus = TxnCheckStatus.builder().
-                    isolationLevel(IsolationLevel.of(isolationLevel)).
-                    primaryKey(lockInfo.getPrimaryKey()).
-                    lockTs(lockInfo.getLockTs()).
-                    callerStartTs(start_ts).
-                    currentTs(current_ts).
-                    build();
-                TxnCheckStatusResult statusResponse = part.txnCheckTxnStatus(txnCheckStatus);
-                log.info("txnPreWrite txnCheckStatus :" + statusResponse);
-                TxnResultInfo resultInfo = statusResponse.getTxnResultInfo();
-                // success
-                if (resultInfo == null) {
-                    long lockTtl = statusResponse.getLockTtl();
-                    long commitTs = statusResponse.getCommitTs();
-                    if (lockTtl > 0) {
-                        // wait
-                        try {
-                            Thread.sleep(lockTtl);
-                            log.info("lockInfo wait " + lockTtl + "ms end.");
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                    } else if (commitTs > 0) {
-                        // resolveLock store commit
-                        TxnResolveLock resolveLockRequest = TxnResolveLock.builder().
-                            isolationLevel(IsolationLevel.of(isolationLevel)).
-                            startTs(lockInfo.getLockTs()).
-                            commitTs(commitTs).
-                            keys(Collections.singletonList(lockInfo.getKey())).
-                            build();
-                        TxnResolveLockResult txnResolveLockResult = part.txnResolveLock(resolveLockRequest);
-                        log.info("txnResolveLockResponse:" + txnResolveLockResult);
-                    } else if (lockTtl == 0 && commitTs == 0) {
-                        // resolveLock store rollback
-                        TxnResolveLock resolveLockRequest = TxnResolveLock.builder().
-                            isolationLevel(IsolationLevel.of(isolationLevel)).
-                            startTs(lockInfo.getLockTs()).
-                            commitTs(commitTs).
-                            keys(Collections.singletonList(lockInfo.getKey())).
-                            build();
-                        TxnResolveLockResult txnResolveLockResult = part.txnResolveLock(resolveLockRequest);
-                        log.info("txnResolveLockResponse:" + txnResolveLockResult);
-                    }
-                } else {
-                    // 1、PrimaryMismatch  or  TxnNotFound
-                    if (resultInfo.getPrimaryMismatch() != null) {
-                        throw new PrimaryMismatchException(resultInfo.getPrimaryMismatch().toString());
-                    } else if (resultInfo.getTxnNotFound() != null) {
-                        throw new RuntimeException(resultInfo.getTxnNotFound().toString());
-                    }
-                }
-            } else {
-                WriteConflict writeConflict = txnResultInfo.getWriteConflict();
-                log.info("txnPreWrite writeConflict :" + writeConflict);
-                if (writeConflict != null) {
-                    throw new WriteConflictException(writeConflict.toString());
-                }
-            }
-        }
-    }
 
     public static <T> List<Set<T>> splitSetIntoSubsets(Set<T> set, int batchSize) {
         List<T> tempList = new ArrayList<>(set);
@@ -117,4 +53,67 @@ public class TransactionUtil {
         return subsets;
     }
 
+    public static CommonId singleKeySplitRegionId(CommonId tableId, CommonId txnId, byte[] key) {
+        // 2、regin split
+        MetaService root = MetaService.root();
+        TableDefinition tableDefinition = root.getTableDefinition(tableId);
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution = root.getRangeDistribution(tableId);
+        CommonId regionId = PartitionService.getService(
+                Optional.ofNullable(tableDefinition.getPartDefinition())
+                    .map(PartitionDefinition::getFuncName)
+                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
+            .calcPartId(key, rangeDistribution);
+        log.info("{} regin split retry tableId:{} regionId:{}", txnId, tableId, regionId);
+        return regionId;
+    }
+
+    public static Map<CommonId, List<byte[]>> multiKeySplitRegionId(CommonId tableId, CommonId txnId, List<byte[]> keys) {
+        // 2、regin split
+        MetaService root = MetaService.root();
+        TableDefinition tableDefinition = root.getTableDefinition(tableId);
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution = root.getRangeDistribution(tableId);
+        final PartitionService ps = PartitionService.getService(
+            Optional.ofNullable(tableDefinition.getPartDefinition())
+                .map(PartitionDefinition::getFuncName)
+                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+        Map<CommonId, List<byte[]>> partMap = ps.partKeys(keys, rangeDistribution);
+        log.info("{} regin split retry tableId:{}", txnId, tableId);
+        return partMap;
+    }
+
+    public static Map<CommonId, TableDefinition> getIndexDefinitions(CommonId tableId) {
+        MetaService root = MetaService.root();
+        return root.getTableIndexDefinitions(tableId);
+    }
+    public static List<byte[]> mutationToKey(List<Mutation> mutations) {
+        List<byte[]> keys = new ArrayList<>(mutations.size());
+        for (Mutation mutation:mutations) {
+            keys.add(mutation.getKey());
+        }
+        return keys;
+    }
+
+    public static List<Mutation> keyToMutation(List<byte[]> keys, List<Mutation> srcMutations) {
+        List<Mutation> mutations = new ArrayList<>(keys.size());
+        for (Mutation mutation: srcMutations) {
+            if (keys.contains(mutation.getKey())) {
+                mutations.add(mutation);
+            }
+        }
+        return mutations;
+    }
+
+    public static List<LockExtraData> toLockExtraDataList(CommonId tableId, CommonId partId, CommonId txnId, int transactionType, int size) {
+        LockExtraDataList lockExtraData = LockExtraDataList.builder().
+            tableId(tableId)
+            .partId(partId)
+            .serverId(TransactionManager.getServerId())
+            .txnId(txnId)
+            .transactionType(transactionType).build();
+        byte[] encode = lockExtraData.encode();
+        List<LockExtraData> lockExtraDataList = IntStream.range(0, size)
+            .mapToObj(i -> new LockExtraData(i, encode))
+            .collect(Collectors.toList());
+        return lockExtraDataList;
+    }
 }

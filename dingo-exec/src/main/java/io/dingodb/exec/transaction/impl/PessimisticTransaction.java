@@ -18,17 +18,24 @@ package io.dingodb.exec.transaction.impl;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.exec.Services;
 import io.dingodb.exec.base.JobManager;
-import io.dingodb.exec.exception.TaskFinException;
 import io.dingodb.exec.transaction.base.BaseTransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
-import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
+import io.dingodb.exec.transaction.base.CacheToObject;
+import io.dingodb.exec.transaction.util.TransactionUtil;
+import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
+import io.dingodb.store.api.transaction.exception.ReginSplitException;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
 
+@Slf4j
 public class PessimisticTransaction extends BaseTransaction {
+
+    private long for_update_ts;
 
     public PessimisticTransaction(long startTs) {
         super(startTs);
@@ -45,33 +52,50 @@ public class PessimisticTransaction extends BaseTransaction {
 
     @Override
     public void cleanUp() {
-        future.cancel(true);
+        if(future != null) {
+            future.cancel(true);
+        }
         // PessimisticRollback
     }
 
     @Override
-    public void preWritePrimaryKey() {
+    public CacheToObject preWritePrimaryKey() {
         // 1、get first key from cache
-        byte[] key = cache.getPrimaryKey();
-        primaryKey = key;
+        CacheToObject cacheToObject = cache.getPrimaryKey();
+        primaryKey = cacheToObject.getMutation().getKey();
         // 2、call sdk preWritePrimaryKey
         TxnPreWrite txnPreWrite = TxnPreWrite.builder().
             isolationLevel(IsolationLevel.of(
                 isolationLevel
-            )).
-            mutations(Collections.singletonList(TransactionCacheToMutation.cacheToMutation(new Object[]{primaryKey}))).
-            primaryLock(primaryKey).
-            startTs(start_ts).
-            lockTtl(lockTtl).
-            txnSize(1l).
-            tryOnePc(false).
-            maxCommitTs(0l).
-            build();
-        part.txnPreWrite(txnPreWrite);
+            ))
+            .mutations(Collections.singletonList(cacheToObject.getMutation()))
+            .primaryLock(primaryKey)
+            .startTs(start_ts)
+            .lockTtl(TransactionManager.lockTtlTm())
+            .txnSize(1l)
+            .tryOnePc(false)
+            .maxCommitTs(0l)
+            .build();
+        try {
+            StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
+            boolean result = store.txnPreWrite(txnPreWrite);
+            if (!result) {
+                throw new RuntimeException(txnId + " " + cacheToObject.getPartId() + ",preWritePrimaryKey false,PrimaryKey:" + primaryKey);
+            }
+        } catch (ReginSplitException e) {
+            log.error(e.getMessage(), e);
+            CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, cacheToObject.getMutation().getKey());
+            StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
+            boolean result = store.txnPreWrite(txnPreWrite);
+            if (!result) {
+                throw new RuntimeException(txnId + " " + regionId + ",preWritePrimaryKey false,PrimaryKey:" + primaryKey);
+            }
+        }
+        return cacheToObject;
     }
 
     @Override
-    public void resolveWriteConflict(JobManager jobManager, Location currentLocation, TaskFinException e) {
+    public void resolveWriteConflict(JobManager jobManager, Location currentLocation, RuntimeException e) {
         rollback(jobManager);
         throw e;
     }

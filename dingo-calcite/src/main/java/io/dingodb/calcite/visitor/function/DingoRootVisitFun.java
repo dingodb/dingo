@@ -29,6 +29,7 @@ import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.RootParam;
+import io.dingodb.exec.transaction.base.ITransaction;
 import org.apache.calcite.rel.type.RelDataType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -41,7 +42,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.ROOT;
 public class DingoRootVisitFun {
     @NonNull
     public static Collection<Vertex> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, @NonNull DingoRoot rel
+        Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction, DingoJobVisitor visitor, @NonNull DingoRoot rel
     ) {
         Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
         if (inputs.size() != 1) {

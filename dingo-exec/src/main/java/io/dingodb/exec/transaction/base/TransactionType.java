@@ -17,5 +17,23 @@
 package io.dingodb.exec.transaction.base;
 
 public enum TransactionType {
-    OPTIMISTIC, PESSIMISTIC
+    OPTIMISTIC(0), PESSIMISTIC(1);
+    private final int code;
+
+    TransactionType(int code) {
+        this.code = code;
+    }
+
+    public int getCode() {
+        return code;
+    }
+
+    public static TransactionType of(int code) {
+        switch (code) {
+            case 0: return OPTIMISTIC;
+            case 1: return PESSIMISTIC;
+            default:
+                throw new IllegalStateException("Unexpected value: " + code);
+        }
+    }
 }

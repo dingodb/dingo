@@ -27,6 +27,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.TxnPartRangeScanParam;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Op;
 import lombok.AllArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -70,12 +71,12 @@ public class TxnPartRangeScanOperator extends FilterProjectSourceOperator {
             localKVIterator = Iterators.transform(
                 localStore.scan(new StoreInstance.Range(encodeStart, encodeEnd, includeStart, includeEnd)),
                 wrap(ByteUtils::mapping)::apply);
-            kvKVIterator = kvStore.scan(new StoreInstance.Range(startKey, endKey, includeStart, includeEnd));
+            kvKVIterator = kvStore.txnScan(param.getStartTs(), IsolationLevel.of(param.getIsolationLevel()), new StoreInstance.Range(startKey, endKey, includeStart, includeEnd));
         } else {
             localKVIterator = Iterators.transform(
                 localStore.scan(new StoreInstance.Range(encodeStart, encodeEnd, includeStart, includeEnd), coprocessor),
                 wrap(ByteUtils::mapping)::apply);
-            kvKVIterator = kvStore.scan(new StoreInstance.Range(startKey, endKey, includeStart, includeEnd), coprocessor);
+            kvKVIterator = kvStore.txnScan(param.getStartTs(), IsolationLevel.of(param.getIsolationLevel()), new StoreInstance.Range(startKey, endKey, includeStart, includeEnd));
         }
 
         KeyValue kv1 = getNextValue(localKVIterator);
@@ -90,7 +91,7 @@ public class TxnPartRangeScanOperator extends FilterProjectSourceOperator {
             byte[] key2 = kv2.getKey();
             int code = key1[key1.length - 2];
             if (ByteArrayUtils.lessThan(key1, key2, pos, key1.length - 2)) {
-                if (code == Op.PUT.getCode() && !deletedList.contains(new KeyBytes(key2))) {
+                if ((code == Op.PUT.getCode() || code == Op.PUTIFABSENT.getCode()) && !deletedList.contains(new KeyBytes(key2))) {
                     mergedList.add(kv1);
                     kv1 = getNextValue(localKVIterator);
                     continue;
@@ -101,14 +102,16 @@ public class TxnPartRangeScanOperator extends FilterProjectSourceOperator {
                 }
             }
             if (ByteArrayUtils.greatThan(key1, key2, pos, key1.length - 2)) {
-                if (code == Op.PUT.getCode() && !deletedList.contains(new KeyBytes(key2))) {
+                if ((code == Op.PUT.getCode() || code == Op.PUTIFABSENT.getCode()) && !deletedList.contains(new KeyBytes(key2))) {
                     mergedList.add(kv2);
                     kv2 = getNextValue(kvKVIterator);
                     continue;
                 }
                 if (code == Op.DELETE.getCode()) {
-                    deletedList.add(new KeyBytes(key1));
-                    kv1 = getNextValue(localKVIterator);
+//                    deletedList.add(new KeyBytes(key1));
+//                    kv1 = getNextValue(localKVIterator);
+                    mergedList.add(kv2);
+                    kv2 = getNextValue(kvKVIterator);
                     continue;
                 }
             }
@@ -118,7 +121,7 @@ public class TxnPartRangeScanOperator extends FilterProjectSourceOperator {
                     kv2 = getNextValue(kvKVIterator);
                     continue;
                 }
-                if (code == Op.PUT.getCode()) {
+                if ((code == Op.PUT.getCode() || code == Op.PUTIFABSENT.getCode())) {
                     mergedList.add(kv1);
                     kv1 = getNextValue(localKVIterator);
                     kv2 = getNextValue(kvKVIterator);
@@ -126,7 +129,7 @@ public class TxnPartRangeScanOperator extends FilterProjectSourceOperator {
             }
         }
         while (kv1 != null) {
-            if (!mergedList.contains(kv1)) {
+            if (!mergedList.contains(kv1) && (kv1.getKey()[kv1.getKey().length - 2] != Op.DELETE.getCode())) {
                 mergedList.add(kv1);
             }
             kv1 = getNextValue(localKVIterator);
