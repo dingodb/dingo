@@ -16,20 +16,58 @@
 
 package io.dingodb.exec.transaction.impl;
 
+import com.google.common.collect.Iterators;
+import io.dingodb.common.CommonId;
+import io.dingodb.common.store.KeyValue;
+import io.dingodb.exec.Services;
+import io.dingodb.exec.transaction.base.CacheToObject;
+import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
+import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.store.api.StoreInstance;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 
-import static io.protostuff.CollectionSchema.MessageFactories.List;
+import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
+@Slf4j
 public class TransactionCache {
+    private final StoreInstance cache = Services.LOCAL_STORE.getInstance(null, null);
+    private final CommonId txnId;
 
-    public byte[] getPrimaryKey() {
+    public TransactionCache(CommonId txnId) {
+        this.txnId = txnId;
+    }
+    public CacheToObject getPrimaryKey() {
         // call StoreService
-        return new byte[]{};
+        CacheToObject primaryKey = null;
+        Iterator<KeyValue> iterator = cache.scan(txnId.encode());
+        if (iterator.hasNext()) {
+            KeyValue keyValue = iterator.next();
+            Object[] tuple = ByteUtils.decode(keyValue);
+            CommonId txnId = (CommonId) tuple[0];
+            CommonId tableId = (CommonId) tuple[1];
+            CommonId newPartId = (CommonId) tuple[2];
+            int op = (byte) tuple[3];
+            byte[] key = (byte[]) tuple[4];
+            byte[] value = (byte[]) tuple[5];
+            primaryKey = new CacheToObject(TransactionCacheToMutation.cacheToMutation(op, key, value, tableId, newPartId), tableId, newPartId);
+            log.info("txnId:{} primary key is {}" , txnId, primaryKey);
+        } else {
+            throw new RuntimeException(txnId + ",PrimaryKey is null");
+        }
+        return primaryKey;
+    }
+
+    public boolean checkContinue() {
+        Iterator<KeyValue> iterator = cache.scan(txnId.encode());
+        return iterator.hasNext();
     }
 
     public Iterator<Object[]> iterator() {
-        return new ArrayList<Object[]>(Collections.singleton(new Object[]{})).iterator();
+        Iterator<KeyValue> iterator = cache.scan(txnId.encode());
+        return Iterators.transform(iterator, wrap(ByteUtils::decode)::apply);
     }
 }

@@ -19,10 +19,10 @@ package io.dingodb.exec.transaction.base;
 import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
-import io.dingodb.exec.table.Part;
 import io.dingodb.exec.transaction.impl.TransactionCache;
 import io.dingodb.net.Channel;
 
+import java.util.List;
 import java.util.Map;
 
 public interface ITransaction {
@@ -39,15 +39,11 @@ public interface ITransaction {
 
     void setIsolationLevel(int isolationLevel);
 
+    TransactionType getType();
+
     TransactionStatus getStatus();
 
     void setStatus(TransactionStatus status);
-
-    Part getPart();
-
-    void setPart(Part part);
-
-    long getLockTtl();
 
     TransactionCache getCache();
 
@@ -55,7 +51,7 @@ public interface ITransaction {
 
     void registerChannel(CommonId commonId, Channel channel);
 
-    boolean commitPrimaryKey();
+    boolean commitPrimaryKey(CacheToObject cacheToObject);
 
     byte[] getPrimaryKey();
 
@@ -64,5 +60,13 @@ public interface ITransaction {
     void rollback(JobManager jobManager);
 
     void close();
+
+    void addSql(String sql);
+
+    List<String> getSqlList();
+
+    boolean isAutoCommit();
+
+    void setAutoCommit(boolean autoCommit);
     Job getJob();
 }

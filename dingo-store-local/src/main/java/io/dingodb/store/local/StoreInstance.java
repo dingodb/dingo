@@ -18,6 +18,7 @@ package io.dingodb.store.local;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.util.ByteArrayUtils;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.rocksdb.RocksIterator;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.dingodb.common.util.ByteArrayUtils.compareWithoutLen;
+import static io.dingodb.common.util.Parameters.cleanNull;
 import static io.dingodb.common.util.Parameters.nonNull;
 
 @AllArgsConstructor
@@ -48,7 +50,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         if (StoreService.db.get(row.getKey()) != null) {
             return false;
         }
-        StoreService.db.put(nonNull(row.getKey(), "key"), nonNull(row.getValue(), "value"));
+        StoreService.db.put(nonNull(row.getKey(), "key"), cleanNull(row.getValue(), ByteArrayUtils.EMPTY_BYTES));
         return true;
     }
 

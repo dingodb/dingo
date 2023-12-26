@@ -24,6 +24,7 @@ import io.dingodb.common.mysql.client.SessionVariableWatched;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -61,6 +62,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
 
     private boolean autoCommit = true;
 
+    @Setter
     @Getter
     private ITransaction transaction;
 
@@ -86,6 +88,16 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         return (DingoMeta) meta;
     }
 
+    public void cleanTransaction() throws SQLException {
+        if(transaction != null) {
+            if (!transaction.isAutoCommit()) {
+                transaction = null;
+                setAutoCommit(true);
+            }
+            transaction = null;
+        }
+    }
+
     public void beginTransaction(boolean pessimistic) throws SQLException{
         try {
             if(this.transaction != null) {
@@ -98,6 +110,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         } finally {
             if(this.transaction != null) {
                 this.transaction.close();
+                this.transaction = null;
             }
         }
         long startTs = TransactionManager.getStart_ts();
@@ -125,6 +138,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         } finally {
             if(this.transaction != null) {
                 this.transaction.close();
+                this.transaction = null;
             }
         }
         if(autoCommit == false) {

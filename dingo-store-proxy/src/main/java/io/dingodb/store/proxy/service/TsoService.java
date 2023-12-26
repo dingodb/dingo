@@ -26,7 +26,7 @@ import io.dingodb.tso.TsoServiceProvider;
 
 public class TsoService implements io.dingodb.tso.TsoService {
 
-    private static final io.dingodb.sdk.service.MetaService defaultStoreMeta = Services.metaService(
+    private static final io.dingodb.sdk.service.MetaService defaultStoreMeta = Services.tsoService(
         Services.parse(Configuration.coordinators())
     );
 
@@ -49,5 +49,13 @@ public class TsoService implements io.dingodb.tso.TsoService {
             TsoRequest.builder().opType(TsoOpType.OP_GEN_TSO).count(1L).build()
         ).getStartTimestamp();
         return (startTimestamp.getPhysical() << PHYSICAL_SHIFT) + (startTimestamp.getLogical() & MAX_LOGICAL);
+    }
+
+    @Override
+    public long timestamp() {
+        TsoTimestamp startTimestamp = defaultStoreMeta.tsoService(
+            TsoRequest.builder().opType(TsoOpType.OP_GEN_TSO).count(1L).build()
+        ).getStartTimestamp();
+        return startTimestamp.getPhysical();
     }
 }

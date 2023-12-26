@@ -25,6 +25,7 @@ public final class ByteUtils {
 
     public static byte[] encode(byte[] key, int code, int len, byte[]... bytes) {
         byte[] result = new  byte[key.length + len];
+        key[0] = 't';
         int destPos = 0;
         for (byte[] idByte : bytes) {
             System.arraycopy(idByte, 0, result, destPos, idByte.length);

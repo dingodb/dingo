@@ -66,4 +66,17 @@ public interface PartitionService {
         }
         return map;
     }
+
+    default Map<CommonId, List<byte[]>> partKeys(
+        final @NonNull List<byte[]> keys,
+        NavigableMap<ComparableByteArray, RangeDistribution> ranges
+    ) {
+        Map<CommonId, List<byte[]>> map = new LinkedHashMap<>(getPartNum(ranges));
+        for (byte[] key: keys) {
+            CommonId partId = calcPartId(key, ranges);
+            map.putIfAbsent(partId, new LinkedList<>());
+            map.get(partId).add(key);
+        }
+        return map;
+    }
 }

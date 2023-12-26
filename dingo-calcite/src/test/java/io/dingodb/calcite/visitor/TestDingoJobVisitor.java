@@ -34,7 +34,6 @@ import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.impl.JobManagerImpl;
-import io.dingodb.exec.impl.LocalTimestampOracle;
 import io.dingodb.exec.operator.CoalesceOperator;
 import io.dingodb.exec.operator.ValuesOperator;
 import io.dingodb.exec.operator.params.ValuesParam;
@@ -42,6 +41,7 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.asserts.AssertJob;
 import io.dingodb.test.asserts.AssertTask;
+import io.dingodb.tso.TsoService;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
@@ -106,7 +106,7 @@ public class TestDingoJobVisitor {
             null,
             null
         );
-        long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, scan, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(1);
@@ -139,7 +139,7 @@ public class TestDingoJobVisitor {
                 null
             )
         );
-        long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, converter, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(1);
@@ -175,7 +175,7 @@ public class TestDingoJobVisitor {
                 null
             )
         );
-        long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, converter, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(1);
@@ -206,7 +206,7 @@ public class TestDingoJobVisitor {
                 new Object[]{2, "Betty", 2.0}
             )
         );
-        long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, values, currentLocation);
         Vertex vertex = Assert.job(job)
@@ -246,7 +246,7 @@ public class TestDingoJobVisitor {
             null,
             true
         );
-        long jobSeqId = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, partModify, currentLocation);
         Assert.job(job).taskNum(1)

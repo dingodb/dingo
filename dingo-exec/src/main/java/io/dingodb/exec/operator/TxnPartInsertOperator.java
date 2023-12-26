@@ -31,6 +31,8 @@ import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 
+import java.util.Arrays;
+
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 public class TxnPartInsertOperator extends PartModifyOperator {
@@ -58,9 +60,12 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         byte[] partIdByte = partId.encode();
         keyValue.setKey(ByteUtils.encode(
             keyValue.getKey(),
-            Op.PUT.getCode(),
+            Op.PUTIFABSENT.getCode(),
             (txnIdByte.length + tableIdByte.length + partIdByte.length),
             txnIdByte, tableIdByte, partIdByte));
+        byte[] deleteKey = Arrays.copyOf(keyValue.getKey(), keyValue.getKey().length);
+        deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
+        store.delete(deleteKey);
         if (store.put(keyValue)) {
             param.inc();
         }

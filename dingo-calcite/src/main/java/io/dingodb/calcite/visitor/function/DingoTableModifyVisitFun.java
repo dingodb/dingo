@@ -40,6 +40,7 @@ import io.dingodb.exec.operator.params.PartUpdateParam;
 import io.dingodb.exec.operator.params.TxnPartDeleteParam;
 import io.dingodb.exec.operator.params.TxnPartInsertParam;
 import io.dingodb.exec.operator.params.TxnPartUpdateParam;
+import io.dingodb.exec.transaction.base.ITransaction;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -57,7 +58,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_UPDATE;
 
 public class DingoTableModifyVisitFun {
     public static Collection<Vertex> visit(Job job, IdGenerator idGenerator, Location currentLocation,
-                                           boolean isTxn, DingoJobVisitor visitor, DingoTableModify rel
+                                           ITransaction transaction, DingoJobVisitor visitor, DingoTableModify rel
     ) {
         Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
         List<Vertex> outputs = new LinkedList<>();
@@ -73,7 +74,7 @@ public class DingoTableModifyVisitFun {
             Vertex vertex;
             switch (rel.getOperation()) {
                 case INSERT:
-                    if (isTxn) {
+                    if (transaction != null) {
                         vertex = new Vertex(TXN_PART_INSERT,
                             new TxnPartInsertParam(tableId, input.getHint().getPartId(), td.getDingoType(),
                                 td.getKeyMapping(), td, distributions));
@@ -84,7 +85,7 @@ public class DingoTableModifyVisitFun {
                     }
                     break;
                 case UPDATE:
-                    if (isTxn) {
+                    if (transaction != null) {
                         vertex = new Vertex(TXN_PART_UPDATE,
                             new TxnPartUpdateParam(tableId, input.getHint().getPartId(), td.getDingoType(),
                                 td.getKeyMapping(), TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
@@ -107,7 +108,7 @@ public class DingoTableModifyVisitFun {
                     }
                     break;
                 case DELETE:
-                    if (isTxn) {
+                    if (transaction != null) {
                         vertex = new Vertex(TXN_PART_DELETE,
                             new TxnPartDeleteParam(tableId, input.getHint().getPartId(), td.getDingoType(),
                                 td.getKeyMapping(), td, distributions)

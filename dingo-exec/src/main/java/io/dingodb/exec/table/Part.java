@@ -18,12 +18,8 @@ package io.dingodb.exec.table;
 
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatus;
-import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatusResult;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
-import io.dingodb.store.api.transaction.data.resolvelock.TxnResolveLock;
-import io.dingodb.store.api.transaction.data.resolvelock.TxnResolveLockResult;
 import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -84,10 +80,6 @@ public interface Part {
     public boolean txnPreWrite(@NonNull TxnPreWrite txnPreWrite);
 
     public Future txnPreWritePrimaryKey(@NonNull TxnPreWrite txnPreWrite);
-
-    public @NonNull TxnCheckStatusResult txnCheckTxnStatus(@NonNull TxnCheckStatus txnCheckStatus);
-
-    public @NonNull TxnResolveLockResult txnResolveLock(@NonNull TxnResolveLock resolveLockRequest);
 
     public boolean txnCommit(@NonNull TxnCommit commitRequest);
 

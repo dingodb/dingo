@@ -21,15 +21,17 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
+@ToString
 public class Mutation {
     private Op op;
     private byte[] key;
     private byte[] value;
-
+    private VectorWithId vectorWithId;
 }

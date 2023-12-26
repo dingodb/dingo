@@ -43,7 +43,7 @@ public class DingoPreWriteVisitFun {
         for (Vertex input : inputs) {
             PreWriteParam param = new PreWriteParam(
                 new BooleanType(true), transaction.getPrimaryKey(), transaction.getStart_ts(),
-                transaction.getLockTtl(), transaction.getIsolationLevel()
+                transaction.getIsolationLevel(), transaction.getType()
             );
             Vertex vertex = new Vertex(PRE_WRITE, param);
             Task task = input.getTask();

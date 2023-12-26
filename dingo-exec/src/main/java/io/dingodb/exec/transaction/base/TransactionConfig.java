@@ -17,7 +17,7 @@
 package io.dingodb.exec.transaction.base;
 
 public class TransactionConfig {
-    public static final long lock_ttl = 2000l;
+    public static final long lock_ttl = 60000l;
     public static final boolean disable_txn_auto_retry = false;
     public static final int txn_retry_limit = 0;
     public static final int max_pre_write_count = 1024;

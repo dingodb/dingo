@@ -131,4 +131,7 @@ public class Vertex {
         return hint != null ? hint.getLocation() : null;
     }
 
+    public long getStartTs() {
+        return getTask().getTxnId().seq;
+    }
 }

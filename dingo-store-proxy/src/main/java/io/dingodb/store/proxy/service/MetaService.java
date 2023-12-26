@@ -264,7 +264,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
         metaServiceClient.getRangeDistribution(mapping(id)).values().stream()
             .map(__ -> mapping(__, codec, isOriginalKey))
-            .forEach(__ -> result.put(new ComparableByteArray(__.getStartKey()), __));
+            .forEach(__ -> result.put(new ComparableByteArray(__.getStartKey(), 1), __));
         return result;
     }
 

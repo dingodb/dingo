@@ -35,7 +35,7 @@ public class RangePartitionService implements PartitionService {
 
     @Override
     public CommonId calcPartId(byte [] key, NavigableMap<ComparableByteArray, RangeDistribution> ranges) {
-        return ranges.floorEntry(new ComparableByteArray(key)).getValue().id();
+        return ranges.floorEntry(new ComparableByteArray(key, 1)).getValue().id();
     }
 
     @Override

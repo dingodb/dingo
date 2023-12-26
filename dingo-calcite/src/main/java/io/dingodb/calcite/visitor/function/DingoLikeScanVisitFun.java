@@ -35,6 +35,7 @@ import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.params.LikeScanParam;
+import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 
@@ -52,7 +53,7 @@ public final class DingoLikeScanVisitFun {
 
     public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation,
-        boolean isTxn, DingoJobVisitor visitor, DingoLikeScan rel
+        ITransaction transaction, DingoJobVisitor visitor, DingoLikeScan rel
     ) {
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         SqlExpr filter = null;
@@ -70,7 +71,7 @@ public final class DingoLikeScanVisitFun {
         for (RangeDistribution distribution
             : ps.calcPartitionRange(rel.getPrefix(), rel.getPrefix(), true, true, distributions)) {
             Task task = job.getOrCreate(currentLocation, idGenerator);
-            if (isTxn) {
+            if (transaction != null) {
 
             }
             LikeScanParam param = new LikeScanParam(

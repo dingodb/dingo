@@ -183,6 +183,8 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         private Map<CommonId, TableDefinition> tableDefinitionMap;
         private Map<DingoCommonId, Table> tableMap;
 
+        @Delegate
+        private final TransactionStoreInstance transactionStoreInstance;
         private final io.dingodb.sdk.service.StoreService storeService;
 
         public StoreInstance(CommonId tableId, CommonId regionId) {
@@ -201,6 +203,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 tableMap.put(MAPPER.idTo(k), table);
             });
             this.storeService = storeService(tableId, regionId);
+            this.transactionStoreInstance = new TransactionStoreInstance(storeService,partitionId);
         }
 
         public StoreInstance(CommonId tableId, CommonId regionId, TableDefinition tableDefinition) {
@@ -219,6 +222,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 tableMap.put(MAPPER.idTo(k), table);
             });
             this.storeService = storeService(tableId, regionId);
+            this.transactionStoreInstance = new TransactionStoreInstance(storeService,partitionId);
         }
 
         @Override

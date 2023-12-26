@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.impl;
+package io.dingodb.meta.local;
 
-import io.dingodb.exec.base.ITimestampOracle;
+import com.google.auto.service.AutoService;
+import io.dingodb.tso.TsoServiceProvider;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-public class LocalTimestampOracle implements ITimestampOracle {
+public class LocalTimestampOracle implements ITimestampOracle, io.dingodb.tso.TsoService {
 
     public static LocalTimestampOracle INSTANCE = new LocalTimestampOracle();
     private final AtomicLong localClock;
@@ -48,5 +49,24 @@ public class LocalTimestampOracle implements ITimestampOracle {
     @Override
     public long nextTimestamp() {
         return next(System.currentTimeMillis() << BITS_LOGICAL_TIME);
+    }
+
+
+    @AutoService(TsoServiceProvider.class)
+    public static class LocalProvider implements TsoServiceProvider {
+        @Override
+        public io.dingodb.tso.TsoService get() {
+            return INSTANCE;
+        }
+    }
+
+    @Override
+    public long tso() {
+        return next(System.currentTimeMillis() << BITS_LOGICAL_TIME);
+    }
+
+    @Override
+    public long timestamp() {
+        return System.currentTimeMillis();
     }
 }

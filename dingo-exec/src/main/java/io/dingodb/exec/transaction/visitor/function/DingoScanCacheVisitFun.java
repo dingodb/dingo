@@ -64,14 +64,14 @@ public class DingoScanCacheVisitFun {
 //            }
         for (Map.Entry<CommonId, Channel> channelEntry : channelMap.entrySet()) {
             Location remoteLocation = channelEntry.getValue().remoteLocation();
-            ScanCacheParam param = new ScanCacheParam(dingoType);
+            ScanCacheParam param = new ScanCacheParam(dingoType, transaction.getType());
             Vertex vertex = new Vertex(SCAN_CACHE, param);
             Task task = job.getOrCreate(remoteLocation, idGenerator);
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);
             outputs.add(vertex);
         }
-        ScanCacheParam param = new ScanCacheParam(dingoType, transaction.getCache());
+        ScanCacheParam param = new ScanCacheParam(dingoType, transaction.getType());
         Vertex vertex = new Vertex(SCAN_CACHE, param);
         Task task = job.getOrCreate(currentLocation, idGenerator);
         vertex.setId(idGenerator.getOperatorId(task.getId()));

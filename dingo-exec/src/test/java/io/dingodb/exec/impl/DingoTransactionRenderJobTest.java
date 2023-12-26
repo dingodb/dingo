@@ -23,6 +23,8 @@ import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.impl.OptimisticTransaction;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
 import io.dingodb.net.Channel;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
+import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,12 +41,14 @@ public class DingoTransactionRenderJobTest {
 
     @BeforeEach
     public void setUp() {
-        long start_ts = LocalTimestampOracle.INSTANCE.nextTimestamp();
-        CommonId commonId = new CommonId(CommonId.CommonType.TRANSACTION, LocalTimestampOracle.INSTANCE.nextTimestamp(), start_ts);
-        long jobSeq = LocalTimestampOracle.INSTANCE.nextTimestamp();
+        long start_ts = TsoService.getDefault().tso();
+        CommonId commonId = new CommonId(CommonId.CommonType.TRANSACTION, TsoService.getDefault().tso(), start_ts);
+        long jobSeq = TsoService.getDefault().tso();
         job = JobManagerImpl.INSTANCE.createJob(start_ts, jobSeq, commonId, null);
         currentLocation = new Location("localhost", 10000);
-        transaction = new OptimisticTransaction(commonId);
+//        transaction = new OptimisticTransaction(commonId);
+        transaction = mock(OptimisticTransaction.class);
+        transaction.setIsolationLevel(IsolationLevel.ReadCommitted.getCode());
         Channel channel3 = mock(Channel.class);
         Channel channel4 = mock(Channel.class);
 
