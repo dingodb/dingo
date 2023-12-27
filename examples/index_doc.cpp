@@ -90,7 +90,7 @@ void test_tokenizer_create()
     fs::remove_all("./temp");
     // fs::remove_all("./log");
     tantivy_logger_initialize("/home/mochix/workspace_github/tantivy-search/log/", "info", false, tantivy_log_callback, true, true);
-    TantivySearchIndexW * indexW = tantivy_create_index_with_language("./temp", "chinese");
+    TantivySearchIndexW * indexW = tantivy_create_index_with_tokenizer("./temp", "chinese");
     tantivy_index_doc(indexW, 0, "古代帝国的兴衰更迭，不仅塑造了历史的进程，也铭刻了时代的变迁与文明的发展。");
     tantivy_index_doc(indexW, 1, "艺术的多样表达方式反映了不同文化的丰富遗产，展现了人类创造力的无限可能。");
     tantivy_index_doc(indexW, 2, "社会运动如同时代的浪潮，改变着社会的面貌，为历史开辟新的道路和方向。");
