@@ -8,7 +8,7 @@ use libc::*;
 //****************************** FFI function names begin *********************************//
 pub static LOGGER_TARGET: &str = "tantivy_search"; // default target is tantivy_search.
 pub static TANTIVY_LOGGER_INITIALIZE_NAME: &str = "tantivy_logger_initialize";
-pub static TANTIVY_CREATE_INDEX_WITH_LANGUAGE_NAME: &str = "tantivy_create_index_with_language";
+pub static TANTIVY_CREATE_INDEX_WITH_TOKENIZER_NAME: &str = "tantivy_create_index_with_tokenizer";
 pub static TANTIVY_CREATE_INDEX_NAME: &str = "tantivy_create_index";
 pub static TANTIVY_LOAD_INDEX_NAME: &str = "tantivy_load_index";
 pub static TANTIVY_SEARCH_IN_ROWID_RANGE_NAME: &str = "tantivy_search_in_rowid_range";

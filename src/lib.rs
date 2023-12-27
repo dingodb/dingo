@@ -3,7 +3,7 @@ use roaring::RoaringBitmap;
 use std::ffi::{CStr, CString};
 use std::path::Path;
 use std::sync::Arc;
-use tantivy::schema::{Schema, FAST, INDEXED};
+use tantivy::schema::{Schema, FAST, INDEXED, TextOptions, TextFieldIndexing, IndexRecordOption};
 use utils::{CustomIndexSetting, SearchError};
 use utils::{IndexR, IndexW};
 
@@ -82,43 +82,43 @@ pub extern "C" fn tantivy_logger_initialize(
     }
 }
 
-/// Creates an index using a specified language (e.g., Chinese, English, Japanese, etc.).
+/// Creates an index using a specified tokenizer (e.g., Chinese, English, Japanese, etc.).
 ///
 /// Arguments:
 /// - `dir_ptr`: The directory path for building the index.
-/// - `language`: The language to be used.
+/// - `tokenizer`: The tokenizer to be used.
 ///
 /// Returns:
 /// - A pointer to the created `IndexW`, or a null pointer if an error occurs.
 #[no_mangle]
-pub extern "C" fn tantivy_create_index_with_language(
+pub extern "C" fn tantivy_create_index_with_tokenizer(
     dir_ptr: *const c_char,
-    language: *const c_char,
+    tokenizer: *const c_char,
 ) -> *mut IndexW {
     // Convert C strings to Rust strings and handle potential null pointers.
     let dir_str = unsafe {
         if dir_ptr.is_null() {
-            ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_LANGUAGE_NAME, "Directory path cannot be null");
+            ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_TOKENIZER_NAME, "Directory path cannot be null");
             return std::ptr::null_mut();
         }
         match CStr::from_ptr(dir_ptr).to_str() {
             Ok(str) => str.to_owned(),
             Err(_) => {
-                ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_LANGUAGE_NAME, "Invalid directory path");
+                ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_TOKENIZER_NAME, "Invalid directory path");
                 return std::ptr::null_mut();
             }
         }
     };
 
-    let language_str = unsafe {
-        if language.is_null() {
-            ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_LANGUAGE_NAME, "Language cannot be null");
+    let tokenizer_with_parameter = unsafe {
+        if tokenizer.is_null() {
+            ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_TOKENIZER_NAME, "Language cannot be null");
             return std::ptr::null_mut();
         }
-        match CStr::from_ptr(language).to_str() {
+        match CStr::from_ptr(tokenizer).to_str() {
             Ok(str) => str.to_owned(),
             Err(_) => {
-                ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_LANGUAGE_NAME, "Invalid language string");
+                ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_TOKENIZER_NAME, "Invalid tokenizer string");
                 return std::ptr::null_mut();
             }
         }
@@ -127,37 +127,57 @@ pub extern "C" fn tantivy_create_index_with_language(
     // Prepare the index directory for use.
     let index_file_path = Path::new(&dir_str);
     if let Err(e) = prepare_index_directory(&index_file_path) {
-        ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_LANGUAGE_NAME, "Error preparing index directory: {}", e);
+        ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_TOKENIZER_NAME, "Error preparing index directory: {}", e);
         return std::ptr::null_mut();
     }
 
     // Save custom index settings.
     let custom_index_setting = CustomIndexSetting {
-        language: language_str.clone(),
+        tokenizer: tokenizer_with_parameter.clone(),
     };
 
     if let Err(e) = save_custom_index_setting(&index_file_path, &custom_index_setting) {
-        ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_LANGUAGE_NAME, "Error saving custom index settings: {}", e);
+        ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_TOKENIZER_NAME, "Error saving custom index settings: {}", e);
         return std::ptr::null_mut();
     }
 
-    INFO!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_LANGUAGE_NAME, "Custom index setting has been saved {}", "");
+    INFO!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_TOKENIZER_NAME, "Custom index setting has been saved {}", "");
 
-    // Get and register the tokenizer for the specified language.
-    let (third_party_tokenizer_name, third_party_tokenizer, third_party_text_options) =
-        get_third_party_tokenizer(&language_str);
+    // Get and register the tokenizer for the specified tokenizer.
+    let (tokenizer_type, text_analyzer) = match get_custom_tokenizer(&tokenizer_with_parameter) {
+        Ok((tokenizer_type, text_analyzer)) => (tokenizer_type, text_analyzer),
+        Err(e) => {
+            ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_TOKENIZER_NAME, "Can't initialize tokenizer: {}", e);
+            return std::ptr::null_mut();
+        }
+    };
+
+    let mut text_options = TextOptions::default().set_indexing_options(
+        TextFieldIndexing::default()
+        .set_tokenizer(tokenizer_type.name())
+        .set_index_option(IndexRecordOption::WithFreqs)
+    );
+    
+    if let TokenizerType::Ngram(_) = tokenizer_type {
+        text_options = TextOptions::default().set_indexing_options(
+            TextFieldIndexing::default()
+            .set_tokenizer(tokenizer_type.name())
+            .set_index_option(IndexRecordOption::WithFreqsAndPositions)
+        );
+    }
+
 
     // Construct the schema for the index.
     let mut schema_builder = Schema::builder();
     schema_builder.add_u64_field("row_id", FAST | INDEXED);
-    schema_builder.add_text_field("text", third_party_text_options);
+    schema_builder.add_text_field("text", text_options);
     let schema = schema_builder.build();
 
     // Create the index in the specified directory.
     let mut index = match Index::create_in_dir(&dir_str, schema) {
         Ok(index) => index,
         Err(e) => {
-            ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_LANGUAGE_NAME, "Failed to create index in directory:{}; exception:{}", dir_str, e);
+            ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_TOKENIZER_NAME, "Failed to create index in directory:{}; exception:{}", dir_str, e);
             return std::ptr::null_mut();
         }
     };
@@ -165,10 +185,11 @@ pub extern "C" fn tantivy_create_index_with_language(
     // Register the tokenizer with the index.
     if let Err(e) = register_tokenizer_to_index(
         &mut index,
-        third_party_tokenizer_name.clone(),
-        third_party_tokenizer,
+        tokenizer_type.clone(),
+        text_analyzer,
     ) {
-        WARNING!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_LANGUAGE_NAME, "Failed to register tokenizer: {:?}, exception: {}", third_party_tokenizer_name, e);
+        ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_TOKENIZER_NAME, "Failed to register tokenizer: {:?}, exception: {}", tokenizer_type.name(), e);
+        return std::ptr::null_mut();
     }
 
     // Create the writer with a specified buffer size (e.g., 1 GB).
@@ -176,7 +197,7 @@ pub extern "C" fn tantivy_create_index_with_language(
         // 1 GB
         Ok(w) => w,
         Err(e) => {
-            ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_LANGUAGE_NAME, "Failed to create tantivy writer: {}", e);
+            ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_TOKENIZER_NAME, "Failed to create tantivy writer: {}", e);
             return std::ptr::null_mut();
         }
     };
@@ -199,7 +220,7 @@ pub extern "C" fn tantivy_create_index_with_language(
     }))
 }
 
-/// Creates an index using the default language.
+/// Creates an index using the default tokenizer.
 ///
 /// Arguments:
 /// - `dir_ptr`: A pointer to the directory path where the index files will be created.
@@ -227,8 +248,8 @@ pub extern "C" fn tantivy_create_index(dir_ptr: *const c_char) -> *mut IndexW {
         }
     };
 
-    // Delegate to `tantivy_create_index_with_language` using the default tokenizer.
-    tantivy_create_index_with_language(dir_ptr, tokenizer_name.as_ptr())
+    // Delegate to `tantivy_create_index_with_tokenizer` using the default tokenizer.
+    tantivy_create_index_with_tokenizer(dir_ptr, tokenizer_name.as_ptr())
 }
 
 /// Loads an index from a specified directory.
@@ -282,14 +303,20 @@ pub extern "C" fn tantivy_load_index(dir_ptr: *const c_char) -> *mut IndexR {
     INFO!(target: LOGGER_TARGET, function: TANTIVY_LOAD_INDEX_NAME, "Custom index setting loaded: {}", serde_json::to_string(&custom_index_setting).unwrap_or_default());
 
     // Register tokenizer based on the loaded settings.
-    let (third_party_tokenizer_name, third_party_tokenizer, _) =
-        get_third_party_tokenizer(&custom_index_setting.language);
+    let (tokenizer_type, text_analyzer) = match get_custom_tokenizer(&custom_index_setting.tokenizer) {
+        Ok((tokenizer_type, text_analyzer)) => (tokenizer_type, text_analyzer),
+        Err(e) => {
+            ERROR!(target: LOGGER_TARGET, function:TANTIVY_CREATE_INDEX_WITH_TOKENIZER_NAME, "Can't initialize tokenizer: {}", e);
+            return std::ptr::null_mut();
+        }
+    };
+
     if let Err(e) = register_tokenizer_to_index(
         &mut index,
-        third_party_tokenizer_name.clone(),
-        third_party_tokenizer,
+        tokenizer_type.clone(),
+        text_analyzer,
     ) {
-        WARNING!(target: LOGGER_TARGET, function: TANTIVY_LOAD_INDEX_NAME, "Failed to register tokenizer: {:?}, exception: {}", third_party_tokenizer_name, e);
+        WARNING!(target: LOGGER_TARGET, function: TANTIVY_LOAD_INDEX_NAME, "Failed to register tokenizer: {:?}, exception: {}", tokenizer_type.name(), e);
     }
 
     // Set the multithreaded executor for search.

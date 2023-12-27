@@ -29,7 +29,7 @@ pub struct IndexW {
 
 #[derive(Serialize, Deserialize)]
 pub struct CustomIndexSetting {
-    pub language: String,
+    pub tokenizer: String,
 }
 
 

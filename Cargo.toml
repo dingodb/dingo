@@ -20,7 +20,7 @@ roaring = "0.10.2"
 cached = "0.46.1"
 stretto = { version = "0.8.2", features = ["full"] }
 cang-jie = "0.18.0"
-jieba-rs = { version = "0.6.8", default-features = false }
+jieba-rs = { version = "0.6.8", default-features = true }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 env_logger = "0.10.0"
@@ -29,6 +29,8 @@ log4rs = "1.2.0"
 threadpool = "1.8.1"
 rand = "0.8.4"
 clap = "2.33"
+regex = "1.10.2"
+rstest = "0.18.2"
 
 
 [features]
