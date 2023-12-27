@@ -27,8 +27,14 @@ import org.springframework.context.annotation.Configuration;
 public class ClientBean {
 
     @Bean
-    public static DingoClient dingoClient(@Value("${server.coordinatorExchangeSvrList}") String coordinator) {
-        return new DingoClient(coordinator);
+    public static DingoClient dingoClient(
+        @Value("${server.coordinatorExchangeSvrList}") String coordinator,
+        @Value("${server.client.retry:0}") int retry
+    ) {
+        if (retry <= 0) {
+            retry = 30;
+        }
+        return new DingoClient(coordinator, retry);
     }
 
     @Bean
