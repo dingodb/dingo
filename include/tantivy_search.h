@@ -35,17 +35,18 @@ bool tantivy_logger_initialize(const char *log_path,
                                bool enable_callback,
                                bool only_tantivy_search);
 
-/// Creates an index using a specified language (e.g., Chinese, English, Japanese, etc.).
+/// Creates an index using a specified tokenizer (e.g., Chinese, English, Japanese, etc.).
 ///
 /// Arguments:
 /// - `dir_ptr`: The directory path for building the index.
-/// - `language`: The language to be used.
+/// - `tokenizer`: The tokenizer to be used.
 ///
 /// Returns:
 /// - A pointer to the created `IndexW`, or a null pointer if an error occurs.
-TantivySearchIndexW *tantivy_create_index_with_language(const char *dir_ptr, const char *language);
+TantivySearchIndexW *tantivy_create_index_with_tokenizer(const char *dir_ptr,
+                                                         const char *tokenizer);
 
-/// Creates an index using the default language.
+/// Creates an index using the default tokenizer.
 ///
 /// Arguments:
 /// - `dir_ptr`: A pointer to the directory path where the index files will be created.
