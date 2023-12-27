@@ -23,7 +23,7 @@ DINGODB_STORE_NORMAL=0
 DINGODB_MYSQL_INIT=0
 DINGODB_SCHEMA_MYSQL=0
 
-while [ "${DINGODB_STORE_NORMAL}" -lt 1 ]; do
+while [ "${DINGODB_STORE_NORMAL}" -lt ${DINGODB_INIT_COUNT:-6} ]; do
     echo "DINGODB_STORE_NORMAL = ${DINGODB_STORE_NORMAL}, wait 1 second"
     sleep 1
     echo "DINGO_MYSQL_COORDINATORS: ${DINGO_MYSQL_COORDINATORS}"
@@ -44,7 +44,8 @@ while [ "${DINGODB_STORE_NORMAL}" -lt 1 ]; do
 
 done
 
-echo "DINGODB_STORE_NORMAL >= 3, start to initialize MySQL"
+echo "DINGODB_STORE_NORMAL = ${DINGODB_STORE_NORMAL}"
+echo "DINGODB_STORE_NORMAL >= ${DINGODB_INIT_COUNT:-6}, start to initialize MySQL"
 if [ "${DINGODB_SCHEMA_MYSQL}" -ne 0 ]; then
     echo "mysql init has been completed"
 else

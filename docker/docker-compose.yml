@@ -166,6 +166,7 @@ services:
     environment:
       DINGO_ROLE: proxy
       DINGO_HOSTNAME: proxy
+      DINGODB_INIT_COUNT: 6
       DINGO_COORDINATORS: ${DINGO_HOST_IP}:22001,${DINGO_HOST_IP}:22002,${DINGO_HOST_IP}:22003
 
 networks:
