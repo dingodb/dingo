@@ -82,6 +82,9 @@ public final class PartUpdateOperator extends PartModifyOperator {
             }
             if (updated) {
                 param.inc();
+                param.addKeyState(true);
+            } else {
+                param.addKeyState(false);
             }
         } catch (Exception ex) {
             log.error("update operator with expr:{}, exception:{}",

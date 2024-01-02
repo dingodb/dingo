@@ -18,47 +18,54 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.PartitionDefinition;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
-import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.params.PartInsertParam;
+import io.dingodb.exec.operator.params.CompareAndSetParam;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import java.util.Arrays;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
-public final class PartInsertOperator extends PartModifyOperator {
-    public static final PartInsertOperator INSTANCE = new PartInsertOperator();
+public class CompareAndSetOperator extends PartModifyOperator {
+    public static final CompareAndSetOperator INSTANCE = new CompareAndSetOperator();
 
-    private PartInsertOperator() {
+    private CompareAndSetOperator() {
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Override
-    public boolean pushTuple(Object[] tuple, Vertex vertex) {
-        PartInsertParam param = vertex.getParam();
+    protected boolean pushTuple(@Nullable Object[] tuple, Vertex vertex) {
+        CompareAndSetParam param = vertex.getParam();
         DingoType schema = param.getSchema();
+
+        int tupleSize = schema.fieldCount();
+        Object[] oldTuple = Arrays.copyOf(tuple, tupleSize);
+        Object[] newTuple = Arrays.copyOfRange(tuple, oldTuple.length, tuple.length);
+        if (oldTuple.length != newTuple.length) {
+            throw new RuntimeException("Compare and set Operator Exception");
+        }
+
         CommonId partId = PartitionService.getService(
                 Optional.ofNullable(param.getTableDefinition().getPartDefinition())
                     .map(PartitionDefinition::getFuncName)
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-            .calcPartId(tuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
+            .calcPartId(oldTuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
         StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), partId);
-        Object[] keyValue = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
-        boolean insert = store.insertIndex(keyValue);
-        if (insert) {
-            if (store.insertWithIndex(keyValue)) {
-                param.inc();
-                param.addKeyState(true);
-            } else {
-                param.addKeyState(false);
-            }
+        KeyValue old = param.getCodec().encode(oldTuple);
+        KeyValue row = param.getCodec().encode(newTuple);
+        if (store.update(row, old)) {
+            param.inc();
+            param.addKeyState(true);
         } else {
             param.addKeyState(false);
         }
+
         return true;
     }
 }

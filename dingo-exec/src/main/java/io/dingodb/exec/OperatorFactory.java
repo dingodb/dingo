@@ -20,6 +20,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.operator.AggregateOperator;
 import io.dingodb.exec.operator.CoalesceOperator;
+import io.dingodb.exec.operator.CompareAndSetOperator;
 import io.dingodb.exec.operator.EmptySourceOperator;
 import io.dingodb.exec.operator.FilterOperator;
 import io.dingodb.exec.operator.GetByIndexOperator;
@@ -65,6 +66,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static io.dingodb.exec.utils.OperatorCodeUtils.AGGREGATE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COALESCE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COMMIT;
+import static io.dingodb.exec.utils.OperatorCodeUtils.COMPARE_AND_SET;
 import static io.dingodb.exec.utils.OperatorCodeUtils.EMPTY_SOURCE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.FILTER;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_INDEX;
@@ -148,6 +150,7 @@ public final class OperatorFactory {
         OPERATORS.put(ROLL_BACK, RollBackOperator.INSTANCE);
         OPERATORS.put(SCAN_CACHE, ScanCacheOperator.INSTANCE);
         OPERATORS.put(INFO_SCHEMA_SCAN, InfoSchemaScanOperator.INSTANCE);
+        OPERATORS.put(COMPARE_AND_SET, CompareAndSetOperator.INSTANCE);
     }
 
     private OperatorFactory() {

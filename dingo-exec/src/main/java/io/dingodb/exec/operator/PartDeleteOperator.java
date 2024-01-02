@@ -46,7 +46,12 @@ public final class PartDeleteOperator extends PartModifyOperator {
         if (store.deleteWithIndex(tuple)) {
             if (store.deleteIndex(tuple)) {
                 param.inc();
+                param.addKeyState(true);
+            } else {
+                param.addKeyState(false);
             }
+        } else {
+            param.addKeyState(false);
         }
         return true;
     }

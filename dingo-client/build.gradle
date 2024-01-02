@@ -24,6 +24,9 @@ dependencies {
     implementation project(":dingo-partition-api")
     implementation project(":dingo-store-proxy")
     implementation project(":dingo-partition-base")
+    implementation project(":dingo-exec")
+    implementation project(":dingo-net-api")
+    implementation project(":dingo-net-netty")
 
     testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()
     testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: 'slf4j'.v()
