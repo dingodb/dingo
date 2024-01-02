@@ -24,14 +24,12 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.table.Part;
-import io.dingodb.exec.table.PartInKvStore;
-import io.dingodb.store.api.StoreService;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NavigableMap;
 
 @Getter
@@ -45,6 +43,7 @@ public abstract class PartModifyParam extends AbstractParams {
     protected TableDefinition tableDefinition;
     protected KeyValueCodec codec;
     protected NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
+    protected List<Boolean> keyState;
 
     public PartModifyParam(
         CommonId tableId,
@@ -66,6 +65,19 @@ public abstract class PartModifyParam extends AbstractParams {
     @Override
     public void init(Vertex vertex) {
         count = 0;
+        keyState = new ArrayList<>();
     }
 
+    public void addKeyState(boolean state) {
+        keyState.add(state);
+    }
+
+    public Boolean[] getKeyState() {
+        return keyState.toArray(new Boolean[0]);
+    }
+
+    public void reset() {
+        count = 0;
+        keyState.clear();
+    }
 }

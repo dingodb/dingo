@@ -72,7 +72,8 @@ import lombok.Getter;
     @JsonSubTypes.Type(CommitParam.class),
     @JsonSubTypes.Type(PreWriteParam.class),
     @JsonSubTypes.Type(RollBackParam.class),
-    @JsonSubTypes.Type(ScanCacheParam.class)
+    @JsonSubTypes.Type(ScanCacheParam.class),
+    @JsonSubTypes.Type(CompareAndSetParam.class)
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class AbstractParams {

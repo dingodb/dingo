@@ -21,6 +21,7 @@ import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.ColumnDefinition;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.common.utils.Parameters;
+import io.dingodb.store.proxy.common.Mapping;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +58,11 @@ public final class Record {
 
     public Record(List<Column> columns, Object[] values) {
         this(columns.toArray(new Column[columns.size()]), Stream.of(values).map(Value::get).toArray(Value[]::new));
+    }
+
+    public Record(Object[] values, List<io.dingodb.common.table.ColumnDefinition> columns) {
+        this(columns.stream().map(Mapping::mapping).toArray(Column[]::new),
+            Stream.of(values).map(Value::get).toArray(Value[]::new));
     }
 
     public Record(Column[] columns, Object[] values) {
@@ -106,7 +112,7 @@ public final class Record {
                 case "DOUBLE":
                     this.values[i] = Value.get(new BigDecimal(
                         String.valueOf(this.values[i].getObject()))
-                        .setScale(columns[i].getScale(), HALF_UP).doubleValue());
+                        .setScale(/*columns[i].getScale()*/2, HALF_UP).doubleValue());
                     break;
                 case "FLOAT":
                     this.values[i] = Value.get(new BigDecimal(

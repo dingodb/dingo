@@ -37,11 +37,11 @@ public abstract class PartModifyOperator extends SoleOutOperator {
         PartModifyParam param = vertex.getParam();
         Edge edge = vertex.getSoleEdge();
         if (!(fin instanceof FinWithException)) {
-            edge.transformToNext(new Object[]{param.getCount()});
+            edge.transformToNext(new Object[]{param.getCount()/*, param.getKeyState()*/});
         }
         edge.fin(fin);
         // Reset
-        param.setCount(0);
+        param.reset();
     }
 
     protected abstract boolean pushTuple(@Nullable Object[] tuple, Vertex vertex);
