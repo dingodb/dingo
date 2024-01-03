@@ -20,13 +20,20 @@ import io.dingodb.common.mysql.MysqlMessage;
 import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
 
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
+
+import static io.dingodb.driver.mysql.util.BufferUtil.NEGATIVE_INC_VAL;
 
 public class OKPacket extends MysqlPacket {
     public static final byte HEADER = 0x00;
+    public static final BigInteger zero = new BigInteger("0");
+    public static final BigInteger level1 = new BigInteger("251");
+    public static final BigInteger level2 = new BigInteger("65536");
+    public static final BigInteger level3 = new BigInteger("16777216");
     public byte header = HEADER;
     public long affectedRows;
-    public long insertId;
+    public BigInteger insertId;
     public int serverStatus;
     public int warningCount;
     public byte[] message;
@@ -41,17 +48,6 @@ public class OKPacket extends MysqlPacket {
 
     @Override
     public void read(byte[] data) {
-        MysqlMessage mm = new MysqlMessage(data);
-        //packetLength = mm.readUB3();
-        packetId = mm.read();
-        header = mm.read();
-        affectedRows = mm.readLength();
-        insertId = mm.readLength();
-        serverStatus = mm.readUB2();
-        warningCount = mm.readUB2();
-        if (mm.hasRemaining()) {
-            this.message = mm.readBytesWithLength();
-        }
     }
 
     @Override
@@ -60,7 +56,7 @@ public class OKPacket extends MysqlPacket {
         buffer.writeByte(packetId);
         buffer.writeByte(header);
         BufferUtil.writeLength(buffer, affectedRows);
-        BufferUtil.writeLength(buffer, insertId);
+        writeInsertId(buffer);
         BufferUtil.writeUB2(buffer, serverStatus);
         BufferUtil.writeUB2(buffer, warningCount);
         if (message != null) {
@@ -72,7 +68,7 @@ public class OKPacket extends MysqlPacket {
     public int calcPacketSize() {
         int i = 1;
         i += BufferUtil.getLength(affectedRows);
-        i += BufferUtil.getLength(insertId);
+        i += getInsertIdLength();
         // server status
         i += 2;
         // warnings
@@ -86,6 +82,61 @@ public class OKPacket extends MysqlPacket {
     @Override
     protected String getPacketInfo() {
         return "MySQL OK Packet";
+    }
+
+    private int getInsertIdLength() {
+        if (insertId.compareTo(zero) < 0) {
+            // if insertId is negative, transform to 2 to the power of 64 and occupying 8 bytes
+            // format fe xx xx xx xx xx xx xx xx
+            // 8 + 1 = 9
+            return 9;
+        } else if (insertId.compareTo(level1) < 0) {
+            return 1;
+        } else if (insertId.compareTo(level2) < 0) {
+            // format fc xx xx
+            return 3;
+        } else if (insertId.compareTo(level3) < 0) {
+            // format fd xx xx xx
+            return 4;
+        } else {
+            // if insertId > 1677716, format remains the same as negative numbers
+            return 9;
+        }
+    }
+
+    public void writeInsertId(ByteBuf buffer) {
+        if (insertId.compareTo(zero) < 0) {
+            // if insertId is negative, transform to 2 to the power of 64 and occupying 8 bytes
+            // format fe xx xx xx xx xx xx xx xx
+            // 8 + 1 = 9
+            processLargeNumberOrNegative(buffer);
+        } else if (insertId.compareTo(level1) < 0) {
+            buffer.writeByte(insertId.intValue());
+        } else if (insertId.compareTo(level2) < 0) {
+            // format fc xx xx
+            // limit is 65536
+            buffer.writeByte((byte)252);
+            BufferUtil.writeUB2(buffer, insertId.intValue());
+        } else if (insertId.compareTo(level3) < 0) {
+            // format fd xx xx xx
+            // limit is 16777216
+            buffer.writeByte((byte)253);
+            BufferUtil.writeUB3(buffer, insertId.intValue());
+        } else {
+            // if insertId > 1677716, format remains the same as negative numbers
+            processLargeNumberOrNegative(buffer);
+        }
+    }
+
+    private void processLargeNumberOrNegative(ByteBuf buffer) {
+        buffer.writeByte(254);
+        BigInteger operandFinal = NEGATIVE_INC_VAL.add(insertId);
+        byte[] original = operandFinal.toByteArray();
+        byte[] actual = new byte[8];
+        System.arraycopy(original, 1, actual, 0, actual.length);
+        for (int i = 7; i >= 0; i--) {
+            buffer.writeByte(actual[i]);
+        }
     }
 
 }

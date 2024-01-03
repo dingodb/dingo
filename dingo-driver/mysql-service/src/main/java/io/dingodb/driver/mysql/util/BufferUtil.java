@@ -19,12 +19,14 @@ package io.dingodb.driver.mysql.util;
 import io.dingodb.common.mysql.MysqlByteUtil;
 import io.netty.buffer.ByteBuf;
 
+import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 
 public class BufferUtil {
+    public static final BigInteger NEGATIVE_INC_VAL = new BigInteger("2").pow(64);
 
     public static final void writeUB2(ByteBuf buffer, int operand) {
         buffer.writeByte(operand & 0xff);

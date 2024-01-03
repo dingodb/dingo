@@ -23,6 +23,7 @@ import io.dingodb.exec.base.JobManager;
 import org.apache.calcite.avatica.AvaticaPreparedStatement;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.remote.TypedValue;
+import org.apache.calcite.avatica.util.ByteString;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -79,6 +80,11 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
         if (signature instanceof DingoSignature) {
             try {
                 Object[] parasValue = TypedValue.values(getParameterValues()).toArray();
+                for (int i = 0; i < parasValue.length; i ++) {
+                    if (parasValue[i] instanceof ByteString) {
+                        parasValue[i] = ((ByteString) parasValue[i]).getBytes();
+                    }
+                }
                 CommonId jobId = ((DingoSignature) signature).getJobId();
                 Job job = jobManager.getJob(jobId);
                 Object[] paras = ((Object[]) job.getParasType().convertFrom(
@@ -96,5 +102,25 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
     public void removeJob(JobManager jobManager) {
         Meta.Signature signature = getSignature();
         DingoStatementUtils.removeJobInSignature(jobManager, signature);
+    }
+
+    @Override
+    public void setBytes(int parameterIndex, byte[] x) throws SQLException {
+        if (slots.length >= parameterIndex) {
+            TypedValue value = slots[parameterIndex - 1];
+            if (value == null) {
+                super.setBytes(parameterIndex, x);
+            } else {
+                // base64 encode
+                String valStr = (String) value.value;
+                byte[] preBytes = ByteString.ofBase64(valStr).getBytes();
+                byte[] bytes = new byte[preBytes.length + x.length];
+                System.arraycopy(preBytes, 0, bytes, 0, preBytes.length);
+                System.arraycopy(x, 0, bytes, preBytes.length, x.length);
+                super.setBytes(parameterIndex, bytes);
+            }
+        } else {
+            super.setBytes(parameterIndex, x);
+        }
     }
 }

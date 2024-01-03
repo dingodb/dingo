@@ -29,7 +29,7 @@ import java.util.Map;
 
 public class ExecuteStatementPacket extends MysqlPacket {
 
-    private int paramCount;
+    private final int paramCount;
     public byte flag;
 
     public int statementId;
@@ -41,7 +41,7 @@ public class ExecuteStatementPacket extends MysqlPacket {
     public String nullBitMap;
     public byte newParamBoundFlag;
 
-    public Map<Integer, TypeValue> paramValMap = new LinkedHashMap();
+    public Map<Integer, TypeValue> paramValMap = new LinkedHashMap<>();
 
     public ExecuteStatementPacket(int paramCount) {
         this.paramCount = paramCount;
@@ -83,9 +83,11 @@ public class ExecuteStatementPacket extends MysqlPacket {
             message.read();
         }
         int bitmapLength = nullBitMap.length();
-        int length = 0;
+        int length;
+        boolean isBlob;
         for (int i = 1; i <= types.length; i ++) {
             int type = types[i - 1];
+            isBlob = false;
             switch (type) {
                 case MysqlType.FIELD_TYPE_TINY:
                     length = NativeConstants.BIN_LEN_INT1;
@@ -116,6 +118,13 @@ public class ExecuteStatementPacket extends MysqlPacket {
                 case MysqlType.FIELD_TYPE_NEWDECIMAL:
                     length = message.read() & 0xff;
                     break;
+                case MysqlType.FIELD_TYPE_BLOB:
+                case MysqlType.FIELD_TYPE_TINY_BLOB:
+                case MysqlType.FIELD_TYPE_MEDIUM_BLOB:
+                case MysqlType.FIELD_TYPE_LONG_BLOB:
+                    length = 0;
+                    isBlob = true;
+                    break;
                 default:
                     length = 0;
                     break;
@@ -123,8 +132,10 @@ public class ExecuteStatementPacket extends MysqlPacket {
             if (nullBitMap.charAt(bitmapLength - i) == '1') {
                 paramValMap.put(i, new TypeValue(type, new byte[0]));
             } else {
-                byte[] bytes = message.readBytes(length);
-                paramValMap.put(i, new TypeValue(type, bytes));
+                if (!isBlob) {
+                    byte[] bytes = message.readBytes(length);
+                    paramValMap.put(i, new TypeValue(type, bytes));
+                }
             }
         }
     }

@@ -20,9 +20,9 @@ import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.constant.ColumnStatus;
 import io.dingodb.common.mysql.constant.ColumnType;
 import io.dingodb.driver.mysql.NativeConstants;
-import org.apache.calcite.avatica.ColumnMetaData;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.math.BigInteger;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -55,24 +55,24 @@ public class MysqlPacketFactory {
      */
     @NonNull
     public OKPacket getOkEofPacket(int affected, AtomicLong packetId, int serverStatus) {
-        OKPacket okPacket = newOkPacket(affected, packetId, serverStatus, 0);
+        OKPacket okPacket = newOkPacket(affected, packetId, serverStatus, BigInteger.ZERO);
         okPacket.header = (byte) NativeConstants.TYPE_ID_EOF;
         return okPacket;
     }
 
     public OKPacket getOkPacket(int affected, AtomicLong packetId) {
-        return getOkPacket(affected, packetId, 0, 0);
+        return getOkPacket(affected, packetId, 0, BigInteger.ZERO);
     }
 
     public OKPacket getOkPacket(int affected, AtomicLong packetId, int serverStatus) {
-        return getOkPacket(affected, packetId, serverStatus, 0);
+        return getOkPacket(affected, packetId, serverStatus, BigInteger.ZERO);
     }
 
     @NonNull
     public OKPacket getOkPacket(int affected,
                                 AtomicLong packetId,
                                 int serverStatus,
-                                int lastInsertId) {
+                                BigInteger lastInsertId) {
         OKPacket okPacket = newOkPacket(affected, packetId, serverStatus, lastInsertId);
         okPacket.header = NativeConstants.TYPE_ID_OK;
         return okPacket;
@@ -81,7 +81,7 @@ public class MysqlPacketFactory {
     private OKPacket newOkPacket(int affected,
                                  AtomicLong packetId,
                                  int serverStatus,
-                                 int lastInsertId) {
+                                 BigInteger lastInsertId) {
         OKPacket okPacket = new OKPacket();
         okPacket.capabilities = MysqlServer.getServerCapabilities();
         okPacket.affectedRows = affected;
@@ -93,19 +93,6 @@ public class MysqlPacketFactory {
         okPacket.serverStatus = status;
         okPacket.insertId = lastInsertId;
         return okPacket;
-    }
-
-    public short getColumnFlags(ColumnMetaData columnMetaData) {
-        try {
-            int columnFlags = 0;
-            // 0 not null  1 nullable
-            int isNullable = columnMetaData.nullable;
-            columnFlags |= isNullable;
-            String columnTypeName = columnMetaData.type.getName();
-            return (short) combineColumnFlags(columnFlags, columnTypeName);
-        } catch (Exception e) {
-            return 0;
-        }
     }
 
     public short getColumnFlags(ResultSetMetaData metaData, int column) {
@@ -137,12 +124,34 @@ public class MysqlPacketFactory {
     }
 
     private int combineColumnFlags(int columnFlags, String columnTypeName) {
-        if (columnTypeName.equals("BLOB")) {
-            columnFlags |= ColumnStatus.COLUMN_BLOB;
-        } else if (columnTypeName.equals("TIMESTAMP")) {
-            columnFlags |= ColumnStatus.COLUMN_TIMESTAMP;
-        } else if (columnTypeName.equals("ARRAY") || columnTypeName.equals("MULTISET")) {
-            columnFlags |= ColumnStatus.COLUMN_SET;
+        return combineColumnFlags(columnFlags, columnTypeName, false, false, false);
+    }
+
+    private static int combineColumnFlags(int columnFlags,
+                                          String columnTypeName,
+                                          boolean isPrimary,
+                                          boolean isUnique,
+                                          boolean autoIncrement) {
+        switch (columnTypeName) {
+            case "VARBINARY":
+                columnFlags |= ColumnStatus.COLUMN_BLOB;
+                break;
+            case "TIMESTAMP":
+                columnFlags |= ColumnStatus.COLUMN_TIMESTAMP;
+                break;
+            case "ARRAY":
+            case "MULTISET":
+                columnFlags |= ColumnStatus.COLUMN_SET;
+                break;
+        }
+        if (isPrimary) {
+            columnFlags |= ColumnStatus.COLUMN_PRIMARY;
+        }
+        if (isUnique) {
+            columnFlags |= ColumnStatus.COLUMN_UNIQUE;
+        }
+        if (autoIncrement) {
+            columnFlags |= ColumnStatus.COLUMN_AUTOINCREMENT;
         }
 
         return columnFlags;

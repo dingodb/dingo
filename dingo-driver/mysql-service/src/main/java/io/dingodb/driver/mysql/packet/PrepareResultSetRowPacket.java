@@ -84,16 +84,18 @@ public class PrepareResultSetRowPacket extends MysqlPacket {
                     case "CHAR":
                     case "ARRAY":
                     case "MULTISET":
-                        if (val != null) {
-                            byte[] v = new byte[0];
-                            try {
-                                v = val.toString().getBytes(characterSet);
-                            } catch (UnsupportedEncodingException e) {
-                                throw new RuntimeException(e);
-                            }
-                            values.set(i - 1, v);
-                            totalSize += BufferUtil.getLength(v);
+                        byte[] v;
+                        try {
+                            v = val.toString().getBytes(characterSet);
+                        } catch (UnsupportedEncodingException e) {
+                            throw new RuntimeException(e);
                         }
+                        values.set(i - 1, v);
+                        totalSize += BufferUtil.getLength(v);
+                        break;
+                    case "VARBINARY":
+                        byte[] blob = (byte[])val;
+                        totalSize += BufferUtil.getLength(blob);
                         break;
                     default:
                         break;
@@ -169,6 +171,7 @@ public class PrepareResultSetRowPacket extends MysqlPacket {
                         case "CHAR":
                         case "ARRAY":
                         case "MULTISET":
+                        case "VARBINARY":
                             byte[] v = (byte[]) val;
                             BufferUtil.writeLength(buffer, v.length);
                             buffer.writeBytes(v);
