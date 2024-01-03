@@ -29,6 +29,8 @@ import io.dingodb.driver.mysql.packet.ExecuteStatementPacket;
 import io.dingodb.driver.mysql.packet.MysqlPacketFactory;
 import io.dingodb.driver.mysql.packet.OKPacket;
 import io.dingodb.driver.mysql.packet.QueryPacket;
+import io.dingodb.driver.mysql.packet.ResetStatementPacket;
+import io.dingodb.driver.mysql.packet.SendBlobPacket;
 import io.dingodb.verify.privilege.PrivilegeVerify;
 import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
@@ -192,6 +194,19 @@ public final class MessageProcess {
                 break;
             case NativeConstants.COM_STMT_SEND_LONG_DATA:
                 // send blob data
+                SendBlobPacket blobPacket = new SendBlobPacket();
+                blobPacket.read(array);
+                statementId = blobPacket.getStatementId();
+                connection = (DingoConnection) mysqlConnection.getConnection();
+                try {
+                    preparedStatement
+                        = (DingoPreparedStatement) connection.getStatement(new Meta.StatementHandle(connection.id,
+                        statementId, null));
+                    preparedStatement.setBytes(blobPacket.getParameter() + 1,
+                        blobPacket.getPayload());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
                 break;
             case NativeConstants.COM_STMT_CLOSE:
                 // statement close
@@ -212,6 +227,21 @@ public final class MessageProcess {
                 break;
             case NativeConstants.COM_STMT_RESET:
                 // destroy prepare sql param cache  : statement reset
+                ResetStatementPacket reset = new ResetStatementPacket();
+                reset.read(array);
+                connection = (DingoConnection) mysqlConnection.getConnection();
+                try {
+                    preparedStatement
+                        = (DingoPreparedStatement) connection.getStatement(new Meta.StatementHandle(connection.id,
+                        reset.getStatementId(), null));
+                    preparedStatement.clearParameters();
+                } catch (NoSuchStatementException e) {
+                    throw new RuntimeException(e);
+                } catch (SQLException e) {
+                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
+                }
+                okPacket = MysqlPacketFactory.getInstance().getOkPacket(0, packetId);
+                MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
                 break;
             case NativeConstants.COM_SET_OPTION:
                 // set option

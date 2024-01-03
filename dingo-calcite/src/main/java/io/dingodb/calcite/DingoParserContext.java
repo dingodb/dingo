@@ -91,6 +91,11 @@ public final class DingoParserContext implements Context {
 
         RelProtoDataType mapType = (RelDataTypeFactory factory) -> factory.createSqlType(SqlTypeName.ANY);
         rootSchema.add("map", mapType);
+        RelProtoDataType blobType = (RelDataTypeFactory factory) -> factory.createSqlType(SqlTypeName.VARBINARY);
+        rootSchema.add("blob", blobType);
+        rootSchema.add("longblob", blobType);
+        rootSchema.add("mediumblob", blobType);
+        rootSchema.add("tinyblob", blobType);
 
         CalciteConnectionConfigImpl config;
         if (options != null) {

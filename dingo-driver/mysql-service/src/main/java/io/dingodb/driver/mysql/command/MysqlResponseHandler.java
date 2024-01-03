@@ -152,12 +152,6 @@ public final class MysqlResponseHandler {
                 resultSetRowPacket.addColumnValue(val);
             }
             resultSetRowPacket.write(buffer);
-            int writerIndex = buffer.writerIndex();
-            if (writerIndex > 1048576) {
-                buffer.retain();
-                mysqlConnection.channel.writeAndFlush(buffer);
-                buffer.clear();
-            }
         }
     }
 
@@ -199,11 +193,6 @@ public final class MysqlResponseHandler {
                 resultSetRowPacket.addColumnValue(resultSet.getObject(i), mysqlConnection);
             }
             resultSetRowPacket.write(buffer);
-            int writerIndex = buffer.writerIndex();
-            if (writerIndex > 1048576) {
-                mysqlConnection.channel.writeAndFlush(buffer);
-                buffer.clear();
-            }
         }
     }
 
