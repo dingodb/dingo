@@ -31,6 +31,11 @@ rand = "0.8.4"
 clap = "2.33"
 regex = "1.10.2"
 rstest = "0.18.2"
+cxx = "1.0.111"
+
+
+[build-dependencies]
+cxx-build = "1.0.111"
 
 
 [features]
@@ -51,3 +56,7 @@ path = "tests/loop_search.rs"
 [[bin]]
 name = "regrex_search"
 path = "tests/regrex_search.rs"
+
+[[bin]]
+name = "natural_language"
+path = "tests/natural_language.rs"

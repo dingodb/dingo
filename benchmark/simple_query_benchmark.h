@@ -7,6 +7,7 @@
 #include <nlohmann/json.hpp>
 #include <ThreadPool.h>
 #include <tantivy_search.h>
+#include <tantivy_search_cxx.h>
 #include <random>
 #include <sstream>
 #include <iomanip>

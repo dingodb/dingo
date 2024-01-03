@@ -183,7 +183,7 @@ pub fn get_custom_tokenizer(tokenizer_with_parameter: &str) -> Result<(Tokenizer
 
 #[cfg(test)]
 mod tests {
-    // use env_logger::Env;
+    use env_logger::Env;
     use rstest::rstest;
     use tantivy::{schema::{Schema, INDEXED, FAST, Field, TextOptions, TextFieldIndexing, IndexRecordOption}, Searcher, Document, query::{RegexQuery, QueryParser}, collector::Count};
 
@@ -239,27 +239,29 @@ mod tests {
 
     #[test]
     fn test_get_custom_tokenizer_sample(){
-        // env_logger::Builder::from_env(Env::default().default_filter_or("trace")).init();
+        env_logger::Builder::from_env(Env::default().default_filter_or("trace")).init();
 
         // init tokenizer
-        let (tokenizer_type, tokenizer) = get_custom_tokenizer("chinese(default, unicode, true)").unwrap();
+        let (tokenizer_type, tokenizer) = get_custom_tokenizer("chinese").unwrap();
         // get searcher
         let (schema, searcher) = test_get_custom_tokenizer_helper(tokenizer_type.name(), tokenizer);
 
         let text_field = schema.get_field("text").unwrap();
 
-        let emoji_regex_query = RegexQuery::from_pattern(".*相识.*", text_field).unwrap();
+        let emoji_regex_query = RegexQuery::from_pattern(".*rise.*", text_field).unwrap();
+        // let emoji_regex_query = RegexQuery::from_regex(Regex::new("jap[A-Z]n").unwrap(), text_field);
+
         let emoji_regex_count = searcher.search(&emoji_regex_query, &Count).expect("failed to execute regex search with emoji");
         println!("emoji_regex_count:{}", emoji_regex_count);
         // assert_eq!(emoji_regex_count, 1);
 
         let query_parser = QueryParser::for_index(&searcher.index(), vec![text_field]);
-        let stop_text_query = query_parser.parse_query("与你相识 很值").expect("failed to parse text query with raw");
+        let stop_text_query = query_parser.parse_query("rise").expect("failed to parse text query with raw");
         let stop_text_count = searcher.search(&stop_text_query,&Count).expect("failed to execute text search with raw");
         println!("stop_text_count: {}", stop_text_count);
 
         let query_parser = QueryParser::for_index(&searcher.index(), vec![text_field]);
-        let raw_text_query = query_parser.parse_query("飞 驰").expect("failed to parse text query with raw");
+        let raw_text_query = query_parser.parse_query("rise and fall").expect("failed to parse text query with raw");
         let raw_text_count = searcher.search(&raw_text_query,&Count).expect("failed to execute text search with raw");
         println!("raw_text_count: {}", raw_text_count);
         // assert_eq!(raw_text_count, 0);

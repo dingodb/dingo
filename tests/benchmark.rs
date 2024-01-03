@@ -3,9 +3,10 @@ use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
 use std::time::{Instant, Duration};
 use std::{fs::File, io::BufReader, ffi::CString};
 use clap::{App, Arg};
+use cxx::{let_cxx_string, CxxString};
 use serde_json::Value;
-use tantivy_search::{tantivy_create_index, tantivy_index_doc, tantivy_search_in_rowid_range, tantivy_load_index, tantivy_reader_free};
-use tantivy_search::utils::IndexR;
+use tantivy_search::index::index_manager::{tantivy_create_index, tantivy_index_doc};
+use tantivy_search::search::index_searcher::{tantivy_search_in_rowid_range, tantivy_load_index, tantivy_reader_free};
 use threadpool::ThreadPool;
 use std::thread;
 use serde::{Deserialize, Serialize};
@@ -19,10 +20,9 @@ struct Doc {
     body: String,
 }
 
-fn index_docs_from_json(json_file_path: &str, index_path: &str) -> usize {
-    let c_index_path = CString::new(index_path).expect("Can't create CString with index_path");
-    let c_index_path_ptr = c_index_path.as_ptr();
-    let iw = tantivy_create_index(c_index_path_ptr);
+fn index_docs_from_json(json_file_path: &str, index_path: &CxxString) -> usize {
+
+    let _ = tantivy_create_index(index_path);
 
     // Read JSON and parse into Vec<Doc>
     let file = File::open(json_file_path).expect("Json file not found");
@@ -32,9 +32,9 @@ fn index_docs_from_json(json_file_path: &str, index_path: &str) -> usize {
     // Create and use Tantivy index
     let mut count= 0;
     for doc in docs {
-        let c_doc = CString::new(doc.body).expect("Can't create CString with doc.body");
-        let c_doc_ptr = c_doc.as_ptr();
-        tantivy_index_doc(iw, count, c_doc_ptr);
+        let_cxx_string!(doc_cxx = doc.body);
+        let doc = doc_cxx.as_ref().get_ref();
+        tantivy_index_doc(index_path, count, doc);
         count+=1;
     }
     return count as usize;
@@ -68,7 +68,7 @@ fn calculate_average(latencies: Arc<Mutex<Vec<u128>>>) -> String {
 fn run_benchmark(terms: &[String], 
                 duration_seconds: usize, 
                 pool: &ThreadPool,
-                index_r: Arc<IndexR>,
+                index_path: String,
                 query_count: Arc<AtomicUsize>, 
                 row_id_range: &[usize], 
                 row_id_step: usize,
@@ -87,31 +87,28 @@ fn run_benchmark(terms: &[String],
             if Instant::now().duration_since(benchmark_start_time) > Duration::from_secs(duration_seconds as u64) {
                 break;
             }
-            let term_clone = term.clone();
-            let row_id_range_clone = row_id_range.to_vec();
+            let row_id_range_vec = row_id_range.to_vec();
             let query_count_clone = Arc::clone(&query_count);
-            let index_r_clone = Arc::clone(&index_r); // 克隆 Arc<IndexR>
             let latencies_clone = Arc::clone(&latencies);
+            let term_clone = term.clone();
+            let index_path_clone = index_path.to_string();
+
             pool.execute(move || {
                 let start_query = Instant::now();
                 let mut hitted = 0;
-                
-                // 将 Arc 转换为裸指针
-                let index_r_ptr = Arc::into_raw(index_r_clone) as *mut IndexR;
-                for &start in row_id_range_clone.iter() {
-                    let end = start + row_id_step;
-                    let c_term = CString::new(term_clone.clone()).expect("Can't create CString with term_clone");
-                    let c_term_ptr = c_term.as_ptr();
-                    if tantivy_search_in_rowid_range(index_r_ptr, c_term_ptr, start as u64, end as u64, false) {
+                let_cxx_string!(cxx_term = term_clone);
+                let term = cxx_term.as_ref().get_ref();                
+                let_cxx_string!(index_path_cxx = index_path_clone);
+                let index_path_cxx = index_path_cxx.as_ref().get_ref();
+
+                for &start in row_id_range_vec.iter() {
+                    if let Ok(_) = tantivy_search_in_rowid_range(index_path_cxx, term, start as u64, (start + row_id_step) as u64, false) {
                         hitted+=1;
                     }
                 }
-                // 重新获得 Arc 所有权, 防止内存泄漏
-                let temp_arc = unsafe { Arc::from_raw(index_r_ptr) };
                 query_count_clone.fetch_add(1, Ordering::SeqCst);
                 let end_query = Instant::now();
                 let latency = end_query.duration_since(start_query).as_nanos();
-                // println!("{:?} hitted, arc:{:?}, time elapsed {:?} ms", hitted, Arc::strong_count(&temp_arc), format!("{:.3}", (latency as f64) / 1_000_000.0));
                 add_latency(latencies_clone, latency);
             });
         }
@@ -256,7 +253,8 @@ fn main() {
     let is_finished = Arc::new(AtomicBool::new(false));
     let mut total_rows = 5600000;
     let row_id_step = 8192;
-
+    let_cxx_string!(index_path_cxx = index_path);
+    let index_path_cxx = index_path_cxx.as_ref().get_ref();
 
     let start = Instant::now();
     let reporter_query_count = Arc::clone(&query_count);
@@ -288,7 +286,7 @@ fn main() {
     // 索引数据集
     if !skip_build_index {
         println!("Starting index docs from dataset: {:?}", dataset_path);
-        total_rows = index_docs_from_json(dataset_path, index_path);
+        total_rows = index_docs_from_json(dataset_path, index_path_cxx);
         println!("{:?} docs has been indexed.", total_rows);
 
     }
@@ -305,20 +303,15 @@ fn main() {
         thread::sleep(Duration::from_secs(each_free_wait));
         println!("[{}] Waiting finished.", i);
 
-        let c_index_path = CString::new(index_path).expect("Can't create CString with index_path");
-        let c_index_path_ptr = c_index_path.as_ptr();
-
-        let index_r: *mut IndexR = tantivy_load_index(c_index_path_ptr); // 加载索引, 获得指向一块内存区域的裸指针
-        let index_r_box: Box<IndexR> = unsafe { Box::from_raw(index_r) }; // Box 获得裸指针指向的内存区域
-        let index_r_arc = Arc::new(*index_r_box); // 解引用 Box 所有的 IndexR 对象给 Arc, 所有权发生 move
+        let _ = tantivy_load_index(index_path_cxx);
 
         // 运行基准测试
-        println!("[{}] Trying benchmark, index_r_arc:{:?}", i, Arc::strong_count(&index_r_arc));
+        println!("[{}] Trying benchmark", i);
         if !skip_benchmark {
             run_benchmark(&terms, 
                 each_benchmark_duration, 
                 &pool, 
-                Arc::clone(&index_r_arc),
+                index_path.to_string(),
                 Arc::clone(&query_count), 
                 &row_id_range, 
                 row_id_step, 
@@ -331,8 +324,7 @@ fn main() {
             thread::sleep(Duration::from_secs(5));
         }
         println!("[{}] Waiting queue-[{}] done.", i, pool.queued_count());
-        println!("[{}] Trying auto free tantivy index reader, index_r_arc:{:?}", i, Arc::strong_count(&index_r_arc));
-        
+        tantivy_reader_free(index_path_cxx);        
         // Arc 引用计数 = 1, 自动释放 IndexR
     }
 

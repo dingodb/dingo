@@ -2,14 +2,14 @@ use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
 use std::time::{Instant, Duration};
 use std::{fs::File, io::BufReader, ffi::CString};
+use cxx::let_cxx_string;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use serde_json::Value;
 use tantivy::collector::Count;
 use tantivy::query::QueryParser;
 use tantivy::{Index, ReloadPolicy};
-use tantivy_search::{tantivy_create_index, tantivy_index_doc, tantivy_search_in_rowid_range, tantivy_load_index, tantivy_reader_free};
-use tantivy_search::utils::IndexR;
+use tantivy_search::index::index_manager::{tantivy_create_index, tantivy_index_doc};
 use threadpool::ThreadPool;
 use std::thread;
 use serde::{Deserialize, Serialize};
@@ -23,9 +23,9 @@ struct Doc {
 }
 
 fn index_docs_from_json(json_file_path: &str, index_path: &str) -> usize {
-    let c_index_path = CString::new(index_path).expect("Can't create CString with index_path");
-    let c_index_path_ptr = c_index_path.as_ptr();
-    let iw = tantivy_create_index(c_index_path_ptr);
+    let_cxx_string!(index_path_cxx = index_path);
+    let index_path_cxx = index_path_cxx.as_ref().get_ref();
+    let iw = tantivy_create_index(index_path_cxx);
 
     // Read JSON and parse into Vec<Doc>
     let file = File::open(json_file_path).expect("Json file not found");
@@ -35,9 +35,9 @@ fn index_docs_from_json(json_file_path: &str, index_path: &str) -> usize {
     // Create and use Tantivy index
     let mut count= 0;
     for doc in docs {
-        let c_doc = CString::new(doc.body).expect("Can't create CString with doc.body");
-        let c_doc_ptr = c_doc.as_ptr();
-        tantivy_index_doc(iw, count, c_doc_ptr);
+        let_cxx_string!(doc_cxx = doc.body);
+        let doc_cxx = doc_cxx.as_ref().get_ref();
+        let _ = tantivy_index_doc(index_path_cxx, count, doc_cxx);
         count+=1;
     }
     return count as usize;

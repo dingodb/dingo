@@ -11,12 +11,12 @@ use crate::commons::*;
 /// A cache structure that stores key-value pairs.
 /// The values are wrapped in `V` for safe cross-thread sharing.
 /// `K` is the type of the keys, `V` is the type of the values, and `S` is the hash builder.
-pub struct FurryCache<K, V, S = DefaultHashBuilder> {
+pub struct FlurryCache<K, V, S = DefaultHashBuilder> {
     capacity: usize,
     hash_map: HashMap<K, OnceCell<V>, S>,
 }
 
-impl<K, V> FurryCache<K, V, DefaultHashBuilder>
+impl<K, V> FlurryCache<K, V, DefaultHashBuilder>
 where
     K: 'static + Hash + Ord + Clone + Send + Sync,
     V: 'static + Send + Sync,
@@ -33,7 +33,7 @@ where
     }
 }
 
-impl<K, V, S> FurryCache<K, V, S>
+impl<K, V, S> FlurryCache<K, V, S>
 where
     K: 'static + Hash + Ord + Clone + Send + Sync,
     V: 'static + Send + Sync + Clone,
@@ -53,7 +53,7 @@ where
 
         // Consider implementing a more sophisticated cache clearing strategy
         if pinned.len() >= self.capacity {
-            INFO!(target: LOGGER_TARGET, "furry cache trigger pinned clear.");
+            INFO!("furry cache trigger pinned clear.");
             pinned.clear();
         }
 
@@ -80,7 +80,7 @@ mod tests {
     use once_cell::sync::Lazy;
     use roaring::RoaringBitmap;
 
-    use crate::furry_cache::FurryCache;
+    use crate::flurry_cache::FlurryCache;
     
     struct CustomStruct {
         data: String, // 或者是您需要的任何数据类型
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let test_furry_cache: Lazy<FurryCache<(usize, String, String), RoaringBitmap>> = Lazy::new(|| FurryCache::with_capacity(1));
+        let test_furry_cache: Lazy<FlurryCache<(usize, String, String), RoaringBitmap>> = Lazy::new(|| FlurryCache::with_capacity(1));
 
         let row_id_roaring_bitmap = test_furry_cache.resolve(
             (0, "hello".to_string(), "/var/lib/xxx".to_string()),
@@ -124,7 +124,7 @@ mod tests {
 
     #[test]
     fn free_value() {
-        let test_furry_cache: Lazy<FurryCache<(usize, String, String), CustomStruct>> = Lazy::new(|| FurryCache::with_capacity(1));
+        let test_furry_cache: Lazy<FlurryCache<(usize, String, String), CustomStruct>> = Lazy::new(|| FlurryCache::with_capacity(1));
 
         let _ = test_furry_cache.resolve(
             (0, "hello".to_string(), "/var/lib/xxx".to_string()),
@@ -142,7 +142,7 @@ mod tests {
 
     #[test]
     fn free_value2() {
-        let test_furry_cache: Lazy<FurryCache<(usize, String, String), Arc<CustomStruct>>> = Lazy::new(|| FurryCache::with_capacity(1));
+        let test_furry_cache: Lazy<FlurryCache<(usize, String, String), Arc<CustomStruct>>> = Lazy::new(|| FlurryCache::with_capacity(1));
 
         let _ = test_furry_cache.resolve(
             (0, "hello".to_string(), "/var/lib/xxx".to_string()),
