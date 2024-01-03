@@ -90,4 +90,10 @@ public interface DingoResource {
 
     @BaseMessage("Illegal column name definition")
     ExInst<DingoSqlException> invalidColumn();
+
+    @BaseMessage("Incorrect argument type to variable ''{0}''")
+    ExInst<DingoSqlException> incorrectArgType(String a0);
+
+    @BaseMessage("Transaction characteristics can't be changed while a transaction is in progress")
+    ExInst<DingoSqlException> transChangeError();
 }

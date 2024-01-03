@@ -47,10 +47,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.commons.lang3.StringUtils;
 
+import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.DriverManager;
-import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Properties;
@@ -83,7 +83,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
         HandshakePacket handshakePacket = createHandShakePacket();
-        mysqlConnection.setId(handshakePacket.threadId);
+        mysqlConnection.setThreadId(handshakePacket.threadId);
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
         handshakePacket.write(buf);
         ctx.writeAndFlush(buf);
@@ -189,7 +189,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         okPacket.affectedRows = 0;
                         okPacket.packetId = (byte) packetId.get();
                         okPacket.serverStatus = SERVER_STATUS_AUTOCOMMIT;
-                        okPacket.insertId = 0;
+                        okPacket.insertId = BigInteger.ZERO;
                         okPacket.message = "connect success".getBytes();
                         okPacket.write(buffer);
                         ctx.writeAndFlush(buffer);

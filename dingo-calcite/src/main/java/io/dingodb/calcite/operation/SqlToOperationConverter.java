@@ -39,6 +39,7 @@ import io.dingodb.calcite.grammar.dql.SqlShowEngines;
 import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
 import io.dingodb.calcite.grammar.dql.SqlShowPlugins;
+import io.dingodb.calcite.grammar.dql.SqlShowLocks;
 import io.dingodb.calcite.grammar.dql.SqlShowTableDistribution;
 import io.dingodb.calcite.grammar.dql.SqlShowTableStatus;
 import io.dingodb.calcite.grammar.dql.SqlShowTables;
@@ -54,7 +55,10 @@ import org.apache.commons.lang3.StringUtils;
 import java.sql.Connection;
 import java.util.Optional;
 
-public class SqlToOperationConverter {
+public final class SqlToOperationConverter {
+
+    private SqlToOperationConverter() {
+    }
 
     public static Optional<Operation> convert(SqlNode sqlNode, Connection connection, DingoParserContext context) {
         if (sqlNode instanceof SqlShowWarnings) {
@@ -186,6 +190,8 @@ public class SqlToOperationConverter {
         } else if (sqlNode instanceof SqlShowCharset) {
             SqlShowCharset sqlShowCharset = (SqlShowCharset) sqlNode;
             return Optional.of(new ShowCharsetOperation(sqlShowCharset.sqlLikePattern));
+        } else if (sqlNode instanceof SqlShowLocks) {
+            return Optional.of(new ShowLocksOperation());
         } else {
             return Optional.empty();
         }

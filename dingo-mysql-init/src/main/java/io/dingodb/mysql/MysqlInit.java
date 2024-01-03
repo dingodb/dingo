@@ -244,7 +244,6 @@ public final class MysqlInit {
         values.add(new Object[]{"thread_cache", "2000"});
         values.add(new Object[]{"thread_stack", "262144"});
         values.add(new Object[]{"thread_concurrency", "10"});
-        values.add(new Object[]{"transaction_isolation", ""});
         values.add(new Object[]{"time_zone", "SYSTEM"});
         values.add(new Object[]{"system_time_zone", "UTC"});
         values.add(new Object[]{"character_set_client", "utf8"});
@@ -284,6 +283,9 @@ public final class MysqlInit {
         values.add(new Object[]{"txn_mode", "optimistic"});
         values.add(new Object[]{"collect_txn", "true"});
         values.add(new Object[]{"statement_timeout", "5000"});
+        values.add(new Object[]{"txn_inert_check", "off"});
+        values.add(new Object[]{"txn_retry", "off"});
+        values.add(new Object[]{"txn_retry_cnt", "0"});
         return values;
     }
 
