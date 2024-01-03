@@ -1,5 +1,6 @@
 use libc::*;
 use std::ffi::CStr;
+use std::ffi::c_uint;
 
 mod commons;
 mod flurry_cache;
@@ -29,6 +30,8 @@ mod ffi {
         fn tantivy_writer_commit(index_path: &CxxString) -> Result<bool>;
         fn tantivy_reader_free(index_path: &CxxString) -> Result<bool>;
         fn tantivy_writer_free(index_path: &CxxString) -> Result<bool>;
+        fn tantivy_search_in_rowid_range(index_path: &CxxString, query: &CxxString, lrange: u64, rrange: u64, use_regex: bool) -> Result<bool>;
+        fn tantivy_count_in_rowid_range(index_path: &CxxString, query: &CxxString, lrange: u64, rrange: u64, use_regex: bool) -> Result<u64>;
     }
 }
 

@@ -212,7 +212,7 @@ pub fn tantivy_count_in_rowid_range(
     lrange: u64,
     rrange: u64,
     use_regex: bool,
-) -> Result<c_uint, String> {
+) -> Result<u64, String> {
     // Parse parameter.
     let index_path_str = match index_path.to_str() {
         Ok(content) => content.to_string(),
@@ -242,7 +242,7 @@ pub fn tantivy_count_in_rowid_range(
         rrange,
         use_regex,
     ) {
-        Ok(row_id_range) => Ok(row_id_range.len() as u32),
+        Ok(row_id_range) => Ok(row_id_range.len() as u64),
         Err(e) => {
             let error_info = format!("Error in search: {}", e);
             ERROR!("{}", error_info);
