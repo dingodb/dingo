@@ -71,4 +71,8 @@ public class AutoIncrementService {
 
     public long getNextAutoIncrement(CommonId tableId) {return autoIncrementService.current(mapping(tableId)) + 1;}
 
+    public void updateAutoIncrementId(CommonId tableId, long autoIncrementId) {
+        autoIncrementService.update(mapping(tableId), autoIncrementId);
+    }
+
 }

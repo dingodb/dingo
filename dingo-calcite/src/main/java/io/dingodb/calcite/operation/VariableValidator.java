@@ -49,7 +49,10 @@ public class VariableValidator {
             throw new RuntimeException(String.format(ErrorCode.ER_IMMUTABLE_VARIABLES.message, name));
         }
         if (name.equalsIgnoreCase("autocommit")
-            || name.equalsIgnoreCase("transaction_read_only")) {
+            || name.equalsIgnoreCase("transaction_read_only")
+            || name.equalsIgnoreCase("txn_inert_check")
+            || name.equalsIgnoreCase("txn_retry")
+        ) {
             if (!SWITCH.contains(value)) {
                 throw DINGO_RESOURCE.invalidVariableArg(name, value).ex();
             }
@@ -64,6 +67,10 @@ public class VariableValidator {
         } else if (name.equalsIgnoreCase("txn_mode")) {
             if (!TX_MODE.contains(value)) {
                 throw DINGO_RESOURCE.invalidVariableArg(name, value).ex();
+            }
+        } else if (name.endsWith("timeout") || name.equalsIgnoreCase("txn_retry_cnt")) {
+            if (!value.matches("\\d+")) {
+                throw DINGO_RESOURCE.incorrectArgType(name).ex();
             }
         }
 

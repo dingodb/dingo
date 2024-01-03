@@ -26,6 +26,7 @@ import org.apache.calcite.sql.SqlSetOption;
 
 import java.sql.Connection;
 import java.sql.SQLClientInfoException;
+import java.sql.SQLException;
 import java.util.Objects;
 
 public class SetOptionOperation implements DdlOperation {
@@ -40,7 +41,7 @@ public class SetOptionOperation implements DdlOperation {
 
     private String name;
 
-    private String value;
+    private String value = "";
 
     public SetOptionOperation(Connection connection, SqlSetOption setOption) {
         this.connection = connection;
@@ -57,6 +58,7 @@ public class SetOptionOperation implements DdlOperation {
         if ("USER".equals(scope)) {
             name = "@" + name;
         }
+        name = name.toLowerCase();
         SqlNode sqlNode = setOption.getValue();
         if (sqlNode instanceof SqlNumericLiteral) {
             SqlNumericLiteral numericLiteral = (SqlNumericLiteral) sqlNode;
@@ -65,7 +67,13 @@ public class SetOptionOperation implements DdlOperation {
             sqlIdentifier = (SqlIdentifier) sqlNode;
             value = sqlIdentifier.names.get(0).toLowerCase();
         } else if (sqlNode instanceof SqlLiteral) {
-            value = "";
+            Object val = ((SqlLiteral) sqlNode).getValue();
+            if (val != null) {
+                value = val.toString();
+            }
+        }
+        if (value.startsWith("'") && value.endsWith("'")) {
+            value = value.substring(1, value.length() - 1);
         }
     }
 
@@ -74,9 +82,6 @@ public class SetOptionOperation implements DdlOperation {
         try {
             value = VariableValidator.validator(name, value, scope);
             if ("SESSION".equals(scope) || "USER".equals(scope)) {
-                if (value.contains("'")) {
-                    value = value.replace("'", "");
-                }
                 if (!setCharacter(name, value)) {
                     connection.setClientInfo(name, value);
                 }
@@ -84,7 +89,7 @@ public class SetOptionOperation implements DdlOperation {
                 putGlobalVariable(name, value);
                 ScopeVariables.globalVariables.put(name, value);
             }
-        } catch (SQLClientInfoException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }

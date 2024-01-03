@@ -19,12 +19,14 @@ package io.dingodb.driver.mysql.util;
 import io.dingodb.common.mysql.MysqlByteUtil;
 import io.netty.buffer.ByteBuf;
 
+import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 
 public class BufferUtil {
+    public static final BigInteger NEGATIVE_INC_VAL = new BigInteger("2").pow(64);
 
     public static void writeUB2(ByteBuf buffer, int operand) {
         buffer.writeByte(operand & 0xff);
@@ -71,7 +73,17 @@ public class BufferUtil {
     }
 
     public static void writeLength(ByteBuf buffer, long operand) {
-        if (operand < 251) {
+        if (operand < 0) {
+            buffer.writeByte((byte)254);
+            BigInteger operandTmp = new BigInteger(String.valueOf(operand));
+            BigInteger operandFinal = NEGATIVE_INC_VAL.add(operandTmp);
+            byte[] original = operandFinal.toByteArray();
+            byte[] actual = new byte[8];
+            System.arraycopy(original, 1, actual, 0, actual.length);
+            for (int i = 7; i >= 0; i--) {
+                buffer.writeByte(actual[i]);
+            }
+        } else if (operand < 251) {
             buffer.writeByte((byte) operand);
         } else if (operand < 0x10000L) {
             buffer.writeByte((byte) 252);
@@ -108,7 +120,9 @@ public class BufferUtil {
     }
 
     public static int getLength(long length) {
-        if (length < 251) {
+        if (length < 0) {
+            return 9;
+        } else if (length < 251) {
             return 1;
         } else if (length < 0x10000L) {
             return 3;

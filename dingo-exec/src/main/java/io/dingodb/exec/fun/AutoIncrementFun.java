@@ -16,7 +16,6 @@
 
 package io.dingodb.exec.fun;
 
-import io.dingodb.expr.annotations.Operators;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
 import io.dingodb.expr.runtime.type.Type;

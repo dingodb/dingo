@@ -35,6 +35,7 @@ import org.apache.calcite.avatica.Meta;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.sql.Date;
@@ -183,7 +184,7 @@ public class MysqlCommands {
                     String lastInsertId = mysqlConnection.getConnection()
                         .getClientInfo().getProperty(jobIdPrefix, "0");
                     okPacket = MysqlPacketFactory.getInstance()
-                        .getOkPacket(count, packetId, 0, Integer.parseInt(lastInsertId));
+                        .getOkPacket(count, packetId, 0, new BigInteger(lastInsertId));
                     mysqlConnection.getConnection().getClientInfo().remove(jobIdPrefix);
                 } else {
                     okPacket = MysqlPacketFactory.getInstance()
@@ -320,7 +321,7 @@ public class MysqlCommands {
                     String lastInsertId = mysqlConnection.getConnection()
                         .getClientInfo().getProperty(jobIdPrefix, "0");
                     okPacket = MysqlPacketFactory.getInstance()
-                        .getOkPacket(affected, packetId, 0, Integer.parseInt(lastInsertId));
+                        .getOkPacket(affected, packetId, 0, new BigInteger(lastInsertId));
                     mysqlConnection.getConnection().getClientInfo().remove(jobIdPrefix);
                 } else {
                     okPacket = mysqlPacketFactory.getOkPacket(affected, packetId);

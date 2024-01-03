@@ -18,7 +18,6 @@ package io.dingodb.driver.mysql.netty;
 
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
 import io.dingodb.driver.mysql.MysqlConnection;
-import io.dingodb.net.netty.Connection;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -26,22 +25,18 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.timeout.IdleStateHandler;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.TimeUnit;
 
 @Getter
 @Builder
 public class MysqlNettyServer {
     public final String host;
     public final int port;
-    public static final Map<Integer, MysqlConnection> connections = new ConcurrentHashMap<>();
+    public static final Map<String, MysqlConnection> connections = new ConcurrentHashMap<>();
 
     private EventLoopGroup eventLoopGroup;
     private ServerBootstrap server;
