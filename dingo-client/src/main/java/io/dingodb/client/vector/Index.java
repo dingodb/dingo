@@ -14,27 +14,26 @@
  * limitations under the License.
  */
 
-package io.dingodb.client.common;
+package io.dingodb.client.vector;
 
-import io.dingodb.sdk.common.index.VectorIndexParameter;
-import io.dingodb.sdk.common.vector.ScalarValue;
-import io.dingodb.sdk.common.vector.Vector;
+import io.dingodb.sdk.service.AutoIncrementService;
+import io.dingodb.sdk.service.entity.meta.DingoCommonId;
+import io.dingodb.sdk.service.entity.meta.IndexDefinition;
+import io.dingodb.sdk.service.entity.meta.RangeDistribution;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
 
-import java.util.Map;
+import java.util.List;
 
-@Getter
-@ToString
-@NoArgsConstructor
 @AllArgsConstructor
-public class VectorWithDistance {
+public class Index {
 
-    private long id;
-    private Vector vector;
-    private Map<String, ScalarValue> scalarData;
-    private float distance;
-    private VectorIndexParameter.MetricType metricType;
+    public final DingoCommonId id;
+    public final IndexDefinition definition;
+    public final List<RangeDistribution> distributions;
+    public final Partitions partitions;
+
+    public final String schemaName;
+    public final String indexName;
+    public final AutoIncrementService autoIncrementService;
+
 }

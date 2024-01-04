@@ -16,21 +16,31 @@
 
 package io.dingodb.client.common;
 
-import io.dingodb.sdk.service.entity.common.VectorSearchParameter;
-import io.dingodb.sdk.service.entity.common.VectorWithId;
+import io.dingodb.sdk.service.entity.common.ScalarValue;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 @Getter
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class VectorSearch {
+public class VectorScanQuery {
 
-    private VectorSearchParameter parameter;
-    private List<VectorWithId> vectors;
+    private Long startId;
+    private Boolean isReverseScan;
+    private Long maxScanCount;
+    private Long endId;
+
+    private Boolean withoutVectorData;
+    private Boolean withoutScalarData;
+    private List<String> selectedKeys;
+    private Boolean withoutTableData;
+
+    // Whether to use scalar filtering.
+    private Boolean useScalarFilter;
+    private Map<String, ScalarValue> scalarForFilter;
+
 }

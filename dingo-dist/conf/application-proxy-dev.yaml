@@ -8,3 +8,5 @@ server:
     grpc:
         port: 9999
     coordinatorExchangeSvrList: node1:22001,node1:22002,node1:22003
+    client:
+      retry: 60

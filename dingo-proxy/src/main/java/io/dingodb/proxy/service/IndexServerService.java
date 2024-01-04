@@ -19,17 +19,19 @@ package io.dingodb.proxy.service;
 import com.google.common.collect.Maps;
 import io.dingodb.client.DingoClient;
 import io.dingodb.client.common.VectorDistanceArray;
+import io.dingodb.client.common.VectorScanQuery;
 import io.dingodb.client.common.VectorSearch;
-import io.dingodb.client.common.VectorWithId;
+import io.dingodb.client.vector.VectorClient;
+import io.dingodb.proxy.annotation.GrpcService;
 import io.dingodb.proxy.common.ProxyCommon;
 import io.dingodb.proxy.error.ProxyError;
 import io.dingodb.proxy.index.IndexServiceGrpc;
 import io.dingodb.proxy.index.ProxyIndex;
-import io.dingodb.sdk.common.DingoClientException;
-import io.dingodb.sdk.common.vector.VectorIndexMetrics;
-import io.dingodb.sdk.common.vector.VectorScanQuery;
-import io.dingodb.proxy.annotation.GrpcService;
 import io.dingodb.proxy.utils.Conversion;
+import io.dingodb.sdk.common.DingoClientException;
+import io.dingodb.sdk.service.entity.common.VectorIndexMetrics;
+import io.dingodb.sdk.service.entity.common.VectorSearchParameter;
+import io.dingodb.sdk.service.entity.common.VectorWithId;
 import io.grpc.stub.StreamObserver;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -39,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static io.dingodb.proxy.utils.Conversion.MAPPER;
 import static io.dingodb.proxy.utils.Conversion.mapping;
 
 @GrpcService
@@ -46,6 +49,9 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
 
     @Autowired
     private DingoClient dingoClient;
+
+    @Autowired
+    private VectorClient vectorClient;
 
     @Override
     public void vectorAdd(ProxyIndex.VectorAddRequest req, StreamObserver<ProxyIndex.VectorAddResponse> resObserver) {
@@ -56,7 +62,7 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
                 .stream()
                 .map(Conversion::mapping)
                 .collect(Collectors.toList());
-            List<VectorWithId> resVectors = dingoClient.vectorAdd(req.getSchemaName(), req.getIndexName(), reqVectors,
+            List<VectorWithId> resVectors = vectorClient.vectorAdd(req.getSchemaName(), req.getIndexName(), reqVectors,
                 req.getReplaceDeleted(),
                 req.getIsUpdate());
             builder.addAllVectors(resVectors.stream().map(Conversion::mapping).collect(Collectors.toList()));
@@ -77,7 +83,7 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
         ProxyError.Error.Builder error = ProxyError.Error.newBuilder();
         try {
             List<Long> ids = req.getVectorIdsList();
-            Map<Long, VectorWithId> vectorWithIdMap = dingoClient.vectorBatchQuery(
+            Map<Long, VectorWithId> vectorWithIdMap = vectorClient.vectorBatchQuery(
                 req.getSchemaName(),
                 req.getIndexName(),
                 new HashSet<>(ids),
@@ -102,18 +108,21 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
         ProxyError.Error.Builder error = ProxyError.Error.newBuilder();
         try {
             ProxyCommon.VectorSearchParameter parameter = req.getParameter();
-            List<VectorDistanceArray> vectorSearch = dingoClient.vectorSearch(
+            VectorSearchParameter searchParameter = MAPPER.mapping(parameter);
+            searchParameter.setWithoutTableData(true);
+            List<VectorDistanceArray> vectorSearch = vectorClient.vectorSearch(
                 req.getSchemaName(),
                 req.getIndexName(),
                 new VectorSearch(
-                    mapping(parameter),
-                    req.getVectorsList().stream().map(Conversion::mapping).collect(Collectors.toList())));
+                    searchParameter,
+                    req.getVectorsList().stream().map(Conversion::mapping).collect(Collectors.toList()))
+            );
             builder.addAllBatchResults(vectorSearch.stream().map(s -> ProxyIndex.VectorWithDistanceResult.newBuilder()
                 .addAllVectorWithDistances(s.getVectorWithDistances().stream().map(r ->
                         ProxyCommon.VectorWithDistance.newBuilder()
-                            .setId(r.getId())
-                            .setVector(mapping(r.getVector()))
-                            .putAllScalarData(mapping(r.getScalarData()))
+                            .setId(r.getVectorWithId().getId())
+                            .setVector(MAPPER.mapping(r.getVectorWithId().getVector()))
+                            .putAllScalarData(mapping(r.getVectorWithId().getScalarData()))
                             .setDistance(r.getDistance())
                             .setMetricType(ProxyCommon.MetricType.valueOf(r.getMetricType().name()))
                             .build())
@@ -138,7 +147,7 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
             if (req.getIdsCount() != count) {
                 throw new DingoClientException("During the delete operation, duplicate ids are not allowed");
             }
-            List<Boolean> vectorDelete = dingoClient.vectorDelete(
+            List<Boolean> vectorDelete = vectorClient.vectorDelete(
                 req.getSchemaName(),
                 req.getIndexName(),
                 req.getIdsList());
@@ -158,7 +167,7 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
         ProxyIndex.VectorGetBorderIdResponse.Builder builder = ProxyIndex.VectorGetBorderIdResponse.newBuilder();
         ProxyError.Error.Builder error = ProxyError.Error.newBuilder();
         try {
-            Long id = dingoClient.vectorGetBorderId(req.getSchemaName(), req.getIndexName(), req.getGetMin());
+            Long id = vectorClient.vectorGetBorderId(req.getSchemaName(), req.getIndexName(), req.getGetMin());
             builder.setId(id);
             error.setErrcode(ProxyError.Errno.OK);
         } catch (Exception e) {
@@ -189,7 +198,7 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
                     Maps::newHashMap,
                     (map, entry) -> map.put(entry.getKey(), mapping(entry.getValue())),
                     Map::putAll));
-            List<VectorWithId> withIds = dingoClient.vectorScanQuery(
+            List<VectorWithId> withIds = vectorClient.vectorScanQuery(
                 req.getSchemaName(),
                 req.getIndexName(),
                 vectorScanQuery);
@@ -209,7 +218,7 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
         ProxyIndex.VectorGetRegionMetricsResponse.Builder builder = ProxyIndex.VectorGetRegionMetricsResponse.newBuilder();
         ProxyError.Error.Builder error = ProxyError.Error.newBuilder();
         try {
-            VectorIndexMetrics metrics = dingoClient.getRegionMetrics(req.getSchemaName(), req.getIndexName());
+            VectorIndexMetrics metrics = vectorClient.getRegionMetrics(req.getSchemaName(), req.getIndexName());
             builder.setMetrics(ProxyCommon.VectorIndexMetrics.newBuilder()
                     .setVectorIndexType(ProxyCommon.VectorIndexType.valueOf(metrics.getVectorIndexType().name()))
                     .setCurrentCount(metrics.getCurrentCount())
@@ -232,7 +241,7 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
         ProxyIndex.VectorCountResponse.Builder builder = ProxyIndex.VectorCountResponse.newBuilder();
         ProxyError.Error.Builder error = ProxyError.Error.newBuilder();
         try {
-            Long count = dingoClient.vectorCount(req.getSchemaName(), req.getIndexName());
+            Long count = vectorClient.vectorCount(req.getSchemaName(), req.getIndexName());
             builder.setCount(count);
             error.setErrcode(ProxyError.Errno.OK);
         } catch (Exception e) {

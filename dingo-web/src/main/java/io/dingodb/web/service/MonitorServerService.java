@@ -478,20 +478,16 @@ public class MonitorServerService {
         RangeDistribution rangeDistribution = rangeDistributions[index];
         Object[] start;
         Object[] end;
-        try {
-            setId(rangeDistribution.getRange().startKey);
-            start = codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(rangeDistribution.getRange().startKey,
-                rangeDistribution.getRange().startKey.length) : rangeDistribution.getRange().startKey);
-            if (index + 1 < rangeDistributions.length) {
-                byte[] nextStart = rangeDistributions[index + 1].getRange().startKey;
-                setId(nextStart);
-                end = codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(nextStart,
-                    nextStart.length) : nextStart);
-            } else {
-                end = null;
-            }
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
+        setId(rangeDistribution.getRange().startKey);
+        start = codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(rangeDistribution.getRange().startKey,
+            rangeDistribution.getRange().startKey.length) : rangeDistribution.getRange().startKey);
+        if (index + 1 < rangeDistributions.length) {
+            byte[] nextStart = rangeDistributions[index + 1].getRange().startKey;
+            setId(nextStart);
+            end = codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(nextStart,
+                nextStart.length) : nextStart);
+        } else {
+            end = null;
         }
         String startKey = buildKeyStr(tableDefinition.getKeyColumnIndices(), start);
         String endKey = buildKeyStr(tableDefinition.getKeyColumnIndices(), end);

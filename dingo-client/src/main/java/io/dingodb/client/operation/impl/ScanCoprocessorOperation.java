@@ -194,27 +194,23 @@ public class ScanCoprocessorOperation implements Operation {
 
         List<Column> resultSchemas = coprocessor.resultSchema.getSchemas();
         for (KeyValue record : list) {
-            try {
-                Record current = new Record(columnDefinitions, codec.getKeyValueCodec().decode(record));
-                ByteArrayUtils.ComparableByteArray byteArray = new ByteArrayUtils.ComparableByteArray(record.getKey());
-                if (cache.get(byteArray) == null) {
-                    cache.put(byteArray, current);
-                    continue;
-                } else {
-                    for (int i = 1; i <= aggregations.size(); i++) {
-                        Record old = cache.get(byteArray);
-                        Object result = reduce(
-                            (KeyRangeCoprocessor.AggType) aggregations.get(aggregations.size() - i).getOperation(),
-                            current.getValues().get(current.getValues().size() - i),
-                            old.getValues().get(old.getValues().size() - i),
-                            resultSchemas.get(resultSchemas.size() - i));
-                        current.setValue(result, current.getValues().size() - i);
-                    }
-                }
+            Record current = new Record(columnDefinitions, codec.getKeyValueCodec().decode(record));
+            ByteArrayUtils.ComparableByteArray byteArray = new ByteArrayUtils.ComparableByteArray(record.getKey());
+            if (cache.get(byteArray) == null) {
                 cache.put(byteArray, current);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+                continue;
+            } else {
+                for (int i = 1; i <= aggregations.size(); i++) {
+                    Record old = cache.get(byteArray);
+                    Object result = reduce(
+                        (KeyRangeCoprocessor.AggType) aggregations.get(aggregations.size() - i).getOperation(),
+                        current.getValues().get(current.getValues().size() - i),
+                        old.getValues().get(old.getValues().size() - i),
+                        resultSchemas.get(resultSchemas.size() - i));
+                    current.setValue(result, current.getValues().size() - i);
+                }
             }
+            cache.put(byteArray, current);
         }
 
         if (standard) {

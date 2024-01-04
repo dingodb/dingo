@@ -18,10 +18,6 @@ package io.dingodb.client;
 
 import io.dingodb.client.common.Key;
 import io.dingodb.client.common.Record;
-import io.dingodb.client.common.VectorDistanceArray;
-import io.dingodb.client.common.VectorSearch;
-import io.dingodb.client.common.VectorWithDistance;
-import io.dingodb.client.common.VectorWithId;
 import io.dingodb.client.operation.impl.CompareAndSetOperation;
 import io.dingodb.client.operation.impl.DeleteOperation;
 import io.dingodb.client.operation.impl.DeleteRangeOperation;
@@ -34,36 +30,16 @@ import io.dingodb.client.operation.impl.PutIfAbsentOperation;
 import io.dingodb.client.operation.impl.PutOperation;
 import io.dingodb.client.operation.impl.ScanCoprocessorOperation;
 import io.dingodb.client.operation.impl.ScanOperation;
-import io.dingodb.client.operation.impl.VectorAddOperation;
-import io.dingodb.client.operation.impl.VectorBatchQueryOperation;
-import io.dingodb.client.operation.impl.VectorCountOperation;
-import io.dingodb.client.operation.impl.VectorDeleteOperation;
-import io.dingodb.client.operation.impl.VectorGetIdOperation;
-import io.dingodb.client.operation.impl.VectorGetRegionMetricsOperation;
-import io.dingodb.client.operation.impl.VectorScanQueryOperation;
-import io.dingodb.client.operation.impl.VectorSearchOperation;
-import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.common.util.Optional;
 import io.dingodb.sdk.common.DingoClientException;
-import io.dingodb.sdk.common.index.Index;
-import io.dingodb.sdk.common.index.IndexMetrics;
-import io.dingodb.sdk.common.index.VectorIndexParameter;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.Parameters;
-import io.dingodb.sdk.common.vector.Vector;
-import io.dingodb.sdk.common.vector.VectorIndexMetrics;
-import io.dingodb.sdk.common.vector.VectorScanQuery;
-import io.dingodb.sdk.service.meta.AutoIncrementService;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 @Slf4j
 public class DingoClient {
@@ -72,9 +48,6 @@ public class DingoClient {
 
     private OperationService operationService;
     private IndexOperationService indexOperationService;
-    private IndexService indexService;
-
-    public static final int MAX_MESSAGE_SIZE = 8 * 1024 * 1024;
 
     public static Integer retryTimes = 20;
 
@@ -88,7 +61,6 @@ public class DingoClient {
 
     public DingoClient(String coordinatorSvr, String schema, Integer retryTimes) {
         operationService = new OperationService(coordinatorSvr, retryTimes);
-        indexService = new IndexService(coordinatorSvr, new AutoIncrementService(coordinatorSvr), retryTimes);
         indexOperationService = new IndexOperationService(coordinatorSvr, retryTimes);
         this.schema = schema.toUpperCase();
     }
@@ -320,200 +292,6 @@ public class DingoClient {
 
     public List<Boolean> deleteNotStandard(final String tableName, List<Key> keys) {
         return operationService.exec(schema, tableName, DeleteOperation.getNotStandardInstance(), keys);
-    }
-
-    public boolean createIndex(String indexName, Index index) {
-        return createIndex(schema, indexName, index);
-    }
-
-    public boolean createIndex(String schema, String indexName, Index index) {
-        return indexService.createIndex(schema, indexName, index);
-    }
-
-    public boolean updateIndex(String index, Index newIndex) {
-        return indexService.updateIndex(schema, index, newIndex);
-    }
-
-    public boolean updateIndex(String schema, String index, Index newIndex) {
-        return indexService.updateIndex(schema, index, newIndex);
-    }
-
-    public boolean dropIndex(String indexName) {
-        return dropIndex(schema, indexName);
-    }
-
-    public boolean dropIndex(String schema, String indexName) {
-        return indexService.dropIndex(schema, indexName);
-    }
-
-    public Index getIndex(String index) {
-        return getIndex(schema, index);
-    }
-
-    public Index getIndex(String schema, String index) {
-        return indexService.getIndex(schema, index);
-    }
-
-    public List<Index> getIndexes(String schema) {
-        return indexService.getIndexes(schema);
-    }
-
-    public IndexMetrics getIndexMetrics(String schema, String index) {
-        return indexService.getIndexMetrics(schema, index);
-    }
-
-    public List<VectorWithId> vectorAdd(String indexName, List<VectorWithId> vectors) {
-        return vectorAdd(schema, indexName, vectors);
-    }
-
-    public List<VectorWithId> vectorAdd(String schema, String indexName, List<VectorWithId> vectors) {
-        return vectorAdd(schema, indexName, vectors, false, false);
-    }
-
-    public List<VectorWithId> vectorAdd(String schema, String indexName, List<VectorWithId> vectors,
-                                        Boolean replaceDeleted, Boolean isUpdate) {
-        VectorContext context = VectorContext.builder().replaceDeleted(replaceDeleted).isUpdate(isUpdate).build();
-        int dimension = getDimension(schema, indexName);
-        long count = checkDimension(vectors, dimension);
-        int messageSize = getMessageSize(vectors);
-        if (vectors.size() > 1024) {
-            throw new DingoClientException("Param vectors size " + vectors.size() + " is exceed max batch count 1024");
-        }
-        if (messageSize > MAX_MESSAGE_SIZE) {
-            throw new DingoClientException("Message exceeds maximum size " + MAX_MESSAGE_SIZE + " : " + messageSize);
-        }
-        if (dimension != 0 && count > 0) {
-            throw new DingoClientException("Dimension is not the same length as its value or from the time it was created");
-        }
-        return indexService.exec(schema, indexName, VectorAddOperation.getInstance(), vectors, context);
-    }
-
-    /**
-     * Get the total size of the vector.
-     *
-     * @param vectors vectors
-     * @return Total message size
-     */
-    private static int getMessageSize(List<VectorWithId> vectors) {
-        int totalSize;
-        if (vectors.get(0).getVector().getValueType().equals(Vector.ValueType.BINARY)) {
-            totalSize = vectors.stream()
-                .map(v -> v.getVector().getBinaryValues())
-                .map(l -> l.stream()
-                    .map(b -> b.length)
-                    .reduce(Integer::sum)
-                    .orElse(0))
-                .reduce(Integer::sum)
-                .orElse(0);
-        } else {
-            totalSize = ProtostuffCodec.write(vectors).length;
-        }
-        return totalSize;
-
-    }
-
-    private static long checkDimension(List<VectorWithId> vectors, int dimension) {
-        return vectors.stream()
-            .map(VectorWithId::getVector)
-            .filter(v -> v.getDimension() != dimension || (v.getValueType() == Vector.ValueType.FLOAT
-                    ? v.getFloatValues().size() != dimension : v.getBinaryValues().size() != dimension))
-            .count();
-    }
-
-    private int getDimension(String schema, String indexName) {
-        Index index = indexService.getIndex(schema, indexName, false);
-        VectorIndexParameter parameter = index.getIndexParameter().getVectorIndexParameter();
-        int dimension;
-        switch (parameter.getVectorIndexType()) {
-            case VECTOR_INDEX_TYPE_FLAT:
-                dimension = parameter.getFlatParam().getDimension();
-                break;
-            case VECTOR_INDEX_TYPE_IVF_FLAT:
-                dimension = parameter.getIvfFlatParam().getDimension();
-                break;
-            case VECTOR_INDEX_TYPE_IVF_PQ:
-                dimension = parameter.getIvfPqParam().getDimension();
-                break;
-            case VECTOR_INDEX_TYPE_HNSW:
-                dimension = parameter.getHnswParam().getDimension();
-                break;
-            case VECTOR_INDEX_TYPE_DISKANN:
-                dimension = parameter.getDiskAnnParam().getDimension();
-                break;
-            default:
-                dimension = 0;
-        }
-        return dimension;
-    }
-
-    public List<VectorDistanceArray> vectorSearch(String indexName, VectorSearch vectorSearch) {
-        return vectorSearch(schema, indexName, vectorSearch);
-    }
-
-    public List<VectorDistanceArray> vectorSearch(String schema, String indexName, VectorSearch vectorSearch) {
-        List<VectorDistanceArray> distanceArrays = indexService.exec(
-            schema,
-            indexName,
-            VectorSearchOperation.getInstance(),
-            vectorSearch);
-
-        List<VectorDistanceArray> result = new ArrayList<>();
-        for (VectorDistanceArray distanceArray : distanceArrays) {
-            List<VectorWithDistance> withDistances = distanceArray.getVectorWithDistances();
-            Integer topN = vectorSearch.getParameter().getTopN();
-            if (withDistances.size() <= topN) {
-                result.add(distanceArray);
-                continue;
-            }
-            result.add(new VectorDistanceArray(withDistances.subList(0, topN)));
-        }
-        return result;
-    }
-
-    public Map<Long, VectorWithId> vectorBatchQuery(String schema, String indexName, Set<Long> ids,
-                                              boolean withoutVectorData,
-                                              boolean withoutScalarData,
-                                              List<String> selectedKeys) {
-        VectorContext vectorContext = VectorContext.builder()
-            .withoutVectorData(withoutVectorData)
-            .withoutScalarData(withoutScalarData)
-            .selectedKeys(selectedKeys)
-            .build();
-        return indexService.exec(schema, indexName, VectorBatchQueryOperation.getInstance(), ids, vectorContext);
-    }
-
-    /**
-     * Get Boundary by schema and index name.
-     * @param schema schema name, default is 'dingo'
-     * @param indexName index name
-     * @param isGetMin if true, get min id, else get max id
-     * @return id
-     */
-    public Long vectorGetBorderId(String schema, String indexName, Boolean isGetMin) {
-        long[] longArr = indexService.exec(schema, indexName, VectorGetIdOperation.getInstance(), isGetMin);
-        return (isGetMin ? Arrays.stream(longArr).min() : Arrays.stream(longArr).max()).getAsLong();
-    }
-
-    public List<VectorWithId> vectorScanQuery(String schema, String indexName, VectorScanQuery query) {
-        List<VectorWithId> result = indexService.exec(schema, indexName, VectorScanQueryOperation.getInstance(), query);
-        return query.getMaxScanCount() > result.size()
-            ? result : result.subList(0, Math.toIntExact(query.getMaxScanCount()));
-    }
-
-    public VectorIndexMetrics getRegionMetrics(String schema, String indexName) {
-        return indexService.exec(schema, indexName, VectorGetRegionMetricsOperation.getInstance(), null);
-    }
-
-    public List<Boolean> vectorDelete(String indexName, List<Long> ids) {
-        return vectorDelete(schema, indexName, ids);
-    }
-
-    public List<Boolean> vectorDelete(String schema, String indexName, List<Long> ids) {
-        return indexService.exec(schema, indexName, VectorDeleteOperation.getInstance(), ids);
-    }
-
-    public Long vectorCount(String schema, String indexName) {
-        return indexService.exec(schema, indexName, VectorCountOperation.getInstance(), null);
     }
 
     public void close() {

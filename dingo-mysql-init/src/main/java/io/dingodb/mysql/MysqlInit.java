@@ -442,20 +442,16 @@ public final class MysqlInit {
             userKeys[0] = "%";
             userKeys[1] = "root";
             KeyValueCodec codec = DingoKeyValueCodec.of(tableId.entityId(), tableDefinition);
-            try {
-                byte[] key = codec.encodeKey(userKeys);
-                NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
-                        = mysqlMetaClient.getRangeDistribution(tableId);
-                if (rangeDistribution == null) {
-                    return 1;
-                }
-                DingoCommonId regionId = rangeDistribution.firstEntry().getValue().getId();
-                key = codec.resetPrefix(key, regionId.parentId());
-                byte[] res = storeServiceClient.kvGet(tableId, regionId, key);
-                if (res == null || res.length == 0) {
-                    return 1;
-                }
-            } catch (IOException e) {
+            byte[] key = codec.encodeKey(userKeys);
+            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
+                    = mysqlMetaClient.getRangeDistribution(tableId);
+            if (rangeDistribution == null) {
+                return 1;
+            }
+            DingoCommonId regionId = rangeDistribution.firstEntry().getValue().getId();
+            key = codec.resetPrefix(key, regionId.parentId());
+            byte[] res = storeServiceClient.kvGet(tableId, regionId, key);
+            if (res == null || res.length == 0) {
                 return 1;
             }
 

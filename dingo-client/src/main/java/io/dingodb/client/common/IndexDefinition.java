@@ -20,11 +20,10 @@ import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.type.converter.StrParseConverter;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.Optional;
-import io.dingodb.sdk.common.index.Index;
-import io.dingodb.sdk.common.index.IndexParameter;
 import io.dingodb.sdk.common.partition.Partition;
 import io.dingodb.sdk.common.partition.PartitionDetailDefinition;
 import io.dingodb.sdk.common.partition.PartitionRule;
+import io.dingodb.sdk.service.entity.common.IndexParameter;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -39,7 +38,7 @@ import java.util.stream.Collectors;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class IndexDefinition implements Index {
+public class IndexDefinition {
 
     private static final LongType LONG_TYPE = new LongType(false);
 
@@ -52,17 +51,4 @@ public class IndexDefinition implements Index {
     @Setter
     private Long autoIncrement;
 
-    public Partition getIndexPartition() {
-        return new PartitionRule(
-            indexPartition.getFuncName(),
-            indexPartition.getColumns(),
-            Optional.mapOrGet(indexPartition.getDetails(), __ -> indexPartition.getDetails().stream().map(d ->
-                    new PartitionDetailDefinition(
-                        d.getPartName(),
-                        d.getOperator(),
-                        Arrays.stream(d.getOperand()).map(
-                            o -> LONG_TYPE.convertFrom(o, StrParseConverter.INSTANCE)).toArray()))
-                .collect(Collectors.toList()), ArrayList::new)
-        );
-    }
 }

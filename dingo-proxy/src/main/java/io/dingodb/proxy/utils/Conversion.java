@@ -20,39 +20,41 @@ import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
 import io.dingodb.client.common.IndexDefinition;
 import io.dingodb.client.common.VectorCoprocessor;
-import io.dingodb.client.common.VectorSearchParameter;
-import io.dingodb.client.common.VectorWithId;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
+import io.dingodb.proxy.bean.ClientBean;
 import io.dingodb.proxy.common.ProxyCommon;
+import io.dingodb.proxy.mapper.EntityMapper;
 import io.dingodb.proxy.meta.ProxyMeta;
-import io.dingodb.sdk.common.index.BruteForceParam;
-import io.dingodb.sdk.common.index.DiskAnnParam;
-import io.dingodb.sdk.common.index.FlatParam;
-import io.dingodb.sdk.common.index.HnswParam;
-import io.dingodb.sdk.common.index.Index;
-import io.dingodb.sdk.common.index.IndexParameter;
-import io.dingodb.sdk.common.index.IvfFlatParam;
-import io.dingodb.sdk.common.index.IvfPqParam;
-import io.dingodb.sdk.common.index.ScalarIndexParameter;
-import io.dingodb.sdk.common.index.VectorIndexParameter;
 import io.dingodb.sdk.common.partition.Partition;
-import io.dingodb.sdk.common.vector.ScalarField;
-import io.dingodb.sdk.common.vector.ScalarValue;
-import io.dingodb.sdk.common.vector.Search;
-import io.dingodb.sdk.common.vector.SearchDiskAnnParam;
-import io.dingodb.sdk.common.vector.SearchFlatParam;
-import io.dingodb.sdk.common.vector.SearchHnswParam;
-import io.dingodb.sdk.common.vector.SearchIvfFlatParam;
-import io.dingodb.sdk.common.vector.SearchIvfPqParam;
 import io.dingodb.sdk.common.vector.Vector;
+import io.dingodb.sdk.service.entity.common.IndexParameter;
+import io.dingodb.sdk.service.entity.common.IndexType;
+import io.dingodb.sdk.service.entity.common.ScalarField;
+import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.BoolData;
+import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.BytesData;
+import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.DoubleData;
+import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.FloatData;
+import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.IntData;
+import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.LongData;
+import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.StringData;
+import io.dingodb.sdk.service.entity.common.ScalarFieldType;
+import io.dingodb.sdk.service.entity.common.ScalarValue;
+import io.dingodb.sdk.service.entity.common.VectorIndexParameter;
+import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexParameterNest;
+import io.dingodb.sdk.service.entity.common.VectorIndexType;
+import io.dingodb.sdk.service.entity.common.VectorScalardata;
+import io.dingodb.sdk.service.entity.common.VectorWithId;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Conversion {
+
+    public static final EntityMapper MAPPER = ClientBean.mapper();
 
     public static IndexDefinition mapping(ProxyMeta.IndexDefinition definition) {
         return new IndexDefinition(
@@ -63,10 +65,10 @@ public class Conversion {
             mapping(definition.getIndexParameter()),
             definition.getWithAutoIncrement(),
             definition.getAutoIncrement()
-            );
+        );
     }
 
-    public static ProxyMeta.IndexDefinition mapping(Index index) {
+    public static ProxyMeta.IndexDefinition mapping(IndexDefinition index) {
         return ProxyMeta.IndexDefinition.newBuilder()
             .setName(index.getName())
             .setVersion(index.getVersion())
@@ -88,14 +90,10 @@ public class Conversion {
             );
     }
 
-    public static ProxyMeta.PartitionRule mapping(Partition partition) {
+    public static ProxyMeta.PartitionRule mapping(PartitionDefinition partition) {
         return ProxyMeta.PartitionRule.newBuilder()
-            .setFuncName(partition.getFuncName())
-            .addAllColumns(new ArrayList<>(partition.getCols()))
             .addAllDetails(partition.getDetails().stream()
                 .map(d -> ProxyMeta.PartitionDetailDefinition.newBuilder()
-                    .setPartName(d.getPartName())
-                    .setOperator(d.getOperator())
                     .addAllOperand(Arrays.stream(d.getOperand())
                         .map(String::valueOf)
                         .collect(Collectors.toList()))
@@ -106,186 +104,104 @@ public class Conversion {
 
     public static IndexParameter mapping(ProxyCommon.IndexParameter parameter) {
         ProxyCommon.VectorIndexParameter vectorIndexParameter = parameter.getVectorIndexParameter();
-        VectorIndexParameter.VectorIndexType vectorIndexType = VectorIndexParameter.VectorIndexType.valueOf(vectorIndexParameter.getVectorIndexType().name());
+        VectorIndexType vectorIndexType = VectorIndexType.valueOf(vectorIndexParameter.getVectorIndexType().name());
         VectorIndexParameter vectorParameter;
         switch (vectorIndexParameter.getVectorIndexType()) {
             case VECTOR_INDEX_TYPE_FLAT:
-                ProxyCommon.CreateFlatParam flatParam = vectorIndexParameter.getFlatParameter();
-                vectorParameter = new VectorIndexParameter(
-                    vectorIndexType, new FlatParam(
-                        flatParam.getDimension(),
-                    VectorIndexParameter.MetricType.valueOf(flatParam.getMetricType().name()))
-                );
+                vectorParameter = VectorIndexParameter.builder()
+                    .vectorIndexType(vectorIndexType)
+                    .vectorIndexParameter(MAPPER.mapping(vectorIndexParameter.getFlatParameter()))
+                    .build();
                 break;
             case VECTOR_INDEX_TYPE_IVF_FLAT:
-                ProxyCommon.CreateIvfFlatParam ivfFlatParam = vectorIndexParameter.getIvfFlatParameter();
-                vectorParameter = new VectorIndexParameter(
-                    vectorIndexType,
-                    new IvfFlatParam(
-                        ivfFlatParam.getDimension(),
-                        VectorIndexParameter.MetricType.valueOf(ivfFlatParam.getMetricType().name()),
-                        ivfFlatParam.getNcentroids()
-                    )
-                );
+                vectorParameter = VectorIndexParameter.builder()
+                    .vectorIndexType(vectorIndexType)
+                    .vectorIndexParameter(MAPPER.mapping(vectorIndexParameter.getIvfFlatParameter()))
+                    .build();
                 break;
             case VECTOR_INDEX_TYPE_IVF_PQ:
-                ProxyCommon.CreateIvfPqParam pqParam = vectorIndexParameter.getIvfPqParameter();
-                vectorParameter = new VectorIndexParameter(
-                    vectorIndexType,
-                    new IvfPqParam(
-                        pqParam.getDimension(),
-                        VectorIndexParameter.MetricType.valueOf(pqParam.getMetricType().name()),
-                        pqParam.getNcentroids(),
-                        pqParam.getNsubvector(),
-                        pqParam.getBucketInitSize(),
-                        pqParam.getBucketMaxSize(),
-                        pqParam.getNbitsPerIdx()
-                    )
-                );
+                vectorParameter = VectorIndexParameter.builder()
+                    .vectorIndexType(vectorIndexType)
+                    .vectorIndexParameter(MAPPER.mapping(vectorIndexParameter.getIvfPqParameter()))
+                    .build();
                 break;
             case VECTOR_INDEX_TYPE_HNSW:
-                ProxyCommon.CreateHnswParam hnswParam = vectorIndexParameter.getHnswParameter();
-                vectorParameter = new VectorIndexParameter(
-                    vectorIndexType,
-                    new HnswParam(
-                        hnswParam.getDimension(),
-                        VectorIndexParameter.MetricType.valueOf(hnswParam.getMetricType().name()),
-                        hnswParam.getEfConstruction(),
-                        hnswParam.getMaxElements(),
-                        hnswParam.getNlinks()
-                    )
-                );
+                vectorParameter = VectorIndexParameter.builder()
+                    .vectorIndexType(vectorIndexType)
+                    .vectorIndexParameter(MAPPER.mapping(vectorIndexParameter.getHnswParameter()))
+                    .build();
                 break;
             case VECTOR_INDEX_TYPE_DISKANN:
-                ProxyCommon.CreateDiskAnnParam diskAnnParam = vectorIndexParameter.getDiskannParameter();
-                vectorParameter = new VectorIndexParameter(
-                    vectorIndexType,
-                    new DiskAnnParam(
-                        diskAnnParam.getDimension(),
-                        VectorIndexParameter.MetricType.valueOf(diskAnnParam.getMetricType().name())
-                    )
-                );
+                vectorParameter = VectorIndexParameter.builder()
+                    .vectorIndexType(vectorIndexType)
+                    .vectorIndexParameter(MAPPER.mapping(vectorIndexParameter.getDiskannParameter()))
+                    .build();
                 break;
             case VECTOR_INDEX_TYPE_BRUTEFORCE:
-                ProxyCommon.CreateBruteForceParam forceParam = vectorIndexParameter.getBruteforceParameter();
-                vectorParameter = new VectorIndexParameter(
-                    vectorIndexType,
-                    new BruteForceParam(
-                        forceParam.getDimension(),
-                        VectorIndexParameter.MetricType.valueOf(forceParam.getMetricType().name())
-                    )
-                );
+                vectorParameter = VectorIndexParameter.builder()
+                    .vectorIndexType(vectorIndexType)
+                    .vectorIndexParameter(MAPPER.mapping(vectorIndexParameter.getBruteforceParameter()))
+                    .build();
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + vectorIndexParameter.getVectorIndexType());
         }
-        return new IndexParameter(
-            IndexParameter.IndexType.valueOf(parameter.getIndexType().name()), vectorParameter);
+        return IndexParameter.builder()
+            .indexType(IndexType.INDEX_TYPE_VECTOR)
+            .vectorIndexParameter(vectorParameter)
+            .build();
+    }
+
+    private static <P extends VectorIndexParameterNest> P mapping(VectorIndexParameterNest parameter) {
+        return (P) parameter;
     }
 
     public static ProxyCommon.IndexParameter mapping(IndexParameter parameter) {
         ProxyCommon.IndexParameter.Builder builder = ProxyCommon.IndexParameter.newBuilder()
             .setIndexType(ProxyCommon.IndexType.valueOf(parameter.getIndexType().name()));
-        if (parameter.getVectorIndexParameter() != null) {
-            VectorIndexParameter vectorParameter = parameter.getVectorIndexParameter();
-            ProxyCommon.VectorIndexParameter.Builder vectorBuilder = ProxyCommon.VectorIndexParameter.newBuilder()
-                .setVectorIndexType(ProxyCommon.VectorIndexType.valueOf(vectorParameter.getVectorIndexType().name()));
-            switch (vectorParameter.getVectorIndexType()) {
-                case VECTOR_INDEX_TYPE_FLAT:
-                    FlatParam flatParam = vectorParameter.getFlatParam();
-                    vectorBuilder.setFlatParameter(ProxyCommon.CreateFlatParam.newBuilder()
-                        .setDimension(flatParam.getDimension())
-                        .setMetricType(ProxyCommon.MetricType.valueOf(flatParam.getMetricType().name()))
-                        .build());
-                    break;
-                case VECTOR_INDEX_TYPE_IVF_FLAT:
-                    IvfFlatParam ivfFlatParam = vectorParameter.getIvfFlatParam();
-                    vectorBuilder.setIvfFlatParameter(ProxyCommon.CreateIvfFlatParam.newBuilder()
-                        .setDimension(ivfFlatParam.getDimension())
-                        .setMetricType(ProxyCommon.MetricType.valueOf(ivfFlatParam.getMetricType().name()))
-                        .setNcentroids(ivfFlatParam.getNcentroids())
-                        .build());
-                    break;
-                case VECTOR_INDEX_TYPE_IVF_PQ:
-                    IvfPqParam ivfPqParam = vectorParameter.getIvfPqParam();
-                    vectorBuilder.setIvfPqParameter(ProxyCommon.CreateIvfPqParam.newBuilder()
-                        .setDimension(ivfPqParam.getDimension())
-                        .setMetricType(ProxyCommon.MetricType.valueOf(ivfPqParam.getMetricType().name()))
-                        .setNcentroids(ivfPqParam.getNcentroids())
-                        .setNsubvector(ivfPqParam.getNsubvector())
-                        .setBucketInitSize(ivfPqParam.getBucketInitSize())
-                        .setBucketMaxSize(ivfPqParam.getBucketMaxSize())
-                        .build());
-                    break;
-                case VECTOR_INDEX_TYPE_HNSW:
-                    HnswParam hnswParam = vectorParameter.getHnswParam();
-                    vectorBuilder.setHnswParameter(ProxyCommon.CreateHnswParam.newBuilder()
-                        .setDimension(hnswParam.getDimension())
-                        .setMetricType(ProxyCommon.MetricType.valueOf(hnswParam.getMetricType().name()))
-                        .setEfConstruction(hnswParam.getEfConstruction())
-                        .setMaxElements(hnswParam.getMaxElements())
-                        .setNlinks(hnswParam.getNlinks())
-                        .build());
-                    break;
-                case VECTOR_INDEX_TYPE_DISKANN:
-                    DiskAnnParam diskAnnParam = vectorParameter.getDiskAnnParam();
-                    vectorBuilder.setDiskannParameter(ProxyCommon.CreateDiskAnnParam.newBuilder()
-                        .setDimension(diskAnnParam.getDimension())
-                        .setMetricType(ProxyCommon.MetricType.valueOf(diskAnnParam.getMetricType().name()))
-                        .build());
-                    break;
-                case VECTOR_INDEX_TYPE_BRUTEFORCE:
-                    BruteForceParam forceParam = vectorParameter.getBruteForceParam();
-                    vectorBuilder.setBruteforceParameter(ProxyCommon.CreateBruteForceParam.newBuilder()
-                        .setDimension(forceParam.getDimension())
-                        .setMetricType(ProxyCommon.MetricType.valueOf(forceParam.getMetricType().name()))
-                        .build());
+        VectorIndexParameter vectorParameter = parameter.getVectorIndexParameter();
+        ProxyCommon.VectorIndexParameter.Builder vectorBuilder = ProxyCommon.VectorIndexParameter.newBuilder()
+            .setVectorIndexType(ProxyCommon.VectorIndexType.valueOf(vectorParameter.getVectorIndexType().name()));
+        switch (vectorParameter.getVectorIndexType()) {
+            case VECTOR_INDEX_TYPE_FLAT: {
+                ProxyCommon.CreateFlatParam.Builder paramBuilder = ProxyCommon.CreateFlatParam.newBuilder();
+                MAPPER.mapping(mapping(vectorParameter.getVectorIndexParameter()), paramBuilder);
+                vectorBuilder.setFlatParameter(paramBuilder.build());
+                break;
             }
-            builder.setVectorIndexParameter(vectorBuilder.build());
-        } else {
-            ScalarIndexParameter scalarParameter = parameter.getScalarIndexParameter();
-            ProxyCommon.ScalarIndexParameter scalarIndexParameter = ProxyCommon.ScalarIndexParameter.newBuilder()
-                .setScalarIndexType(ProxyCommon.ScalarIndexType.valueOf(scalarParameter.getScalarIndexType().name()))
-                .build();
-
-            builder.setScalarIndexParameter(scalarIndexParameter);
+            case VECTOR_INDEX_TYPE_IVF_FLAT:{
+                ProxyCommon.CreateIvfFlatParam.Builder paramBuilder = ProxyCommon.CreateIvfFlatParam.newBuilder();
+                MAPPER.mapping(mapping(vectorParameter.getVectorIndexParameter()), paramBuilder);
+                vectorBuilder.setIvfFlatParameter(paramBuilder.build());
+                break;
+            }
+            case VECTOR_INDEX_TYPE_IVF_PQ: {
+                ProxyCommon.CreateIvfPqParam.Builder paramBuilder = ProxyCommon.CreateIvfPqParam.newBuilder();
+                MAPPER.mapping(mapping(vectorParameter.getVectorIndexParameter()), paramBuilder);
+                vectorBuilder.setIvfPqParameter(paramBuilder.build());
+                break;
+            }
+            case VECTOR_INDEX_TYPE_HNSW:{
+                ProxyCommon.CreateHnswParam.Builder paramBuilder = ProxyCommon.CreateHnswParam.newBuilder();
+                MAPPER.mapping(mapping(vectorParameter.getVectorIndexParameter()), paramBuilder);
+                vectorBuilder.setHnswParameter(paramBuilder.build());
+                break;
+            }
+            case VECTOR_INDEX_TYPE_DISKANN:{
+                ProxyCommon.CreateDiskAnnParam.Builder paramBuilder = ProxyCommon.CreateDiskAnnParam.newBuilder();
+                MAPPER.mapping(mapping(vectorParameter.getVectorIndexParameter()), paramBuilder);
+                vectorBuilder.setDiskannParameter(paramBuilder.build());
+                break;
+            }
+            case VECTOR_INDEX_TYPE_BRUTEFORCE:{
+                ProxyCommon.CreateBruteForceParam.Builder paramBuilder = ProxyCommon.CreateBruteForceParam.newBuilder();
+                MAPPER.mapping(mapping(vectorParameter.getVectorIndexParameter()), paramBuilder);
+                vectorBuilder.setBruteforceParameter(paramBuilder.build());
+                break;
+            }
         }
+        builder.setVectorIndexParameter(vectorBuilder.build());
         return builder.build();
-    }
-
-    public static VectorSearchParameter mapping(ProxyCommon.VectorSearchParameter parameter) {
-        Search search = null;
-        if (parameter.hasIvfPq()) {
-            ProxyCommon.SearchIvfPqParam ivfPq = parameter.getIvfPq();
-            search = new Search(new SearchIvfPqParam(ivfPq.getNprobe(), ivfPq.getParallelOnQueries(), ivfPq.getRecallNum()));
-        }
-        if (parameter.hasIvfFlat()) {
-            ProxyCommon.SearchIvfFlatParam ivfFlat = parameter.getIvfFlat();
-            search = new Search(new SearchIvfFlatParam(ivfFlat.getNprobe(), ivfFlat.getParallelOnQueries()));
-        }
-        if (parameter.hasHnsw()) {
-            search = new Search(new SearchHnswParam(parameter.getHnsw().getEfSearch()));
-        }
-        if (parameter.hasFlat()) {
-            search = new Search(new SearchFlatParam(parameter.getFlat().getParallelOnQueries()));
-        }
-        if (parameter.hasDiskann()) {
-            search = new Search(new SearchDiskAnnParam());
-        }
-        return new VectorSearchParameter(
-            parameter.getTopN(),
-            parameter.getWithoutVectorData(),
-            parameter.getWithoutScalarData(),
-            parameter.getSelectedKeysList(),
-            parameter.getWithoutTableData(),
-            search,
-            parameter.getUseScalarFilter(),
-            io.dingodb.sdk.common.vector.VectorSearchParameter.VectorFilter.valueOf(parameter.getVectorFilter().name()),
-            io.dingodb.sdk.common.vector.VectorSearchParameter.VectorFilterType.valueOf(parameter.getVectorFilterType().name()),
-            mapping(parameter.getVectorCoprocessor()),
-            parameter.getVectorIdsList(),
-            parameter.getUseBruteForce()
-        );
     }
 
     public static VectorCoprocessor mapping(ProxyCommon.VectorCoprocessor coprocessor) {
@@ -312,45 +228,45 @@ public class Conversion {
 
     public static VectorWithId mapping(ProxyCommon.VectorWithId withId) {
         ProxyCommon.Vector vector = withId.getVector();
-        return new VectorWithId(
-            withId.getId(),
-            new Vector(
-                vector.getDimension(),
-                Vector.ValueType.valueOf(vector.getValueType().name()),
-                vector.getFloatValuesList(),
-                vector.getBinaryValuesList().stream().map(ByteString::toByteArray).collect(Collectors.toList())),
-            withId.getScalarDataMap().entrySet().stream().collect(
+
+        return io.dingodb.sdk.service.entity.common.VectorWithId.builder()
+            .id(withId.getId())
+            .vector(MAPPER.mapping(withId.getVector()))
+            .scalarData(VectorScalardata.builder().scalarData(withId.getScalarDataMap().entrySet().stream().collect(
                 Maps::newHashMap,
                 (map, entry) -> map.put(entry.getKey(), mapping(entry.getValue())),
                 Map::putAll
-            ));
+            )).build())
+            .build();
     }
 
     public static ScalarValue mapping(ProxyCommon.ScalarValue value) {
-        return new ScalarValue(ScalarValue.ScalarFieldType.valueOf(value.getFieldType().name()),
-            value.getFieldsList().stream()
+        return ScalarValue.builder()
+            .fieldType(ScalarFieldType.valueOf(value.getFieldType().name()))
+            .fields(value.getFieldsList().stream()
                 .map(f -> mapping(f, value.getFieldType()))
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList()))
+            .build();
     }
 
     public static ScalarField mapping(ProxyCommon.ScalarField field, ProxyCommon.ScalarFieldType type) {
         switch (type) {
             case BOOL:
-                return new ScalarField(field.getBoolData());
+                return ScalarField.builder().data(BoolData.of(field.getBoolData())).build();
             case INT8:
             case INT16:
             case INT32:
-                return new ScalarField(field.getIntData());
+                return ScalarField.builder().data(IntData.of(field.getIntData())).build();
             case INT64:
-                return new ScalarField(field.getLongData());
+                return ScalarField.builder().data(LongData.of(field.getIntData())).build();
             case FLOAT32:
-                return new ScalarField(field.getFloatData());
+                return ScalarField.builder().data(FloatData.of(field.getFloatData())).build();
             case DOUBLE:
-                return new ScalarField(field.getDoubleData());
+                return ScalarField.builder().data(DoubleData.of(field.getDoubleData())).build();
             case STRING:
-                return new ScalarField(field.getStringData());
+                return ScalarField.builder().data(StringData.of(field.getStringData())).build();
             case BYTES:
-                return new ScalarField(field.getBytesData().toByteArray());
+                return ScalarField.builder().data(BytesData.of(field.getBytesData().toByteArray())).build();
             default:
                 throw new IllegalStateException("Unexpected value: " + type);
         }
@@ -362,7 +278,9 @@ public class Conversion {
             return builder.build();
         }
         if (withId.getVector() != null) {
-            builder.setVector(mapping(withId.getVector()));
+            builder.setVector(MAPPER.mapping(withId.getVector()));
+        } else {
+            builder.setVector(ProxyCommon.Vector.newBuilder().build());
         }
         if (withId.getScalarData() != null) {
             builder.putAllScalarData(mapping(withId.getScalarData()));
@@ -371,8 +289,11 @@ public class Conversion {
         return builder.build();
     }
 
-    public static Map<String, ProxyCommon.ScalarValue> mapping(Map<String, ScalarValue> scalarData) {
-        return scalarData.entrySet().stream()
+    public static Map<String, ProxyCommon.ScalarValue> mapping(VectorScalardata scalarData) {
+        if (scalarData == null) {
+            return Collections.emptyMap();
+        }
+        return scalarData.getScalarData().entrySet().stream()
                 .collect(Maps::newHashMap,
                     (map, entry) -> map.put(entry.getKey(), mapping(entry.getValue())),
                     Map::putAll);
@@ -406,22 +327,32 @@ public class Conversion {
             .build();
     }
 
-    public static ProxyCommon.ScalarField mapping(ScalarField field, ScalarValue.ScalarFieldType type) {
+    public static ProxyCommon.ScalarField mapping(ScalarField field, ScalarFieldType type) {
         switch (type) {
             case BOOL:
-                return ProxyCommon.ScalarField.newBuilder().setBoolData((Boolean) field.getData()).build();
-            case INTEGER:
-                return ProxyCommon.ScalarField.newBuilder().setIntData((Integer) field.getData()).build();
-            case LONG:
-                return ProxyCommon.ScalarField.newBuilder().setLongData((Long) field.getData()).build();
-            case FLOAT:
-                return ProxyCommon.ScalarField.newBuilder().setFloatData((Float) field.getData()).build();
+                ProxyCommon.ScalarField build = ProxyCommon.ScalarField.newBuilder().setBoolData(((BoolData) field.getData()).isValue()).build();
+                return build;
+            case INT8:
+            case INT16:
+            case INT32:
+                return ProxyCommon.ScalarField.newBuilder()
+                    .setIntData(((IntData) field.getData()).getValue()).build();
+            case INT64:
+                return ProxyCommon.ScalarField.newBuilder()
+                    .setLongData(((LongData) field.getData()).getValue()).build();
+            case FLOAT32:
+                return ProxyCommon.ScalarField.newBuilder()
+                    .setFloatData(((FloatData) field.getData()).getValue()).build();
             case DOUBLE:
-                return ProxyCommon.ScalarField.newBuilder().setDoubleData((Double) field.getData()).build();
+                return ProxyCommon.ScalarField.newBuilder()
+                    .setDoubleData(((DoubleData) field.getData()).getValue()).build();
             case STRING:
-                return ProxyCommon.ScalarField.newBuilder().setStringData(field.getData().toString()).build();
+                return ProxyCommon.ScalarField.newBuilder()
+                    .setStringData(((StringData) field.getData()).getValue()).build();
             case BYTES:
-                return ProxyCommon.ScalarField.newBuilder().setBytesData(ByteString.copyFromUtf8(field.getData().toString())).build();
+                return ProxyCommon.ScalarField.newBuilder().setBytesData(
+                    ByteString.copyFrom(((BytesData) field.getData()).getValue())
+                ).build();
             default:
                 throw new IllegalStateException("Unexpected value: " + type);
         }

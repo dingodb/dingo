@@ -17,6 +17,7 @@
 package io.dingodb.proxy.bean;
 
 import io.dingodb.client.DingoClient;
+import io.dingodb.client.vector.VectorClient;
 import io.dingodb.proxy.mapper.EntityMapper;
 import org.mapstruct.factory.Mappers;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,8 +38,21 @@ public class ClientBean {
         return new DingoClient(coordinator, retry);
     }
 
+
     @Bean
-    public EntityMapper mapper() {
+    public static VectorClient vectorClient(
+        @Value("${server.coordinatorExchangeSvrList}") String coordinator,
+        @Value("${server.client.retry:0}") int retry
+    ) {
+        if (retry <= 0) {
+            retry = 30;
+        }
+        return new VectorClient(coordinator, retry);
+    }
+
+
+    @Bean
+    public static EntityMapper mapper() {
         return Mappers.getMapper(EntityMapper.class);
     }
 }

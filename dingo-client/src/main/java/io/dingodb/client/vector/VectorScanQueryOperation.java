@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package io.dingodb.client.operation.impl;
+package io.dingodb.client.vector;
 
-import io.dingodb.client.OperationContext;
-import io.dingodb.client.common.IndexInfo;
-import io.dingodb.client.common.VectorWithId;
-import io.dingodb.sdk.common.DingoCommonId;
-import io.dingodb.sdk.common.table.RangeDistribution;
+import io.dingodb.client.common.VectorScanQuery;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.Optional;
-import io.dingodb.sdk.common.vector.VectorScanQuery;
+import io.dingodb.sdk.service.entity.common.VectorScalardata;
+import io.dingodb.sdk.service.entity.common.VectorWithId;
+import io.dingodb.sdk.service.entity.index.VectorScanQueryRequest;
+import io.dingodb.sdk.service.entity.meta.DingoCommonId;
+import io.dingodb.sdk.service.entity.meta.RangeDistribution;
 import lombok.AllArgsConstructor;
 
 import java.util.ArrayList;
@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -45,33 +46,17 @@ public class VectorScanQueryOperation implements Operation {
     }
 
     @Override
-    public Fork fork(Any parameters, IndexInfo indexInfo) {
-        VectorScanQuery query = parameters.getValue();
-        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
-        Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
-
-        List<RangeDistribution> rangeDistributions = new ArrayList<>(indexInfo.rangeDistribution.values());
-        for (int i = 0; i < rangeDistributions.size(); i++) {
-            RangeDistribution distribution = rangeDistributions.get(i);
-            Map<DingoCommonId, VectorTuple<VectorScanQuery>> regionParam = subTaskMap.computeIfAbsent(
-                distribution.getId(), k -> new Any(new HashMap<>())
-            ).getValue();
-
-            regionParam.put(distribution.getId(), new VectorTuple<>(i, query));
-        }
-
-        subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
-        return new Fork(new VectorWithIdArray[subTasks.size()], subTasks, false);
+    public boolean stateful() {
+        return false;
     }
 
     @Override
-    public Fork fork(OperationContext context, IndexInfo indexInfo) {
-        Map<DingoCommonId, VectorTuple<VectorScanQuery>> parameters = context.parameters();
-        VectorScanQuery query = new ArrayList<>(parameters.values()).get(0).value;
-        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
+    public Fork fork(Any parameters, Index indexInfo) {
+        VectorScanQuery query = parameters.getValue();
+        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().getEntityId()));
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
 
-        List<RangeDistribution> rangeDistributions = new ArrayList<>(indexInfo.rangeDistribution.values());
+        List<RangeDistribution> rangeDistributions = indexInfo.distributions;
         for (int i = 0; i < rangeDistributions.size(); i++) {
             RangeDistribution distribution = rangeDistributions.get(i);
             Map<DingoCommonId, VectorTuple<VectorScanQuery>> regionParam = subTaskMap.computeIfAbsent(
@@ -89,13 +74,32 @@ public class VectorScanQueryOperation implements Operation {
     public void exec(OperationContext context) {
         Map<DingoCommonId, VectorTuple<VectorScanQuery>> parameters = context.parameters();
         VectorScanQuery scanQuery = parameters.get(context.getRegionId()).value;
-        List<io.dingodb.sdk.common.vector.VectorWithId> withIdList = context.getIndexServiceClient().vectorScanQuery(
-            context.getIndexId(),
-            context.getRegionId(),
-            scanQuery
-        );
+
+        List<VectorWithId> withIdList = context.getIndexService().vectorScanQuery(
+            context.getRequestId(),
+            VectorScanQueryRequest.builder()
+                .isReverseScan(scanQuery.getIsReverseScan())
+                .maxScanCount(scanQuery.getMaxScanCount())
+                .scalarForFilter(VectorScalardata.builder().scalarData(scanQuery.getScalarForFilter()).build())
+                .selectedKeys(scanQuery.getSelectedKeys())
+                .useScalarFilter(scanQuery.getUseScalarFilter())
+                .vectorIdEnd(scanQuery.getEndId())
+                .vectorIdStart(scanQuery.getStartId())
+                .withoutScalarData(scanQuery.getWithoutScalarData())
+                .withoutTableData(scanQuery.getWithoutTableData())
+                .withoutVectorData(scanQuery.getWithoutVectorData())
+            .build()
+        ).getVectors();
+        if (withIdList == null) {
+            return;
+        }
         List<VectorWithId> result = withIdList.stream()
-            .map(w -> new VectorWithId(w.getId(), w.getVector(), w.getScalarData()))
+            .map(w -> VectorWithId.builder()
+                .id(w.getId())
+                .vector(w.getVector())
+                .scalarData(w.getScalarData())
+                .build()
+            )
             .collect(Collectors.toList());
 
         context.<VectorWithIdArray[]>result()[parameters.get(context.getRegionId()).key] =
@@ -131,7 +135,7 @@ public class VectorScanQueryOperation implements Operation {
                 .get().value.getIsReverseScan(),
             () -> false);
         VectorWithIdArray withIdArray = new VectorWithIdArray(new ArrayList<>(), isReverseScan);
-        Arrays.stream(fork.<VectorWithIdArray[]>result()).forEach(v -> withIdArray.addAll(v.vectorWithIds));
+        Arrays.stream(fork.<VectorWithIdArray[]>result()).filter(Objects::nonNull).forEach(v -> withIdArray.addAll(v.vectorWithIds));
         return (R) withIdArray.getVectorWithIds();
     }
 }

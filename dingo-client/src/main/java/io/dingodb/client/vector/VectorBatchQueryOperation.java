@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package io.dingodb.client.operation.impl;
+package io.dingodb.client.vector;
 
-import io.dingodb.client.OperationContext;
-import io.dingodb.client.common.IndexInfo;
-import io.dingodb.client.common.VectorWithId;
-import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.utils.Any;
+import io.dingodb.sdk.service.entity.common.VectorWithId;
+import io.dingodb.sdk.service.entity.index.VectorBatchQueryRequest;
+import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -45,9 +43,9 @@ public class VectorBatchQueryOperation implements Operation {
     }
 
     @Override
-    public Fork fork(Any parameters, IndexInfo indexInfo) {
+    public Fork fork(Any parameters, Index indexInfo) {
         Set<Long> ids = parameters.getValue();
-        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
+        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().getEntityId()));
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
 
         int i = 0;
@@ -55,16 +53,12 @@ public class VectorBatchQueryOperation implements Operation {
             if (id < 0) {
                 id = 0L;
             }
-            try {
-                byte[] key = indexInfo.codec.encodeKey(new Object[]{id});
-                Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
-                    indexInfo.calcRegionId(key), k -> new Any(new HashMap<>())
-                ).getValue();
+            byte[] key = VectorKeyCodec.encode(id);
+            Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
+                indexInfo.partitions.lookup(key, id), k -> new Any(new HashMap<>())
+            ).getValue();
 
-                regionParams.put(id, i++);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            regionParams.put(id, i++);
         }
 
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
@@ -72,22 +66,18 @@ public class VectorBatchQueryOperation implements Operation {
     }
 
     @Override
-    public Fork fork(OperationContext context, IndexInfo indexInfo) {
+    public Fork fork(OperationContext context, Index indexInfo) {
         Map<Long, Integer> parameters = context.parameters();
-        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
+        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().getEntityId()));
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
 
         for (Map.Entry<Long, Integer> parameter : parameters.entrySet()) {
-            try {
-                byte[] key = indexInfo.codec.encodeKey(new Object[]{parameter.getKey()});
-                Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
-                    indexInfo.calcRegionId(key), k -> new Any(new HashMap<>())
-                ).getValue();
+            byte[] key = VectorKeyCodec.encode(parameter.getKey());
+            Map<Long, Integer> regionParams = subTaskMap.computeIfAbsent(
+                indexInfo.partitions.lookup(key, parameter.getKey()), k -> new Any(new HashMap<>())
+            ).getValue();
 
-                regionParams.put(parameter.getKey(), parameter.getValue());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            regionParams.put(parameter.getKey(), parameter.getValue());
         }
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
         return new Fork(context.result(), subTasks, false);
@@ -95,25 +85,29 @@ public class VectorBatchQueryOperation implements Operation {
 
     @Override
     public void exec(OperationContext context) {
-        Map<Long, io.dingodb.sdk.common.vector.VectorWithId> result = new HashMap<>();
+        Map<Long, VectorWithId> result = new HashMap<>();
         Map<Long, Integer> parameters = context.parameters();
         List<Long> ids = new ArrayList<>(parameters.keySet());
-        context.getIndexServiceClient().vectorBatchQuery(
-            context.getIndexId(),
-            context.getRegionId(),
-            ids,
-            context.getVectorContext().isWithoutVectorData(),
-            context.getVectorContext().isWithoutScalarData(),
-            context.getVectorContext().getSelectedKeys()
-        ).forEach(v -> result.put(v.getId(), v));
+        context.getIndexService().vectorBatchQuery(
+            context.getRequestId(),
+            VectorBatchQueryRequest.builder()
+                .withoutTableData(true)
+                .withoutScalarData(context.getVectorContext().isWithoutScalarData())
+                .withoutVectorData(context.getVectorContext().isWithoutVectorData())
+                .selectedKeys(context.getVectorContext().getSelectedKeys())
+                .vectorIds(ids)
+                .build()
+        ).getVectors().stream().filter(Objects::nonNull).forEach($ -> result.put($.getId(), $));
         for (Long id : ids) {
-            io.dingodb.sdk.common.vector.VectorWithId withId = result.get(id);
+            VectorWithId withId = result.get(id);
             if (withId == null || withId.getId() <= 0) {
                 continue;
             }
-            context.<VectorWithId[]>result()[parameters.get(id)] = new VectorWithId(
-                withId.getId(), withId.getVector(), withId.getScalarData()
-            );
+            context.<VectorWithId[]>result()[parameters.get(id)] = VectorWithId.builder()
+                .id(withId.getId())
+                .vector(withId.getVector())
+                .scalarData(withId.getScalarData())
+                .build();
         }
     }
 
