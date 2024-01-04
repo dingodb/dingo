@@ -14,23 +14,26 @@
  * limitations under the License.
  */
 
-package io.dingodb.client.common;
+package io.dingodb.proxy.model.dto;
 
-import io.dingodb.sdk.service.entity.common.VectorSearchParameter;
-import io.dingodb.sdk.service.entity.common.VectorWithId;
+import io.dingodb.sdk.service.entity.common.MetricType;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
+import lombok.Setter;
+import lombok.experimental.Delegate;
 
 @Getter
-@Builder
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class VectorSearch {
+public class VectorWithDistance {
 
-    private VectorSearchParameter parameter;
-    private List<VectorWithId> vectors;
+    @Delegate
+    private VectorWithId vectorWithId;
+
+    private MetricType metricType;
+
+    private float distance;
+
 }

@@ -14,23 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.client.common;
+package io.dingodb.proxy.model.dto;
 
-import io.dingodb.sdk.service.entity.common.VectorSearchParameter;
-import io.dingodb.sdk.service.entity.common.VectorWithId;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
-import java.util.List;
-
-@Getter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class VectorSearch {
-
-    private VectorSearchParameter parameter;
-    private List<VectorWithId> vectors;
+public class IndexDefinition {
 }

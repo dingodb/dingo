@@ -22,7 +22,6 @@ import io.dingodb.sdk.common.codec.KeyValueCodec;
 import io.dingodb.sdk.common.table.Column;
 import lombok.Getter;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
@@ -48,13 +47,10 @@ public class RecordIterator implements Iterator<Record> {
 
     @Override
     public Record next() {
-        try {
-            KeyValue keyValue = kvIterator.next();
-            return new Record(
-                columns,
-                codec.decode(new KeyValue(codec.resetPrefix(keyValue.getKey(), id), keyValue.getValue())));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        KeyValue keyValue = kvIterator.next();
+        return new Record(
+            columns,
+            codec.decode(new KeyValue(codec.resetPrefix(keyValue.getKey(), id), keyValue.getValue()))
+        );
     }
 }

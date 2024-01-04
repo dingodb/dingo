@@ -16,13 +16,14 @@
 
 package io.dingodb.proxy.model.dto;
 
-import io.dingodb.sdk.common.vector.ScalarValue;
-import io.dingodb.sdk.common.vector.Vector;
+import io.dingodb.sdk.service.entity.common.ScalarValue;
+import io.dingodb.sdk.service.entity.common.Vector;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.util.Collections;
 import java.util.Map;
 
 @Getter
@@ -32,6 +33,27 @@ import java.util.Map;
 public class VectorWithId {
 
     private long id;
-    private Vector vector;
-    private Map<String, ScalarValue> scalarData;
+    private Vector vector = Vector.builder()
+        .binaryValues(Collections.emptyList())
+        .floatValues(Collections.emptyList())
+        .build();
+    private Map<String, ScalarValue> scalarData = Collections.emptyMap();
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public void setVector(Vector vector) {
+        if (vector == null) {
+            return;
+        }
+        this.vector = vector;
+    }
+
+    public void setScalarData(Map<String, ScalarValue> scalarData) {
+        if (scalarData == null) {
+            return;
+        }
+        this.scalarData = scalarData;
+    }
 }

@@ -41,8 +41,11 @@ public interface IndexMapper {
             indexDefinition.setIndexParameter(
                 IndexParameter.builder()
                     .indexType(IndexType.INDEX_TYPE_SCALAR)
-                    .scalarIndexParameter(new ScalarIndexParameter(ScalarIndexType.SCALAR_INDEX_TYPE_LSM, false))
-                    .build()
+                    .scalarIndexParameter(ScalarIndexParameter.builder()
+                        .isUnique(false)
+                        .scalarIndexType(ScalarIndexType.SCALAR_INDEX_TYPE_LSM)
+                        .build()
+                    ).build()
             );
         } else {
             VectorIndexParameter vectorIndexParameter;
@@ -66,16 +69,19 @@ public interface IndexMapper {
             }
             switch (properties.getOrDefault("type", "HNSW").toUpperCase()) {
                 case "DISKANN":
-                    vectorIndexParameter = new VectorIndexParameter(
-                        VectorIndexType.VECTOR_INDEX_TYPE_DISKANN,
-                        DiskannParameter.builder().dimension(dimension).metricType(metricType).build()
-                    );
+                    vectorIndexParameter = VectorIndexParameter.builder()
+                        .vectorIndexType(VectorIndexType.VECTOR_INDEX_TYPE_DISKANN)
+                        .vectorIndexParameter(
+                            DiskannParameter.builder().dimension(dimension).metricType(metricType).build()
+                        )
+                        .build();
                     break;
                 case "FLAT":
-                    vectorIndexParameter = new VectorIndexParameter(
-                        VectorIndexType.VECTOR_INDEX_TYPE_FLAT,
-                        FlatParameter.builder().dimension(dimension).metricType(metricType).build()
-                    );
+                    vectorIndexParameter = VectorIndexParameter.builder()
+                        .vectorIndexType(VectorIndexType.VECTOR_INDEX_TYPE_FLAT)
+                        .vectorIndexParameter(
+                            FlatParameter.builder().dimension(dimension).metricType(metricType).build()
+                        ).build();
                     break;
                 case "IVFPQ": {
                     int ncentroids = Integer.parseInt(properties.getOrDefault("ncentroids", "0"));
@@ -83,9 +89,9 @@ public interface IndexMapper {
                     int bucketInitSize = Integer.parseInt(properties.getOrDefault("bucketInitSize", "0"));
                     int bucketMaxSize = Integer.parseInt(properties.getOrDefault("bucketMaxSize", "0"));
                     int nbitsPerIdx = Integer.parseInt(properties.getOrDefault("nbitsPerIdx", "0"));
-                    vectorIndexParameter = new VectorIndexParameter(
-                        VectorIndexType.VECTOR_INDEX_TYPE_IVF_PQ,
-                        IvfPqParameter.builder()
+                    vectorIndexParameter = VectorIndexParameter.builder()
+                        .vectorIndexType(VectorIndexType.VECTOR_INDEX_TYPE_IVF_PQ)
+                        .vectorIndexParameter(IvfPqParameter.builder()
                             .dimension(dimension)
                             .metricType(metricType)
                             .ncentroids(ncentroids)
@@ -94,30 +100,35 @@ public interface IndexMapper {
                             .bucketMaxSize(bucketMaxSize)
                             .nbitsPerIdx(nbitsPerIdx)
                             .build()
-                    );
+                        ).build();
                     break;
                 }
                 case "IVFFLAT": {
                     int ncentroids = Integer.valueOf(properties.getOrDefault("ncentroids", "0"));
-                    vectorIndexParameter = new VectorIndexParameter(
-                        VectorIndexType.VECTOR_INDEX_TYPE_IVF_FLAT,
-                        IvfFlatParameter.builder().dimension(dimension).metricType(metricType).ncentroids(ncentroids).build()
-                    );
+                    vectorIndexParameter = VectorIndexParameter.builder()
+                        .vectorIndexType(VectorIndexType.VECTOR_INDEX_TYPE_IVF_FLAT)
+                        .vectorIndexParameter(
+                            IvfFlatParameter.builder()
+                                .dimension(dimension)
+                                .metricType(metricType)
+                                .ncentroids(ncentroids)
+                                .build()
+                        ).build();
                     break;
                 }
                 case "HNSW": {
                     int efConstruction = Integer.valueOf(properties.getOrDefault("efConstruction", "40"));
                     int nlinks = Integer.valueOf(properties.getOrDefault("nlinks", "32"));
-                    vectorIndexParameter = new VectorIndexParameter(
-                        VectorIndexType.VECTOR_INDEX_TYPE_HNSW,
-                        HnswParameter.builder()
+                    vectorIndexParameter = VectorIndexParameter.builder()
+                        .vectorIndexType(VectorIndexType.VECTOR_INDEX_TYPE_HNSW)
+                        .vectorIndexParameter(HnswParameter.builder()
                             .dimension(dimension)
                             .metricType(metricType)
                             .efConstruction(efConstruction)
                             .maxElements(Integer.MAX_VALUE)
                             .nlinks(nlinks)
                             .build()
-                    );
+                        ).build();
                     break;
                 }
                 default:

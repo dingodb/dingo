@@ -52,7 +52,11 @@ public interface EntityMapper {
     }
 
     default DingoCommonId idTo(CommonId id) {
-        return new DingoCommonId(EntityType.forNumber(id.type.code), id.seq, id.domain);
+        return DingoCommonId.builder()
+            .entityType(EntityType.forNumber(id.type.code))
+            .parentEntityId(id.domain)
+            .entityId(id.seq)
+            .build();
     }
 
     CommonId copyId(CommonId id);
@@ -84,11 +88,11 @@ public interface EntityMapper {
         return RangeWithOptions.builder()
             .withStart(range.withStart)
             .withEnd(range.withEnd)
-            .range(new io.dingodb.sdk.service.entity.common.Range(
-                CodecService.INSTANCE.setId(range.start, id),
-                CodecService.INSTANCE.setId(range.end, id)
-            ))
-            .build();
+            .range(io.dingodb.sdk.service.entity.common.Range.builder()
+                .startKey(CodecService.INSTANCE.setId(range.start, id))
+                .endKey(CodecService.INSTANCE.setId(range.end, id))
+                .build()
+            ).build();
     }
 
     @Mappings({

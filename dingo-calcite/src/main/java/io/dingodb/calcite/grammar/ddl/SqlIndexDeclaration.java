@@ -50,6 +50,9 @@ public class SqlIndexDeclaration extends SqlCall {
     @Getter
     String indexType;
 
+    @Getter
+    String engine;
+
     private static final SqlSpecialOperator OPERATOR =
         new SqlSpecialOperator("INDEX_DECL", SqlKind.CREATE_INDEX);
 
@@ -61,7 +64,8 @@ public class SqlIndexDeclaration extends SqlCall {
         Properties properties,
         PartitionDefinition partDefinition,
         int replica,
-        String indexType
+        String indexType,
+        String engine
     ) {
         super(pos);
         this.index = index;
@@ -71,6 +75,7 @@ public class SqlIndexDeclaration extends SqlCall {
         this.partDefinition = partDefinition;
         this.replica = replica;
         this.indexType = indexType;
+        this.engine = engine;
     }
 
     @Override

@@ -16,18 +16,20 @@
 
 package io.dingodb.proxy.controller;
 
-import io.dingodb.client.DingoClient;
-import io.dingodb.client.common.VectorDistanceArray;
-import io.dingodb.client.common.VectorSearch;
-import io.dingodb.sdk.common.DingoClientException;
-import io.dingodb.sdk.common.vector.VectorIndexMetrics;
-import io.dingodb.sdk.common.vector.VectorScanQuery;
+import io.dingodb.client.common.VectorScanQuery;
+import io.dingodb.client.vector.VectorClient;
 import io.dingodb.proxy.Result;
 import io.dingodb.proxy.mapper.EntityMapper;
+import io.dingodb.proxy.model.dto.VectorDistanceArray;
 import io.dingodb.proxy.model.dto.VectorGet;
+import io.dingodb.proxy.model.dto.VectorSearch;
+import io.dingodb.proxy.model.dto.VectorWithDistance;
 import io.dingodb.proxy.model.dto.VectorWithId;
+import io.dingodb.sdk.common.DingoClientException;
+import io.dingodb.sdk.service.entity.common.VectorIndexMetrics;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,18 +41,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Api("Vector")
+@Slf4j
 @RestController
 @RequestMapping("/vector")
 public class VectorController {
 
     @Autowired
-    private DingoClient dingoClient;
+    private VectorClient vectorClient;
 
     @Autowired
     private EntityMapper mapper;
@@ -62,13 +66,16 @@ public class VectorController {
         @PathVariable String index,
         @RequestBody List<VectorWithId> vectors) {
         try {
-            List<io.dingodb.client.common.VectorWithId> result = dingoClient.vectorAdd(schema, index, vectors.stream()
-                .map(mapper::mapping)
-                .collect(Collectors.toList()));
+            List<io.dingodb.sdk.service.entity.common.VectorWithId> result = vectorClient
+                .vectorAdd(schema, index, vectors.stream()
+                    .map(mapper::mapping)
+                    .collect(Collectors.toList())
+                );
             return Result.ok(result.stream().map(mapper::mapping).collect(Collectors.toList()));
         } catch (Exception e) {
             List<VectorWithId> result = new ArrayList<>();
             vectors.forEach(v -> result.add(null));
+            log.error("Vector add error.", e);
             return Result.build(500, e.getMessage(), result);
         }
     }
@@ -84,30 +91,32 @@ public class VectorController {
             if (ids.size() != count) {
                 throw new DingoClientException("During the delete operation, duplicate ids are not allowed");
             }
-            return Result.ok(dingoClient.vectorDelete(schema, index, ids));
+            return Result.ok(vectorClient.vectorDelete(schema, index, ids));
         } catch (Exception e) {
+            log.error("Vector delete error.", e);
             return Result.errorMsg(e.getMessage());
         }
     }
 
     @ApiOperation("Vector get")
     @PostMapping("/api/{schema}/{index}/get")
-    public Result<List<io.dingodb.client.common.VectorWithId>> vectorGet(
+    public Result<List<VectorWithId>> vectorGet(
         @PathVariable String schema,
         @PathVariable String index,
         @RequestBody VectorGet vectorGet
         ) {
         try {
             List<Long> ids = vectorGet.getIds();
-            Map<Long, io.dingodb.client.common.VectorWithId> vectorWithIdMap = dingoClient.vectorBatchQuery(
+            Map<Long, io.dingodb.sdk.service.entity.common.VectorWithId> vectorWithIdMap = vectorClient.vectorBatchQuery(
                 schema,
                 index,
                 new HashSet<>(vectorGet.getIds()),
                 vectorGet.getWithoutVectorData(),
                 vectorGet.getWithoutScalarData(),
                 vectorGet.getKeys());
-            return Result.ok(ids.stream().map(vectorWithIdMap::get).collect(Collectors.toList()));
+            return Result.ok(ids.stream().map(vectorWithIdMap::get).map(mapper::mapping).collect(Collectors.toList()));
         } catch (Exception e) {
+            log.error("Vector get error.", e);
             return Result.errorMsg(e.getMessage());
         }
     }
@@ -120,8 +129,9 @@ public class VectorController {
         Boolean isGetMin
     ) {
         try {
-            return Result.ok(dingoClient.vectorGetBorderId(schema, index, isGetMin));
+            return Result.ok(vectorClient.vectorGetBorderId(schema, index, isGetMin));
         } catch (Exception e) {
+            log.error("Vector get max error.", e);
             return Result.errorMsg(e.getMessage());
         }
     }
@@ -133,8 +143,11 @@ public class VectorController {
         @PathVariable String index,
         @RequestBody VectorSearch vectorSearch) {
         try {
-            return Result.ok(dingoClient.vectorSearch(schema, index, vectorSearch));
+            return Result.ok(vectorClient.vectorSearch(
+                schema, index, mapper.mapping(vectorSearch)
+            ).stream().map(mapper::mapping).collect(Collectors.toList()));
         } catch (Exception e) {
+            log.error("Vector search error.", e);
             return Result.errorMsg(e.getMessage());
         }
     }
@@ -144,13 +157,15 @@ public class VectorController {
     public Result<List<VectorWithId>> vectorScanQuery(
         @PathVariable String schema,
         @PathVariable String index,
-        @RequestBody VectorScanQuery vectorScanQuery) {
+        @RequestBody VectorScanQuery vectorScanQuery
+    ) {
         try {
-            return Result.ok(dingoClient.vectorScanQuery(schema, index, vectorScanQuery)
+            return Result.ok(vectorClient.vectorScanQuery(schema, index, vectorScanQuery)
                 .stream()
                 .map(mapper::mapping)
                 .collect(Collectors.toList()));
         } catch (Exception e) {
+            log.error("Vector scan error.", e);
             return Result.errorMsg(e.getMessage());
         }
     }
@@ -159,8 +174,9 @@ public class VectorController {
     @GetMapping("/api/{schema}/{index}")
     public Result<VectorIndexMetrics> vectorGetMetrics(@PathVariable String schema, @PathVariable String index) {
         try {
-            return Result.ok(dingoClient.getRegionMetrics(schema, index));
+            return Result.ok(vectorClient.getRegionMetrics(schema, index));
         } catch (Exception e) {
+            log.error("Vector region metrics error.", e);
             return Result.errorMsg(e.getMessage());
         }
     }
@@ -169,8 +185,9 @@ public class VectorController {
     @GetMapping("/api/{schema}/{index}/count")
     public Result<Long> vectorCount(@PathVariable String schema, @PathVariable String index) {
         try {
-            return Result.ok(dingoClient.vectorCount(schema, index));
+            return Result.ok(vectorClient.vectorCount(schema, index));
         } catch (Exception e) {
+            log.error("Vector count error.", e);
             return Result.errorMsg(e.getMessage());
         }
     }

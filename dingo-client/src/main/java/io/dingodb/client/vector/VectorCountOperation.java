@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-package io.dingodb.client.operation.impl;
+package io.dingodb.client.vector;
 
-import io.dingodb.client.OperationContext;
-import io.dingodb.client.common.IndexInfo;
-import io.dingodb.sdk.common.DingoCommonId;
-import io.dingodb.sdk.common.table.RangeDistribution;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.service.entity.index.VectorCountRequest;
+import io.dingodb.sdk.service.entity.meta.DingoCommonId;
+import io.dingodb.sdk.service.entity.meta.RangeDistribution;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -42,11 +39,16 @@ public class VectorCountOperation implements Operation {
     }
 
     @Override
-    public Fork fork(Any parameters, IndexInfo indexInfo) {
-        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
+    public boolean stateful() {
+        return false;
+    }
+
+    @Override
+    public Fork fork(Any parameters, Index indexInfo) {
+        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().getEntityId()));
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
 
-        List<RangeDistribution> rangeDistributions = new ArrayList<>(indexInfo.rangeDistribution.values());
+        List<RangeDistribution> rangeDistributions = indexInfo.distributions;
         for (int i = 0; i < rangeDistributions.size(); i++) {
             RangeDistribution distribution = rangeDistributions.get(i);
             Map<DingoCommonId, Integer> regionParam = subTaskMap.computeIfAbsent(
@@ -61,31 +63,13 @@ public class VectorCountOperation implements Operation {
     }
 
     @Override
-    public Fork fork(OperationContext context, IndexInfo indexInfo) {
-        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
-        Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
-
-        List<RangeDistribution> rangeDistributions = new ArrayList<>(indexInfo.rangeDistribution.values());
-        for (int i = 0; i < rangeDistributions.size(); i++) {
-            RangeDistribution distribution = rangeDistributions.get(i);
-            Map<DingoCommonId, Integer> regionParam = subTaskMap.computeIfAbsent(
-                distribution.getId(), k -> new Any(new HashMap<>())
-            ).getValue();
-
-            regionParam.put(distribution.getId(), i);
-        }
-        subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
-
-        AtomicReference<Object> result = context.getResult();
-        result.set(new long[subTasks.size()]);
-        return new Fork(subTasks, false, result);
-    }
-
-    @Override
     public void exec(OperationContext context) {
         Map<DingoCommonId, Integer> parameters = context.parameters();
-        Long currentCount = context.getIndexService().vectorCount(VectorCountRequest.builder().build()).getCount();
-        context.<long[]>result()[parameters.get(context.getRegionId())] = currentCount;
+        Long currentCount = context.getIndexService().vectorCount(
+            context.getRequestId(),
+            VectorCountRequest.builder().build()
+        ).getCount();
+        context.<long[]>result()[parameters.get(context.getRegionId())] += currentCount;
     }
 
     @Override

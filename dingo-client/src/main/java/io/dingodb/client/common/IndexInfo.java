@@ -16,15 +16,15 @@
 
 package io.dingodb.client.common;
 
-import io.dingodb.client.operation.RangeUtils;
-import io.dingodb.sdk.common.DingoCommonId;
-import io.dingodb.sdk.common.index.Index;
-import io.dingodb.sdk.common.table.RangeDistribution;
-import io.dingodb.sdk.common.utils.ByteArrayUtils;
-import io.dingodb.sdk.service.meta.AutoIncrementService;
+import io.dingodb.client.vector.Partitions;
+import io.dingodb.sdk.service.AutoIncrementService;
+import io.dingodb.sdk.service.entity.meta.DingoCommonId;
+import io.dingodb.sdk.service.entity.meta.IndexDefinition;
+import io.dingodb.sdk.service.entity.meta.RangeDistribution;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.NavigableMap;
 
 import static io.dingodb.common.util.ByteArrayUtils.SKIP_LONG_POS;
@@ -37,19 +37,11 @@ public class IndexInfo {
     public final String indexName;
     public final DingoCommonId indexId;
 
-    public final Index index;
+
+    public final IndexDefinition index;
     public final KeyValueCodec codec;
     public final AutoIncrementService autoIncrementService;
-
-    public final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution;
-
-    public DingoCommonId calcRegionId(byte[] key) {
-        if (index.getIndexPartition() == null || index.getIndexPartition().getFuncName().isEmpty()) {
-            return rangeDistribution.floorEntry(
-                new ByteArrayUtils.ComparableByteArray(key, SKIP_LONG_POS)).getValue().getId();
-        }
-        String strategy = index.getIndexPartition().getFuncName().toUpperCase();
-        return RangeUtils.getDingoCommonId(key, strategy, rangeDistribution);
-    }
+    public final Partitions partitions;
+    public final List<RangeDistribution> distributions;
 
 }

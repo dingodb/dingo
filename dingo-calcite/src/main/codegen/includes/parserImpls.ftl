@@ -137,6 +137,7 @@ void TableElement(List<SqlNode> list) :
     Properties properties = null;
     PartitionDefinition partitionDefinition = null;
     int replica = 0;
+    String engine = "";
     String indexType = "scalar";
 }
 {
@@ -197,6 +198,7 @@ void TableElement(List<SqlNode> list) :
             columnList = ParenthesizedSimpleIdentifierList()
         )
         [ <WITH> withColumnList = ParenthesizedSimpleIdentifierList() ]
+        [ <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "ENG_ROCKSDB";} } ]
         [
            <PARTITION> <BY>
            {
@@ -212,15 +214,16 @@ void TableElement(List<SqlNode> list) :
         [ <PARAMETERS> properties = readProperties() ]
         {
             list.add(new SqlIndexDeclaration(s.end(this), index, columnList, withColumnList, properties,
-            partitionDefinition, replica, indexType));
+            partitionDefinition, replica, indexType, engine));
         }
     |
         <KEY> { s.add(this); } name = SimpleIdentifier()
-        columnList = ParenthesizedSimpleIdentifierList() {
+        columnList = ParenthesizedSimpleIdentifierList()
+        {
             index = name.getSimple();
             list.add(new SqlIndexDeclaration(s.end(this), index, columnList, withColumnList, properties,
-            partitionDefinition, replica, indexType));
-            }
+            partitionDefinition, replica, indexType, null));
+        }
     |
         <UNIQUE> { s.add(this); }
         [<KEY>] [<INDEX>] name = SimpleIdentifier()

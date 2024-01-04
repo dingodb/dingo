@@ -22,6 +22,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.ChannelProvider;
 import io.dingodb.sdk.service.StoreService;
+import io.dingodb.sdk.service.StoreServiceDescriptors;
 import io.dingodb.sdk.service.caller.RpcCaller;
 import io.dingodb.sdk.service.entity.common.KeyValue;
 import io.dingodb.sdk.service.entity.common.RangeWithOptions;
@@ -94,11 +95,12 @@ public class ScanIterator implements Iterator<KeyValue>, AutoCloseable {
                     .build();
                 channelProvider.before(request);
                 KvScanBeginResponse res = RpcCaller.call(
-                    StoreService.kvScanBegin,
+                    StoreServiceDescriptors.kvScanBegin,
                     request,
                     CallOptions.DEFAULT,
                     channel,
-                    requestId
+                    requestId,
+                    StoreServiceDescriptors.kvScanBeginHandlers
                 );
                 channelProvider.after(res);
                 if (res != null && (res.getError() == null || res.getError().getErrcode() == OK)) {

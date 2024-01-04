@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package io.dingodb.client.operation.impl;
+package io.dingodb.client.vector;
 
-import io.dingodb.client.OperationContext;
 import io.dingodb.client.common.ArrayWrapperList;
-import io.dingodb.client.common.IndexInfo;
-import io.dingodb.client.common.VectorWithId;
 import io.dingodb.sdk.common.DingoClientException;
-import io.dingodb.sdk.common.DingoCommonId;
-import io.dingodb.sdk.common.index.Index;
 import io.dingodb.sdk.common.utils.Any;
+import io.dingodb.sdk.service.entity.common.VectorWithId;
+import io.dingodb.sdk.service.entity.index.VectorAddRequest;
+import io.dingodb.sdk.service.entity.meta.DingoCommonId;
+import io.dingodb.sdk.service.entity.meta.IndexDefinition;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -33,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 public class VectorAddOperation implements Operation {
 
@@ -44,58 +41,51 @@ public class VectorAddOperation implements Operation {
     }
 
     @Override
-    public Fork fork(Any parameters, IndexInfo indexInfo) {
+    public Fork fork(Any parameters, Index indexInfo) {
         List<VectorWithId> vectors = parameters.getValue();
-        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
+        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().getEntityId()));
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
 
-        Index index = indexInfo.index;
+        IndexDefinition index = indexInfo.definition;
 
         long count = vectors.stream().map(VectorWithId::getId).distinct().count();
-        if (!index.getIsAutoIncrement() && vectors.size() != count) {
+        if (!index.isWithAutoIncrment() && vectors.size() != count) {
             throw new DingoClientException(-1, "Vectors cannot be added repeatedly");
         }
 
         for (int i = 0; i < vectors.size(); i++) {
             VectorWithId vector = vectors.get(i);
-            if (!index.getIsAutoIncrement() && vector.getId() <= 0) {
+            if (!index.isWithAutoIncrment() && vector.getId() <= 0) {
                 throw new DingoClientException("Vector IDs do not support negative numbers.");
             }
-            if (index.getIsAutoIncrement()) {
-                long id = indexInfo.autoIncrementService.next(indexInfo.indexId);
+            if (index.isWithAutoIncrment()) {
+                long id = indexInfo.autoIncrementService.next(indexInfo.id);
                 vector.setId(id);
             }
-            try {
-                byte[] key = indexInfo.codec.encodeKey(new Object[]{vector.getId()});
-                Map<VectorWithId, Integer> regionParams = subTaskMap.computeIfAbsent(
-                    indexInfo.calcRegionId(key), k -> new Any(new HashMap<>())
-                ).getValue();
+            byte[] key = VectorKeyCodec.encode(vector.getId());
+            Map<VectorWithId, Integer> regionParams = subTaskMap.computeIfAbsent(
+                indexInfo.partitions.lookup(key, vector.getId()), k -> new Any(new HashMap<>())
+            ).getValue();
 
-                regionParams.put(vector, i);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            regionParams.put(vector, i);
+
         }
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
         return new Fork(new VectorWithId[vectors.size()], subTasks, true);
     }
 
     @Override
-    public Fork fork(OperationContext context, IndexInfo indexInfo) {
+    public Fork fork(OperationContext context, Index indexInfo) {
         Map<VectorWithId, Integer> parameters = context.parameters();
-        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().entityId()));
+        NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().getEntityId()));
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
         for (Map.Entry<VectorWithId, Integer> parameter : parameters.entrySet()) {
-            try {
-                byte[] key = indexInfo.codec.encodeKey(new Object[]{parameter.getKey().getId()});
-                Map<VectorWithId, Integer> regionParams = subTaskMap.computeIfAbsent(
-                    indexInfo.calcRegionId(key), k -> new Any(new HashMap<>())
-                ).getValue();
+            byte[] key = VectorKeyCodec.encode(parameter.getKey().getId());
+            Map<VectorWithId, Integer> regionParams = subTaskMap.computeIfAbsent(
+                indexInfo.partitions.lookup(key, parameter.getKey().getId()), k -> new Any(new HashMap<>())
+            ).getValue();
 
-                regionParams.put(parameter.getKey(), parameter.getValue());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            regionParams.put(parameter.getKey(), parameter.getValue());
         }
 
         subTaskMap.forEach((k, v) -> subTasks.add(new Task(k, v)));
@@ -106,18 +96,14 @@ public class VectorAddOperation implements Operation {
     public void exec(OperationContext context) {
         Map<VectorWithId, Integer> parameters = context.parameters();
         List<VectorWithId> vectors = new ArrayList<>(parameters.keySet());
-        List<Boolean> result = context.getIndexServiceClient().vectorAdd(
-            context.getIndexId(),
-            context.getRegionId(),
-            parameters.keySet().stream()
-                .map(integer -> new io.dingodb.sdk.common.vector.VectorWithId(
-                    integer.getId(),
-                    integer.getVector(),
-                    integer.getScalarData()))
-                .collect(Collectors.toList()),
-            context.getVectorContext().isReplaceDeleted(),
-            context.getVectorContext().isUpdate()
-        );
+        List<Boolean> result = context.getIndexService().vectorAdd(
+            context.getRequestId(),
+            VectorAddRequest.builder()
+                .isUpdate(context.getVectorContext().isUpdate())
+                .replaceDeleted(context.getVectorContext().isReplaceDeleted())
+                .vectors(vectors)
+                .build()
+        ).getKeyStates();
         for (int i = 0; i < vectors.size(); i++) {
             context.<VectorWithId[]>result()[parameters.get(vectors.get(i))] = result.get(i) ? vectors.get(i) : null;
         }

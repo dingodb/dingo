@@ -16,6 +16,7 @@
 
 package io.dingodb.client.common;
 
+import io.dingodb.sdk.service.entity.common.VectorWithDistance;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
