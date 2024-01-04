@@ -31,7 +31,7 @@ rand = "0.8.4"
 clap = "2.33"
 regex = "1.10.2"
 rstest = "0.18.2"
-cxx = "1.0.111"
+cxx = {path="contrib/cxx"}
 
 
 [build-dependencies]

@@ -14,3 +14,6 @@
 [submodule "contrib/google_test"]
 	path = contrib/google_test
 	url = https://github.com/google/googletest.git
+[submodule "contrib/cxx"]
+	path = contrib/cxx
+	url = git@github.com:dtolnay/cxx.git
