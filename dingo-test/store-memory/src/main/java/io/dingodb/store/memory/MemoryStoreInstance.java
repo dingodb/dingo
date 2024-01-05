@@ -58,12 +58,12 @@ public class MemoryStoreInstance implements StoreInstance {
     }
 
     @Override
-    public KeyValue get(byte[] key) {
+    public KeyValue get(long requestTs, byte[] key) {
         return Optional.mapOrNull(db.get(key), v -> new KeyValue(key, v));
     }
 
     @Override
-    public List<KeyValue> get(List<byte[]> keys) {
+    public List<KeyValue> get(long requestTs, List<byte[]> keys) {
         List<KeyValue> result = new ArrayList<>(keys.size());
         for (byte[] key : keys) {
             result.add(new KeyValue(key, db.get(key)));
@@ -72,7 +72,7 @@ public class MemoryStoreInstance implements StoreInstance {
     }
 
     @Override
-    public Iterator<KeyValue> scan(Range range) {
+    public Iterator<KeyValue> scan(long requestTs, Range range) {
         return getTreeMapByRange(db.entrySet().iterator(), range.start, range.end, range.withStart, range.withEnd)
             .entrySet().stream().map(e -> new KeyValue(e.getKey(), e.getValue()))
             .iterator();
@@ -109,7 +109,7 @@ public class MemoryStoreInstance implements StoreInstance {
     }
 
     @Override
-    public long count(Range range) {
+    public long count(long requestTs, Range range) {
         Set<byte[]> keys = getTreeMapByRange(
             db.entrySet().iterator(), range.start, range.end, range.withStart, range.withEnd
         ).keySet();
@@ -117,7 +117,7 @@ public class MemoryStoreInstance implements StoreInstance {
     }
 
     @Override
-    public long delete(Range range) {
+    public long delete(long requestTs, Range range) {
         Set<byte[]> keys = getTreeMapByRange(
             db.entrySet().iterator(), range.start, range.end, range.withStart, range.withEnd
         ).keySet();
@@ -126,13 +126,13 @@ public class MemoryStoreInstance implements StoreInstance {
     }
 
     @Override
-    public boolean insert(KeyValue row) {
+    public boolean insert(long requestTs, KeyValue row) {
         db.put(row.getKey(), row.getValue());
         return true;
     }
 
     @Override
-    public boolean insertWithIndex(Object[] record) {
+    public boolean insertWithIndex(long requestTs, Object[] record) {
         // TODO:
         KeyValue keyValue = convertRow(record);
         db.put(keyValue.getKey(), keyValue.getValue());
@@ -140,13 +140,13 @@ public class MemoryStoreInstance implements StoreInstance {
     }
 
     @Override
-    public boolean insertIndex(Object[] record) {
+    public boolean insertIndex(long requestTs, Object[] record) {
         // TODO:
         return true;
     }
 
     @Override
-    public boolean update(KeyValue row, KeyValue old) {
+    public boolean update(long requestTs, KeyValue row, KeyValue old) {
         if (Arrays.equals(row.getKey(), old.getKey())) {
             if (Arrays.equals(db.get(row.getKey()), old.getValue())) {
                 db.put(row.getKey(), row.getValue());
@@ -159,7 +159,7 @@ public class MemoryStoreInstance implements StoreInstance {
     }
 
     @Override
-    public boolean updateWithIndex(Object[] newRecord, Object[] oldRecord) {
+    public boolean updateWithIndex(long requestTs, Object[] newRecord, Object[] oldRecord) {
         KeyValue newKeyValue = convertRow(newRecord);
         KeyValue oldKeyValue = convertRow(oldRecord);
         if (Arrays.equals(newKeyValue.getKey(), oldKeyValue.getKey())) {
@@ -174,22 +174,22 @@ public class MemoryStoreInstance implements StoreInstance {
     }
 
     @Override
-    public boolean delete(byte[] key) {
+    public boolean delete(long requestTs, byte[] key) {
         db.remove(key);
         return true;
     }
 
     @Override
-    public boolean deleteIndex(Object[] key) {
+    public boolean deleteIndex(long requestTs, Object[] key) {
         return true;
     }
 
-    public boolean deleteIndex(Object[] newRecord, Object[] oldRecord) {
+    public boolean deleteIndex(long requestTs, Object[] newRecord, Object[] oldRecord) {
         return true;
     }
 
     @Override
-    public boolean deleteWithIndex(Object[] key) {
+    public boolean deleteWithIndex(long requestTs, Object[] key) {
         db.remove(convertRow(key).getKey());
         return true;
     }
