@@ -10,7 +10,7 @@ use tantivy::schema::Schema;
 use tantivy::schema::TextFieldIndexing;
 use tantivy::schema::TextOptions;
 
-use crate::ERROR;
+use crate::{ERROR, INFO};
 use crate::tokenizer::parse_and_register::TokenizerType;
 use crate::tokenizer::parse_and_register::get_custom_tokenizer;
 use crate::tokenizer::parse_and_register::register_tokenizer_to_index;
@@ -89,6 +89,7 @@ pub fn tantivy_create_index_with_tokenizer(index_path: &CxxString, tokenizer_wit
     schema_builder.add_text_field("text", text_options);
     let schema = schema_builder.build();
 
+    INFO!("create index, index_path:{}, tokenizer:{}", index_path_str, tokenizer_with_parameter_str);
     // Create the index in the specified directory.
     let mut index = match Index::create_in_dir(index_files_directory, schema) {
         Ok(index) => index,
@@ -222,7 +223,7 @@ pub fn tantivy_index_doc(index_path: &CxxString, row_id: u64, doc: &CxxString) -
     match index_w.add_document(doc) {
         Ok(_) => Ok(true),
         Err(e) => {
-            let error_info = "Failed to index doc";
+            let error_info = format!("Failed to index doc:{}", e);
             ERROR!("{}", error_info);
             Err(error_info.to_string())
         }

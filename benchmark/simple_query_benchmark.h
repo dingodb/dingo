@@ -18,6 +18,7 @@
 using json = nlohmann::json;
 
 using namespace std;
+using namespace TANTIVY;
 
 
 
@@ -47,19 +48,19 @@ size_t index_docs_from_json(const std::string &json_file_path, const std::string
     // from json file to Doc vector
     std::vector<Doc> docs = j.get<std::vector<Doc>>();
 
-    TantivySearchIndexW *indexW = tantivy_create_index(index_path.c_str());
+    tantivy_create_index(index_path);
 
     // index all docs
     size_t row_id = 0;
     for (const auto &doc : docs)
     {
-        tantivy_index_doc(indexW, row_id, doc.body.c_str());
+        tantivy_index_doc(index_path, row_id, doc.body.c_str());
         row_id += 1;
         // each doc call commit will slower the index build time.
         // tantivy_writer_commit(indexW);
     }
-    tantivy_writer_commit(indexW);
-    tantivy_writer_free(indexW);
+    tantivy_writer_commit(index_path);
+    tantivy_writer_free(index_path);
     return row_id;
 }
 
@@ -103,13 +104,13 @@ public:
 
 BENCHMARK_DEFINE_F(SearchBenchmark, SearchOperation)(benchmark::State& state){
     for (auto _ : state) {
-        TantivySearchIndexR *indexR = tantivy_load_index(index_path.c_str());
+        tantivy_load_index(index_path);
         for (size_t i = 0; i < terms.size(); i++) {
             for (size_t j = 0; j < row_id_range.size(); j++) {
-                tantivy_search_in_rowid_range(indexR, terms[i].c_str(), row_id_range[j], row_id_range[j] + row_id_step, false);
+                tantivy_search_in_rowid_range(index_path, terms[i].c_str(), row_id_range[j], row_id_range[j] + row_id_step, false);
             }
         }
-        tantivy_reader_free(indexR);
+        tantivy_reader_free(index_path);
     }
 }
 

@@ -1,6 +1,5 @@
 use libc::*;
 use std::ffi::CStr;
-use std::ffi::c_uint;
 
 mod commons;
 mod flurry_cache;
@@ -19,7 +18,7 @@ use search::index_searcher::*;
 
 
 
-#[cxx::bridge(namespace="TANTIVY")]
+#[cxx::bridge]
 mod ffi {
     extern "Rust" {
         // fn tantivy_logger_initialize(log_path: &CxxString, log_level: &CxxString, console_logging: bool, callback: LogCallback, enable_callback: bool, only_tantivy_search: bool) -> Result<bool>;

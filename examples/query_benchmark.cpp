@@ -7,6 +7,7 @@
 #include <nlohmann/json.hpp>
 #include <ThreadPool.h>
 #include <tantivy_search.h>
+#include <tantivy_search_cxx.h>
 #include <random>
 #include <sstream>
 #include <iomanip>
@@ -19,6 +20,7 @@
 using json = nlohmann::json;
 
 using namespace std;
+using namespace TANTIVY;
 using namespace Utils;
 namespace  bpo = boost::program_options;
 
@@ -65,19 +67,19 @@ size_t index_docs_from_json(const std::string &json_file_path, const std::string
     // from json file to Doc vector
     std::vector<Doc> docs = j.get<std::vector<Doc>>();
 
-    TantivySearchIndexW *indexW = tantivy_create_index(index_path.c_str());
+    tantivy_create_index(index_path);
 
     // index all docs
     size_t row_id = 0;
     for (const auto &doc : docs)
     {
-        tantivy_index_doc(indexW, row_id, doc.body.c_str());
+        tantivy_index_doc(index_path, row_id, doc.body.c_str());
         row_id += 1;
         // each doc call commit will slower the index build time.
         // tantivy_writer_commit(indexW);
     }
-    tantivy_writer_commit(indexW);
-    tantivy_writer_free(indexW);
+    tantivy_writer_commit(index_path);
+    tantivy_writer_free(index_path);
     return row_id;
 }
 
@@ -120,7 +122,7 @@ void run_benchmark(size_t idx,                              // iter id
                    const std::vector<std::string>& terms,   // query terms
                    size_t each_benchmark_duration,          // benchmark time should smaller than each_benchmark_duration
                    ThreadPool& pool,                        // thread pool
-                   TantivySearchIndexR* indexR,             // index reader
+                   std::string& index_path,             // index reader
                    std::atomic<int>& query_count,           // how many terms have been queried
                    const std::vector<size_t>& row_id_range, // row_id_range for queried
                    size_t row_id_step,                      // row_id_step is similar wih granule range 8192
@@ -154,10 +156,10 @@ void run_benchmark(size_t idx,                              // iter id
 
 
             std::string term = std::string(terms[i]);
-            pool.enqueue([idx, term, &row_id_range, row_id_step, indexR, &query_count, &finished_tasks](){
+            pool.enqueue([idx, term, &row_id_range, row_id_step, index_path, &query_count, &finished_tasks](){
                 auto start_query = std::chrono::high_resolution_clock::now();
                 for (size_t j = 0; j < row_id_range.size(); j++) {
-                    tantivy_search_in_rowid_range(indexR, term.c_str(), row_id_range[j], row_id_range[j] + row_id_step, false);
+                    tantivy_search_in_rowid_range(index_path, term.c_str(), row_id_range[j], row_id_range[j] + row_id_step, false);
                 }
                 query_count++;
                 auto end_query = std::chrono::high_resolution_clock::now();
@@ -297,9 +299,9 @@ int main(int argc, char* argv[])
         sleep(each_free_wait);
         setBenchmarking(true);
         reporter_start = std::chrono::high_resolution_clock::now();
-        TantivySearchIndexR *indexR = tantivy_load_index(index_path.c_str());
+        tantivy_load_index(index_path);
         if (!skip_benchmark){
-            run_benchmark(i, terms, each_benchmark_duration, pool, indexR, query_count, row_id_range, row_id_step, finished_tasks, enqueue_tasks_count, max_pending_tasks);
+            run_benchmark(i, terms, each_benchmark_duration, pool, index_path, query_count, row_id_range, row_id_step, finished_tasks, enqueue_tasks_count, max_pending_tasks);
         }
         while (pool.getTaskQueueSize()>0 || finished_tasks < enqueue_tasks_count)
         {
@@ -307,7 +309,7 @@ int main(int argc, char* argv[])
             sleep(2);
         }
         LOG(INFO) << "[iter-"<<i<<"] Trying free index reader; benchmark pool["<<pool.getTaskQueueSize()<<"] # ["<<finished_tasks<<"/"<<enqueue_tasks_count<<"]";
-        tantivy_reader_free(indexR);
+        tantivy_reader_free(index_path);
         clear_millis_latency();
         setBenchmarking(false);
     }

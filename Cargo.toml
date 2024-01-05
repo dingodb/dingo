@@ -31,7 +31,7 @@ rand = "0.8.4"
 clap = "2.33"
 regex = "1.10.2"
 rstest = "0.18.2"
-cxx = {path="contrib/cxx"}
+cxx = "1.0.111"
 
 
 [build-dependencies]
@@ -45,18 +45,18 @@ use-flurry-cache = []
 debug = true
 
 
-[[bin]]
-name = "tantivy_search_benchmark"
-path = "tests/benchmark.rs"
+# [[bin]]
+# name = "tantivy_search_benchmark"
+# path = "tests/benchmark.rs"
 
-[[bin]]
-name = "loop_search"
-path = "tests/loop_search.rs"
+# [[bin]]
+# name = "loop_search"
+# path = "tests/loop_search.rs"
 
-[[bin]]
-name = "regrex_search"
-path = "tests/regrex_search.rs"
+# [[bin]]
+# name = "regrex_search"
+# path = "tests/regrex_search.rs"
 
-[[bin]]
-name = "natural_language"
-path = "tests/natural_language.rs"
+# [[bin]]
+# name = "natural_language"
+# path = "tests/natural_language.rs"
