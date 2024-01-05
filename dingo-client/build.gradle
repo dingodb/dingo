@@ -20,6 +20,7 @@ dependencies {
     api group: 'io.dingodb', name: 'dingo-sdk', version: project.version
 
     api project(":dingo-common")
+    implementation project(":dingo-cluster-api")
     implementation project(":dingo-store-api")
     implementation project(":dingo-partition-api")
     implementation project(":dingo-store-proxy")
@@ -66,7 +67,9 @@ fatJar.dependsOn(
     ':dingo-meta-api:jar',
     ':dingo-net-api:jar',
     ':dingo-tso-api:jar',
+    ':dingo-cluster-api:jar',
     ':dingo-store-proxy:jar',
+    ':dingo-tool-api:jar',
     ':dingo-exec:jar'
 )
 

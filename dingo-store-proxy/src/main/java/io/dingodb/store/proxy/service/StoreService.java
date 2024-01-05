@@ -68,7 +68,6 @@ import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -239,19 +238,19 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         }
 
         @Override
-        public boolean insert(KeyValue row) {
-            return storeService.kvPutIfAbsent(
+        public boolean insert(long requestTs, KeyValue row) {
+            return storeService.kvPutIfAbsent(requestTs,
                 KvPutIfAbsentRequest.builder().kv(MAPPER.kvTo(setId(row))).build()
             ).isKeyState();
         }
 
         @Override
-        public boolean insertWithIndex(Object[] record) {
-            return insert(tableCodec.encode(record));
+        public boolean insertWithIndex(long requestTs, Object[] record) {
+            return insert(requestTs, tableCodec.encode(record));
         }
 
         @Override
-        public boolean insertIndex(Object[] record) {
+        public boolean insertIndex(long requestTs, Object[] record) {
             for (Map.Entry<DingoCommonId, Table> entry : tableMap.entrySet()) {
                 Object[] newRecord = Arrays.copyOf(record, record.length);
 
@@ -259,10 +258,10 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 Table index = entry.getValue();
                 if (index.getIndexParameter().getIndexType().equals(IndexParameter.IndexType.INDEX_TYPE_VECTOR)) {
                     // vector index add
-                    vectorAdd(newRecord, table, tableCodec, indexId, index);
+                    vectorAdd(requestTs, newRecord, table, tableCodec, indexId, index);
                 } else {
                     // scalar index insert
-                    boolean result = scalarInsert(newRecord, table, indexId, index);
+                    boolean result = scalarInsert(requestTs, newRecord, table, indexId, index);
                     if (!result) {
                         return false;
                     }
@@ -272,10 +271,11 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         }
 
         @Override
-        public boolean updateWithIndex(Object[] newRecord, Object[] oldRecord) {
+        public boolean updateWithIndex(long requestTs, Object[] newRecord, Object[] oldRecord) {
             KeyValue oldKv = setId(tableCodec.encode(oldRecord));
             KeyValue newKv = setId(tableCodec.encode(newRecord));
             return storeService.kvBatchCompareAndSet(
+                    requestTs,
                     KvBatchCompareAndSetRequest.builder()
                         .kvs(Collections.singletonList(MAPPER.kvTo(newKv)))
                         .expectValues(Collections.singletonList(oldKv.getValue())).build()
@@ -283,14 +283,16 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         }
 
         @Override
-        public boolean deleteWithIndex(Object[] key) {
+        public boolean deleteWithIndex(long requestTs, Object[] key) {
             byte[] bytes = this.tableCodec.encodeKey(key);
-            return storeService.kvBatchDelete(KvBatchDeleteRequest.builder().keys(singletonList(setId(bytes))).build())
-                .getKeyStates().get(0);
+            return storeService.kvBatchDelete(
+                requestTs,
+                KvBatchDeleteRequest.builder().keys(singletonList(setId(bytes))).build()
+            ).getKeyStates().get(0);
         }
 
         @Override
-        public boolean deleteIndex(Object[] record) {
+        public boolean deleteIndex(long requestTs, Object[] record) {
             record = (Object[]) tableCodec.type.convertTo(record, DingoConverter.INSTANCE);
             for (Map.Entry<DingoCommonId, Table> entry : tableMap.entrySet()) {
                 DingoCommonId indexId = entry.getKey();
@@ -302,7 +304,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     schema.setAllowNull(false);
                     long id = Long.parseLong(String.valueOf(record[table.getColumnIndex(primaryCol.getName())]));
 
-                    DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(0l, singletonList(schema));
+                    DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(0L, singletonList(schema));
                     DingoCommonId regionId;
                     CommonId commonId = MAPPER.idFrom(indexId);
                     NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.common.partition.RangeDistribution> distribution = MetaService.root().getIndexRangeDistribution(commonId, mapping(index));
@@ -313,6 +315,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     regionId = MAPPER.idTo(ps.calcPartId(vectorCodec.encodeKey(new Object[]{id}),distribution));
 
                     result = indexService(indexId, regionId).vectorDelete(
+                        requestTs,
                         VectorDeleteRequest.builder().ids(singletonList(id)).build()
                     ).getKeyStates().get(0);
                 } else {
@@ -328,9 +331,13 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                             .map(Partition::getFuncName)
                             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
                     DingoCommonId regionId = MAPPER.idTo(ps.calcPartId(bytes, distribution));
-                    result = storeService(indexId, regionId).kvBatchDelete(KvBatchDeleteRequest.builder()
+                    result = storeService(indexId, regionId).kvBatchDelete(
+                        requestTs,
+                        KvBatchDeleteRequest
+                            .builder()
                             .keys(singletonList(indexCodec.resetPrefix(bytes, regionId.getParentEntityId())))
-                            .build()).getKeyStates().get(0);
+                            .build()
+                    ).getKeyStates().get(0);
                 }
                 if (!result) {
                     return false;
@@ -340,7 +347,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         }
 
         @Override
-        public boolean deleteIndex(Object[] newRecord, Object[] oldRecord) {
+        public boolean deleteIndex(long requestTs, Object[] newRecord, Object[] oldRecord) {
             newRecord = (Object[]) tableCodec.type.convertTo(newRecord, DingoConverter.INSTANCE);
             oldRecord = (Object[]) tableCodec.type.convertTo(oldRecord, DingoConverter.INSTANCE);
             for (Map.Entry<DingoCommonId, Table> entry : tableMap.entrySet()) {
@@ -351,7 +358,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     Column primaryKey = index.getColumns().get(0);
                     schema.setIsKey(true);
                     schema.setAllowNull(false);
-                    DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(0l, singletonList(schema));
+                    DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(0L, singletonList(schema));
 
                     long newLongId = Long.parseLong(
                         String.valueOf(newRecord[table.getColumnIndex(primaryKey.getName())])
@@ -368,6 +375,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
                         DingoCommonId regionId = MAPPER.idTo(ps.calcPartId(vectorCodec.encodeKey(new Object[]{oldLongId}), distribution));
                         indexService(indexId, regionId).vectorDelete(
+                            requestTs,
                             VectorDeleteRequest.builder().ids(singletonList(oldLongId)).build()
                         );
                     }
@@ -376,7 +384,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     for (Column column : index.getColumns()) {
                         schemas.add(CodecUtils.createSchemaForColumn(column, table.getColumnIndex(column.getName())));
                     }
-                    DingoKeyValueCodec indexCodec = new DingoKeyValueCodec(0l, schemas);
+                    DingoKeyValueCodec indexCodec = new DingoKeyValueCodec(0L, schemas);
                     io.dingodb.sdk.common.KeyValue newKv = indexCodec.encode(newRecord);
                     io.dingodb.sdk.common.KeyValue oldKv = indexCodec.encode(oldRecord);
                     if (!equal(newKv.getKey(), oldKv.getKey())) {
@@ -387,9 +395,12 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                                 .map(Partition::getFuncName)
                                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
                         DingoCommonId regionId = MAPPER.idTo(ps.calcPartId(oldKv.getKey(), distribution));
-                        storeService(indexId, regionId).kvBatchDelete(KvBatchDeleteRequest.builder()
-                            .keys(singletonList(indexCodec.resetPrefix(oldKv.getKey(), regionId.getParentEntityId())))
-                            .build()
+                        storeService(indexId, regionId).kvBatchDelete(
+                            requestTs,
+                            KvBatchDeleteRequest
+                                .builder()
+                                .keys(singletonList(indexCodec.resetPrefix(oldKv.getKey(), regionId.getParentEntityId())))
+                                .build()
                         );
                     }
                 }
@@ -401,11 +412,12 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         }
 
         @Override
-        public boolean update(KeyValue row, KeyValue old) {
+        public boolean update(long requestTs, KeyValue row, KeyValue old) {
             row = setId(row);
             old = setId(old);
             if (ByteArrayUtils.equal(row.getKey(), old.getKey())) {
                 return storeService.kvBatchCompareAndSet(
+                    requestTs,
                     KvBatchCompareAndSetRequest.builder()
                         .kvs(singletonList(MAPPER.kvTo(row)))
                         .expectValues(singletonList(old.getValue()))
@@ -416,45 +428,55 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         }
 
         @Override
-        public boolean delete(byte[] key) {
+        public boolean delete(long requestTs, byte[] key) {
             return storeService.kvBatchDelete(
+                requestTs,
                 KvBatchDeleteRequest.builder().keys(singletonList(key)).build()
             ).getKeyStates().get(0);
         }
 
         @Override
-        public long delete(Range range) {
-            return storeService.kvDeleteRange(KvDeleteRangeRequest.builder()
-                .range(RangeWithOptions.builder()
-                    .withStart(range.withStart)
-                    .withEnd(range.withEnd)
-                    .range(io.dingodb.sdk.service.entity.common.Range.builder()
-                        .startKey(setId(range.start))
-                        .endKey(setId(range.end))
+        public long delete(long requestTs, Range range) {
+            return storeService.kvDeleteRange(
+                requestTs,
+                KvDeleteRangeRequest
+                    .builder()
+                    .range(RangeWithOptions.builder()
+                        .withStart(range.withStart)
+                        .withEnd(range.withEnd)
+                        .range(io.dingodb.sdk.service.entity.common.Range.builder()
+                            .startKey(setId(range.start))
+                            .endKey(setId(range.end))
+                            .build()
+                        )
                         .build()
-                    )
-                    .build())
-                .build()).getDeleteCount();
+                    ).build()
+            ).getDeleteCount();
         }
 
         @Override
-        public KeyValue get(byte[] key) {
-            return new KeyValue(key, storeService.kvGet(KvGetRequest.builder().key(setId(key)).build()).getValue());
+        public KeyValue get(long requestTs, byte[] key) {
+            return new KeyValue(key, storeService.kvGet(
+                requestTs, KvGetRequest.builder().key(setId(key)).build()
+            ).getValue());
         }
 
         @Override
-        public List<KeyValue> get(List<byte[]> keys) {
+        public List<KeyValue> get(long requestTs, List<byte[]> keys) {
             keys = keys.stream().map(this::setId).collect(Collectors.toList());
-            return storeService.kvBatchGet(KvBatchGetRequest.builder().keys(keys).build())
-                .getKvs().stream().map(MAPPER::kvFrom).collect(Collectors.toList());
+            return storeService.kvBatchGet(
+                requestTs,
+                KvBatchGetRequest.builder().keys(keys).build()
+            ).getKvs().stream().map(MAPPER::kvFrom).collect(Collectors.toList());
         }
 
         @Override
-        public Iterator<KeyValue> scan(Range range) {
+        public Iterator<KeyValue> scan(long requestTs, Range range) {
             ChannelProvider channelProvider = Services.regionChannelProvider(
                 coordinators, MAPPER.idTo(tableId), MAPPER.idTo(regionId)
             );
             return Iterators.transform(new ScanIterator(
+                requestTs,
                 regionId,
                 channelProvider,
                 MAPPER.rangeTo(partitionId.seq, range),
@@ -464,11 +486,12 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         }
 
         @Override
-        public Iterator<KeyValue> scan(Range range, Coprocessor coprocessor) {
+        public Iterator<KeyValue> scan(long requestTs, Range range, Coprocessor coprocessor) {
             ChannelProvider channelProvider = Services.regionChannelProvider(
                 coordinators, MAPPER.idTo(tableId), MAPPER.idTo(regionId)
             );
             return Iterators.transform(new ScanIterator(
+                requestTs,
                 regionId,
                 channelProvider,
                 MAPPER.rangeTo(partitionId.seq, range),
@@ -479,7 +502,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
         @Override
         public List<VectorSearchResponse> vectorSearch(
-            CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap
+            long requestTs, CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap
         ) {
 
             List<VectorWithId> vectors = new ArrayList<>();
@@ -503,6 +526,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 .search(search)
                 .build();
             List<VectorWithDistanceResult> results = indexService(indexId, regionId).vectorSearch(
+                requestTs,
                 VectorSearchRequest.builder()
                     .vectorWithIds(vectors)
                     .parameter(parameter)
@@ -532,10 +556,10 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         }
 
         @Override
-        public long count(Range range) {
+        public long count(long requestTs, Range range) {
             // todo operator push down
             range = new Range(setId(range.start), setId(range.end), range.withStart, range.withEnd);
-            Iterator<KeyValue> iterator = scan(range);
+            Iterator<KeyValue> iterator = scan(requestTs, range);
             long count = 0;
             while (iterator.hasNext()) {
                 iterator.next();
@@ -544,7 +568,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             return count;
         }
 
-        private boolean scalarInsert(Object[] record, Table table, DingoCommonId indexId, Table index) {
+        private boolean scalarInsert(long requestTs, Object[] record, Table table, DingoCommonId indexId, Table index) {
             List<DingoSchema> schemas = new ArrayList<>();
             for (Column column : index.getColumns()) {
                 schemas.add(CodecUtils.createSchemaForColumn(column, table.getColumnIndex(column.getName())));
@@ -566,14 +590,18 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 .key(indexCodec.resetPrefix(keyValue.getKey(), regionId.getParentEntityId()))
                 .value(keyValue.getValue())
                 .build();
-            storeService(indexId, regionId).kvPut(KvPutRequest.builder().kv(kv).build());
+            storeService(indexId, regionId).kvPut(requestTs, KvPutRequest.builder().kv(kv).build());
             return true;
         }
 
-        private void vectorAdd(Object[] record, Table table,
-                               KeyValueCodec tableCodec,
-                               DingoCommonId indexId,
-                               Table index) {
+        private void vectorAdd(
+            long requestTs,
+            Object[] record,
+            Table table,
+            KeyValueCodec tableCodec,
+            DingoCommonId indexId,
+            Table index
+        ) {
             Column primaryKey = index.getColumns().get(0);
             schema.setIsKey(true);
             schema.setAllowNull(primaryKey.isNullable());
@@ -602,6 +630,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             tableData = VectorTableData.builder().tableKey(keyValue.getKey()).build();
             VectorWithId vectorWithId = VectorWithId.builder().id(longId).vector(vector).tableData(tableData).build();
             indexService(indexId, regionId).vectorAdd(
+                requestTs,
                 VectorAddRequest.builder().vectors(singletonList(vectorWithId)).build()
             );
         }

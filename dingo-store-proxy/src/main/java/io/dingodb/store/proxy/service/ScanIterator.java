@@ -52,7 +52,7 @@ public class ScanIterator implements Iterator<KeyValue>, AutoCloseable {
 
     private final CommonId regionId;
     private final ChannelProvider channelProvider;
-    private long requestId;
+    private long requestTs;
     private StoreService storeService;
     private byte[] scanId;
     private Coprocessor coprocessor;
@@ -64,6 +64,7 @@ public class ScanIterator implements Iterator<KeyValue>, AutoCloseable {
     private boolean release = false;
 
     public ScanIterator(
+        long requestTs,
         CommonId regionId,
         ChannelProvider channelProvider,
         RangeWithOptions range,
@@ -74,7 +75,7 @@ public class ScanIterator implements Iterator<KeyValue>, AutoCloseable {
         this.range = range;
         this.retryTimes = retryTimes;
         this.coprocessor = coprocessor;
-        this.requestId = System.identityHashCode(this);
+        this.requestTs = requestTs;
         this.scanId = scanBegin(channelProvider);
         if (scanId == null || scanId.length == 0) {
             release = true;
@@ -99,7 +100,7 @@ public class ScanIterator implements Iterator<KeyValue>, AutoCloseable {
                     request,
                     CallOptions.DEFAULT,
                     channel,
-                    requestId,
+                    requestTs,
                     StoreServiceDescriptors.kvScanBeginHandlers
                 );
                 channelProvider.after(res);
@@ -112,7 +113,7 @@ public class ScanIterator implements Iterator<KeyValue>, AutoCloseable {
                 }
             } catch (Exception ignored) {
             }
-            channelProvider.refresh(channel, requestId);
+            channelProvider.refresh(channel, requestTs);
             LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
         }
         throw new RuntimeException("Scan begin retry >= " + retryTimes);
