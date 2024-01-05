@@ -20,7 +20,6 @@
 using json = nlohmann::json;
 
 using namespace std;
-using namespace TANTIVY;
 using namespace Utils;
 namespace  bpo = boost::program_options;
 

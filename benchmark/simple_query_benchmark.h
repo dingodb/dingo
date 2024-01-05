@@ -18,7 +18,6 @@
 using json = nlohmann::json;
 
 using namespace std;
-using namespace TANTIVY;
 
 
 

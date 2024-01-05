@@ -9,7 +9,6 @@ namespace fs = std::filesystem;
 
 using namespace Utils;
 using namespace std;
-using namespace TANTIVY;
 
 void test_default_create()
 {
