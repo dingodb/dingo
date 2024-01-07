@@ -9,7 +9,7 @@ edition = "2021"
 [lib]
 name = "tantivy_search" # library name
 # crate-type = ["cdylib", "staticlib", "lib"]
-crate-type = ["staticlib"]
+crate-type = ["staticlib", "rlib"]
 
 [dependencies]
 libc = "0.2.82"
