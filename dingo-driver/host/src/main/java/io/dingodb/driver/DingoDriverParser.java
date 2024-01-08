@@ -34,6 +34,7 @@ import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.impl.TransactionManager;
+import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.meta.MetaService;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
@@ -295,10 +296,9 @@ public final class DingoDriverParser extends DingoParser {
             txn_Id = connection.getTransaction().getTxnId();
         } else {
             if (isTxn) {
-                start_ts = TransactionManager.getStart_ts();
-                ITransaction transaction = TransactionManager.createTransaction(false, start_ts);
+                ITransaction transaction = connection.createTransaction(false);
                 transaction.setAutoCommit(true);
-                connection.setTransaction(transaction);
+                start_ts = transaction.getStart_ts();
                 txn_Id = transaction.getTxnId();
             } else {
                 start_ts = jobSeqId;

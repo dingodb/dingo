@@ -44,12 +44,12 @@ import java.util.concurrent.Future;
 
 @Slf4j
 public class OptimisticTransaction extends BaseTransaction {
-    public OptimisticTransaction(long startTs) {
-        super(startTs);
+    public OptimisticTransaction(long startTs, int isolationLevel) {
+        super(startTs, isolationLevel);
     }
 
-    public OptimisticTransaction(CommonId txnId) {
-        super(txnId);
+    public OptimisticTransaction(CommonId txnId, int isolationLevel) {
+        super(txnId, isolationLevel);
     }
 
     @Override
@@ -126,9 +126,9 @@ public class OptimisticTransaction extends BaseTransaction {
     public void resolveWriteConflict(JobManager jobManager, Location currentLocation, RuntimeException e) {
         rollback(jobManager);
         CommonId retryJobId = CommonId.EMPTY_JOB;;
-        int txnRetryLimit = TransactionConfig.txn_retry_limit;
+        int txnRetryLimit = transactionConfig.getTxn_retry_limit();
         RuntimeException conflictException = e;
-        while (TransactionConfig.disable_txn_auto_retry && (txnRetryLimit-- > 0)) {
+        while (transactionConfig.isDisable_txn_auto_retry() && (txnRetryLimit-- > 0)) {
             try {
                 conflictException = null;
                 retryPrepare();

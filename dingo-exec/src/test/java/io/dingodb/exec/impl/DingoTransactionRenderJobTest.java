@@ -48,7 +48,6 @@ public class DingoTransactionRenderJobTest {
         currentLocation = new Location("localhost", 10000);
 //        transaction = new OptimisticTransaction(commonId);
         transaction = mock(OptimisticTransaction.class);
-        transaction.setIsolationLevel(IsolationLevel.ReadCommitted.getCode());
         Channel channel3 = mock(Channel.class);
         Channel channel4 = mock(Channel.class);
 

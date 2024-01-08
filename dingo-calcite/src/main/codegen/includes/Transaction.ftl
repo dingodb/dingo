@@ -18,15 +18,15 @@
 
 SqlBeginTx SqlStartTx(): {
   final Span s;
-  boolean pessimistic = false;
+  String txnMode = "";
 } {
-  <START> { s = span(); } <TRANSACTION> [<PESSIMISTIC> { pessimistic = true; }]{ return new SqlBeginTx(s.end(this), pessimistic); }
+  <START> { s = span(); } <TRANSACTION> [<PESSIMISTIC> { txnMode = "PESSIMISTIC"; } | <OPTIMISTIC> { txnMode = "OPTIMISTIC"; }]{ return new SqlBeginTx(s.end(this), txnMode); }
 }
 
 SqlBeginTx SqlBegin(): {
-  final Span s; boolean pessimistic = false;
+  final Span s; String txnMode = "";
 } {
-  <BEGIN> [<PESSIMISTIC> { pessimistic = true; }] { s = span();  return new SqlBeginTx(s.end(this), pessimistic); }
+  <BEGIN> [<PESSIMISTIC> { txnMode = "PESSIMISTIC"; } | <OPTIMISTIC> { txnMode = "OPTIMISTIC"; }] { s = span();  return new SqlBeginTx(s.end(this), txnMode); }
 }
 
 SqlLock SqlLock(): {
@@ -41,8 +41,8 @@ SqlLock SqlLock(): {
      <IDENTIFIER> { tableNameList.add(token.image); }
    )*
    { return new SqlLockTable(s.end(this), tableNameList); }
-  | 
-   <BLOCKS> 
+  |
+   <BLOCKS>
    {
      sqlBlockList.add(readBlock());
    }
@@ -94,8 +94,8 @@ SqlUnLock SqlUnLock(): {
      <IDENTIFIER> { tableNameList.add(token.image); }
    )*
    { return new SqlUnLockTable(s.end(this), tableNameList); }
-  | 
-   <BLOCKS> 
+  |
+   <BLOCKS>
    {
      sqlBlockList.add(readBlock());
    }

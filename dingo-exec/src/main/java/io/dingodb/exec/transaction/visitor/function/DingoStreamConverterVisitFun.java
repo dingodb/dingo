@@ -37,7 +37,7 @@ public class DingoStreamConverterVisitFun {
         if (transaction.getChannelMap().size() > 0) {
             outputs = outputs.stream().map(input -> {
                 Location targetLocation = currentLocation;
-                return DingoTransactionExchangeFun.exchange(job, idGenerator, input, targetLocation, new BooleanType(true));
+                return DingoTransactionExchangeFun.exchange(job, idGenerator, transaction, input, targetLocation, new BooleanType(true));
             }).collect(Collectors.toList());
             outputs = DingoCoalesceVisitFun.visit(job, idGenerator, currentLocation, transaction, visitor, outputs, streamConverterLeaf);
         }

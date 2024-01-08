@@ -61,7 +61,7 @@ public class CommitOperator extends TransactionOperator {
             param.setTableId(tableId);
         } else if (partId.equals(newPartId)) {
             param.addKey(key);
-            if (param.getKeys().size() == TransactionConfig.max_pre_write_count) {
+            if (param.getKeys().size() == TransactionUtil.max_pre_write_count) {
                 boolean result = txnCommit(param, txnId, tableId, partId);
                 if (!result) {
                     throw new RuntimeException(txnId + " " + partId + ",txnCommit false,PrimaryKey:" + param.getPrimaryKey().toString());

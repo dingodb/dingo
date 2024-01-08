@@ -27,7 +27,8 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import java.util.List;
 
 public class SqlBeginTx extends SqlDdl {
-    public boolean pessimistic;
+    public String txnMode = "";
+
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("START TRANSACTION", SqlKind.OTHER_DDL);
 
@@ -36,9 +37,9 @@ public class SqlBeginTx extends SqlDdl {
      *
      * @param pos
      */
-    public SqlBeginTx(SqlParserPos pos, boolean pessimistic) {
+    public SqlBeginTx(SqlParserPos pos, String txnMode) {
         super(OPERATOR, pos);
-        this.pessimistic = pessimistic;
+        this.txnMode = txnMode;
     }
 
     @Override

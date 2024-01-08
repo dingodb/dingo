@@ -43,6 +43,7 @@ import io.dingodb.exec.operator.params.TxnPartRangeScanParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -106,9 +107,10 @@ public final class DingoTableScanVisitFun {
 
         // TODO
         for (RangeDistribution rd : distributions) {
-            Task task = job.getOrCreate(currentLocation, idGenerator);
+            Task task;
             Vertex vertex;
             if (transaction != null) {
+                task = job.getOrCreate(currentLocation, idGenerator, transaction.getType(), IsolationLevel.of(transaction.getIsolationLevel()));
                 TxnPartRangeScanParam param = new TxnPartRangeScanParam(
                     tableInfo.getId(),
                     rd.id(),
@@ -131,6 +133,7 @@ public final class DingoTableScanVisitFun {
                 );
                 vertex = new Vertex(TXN_PART_RANGE_SCAN, param);
             } else {
+                task = job.getOrCreate(currentLocation, idGenerator);
                 PartRangeScanParam param = new PartRangeScanParam(
                     tableInfo.getId(),
                     rd.id(),

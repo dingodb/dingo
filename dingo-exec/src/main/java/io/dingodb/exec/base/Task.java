@@ -20,6 +20,8 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -32,6 +34,10 @@ public interface Task {
     CommonId getJobId();
 
     CommonId getTxnId();
+
+    TransactionType getTransactionType();
+
+    IsolationLevel getIsolationLevel();
 
     Location getLocation();
 

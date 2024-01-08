@@ -40,8 +40,11 @@ import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.ValuesParam;
+import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.LinkedList;
@@ -58,11 +61,16 @@ public final class DingoValuesVisitFun {
     }
 
     public static List<Vertex> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, @NonNull DingoValues rel
+        Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction, DingoJobVisitor visitor, @NonNull DingoValues rel
     ) {
         DingoRelStreaming streaming = rel.getStreaming();
         if (streaming.equals(DingoRelStreaming.ROOT)) {
-            Task task = job.getOrCreate(currentLocation, idGenerator);
+            Task task;
+            if (transaction != null) {
+                task = job.getOrCreate(currentLocation, idGenerator, transaction.getType(), IsolationLevel.of(transaction.getIsolationLevel()));
+            } else {
+                task = job.getOrCreate(currentLocation, idGenerator);
+            }
             ValuesParam param = new ValuesParam(rel.getTuples(),
                 Objects.requireNonNull(DefinitionMapper.mapToDingoType(rel.getRowType()))
             );
@@ -93,7 +101,12 @@ public final class DingoValuesVisitFun {
                     Objects.requireNonNull(DefinitionMapper.mapToDingoType(rel.getRowType()))
                 );
                 Vertex vertex = new Vertex(VALUES, param);
-                Task task = job.getOrCreate(currentLocation, idGenerator);
+                Task task;
+                if (transaction != null) {
+                    task = job.getOrCreate(currentLocation, idGenerator, transaction.getType(), IsolationLevel.of(transaction.getIsolationLevel()));
+                } else {
+                    task = job.getOrCreate(currentLocation, idGenerator);
+                }
                 vertex.setId(idGenerator.getOperatorId(task.getId()));
                 OutputHint hint = new OutputHint();
                 hint.setPartId(entry.getKey());

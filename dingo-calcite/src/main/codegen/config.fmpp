@@ -154,6 +154,7 @@ data: {
       "SAMPLES"
       "SAMPLERATE"
       "PESSIMISTIC"
+      "OPTIMISTIC"
       "BLOCKS"
       "HASH"
       "LOCKS"

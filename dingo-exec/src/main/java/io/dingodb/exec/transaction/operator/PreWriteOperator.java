@@ -85,7 +85,7 @@ public final class PreWriteOperator extends TransactionOperator {
             param.addMutation(mutation);
         } else if (partId.equals(newPartId)) {
             param.addMutation(mutation);
-            if (param.getMutations().size() == TransactionConfig.max_pre_write_count) {
+            if (param.getMutations().size() == TransactionUtil.max_pre_write_count) {
                 boolean result = txnPreWrite(param, txnId, tableId, partId);
                 if (!result) {
                     throw new RuntimeException(txnId + " " + partId + ",txnPreWrite false,PrimaryKey:" + param.getPrimaryKey().toString());

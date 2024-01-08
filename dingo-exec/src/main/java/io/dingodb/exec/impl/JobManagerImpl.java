@@ -34,7 +34,6 @@ import io.dingodb.exec.impl.message.DestroyTaskMessage;
 import io.dingodb.exec.impl.message.RunTaskMessage;
 import io.dingodb.exec.impl.message.TaskMessage;
 import io.dingodb.exec.transaction.base.ITransaction;
-import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.meta.MetaService;
 import io.dingodb.net.Channel;
@@ -187,7 +186,9 @@ public final class JobManagerImpl implements JobManager {
             // 2、check whether the current node can execute transactions
             ITransaction transaction = TransactionManager.getTransaction(task.getTxnId() == null ? CommonId.EMPTY_TRANSACTION : task.getTxnId());
             if(transaction == null) {
-                TransactionManager.createTransaction(TransactionType.OPTIMISTIC, task.getTxnId() == null ? CommonId.EMPTY_TRANSACTION : task.getTxnId());
+                TransactionManager.createTransaction(task.getTransactionType(),
+                    task.getTxnId() == null ? CommonId.EMPTY_TRANSACTION : task.getTxnId(),
+                    task.getIsolationLevel().getCode());
             }
             taskManager.addTask(task);
         } finally {

@@ -28,7 +28,9 @@ import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.expr.json.runtime.Parser;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -77,11 +79,11 @@ public final class JobImpl implements Job {
     }
 
     @Override
-    public @NonNull Task create(CommonId id, Location location) {
+    public @NonNull Task create(CommonId id, Location location, TransactionType transactionType, IsolationLevel isolationLevel) {
         if (tasks.containsKey(id)) {
             throw new IllegalArgumentException("The task \"" + id + "\" already exists in job \"" + jobId + "\".");
         }
-        Task task = new TaskImpl(id, jobId, txnId, location, parasType);
+        Task task = new TaskImpl(id, jobId, txnId, location, parasType, transactionType, isolationLevel);
         tasks.put(id, task);
         return task;
     }

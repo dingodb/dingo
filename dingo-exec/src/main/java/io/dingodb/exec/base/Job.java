@@ -19,6 +19,8 @@ package io.dingodb.exec.base;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
@@ -30,7 +32,7 @@ public interface Job {
 
     Map<CommonId, Task> getTasks();
 
-    @NonNull Task create(CommonId id, Location location);
+    @NonNull Task create(CommonId id, Location location, TransactionType transactionType, IsolationLevel isolationLevel);
 
     DingoType getParasType();
 
@@ -51,9 +53,13 @@ public interface Job {
     }
 
     default Task getOrCreate(Location location, IdGenerator idGenerator) {
+        return getOrCreate(location, idGenerator, TransactionType.OPTIMISTIC, IsolationLevel.SnapshotIsolation);
+    }
+
+    default Task getOrCreate(Location location, IdGenerator idGenerator, TransactionType transactionType, IsolationLevel isolationLevel) {
         Task task = getByLocation(location);
         if (task == null) {
-            task = create(idGenerator.getTaskId(), location);
+            task = create(idGenerator.getTaskId(), location, transactionType, isolationLevel);
         }
         return task;
     }

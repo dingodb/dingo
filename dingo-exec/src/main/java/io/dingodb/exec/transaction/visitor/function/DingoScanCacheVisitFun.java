@@ -30,6 +30,7 @@ import io.dingodb.exec.transaction.params.ScanCacheParam;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
 import io.dingodb.exec.transaction.visitor.data.ScanCacheLeaf;
 import io.dingodb.net.Channel;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -66,14 +67,14 @@ public class DingoScanCacheVisitFun {
             Location remoteLocation = channelEntry.getValue().remoteLocation();
             ScanCacheParam param = new ScanCacheParam(dingoType, transaction.getType());
             Vertex vertex = new Vertex(SCAN_CACHE, param);
-            Task task = job.getOrCreate(remoteLocation, idGenerator);
+            Task task = job.getOrCreate(remoteLocation, idGenerator, transaction.getType(), IsolationLevel.of(transaction.getIsolationLevel()));
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);
             outputs.add(vertex);
         }
         ScanCacheParam param = new ScanCacheParam(dingoType, transaction.getType());
         Vertex vertex = new Vertex(SCAN_CACHE, param);
-        Task task = job.getOrCreate(currentLocation, idGenerator);
+        Task task = job.getOrCreate(currentLocation, idGenerator, transaction.getType(), IsolationLevel.of(transaction.getIsolationLevel()));
         vertex.setId(idGenerator.getOperatorId(task.getId()));
         task.putVertex(vertex);
         outputs.add(vertex);

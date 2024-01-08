@@ -20,8 +20,8 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.transaction.base.ITransaction;
-import io.dingodb.exec.transaction.base.TransactionConfig;
 import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -35,30 +35,30 @@ public class TransactionManager {
     // connectionId -> Transaction
     private static final Map<CommonId, ITransaction> trans = new ConcurrentHashMap<>();
 
-    public static @NonNull ITransaction createTransaction(boolean pessimistic, long start_ts) {
+    public static @NonNull ITransaction createTransaction(boolean pessimistic, long start_ts, int isolationLevel) {
         if (pessimistic) {
-            return createTransaction(TransactionType.PESSIMISTIC, start_ts);
+            return createTransaction(TransactionType.PESSIMISTIC, start_ts, isolationLevel);
         } else {
-            return createTransaction(TransactionType.OPTIMISTIC, start_ts);
+            return createTransaction(TransactionType.OPTIMISTIC, start_ts, isolationLevel);
         }
     }
 
-    public static @NonNull ITransaction createTransaction(boolean pessimistic, @NonNull CommonId txnId) {
+    public static @NonNull ITransaction createTransaction(boolean pessimistic, @NonNull CommonId txnId, int isolationLevel) {
         if (pessimistic) {
-            return createTransaction(TransactionType.PESSIMISTIC, txnId);
+            return createTransaction(TransactionType.PESSIMISTIC, txnId, isolationLevel);
         } else {
-            return createTransaction(TransactionType.OPTIMISTIC, txnId);
+            return createTransaction(TransactionType.OPTIMISTIC, txnId, isolationLevel);
         }
     }
 
-    public static @NonNull ITransaction createTransaction(@NonNull TransactionType trxType, long start_ts) {
+    public static @NonNull ITransaction createTransaction(@NonNull TransactionType trxType, long start_ts, int isolationLevel) {
         ITransaction tran;
         switch (trxType) {
             case OPTIMISTIC:
-                tran = new OptimisticTransaction(start_ts);
+                tran = new OptimisticTransaction(start_ts, isolationLevel);
                 break;
             case PESSIMISTIC:
-                tran = new PessimisticTransaction(start_ts);
+                tran = new PessimisticTransaction(start_ts, isolationLevel);
                 break;
             default:
                 log.info("start_ts:" + start_ts + ", TransactionType: " + trxType.name() + " not supported");
@@ -67,14 +67,14 @@ public class TransactionManager {
         return tran;
     }
 
-    public static @NonNull ITransaction createTransaction(@NonNull TransactionType trxType, @NonNull CommonId txnId) {
+    public static @NonNull ITransaction createTransaction(@NonNull TransactionType trxType, @NonNull CommonId txnId, int isolationLevel) {
         ITransaction tran;
         switch (trxType) {
             case OPTIMISTIC:
-                tran = new OptimisticTransaction(txnId);
+                tran = new OptimisticTransaction(txnId, isolationLevel);
                 break;
             case PESSIMISTIC:
-                tran = new PessimisticTransaction(txnId);
+                tran = new PessimisticTransaction(txnId, isolationLevel);
                 break;
             default:
                 log.info("txnId:" + txnId + ", TransactionType: " + trxType.name() + " not supported");
@@ -117,6 +117,6 @@ public class TransactionManager {
     }
 
     public static long lockTtlTm() {
-        return TsoService.getDefault().timestamp() + TransactionConfig.lock_ttl;
+        return TsoService.getDefault().timestamp() + TransactionUtil.lock_ttl;
     }
 }
