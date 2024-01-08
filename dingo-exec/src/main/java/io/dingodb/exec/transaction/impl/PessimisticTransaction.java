@@ -37,12 +37,12 @@ public class PessimisticTransaction extends BaseTransaction {
 
     private long for_update_ts;
 
-    public PessimisticTransaction(long startTs) {
-        super(startTs);
+    public PessimisticTransaction(long startTs, int isolationLevel) {
+        super(startTs, isolationLevel);
     }
 
-    public PessimisticTransaction(CommonId txnId) {
-        super(txnId);
+    public PessimisticTransaction(CommonId txnId, int isolationLevel) {
+        super(txnId, isolationLevel);
     }
 
     @Override

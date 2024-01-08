@@ -38,6 +38,7 @@ import io.dingodb.exec.operator.params.TxnPartRangeDeleteParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -103,7 +104,12 @@ public final class DingoRangeDeleteVisitFun {
                     rd.isWithEnd());
                 vertex = new Vertex(PART_RANGE_DELETE, param);
             }
-            Task task = job.getOrCreate(currentLocation, idGenerator);
+            Task task;
+            if (transaction != null) {
+                task = job.getOrCreate(currentLocation, idGenerator, transaction.getType(), IsolationLevel.of(transaction.getIsolationLevel()));
+            } else {
+                task = job.getOrCreate(currentLocation, idGenerator);
+            }
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);
             OutputHint outputHint = new OutputHint();

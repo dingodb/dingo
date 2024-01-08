@@ -43,6 +43,7 @@ import io.dingodb.exec.operator.hash.HashStrategy;
 import io.dingodb.exec.operator.hash.SimpleHashStrategy;
 import io.dingodb.exec.operator.params.HashParam;
 import io.dingodb.exec.operator.params.PartitionParam;
+import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.meta.MetaService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -64,10 +65,11 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.PARTITION;
 public class DingoStreamingConverterVisitFun {
     @NonNull
     public static Collection<Vertex> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, DingoStreamingConverter rel
+        Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction, DingoJobVisitor visitor, DingoStreamingConverter rel
     ) {
         return convertStreaming(
             job, idGenerator, currentLocation,
+            transaction,
             dingo(rel.getInput()).accept(visitor),
             dingo(rel.getInput()).getStreaming(),
             rel.getStreaming(),
@@ -77,6 +79,7 @@ public class DingoStreamingConverterVisitFun {
 
     public static @NonNull Collection<Vertex> convertStreaming(
         Job job, IdGenerator idGenerator, Location currentLocation,
+        ITransaction transaction,
         @NonNull Collection<Vertex> inputs,
         @NonNull DingoRelStreaming srcStreaming,
         @NonNull DingoRelStreaming dstStreaming,
@@ -106,7 +109,7 @@ public class DingoStreamingConverterVisitFun {
         if (!Objects.equals(dstDistribution, srcDistribution)) {
             outputs = outputs.stream().map(input -> {
                 Location targetLocation = (dstDistribution == null ? currentLocation : input.getTargetLocation());
-                return DingoExchangeFun.exchange(job, idGenerator, input, targetLocation, schema);
+                return DingoExchangeFun.exchange(job, idGenerator, transaction, input, targetLocation, schema);
             }).collect(Collectors.toList());
         }
         if (dstPartitions.size() < media.getPartitions().size()) {

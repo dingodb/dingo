@@ -38,6 +38,7 @@ import io.dingodb.exec.operator.params.LikeScanParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -70,9 +71,11 @@ public final class DingoLikeScanVisitFun {
 
         for (RangeDistribution distribution
             : ps.calcPartitionRange(rel.getPrefix(), rel.getPrefix(), true, true, distributions)) {
-            Task task = job.getOrCreate(currentLocation, idGenerator);
+            Task task;
             if (transaction != null) {
-
+                task = job.getOrCreate(currentLocation, idGenerator, transaction.getType(), IsolationLevel.of(transaction.getIsolationLevel()));
+            } else {
+                task = job.getOrCreate(currentLocation, idGenerator);
             }
             LikeScanParam param = new LikeScanParam(
                 tableInfo.getId(),

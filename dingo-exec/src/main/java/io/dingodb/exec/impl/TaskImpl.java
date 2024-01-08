@@ -36,6 +36,8 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.TaskStatus;
 import io.dingodb.exec.operator.SourceOperator;
+import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import lombok.Getter;
@@ -54,7 +56,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.ROOT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SOURCE;
 
 @Slf4j
-@JsonPropertyOrder({"txnId" ,"jobId", "location", "operators", "runList", "parasType"})
+@JsonPropertyOrder({"txnType", "isolationLevel", "txnId" , "jobId", "location", "operators", "runList", "parasType"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public final class TaskImpl implements Task {
     @JsonProperty("id")
@@ -88,6 +90,12 @@ public final class TaskImpl implements Task {
     @JsonProperty("parasType")
     @Getter
     private final DingoType parasType;
+    @JsonProperty("txnType")
+    @Getter
+    private final TransactionType transactionType;
+    @JsonProperty("isolationLevel")
+    @Getter
+    private final IsolationLevel isolationLevel;
     private final transient AtomicInteger status;
     private CommonId rootOperatorId = null;
     private CountDownLatch activeThreads = null;
@@ -100,7 +108,9 @@ public final class TaskImpl implements Task {
         @JsonProperty("jobId") CommonId jobId,
         @JsonProperty("txnId") CommonId txnId,
         @JsonProperty("location") Location location,
-        @JsonProperty("parasType") DingoType parasType
+        @JsonProperty("parasType") DingoType parasType,
+        @JsonProperty("txnType") TransactionType transactionType,
+        @JsonProperty("isolationLevel") IsolationLevel isolationLevel
     ) {
         this.id = id;
         this.jobId = jobId;
@@ -110,6 +120,8 @@ public final class TaskImpl implements Task {
         this.runList = new LinkedList<>();
         this.status = new AtomicInteger(Status.BORN);
         this.vertexes = new HashMap<>();
+        this.transactionType = transactionType;
+        this.isolationLevel = isolationLevel;
     }
 
     @Override

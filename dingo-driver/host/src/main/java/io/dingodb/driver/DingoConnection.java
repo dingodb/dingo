@@ -23,6 +23,7 @@ import io.dingodb.common.mysql.client.SessionVariableChange;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.impl.TransactionManager;
+import io.dingodb.exec.transaction.util.TransactionUtil;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -88,6 +89,16 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         return (DingoMeta) meta;
     }
 
+    public ITransaction createTransaction(boolean pessimistic) {
+        if (transaction == null) {
+            long startTs = TransactionManager.getStart_ts();
+            this.transaction = TransactionManager.createTransaction(pessimistic, startTs,
+                TransactionUtil.convertIsolationLevel(getClientInfo("transaction_isolation")));
+            transaction.setTransactionConfig(sessionVariables);
+        }
+        return transaction;
+    }
+
     public void cleanTransaction() throws SQLException {
         if(transaction != null) {
             if (!transaction.isAutoCommit()) {
@@ -113,8 +124,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 this.transaction = null;
             }
         }
-        long startTs = TransactionManager.getStart_ts();
-        this.transaction = TransactionManager.createTransaction(pessimistic, startTs);
+        createTransaction(pessimistic);
         this.autoCommit = false;
     }
 
@@ -142,8 +152,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             }
         }
         if(autoCommit == false) {
-            long startTs = TransactionManager.getStart_ts();
-            this.transaction = TransactionManager.createTransaction(false, startTs);
+            createTransaction(false);
             this.autoCommit = false;
         }
 
@@ -252,7 +261,23 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
 
     @Override
     public void setClientInfo(String name, String value) throws SQLClientInfoException {
+        if (name.equalsIgnoreCase("transaction_isolation")) {
+            if (transaction != null) {
+                throw new RuntimeException("Transaction characteristics can't be changed while a transaction is in progress");
+            }
+            // optimistic transaction only support REPEATABLE-READ transaction isolation
+            if (value.equalsIgnoreCase("READ-COMMITTED") && getClientInfo("txn_mode").equalsIgnoreCase("optimistic")) {
+                return;
+            }
+        }
         sessionVariables.setProperty(name, value);
+        if (name.equalsIgnoreCase("autocommit")) {
+            try {
+                setAutoCommit(value.equalsIgnoreCase("on") ? true : false);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
         SessionVariableWatched.getInstance().notifyObservers(
             SessionVariableChange.builder().id(id).name(name).value(value).build()

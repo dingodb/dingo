@@ -45,6 +45,7 @@ import io.dingodb.calcite.grammar.dql.SqlShowTableStatus;
 import io.dingodb.calcite.grammar.dql.SqlShowTables;
 import io.dingodb.calcite.grammar.dql.SqlShowVariables;
 import io.dingodb.calcite.grammar.dql.SqlShowWarnings;
+import io.dingodb.exec.transaction.base.TransactionType;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -53,6 +54,7 @@ import org.apache.calcite.sql.SqlSetOption;
 import org.apache.commons.lang3.StringUtils;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Optional;
 
 public final class SqlToOperationConverter {
@@ -159,7 +161,18 @@ public final class SqlToOperationConverter {
             return Optional.of(new RollbackTxOperation(connection));
         } else if (sqlNode instanceof SqlBeginTx) {
             SqlBeginTx sqlBeginTx = (SqlBeginTx) sqlNode;
-            return Optional.of(new StartTransactionOperation(connection, sqlBeginTx.pessimistic));
+            boolean pessimistic = false;
+            try {
+                if (sqlBeginTx.txnMode.equalsIgnoreCase(TransactionType.PESSIMISTIC.name())) {
+                    pessimistic = true;
+                } else if (sqlBeginTx.txnMode.equals("") &&
+                    connection.getClientInfo("txn_mode").equalsIgnoreCase(TransactionType.PESSIMISTIC.name())) {
+                    pessimistic = true;
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+            return Optional.of(new StartTransactionOperation(connection, pessimistic));
         } else if (sqlNode instanceof SqlLockTable) {
             SqlLockTable sqlLockTable = (SqlLockTable) sqlNode;
             return Optional.of(new LockTableOperation(connection, sqlLockTable.tableList));

@@ -29,6 +29,8 @@ import io.dingodb.exec.operator.ReceiveOperator;
 import io.dingodb.exec.operator.SendOperator;
 import io.dingodb.exec.operator.params.ReceiveParam;
 import io.dingodb.exec.operator.params.SendParam;
+import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import static io.dingodb.exec.utils.OperatorCodeUtils.RECEIVE;
@@ -39,14 +41,14 @@ public final class DingoTransactionExchangeFun {
     }
 
     public static Vertex exchange(
-        Job job, IdGenerator idGenerator, @NonNull Vertex input, @NonNull Location target, DingoType schema
+        Job job, IdGenerator idGenerator, ITransaction transaction, @NonNull Vertex input, @NonNull Location target, DingoType schema
     ) {
         Task task = input.getTask();
         if (target.equals(task.getLocation())) {
             return input;
         }
         CommonId id = idGenerator.getOperatorId(task.getId());
-        Task rcvTask = job.getOrCreate(target, idGenerator);
+        Task rcvTask = job.getOrCreate(target, idGenerator, transaction.getType(), IsolationLevel.of(transaction.getIsolationLevel()));
         CommonId receiveId = idGenerator.getOperatorId(rcvTask.getId());
         SendParam sendParam = new SendParam(target.getHost(), target.getPort(), receiveId, schema);
         Vertex send = new Vertex(SEND, sendParam);

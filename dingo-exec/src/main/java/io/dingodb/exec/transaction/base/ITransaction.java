@@ -24,6 +24,7 @@ import io.dingodb.net.Channel;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 public interface ITransaction {
 
@@ -37,13 +38,9 @@ public interface ITransaction {
 
     int getIsolationLevel();
 
-    void setIsolationLevel(int isolationLevel);
-
     TransactionType getType();
 
     TransactionStatus getStatus();
-
-    void setStatus(TransactionStatus status);
 
     TransactionCache getCache();
 
@@ -68,5 +65,8 @@ public interface ITransaction {
     boolean isAutoCommit();
 
     void setAutoCommit(boolean autoCommit);
+
     Job getJob();
+
+    void setTransactionConfig(Properties sessionVariables);
 }

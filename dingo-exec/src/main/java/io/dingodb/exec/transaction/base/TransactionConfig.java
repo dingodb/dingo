@@ -16,9 +16,30 @@
 
 package io.dingodb.exec.transaction.base;
 
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.Properties;
+
+@NoArgsConstructor
 public class TransactionConfig {
-    public static final long lock_ttl = 60000l;
-    public static final boolean disable_txn_auto_retry = false;
-    public static final int txn_retry_limit = 0;
-    public static final int max_pre_write_count = 1024;
+
+    @Setter
+    private Properties sessionVariables;
+
+    public TransactionConfig(Properties sessionVariables) {
+        this.sessionVariables = sessionVariables;
+    }
+
+    public int getTxn_retry_limit() {
+        return Integer.parseInt(sessionVariables.getProperty("txn_retry_cnt"));
+    }
+
+    public boolean isDisable_txn_auto_retry() {
+        return (sessionVariables.getProperty("txn_retry") == "on") ? true : false;
+    }
+
+    public boolean isConstraint_check_in_place() {
+        return sessionVariables.getProperty("txn_inert_check") == "on" ? true : false;
+    }
 }

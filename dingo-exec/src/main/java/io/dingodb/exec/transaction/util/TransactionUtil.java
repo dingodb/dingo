@@ -43,7 +43,20 @@ import java.util.stream.IntStream;
 
 @Slf4j
 public class TransactionUtil {
+    public static final long lock_ttl = 60000l;
+    public static final int max_pre_write_count = 1024;
+    public final static String snapshotIsolation = "REPEATABLE-READ";
+    public final static String readCommitted = "READ-COMMITTED";
 
+    public static int convertIsolationLevel(String transactionIsolation) {
+        if (transactionIsolation.equalsIgnoreCase(snapshotIsolation)) {
+            return 1;
+        } else if (transactionIsolation.equalsIgnoreCase(readCommitted)){
+            return 2;
+        } else {
+            throw new RuntimeException("The set transaction isolation level is not currently supported.");
+        }
+    }
     public static <T> List<Set<T>> splitSetIntoSubsets(Set<T> set, int batchSize) {
         List<T> tempList = new ArrayList<>(set);
         List<Set<T>> subsets = new ArrayList<>();

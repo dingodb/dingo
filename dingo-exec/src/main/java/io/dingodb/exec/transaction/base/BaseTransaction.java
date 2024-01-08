@@ -47,6 +47,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
@@ -58,7 +59,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @AllArgsConstructor
 public abstract class BaseTransaction implements ITransaction{
 
-    protected int isolationLevel = IsolationLevel.ReadCommitted.getCode();
+    protected int isolationLevel;
     protected long start_ts;
     protected CommonId txnId;
     protected CommonId txnInstanceId;
@@ -73,8 +74,10 @@ public abstract class BaseTransaction implements ITransaction{
     protected Future future;
     protected List<String> sqlList;
     protected boolean autoCommit;
+    protected TransactionConfig transactionConfig;
 
-    public BaseTransaction(@NonNull CommonId txnId) {
+    public BaseTransaction(@NonNull CommonId txnId, int isolationLevel) {
+        this.isolationLevel = isolationLevel;
         this.txnId = txnId;
         this.start_ts = txnId.seq;
         this.txnInstanceId = new CommonId(CommonId.CommonType.TXN_INSTANCE, txnId.seq, 0l);
@@ -82,10 +85,12 @@ public abstract class BaseTransaction implements ITransaction{
         this.channelMap = new ConcurrentHashMap<>();
         this.cache = new TransactionCache(txnId);
         this.sqlList = new ArrayList<>();
+        this.transactionConfig = new TransactionConfig();
         TransactionManager.register(txnId, this);
     }
 
-    public BaseTransaction(long start_ts) {
+    public BaseTransaction(long start_ts, int isolationLevel) {
+        this.isolationLevel = isolationLevel;
         this.start_ts = start_ts;
         this.txnInstanceId = new CommonId(CommonId.CommonType.TXN_INSTANCE, start_ts, 0l);
         this.txnId = new CommonId(CommonId.CommonType.TRANSACTION, TransactionManager.getServerId().seq, start_ts);
@@ -93,12 +98,18 @@ public abstract class BaseTransaction implements ITransaction{
         this.channelMap = new ConcurrentHashMap<>();
         this.cache = new TransactionCache(txnId);
         this.sqlList = new ArrayList<>();
+        this.transactionConfig = new TransactionConfig();
         TransactionManager.register(txnId, this);
     }
 
     @Override
     public void addSql(String sql) {
         sqlList.add(sql);
+    }
+
+    @Override
+    public void setTransactionConfig(Properties sessionVariables) {
+        transactionConfig.setSessionVariables(sessionVariables);
     }
 
     public abstract void cleanUp();
@@ -119,7 +130,7 @@ public abstract class BaseTransaction implements ITransaction{
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         TransactionManager.unregister(txnId);
         this.closed = true;
         this.status = TransactionStatus.CLOSE;

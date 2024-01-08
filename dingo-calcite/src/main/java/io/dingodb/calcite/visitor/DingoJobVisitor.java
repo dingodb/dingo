@@ -110,7 +110,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
 
     @Override
     public Collection<Vertex> visit(@NonNull DingoStreamingConverter rel) {
-        return DingoStreamingConverterVisitFun.visit(job, idGenerator, currentLocation, this, rel);
+        return DingoStreamingConverterVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel);
     }
 
     @Override
@@ -176,7 +176,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
 
     @Override
     public Collection<Vertex> visit(@NonNull DingoValues rel) {
-        return DingoValuesVisitFun.visit(job, idGenerator, currentLocation, this, rel);
+        return DingoValuesVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel);
     }
 
     @Override
