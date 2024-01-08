@@ -29,11 +29,11 @@ foreach(DEMO ${DEMOS})
     # 创建 example target
     add_executable(${FILE_NAME} ${DEMO})
     # 添加依赖，确保在构建 example target 之前已经构建了 Rust 静态库
-    add_dependencies(${FILE_NAME}  tantivy_library_build_target)
+    # add_dependencies(${FILE_NAME}  tantivy_library_build_target)
     # 链接 Rust 构建出的静态库到 example target
     # target_link_directories(${FILE_NAME} PRIVATE ${LIB_SEARCH_PATH})
     # target_link_directories(${FILE_NAME} PRIVATE ${UTILS_INCLUDE_DIRS})
-    target_link_libraries(${FILE_NAME} PUBLIC tantivy_search tantivy_search_utils_lib)
+    target_link_libraries(${FILE_NAME} PUBLIC tantivy_search tantivy_search_utils_lib rust::tantivy_search)
     # target_link_libraries(${FILE_NAME} PUBLIC ${JEMALLOC_LIBRARIES} tantivy_search tantivy_search_utils_lib)
     # 为 example target 指定 include 目录路径
     # target_include_directories(${FILE_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)

@@ -11,23 +11,6 @@ use super::index_r::*;
 use super::row_id_bitmap_collector::RowIdRoaringCollector;
 
 
-#[derive(Debug)]
-pub enum SearchError {
-    NullIndexReader,
-    InvalidQueryStr
-}
-
-impl std::fmt::Display for SearchError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SearchError::NullIndexReader => write!(f, "IndexReader pointer is null"),
-            SearchError::InvalidQueryStr => write!(f, "Invalid query string")
-        }
-    }
-}
-
-
-
 fn compute_bitmap(index_r: &IndexR, query_str: &str, use_regrex: bool) -> Arc<RoaringBitmap> {
     let schema = index_r.reader.searcher().index().schema();
     let text = match schema.get_field("text") {
@@ -86,7 +69,7 @@ fn compute_bitmap(index_r: &IndexR, query_str: &str, use_regrex: bool) -> Arc<Ro
 
 
 
-fn intersect_and_return(row_id_roaring_bitmap: Arc<RoaringBitmap>, lrange: u64, rrange: u64) -> Result<Arc<RoaringBitmap>, SearchError> {
+fn intersect_and_return(row_id_roaring_bitmap: Arc<RoaringBitmap>, lrange: u64, rrange: u64) -> Result<Arc<RoaringBitmap>, String> {
     let mut row_id_range = RoaringBitmap::new();
     row_id_range.insert_range(lrange as u32..(rrange + 1) as u32);
     row_id_range &= Arc::as_ref(&row_id_roaring_bitmap);
@@ -105,7 +88,7 @@ fn intersect_and_return(row_id_roaring_bitmap: Arc<RoaringBitmap>, lrange: u64, 
 /// - `use_regrex`: Whether to use regex search.
 ///
 /// Returns:
-/// - `Result<RoaringBitmap, SearchError>`: A `RoaringBitmap` containing the search results,
+/// - `Result<RoaringBitmap, String>`: A `RoaringBitmap` containing the search results,
 ///   or an error if the search fails.
 pub fn perform_search(
     index_r: &IndexR,
@@ -113,7 +96,7 @@ pub fn perform_search(
     lrange: u64,
     rrange: u64,
     use_regrex: bool
-) -> Result<Arc<RoaringBitmap>, SearchError> {
+) -> Result<Arc<RoaringBitmap>, String> {
     #[cfg(feature = "use-flurry-cache")]
     {
         // Resolve cache or compute the roaring bitmap for the given query.

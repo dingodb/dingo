@@ -33,6 +33,7 @@ impl TokenizerType {
 
 // Register the third-party tokenizer to the index
 pub fn register_tokenizer_to_index(index: &mut Index, tokenizer_type: TokenizerType, tokenizer: TextAnalyzer) -> Result<String, String> {
+    #[allow(unreachable_patterns)]
     match tokenizer_type {
         TokenizerType::Default(tokenizer_name) => {
             index.tokenizers().register(&tokenizer_name, tokenizer);

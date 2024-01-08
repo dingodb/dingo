@@ -5,7 +5,6 @@ mod commons;
 mod flurry_cache;
 mod logger;
 mod tokenizer;
-mod utils;
 pub mod index;
 pub mod search;
 mod common;

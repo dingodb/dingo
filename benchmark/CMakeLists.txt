@@ -8,4 +8,4 @@ file(GLOB BENCHMARKS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 message(STATUS "Config benchmarks.")
 
 add_executable(tantivy_search_benchmark ${BENCHMARK_ENTRY} ${BENCHMARKS})
-target_link_libraries(tantivy_search_benchmark PUBLIC tantivy_search tantivy_search_contrib_lib)
+target_link_libraries(tantivy_search_benchmark PUBLIC tantivy_search tantivy_search_contrib_lib rust::tantivy_search)

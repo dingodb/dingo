@@ -56,20 +56,20 @@ pub fn save_custom_index_setting(path: &Path, setting: &CustomIndexSetting) -> R
 /// Loads the custom index settings from a file.
 pub fn load_custom_index_setting(index_file_path: &Path) -> Result<CustomIndexSetting, String> {
     let file_path = index_file_path.join(CUSTOM_INDEX_SETTING_FILE_NAME);
-    let mut file = match File::open(file_path) {
+    let mut file = match File::open(file_path.clone()) {
         Ok(content) => content,
         Err(e) => {
-            return Err(format!("Can't open custom index setting file:{:?}, exception:{}", index_file_path, e.to_string()))
+            return Err(format!("Can't open custom index setting file:{:?}, exception:{}", file_path, e.to_string()))
         }
     };
     let mut contents = String::new();
     if let Err(e) = file.read_to_string(&mut contents) {
-        return Err(format!("Can't read custom index setting file:{:?}, exception:{}", index_file_path, e.to_string()))
+        return Err(format!("Can't read custom index setting file:{:?}, exception:{}", file_path, e.to_string()))
     };
     let result: CustomIndexSetting = match serde_json::from_str(&contents) {
         Ok(content) => content,
         Err(e)=>{
-            return Err(format!("Can't get CustomIndexSetting variable from file:{:?}, exception:{}", index_file_path, e.to_string()))
+            return Err(format!("Can't get CustomIndexSetting variable from file:{:?}, exception:{}", file_path, e.to_string()))
         }
     };
     Ok(result)

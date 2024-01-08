@@ -93,24 +93,24 @@ public:
         terms = j["terms"];
         file.close();
         row_id_range = generate_array(row_id_step, 0, total_rows);
+        tantivy_load_index(index_path);
     }
 
     void TearDown(const ::benchmark::State& state) override {
-        terms.clear();
-        row_id_range.clear();
+        // terms.clear();
+        // row_id_range.clear();
+        tantivy_reader_free(index_path);
     }
 };
 
 BENCHMARK_DEFINE_F(SearchBenchmark, SearchOperation)(benchmark::State& state){
     for (auto _ : state) {
-        tantivy_load_index(index_path);
-        for (size_t i = 0; i < terms.size(); i++) {
+        for (size_t i = 0; i < 1000; i++) {
             for (size_t j = 0; j < row_id_range.size(); j++) {
-                tantivy_search_in_rowid_range(index_path, terms[i].c_str(), row_id_range[j], row_id_range[j] + row_id_step, false);
+                tantivy_search_in_rowid_range(index_path, terms[i], row_id_range[j], row_id_range[j] + row_id_step, false);
             }
         }
-        tantivy_reader_free(index_path);
     }
 }
 
-BENCHMARK_REGISTER_F(SearchBenchmark, SearchOperation)->Threads(16)->Iterations(100);
+BENCHMARK_REGISTER_F(SearchBenchmark, SearchOperation)->Threads(3)->Iterations(2);

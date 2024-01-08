@@ -5,57 +5,75 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 project(TANTIVY_LIB)
 
-# tantivy 构建方式
-# if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-#     set(CARGO_CMD cargo update -p tantivy && cargo build)
-#     set(TARGET_DIR "debug")
-# else ()
-# set(CARGO_CMD cargo build --release)
-# set(CARGO_CMD RUSTFLAGS=\"-C debuginfo=2\" cargo build --release --features \"use-jemalloc use-flurry-cache\")
-set(CARGO_CMD cargo build --release --features \"use-flurry-cache\")
-# set(CARGO_CMD cargo build --release)
-set(TARGET_DIR "release")
-# endif ()
+find_package(Corrosion REQUIRED)
+corrosion_import_crate(MANIFEST_PATH "Cargo.toml")
 
-# tantivy 静态库路径
-set(LIB_SEARCH_PATH ${CMAKE_CURRENT_BINARY_DIR}/target/${TARGET_DIR})
-set(LIB_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+set(rust_lib "tantivy_search")
+# -Wno-dollar-in-identifier-extension: cxx bridge complies names with '$'
+# -Wno-unused-macros: unused CXXBRIDGE1_RUST_STRING
+set(RUST_CXXFLAGS "-Wno-dollar-in-identifier-extension -Wno-unused-macros")
+message(${RUST_CXXFLAGS})
+# NOTE: requires RW access for the source dir
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/.cargo/config.toml.in" "${CMAKE_CURRENT_SOURCE_DIR}/.cargo/config.toml" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/build.rs.in" "${CMAKE_CURRENT_SOURCE_DIR}/build.rs" @ONLY)
 
-# 自定义构建脚本, 后续比较繁琐的话可以单独放到一个 .sh 文件
-add_custom_target(tantivy_library_build_target ALL
-  COMMENT "Compiling TANTIVY_SEARCH module"
-  COMMAND CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/target ${CARGO_CMD}
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+# corrosion 2022 edition doesn't fit this CMake.
+# set(cxx_bridge_binary_folder ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/cargo/build/${Rust_CARGO_TARGET_CACHED}/cxxbridge)
+# Rust_CARGO_TARGET 和 Rust_CARGO_TARGET_CACHED 分别是啥
+set(cxx_bridge_binary_folder ${CMAKE_BINARY_DIR}/cargo/build/${Rust_CARGO_TARGET}/cxxbridge)
+set(cxx_bridge_source_file "src/lib.rs")
+
+set(common_header ${cxx_bridge_binary_folder}/rust/cxx.h)
+# tantivy_search cxx header and source.
+set(tantivy_search_header ${cxx_bridge_binary_folder}/${rust_lib}/${cxx_bridge_source_file}.h)
+set(tantivy_search_source ${cxx_bridge_binary_folder}/${rust_lib}/${cxx_bridge_source_file}.cc)
+
+# get include path
+set(tantivy_search_include ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+message(STATUS "> common_header: ${tantivy_search_header}")
+message(STATUS "> tantivy_search header: ${tantivy_search_header}")
+message(STATUS "> tantivy_search source: ${tantivy_search_source}")
+message(STATUS "> tantivy_search include: ${tantivy_search_include}")
+
+add_custom_command(
+    OUTPUT
+    ${common_header}
+    ${tantivy_search_header}
+    ${tantivy_search_source}
+    COMMAND
+    DEPENDS ${rust_lib}-static
+    # DEPENDS cargo-build_supercrate  # releated with corrosion version.
+    COMMENT "Fixing cmake to find source files"
 )
 
-# 尝试查找 tantivy 静态库文件, 如果在构建目录中不存在, 则不会报错
-find_library(LIB_FILE NAMES tantivy_search PATHS ${LIB_SEARCH_PATH} NO_DEFAULT_PATH)
 
-# 判断静态库 tantivy 是否存在
-if(LIB_FILE)
-  message(STATUS "Tantivy libtantivy_search.a path is " ${LIB_FILE})
-else()
-  set(LIB_FILE ${LIB_SEARCH_PATH}/libtantivy_search.a)
-  # 临时空目录和文件
-  file(MAKE_DIRECTORY ${LIB_SEARCH_PATH})
-  file(TOUCH ${LIB_FILE})
-  message(STATUS "Tantivy libtantivy_search.a will be rebuild during build time.")
-endif()
+add_library(${rust_lib}_cxxbridge
+    ${common_header}
+    ${skim_header}
+    ${skim_source}
+    ${tantivy_search_header}
+    ${tantivy_search_source}
+)
+# cxx bridge compiles such bindings
+set_target_properties(${rust_lib}_cxxbridge PROPERTIES COMPILE_FLAGS "${CXXBRIDGE_CXXFLAGS}")
+set_target_properties(${rust_lib}_cxxbridge PROPERTIES LINKER_LANGUAGE CXX)
 
+target_include_directories(${rust_lib}_cxxbridge
+    PUBLIC
+    ${tantivy_search_include}
+)
 
-if (LIB_FILE AND LIB_INCLUDE)
-  set(CMAKE_REQUIRED_LIBRARIES ${LIB_FILE})
-  set(CMAKE_REQUIRED_INCLUDES ${LIB_INCLUDE})
-  add_library (tantivy_search INTERFACE)
-  # 提供 libtantivy.a 静态的完整路径
-  set_property (TARGET tantivy_search PROPERTY INTERFACE_LINK_LIBRARIES  ${LIB_FILE})
-  # 其它 target 链接到这个库时 include 目录路径
-  set_property (TARGET tantivy_search PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${LIB_INCLUDE})
-  message (STATUS "Tantivy rust library is ready")
-else()
-  message (STATUS "Tantivy rust library doesn't build during the configure stage.")
-endif()
+# Create total target with alias with given namespace
+add_library(${rust_lib}-total INTERFACE)
+target_link_libraries(${rust_lib}-total
+    INTERFACE
+    ${rust_lib}_cxxbridge
+    ${rust_lib}
+)
 
+# for end-user to link into project
+add_library(rust::${rust_lib} ALIAS ${rust_lib}-total)
 
 add_subdirectory(contrib ${CMAKE_CURRENT_BINARY_DIR}/contrib)
 add_subdirectory(examples ${CMAKE_CURRENT_BINARY_DIR}/examples)
