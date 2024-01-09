@@ -3,8 +3,8 @@ use flurry::{DefaultHashBuilder, HashMap};
 use once_cell::sync::OnceCell;
 use std::hash::{BuildHasher, Hash};
 
-use crate::INFO;
 use crate::commons::*;
+use crate::INFO;
 
 /// TODO This is a temporary solution for the "skip-index" issue,
 /// and this part of the code will need to be removed when rewriting the processor in the future.
@@ -72,7 +72,6 @@ where
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
@@ -81,7 +80,7 @@ mod tests {
     use roaring::RoaringBitmap;
 
     use crate::flurry_cache::FlurryCache;
-    
+
     struct CustomStruct {
         data: String, // 或者是您需要的任何数据类型
     }
@@ -90,7 +89,7 @@ mod tests {
             CustomStruct { data: data.into() }
         }
     }
-    
+
     impl Drop for CustomStruct {
         fn drop(&mut self) {
             println!("CustomStruct with data `{}` is being dropped!", self.data);
@@ -102,59 +101,72 @@ mod tests {
         }
     }
 
-
     #[test]
     fn it_works() {
-        let test_furry_cache: Lazy<FlurryCache<(usize, String, String), RoaringBitmap>> = Lazy::new(|| FlurryCache::with_capacity(1));
+        let test_furry_cache: Lazy<FlurryCache<(usize, String, String), RoaringBitmap>> =
+            Lazy::new(|| FlurryCache::with_capacity(1));
 
-        let row_id_roaring_bitmap = test_furry_cache.resolve(
-            (0, "hello".to_string(), "/var/lib/xxx".to_string()),
-            || {
+        let row_id_roaring_bitmap =
+            test_furry_cache.resolve((0, "hello".to_string(), "/var/lib/xxx".to_string()), || {
                 let fake_bitmap = RoaringBitmap::new();
                 return fake_bitmap;
-            },
-        );
+            });
 
         for i_ in 1..10000 {
-            let _: RoaringBitmap = test_furry_cache.resolve((i_, "hello".to_string(), "/var/lib/xxx".to_string()),|| {RoaringBitmap::new()});
-            let _: RoaringBitmap = test_furry_cache.resolve((i_, "hello".to_string(), "/var/lib/xxx".to_string()),|| {RoaringBitmap::new()});
+            let _: RoaringBitmap = test_furry_cache.resolve(
+                (i_, "hello".to_string(), "/var/lib/xxx".to_string()),
+                || RoaringBitmap::new(),
+            );
+            let _: RoaringBitmap = test_furry_cache.resolve(
+                (i_, "hello".to_string(), "/var/lib/xxx".to_string()),
+                || RoaringBitmap::new(),
+            );
         }
-
     }
 
     #[test]
     fn free_value() {
-        let test_furry_cache: Lazy<FlurryCache<(usize, String, String), CustomStruct>> = Lazy::new(|| FlurryCache::with_capacity(1));
+        let test_furry_cache: Lazy<FlurryCache<(usize, String, String), CustomStruct>> =
+            Lazy::new(|| FlurryCache::with_capacity(1));
 
-        let _ = test_furry_cache.resolve(
-            (0, "hello".to_string(), "/var/lib/xxx".to_string()),
-            || {
+        let _ =
+            test_furry_cache.resolve((0, "hello".to_string(), "/var/lib/xxx".to_string()), || {
                 let fake_data = CustomStruct::new("test");
                 return fake_data;
-            },
-        );
+            });
 
         for i_ in 1..10000 {
-            let _: CustomStruct = test_furry_cache.resolve((i_, "hello".to_string(), "/var/lib/xxx".to_string()),|| {CustomStruct::new("test-2")});
-            let _: CustomStruct = test_furry_cache.resolve((i_, "hello".to_string(), "/var/lib/xxx".to_string()),|| {CustomStruct::new("test-3")});
+            let _: CustomStruct = test_furry_cache.resolve(
+                (i_, "hello".to_string(), "/var/lib/xxx".to_string()),
+                || CustomStruct::new("test-2"),
+            );
+            let _: CustomStruct = test_furry_cache.resolve(
+                (i_, "hello".to_string(), "/var/lib/xxx".to_string()),
+                || CustomStruct::new("test-3"),
+            );
         }
     }
 
     #[test]
     fn free_value2() {
-        let test_furry_cache: Lazy<FlurryCache<(usize, String, String), Arc<CustomStruct>>> = Lazy::new(|| FlurryCache::with_capacity(1));
+        let test_furry_cache: Lazy<FlurryCache<(usize, String, String), Arc<CustomStruct>>> =
+            Lazy::new(|| FlurryCache::with_capacity(1));
 
-        let _ = test_furry_cache.resolve(
-            (0, "hello".to_string(), "/var/lib/xxx".to_string()),
-            || {
+        let _ =
+            test_furry_cache.resolve((0, "hello".to_string(), "/var/lib/xxx".to_string()), || {
                 let fake_data = CustomStruct::new("test");
                 return Arc::new(fake_data);
-            },
-        );
+            });
 
         for i_ in 1..10000 {
-            let _: Arc<CustomStruct> = test_furry_cache.resolve((i_, "hello".to_string(), "/var/lib/xxx".to_string()),|| {Arc::new(CustomStruct::new("test-2"))});
-            let _: Arc<CustomStruct> = test_furry_cache.resolve((i_, "hello".to_string(), "/var/lib/xxx".to_string()),|| {Arc::new(CustomStruct::new("test-3"))});
+            let _: Arc<CustomStruct> = test_furry_cache.resolve(
+                (i_, "hello".to_string(), "/var/lib/xxx".to_string()),
+                || Arc::new(CustomStruct::new("test-2")),
+            );
+            let _: Arc<CustomStruct> = test_furry_cache.resolve(
+                (i_, "hello".to_string(), "/var/lib/xxx".to_string()),
+                || Arc::new(CustomStruct::new("test-3")),
+            );
         }
     }
 }

@@ -1,19 +1,16 @@
-
-use std::{sync::Arc, path::Path};
-use cxx::CxxString;
-use crate::ERROR;
-use crate::tokenizer::parse_and_register::get_custom_tokenizer;
-use crate::tokenizer::parse_and_register::register_tokenizer_to_index;
 use crate::commons::LOG_CALLBACK;
 use crate::logger::ffi_logger::callback_with_thread_info;
+use crate::tokenizer::parse_and_register::get_custom_tokenizer;
+use crate::tokenizer::parse_and_register::register_tokenizer_to_index;
+use crate::ERROR;
+use cxx::CxxString;
+use std::{path::Path, sync::Arc};
 
 use super::index_r::*;
 use super::utils::perform_search;
 use crate::common::index_utils::*;
 
 use tantivy::{Index, ReloadPolicy};
-
-
 
 /// Loads an index from a specified directory.
 ///
@@ -27,14 +24,21 @@ pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
     let index_path_str = match index_path.to_str() {
         Ok(content) => content.to_string(),
         Err(e) => {
-            return Err(format!("Can't parse parameter index_path: {}, exception: {}", index_path, e.to_string()));
+            return Err(format!(
+                "Can't parse parameter index_path: {}, exception: {}",
+                index_path,
+                e.to_string()
+            ));
         }
     };
 
     // Verify index files directory.
     let index_files_directory = Path::new(&index_path_str);
     if !index_files_directory.exists() || !index_files_directory.is_dir() {
-        let error_info = format!("Directory does not exist or it's not a valid path: {:?}", index_path_str.clone());
+        let error_info = format!(
+            "Directory does not exist or it's not a valid path: {:?}",
+            index_path_str.clone()
+        );
         ERROR!("{}", error_info);
         return Err(error_info);
     }
@@ -43,7 +47,11 @@ pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
     let mut index = match Index::open_in_dir(index_files_directory) {
         Ok(idx) => idx,
         Err(e) => {
-            let error_info = format!("Failed to load tantivy index with given directory: {}, exception: {}", index_path_str.clone(), e);
+            let error_info = format!(
+                "Failed to load tantivy index with given directory: {}, exception: {}",
+                index_path_str.clone(),
+                e
+            );
             ERROR!("{}", error_info);
             return Err(error_info);
         }
@@ -60,21 +68,23 @@ pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
     };
 
     // Register tokenizer based on the loaded settings.
-    let (tokenizer_type, text_analyzer) = match get_custom_tokenizer(&custom_index_setting.tokenizer) {
-        Ok((tokenizer_type, text_analyzer)) => (tokenizer_type, text_analyzer),
-        Err(e) => {
-            let error_info = format!("Failed to initialize tokenizer when loading index: {}", e);
-            ERROR!("{}", error_info);
-            return Err(error_info);
-        }
-    };
+    let (tokenizer_type, text_analyzer) =
+        match get_custom_tokenizer(&custom_index_setting.tokenizer) {
+            Ok((tokenizer_type, text_analyzer)) => (tokenizer_type, text_analyzer),
+            Err(e) => {
+                let error_info =
+                    format!("Failed to initialize tokenizer when loading index: {}", e);
+                ERROR!("{}", error_info);
+                return Err(error_info);
+            }
+        };
 
-    if let Err(e) = register_tokenizer_to_index(
-        &mut index,
-        tokenizer_type.clone(),
-        text_analyzer,
-    ) {
-        let error_info = format!("Failed to register tokenizer when loading index: {:?}, exception: {}", tokenizer_type.name(), e);
+    if let Err(e) = register_tokenizer_to_index(&mut index, tokenizer_type.clone(), text_analyzer) {
+        let error_info = format!(
+            "Failed to register tokenizer when loading index: {:?}, exception: {}",
+            tokenizer_type.name(),
+            e
+        );
         ERROR!("{}", error_info);
         return Err(error_info);
     }
@@ -102,7 +112,11 @@ pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
     };
 
     // Save IndexR to cache.
-    let indexr = IndexR {index, reader, path: index_path_str.clone()};
+    let indexr = IndexR {
+        index,
+        reader,
+        path: index_path_str.clone(),
+    };
 
     if let Err(e) = set_index_r(index_path_str.clone(), Arc::new(indexr)) {
         ERROR!("{}", e);
@@ -111,7 +125,6 @@ pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
 
     Ok(true)
 }
-
 
 /// Frees the index reader.
 ///
@@ -125,7 +138,11 @@ pub fn tantivy_reader_free(index_path: &CxxString) -> Result<bool, String> {
     let index_path_str = match index_path.to_str() {
         Ok(content) => content.to_string(),
         Err(e) => {
-            return Err(format!("Can't parse parameter index_path: {}, exception: {}", index_path, e.to_string()));
+            return Err(format!(
+                "Can't parse parameter index_path: {}, exception: {}",
+                index_path,
+                e.to_string()
+            ));
         }
     };
 
@@ -135,7 +152,6 @@ pub fn tantivy_reader_free(index_path: &CxxString) -> Result<bool, String> {
     // success remove.
     Ok(true)
 }
-
 
 /// Determines if a query string appears within a specified row ID range.
 ///
@@ -159,13 +175,21 @@ pub fn tantivy_search_in_rowid_range(
     let index_path_str = match index_path.to_str() {
         Ok(content) => content.to_string(),
         Err(e) => {
-            return Err(format!("Can't parse parameter index_path: {}, exception: {}", index_path, e.to_string()));
+            return Err(format!(
+                "Can't parse parameter index_path: {}, exception: {}",
+                index_path,
+                e.to_string()
+            ));
         }
     };
     let query_str = match query.to_str() {
         Ok(content) => content.to_string(),
         Err(e) => {
-            return Err(format!("Can't parse parameter index_path: {}, exception: {}", query, e.to_string()));
+            return Err(format!(
+                "Can't parse parameter index_path: {}, exception: {}",
+                query,
+                e.to_string()
+            ));
         }
     };
     // get index reader from CACHE
@@ -177,13 +201,7 @@ pub fn tantivy_search_in_rowid_range(
         }
     };
 
-    match perform_search(
-        &index_r,
-        &query_str,
-        lrange,
-        rrange,
-        use_regex,
-    ) {
+    match perform_search(&index_r, &query_str, lrange, rrange, use_regex) {
         Ok(row_id_range) => Ok(!row_id_range.is_empty()),
         Err(e) => {
             let error_info = format!("Error in search: {}", e);
@@ -192,7 +210,6 @@ pub fn tantivy_search_in_rowid_range(
         }
     }
 }
-
 
 /// Counts the occurrences of a query string within a specified row ID range.
 ///
@@ -216,13 +233,21 @@ pub fn tantivy_count_in_rowid_range(
     let index_path_str = match index_path.to_str() {
         Ok(content) => content.to_string(),
         Err(e) => {
-            return Err(format!("Can't parse parameter index_path: {}, exception: {}", index_path, e.to_string()));
+            return Err(format!(
+                "Can't parse parameter index_path: {}, exception: {}",
+                index_path,
+                e.to_string()
+            ));
         }
     };
     let query_str = match query.to_str() {
         Ok(content) => content.to_string(),
         Err(e) => {
-            return Err(format!("Can't parse parameter index_path: {}, exception: {}", query, e.to_string()));
+            return Err(format!(
+                "Can't parse parameter index_path: {}, exception: {}",
+                query,
+                e.to_string()
+            ));
         }
     };
     // get index reader from CACHE
@@ -234,13 +259,7 @@ pub fn tantivy_count_in_rowid_range(
         }
     };
 
-    match perform_search(
-        &index_r,
-        &query_str,
-        lrange,
-        rrange,
-        use_regex,
-    ) {
+    match perform_search(&index_r, &query_str, lrange, rrange, use_regex) {
         Ok(row_id_range) => Ok(row_id_range.len() as u64),
         Err(e) => {
             let error_info = format!("Error in search: {}", e);

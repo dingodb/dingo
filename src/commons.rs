@@ -1,9 +1,9 @@
 use crate::flurry_cache::FlurryCache;
+use libc::*;
 use once_cell::sync::Lazy;
+use once_cell::sync::OnceCell;
 use roaring::RoaringBitmap;
 use std::sync::Arc;
-use once_cell::sync::OnceCell;
-use libc::*;
 
 //**************************** SKIP_INDEX Furry Cache begin *******************************//
 // #[cfg(feature = "use-flurry-cache")]

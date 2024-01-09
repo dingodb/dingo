@@ -1,17 +1,19 @@
-use std::path::Path;
-use std::sync::atomic::{AtomicUsize, Ordering, AtomicBool};
-use std::time::{Instant, Duration};
-use std::{fs::File, io::BufReader, ffi::CString};
 use clap::{App, Arg};
 use cxx::{let_cxx_string, CxxString};
-use serde_json::Value;
-use tantivy_search::index::index_manager::{tantivy_create_index, tantivy_index_doc};
-use tantivy_search::search::index_searcher::{tantivy_search_in_rowid_range, tantivy_load_index, tantivy_reader_free};
-use threadpool::ThreadPool;
-use std::thread;
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, Mutex};
+use serde_json::Value;
+use std::path::Path;
 use std::process;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::{Duration, Instant};
+use std::{ffi::CString, fs::File, io::BufReader};
+use tantivy_search::index::index_manager::{tantivy_create_index, tantivy_index_doc};
+use tantivy_search::search::index_searcher::{
+    tantivy_load_index, tantivy_reader_free, tantivy_search_in_rowid_range,
+};
+use threadpool::ThreadPool;
 
 #[derive(Serialize, Deserialize)]
 struct Doc {
@@ -21,21 +23,20 @@ struct Doc {
 }
 
 fn index_docs_from_json(json_file_path: &str, index_path: &CxxString) -> usize {
-
     let _ = tantivy_create_index(index_path);
 
     // Read JSON and parse into Vec<Doc>
     let file = File::open(json_file_path).expect("Json file not found");
     let reader = BufReader::new(file);
     let docs: Vec<Doc> = serde_json::from_reader(reader).expect("Error parning JSON");
-    
+
     // Create and use Tantivy index
-    let mut count= 0;
+    let mut count = 0;
     for doc in docs {
         let_cxx_string!(doc_cxx = doc.body);
         let doc = doc_cxx.as_ref().get_ref();
         tantivy_index_doc(index_path, count, doc);
-        count+=1;
+        count += 1;
     }
     return count as usize;
 }
@@ -65,26 +66,32 @@ fn calculate_average(latencies: Arc<Mutex<Vec<u128>>>) -> String {
     format!("{:.3}", average as f64 / 1_000_000.0)
 }
 
-fn run_benchmark(terms: &[String], 
-                duration_seconds: usize, 
-                pool: &ThreadPool,
-                index_path: String,
-                query_count: Arc<AtomicUsize>, 
-                row_id_range: &[usize], 
-                row_id_step: usize,
-                latencies: Arc<Mutex<Vec<u128>>>,
-                pool_max_active_count: usize) {
+fn run_benchmark(
+    terms: &[String],
+    duration_seconds: usize,
+    pool: &ThreadPool,
+    index_path: String,
+    query_count: Arc<AtomicUsize>,
+    row_id_range: &[usize],
+    row_id_step: usize,
+    latencies: Arc<Mutex<Vec<u128>>>,
+    pool_max_active_count: usize,
+) {
     // Benchmark logic
     let benchmark_start_time = Instant::now();
 
-    while Instant::now().duration_since(benchmark_start_time) < Duration::from_secs(duration_seconds as u64) {
+    while Instant::now().duration_since(benchmark_start_time)
+        < Duration::from_secs(duration_seconds as u64)
+    {
         for term in terms.iter() {
             // 限制 pool 队列等待的最大长度
-            while pool.queued_count()>=pool_max_active_count {
+            while pool.queued_count() >= pool_max_active_count {
                 thread::sleep(Duration::from_millis(1000));
             }
             // 超过限制时间, 停止执行
-            if Instant::now().duration_since(benchmark_start_time) > Duration::from_secs(duration_seconds as u64) {
+            if Instant::now().duration_since(benchmark_start_time)
+                > Duration::from_secs(duration_seconds as u64)
+            {
                 break;
             }
             let row_id_range_vec = row_id_range.to_vec();
@@ -97,13 +104,19 @@ fn run_benchmark(terms: &[String],
                 let start_query = Instant::now();
                 let mut hitted = 0;
                 let_cxx_string!(cxx_term = term_clone);
-                let term = cxx_term.as_ref().get_ref();                
+                let term = cxx_term.as_ref().get_ref();
                 let_cxx_string!(index_path_cxx = index_path_clone);
                 let index_path_cxx = index_path_cxx.as_ref().get_ref();
 
                 for &start in row_id_range_vec.iter() {
-                    if let Ok(_) = tantivy_search_in_rowid_range(index_path_cxx, term, start as u64, (start + row_id_step) as u64, false) {
-                        hitted+=1;
+                    if let Ok(_) = tantivy_search_in_rowid_range(
+                        index_path_cxx,
+                        term,
+                        start as u64,
+                        (start + row_id_step) as u64,
+                        false,
+                    ) {
+                        hitted += 1;
                     }
                 }
                 query_count_clone.fetch_add(1, Ordering::SeqCst);
@@ -132,7 +145,9 @@ fn load_terms_from_json<P: AsRef<Path>>(path: P) -> Vec<String> {
     let json: Value = serde_json::from_reader(reader).expect("Unable to parse JSON");
 
     // 假设 JSON 结构是 {"terms": ["term1", "term2", ...]}
-    json["terms"].as_array().expect("Expected an array")
+    json["terms"]
+        .as_array()
+        .expect("Expected an array")
         .iter()
         .map(|val| val.as_str().expect("Expected a string").to_string())
         .collect()
@@ -149,90 +164,127 @@ fn main() {
         .version("1.0")
         .author("mochix")
         .about("Do some benchmarking")
-        .arg(Arg::with_name("pool-size")
-            .short("ps")
-            .long("pool-size")
-            .value_name("POOL_SIZE")
-            .help("Set pool size")
-            .default_value("1"))
-        .arg(Arg::with_name("each-benchmark-duration")
-            .short("ebd")
-            .long("each-benchmark-duration")
-            .value_name("EACH_BENCHMARK_DURATION")
-            .help("Set each benchmark duration")
-            .default_value("1200")) // default 20min
-        .arg(Arg::with_name("skip-build-index")
-            .short("sbi")
-            .long("skip-build-index")
-            .value_name("SKIP_BUILD_INDEX")
-            .help("Skip build index")
-            .default_value("true"))
-        .arg(Arg::with_name("skip-benchmark")
-            .short("sb")
-            .long("skip-benchmark")
-            .value_name("SKIP_BENCHMARK")
-            .help("Skip benchmark")
-            .default_value("false"))
-        .arg(Arg::with_name("each-free-wait")
-            .short("efw")
-            .long("each-free-wait")
-            .value_name("EACH_FREE_WAIT")
-            .help("Set each free operation wait time")
-            .default_value("120"))
-        .arg(Arg::with_name("iter-times")
-            .short("it")
-            .long("iter-times")
-            .value_name("ITER_TIMES")
-            .help("Set iter times")
-            .default_value("30"))
-        .arg(Arg::with_name("index-path")
-            .short("ip")
-            .long("index-path")
-            .value_name("INDEX_PATH")
-            .help("Set index path")
-            .default_value("/home/mochix/tantivy_search_memory/index_path"))
-        .arg(Arg::with_name("query-term-path")
-            .short("qtp")
-            .long("query-term-path")
-            .value_name("QUERY_TERM_PATH")
-            .help("Set query term path")
-            .default_value("/home/mochix/workspace_github/tantivy-search/examples/query_terms.json"))
-        .arg(Arg::with_name("dataset-path")
-            .short("dp")
-            .long("dataset-path")
-            .value_name("DATASET_PATH")
-            .help("Set dataset path")
-            .default_value("/home/mochix/workspace_github/tantivy-search/examples/wiki_560w.json"))
-        .arg(Arg::with_name("max-task-size")
-            .short("mts")
-            .long("max-task-size")
-            .value_name("MAX_TASK_SIZE")
-            .help("Set max task size")
-            .default_value("1000"))
+        .arg(
+            Arg::with_name("pool-size")
+                .short("ps")
+                .long("pool-size")
+                .value_name("POOL_SIZE")
+                .help("Set pool size")
+                .default_value("1"),
+        )
+        .arg(
+            Arg::with_name("each-benchmark-duration")
+                .short("ebd")
+                .long("each-benchmark-duration")
+                .value_name("EACH_BENCHMARK_DURATION")
+                .help("Set each benchmark duration")
+                .default_value("1200"),
+        ) // default 20min
+        .arg(
+            Arg::with_name("skip-build-index")
+                .short("sbi")
+                .long("skip-build-index")
+                .value_name("SKIP_BUILD_INDEX")
+                .help("Skip build index")
+                .default_value("true"),
+        )
+        .arg(
+            Arg::with_name("skip-benchmark")
+                .short("sb")
+                .long("skip-benchmark")
+                .value_name("SKIP_BENCHMARK")
+                .help("Skip benchmark")
+                .default_value("false"),
+        )
+        .arg(
+            Arg::with_name("each-free-wait")
+                .short("efw")
+                .long("each-free-wait")
+                .value_name("EACH_FREE_WAIT")
+                .help("Set each free operation wait time")
+                .default_value("120"),
+        )
+        .arg(
+            Arg::with_name("iter-times")
+                .short("it")
+                .long("iter-times")
+                .value_name("ITER_TIMES")
+                .help("Set iter times")
+                .default_value("30"),
+        )
+        .arg(
+            Arg::with_name("index-path")
+                .short("ip")
+                .long("index-path")
+                .value_name("INDEX_PATH")
+                .help("Set index path")
+                .default_value("/home/mochix/tantivy_search_memory/index_path"),
+        )
+        .arg(
+            Arg::with_name("query-term-path")
+                .short("qtp")
+                .long("query-term-path")
+                .value_name("QUERY_TERM_PATH")
+                .help("Set query term path")
+                .default_value(
+                    "/home/mochix/workspace_github/tantivy-search/examples/query_terms.json",
+                ),
+        )
+        .arg(
+            Arg::with_name("dataset-path")
+                .short("dp")
+                .long("dataset-path")
+                .value_name("DATASET_PATH")
+                .help("Set dataset path")
+                .default_value(
+                    "/home/mochix/workspace_github/tantivy-search/examples/wiki_560w.json",
+                ),
+        )
+        .arg(
+            Arg::with_name("max-task-size")
+                .short("mts")
+                .long("max-task-size")
+                .value_name("MAX_TASK_SIZE")
+                .help("Set max task size")
+                .default_value("1000"),
+        )
         .get_matches();
 
-    let pool_size: usize = matches.value_of("pool-size")
+    let pool_size: usize = matches
+        .value_of("pool-size")
         .and_then(|v| v.parse().ok())
         .expect("Invalid value for pool size");
-    let each_benchmark_duration: usize = matches.value_of("each-benchmark-duration")
+    let each_benchmark_duration: usize = matches
+        .value_of("each-benchmark-duration")
         .and_then(|v| v.parse().ok())
         .expect("Invalid value for each benchmark duration");
-    let skip_build_index: bool = matches.value_of("skip-build-index")
+    let skip_build_index: bool = matches
+        .value_of("skip-build-index")
         .and_then(|v| v.parse().ok())
         .expect("Invalid value for skip build index");
-    let skip_benchmark: bool = matches.value_of("skip-benchmark")
+    let skip_benchmark: bool = matches
+        .value_of("skip-benchmark")
         .and_then(|v| v.parse().ok())
         .expect("Invalid value for skip benchmark");
-    let each_free_wait: u64 = matches.value_of("each-free-wait")
+    let each_free_wait: u64 = matches
+        .value_of("each-free-wait")
         .and_then(|v| v.parse().ok())
         .expect("Invalid value for each free wait");
-    let iter_times: i32 = matches.value_of("iter-times")
+    let iter_times: i32 = matches
+        .value_of("iter-times")
         .and_then(|v| v.parse().ok())
         .expect("Invalid value for iter times");
-    let index_path = matches.value_of("index-path").expect("Index path not provided");
-    let query_term_path = matches.value_of("query-term-path").expect("Query term path not provided");
-    let dataset_path = matches.value_of("dataset-path").expect("Dataset path not provided");
-    let max_task_size: usize = matches.value_of("max-task-size")
+    let index_path = matches
+        .value_of("index-path")
+        .expect("Index path not provided");
+    let query_term_path = matches
+        .value_of("query-term-path")
+        .expect("Query term path not provided");
+    let dataset_path = matches
+        .value_of("dataset-path")
+        .expect("Dataset path not provided");
+    let max_task_size: usize = matches
+        .value_of("max-task-size")
         .and_then(|v| v.parse().ok())
         .expect("Invalid value for max task size");
 
@@ -260,7 +312,7 @@ fn main() {
     let reporter_query_count = Arc::clone(&query_count);
     let reporter_latencies = Arc::clone(&latencies);
     let reporter_is_finished = Arc::clone(&is_finished);
-    let reporter_thread = thread::spawn(move||{
+    let reporter_thread = thread::spawn(move || {
         while !reporter_is_finished.load(Ordering::SeqCst) {
             thread::sleep(Duration::from_secs(10));
             let total_duration = start.elapsed().as_secs();
@@ -277,9 +329,8 @@ fn main() {
             let p70 = calculate_percentile(Arc::clone(&reporter_latencies), 70);
             let p99 = calculate_percentile(Arc::clone(&reporter_latencies), 99);
             let average_latency = calculate_average(Arc::clone(&reporter_latencies));
-    
+
             println!("QPS: {}, Avg Latency: {} ms, P10: {} ms, P30: {} ms, P50: {} ms, P70: {} ms, P99: {} ms", qps, average_latency, p10, p30, p50, p70, p99);
-            
         }
     });
 
@@ -288,18 +339,19 @@ fn main() {
         println!("Starting index docs from dataset: {:?}", dataset_path);
         total_rows = index_docs_from_json(dataset_path, index_path_cxx);
         println!("{:?} docs has been indexed.", total_rows);
-
     }
     // 初始化相关数据
     let terms = load_terms_from_json(query_term_path);
     let row_id_range = generate_array(8192, 0, total_rows);
     let pool = ThreadPool::new(pool_size);
 
-
     println!("Starting benchmark, pool: {}", pool_size);
 
     for i in 0..iter_times {
-        println!("[{}] Loading tantivy index from index_path after {}s", i, each_free_wait);
+        println!(
+            "[{}] Loading tantivy index from index_path after {}s",
+            i, each_free_wait
+        );
         thread::sleep(Duration::from_secs(each_free_wait));
         println!("[{}] Waiting finished.", i);
 
@@ -308,15 +360,17 @@ fn main() {
         // 运行基准测试
         println!("[{}] Trying benchmark", i);
         if !skip_benchmark {
-            run_benchmark(&terms, 
-                each_benchmark_duration, 
-                &pool, 
+            run_benchmark(
+                &terms,
+                each_benchmark_duration,
+                &pool,
                 index_path.to_string(),
-                Arc::clone(&query_count), 
-                &row_id_range, 
-                row_id_step, 
+                Arc::clone(&query_count),
+                &row_id_range,
+                row_id_step,
                 Arc::clone(&latencies),
-                max_task_size);   
+                max_task_size,
+            );
         }
         // Waiting queue clean
         while pool.queued_count() > 0 {
@@ -324,7 +378,7 @@ fn main() {
             thread::sleep(Duration::from_secs(5));
         }
         println!("[{}] Waiting queue-[{}] done.", i, pool.queued_count());
-        tantivy_reader_free(index_path_cxx);        
+        tantivy_reader_free(index_path_cxx);
         // Arc 引用计数 = 1, 自动释放 IndexR
     }
 

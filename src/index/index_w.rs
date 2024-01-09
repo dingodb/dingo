@@ -1,19 +1,17 @@
 use std::sync::{Arc, Mutex};
 
-use flurry::HashMap;
-use once_cell::sync::Lazy;
-use tantivy::{Index, IndexWriter, Opstamp, Document};
 use crate::commons::LOG_CALLBACK;
 use crate::logger::ffi_logger::callback_with_thread_info;
 use crate::WARNING;
-
+use flurry::HashMap;
+use once_cell::sync::Lazy;
+use tantivy::{Document, Index, IndexWriter, Opstamp};
 
 pub struct IndexW {
     pub path: String,
     pub index: Index,
     pub writer: Mutex<Option<IndexWriter>>,
 }
-
 
 impl IndexW {
     // wrapper for IndexWriter.commit
@@ -25,7 +23,7 @@ impl IndexW {
                 } else {
                     Err("IndexWriter is not available".to_string())
                 }
-            },
+            }
             Err(e) => Err(format!("Lock error: {}", e)),
         }
     }
@@ -39,7 +37,7 @@ impl IndexW {
                 } else {
                     Err("IndexWriter is not available".to_string())
                 }
-            },
+            }
             Err(e) => Err(format!("Lock error: {}", e)),
         }
     }
@@ -49,19 +47,15 @@ impl IndexW {
         // use Interior Mutability
         match self.writer.lock() {
             Ok(mut writer) => {
-                
                 if let Some(writer) = writer.take() {
                     let _ = writer.wait_merging_threads();
                 };
                 Ok(())
-            },
-            Err(e) => {
-                Err(format!("Failed to acquire lock in drop: {}", e.to_string()))
-            },
+            }
+            Err(e) => Err(format!("Failed to acquire lock in drop: {}", e.to_string())),
         }
     }
 }
-
 
 impl Drop for IndexW {
     fn drop(&mut self) {
@@ -69,11 +63,9 @@ impl Drop for IndexW {
     }
 }
 
-
-
 // cache store IndexW for thread safe
-static INDEXW_CACHE: Lazy<Arc<HashMap<String, Arc<IndexW>>>> = Lazy::new(|| Arc::new(HashMap::new()));
-
+static INDEXW_CACHE: Lazy<Arc<HashMap<String, Arc<IndexW>>>> =
+    Lazy::new(|| Arc::new(HashMap::new()));
 
 pub fn get_index_w(key: String) -> Result<Arc<IndexW>, String> {
     let pinned = INDEXW_CACHE.pin();
@@ -87,10 +79,13 @@ pub fn set_index_w(key: String, value: Arc<IndexW>) -> Result<(), String> {
     let pinned = INDEXW_CACHE.pin();
     if pinned.contains_key(&key) {
         pinned.insert(key.clone(), value.clone());
-        WARNING!("{}", format!(
-            "Index writer already exists with given key: [{}], it has been overwritten.",
-            key
-        ))
+        WARNING!(
+            "{}",
+            format!(
+                "Index writer already exists with given key: [{}], it has been overwritten.",
+                key
+            )
+        )
     } else {
         pinned.insert(key, value.clone());
     }
@@ -101,10 +96,13 @@ pub fn remove_index_w(key: String) -> Result<(), String> {
     if pinned.contains_key(&key) {
         pinned.remove(&key);
     } else {
-        WARNING!("{}", format!(
-            "Index doesn't exist, can't remove it with given key: [{}]",
-            key
-        ))
+        WARNING!(
+            "{}",
+            format!(
+                "Index doesn't exist, can't remove it with given key: [{}]",
+                key
+            )
+        )
     }
     Ok(())
 }

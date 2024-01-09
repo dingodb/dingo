@@ -1,40 +1,51 @@
 use libc::*;
 use std::ffi::CStr;
 
+mod common;
 mod commons;
 mod flurry_cache;
-mod logger;
-mod tokenizer;
 pub mod index;
+mod logger;
 pub mod search;
-mod common;
-
+mod tokenizer;
 
 use commons::*;
-use logger::ffi_logger::*;
 use index::index_manager::*;
+use logger::ffi_logger::*;
 use search::index_searcher::*;
-
-
 
 #[cxx::bridge]
 mod ffi {
     extern "Rust" {
         // fn tantivy_logger_initialize(log_path: &CxxString, log_level: &CxxString, console_logging: bool, callback: LogCallback, enable_callback: bool, only_tantivy_search: bool) -> Result<bool>;
-        fn tantivy_create_index_with_tokenizer(index_path: &CxxString, tokenizer_with_parameter: &CxxString) -> Result<bool>;
+        fn tantivy_create_index_with_tokenizer(
+            index_path: &CxxString,
+            tokenizer_with_parameter: &CxxString,
+        ) -> Result<bool>;
         fn tantivy_create_index(index_path: &CxxString) -> Result<bool>;
         fn tantivy_load_index(index_path: &CxxString) -> Result<bool>;
         fn tantivy_index_doc(index_path: &CxxString, row_id: u64, doc: &CxxString) -> Result<bool>;
         fn tantivy_writer_commit(index_path: &CxxString) -> Result<bool>;
         fn tantivy_reader_free(index_path: &CxxString) -> Result<bool>;
         fn tantivy_writer_free(index_path: &CxxString) -> Result<bool>;
-        fn tantivy_search_in_rowid_range(index_path: &CxxString, query: &CxxString, lrange: u64, rrange: u64, use_regex: bool) -> Result<bool>;
-        fn tantivy_count_in_rowid_range(index_path: &CxxString, query: &CxxString, lrange: u64, rrange: u64, use_regex: bool) -> Result<u64>;
+        fn tantivy_search_in_rowid_range(
+            index_path: &CxxString,
+            query: &CxxString,
+            lrange: u64,
+            rrange: u64,
+            use_regex: bool,
+        ) -> Result<bool>;
+        fn tantivy_count_in_rowid_range(
+            index_path: &CxxString,
+            query: &CxxString,
+            lrange: u64,
+            rrange: u64,
+            use_regex: bool,
+        ) -> Result<u64>;
     }
 }
 
 pub type LogCallback = extern "C" fn(i32, *const c_char, *const c_char, *const c_char);
-
 
 /// Initializes the logger configuration for the tantivy search library.
 ///
@@ -89,7 +100,6 @@ pub extern "C" fn tantivy_logger_initialize(
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

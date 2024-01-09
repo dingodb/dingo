@@ -1,4 +1,4 @@
-pub mod index_searcher;
 mod index_r;
-mod utils;
+pub mod index_searcher;
 mod row_id_bitmap_collector;
+mod utils;

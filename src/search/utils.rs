@@ -1,15 +1,14 @@
-use std::sync::Arc;
 use roaring::RoaringBitmap;
-use tantivy::query::{RegexQuery, QueryParser};
+use std::sync::Arc;
+use tantivy::query::{QueryParser, RegexQuery};
 
-use crate::ERROR;
 use crate::commons::CACHE_FOR_SKIP_INDEX;
 use crate::commons::LOG_CALLBACK;
 use crate::logger::ffi_logger::callback_with_thread_info;
+use crate::ERROR;
 
 use super::index_r::*;
 use super::row_id_bitmap_collector::RowIdRoaringCollector;
-
 
 fn compute_bitmap(index_r: &IndexR, query_str: &str, use_regrex: bool) -> Arc<RoaringBitmap> {
     let schema = index_r.reader.searcher().index().schema();
@@ -24,18 +23,19 @@ fn compute_bitmap(index_r: &IndexR, query_str: &str, use_regrex: bool) -> Arc<Ro
     let searcher = index_r.reader.searcher();
     let row_id_collector = RowIdRoaringCollector::with_field("row_id".to_string());
 
-    if  use_regrex  {
+    if use_regrex {
         let regex_query = match RegexQuery::from_pattern(&like_to_regex(query_str), text) {
             Ok(parsed_query) => parsed_query,
             Err(e) => {
-                ERROR!("Can't parse regrex query: {}, {}", like_to_regex(query_str), e);
+                ERROR!(
+                    "Can't parse regrex query: {}, {}",
+                    like_to_regex(query_str),
+                    e
+                );
                 return Arc::new(RoaringBitmap::new());
             }
         };
-        let searched_bitmap = match searcher.search(
-            &regex_query,
-            &row_id_collector,
-        ) {
+        let searched_bitmap = match searcher.search(&regex_query, &row_id_collector) {
             Ok(result_bitmap) => result_bitmap,
             Err(e) => {
                 ERROR!("Can't execute search in `compute_bitmap`: {}", e);
@@ -52,10 +52,7 @@ fn compute_bitmap(index_r: &IndexR, query_str: &str, use_regrex: bool) -> Arc<Ro
                 return Arc::new(RoaringBitmap::new());
             }
         };
-        let searched_bitmap = match searcher.search(
-            &text_query,
-            &row_id_collector,
-        ) {
+        let searched_bitmap = match searcher.search(&text_query, &row_id_collector) {
             Ok(result_bitmap) => result_bitmap,
             Err(e) => {
                 ERROR!("Can't execute search in `compute_bitmap`: {}", e);
@@ -64,19 +61,18 @@ fn compute_bitmap(index_r: &IndexR, query_str: &str, use_regrex: bool) -> Arc<Ro
         };
         searched_bitmap
     }
-    
 }
 
-
-
-fn intersect_and_return(row_id_roaring_bitmap: Arc<RoaringBitmap>, lrange: u64, rrange: u64) -> Result<Arc<RoaringBitmap>, String> {
+fn intersect_and_return(
+    row_id_roaring_bitmap: Arc<RoaringBitmap>,
+    lrange: u64,
+    rrange: u64,
+) -> Result<Arc<RoaringBitmap>, String> {
     let mut row_id_range = RoaringBitmap::new();
     row_id_range.insert_range(lrange as u32..(rrange + 1) as u32);
     row_id_range &= Arc::as_ref(&row_id_roaring_bitmap);
     Ok(Arc::new(row_id_range))
 }
-
-
 
 /// Performs a search operation using the given index reader, query, and range.
 ///
@@ -95,13 +91,17 @@ pub fn perform_search(
     query_str: &str,
     lrange: u64,
     rrange: u64,
-    use_regrex: bool
+    use_regrex: bool,
 ) -> Result<Arc<RoaringBitmap>, String> {
     #[cfg(feature = "use-flurry-cache")]
     {
         // Resolve cache or compute the roaring bitmap for the given query.
         let row_id_roaring_bitmap = CACHE_FOR_SKIP_INDEX.resolve(
-            (index_r.reader_address(), query_str.to_string(), index_r.path.to_string()),
+            (
+                index_r.reader_address(),
+                query_str.to_string(),
+                index_r.path.to_string(),
+            ),
             || compute_bitmap(index_r, query_str, use_regrex),
         );
         intersect_and_return(row_id_roaring_bitmap, lrange, rrange)
@@ -111,9 +111,7 @@ pub fn perform_search(
         let row_id_roaring_bitmap = compute_bitmap(index_r, query_str, use_regrex);
         intersect_and_return(row_id_roaring_bitmap, lrange, rrange)
     }
-
 }
-
 
 // Convert Clickhouse like pattern to Rust regex pattern.
 pub fn like_to_regex(like_pattern: &str) -> String {
@@ -123,13 +121,15 @@ pub fn like_to_regex(like_pattern: &str) -> String {
     for c in like_pattern.chars() {
         match c {
             // got r'\', if not escape currently, need escape.
-            '\\' if !escape => {escape = true;},
+            '\\' if !escape => {
+                escape = true;
+            }
 
             // got r'\', if escaped currently, need push r'\\'
             '\\' if escape => {
                 regex_pattern.push_str("\\\\");
                 escape = false;
-            },
+            }
 
             // In not escape mode, convert '%' to '.*'
             '%' if !escape => regex_pattern.push_str(".*"),
@@ -141,7 +141,7 @@ pub fn like_to_regex(like_pattern: &str) -> String {
             '%' | '_' if escape => {
                 regex_pattern.push(c);
                 escape = false;
-            },
+            }
 
             // Handle regex special chars.
             _ => {
@@ -150,14 +150,12 @@ pub fn like_to_regex(like_pattern: &str) -> String {
                 }
                 regex_pattern.push(c);
                 escape = false;
-            },
+            }
         }
     }
 
     regex_pattern
 }
-
-
 
 #[cfg(test)]
 mod tests {

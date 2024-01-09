@@ -17,10 +17,8 @@ use once_cell::sync::OnceCell;
 use std::ffi::{c_int, CString};
 use std::thread;
 
-
 // Store log4rs handle for runtime update.
 static LOG4RS_HANDLE: OnceCell<log4rs::Handle> = OnceCell::new();
-
 
 #[derive(Debug)]
 struct TantivyFilter {
@@ -39,13 +37,11 @@ impl Filter for TantivyFilter {
     }
 }
 
-
-
 fn build_log_config(
     log_path: String,
     log_level: String,
     console_logging: bool,
-    only_tantivy_search: bool
+    only_tantivy_search: bool,
 ) -> Result<Config, String> {
     let log_path_trimmed = log_path.trim_end_matches('/').to_string();
     // process Log Path
@@ -87,7 +83,9 @@ fn build_log_config(
         // log level filter
         .filter(Box::new(ThresholdFilter::new(log_level)))
         // tantivy_search target filter
-        .filter(Box::new(TantivyFilter { only_tantivy_search }))
+        .filter(Box::new(TantivyFilter {
+            only_tantivy_search,
+        }))
         .build("file", Box::new(file));
 
     let mut config_builder = Config::builder().appender(file_appender);
@@ -99,7 +97,9 @@ fn build_log_config(
             // log level filter
             .filter(Box::new(ThresholdFilter::new(log_level)))
             // tantivy_search target filter
-            .filter(Box::new(TantivyFilter { only_tantivy_search }))
+            .filter(Box::new(TantivyFilter {
+                only_tantivy_search,
+            }))
             .build("stdout", Box::new(stdout));
         // add console Appender to config_builder
         config_builder = config_builder.appender(stdout_appender);
@@ -112,7 +112,7 @@ fn build_log_config(
         .build(root_builder.build(log_level))
         .map_err(|e| e.to_string())?;
 
-        crate::INFO!(
+    crate::INFO!(
         "build log4rs config: [log_path:{}, log_level:{}, console_logging:{}, only_tantivy_search:{}, log_file_path:{}]",
         log_path,
         log_level,
@@ -127,7 +127,7 @@ fn initialize_logger(
     log_path: String,
     log_level: String,
     console_logging: bool,
-    only_tantivy_search: bool
+    only_tantivy_search: bool,
 ) -> Result<(), String> {
     // construct logger config
     let config = build_log_config(log_path, log_level, console_logging, only_tantivy_search)
@@ -157,7 +157,6 @@ fn initialize_logger(
 fn initialize_log_callback(callback: LogCallback) {
     let _ = LOG_CALLBACK.get_or_init(|| callback);
 }
-
 
 /**
  * Initializes the tantivy_search logger.
