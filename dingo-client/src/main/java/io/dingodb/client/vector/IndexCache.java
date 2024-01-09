@@ -96,7 +96,7 @@ public class IndexCache {
     public IndexCache(int retry, Set<Location> coordinators) {
         this.retry = retry;
         this.coordinators = coordinators;
-        this.metaService = Services.metaService(Configuration.coordinatorSet());
+        this.metaService = Services.metaService(coordinators);
         this.autoIncrementService = new AutoIncrementService(coordinators);
     }
 
