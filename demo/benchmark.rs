@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
-use std::{ffi::CString, fs::File, io::BufReader};
+use std::{fs::File, io::BufReader};
 use tantivy_search::index::index_manager::{tantivy_create_index, tantivy_index_doc};
 use tantivy_search::search::index_searcher::{
     tantivy_load_index, tantivy_reader_free, tantivy_search_in_rowid_range,
@@ -35,7 +35,7 @@ fn index_docs_from_json(json_file_path: &str, index_path: &CxxString) -> usize {
     for doc in docs {
         let_cxx_string!(doc_cxx = doc.body);
         let doc = doc_cxx.as_ref().get_ref();
-        tantivy_index_doc(index_path, count, doc);
+        let _ = tantivy_index_doc(index_path, count, doc);
         count += 1;
     }
     return count as usize;
@@ -102,7 +102,7 @@ fn run_benchmark(
 
             pool.execute(move || {
                 let start_query = Instant::now();
-                let mut hitted = 0;
+                // let mut hitted = 0;
                 let_cxx_string!(cxx_term = term_clone);
                 let term = cxx_term.as_ref().get_ref();
                 let_cxx_string!(index_path_cxx = index_path_clone);
@@ -116,7 +116,7 @@ fn run_benchmark(
                         (start + row_id_step) as u64,
                         false,
                     ) {
-                        hitted += 1;
+                        // hitted += 1;
                     }
                 }
                 query_count_clone.fetch_add(1, Ordering::SeqCst);
@@ -378,7 +378,7 @@ fn main() {
             thread::sleep(Duration::from_secs(5));
         }
         println!("[{}] Waiting queue-[{}] done.", i, pool.queued_count());
-        tantivy_reader_free(index_path_cxx);
+        let _ = tantivy_reader_free(index_path_cxx);
         // Arc 引用计数 = 1, 自动释放 IndexR
     }
 

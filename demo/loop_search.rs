@@ -4,16 +4,13 @@ use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::{Duration, Instant};
-use std::{ffi::CString, fs::File, io::BufReader};
+use std::time::Duration;
+use std::{fs::File, io::BufReader};
 use tantivy::collector::Count;
 use tantivy::query::QueryParser;
 use tantivy::{Index, ReloadPolicy};
 use tantivy_search::index::index_manager::{tantivy_create_index, tantivy_index_doc};
-use threadpool::ThreadPool;
 
 #[derive(Serialize, Deserialize)]
 struct Doc {
@@ -25,7 +22,7 @@ struct Doc {
 fn index_docs_from_json(json_file_path: &str, index_path: &str) -> usize {
     let_cxx_string!(index_path_cxx = index_path);
     let index_path_cxx = index_path_cxx.as_ref().get_ref();
-    let iw = tantivy_create_index(index_path_cxx);
+    let _ = tantivy_create_index(index_path_cxx);
 
     // Read JSON and parse into Vec<Doc>
     let file = File::open(json_file_path).expect("Json file not found");
@@ -43,9 +40,9 @@ fn index_docs_from_json(json_file_path: &str, index_path: &str) -> usize {
     return count as usize;
 }
 
-fn generate_array(step: usize, lrange: usize, rrange: usize) -> Vec<usize> {
-    (lrange..=rrange).step_by(step).collect()
-}
+// fn generate_array(step: usize, lrange: usize, rrange: usize) -> Vec<usize> {
+//     (lrange..=rrange).step_by(step).collect()
+// }
 
 fn load_terms_from_json<P: AsRef<Path>>(path: P) -> Vec<String> {
     let file = File::open(path).expect("Unable to open the file");

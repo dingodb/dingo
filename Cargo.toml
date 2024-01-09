@@ -48,7 +48,7 @@ debug = true
 
 
 [[bin]]
-name = "tantivy_search_benchmark"
+name = "rust_benchmark"
 path = "demo/benchmark.rs"
 
 [[bin]]
@@ -62,3 +62,7 @@ path = "demo/regrex_search.rs"
 [[bin]]
 name = "natural_language"
 path = "demo/natural_language.rs"
+
+[[bin]]
+name = "bm25_search"
+path = "demo/bm25_search.rs"

@@ -1,8 +1,6 @@
 use tantivy::collector::Count;
 use tantivy::query::RegexQuery;
-use tantivy::schema::{
-    IndexRecordOption, Schema, TextFieldIndexing, TextOptions, FAST, INDEXED, TEXT,
-};
+use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions, FAST, INDEXED};
 use tantivy::{Document, Index};
 
 fn main() {
