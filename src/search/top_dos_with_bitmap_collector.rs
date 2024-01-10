@@ -1,12 +1,14 @@
-use std::cmp::Ordering;
-use std::fmt;
+use std::collections::BinaryHeap;
 use std::sync::Arc;
-use std::{collections::BinaryHeap, marker::PhantomData};
+use std::{cmp, fmt};
 
 use roaring::RoaringBitmap;
 use tantivy::collector::{Collector, SegmentCollector};
 use tantivy::query::Weight;
-use tantivy::{DocAddress, DocId, Score, SegmentOrdinal, SegmentReader};
+use tantivy::schema::Field;
+use tantivy::{DocAddress, DocId, Score, Searcher, SegmentOrdinal, SegmentReader};
+
+use crate::RowIdWithScore;
 
 // Class Inheritance Diagram:
 //
@@ -16,188 +18,106 @@ use tantivy::{DocAddress, DocId, Score, SegmentOrdinal, SegmentReader};
 //             ^
 //             |
 //             |
-//   +---------------------+
-//   | TopDocsWithFilter   |
-//   +---------------------+
+//   +---------------------+            +--------------------------+
+//   | TopDocsWithFilter   |<-----X------| TopScoreSegmentCollector |
+//   +---------------------+            +--------------------------+
 //
 // Explanation:
 // - `TopDocsWithFilter` can be treated as a subclass of `TopCollectorWithFilter`.
-//
+// - `TopScoreSegmentCollector` is utilized by `TopDocsWithFilter` but its internal
+//   functionalities are not implemented yet.
 
-// `ComparableDoc` is same with tantivy.
-struct ComparableDoc<T, D> {
-    pub feature: T,
-    pub doc: D,
-}
+static INITIAL_HEAP_SIZE: usize = 1000;
 
-impl<T: PartialOrd, D: PartialOrd> PartialOrd for ComparableDoc<T, D> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl<T: PartialOrd, D: PartialOrd> Ord for ComparableDoc<T, D> {
-    #[inline]
-    fn cmp(&self, other: &Self) -> Ordering {
-        // Reversed to make BinaryHeap work as a min-heap
-        let by_feature = other
-            .feature
-            .partial_cmp(&self.feature)
-            .unwrap_or(Ordering::Equal);
-
-        let lazy_by_doc_address = || self.doc.partial_cmp(&other.doc).unwrap_or(Ordering::Equal);
-
-        // In case of a tie on the feature, we sort by ascending
-        // `DocAddress` in order to ensure a stable sorting of the
-        // documents.
-        by_feature.then_with(lazy_by_doc_address)
-    }
-}
-
-impl<T: PartialOrd, D: PartialOrd> PartialEq for ComparableDoc<T, D> {
-    fn eq(&self, other: &Self) -> bool {
-        self.cmp(other) == Ordering::Equal
-    }
-}
-
-impl<T: PartialOrd, D: PartialOrd> Eq for ComparableDoc<T, D> {}
-
-pub struct TopCollectorWithFilter<T> {
+pub struct TopCollectorWithFilter {
     pub limit: usize,
     pub row_id_bitmap: Arc<RoaringBitmap>,
-    _marker: PhantomData<T>,
+    pub searcher: Option<Searcher>,
+    pub text_field: Option<Field>,
+    pub need_text: bool,
+    pub initial_heap_size: usize,
 }
 
-impl<T> TopCollectorWithFilter<T>
-where
-    T: PartialOrd + Clone,
-{
-    pub fn with_limit(limit: usize) -> TopCollectorWithFilter<T> {
+impl TopCollectorWithFilter {
+    // limit for result size.
+    pub fn with_limit(limit: usize) -> TopCollectorWithFilter {
         assert!(limit >= 1, "Limit must be strictly greater than 0.");
         Self {
             limit,
             row_id_bitmap: Arc::new(RoaringBitmap::new()),
-            _marker: PhantomData,
+            searcher: None,
+            text_field: None,
+            need_text: false,
+            initial_heap_size: INITIAL_HEAP_SIZE,
         }
     }
 
-    pub fn and_row_id_bitmap(
-        mut self,
-        row_id_bitmap: Arc<RoaringBitmap>,
-    ) -> TopCollectorWithFilter<T> {
+    // `row_id_bitmap` is used to filter out row ids.
+    pub fn with_filter(mut self, row_id_bitmap: Arc<RoaringBitmap>) -> TopCollectorWithFilter {
         self.row_id_bitmap = Arc::clone(&row_id_bitmap);
+        self
+    }
+
+    // `searcher` is used to search origin text content.
+    pub fn with_searcher(mut self, searcher: Searcher) -> TopCollectorWithFilter {
+        self.searcher = Some(searcher.clone());
+        self
+    }
+
+    // field which store origin text content.
+    pub fn with_text_field(mut self, field: Field) -> TopCollectorWithFilter {
+        self.text_field = Some(field.clone());
+        self
+    }
+
+    // whether need return origin text content.
+    pub fn with_stored_text(mut self, need_text: bool) -> TopCollectorWithFilter {
+        self.need_text = need_text;
+        self
+    }
+
+    // initial size for binary_heap
+    pub fn with_initial_heap_size(mut self, initial_heap_size: usize) -> TopCollectorWithFilter {
+        self.initial_heap_size = initial_heap_size;
         self
     }
 
     pub fn merge_fruits(
         &self,
-        children: Vec<Vec<(T, DocAddress)>>,
-    ) -> tantivy::Result<Vec<(T, DocAddress)>> {
+        children: Vec<Vec<RowIdWithScore>>,
+    ) -> tantivy::Result<Vec<RowIdWithScore>> {
         if self.limit == 0 {
             return Ok(Vec::new());
         }
         let mut top_collector = BinaryHeap::new();
         for child_fruit in children {
-            for (feature, doc) in child_fruit {
+            for child in child_fruit {
                 if top_collector.len() < self.limit {
-                    top_collector.push(ComparableDoc { feature, doc });
+                    top_collector.push(child);
                 } else if let Some(mut head) = top_collector.peek_mut() {
-                    if head.feature < feature {
-                        *head = ComparableDoc { feature, doc };
+                    if head.score < child.score {
+                        *head = child;
                     }
                 }
             }
         }
-        Ok(top_collector
-            .into_sorted_vec()
-            .into_iter()
-            .map(|cdoc| (cdoc.feature, cdoc.doc))
-            .collect())
-    }
-
-    pub fn for_segment<F: PartialOrd>(
-        &self,
-        segment_id: SegmentOrdinal,
-        _: &SegmentReader,
-    ) -> TopSegmentCollector<F> {
-        TopSegmentCollector::new(segment_id, self.limit)
+        Ok(top_collector.into_sorted_vec())
     }
 }
 
-pub struct TopSegmentCollector<T> {
-    limit: usize,
-    heap: BinaryHeap<ComparableDoc<T, DocId>>, // default max-heap, reverse by ComparableDoc Ord.
-    segment_ord: SegmentOrdinal,
-}
-
-impl<T: PartialOrd> TopSegmentCollector<T> {
-    fn new(segment_ord: SegmentOrdinal, limit: usize) -> TopSegmentCollector<T> {
-        TopSegmentCollector {
-            limit,
-            heap: BinaryHeap::with_capacity(limit), // 是否需要优化
-            segment_ord,
-        }
-    }
-}
-
-impl<T: PartialOrd + Clone> TopSegmentCollector<T> {
-    pub fn harvest(self) -> Vec<(T, DocAddress)> {
-        let segment_ord = self.segment_ord;
-        self.heap
-            .into_sorted_vec()
-            .into_iter()
-            .map(|comparable_doc| {
-                (
-                    comparable_doc.feature,
-                    DocAddress {
-                        segment_ord,
-                        doc_id: comparable_doc.doc,
-                    },
-                )
-            })
-            .collect()
-    }
-
-    /// Return true if more documents have been collected than the limit.
-    #[inline]
-    pub(crate) fn at_capacity(&self) -> bool {
-        self.heap.len() >= self.limit
-    }
-
-    /// Collects a document scored by the given feature
-    ///
-    /// It collects documents until it has reached the max capacity. Once it reaches capacity, it
-    /// will compare the lowest scoring item with the given one and keep whichever is greater.
-    #[inline]
-    pub fn collect(&mut self, doc: DocId, feature: T) {
-        if self.at_capacity() {
-            // It's ok to unwrap as long as a limit of 0 is forbidden.
-            if let Some(limit_feature) = self.heap.peek().map(|head| head.feature.clone()) {
-                if limit_feature < feature {
-                    if let Some(mut head) = self.heap.peek_mut() {
-                        head.feature = feature;
-                        head.doc = doc;
-                    }
-                }
-            }
-        } else {
-            // we have not reached capacity yet, so we can just push the
-            // element.
-            self.heap.push(ComparableDoc { feature, doc });
-        }
-    }
-}
-
-// Score is an alias name for `f32`
-pub struct TopDocsWithFilter(TopCollectorWithFilter<Score>); // tuple struct
+pub struct TopDocsWithFilter(TopCollectorWithFilter); // tuple struct
 
 impl fmt::Debug for TopDocsWithFilter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "TopDocs(limit={}, row_id_bitmap_size={})",
+            "TopDocsWithFilter(limit:{}, row_ids_size:{}, text_field_is_some:{}, searcher_is_some:{}, need_text:{}, initial_heap_size:{})",
             self.0.limit,
-            self.0.row_id_bitmap.len()
+            self.0.row_id_bitmap.len(),
+            self.0.text_field.is_some(),
+            self.0.searcher.is_some(),
+            self.0.need_text,
+            self.0.initial_heap_size
         )
     }
 }
@@ -207,44 +127,82 @@ impl TopDocsWithFilter {
         TopDocsWithFilter(TopCollectorWithFilter::with_limit(limit))
     }
 
-    pub fn and_row_id_bitmap(self, row_id_bitmap: Arc<RoaringBitmap>) -> TopDocsWithFilter {
-        TopDocsWithFilter(self.0.and_row_id_bitmap(row_id_bitmap))
+    pub fn with_filter(self, row_id_bitmap: Arc<RoaringBitmap>) -> TopDocsWithFilter {
+        TopDocsWithFilter(self.0.with_filter(row_id_bitmap))
+    }
+
+    pub fn with_searcher(self, searcher: Searcher) -> TopDocsWithFilter {
+        TopDocsWithFilter(self.0.with_searcher(searcher))
+    }
+
+    pub fn with_text_field(self, field: Field) -> TopDocsWithFilter {
+        TopDocsWithFilter(self.0.with_text_field(field))
+    }
+
+    pub fn with_stored_text(self, need_text: bool) -> TopDocsWithFilter {
+        TopDocsWithFilter(self.0.with_stored_text(need_text))
+    }
+
+    pub fn with_initial_heap_size(self, initial_heap_size: usize) -> TopDocsWithFilter {
+        TopDocsWithFilter(self.0.with_initial_heap_size(initial_heap_size))
+    }
+
+    #[inline]
+    fn extract_doc_text(&self, doc: DocId, segment_ord: SegmentOrdinal) -> String {
+        let mut doc_text = String::new();
+        if self.0.need_text {
+            if let Some(searcher) = &self.0.searcher {
+                if let Ok(document) = searcher.doc(DocAddress {
+                    segment_ord,
+                    doc_id: doc,
+                }) {
+                    if let Some(text_field) = self.0.text_field {
+                        if let Some(field_value) = document.get_first(text_field) {
+                            if let Some(text_value) = field_value.as_text() {
+                                doc_text = text_value.to_string();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        doc_text
     }
 }
 
 impl Collector for TopDocsWithFilter {
-    type Fruit = Vec<(Score, DocAddress)>;
+    type Fruit = Vec<RowIdWithScore>;
 
-    type Child = TopScoreSegmentCollector;
+    type Child = TopScoreSegmentCollector; // won't use for current design.
 
+    // won't use for current design.
     fn for_segment(
         &self,
-        segment_local_id: SegmentOrdinal,
-        reader: &SegmentReader,
+        _segment_local_id: SegmentOrdinal,
+        _reader: &SegmentReader,
     ) -> tantivy::Result<Self::Child> {
-        let collector = self.0.for_segment(segment_local_id, reader);
-        Ok(TopScoreSegmentCollector(collector))
+        Ok(TopScoreSegmentCollector())
     }
 
+    // won't use for current design.
     fn requires_scoring(&self) -> bool {
         true
     }
 
-    fn merge_fruits(
-        &self,
-        child_fruits: Vec<Vec<(Score, DocAddress)>>,
-    ) -> tantivy::Result<Self::Fruit> {
+    fn merge_fruits(&self, child_fruits: Vec<Vec<RowIdWithScore>>) -> tantivy::Result<Self::Fruit> {
         self.0.merge_fruits(child_fruits)
     }
 
+    // collector for each segment.
     fn collect_segment(
         &self,
         weight: &dyn Weight,
         segment_ord: SegmentOrdinal,
         reader: &SegmentReader,
     ) -> tantivy::Result<<Self::Child as SegmentCollector>::Fruit> {
-        let heap_len = self.0.limit;
-        let mut heap: BinaryHeap<ComparableDoc<Score, DocId>> = BinaryHeap::with_capacity(heap_len);
+        // TODO: need a more efficient way to initialize binary-heap.
+        let heap_len = cmp::min(self.0.limit, self.0.initial_heap_size);
+        let mut heap: BinaryHeap<RowIdWithScore> = BinaryHeap::with_capacity(heap_len);
 
         let row_id_field_reader = reader
             .fast_fields()
@@ -262,19 +220,22 @@ impl Collector for TopDocsWithFilter {
                 if alive_bitset.is_deleted(doc) {
                     return threshold;
                 }
-                let heap_item = ComparableDoc {
-                    feature: score,
-                    doc,
+                let heap_item = RowIdWithScore {
+                    row_id,
+                    score,
+                    seg_id: segment_ord,
+                    doc_id: doc,
+                    doc: self.extract_doc_text(doc, segment_ord),
                 };
                 if heap.len() < heap_len {
                     heap.push(heap_item);
                     if heap.len() == heap_len {
-                        threshold = heap.peek().map(|el| el.feature).unwrap_or(Score::MIN);
+                        threshold = heap.peek().map(|el| el.score).unwrap_or(Score::MIN);
                     }
                     return threshold;
                 }
                 *heap.peek_mut().unwrap() = heap_item;
-                threshold = heap.peek().map(|el| el.feature).unwrap_or(Score::MIN);
+                threshold = heap.peek().map(|el| el.score).unwrap_or(Score::MIN);
                 threshold
             })?;
         } else {
@@ -283,52 +244,41 @@ impl Collector for TopDocsWithFilter {
                 if self.0.row_id_bitmap.contains(row_id as u32) {
                     return Score::MIN;
                 }
-                let heap_item = ComparableDoc {
-                    feature: score,
-                    doc,
+                let heap_item = RowIdWithScore {
+                    row_id,
+                    score,
+                    seg_id: segment_ord,
+                    doc_id: doc,
+                    doc: self.extract_doc_text(doc, segment_ord),
                 };
                 if heap.len() < heap_len {
                     heap.push(heap_item);
                     // TODO the threshold is suboptimal for heap.len == heap_len
                     if heap.len() == heap_len {
-                        return heap.peek().map(|el| el.feature).unwrap_or(Score::MIN);
+                        return heap.peek().map(|el| el.score).unwrap_or(Score::MIN);
                     } else {
                         return Score::MIN;
                     }
                 }
                 *heap.peek_mut().unwrap() = heap_item;
-                heap.peek().map(|el| el.feature).unwrap_or(Score::MIN)
+                heap.peek().map(|el| el.score).unwrap_or(Score::MIN)
             })?;
         }
-
-        let fruit = heap
-            .into_sorted_vec()
-            .into_iter()
-            .map(|cid| {
-                (
-                    cid.feature,
-                    DocAddress {
-                        segment_ord,
-                        doc_id: cid.doc,
-                    },
-                )
-            })
-            .collect();
-        Ok(fruit)
+        Ok(heap.into_sorted_vec())
     }
 }
 
-/// Segment Collector associated with `TopDocsWithFilter`.
-pub struct TopScoreSegmentCollector(TopSegmentCollector<Score>);
+pub struct TopScoreSegmentCollector();
 
 impl SegmentCollector for TopScoreSegmentCollector {
-    type Fruit = Vec<(Score, DocAddress)>;
+    type Fruit = Vec<RowIdWithScore>;
 
-    fn collect(&mut self, doc: DocId, score: Score) {
-        self.0.collect(doc, score);
+    fn collect(&mut self, _doc: DocId, _score: Score) {
+        println!("Not implement");
     }
 
-    fn harvest(self) -> Vec<(Score, DocAddress)> {
-        self.0.harvest()
+    fn harvest(self) -> Vec<RowIdWithScore> {
+        println!("Not implement");
+        vec![]
     }
 }

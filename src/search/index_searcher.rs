@@ -2,11 +2,17 @@ use crate::commons::LOG_CALLBACK;
 use crate::logger::ffi_logger::callback_with_thread_info;
 use crate::tokenizer::parse_and_register::get_custom_tokenizer;
 use crate::tokenizer::parse_and_register::register_tokenizer_to_index;
+use crate::RowIdWithScore;
 use crate::ERROR;
 use cxx::CxxString;
+use cxx::CxxVector;
+use cxx::UniquePtr;
+use roaring::RoaringBitmap;
 use std::{path::Path, sync::Arc};
+use tantivy::query::QueryParser;
 
 use super::index_r::*;
+use super::top_dos_with_bitmap_collector::TopDocsWithFilter;
 use super::utils::perform_search;
 use crate::common::index_utils::*;
 
@@ -267,4 +273,106 @@ pub fn tantivy_count_in_rowid_range(
             return Err(error_info);
         }
     }
+}
+
+pub fn tantivy_search_bm25_with_filter(
+    index_path: &CxxString,
+    query: &CxxString,
+    row_ids: &CxxVector<u32>,
+    top_k: u32,
+    need_text: bool,
+) -> Result<Vec<RowIdWithScore>, String> {
+    // Parse parameter.
+    let index_path_str = match index_path.to_str() {
+        Ok(content) => content.to_string(),
+        Err(e) => {
+            return Err(format!(
+                "Can't parse parameter index_path: {}, exception: {}",
+                index_path,
+                e.to_string()
+            ));
+        }
+    };
+    let query_str = match query.to_str() {
+        Ok(content) => content.to_string(),
+        Err(e) => {
+            return Err(format!(
+                "Can't parse parameter index_path: {}, exception: {}",
+                query,
+                e.to_string()
+            ));
+        }
+    };
+
+    let row_ids: Vec<u32> = row_ids.iter().map(|s| *s).collect();
+
+    // get index reader from CACHE
+    let index_r = match get_index_r(index_path_str.clone()) {
+        Ok(content) => content,
+        Err(e) => {
+            ERROR!("{}", e);
+            return Err(e);
+        }
+    };
+
+    let schema = index_r.reader.searcher().index().schema();
+    let text = match schema.get_field("text") {
+        Ok(str) => str,
+        Err(_) => {
+            ERROR!("Missing text field.");
+            return Ok(Vec::new());
+        }
+    };
+
+    let is_stored = schema.get_field_entry(text).is_stored();
+    if !is_stored && need_text {
+        let error_info = format!("Can't search with origin text, index doesn't store it");
+        ERROR!("{}", error_info);
+        return Err(error_info);
+    }
+
+    let searcher = index_r.reader.searcher();
+
+    let mut filter_bitmap = RoaringBitmap::new();
+    filter_bitmap.extend(row_ids);
+
+    let top_docs_collector = TopDocsWithFilter::with_limit(top_k as usize)
+        .with_filter(Arc::new(filter_bitmap))
+        .with_searcher(searcher.clone())
+        .with_text_field(text)
+        .with_stored_text(need_text);
+
+    let query_parser = QueryParser::for_index(index_r.reader.searcher().index(), vec![text]);
+    let text_query = match query_parser.parse_query(&query_str) {
+        Ok(parsed_query) => parsed_query,
+        Err(_) => {
+            let error_info = format!("Can't parse query: {}", query_str);
+            ERROR!("{}", error_info);
+            return Err(error_info);
+        }
+    };
+    let searched_result = match searcher.search(&text_query, &top_docs_collector) {
+        Ok(result) => result,
+        Err(e) => {
+            let error_info = format!(
+                "Can't execute search in `tantivy_search_with_row_id_bitmap`: {}",
+                e
+            );
+            ERROR!("{}", error_info);
+            return Err(error_info);
+        }
+    };
+
+    Ok(searched_result)
+}
+
+pub fn tantivy_search_bm25(
+    index_path: &CxxString,
+    query: &CxxString,
+    top_k: u32,
+    need_text: bool,
+) -> Result<Vec<RowIdWithScore>, String> {
+    let cxx_vector: UniquePtr<CxxVector<u32>> = CxxVector::new();
+    let cxx_vector: &CxxVector<u32> = cxx_vector.as_ref().unwrap();
+    tantivy_search_bm25_with_filter(index_path, query, cxx_vector, top_k, need_text)
 }

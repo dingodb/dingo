@@ -19,7 +19,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/build.rs.in" "${CMAKE_CURRENT_SOURCE
 
 # corrosion 2022 edition doesn't fit this CMake.
 # set(cxx_bridge_binary_folder ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/cargo/build/${Rust_CARGO_TARGET_CACHED}/cxxbridge)
-# Rust_CARGO_TARGET 和 Rust_CARGO_TARGET_CACHED 分别是啥
+# What's the difference about Rust_CARGO_TARGET and Rust_CARGO_TARGET_CACHED?
 set(cxx_bridge_binary_folder ${CMAKE_BINARY_DIR}/cargo/build/${Rust_CARGO_TARGET}/cxxbridge)
 set(cxx_bridge_source_file "src/lib.rs")
 

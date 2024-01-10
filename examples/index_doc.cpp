@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <tantivy_search.h>
-#include <tantivy_search_cxx.h>
 #include <filesystem>
 #include <utils.h>
 
@@ -83,6 +82,22 @@ void test_regx_create()
     // bool searched = tantivy_regex_count_in_rowid_range(indexR, ".*me.*", 20, 20);
     cout << "searched:" << searched << endl;
 
+    
+    std::vector<uint32_t> vec;
+    for (uint32_t i = 1; i <= 2; ++i) {
+        vec.push_back(i);
+    }
+    // rust::cxxbridge1::Vec<RowIdWithScore> result = tantivy_search_bm25_with_filter("./temp", "military", vec, 5, true);
+    rust::cxxbridge1::Vec<RowIdWithScore> result = tantivy_search_bm25("./temp", "of", 3, false);
+    for (size_t i = 0; i < result.size(); i++)
+    {
+        cout << "row_id: " << result[i].row_id 
+             << ", score: " << result[i].score 
+             << ", seg_id: " << result[i].seg_id 
+             << ", doc_id: " << result[i].doc_id 
+             << ", doc: " << std::string(result[i].doc) << endl;
+    }
+    
     tantivy_reader_free("./temp");
 }
 

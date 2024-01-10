@@ -106,7 +106,7 @@ mod tests {
         let test_furry_cache: Lazy<FlurryCache<(usize, String, String), RoaringBitmap>> =
             Lazy::new(|| FlurryCache::with_capacity(1));
 
-        let row_id_roaring_bitmap =
+        let _row_id_roaring_bitmap =
             test_furry_cache.resolve((0, "hello".to_string(), "/var/lib/xxx".to_string()), || {
                 let fake_bitmap = RoaringBitmap::new();
                 return fake_bitmap;
