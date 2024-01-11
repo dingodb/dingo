@@ -87,8 +87,8 @@ void test_regx_create()
     for (uint32_t i = 1; i <= 2; ++i) {
         vec.push_back(i);
     }
-    // rust::cxxbridge1::Vec<RowIdWithScore> result = tantivy_search_bm25_with_filter("./temp", "military", vec, 5, true);
-    rust::cxxbridge1::Vec<RowIdWithScore> result = tantivy_search_bm25("./temp", "of", 3, false);
+    rust::cxxbridge1::Vec<RowIdWithScore> result = tantivy_search_bm25_with_filter("./temp", "of", vec, 5, false);
+    // rust::cxxbridge1::Vec<RowIdWithScore> result = tantivy_search_bm25("./temp", "of", 3, false);
     for (size_t i = 0; i < result.size(); i++)
     {
         cout << "row_id: " << result[i].row_id 
@@ -105,7 +105,7 @@ void test_tokenizer_create()
 {
     fs::remove_all("./temp");
     // fs::remove_all("./log");
-    tantivy_logger_initialize("/home/mochix/workspace_github/tantivy-search/log/", "info", false, tantivy_log_callback, true, true);
+    tantivy_logger_initialize("/home/mochix/workspace_github/tantivy-search/log/", "trace", true, tantivy_log_callback, true, false);
     tantivy_create_index_with_tokenizer("./temp", "chinese");
     tantivy_index_doc("./temp", 0, "古代帝国的兴衰更迭，不仅塑造了历史的进程，也铭刻了时代的变迁与文明的发展。");
     tantivy_index_doc("./temp", 1, "艺术的多样表达方式反映了不同文化的丰富遗产，展现了人类创造力的无限可能。");
@@ -127,7 +127,7 @@ void test_tokenizer_create()
     tantivy_index_doc("./temp", 17, "在医学领域，化学化合物的作用至关重要，它们在许多重大医疗突破中扮演了核心角色。");
     tantivy_index_doc("./temp", 18, "当代哲学家在探讨人工智能时代的伦理道德问题，对机器与人类的关系进行深刻反思。");
     tantivy_index_doc("./temp", 19, "不同文化背景下的婚礼仪式代表着一生的承诺与责任，象征着两颗心的永恒结合。");
-    tantivy_logger_initialize("/home/mochix/workspace_github/tantivy-search/log/", "info", true, tantivy_log_callback, true, true);
+    // tantivy_logger_initialize("/home/mochix/workspace_github/tantivy-search/log/", "info", true, tantivy_log_callback, true, true);
     tantivy_writer_commit("./temp");
     tantivy_writer_free("./temp");
     // search
@@ -142,8 +142,8 @@ void test_tokenizer_create()
 
 int main(){
     // test_default_create();
-    test_regx_create();
-    // test_tokenizer_create();
+    // test_regx_create();
+    test_tokenizer_create();
     return 0;
 }
 

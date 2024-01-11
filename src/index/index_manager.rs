@@ -86,7 +86,7 @@ pub fn tantivy_create_index_with_tokenizer(
             .set_index_option(IndexRecordOption::WithFreqs),
     );
     // Ngram tokenizer need positions information.
-    if let TokenizerType::Ngram(_) = tokenizer_type {
+    if let TokenizerType::Ngram(_) | TokenizerType::Chinese(_) = tokenizer_type {
         text_options = TextOptions::default().set_indexing_options(
             TextFieldIndexing::default()
                 .set_tokenizer(tokenizer_type.name())

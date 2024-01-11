@@ -12,15 +12,10 @@ INITIALIZE_EASYLOGGINGPP
 
 namespace Utils {
     std::string getCurrentDateTime() {
-        // 获取当前时间点
-        auto now = std::chrono::system_clock::now();
-        // 转换为 time_t 类型
-        auto now_c = std::chrono::system_clock::to_time_t(now);
-        // 转换为 tm 结构
-        struct tm *parts = std::localtime(&now_c);
-        // 使用 stringstream 进行格式化
+        auto now = std::chrono::system_clock::now(); // get current time.
+        auto now_c = std::chrono::system_clock::to_time_t(now); // convert to `time_t`
         std::ostringstream oss;
-        oss << std::put_time(parts, "%Y-%m-%d %H:%M:%S");
+        oss << std::put_time(std::localtime(&now_c), "%Y-%m-%d %H:%M:%S"); // format
         return oss.str();
     }
 

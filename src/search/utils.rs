@@ -47,8 +47,8 @@ fn compute_bitmap(index_r: &IndexR, query_str: &str, use_regrex: bool) -> Arc<Ro
         let query_parser = QueryParser::for_index(index_r.reader.searcher().index(), vec![text]);
         let text_query = match query_parser.parse_query(query_str) {
             Ok(parsed_query) => parsed_query,
-            Err(_) => {
-                ERROR!("Can't parse query: {}", query_str);
+            Err(e) => {
+                ERROR!("Can't parse query: {}, error:{}", query_str, e.to_string());
                 return Arc::new(RoaringBitmap::new());
             }
         };
