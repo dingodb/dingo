@@ -52,6 +52,7 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlKill"
       "io.dingodb.calcite.grammar.ddl.SqlKillConnection"
       "io.dingodb.calcite.grammar.ddl.SqlKillQuery"
+      "io.dingodb.calcite.grammar.ddl.SqlLoadData"
       "io.dingodb.calcite.grammar.ddl.SqlLock"
       "io.dingodb.calcite.grammar.ddl.SqlLockBlock"
       "io.dingodb.calcite.grammar.ddl.SqlLockTable"
@@ -82,6 +83,7 @@ data: {
       "io.dingodb.calcite.grammar.dql.SqlShowWarnings"
       "io.dingodb.calcite.grammar.dml.SqlExecute"
       "io.dingodb.calcite.grammar.dml.SqlPrepare"
+      "io.dingodb.calcite.grammar.dml.SqlSelect"
       "io.dingodb.calcite.grammar.SqlUserDefinedOperators"
       "org.apache.calcite.avatica.util.DateTimeUtils"
       "org.apache.calcite.schema.ColumnStrategy"
@@ -119,14 +121,20 @@ data: {
       "COLUMNS"
       "DATABASES"
       "DISTRIBUTION"
+      "ENCLOSED"
       "ENGINE"
       "ENGINES"
       "EXECUTOR"
       "EXPIRE"
+      "ESCAPED"
+      "FIELDS"
       "FLUSH"
       "GRANTS"
       "IDENTIFIED"
       "INDEX"
+      "INFILE"
+      "LINES"
+      "LOAD"
       "LOCK"
       "NEXT_AUTO_INCREMENT"
       "PARAMETERS"
@@ -139,8 +147,10 @@ data: {
       "REQUIRE"
       "SCAN"
       "SSL"
+      "STARTING"
       "STATUS"
       "TABLES"
+      "TERMINATED"
       "THAN"
       "TTL"
       "UNLOCK"
@@ -165,6 +175,7 @@ data: {
       "UNSIGNED"
       "TEXT"
       "LONGTEXT"
+      "OUTFILE"
     ]
 
     # List of non-reserved keywords to add;
@@ -232,6 +243,7 @@ data: {
         "SqlEnd"
         "SqlUnLock"
         "SqlKill"
+        "SqlLoadData"
     ]
 
     sqlTypeNameMethods: [
@@ -259,6 +271,7 @@ data: {
       "Transaction.ftl"
       "SqlType.ftl"
       "Kill.ftl"
+      "LoadData.ftl"
     ]
 
     includePosixOperators: false

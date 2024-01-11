@@ -23,7 +23,6 @@ import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.Versions;
 import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.common.mysql.constant.ServerConstant;
-import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.common.util.ByteUtils;
@@ -34,7 +33,6 @@ import io.dingodb.driver.mysql.facotry.SecureChatSslContextFactory;
 import io.dingodb.driver.mysql.packet.AuthPacket;
 import io.dingodb.driver.mysql.packet.HandshakePacket;
 import io.dingodb.driver.mysql.packet.OKPacket;
-import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.verify.service.UserService;
 import io.dingodb.verify.service.UserServiceProvider;
 import io.netty.buffer.ByteBuf;
@@ -52,7 +50,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.TimeZone;
@@ -62,6 +59,7 @@ import javax.net.ssl.SSLEngine;
 
 import static io.dingodb.common.mysql.Versions.PROTOCOL_VERSION;
 import static io.dingodb.common.mysql.constant.ServerStatus.SERVER_STATUS_AUTOCOMMIT;
+import static io.dingodb.driver.ServerMeta.loadGlobalVariables;
 
 @ChannelHandler.Sharable
 @Slf4j
@@ -359,14 +357,4 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         }
     }
 
-    public synchronized static void loadGlobalVariables(DingoConnection dingoConnection) {
-        if (ScopeVariables.globalVariables.size() > 0) {
-            dingoConnection.setClientInfo(ScopeVariables.globalVariables);
-            return;
-        }
-        InfoSchemaService infoSchemaService = InfoSchemaService.root();
-        Map<String, String> globalVariableMap = infoSchemaService.getGlobalVariables();
-        ScopeVariables.globalVariables.putAll(globalVariableMap);
-        dingoConnection.setClientInfo(ScopeVariables.globalVariables);
-    }
 }

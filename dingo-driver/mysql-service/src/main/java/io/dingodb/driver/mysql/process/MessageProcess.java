@@ -33,15 +33,11 @@ import io.dingodb.driver.mysql.packet.ResetStatementPacket;
 import io.dingodb.driver.mysql.packet.SendBlobPacket;
 import io.dingodb.verify.privilege.PrivilegeVerify;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.jdbc.CalciteSchema;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -94,7 +90,7 @@ public final class MessageProcess {
                 if (schema != null) {
                     connection.getContext().setUsedSchema(schema);
                     OKPacket okPacket = MysqlPacketFactory.getInstance().getOkPacket(0, packetId,
-                       ServerStatus.SERVER_SESSION_STATE_CHANGED);
+                       ServerStatus.SERVER_SESSION_STATE_CHANGED, null);
                     MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
                 } else {
                     MysqlResponseHandler.responseError(packetId, mysqlConnection.channel,
@@ -146,7 +142,7 @@ public final class MessageProcess {
                 break;
             case NativeConstants.COM_PING:
                 // test ping
-                OKPacket okPacket = MysqlPacketFactory.getInstance().getOkPacket(0, packetId);
+                OKPacket okPacket = MysqlPacketFactory.getInstance().getOkPacket(0, packetId, null);
                 MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
                 break;
             case NativeConstants.COM_TIME:
@@ -246,7 +242,7 @@ public final class MessageProcess {
                 } catch (SQLException e) {
                     MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
                 }
-                okPacket = MysqlPacketFactory.getInstance().getOkPacket(0, packetId);
+                okPacket = MysqlPacketFactory.getInstance().getOkPacket(0, packetId, null);
                 MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
                 break;
             case NativeConstants.COM_SET_OPTION:

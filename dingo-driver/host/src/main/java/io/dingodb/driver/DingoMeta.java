@@ -24,6 +24,8 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.common.mysql.constant.ErrorCode;
+import io.dingodb.common.mysql.constant.ServerStatus;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.IndexScan;
@@ -55,6 +57,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Field;
 import java.sql.DatabaseMetaData;
+import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -743,5 +746,69 @@ public class DingoMeta extends MetaImpl {
             "PAGES",
             "FILTER_CONDITION"
         );
+    }
+
+    @Override
+    public ConnectionProperties connectionSync(ConnectionHandle ch, ConnectionProperties connProps) {
+        if (connProps.isEmpty()) {
+            return connProps;
+        }
+        try {
+            if (connProps.isAutoCommit() != null) {
+                String autoCommit;
+                if (connProps.isAutoCommit()) {
+                    autoCommit = "on";
+                } else {
+                    autoCommit = "off";
+                }
+                String serverAutoCommit = connection.getClientInfo("autocommit");
+                if (!autoCommit.equalsIgnoreCase(serverAutoCommit)) {
+                    connection.setClientInfo("autocommit", autoCommit);
+                }
+            }
+            if (connProps.isReadOnly() != null) {
+                String readOnly;
+                if (connProps.isReadOnly()) {
+                    readOnly = "on";
+                } else {
+                    readOnly = "off";
+                }
+                String serverReadOnly = connection.getClientInfo("transaction_read_only");
+                if (!readOnly.equalsIgnoreCase(serverReadOnly)) {
+                    connection.setClientInfo("transaction_read_only", readOnly);
+                }
+            }
+            if (connProps.getTransactionIsolation() != null) {
+                String txIsolation = null;
+                if (connProps.getTransactionIsolation() == 1) {
+                    txIsolation = "READ-UNCOMMITTED";
+                } else if (connProps.getTransactionIsolation() == 2) {
+                    txIsolation = "READ-COMMITTED";
+                } else if (connProps.getTransactionIsolation() == 4) {
+                    txIsolation = "REPEATABLE-READ";
+                } else if (connProps.getTransactionIsolation() == 8) {
+                    txIsolation = "SERIALIZABLE";
+                }
+                String serverTxIsolation = connection.getClientInfo("transaction_isolation");
+                if (serverTxIsolation != null && !serverTxIsolation.equalsIgnoreCase(txIsolation)) {
+                    connection.setClientInfo("transaction_isolation", txIsolation);
+                }
+            }
+            if (connProps.getSchema() != null) {
+                DingoConnection dingoConnection = (DingoConnection) connection;
+                String usedSchema = dingoConnection.getContext().getUsedSchema().getName();
+                if (!connProps.getSchema().equals(usedSchema)) {
+                    CalciteSchema schema = dingoConnection.getContext()
+                        .getRootSchema().getSubSchema(connProps.getSchema(), false);
+                    if (schema != null) {
+                        dingoConnection.getContext().setUsedSchema(schema);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+
+        return connProps;
     }
 }

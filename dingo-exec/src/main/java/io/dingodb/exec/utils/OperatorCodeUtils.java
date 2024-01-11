@@ -68,6 +68,7 @@ public final class OperatorCodeUtils {
     public static final CommonId PRE_WRITE = new CommonId(CommonId.CommonType.OP, OP, 40);
     public static final CommonId ROLL_BACK = new CommonId(CommonId.CommonType.OP, OP, 41);
     public static final CommonId COMPARE_AND_SET = new CommonId(CommonId.CommonType.OP, OP, 42);
+    public static final CommonId EXPORT_DATA = new CommonId(CommonId.CommonType.OP, OP, 42);
 
     // sink
     public static final CommonId ROOT = new CommonId(CommonId.CommonType.OP, SINK, 80);

@@ -60,7 +60,7 @@ public class LogicalDingoTableScan extends TableScan {
     @Getter
     protected final RexNode filter;
     @Getter
-    protected final TupleMapping selection;
+    protected TupleMapping selection;
     @Getter
     protected TupleMapping realSelection;
     @Getter
@@ -77,6 +77,13 @@ public class LogicalDingoTableScan extends TableScan {
     // temporary constant
     protected boolean forUpdate = false;
 
+    @Getter
+    @Setter
+    protected boolean export;
+    @Getter
+    @Setter
+    protected String outfile;
+
     public LogicalDingoTableScan(
         RelOptCluster cluster,
         RelTraitSet traitSet,
@@ -85,7 +92,7 @@ public class LogicalDingoTableScan extends TableScan {
         @Nullable RexNode filter,
         @Nullable TupleMapping selection
     ) {
-        this(cluster, traitSet, hints, table, filter, selection, null, null, null, false);
+        this(cluster, traitSet, hints, table, filter, selection, null, null, null, false, false);
     }
 
     public LogicalDingoTableScan(
@@ -98,7 +105,8 @@ public class LogicalDingoTableScan extends TableScan {
         @Nullable List<AggregateCall> aggCalls,
         @Nullable ImmutableBitSet groupSet,
         @Nullable ImmutableList<ImmutableBitSet> groupSets,
-        boolean pushDown
+        boolean pushDown,
+        boolean forModify
     ) {
         super(cluster, traitSet, hints, table);
         this.filter = filter;
@@ -111,13 +119,17 @@ public class LogicalDingoTableScan extends TableScan {
         this.realSelection = selection;
         // If the columns of the table contain hide and delete, the data shows that they need to be deleted
         if (selection != null) {
-            List<Integer> mappingList = new ArrayList<>();
-            for (int index : selection.getMappings()) {
-                if (dingoTable.getTableDefinition().getColumn(index).getState() == 1) {
-                    mappingList.add(index);
+            if (forUpdate) {
+                this.selection = selection;
+            } else {
+                List<Integer> mappingList = new ArrayList<>();
+                for (int index : selection.getMappings()) {
+                    if (dingoTable.getTableDefinition().getColumn(index).getState() == 1) {
+                        mappingList.add(index);
+                    }
                 }
+                this.selection = TupleMapping.of(mappingList);
             }
-            this.selection = TupleMapping.of(mappingList);
         } else {
             List<Integer> mapping = dingoTable.getTableDefinition()
                 .getColumns()
@@ -311,5 +323,11 @@ public class LogicalDingoTableScan extends TableScan {
             }
         }
         throw new RuntimeException("found not distance fun");
+    }
+
+    public void setSelection(TupleMapping selection) {
+        this.selection = selection;
+        this.realSelection = selection;
+        this.forUpdate = true;
     }
 }

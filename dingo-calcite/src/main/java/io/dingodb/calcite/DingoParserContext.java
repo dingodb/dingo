@@ -21,6 +21,7 @@ import io.dingodb.calcite.grammar.SqlUserDefinedOperators;
 import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -40,6 +41,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Field;
+import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -68,6 +70,10 @@ public final class DingoParserContext implements Context {
     private final Properties options;
     @Getter
     private CalciteSchema usedSchema;
+
+    @Setter
+    @Getter
+    private List<SQLWarning> warningList;
 
     public DingoParserContext(@NonNull String defaultSchemaName) {
         this(defaultSchemaName, null);

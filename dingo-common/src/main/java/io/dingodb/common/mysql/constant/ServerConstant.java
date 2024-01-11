@@ -17,17 +17,11 @@
 package io.dingodb.common.mysql.constant;
 
 public class ServerConstant {
-    public static final byte[] SEED = new byte[]{
-        80, 110, 92, 95, 73, 48, 84, 53
-    };
-
-
-    public static final byte[] REST_OF_SCRAMBLE = new byte[]{
-        74, 87, 87, 45, 120, 58, 84, 122, 41, 91, 110, 58
-    };
 
     public static final byte[] unused = new byte[]{
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     };
+
+    public static final char ARRAY_SPLIT = 0x05;
 
 }

@@ -17,16 +17,33 @@
 package io.dingodb.calcite.operation;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.DingoParserContext;
 
+import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ShowWarningsOperation implements QueryOperation {
+    private DingoParserContext context;
+
+    public ShowWarningsOperation(DingoParserContext context) {
+        this.context = context;
+    }
 
     @Override
-    public Iterator getIterator() {
-        return ImmutableList.of().iterator();
+    public Iterator<Object[]> getIterator() {
+        List<SQLWarning> warningList = context.getWarningList();
+        if (warningList == null) {
+            List<Object[]> res = new ArrayList<>();
+            return res.iterator();
+        }
+        List<Object[]> res = warningList
+            .stream()
+            .map(sqlWarning -> new Object[]{"Error", sqlWarning.getErrorCode(), sqlWarning.getMessage()})
+            .collect(Collectors.toList());
+        return res.iterator();
     }
 
     @Override

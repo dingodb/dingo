@@ -106,7 +106,8 @@ public class DingoAggregateScanRule extends RelRule<RelRule.Config> {
                 aggregate.getAggCallList(),
                 aggregate.getGroupSet(),
                 aggregate.getGroupSets(),
-                scan.isPushDown()
+                scan.isPushDown(),
+                scan.isForUpdate()
             )
         );
     }

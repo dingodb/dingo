@@ -46,7 +46,8 @@ public class DingoScanFilterRule extends RelRule<DingoScanFilterRule.Config> imp
                 scan.getAggCalls(),
                 scan.getGroupSet(),
                 scan.getGroupSets(),
-                scan.isPushDown()
+                scan.isPushDown(),
+                scan.isForUpdate()
             )
         );
     }

@@ -22,6 +22,7 @@ import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.grammar.ddl.SqlKillConnection;
 import io.dingodb.calcite.grammar.ddl.SqlKillQuery;
+import io.dingodb.calcite.grammar.ddl.SqlLoadData;
 import io.dingodb.calcite.grammar.ddl.SqlLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlLockTable;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
@@ -38,6 +39,8 @@ import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.SqlToOperationConverter;
 import io.dingodb.calcite.rel.DingoCost;
 import io.dingodb.calcite.rel.LogicalDingoRoot;
+import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.rel.LogicalExportData;
 import io.dingodb.calcite.rule.DingoRules;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
@@ -61,10 +64,12 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlBasicCall;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -94,7 +99,7 @@ import static io.dingodb.calcite.rule.DingoRules.DINGO_AGGREGATE_SCAN_RULE;
 // Each sql parsing requires a new instance.
 @Slf4j
 public class DingoParser {
-    private static Map<String, String> sensitiveKey = new HashMap();
+    private static final Map<String, String> sensitiveKey = new HashMap<>();
 
     static {
         sensitiveKey.put(".\"USER\"", ".USER");
@@ -208,14 +213,40 @@ public class DingoParser {
 
         RelRoot relRoot = sqlToRelConverter.convertQuery(sqlNode, needsValidation, true);
 
+        RelNode relNode = relRoot.rel;
         TupleMapping selection = null;
         if (relRoot.kind == SqlKind.SELECT) {
             selection = TupleMapping.of(
                 relRoot.fields.stream().map(Pair::getKey).collect(Collectors.toList())
             );
+
+            if (needExport(sqlNode)) {
+                io.dingodb.calcite.grammar.dml.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dml.SqlSelect) sqlNode;
+                relNode = new LogicalExportData(
+                    cluster,
+                    planner.emptyTraitSet(),
+                    relRoot.rel,
+                    sqlSelect.getOutfile(),
+                    sqlSelect.getTerminated(),
+                    sqlSelect.getSqlId(),
+                    sqlSelect.getEnclosed(),
+                    sqlSelect.getLineTerminated(),
+                    sqlSelect.getEscaped(),
+                    sqlSelect.getCharset(),
+                    sqlSelect.getLineStarting()
+                );
+            }
         }
         // Insert a `DingoRoot` to collect the results.
-        return relRoot.withRel(new LogicalDingoRoot(cluster, planner.emptyTraitSet(), relRoot.rel, selection));
+        return relRoot.withRel(new LogicalDingoRoot(cluster, planner.emptyTraitSet(), relNode, selection));
+    }
+
+    private static boolean needExport(@NonNull SqlNode sqlNode) {
+        if (sqlNode instanceof io.dingodb.calcite.grammar.dml.SqlSelect) {
+            io.dingodb.calcite.grammar.dml.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dml.SqlSelect) sqlNode;
+            return sqlSelect.isExport();
+        }
+        return false;
     }
 
     /**
@@ -281,6 +312,7 @@ public class DingoParser {
             || sqlNode instanceof SqlUnLockBlock
             || sqlNode instanceof SqlKillQuery
             || sqlNode instanceof SqlKillConnection
+            || sqlNode instanceof SqlLoadData
         ) {
             return true;
         }

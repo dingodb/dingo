@@ -78,7 +78,8 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
             scan.getAggCalls(),
             scan.getGroupSet(),
             scan.getGroupSets(),
-            scan.isPushDown()
+            scan.isPushDown(),
+            scan.isForUpdate()
         );
         final List<RexNode> newProjectRexNodes = RexUtil.apply(mapping, project.getProjects());
         if (RexUtil.isIdentity(newProjectRexNodes, newScan.getRowType())) {

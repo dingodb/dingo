@@ -17,6 +17,7 @@
 package io.dingodb.calcite.visitor;
 
 import io.dingodb.calcite.rel.DingoAggregate;
+import io.dingodb.calcite.rel.DingoExportData;
 import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.rel.DingoGetByIndex;
@@ -41,6 +42,7 @@ import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.rel.VectorStreamConvertor;
 import io.dingodb.calcite.visitor.function.DingoAggregateVisitFun;
 import io.dingodb.calcite.visitor.function.DingoCountDeleteVisitFun;
+import io.dingodb.calcite.visitor.function.DingoExportDataVisitFun;
 import io.dingodb.calcite.visitor.function.DingoFilterVisitFun;
 import io.dingodb.calcite.visitor.function.DingoFunctionScanVisitFun;
 import io.dingodb.calcite.visitor.function.DingoGetByIndexMergeVisitFun;
@@ -222,5 +224,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     @Override
     public Collection<Vertex> visit(@NonNull DingoInfoSchemaScan rel) {
         return DingoInfoSchemaScanVisitFun.visit(job, idGenerator, currentLocation, this, rel);
+    }
+
+    @Override
+    public Collection<Vertex> visit(@NonNull DingoExportData rel) {
+        return DingoExportDataVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 }

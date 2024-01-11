@@ -22,6 +22,8 @@ import io.dingodb.common.privilege.PrivilegeGather;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +35,8 @@ public class ExecutionEnvironment {
     }
 
     public static ExecutionEnvironment INSTANCE = new ExecutionEnvironment();
+
+    public static Map<Object, List<Object[]>> memoryCache = new HashMap<>();
 
     @Getter
     @Setter

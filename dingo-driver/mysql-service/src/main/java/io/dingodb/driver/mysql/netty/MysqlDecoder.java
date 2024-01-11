@@ -44,9 +44,7 @@ public class MysqlDecoder extends ByteToMessageDecoder {
             return null;
         }
 
-        ByteBuf buf1 = buf.readBytes(contentLength + 1);
-
-        return buf1;
+        return buf.readBytes(contentLength + 1);
     }
 
     public int readLength(byte[] data) {

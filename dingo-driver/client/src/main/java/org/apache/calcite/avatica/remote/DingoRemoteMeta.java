@@ -19,6 +19,7 @@ package org.apache.calcite.avatica.remote;
 import io.dingodb.driver.DingoServiceImpl;
 import io.dingodb.driver.api.MetaApi;
 import org.apache.calcite.avatica.AvaticaConnection;
+import org.apache.calcite.avatica.ConnectionPropertiesImpl;
 
 public class DingoRemoteMeta extends RemoteMeta {
     private final MetaApi metaApi;
@@ -31,5 +32,31 @@ public class DingoRemoteMeta extends RemoteMeta {
     @Override
     public StatementHandle prepare(ConnectionHandle ch, String sql, long maxRowCount) {
         return StatementHandle.fromProto(metaApi.prepare(ch, sql, maxRowCount));
+    }
+
+    @Override
+    public ConnectionProperties connectionSync(ConnectionHandle ch, ConnectionProperties connProps) {
+        return connection.invokeWithRetries(
+            () -> {
+                ConnectionPropertiesImpl localProps = propsMap.get(ch.id);
+                if (localProps == null) {
+                    localProps = new ConnectionPropertiesImpl();
+                    localProps.setDirty(true);
+                    propsMap.put(ch.id, localProps);
+                }
+
+                // Only make an RPC if necessary. RPC is necessary when we have local changes that need
+                // flushed to the server (be sure to introduce any new changes from connProps before
+                // checking AND when connProps.isEmpty() (meaning, this was a request for a value, not
+                // overriding a value). Otherwise, accumulate the change locally and return immediately.
+                if (localProps.merge(connProps).isDirty()) {
+                    final Service.ConnectionSyncResponse response = service.apply(
+                        new Service.ConnectionSyncRequest(ch.id, localProps));
+                    propsMap.put(ch.id, (ConnectionPropertiesImpl) response.connProps);
+                    return response.connProps;
+                } else {
+                    return localProps;
+                }
+            });
     }
 }

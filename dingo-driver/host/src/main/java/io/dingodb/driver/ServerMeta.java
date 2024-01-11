@@ -19,6 +19,8 @@ package io.dingodb.driver;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.config.SecurityConfiguration;
+import io.dingodb.common.mysql.scope.ScopeVariables;
+import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.verify.auth.IdentityAuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaStatement;
@@ -644,6 +646,7 @@ public class ServerMeta implements Meta {
         Properties properties = new Properties();
         properties.putAll(info);
         DingoConnection connection = DingoDriver.INSTANCE.createConnection(null, properties);
+        loadGlobalVariables(connection);
         connectionMap.put(ch.id, connection);
 
         if (SecurityConfiguration.isAuth()) {
@@ -658,6 +661,17 @@ public class ServerMeta implements Meta {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    public synchronized static void loadGlobalVariables(DingoConnection dingoConnection) {
+        if (ScopeVariables.globalVariables.size() > 0) {
+            dingoConnection.setClientInfo(ScopeVariables.globalVariables);
+            return;
+        }
+        InfoSchemaService infoSchemaService = InfoSchemaService.root();
+        Map<String, String> globalVariableMap = infoSchemaService.getGlobalVariables();
+        ScopeVariables.globalVariables.putAll(globalVariableMap);
+        dingoConnection.setClientInfo(ScopeVariables.globalVariables);
     }
 
     @Override

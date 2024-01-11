@@ -22,6 +22,7 @@ import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.grammar.ddl.SqlKillConnection;
 import io.dingodb.calcite.grammar.ddl.SqlKillQuery;
+import io.dingodb.calcite.grammar.ddl.SqlLoadData;
 import io.dingodb.calcite.grammar.ddl.SqlLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlLockTable;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
@@ -64,7 +65,7 @@ public final class SqlToOperationConverter {
 
     public static Optional<Operation> convert(SqlNode sqlNode, Connection connection, DingoParserContext context) {
         if (sqlNode instanceof SqlShowWarnings) {
-            return Optional.of(new ShowWarningsOperation());
+            return Optional.of(new ShowWarningsOperation(context));
         } else if (sqlNode instanceof SqlShowGrants) {
             return Optional.of(new ShowGrantsOperation(sqlNode));
         } else if (sqlNode instanceof SqlShowDatabases) {
@@ -205,6 +206,12 @@ public final class SqlToOperationConverter {
             return Optional.of(new ShowCharsetOperation(sqlShowCharset.sqlLikePattern));
         } else if (sqlNode instanceof SqlShowLocks) {
             return Optional.of(new ShowLocksOperation());
+        } else if (sqlNode instanceof SqlLoadData) {
+            SqlLoadData sqlLoadData = (SqlLoadData) sqlNode;
+            if (StringUtils.isBlank(sqlLoadData.getSchemaName())) {
+                sqlLoadData.setSchemaName(getSchemaName(context));
+            }
+            return Optional.of(new LoadDataOperation(sqlLoadData, connection, context));
         } else {
             return Optional.empty();
         }

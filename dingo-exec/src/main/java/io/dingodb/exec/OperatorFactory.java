@@ -22,6 +22,7 @@ import io.dingodb.exec.operator.AggregateOperator;
 import io.dingodb.exec.operator.CoalesceOperator;
 import io.dingodb.exec.operator.CompareAndSetOperator;
 import io.dingodb.exec.operator.EmptySourceOperator;
+import io.dingodb.exec.operator.ExportDataOperator;
 import io.dingodb.exec.operator.FilterOperator;
 import io.dingodb.exec.operator.GetByIndexOperator;
 import io.dingodb.exec.operator.GetByKeysOperator;
@@ -68,6 +69,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.COALESCE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COMMIT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COMPARE_AND_SET;
 import static io.dingodb.exec.utils.OperatorCodeUtils.EMPTY_SOURCE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.EXPORT_DATA;
 import static io.dingodb.exec.utils.OperatorCodeUtils.FILTER;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_INDEX;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_KEYS;
@@ -151,6 +153,7 @@ public final class OperatorFactory {
         OPERATORS.put(SCAN_CACHE, ScanCacheOperator.INSTANCE);
         OPERATORS.put(INFO_SCHEMA_SCAN, InfoSchemaScanOperator.INSTANCE);
         OPERATORS.put(COMPARE_AND_SET, CompareAndSetOperator.INSTANCE);
+        OPERATORS.put(EXPORT_DATA, ExportDataOperator.INSTANCE);
     }
 
     private OperatorFactory() {
