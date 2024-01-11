@@ -74,7 +74,8 @@ public class DingoTableScanRule extends ConverterRule {
                 scan.getAggCalls(),
                 scan.getGroupSet(),
                 scan.getGroupSets(),
-                scan.isPushDown()
+                scan.isPushDown(),
+                scan.isForUpdate()
             );
         }
     }

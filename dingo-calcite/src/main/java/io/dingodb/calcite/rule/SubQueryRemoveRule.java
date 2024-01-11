@@ -861,10 +861,6 @@ public class SubQueryRemoveRule
     call.transformTo(builder.build());
   }
 
-    public static void main(String[] args) {
-        System.out.println("---");
-    }
-
   private static void matchJoin(SubQueryRemoveRule rule, RelOptRuleCall call) {
     final Join join = call.rel(0);
     final RelBuilder builder = call.builder();

@@ -16,6 +16,8 @@
 
 package io.dingodb.calcite.utils;
 
+import io.dingodb.common.util.ByteUtils;
+
 public final class ParseValueUtils {
 
     private ParseValueUtils() {
@@ -32,6 +34,14 @@ public final class ParseValueUtils {
         } catch (Exception ignore) {
             throw new IllegalArgumentException("The " + field + " need a positive integer, but [" + source + "].");
         }
+    }
+
+    public static byte[] getSpecialBytes(String image) {
+        return image.replace("'", "").toLowerCase().getBytes();
+    }
+
+    public static byte[] getSpecialHexBytes(String image) {
+        return ByteUtils.hexStringToByteArray(image.replace("'", "").toLowerCase().substring(1));
     }
 
 }

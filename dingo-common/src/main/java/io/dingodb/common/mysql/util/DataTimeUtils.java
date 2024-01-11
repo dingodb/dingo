@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.operation;
+package io.dingodb.common.mysql.util;
 
-import java.util.Iterator;
-import java.util.List;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 
-public interface QueryOperation extends Operation {
-    Iterator<Object[]> getIterator();
+public class DataTimeUtils {
+    private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
-    List<String> columns();
+    public static String getTimeStamp(Timestamp timestamp) {
+        return new SimpleDateFormat(TIMESTAMP_FORMAT).format(timestamp);
+    }
+
 }

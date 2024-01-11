@@ -46,7 +46,7 @@ public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
         @Nullable RexNode filter,
         @Nullable TupleMapping selection
     ) {
-        this(cluster, traitSet, hints, table, filter, selection, null, null, null, false);
+        this(cluster, traitSet, hints, table, filter, selection, null, null, null, false, false);
     }
 
     public DingoTableScan(
@@ -59,9 +59,10 @@ public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
         @Nullable List<AggregateCall> aggCalls,
         @Nullable ImmutableBitSet groupSet,
         @Nullable ImmutableList<ImmutableBitSet> groupSets,
-        boolean pushDown
+        boolean pushDown,
+        boolean forModify
     ) {
-        super(cluster, traitSet, hints, table, filter, selection, aggCalls, groupSet, groupSets, pushDown);
+        super(cluster, traitSet, hints, table, filter, selection, aggCalls, groupSet, groupSets, pushDown, forModify);
     }
 
     @Override
@@ -81,7 +82,8 @@ public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
             aggCalls,
             groupSet,
             groupSets,
-            pushDown
+            pushDown,
+            forUpdate
         );
     }
 

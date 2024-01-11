@@ -56,7 +56,7 @@ public class ShowGrantsOperation implements QueryOperation {
     @Override
     public Iterator getIterator() {
         List<SqlGrant> sqlGrants = execute((SqlShowGrants) sqlNode);
-        List<Object[]> showGrants = sqlGrants.stream().map(sqlGrant -> sqlGrant.toString())
+        List<Object[]> showGrants = sqlGrants.stream().map(SqlNode::toString)
             .map(grant -> new Object[] {grant})
             .collect(Collectors.toList());
         return showGrants.iterator();

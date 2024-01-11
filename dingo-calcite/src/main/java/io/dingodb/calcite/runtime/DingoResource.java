@@ -96,4 +96,15 @@ public interface DingoResource {
 
     @BaseMessage("Transaction characteristics can't be changed while a transaction is in progress")
     ExInst<DingoSqlException> transChangeError();
+    @BaseMessage("Can't get stat of ''{0}'' (Errcode: '{1}' - ''{2}'')")
+    ExInst<DingoSqlException> accessError(String a0, int a1, String a2);
+
+    @BaseMessage("Can't create/write to file ''{0}'' (Errcode: 13 - Permission denied)")
+    ExInst<DingoSqlException> writeReadError(String a0);
+
+    @BaseMessage("Incorrect value")
+    ExInst<DingoSqlException> loadDataError();
+
+    @BaseMessage("Duplicate entry for key 'PRIMARY'")
+    ExInst<DingoSqlException> duplicateKey();
 }

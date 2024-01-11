@@ -26,6 +26,7 @@ import io.dingodb.calcite.grammar.ddl.SqlDropIndex;
 import io.dingodb.calcite.grammar.ddl.SqlDropUser;
 import io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
+import io.dingodb.calcite.grammar.ddl.SqlLoadData;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.dql.SqlDesc;
@@ -193,6 +194,13 @@ public class DingoDdlVerify {
                 sqlShowTableDistribution.tableName, "getTables")) {
                 throw new RuntimeException(String.format("Access denied for user '%s'@'%s'", user, host));
             }
+        } else if (sqlNode instanceof SqlLoadData) {
+            SqlLoadData sqlLoadData = (SqlLoadData) sqlNode;
+            if (sqlLoadData.getSchemaName() == null) {
+                sqlLoadData.setSchemaName(connection.getContext().getDefaultSchemaName());
+            }
+            schemaTables = new String[] {sqlLoadData.getSchemaName(), sqlLoadData.getTableName()};
+            accessTypes.add(DingoSqlAccessEnum.INSERT);
         }
 
         if (schemaTables != null) {

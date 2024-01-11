@@ -26,6 +26,7 @@ import java.math.BigInteger;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -55,25 +56,30 @@ public class MysqlPacketFactory {
      */
     @NonNull
     public OKPacket getOkEofPacket(int affected, AtomicLong packetId, int serverStatus) {
-        OKPacket okPacket = newOkPacket(affected, packetId, serverStatus, BigInteger.ZERO);
+        OKPacket okPacket = newOkPacket(affected, packetId, serverStatus, BigInteger.ZERO, 0);
         okPacket.header = (byte) NativeConstants.TYPE_ID_EOF;
         return okPacket;
     }
 
-    public OKPacket getOkPacket(int affected, AtomicLong packetId) {
-        return getOkPacket(affected, packetId, 0, BigInteger.ZERO);
+    public OKPacket getOkPacket(int affected, AtomicLong packetId, SQLWarning sqlWarning) {
+        return getOkPacket(affected, packetId, 0, BigInteger.ZERO, sqlWarning);
     }
 
-    public OKPacket getOkPacket(int affected, AtomicLong packetId, int serverStatus) {
-        return getOkPacket(affected, packetId, serverStatus, BigInteger.ZERO);
+    public OKPacket getOkPacket(int affected, AtomicLong packetId, int serverStatus, SQLWarning sqlWarning) {
+        return getOkPacket(affected, packetId, serverStatus, BigInteger.ZERO, sqlWarning);
     }
 
     @NonNull
     public OKPacket getOkPacket(int affected,
                                 AtomicLong packetId,
                                 int serverStatus,
-                                BigInteger lastInsertId) {
-        OKPacket okPacket = newOkPacket(affected, packetId, serverStatus, lastInsertId);
+                                BigInteger lastInsertId,
+                                SQLWarning sqlWarning) {
+        int warningCount = 0;
+        if (sqlWarning != null) {
+            warningCount = 1;
+        }
+        OKPacket okPacket = newOkPacket(affected, packetId, serverStatus, lastInsertId, warningCount);
         okPacket.header = NativeConstants.TYPE_ID_OK;
         return okPacket;
     }
@@ -81,7 +87,8 @@ public class MysqlPacketFactory {
     private OKPacket newOkPacket(int affected,
                                  AtomicLong packetId,
                                  int serverStatus,
-                                 BigInteger lastInsertId) {
+                                 BigInteger lastInsertId,
+                                 int warningCount) {
         OKPacket okPacket = new OKPacket();
         okPacket.capabilities = MysqlServer.getServerCapabilities();
         okPacket.affectedRows = affected;
@@ -90,6 +97,7 @@ public class MysqlPacketFactory {
         if (serverStatus != 0) {
             status |= serverStatus;
         }
+        okPacket.warningCount = warningCount;
         okPacket.serverStatus = status;
         okPacket.insertId = lastInsertId;
         return okPacket;

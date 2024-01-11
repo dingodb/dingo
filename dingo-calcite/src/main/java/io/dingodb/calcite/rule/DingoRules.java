@@ -108,6 +108,15 @@ public final class DingoRules {
     public static final SubQueryRemoveRule JOIN_SUB_QUERY_TO_CORRELATE =
         SubQueryRemoveRule.Config.JOIN.toRule();
 
+    public static final DingoExportDataRule EXPORT_DATA_RULE =
+        DingoExportDataRule.DEFAULT.toRule(DingoExportDataRule.class);
+
+    public static final DingoWithoutPriModifyRule WITHOUT_PRI_DELETE_RULE =
+        DingoWithoutPriModifyRule.Config.DELETE.toRule();
+
+    public static final DingoWithoutPriModifyRule WITHOUT_PRI_UPDATE_RULE =
+        DingoWithoutPriModifyRule.Config.UPDATE.toRule();
+
     private static final List<RelOptRule> rules = ImmutableList.of(
         CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN,
         // CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES,
@@ -146,7 +155,10 @@ public final class DingoRules {
         DINGO_MODIFY_INDEX_RULE,
         PROJECT_SUB_QUERY_TO_CORRELATE,
         FILTER_SUB_QUERY_TO_CORRELATE,
-        JOIN_SUB_QUERY_TO_CORRELATE
+        JOIN_SUB_QUERY_TO_CORRELATE,
+        EXPORT_DATA_RULE,
+        WITHOUT_PRI_DELETE_RULE,
+        WITHOUT_PRI_UPDATE_RULE
     );
 
     private DingoRules() {

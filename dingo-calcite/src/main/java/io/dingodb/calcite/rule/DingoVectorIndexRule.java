@@ -123,7 +123,8 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
             null,
             null,
             null,
-            true
+            true,
+            false
             );
 
         VectorStreamConvertor vectorStreamConvertor = new VectorStreamConvertor(

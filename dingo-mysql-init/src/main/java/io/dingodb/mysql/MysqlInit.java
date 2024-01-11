@@ -277,7 +277,7 @@ public final class MysqlInit {
         values.add(new Object[]{"connect_timeout", "10"});
         values.add(new Object[]{"max_execution_time", "0"});
         values.add(new Object[]{"autocommit", "on"});
-        values.add(new Object[]{"lock_wait_timeout", "31536000"});
+        values.add(new Object[]{"lock_wait_timeout", "50"});
         values.add(new Object[]{"transaction_isolation", "REPEATABLE-READ"});
         values.add(new Object[]{"transaction_read_only", "off"});
         values.add(new Object[]{"txn_mode", "optimistic"});

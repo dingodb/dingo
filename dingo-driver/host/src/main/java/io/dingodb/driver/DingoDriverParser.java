@@ -22,6 +22,7 @@ import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.operation.DdlOperation;
+import io.dingodb.calcite.operation.DmlOperation;
 import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.QueryOperation;
 import io.dingodb.calcite.rel.AutoIncrementShuttle;
@@ -215,23 +216,26 @@ public final class DingoDriverParser extends DingoParser {
         // for compatible mysql protocol
         if (compatibleMysql(sqlNode)) {
             DingoDdlVerify.verify(sqlNode, connection);
-            boolean isDdl = sqlNode.getKind().belongsTo(SqlKind.DDL);
             Operation operation = convertToOperation(sqlNode, connection, connection.getContext());
+            Meta.StatementType statementType;
             List<ColumnMetaData> columns = new ArrayList<>();
-            if (!isDdl) {
+            if (sqlNode.getKind() == SqlKind.SELECT) {
                 columns = ((QueryOperation)operation).columns().stream().map(column -> metaData(typeFactory, 0, column,
                     new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null))
                     .collect(Collectors.toList());
+                statementType = Meta.StatementType.SELECT;
+            } else if (sqlNode.getKind() == SqlKind.INSERT) {
+                columns = ((DmlOperation)operation).columns(typeFactory);
+                statementType = Meta.StatementType.IS_DML;
+                ((DmlOperation) operation).execute();
             } else {
                 ((DdlOperation)operation).execute();
+                statementType = Meta.StatementType.OTHER_DDL;
             }
 
-            Meta.StatementType statementType = isDdl
-                ? Meta.StatementType.OTHER_DDL
-                : Meta.StatementType.SELECT;
             return new MysqlSignature(columns,
                 sql,
-                null,
+                new ArrayList<>(),
                 null,
                 cursorFactory,
                 statementType,

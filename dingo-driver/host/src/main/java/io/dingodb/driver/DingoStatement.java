@@ -17,6 +17,8 @@
 package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.operation.DmlOperation;
+import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.QueryOperation;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
@@ -26,9 +28,14 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 public class DingoStatement extends AvaticaStatement {
+    private String warning;
+
     DingoStatement(
         DingoConnection connection,
         Meta.StatementHandle handle,
@@ -85,8 +92,15 @@ public class DingoStatement extends AvaticaStatement {
             Job job = jobManager.getJob(((DingoSignature) signature).getJobId());
             return jobManager.createIterator(job, null);
         } else if (signature instanceof MysqlSignature) {
-            QueryOperation queryOperation = (QueryOperation) ((MysqlSignature) signature).getOperation();
-            return queryOperation.getIterator();
+            Operation operation = ((MysqlSignature) signature).getOperation();
+            if (operation instanceof QueryOperation) {
+                return ((QueryOperation) operation).getIterator();
+            } else {
+                DmlOperation dmlOperation = (DmlOperation) operation;
+                Iterator<Object[]> iterator = dmlOperation.getIterator();
+                warning = dmlOperation.getWarning();
+                return iterator;
+            }
         }
         throw ExceptionUtils.wrongSignatureType(this, signature);
     }
@@ -94,5 +108,14 @@ public class DingoStatement extends AvaticaStatement {
     public void removeJob(JobManager jobManager) {
         Meta.Signature signature = getSignature();
         DingoStatementUtils.removeJobInSignature(jobManager, signature);
+    }
+
+    @Override
+    public SQLWarning getWarnings() {
+        if (warning == null) {
+            return null;
+        } else {
+            return new SQLWarning(warning);
+        }
     }
 }

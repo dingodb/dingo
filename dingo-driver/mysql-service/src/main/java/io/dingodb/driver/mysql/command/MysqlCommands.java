@@ -41,6 +41,7 @@ import java.nio.ByteOrder;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -93,7 +94,7 @@ public class MysqlCommands {
         executeSingleQuery(sql, packetId, mysqlConnection);
     }
 
-    private boolean doExpire(MysqlConnection mysqlConnection, String sql, AtomicLong packetId) {
+    private static boolean doExpire(MysqlConnection mysqlConnection, String sql, AtomicLong packetId) {
         sql = sql.trim().toLowerCase().replace("'", "");
         DingoConnection dingoConnection = (DingoConnection) mysqlConnection.getConnection();
         String user = dingoConnection.getContext().getOption("user");
@@ -103,8 +104,8 @@ public class MysqlCommands {
         String setPwdSql2;
         String alterUserPwdSql2;
         if (host.contains("%")) {
-            setPwdSql2 = String.format(setPwdSqlTemp2, user, host);
-            alterUserPwdSql2 = String.format(alterUserPwdSqlTemp2, user, host);
+            setPwdSql2 = String.format(setPwdSqlTemp2, user);
+            alterUserPwdSql2 = String.format(alterUserPwdSqlTemp2, user);
             if (sql.startsWith(setPwdSql2) || sql.startsWith(alterUserPwdSql2)) {
                 return true;
             }
@@ -177,6 +178,7 @@ public class MysqlCommands {
             } else {
                 // update insert delete
                 int count = statement.getUpdateCount();
+                SQLWarning sqlWarning = statement.getWarnings();
                 DingoStatement dingoStatement = (DingoStatement) statement;
                 String jobIdPrefix = dingoStatement.handle.toString();
                 OKPacket okPacket;
@@ -184,11 +186,11 @@ public class MysqlCommands {
                     String lastInsertId = mysqlConnection.getConnection()
                         .getClientInfo().getProperty(jobIdPrefix, "0");
                     okPacket = MysqlPacketFactory.getInstance()
-                        .getOkPacket(count, packetId, 0, new BigInteger(lastInsertId));
+                        .getOkPacket(count, packetId, 0, new BigInteger(lastInsertId), sqlWarning);
                     mysqlConnection.getConnection().getClientInfo().remove(jobIdPrefix);
                 } else {
                     okPacket = MysqlPacketFactory.getInstance()
-                        .getOkPacket(count, packetId);
+                        .getOkPacket(count, packetId, sqlWarning);
                 }
                 MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
             }
@@ -314,6 +316,7 @@ public class MysqlCommands {
                     MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
                 }
             } else {
+                SQLWarning sqlWarning = preparedStatement.getWarnings();
                 int affected = preparedStatement.executeUpdate();
                 String jobIdPrefix = preparedStatement.handle.toString();
                 OKPacket okPacket;
@@ -321,10 +324,10 @@ public class MysqlCommands {
                     String lastInsertId = mysqlConnection.getConnection()
                         .getClientInfo().getProperty(jobIdPrefix, "0");
                     okPacket = MysqlPacketFactory.getInstance()
-                        .getOkPacket(affected, packetId, 0, new BigInteger(lastInsertId));
+                        .getOkPacket(affected, packetId, 0, new BigInteger(lastInsertId), sqlWarning);
                     mysqlConnection.getConnection().getClientInfo().remove(jobIdPrefix);
                 } else {
-                    okPacket = mysqlPacketFactory.getOkPacket(affected, packetId);
+                    okPacket = mysqlPacketFactory.getOkPacket(affected, packetId, sqlWarning);
                 }
                 MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
             }
