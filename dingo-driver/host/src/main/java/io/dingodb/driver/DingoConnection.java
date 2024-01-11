@@ -63,6 +63,8 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
 
     private boolean autoCommit = true;
 
+    private String oneTimeTxIsolation;
+
     @Setter
     @Getter
     private ITransaction transaction;
@@ -92,8 +94,14 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     public ITransaction createTransaction(boolean pessimistic) {
         if (transaction == null) {
             long startTs = TransactionManager.getStart_ts();
+            String txIsolation;
+            if (oneTimeTxIsolation != null) {
+                txIsolation = oneTimeTxIsolation;
+            } else {
+                txIsolation = getClientInfo("transaction_isolation");
+            }
             this.transaction = TransactionManager.createTransaction(pessimistic, startTs,
-                TransactionUtil.convertIsolationLevel(getClientInfo("transaction_isolation")));
+                TransactionUtil.convertIsolationLevel(txIsolation));
             transaction.setTransactionConfig(sessionVariables);
         }
         return transaction;
@@ -106,6 +114,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 setAutoCommit(true);
             }
             transaction = null;
+            oneTimeTxIsolation = null;
         }
     }
 
@@ -151,7 +160,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 this.transaction = null;
             }
         }
-        if(autoCommit == false) {
+        if(!autoCommit) {
             createTransaction(false);
             this.autoCommit = false;
         }
@@ -261,7 +270,8 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
 
     @Override
     public void setClientInfo(String name, String value) throws SQLClientInfoException {
-        if (name.equalsIgnoreCase("transaction_isolation")) {
+        if (name.equalsIgnoreCase("transaction_isolation")
+            || name.equalsIgnoreCase("onetime_transaction_isolation")) {
             if (transaction != null) {
                 throw new RuntimeException("Transaction characteristics can't be changed while a transaction is in progress");
             }
@@ -269,11 +279,15 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             if (value.equalsIgnoreCase("READ-COMMITTED") && getClientInfo("txn_mode").equalsIgnoreCase("optimistic")) {
                 return;
             }
+            if (name.startsWith("onetime_transaction_isolation")) {
+                oneTimeTxIsolation = value;
+                return;
+            }
         }
         sessionVariables.setProperty(name, value);
         if (name.equalsIgnoreCase("autocommit")) {
             try {
-                setAutoCommit(value.equalsIgnoreCase("on") ? true : false);
+                setAutoCommit(value.equalsIgnoreCase("on"));
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
