@@ -16,6 +16,9 @@
 
 package io.dingodb.exec.operator.params;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
@@ -35,8 +38,13 @@ import java.util.NavigableMap;
 @Getter
 public abstract class PartModifyParam extends AbstractParams {
 
+    @JsonProperty("table")
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     protected final CommonId tableId;
+    @JsonProperty("schema")
     protected final DingoType schema;
+    @JsonProperty("keyMapping")
     protected final TupleMapping keyMapping;
     @Setter
     protected long count;

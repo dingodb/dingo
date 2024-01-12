@@ -41,7 +41,7 @@ import java.util.stream.IntStream;
 @Getter
 @JsonTypeName("txnScan")
 @JsonPropertyOrder({
-    "tableId", "part", "startTs", "isolationLevel", "schema", "keyMapping", "filter",
+    "tableId", "part", "scanTs", "isolationLevel", "schema", "keyMapping", "filter",
     "selection", "startKey", "endKey", "includeStart", "includeEnd", "prefixScan"
 })
 public class TxnPartRangeScanParam extends FilterProjectSourceParam {
@@ -63,8 +63,8 @@ public class TxnPartRangeScanParam extends FilterProjectSourceParam {
     private final DingoType outputSchema;
     @JsonProperty("pushDown")
     private final boolean pushDown;
-    @JsonProperty("startTs")
-    private final long startTs;
+    @JsonProperty("scanTs")
+    private final long scanTs;
     @JsonProperty("isolationLevel")
     private final int isolationLevel;
 
@@ -85,7 +85,7 @@ public class TxnPartRangeScanParam extends FilterProjectSourceParam {
         TupleMapping aggKeys,
         List<Agg> aggList,
         DingoType outputSchema,
-        long startTs,
+        long scanTs,
         int isolationLevel,
         boolean pushDown
     ) {
@@ -97,7 +97,7 @@ public class TxnPartRangeScanParam extends FilterProjectSourceParam {
         this.aggKeys = aggKeys;
         this.aggList = aggList;
         this.outputSchema = outputSchema;
-        this.startTs = startTs;
+        this.scanTs = scanTs;
         this.isolationLevel = isolationLevel;
         this.pushDown = pushDown;
     }

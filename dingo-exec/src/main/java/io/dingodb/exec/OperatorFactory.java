@@ -39,6 +39,9 @@ import io.dingodb.exec.operator.PartRangeScanOperator;
 import io.dingodb.exec.operator.PartUpdateOperator;
 import io.dingodb.exec.operator.PartVectorOperator;
 import io.dingodb.exec.operator.PartitionOperator;
+import io.dingodb.exec.operator.PessimisticLockDeleteOperator;
+import io.dingodb.exec.operator.PessimisticLockInsertOperator;
+import io.dingodb.exec.operator.PessimisticLockUpdateOperator;
 import io.dingodb.exec.operator.ProjectOperator;
 import io.dingodb.exec.operator.ReceiveOperator;
 import io.dingodb.exec.operator.ReduceOperator;
@@ -57,6 +60,7 @@ import io.dingodb.exec.operator.ValuesOperator;
 import io.dingodb.exec.operator.VectorPartitionOperator;
 import io.dingodb.exec.operator.VectorPointDistanceOperator;
 import io.dingodb.exec.transaction.operator.CommitOperator;
+import io.dingodb.exec.transaction.operator.PessimisticRollBackOperator;
 import io.dingodb.exec.transaction.operator.PreWriteOperator;
 import io.dingodb.exec.transaction.operator.RollBackOperator;
 import io.dingodb.exec.transaction.operator.ScanCacheOperator;
@@ -106,6 +110,10 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_UPDATE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.VALUES;
 import static io.dingodb.exec.utils.OperatorCodeUtils.VECTOR_PARTITION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.VECTOR_POINT_DISTANCE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_DELETE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_INSERT;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_UPDATE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_ROLL_BACK;
 
 public final class OperatorFactory {
 
@@ -154,6 +162,10 @@ public final class OperatorFactory {
         OPERATORS.put(INFO_SCHEMA_SCAN, InfoSchemaScanOperator.INSTANCE);
         OPERATORS.put(COMPARE_AND_SET, CompareAndSetOperator.INSTANCE);
         OPERATORS.put(EXPORT_DATA, ExportDataOperator.INSTANCE);
+        OPERATORS.put(PESSIMISTIC_LOCK_DELETE, PessimisticLockDeleteOperator.INSTANCE);
+        OPERATORS.put(PESSIMISTIC_LOCK_INSERT, PessimisticLockInsertOperator.INSTANCE);
+        OPERATORS.put(PESSIMISTIC_LOCK_UPDATE, PessimisticLockUpdateOperator.INSTANCE);
+        OPERATORS.put(PESSIMISTIC_ROLL_BACK, PessimisticRollBackOperator.INSTANCE);
     }
 
     private OperatorFactory() {

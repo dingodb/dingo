@@ -4251,8 +4251,8 @@ SqlSetOption SqlSetOption(Span s, String scope) :
          (<QUOTED_STRING> <COLLATE> <QUOTED_STRING>
          |
          <ISOLATION> <LEVEL>
-         [<READ> <MINUS> [ <COMMITTED> { val = new SqlIdentifier("read-committed", s.end(this)); } ] [<UNCOMMITTED> { val = new SqlIdentifier("read-uncommitted", s.end(this)); }]  ]
-         [<REPEATABLE> <MINUS> <READ> { val = new SqlIdentifier("repeatable-read", s.end(this)); } ]
+         [<READ> [<MINUS>] [ <COMMITTED> { val = new SqlIdentifier("read-committed", s.end(this)); } ] [<UNCOMMITTED> { val = new SqlIdentifier("read-uncommitted", s.end(this)); }]  ]
+         [<REPEATABLE> [<MINUS>] <READ> { val = new SqlIdentifier("repeatable-read", s.end(this)); } ]
          [<SERIALIZABLE> { val = new SqlIdentifier(token.image, s.end(this)); }]
          ){
             if (name.names.size() != 1 || !name.names.get(0).equalsIgnoreCase("transaction")) {

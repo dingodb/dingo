@@ -42,43 +42,36 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.SCAN_CACHE;
 public class DingoScanCacheVisitFun {
 
     public static Collection<Vertex> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction, DingoTransactionRenderJob visitor, ScanCacheLeaf scanCacheLeaf) {
+        Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction,
+        DingoTransactionRenderJob visitor, ScanCacheLeaf scanCacheLeaf) {
         List<Vertex> outputs = new ArrayList<>();
-//        if(scanCacheLeaf.getData() instanceof Element) {
-//            ScanCacheOperator operator = new ScanCacheOperator(transaction.getCache());
-//            Collection<Output> inputs = scanCacheLeaf.getData().accept(visitor);
-//            Output input = sole(inputs);
-//            Task task = input.getTask();
-//            operator.setId(idGenerator.getOperatorId(task.getId()));
-//            task.putOperator(operator);
-//            input.setLink(operator.getInput(0));
-//        } else {
         DingoType dingoType = DingoTypeFactory.tuple(new DingoType[]{new BooleanType(true)});
         Map<CommonId, Channel> channelMap = transaction.getChannelMap();
-//            if(channelMap.size() == 0){
-//                Location remoteLocation = new Location("172.20.3.30", 10000);
-//                ScanCacheOperator operator = new ScanCacheOperator(dingoType);
-//                Task task = job.getOrCreate(remoteLocation, idGenerator);
-//                operator.setId(idGenerator.getOperatorId(task.getId()));
-//                task.putOperator(operator);
-//                outputs.addAll(operator.getOutputs());
-//            }
         for (Map.Entry<CommonId, Channel> channelEntry : channelMap.entrySet()) {
             Location remoteLocation = channelEntry.getValue().remoteLocation();
             ScanCacheParam param = new ScanCacheParam(dingoType, transaction.getType());
             Vertex vertex = new Vertex(SCAN_CACHE, param);
-            Task task = job.getOrCreate(remoteLocation, idGenerator, transaction.getType(), IsolationLevel.of(transaction.getIsolationLevel()));
+            Task task = job.getOrCreate(
+                remoteLocation,
+                idGenerator,
+                transaction.getType(),
+                IsolationLevel.of(transaction.getIsolationLevel())
+            );
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);
             outputs.add(vertex);
         }
         ScanCacheParam param = new ScanCacheParam(dingoType, transaction.getType());
         Vertex vertex = new Vertex(SCAN_CACHE, param);
-        Task task = job.getOrCreate(currentLocation, idGenerator, transaction.getType(), IsolationLevel.of(transaction.getIsolationLevel()));
+        Task task = job.getOrCreate(
+            currentLocation,
+            idGenerator,
+            transaction.getType(),
+            IsolationLevel.of(transaction.getIsolationLevel())
+        );
         vertex.setId(idGenerator.getOperatorId(task.getId()));
         task.putVertex(vertex);
         outputs.add(vertex);
-//        }
         return outputs;
     }
 }

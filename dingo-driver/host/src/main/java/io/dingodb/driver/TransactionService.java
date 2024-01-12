@@ -21,13 +21,13 @@ import com.google.auto.service.AutoService;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public class TransactionService implements io.dingodb.transaction.api.TransactionService{
+public class TransactionService implements io.dingodb.transaction.api.TransactionService {
 
     public static final TransactionService DEFAULT_INSTANCE = new TransactionService();
 
     @Override
     public void begin(Connection connection, boolean pessimistic) throws SQLException {
-        if(connection instanceof DingoConnection) {
+        if (connection instanceof DingoConnection) {
             ((DingoConnection) connection).beginTransaction(pessimistic);
         }
     }
@@ -43,7 +43,7 @@ public class TransactionService implements io.dingodb.transaction.api.Transactio
     }
 
     @AutoService(io.dingodb.transaction.api.TransactionServiceProvider.class)
-    public static final class TransactionServiceProvider implements io.dingodb.transaction.api.TransactionServiceProvider{
+    public static final class TransactionServiceProvider implements io.dingodb.transaction.api.TransactionServiceProvider {
 
         @Override
         public TransactionService get() {

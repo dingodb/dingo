@@ -27,7 +27,7 @@ import java.util.Optional;
  */
 public class TransactionDiGraph<T> {
 
-    final private HashMap<T, ArrayList<T>> edges;
+    private final HashMap<T, ArrayList<T>> edges;
 
     public TransactionDiGraph() {
         this.edges = new HashMap<>();
@@ -39,9 +39,9 @@ public class TransactionDiGraph<T> {
     }
 
     private static class Detector<T> {
-        final private HashMap<T, ArrayList<T>> edges;
-        final private HashSet<T> discovered;
-        final private HashSet<T> finished;
+        private final HashMap<T, ArrayList<T>> edges;
+        private final HashSet<T> discovered;
+        private final HashSet<T> finished;
         private ArrayList<T> curPath;
 
         Detector(HashMap<T, ArrayList<T>> edges) {

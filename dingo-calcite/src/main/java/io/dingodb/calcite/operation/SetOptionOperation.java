@@ -81,6 +81,14 @@ public class SetOptionOperation implements DdlOperation {
     public void execute() {
         try {
             value = VariableValidator.validator(name, value, scope);
+            // optimistic transaction only support REPEATABLE-READ transaction isolation
+            if ("transaction_isolation".equalsIgnoreCase(name)
+                && "READ-COMMITTED".equalsIgnoreCase(value)
+                && connection.getClientInfo("txn_mode").equalsIgnoreCase("optimistic")
+            ) {
+                throw new RuntimeException("Optimistic transaction mode cannot be changed" +
+                    " to read committed transaction isolation level");
+            }
             if ("SESSION".equals(scope) || "USER".equals(scope)) {
                 if (!setCharacter(name, value)) {
                     connection.setClientInfo(name, value);

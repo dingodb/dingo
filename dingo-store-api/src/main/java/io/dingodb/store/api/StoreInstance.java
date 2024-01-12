@@ -22,8 +22,10 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.vector.VectorSearchResponse;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
+import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
+import io.dingodb.store.api.transaction.data.rollback.TxnPessimisticRollBack;
 import lombok.AllArgsConstructor;
 
 import java.util.Collections;
@@ -221,15 +223,15 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default Iterator<KeyValue> txnScan(long startTs, IsolationLevel isolationLevel, Range range) {
+    default Iterator<KeyValue> txnScan(long startTs, Range range) {
         throw new UnsupportedOperationException();
     }
 
-    default KeyValue txnGet(long startTs, IsolationLevel isolationLevel, byte[] key) {
-        return txnGet(startTs, isolationLevel, Collections.singletonList(key)).get(0);
+    default KeyValue txnGet(long startTs, byte[] key) {
+        return txnGet(startTs, Collections.singletonList(key)).get(0);
     }
 
-    default List<KeyValue> txnGet(long startTs, IsolationLevel isolationLevel, List<byte[]> keys) {
+    default List<KeyValue> txnGet(long startTs, List<byte[]> keys) {
         throw new UnsupportedOperationException();
     }
 
@@ -260,13 +262,16 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-//    default TxnCheckStatusResult txnCheckTxnStatus(TxnCheckStatus txnCheckStatus) {
-//        throw new UnsupportedOperationException();
-//    }
-//
-//    default TxnResolveLockResult txnResolveLock(TxnResolveLock txnResolveLock) {
-//        throw new UnsupportedOperationException();
-//    }
+    default Future txnPessimisticLockPrimaryKey(TxnPessimisticLock txnPessimisticLock, long timeOut) {
+        throw new UnsupportedOperationException();
+    }
+    default boolean txnPessimisticLock(TxnPessimisticLock txnPessimisticLock, long timeOut) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean txnPessimisticLockRollback(TxnPessimisticRollBack txnPessimisticRollBack) {
+        throw new UnsupportedOperationException();
+    }
 
     default boolean txnBatchRollback(TxnBatchRollBack txnBatchRollBack) {
         throw new UnsupportedOperationException();

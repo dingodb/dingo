@@ -25,12 +25,13 @@ import io.dingodb.net.Channel;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Future;
 
 public interface ITransaction {
 
-    long getStart_ts();
+    long getStartTs();
 
-    long getCommit_ts();
+    long getCommitTs();
 
     CommonId getTxnId();
 
@@ -56,6 +57,8 @@ public interface ITransaction {
 
     void rollback(JobManager jobManager);
 
+    void rollBackPessimisticLock(JobManager jobManager);
+
     void close();
 
     void addSql(String sql);
@@ -66,7 +69,23 @@ public interface ITransaction {
 
     void setAutoCommit(boolean autoCommit);
 
+    boolean isPessimistic();
+
+    long getForUpdateTs();
+
+    void setForUpdateTs(long forUpdateTs);
+
+    byte[] getPrimaryKeyLock();
+
+    void setPrimaryKeyLock(byte[] primaryKeyLock);
+
+    void setPrimaryKeyFuture(Future future);
+
     Job getJob();
 
+    void setJob(Job job);
+
     void setTransactionConfig(Properties sessionVariables);
+
+    long getLockTimeOut();
 }

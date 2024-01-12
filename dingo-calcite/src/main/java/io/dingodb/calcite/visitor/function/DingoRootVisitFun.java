@@ -42,7 +42,8 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.ROOT;
 public class DingoRootVisitFun {
     @NonNull
     public static Collection<Vertex> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction, DingoJobVisitor visitor, @NonNull DingoRoot rel
+        Job job, IdGenerator idGenerator, Location currentLocation,
+        ITransaction transaction, DingoJobVisitor visitor, @NonNull DingoRoot rel
     ) {
         Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
         if (inputs.size() != 1) {

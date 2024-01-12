@@ -35,11 +35,11 @@ public class TransactionManager {
     // connectionId -> Transaction
     private static final Map<CommonId, ITransaction> trans = new ConcurrentHashMap<>();
 
-    public static @NonNull ITransaction createTransaction(boolean pessimistic, long start_ts, int isolationLevel) {
+    public static @NonNull ITransaction createTransaction(boolean pessimistic, long startTs, int isolationLevel) {
         if (pessimistic) {
-            return createTransaction(TransactionType.PESSIMISTIC, start_ts, isolationLevel);
+            return createTransaction(TransactionType.PESSIMISTIC, startTs, isolationLevel);
         } else {
-            return createTransaction(TransactionType.OPTIMISTIC, start_ts, isolationLevel);
+            return createTransaction(TransactionType.OPTIMISTIC, startTs, isolationLevel);
         }
     }
 
@@ -51,17 +51,17 @@ public class TransactionManager {
         }
     }
 
-    public static @NonNull ITransaction createTransaction(@NonNull TransactionType trxType, long start_ts, int isolationLevel) {
+    public static @NonNull ITransaction createTransaction(@NonNull TransactionType trxType, long startTs, int isolationLevel) {
         ITransaction tran;
         switch (trxType) {
             case OPTIMISTIC:
-                tran = new OptimisticTransaction(start_ts, isolationLevel);
+                tran = new OptimisticTransaction(startTs, isolationLevel);
                 break;
             case PESSIMISTIC:
-                tran = new PessimisticTransaction(start_ts, isolationLevel);
+                tran = new PessimisticTransaction(startTs, isolationLevel);
                 break;
             default:
-                log.info("start_ts:" + start_ts + ", TransactionType: " + trxType.name() + " not supported");
+                log.info("startTs:" + startTs + ", TransactionType: " + trxType.name() + " not supported");
                 throw new ArithmeticException("TransactionType: " + trxType.name() + " not supported");
         }
         return tran;
@@ -83,11 +83,11 @@ public class TransactionManager {
         return tran;
     }
 
-    public static long getStart_ts() {
+    public static long getStartTs() {
         return TsoService.getDefault().tso();
     }
 
-    public static long getCommit_ts() {
+    public static long getCommitTs() {
         return TsoService.getDefault().tso();
     }
 
@@ -103,8 +103,8 @@ public class TransactionManager {
         return trans.get(txnId);
     }
 
-    public static ITransaction getTransaction(@NonNull long start_ts) {
-        CommonId txnId = new CommonId(CommonId.CommonType.TRANSACTION, getServerId().seq, start_ts);
+    public static ITransaction getTransaction(@NonNull long startTs) {
+        CommonId txnId = new CommonId(CommonId.CommonType.TRANSACTION, getServerId().seq, startTs);
         return Optional.ofNullable(trans.get(txnId)).get();
     }
 
@@ -113,7 +113,7 @@ public class TransactionManager {
     }
 
     public static CommonId getServerId() {
-        return DingoConfiguration.serverId() == null ? new CommonId(CommonId.CommonType.SCHEMA, 0l, 0l) : DingoConfiguration.serverId();
+        return DingoConfiguration.serverId() == null ? new CommonId(CommonId.CommonType.SCHEMA, 0L, 0L) : DingoConfiguration.serverId();
     }
 
     public static long lockTtlTm() {

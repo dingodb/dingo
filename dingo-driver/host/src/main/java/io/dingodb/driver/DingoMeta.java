@@ -393,19 +393,37 @@ public class DingoMeta extends MetaImpl {
             }
             Signature signature = resultSet.getSignature();
             Iterator<Object[]> iterator = resultSet.getIterator();
-            if (iterator == null) {
-                iterator = createIterator(statement);
-                resultSet.setIterator(iterator);
-            }
+            ITransaction transaction = ((DingoConnection) connection).getTransaction();
             final List rows = new ArrayList(fetchMaxRowCount);
-            DingoType dingoType = DefinitionMapper.mapToDingoType(signature.columns);
-            AvaticaResultSetConverter converter = new AvaticaResultSetConverter(resultSet.getLocalCalendar());
-            for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
-                rows.add(dingoType.convertTo(iterator.next(), converter));
+            try {
+                if (iterator == null) {
+                    iterator = createIterator(statement);
+                    resultSet.setIterator(iterator);
+                }
+                DingoType dingoType = DefinitionMapper.mapToDingoType(signature.columns);
+                AvaticaResultSetConverter converter = new AvaticaResultSetConverter(resultSet.getLocalCalendar());
+                for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
+                    rows.add(dingoType.convertTo(iterator.next(), converter));
+                }
+            } catch (Throwable e) {
+                log.error("run job exception:{}", e, e);
+                if (transaction != null && transaction.isPessimistic() && transaction.getPrimaryKeyLock() != null
+                    && (sh.signature.statementType == StatementType.DELETE
+                    || sh.signature.statementType == StatementType.INSERT
+                    || sh.signature.statementType == StatementType.UPDATE)) {
+                    // rollback pessimistic lock
+                    transaction.rollBackPessimisticLock(jobManager);
+                }
+                if (transaction != null) {
+                    transaction.addSql(signature.sql);
+                    if (connection.getAutoCommit()) {
+                        ((DingoConnection) connection).cleanTransaction();
+                    }
+                }
+                throw ExceptionUtils.toRuntime(e);
             }
             boolean done = fetchMaxRowCount == 0 || !iterator.hasNext();
-            ITransaction transaction = ((DingoConnection) connection).getTransaction();
-            if (transaction !=null) {
+            if (transaction != null) {
                 transaction.addSql(signature.sql);
                 if (connection.getAutoCommit()) {
                     connection.commit();

@@ -16,7 +16,7 @@
 
 package io.dingodb.store.api.transaction.exception;
 
-public class DuplicateEntryException extends RuntimeException{
+public class DuplicateEntryException extends RuntimeException {
     public DuplicateEntryException(String message) {
         super(message);
     }

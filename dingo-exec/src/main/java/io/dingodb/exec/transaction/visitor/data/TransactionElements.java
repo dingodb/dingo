@@ -26,53 +26,146 @@ public class TransactionElements {
         elementMap.put(ElementName.SINGLE_TRANSACTION_PRE_WRITE, createSingleTransactionPreWrite());
         elementMap.put(ElementName.SINGLE_TRANSACTION_COMMIT, createSingleTransactionCommit());
         elementMap.put(ElementName.SINGLE_TRANSACTION_ROLLBACK, createSingleTransactionRollBack());
+        elementMap.put(ElementName.SINGLE_TRANSACTION_PESSIMISTIC_ROLLBACK, createSingleTransactionRollBackPl());
         elementMap.put(ElementName.MULTI_TRANSACTION_PRE_WRITE, createMultiTransactionPreWrite());
         elementMap.put(ElementName.MULTI_TRANSACTION_COMMIT, createMultiTransactionCommit());
         elementMap.put(ElementName.MULTI_TRANSACTION_ROLLBACK, createMultiTransactionRollBack());
+        elementMap.put(ElementName.MULTI_TRANSACTION_PESSIMISTIC_ROLLBACK, createMultiTransactionRollBackPl());
     }
 
     private static Element createSingleTransactionPreWrite() {
-        ScanCacheLeaf scanCacheLeaf = ScanCacheLeaf.builder().name(ElementName.SCAN_CACHE).build();
-        PreWriteLeaf preWriteLeaf = PreWriteLeaf.builder().name(ElementName.PRE_WRITE).data(scanCacheLeaf).build();
-        RootLeaf root = RootLeaf.builder().name(ElementName.ROOT).data(preWriteLeaf).build();
+        ScanCacheLeaf scanCacheLeaf = ScanCacheLeaf.builder()
+            .name(ElementName.SCAN_CACHE)
+            .build();
+        PreWriteLeaf preWriteLeaf = PreWriteLeaf.builder()
+            .name(ElementName.PRE_WRITE)
+            .data(scanCacheLeaf)
+            .build();
+        RootLeaf root = RootLeaf.builder()
+            .name(ElementName.ROOT)
+            .data(preWriteLeaf)
+            .build();
         return root;
     }
 
     private static Element createSingleTransactionCommit() {
-        ScanCacheLeaf scanCacheLeaf = ScanCacheLeaf.builder().name(ElementName.SCAN_CACHE).build();
-        CommitLeaf commitLeaf = CommitLeaf.builder().name(ElementName.COMMIT).data(scanCacheLeaf).build();
-        RootLeaf root = RootLeaf.builder().name(ElementName.ROOT).data(commitLeaf).build();
+        ScanCacheLeaf scanCacheLeaf = ScanCacheLeaf.builder()
+            .name(ElementName.SCAN_CACHE)
+            .build();
+        CommitLeaf commitLeaf = CommitLeaf.builder()
+            .name(ElementName.COMMIT)
+            .data(scanCacheLeaf)
+            .build();
+        RootLeaf root = RootLeaf.builder()
+            .name(ElementName.ROOT)
+            .data(commitLeaf)
+            .build();
         return root;
     }
 
     private static Element createSingleTransactionRollBack() {
-        ScanCacheLeaf scanCacheLeaf = ScanCacheLeaf.builder().name(ElementName.SCAN_CACHE).build();
-        RollBackLeaf rollBackLeaf = RollBackLeaf.builder().name(ElementName.ROLLBACK).data(scanCacheLeaf).build();
-        RootLeaf root = RootLeaf.builder().name(ElementName.ROOT).data(rollBackLeaf).build();
+        ScanCacheLeaf scanCacheLeaf = ScanCacheLeaf.builder()
+            .name(ElementName.SCAN_CACHE)
+            .build();
+        RollBackLeaf rollBackLeaf = RollBackLeaf.builder()
+            .name(ElementName.ROLLBACK)
+            .data(scanCacheLeaf)
+            .build();
+        RootLeaf root = RootLeaf.builder()
+            .name(ElementName.ROOT)
+            .data(rollBackLeaf)
+            .build();
         return root;
     }
 
     private static Element createMultiTransactionPreWrite() {
-        ScanCacheLeaf scanCacheLeaf = ScanCacheLeaf.builder().name(ElementName.SCAN_CACHE).build();
-        PreWriteLeaf preWriteLeaf = PreWriteLeaf.builder().name(ElementName.PRE_WRITE).data(scanCacheLeaf).build();
-        StreamConverterLeaf streamConverterLeaf = StreamConverterLeaf.builder().name(ElementName.STREAM).data(preWriteLeaf).build();
-        RootLeaf root = RootLeaf.builder().name(ElementName.ROOT).data(streamConverterLeaf).build();
+        ScanCacheLeaf scanCacheLeaf = ScanCacheLeaf.builder()
+            .name(ElementName.SCAN_CACHE)
+            .build();
+        PreWriteLeaf preWriteLeaf = PreWriteLeaf.builder()
+            .name(ElementName.PRE_WRITE)
+            .data(scanCacheLeaf)
+            .build();
+        StreamConverterLeaf streamConverterLeaf = StreamConverterLeaf.builder()
+            .name(ElementName.STREAM)
+            .data(preWriteLeaf)
+            .build();
+        RootLeaf root = RootLeaf.builder()
+            .name(ElementName.ROOT)
+            .data(streamConverterLeaf)
+            .build();
         return root;
     }
 
     private static Element createMultiTransactionCommit() {
-        ScanCacheLeaf scanCacheLeaf = ScanCacheLeaf.builder().name(ElementName.SCAN_CACHE).build();
-        CommitLeaf commitLeaf = CommitLeaf.builder().name(ElementName.COMMIT).data(scanCacheLeaf).build();
-        StreamConverterLeaf streamConverterLeaf = StreamConverterLeaf.builder().name(ElementName.STREAM).data(commitLeaf).build();
-        RootLeaf root = RootLeaf.builder().name(ElementName.ROOT).data(streamConverterLeaf).build();
+        ScanCacheLeaf scanCacheLeaf = ScanCacheLeaf.builder()
+            .name(ElementName.SCAN_CACHE)
+            .build();
+        CommitLeaf commitLeaf = CommitLeaf.builder()
+            .name(ElementName.COMMIT)
+            .data(scanCacheLeaf)
+            .build();
+        StreamConverterLeaf streamConverterLeaf = StreamConverterLeaf.builder()
+            .name(ElementName.STREAM)
+            .data(commitLeaf)
+            .build();
+        RootLeaf root = RootLeaf.builder()
+            .name(ElementName.ROOT)
+            .data(streamConverterLeaf)
+            .build();
         return root;
     }
 
     private static Element createMultiTransactionRollBack() {
-        ScanCacheLeaf scanCacheLeaf = ScanCacheLeaf.builder().name(ElementName.SCAN_CACHE).build();
-        RollBackLeaf rollBackLeaf = RollBackLeaf.builder().name(ElementName.COMMIT).data(scanCacheLeaf).build();
-        StreamConverterLeaf streamConverterLeaf = StreamConverterLeaf.builder().name(ElementName.STREAM).data(rollBackLeaf).build();
-        RootLeaf root = RootLeaf.builder().name(ElementName.ROOT).data(streamConverterLeaf).build();
+        ScanCacheLeaf scanCacheLeaf = ScanCacheLeaf.builder()
+            .name(ElementName.SCAN_CACHE)
+            .build();
+        RollBackLeaf rollBackLeaf = RollBackLeaf.builder()
+            .name(ElementName.ROLLBACK)
+            .data(scanCacheLeaf)
+            .build();
+        StreamConverterLeaf streamConverterLeaf = StreamConverterLeaf.builder()
+            .name(ElementName.STREAM)
+            .data(rollBackLeaf)
+            .build();
+        RootLeaf root = RootLeaf.builder()
+            .name(ElementName.ROOT)
+            .data(streamConverterLeaf)
+            .build();
+        return root;
+    }
+
+    private static Element createMultiTransactionRollBackPl() {
+        PessimisticRollBackScanLeaf pessimisticRollBackScanLeaf = PessimisticRollBackScanLeaf.builder()
+            .name(ElementName.PESSIMISTIC_ROLLBACK_SCAN)
+            .build();
+        PessimisticRollBackLeaf pessimisticRollBackLeaf = PessimisticRollBackLeaf.builder()
+            .name(ElementName.PESSIMISTIC_ROLLBACK)
+            .data(pessimisticRollBackScanLeaf)
+            .build();
+        RootLeaf root = RootLeaf.builder()
+            .name(ElementName.ROOT)
+            .data(pessimisticRollBackLeaf)
+            .build();
+        return root;
+    }
+
+    private static Element createSingleTransactionRollBackPl() {
+        PessimisticRollBackScanLeaf pessimisticRollBackScanLeaf = PessimisticRollBackScanLeaf.builder()
+            .name(ElementName.PESSIMISTIC_ROLLBACK_SCAN)
+            .build();
+        PessimisticRollBackLeaf pessimisticRollBackLeaf = PessimisticRollBackLeaf.builder()
+            .name(ElementName.PESSIMISTIC_ROLLBACK)
+            .data(pessimisticRollBackScanLeaf)
+            .build();
+        StreamConverterLeaf streamConverterLeaf = StreamConverterLeaf.builder()
+            .name(ElementName.STREAM)
+            .data(pessimisticRollBackLeaf)
+            .build();
+        RootLeaf root = RootLeaf.builder()
+            .name(ElementName.ROOT)
+            .data(streamConverterLeaf)
+            .build();
         return root;
     }
 

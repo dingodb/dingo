@@ -21,6 +21,8 @@ import io.dingodb.sdk.service.entity.store.TxnBatchGetRequest;
 import io.dingodb.sdk.service.entity.store.TxnBatchRollbackRequest;
 import io.dingodb.sdk.service.entity.store.TxnCheckTxnStatusRequest;
 import io.dingodb.sdk.service.entity.store.TxnCommitRequest;
+import io.dingodb.sdk.service.entity.store.TxnPessimisticLockRequest;
+import io.dingodb.sdk.service.entity.store.TxnPessimisticRollbackRequest;
 import io.dingodb.sdk.service.entity.store.TxnPrewriteRequest;
 import io.dingodb.sdk.service.entity.store.TxnScanRequest;
 import io.dingodb.store.api.StoreInstance;
@@ -28,9 +30,11 @@ import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.sdk.service.entity.store.TxnResolveLockRequest;
 import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatus;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
+import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import io.dingodb.store.api.transaction.data.resolvelock.TxnResolveLock;
 import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
+import io.dingodb.store.api.transaction.data.rollback.TxnPessimisticRollBack;
 import org.mapstruct.Mapping;
 import org.mapstruct.Mappings;
 
@@ -43,6 +47,12 @@ public interface TxnMapper {
 
     @Mapping(source = "isolationLevel", target = "context.isolationLevel")
     TxnCommitRequest commitTo(TxnCommit commit);
+
+    @Mapping(source = "isolationLevel", target = "context.isolationLevel")
+    TxnPessimisticLockRequest pessimisticLockTo(TxnPessimisticLock pessimisticLock);
+
+    @Mapping(source = "isolationLevel", target = "context.isolationLevel")
+    TxnPessimisticRollbackRequest pessimisticRollBackTo(TxnPessimisticRollBack txnPessimisticRollBack);
 
     @Mapping(source = "isolationLevel", target = "context.isolationLevel")
     TxnBatchRollbackRequest rollbackTo(TxnBatchRollBack rollBack);

@@ -19,7 +19,7 @@ package io.dingodb.store.api.transaction.exception;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
-public class PrimaryMismatchException extends RuntimeException{
+public class PrimaryMismatchException extends RuntimeException {
     public PrimaryMismatchException(String message) {
         super(message);
     }

@@ -28,7 +28,7 @@ public interface IdGenerator {
 
     @NonNull CommonId getTaskId();
 
-    @NonNull CommonId getJobId(long start_ts, long jobSeqId);
+    @NonNull CommonId getJobId(long startTs, long jobSeqId);
 
-    @NonNull CommonId getJobId(long start_ts);
+    @NonNull CommonId getJobId(long startTs);
 }

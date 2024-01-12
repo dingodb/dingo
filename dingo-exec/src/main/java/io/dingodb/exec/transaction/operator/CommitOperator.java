@@ -22,7 +22,6 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
-import io.dingodb.exec.transaction.base.TransactionConfig;
 import io.dingodb.exec.transaction.params.CommitParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.store.api.StoreInstance;
@@ -32,7 +31,6 @@ import io.dingodb.store.api.transaction.exception.ReginSplitException;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -46,10 +44,12 @@ public class CommitOperator extends TransactionOperator {
     @Override
     public synchronized boolean push(int pin, @Nullable Object[] tuple, Vertex vertex) {
         CommitParam param = vertex.getParam();
-        CommonId txnId = (CommonId) tuple[0];
-        CommonId tableId = (CommonId) tuple[1];
-        CommonId newPartId = (CommonId) tuple[2];
-        byte[] key = (byte[]) tuple[4];
+        CommonId.CommonType type = CommonId.CommonType.of((byte) tuple[0]);
+        CommonId txnId = (CommonId) tuple[1];
+        CommonId tableId = (CommonId) tuple[2];
+        CommonId newPartId = (CommonId) tuple[3];
+        int op = (byte) tuple[4];
+        byte[] key = (byte[]) tuple[5];
         if (ByteArrayUtils.compare(key, param.getPrimaryKey(), 9) == 0) {
             return true;
         }
@@ -84,13 +84,13 @@ public class CommitOperator extends TransactionOperator {
 
     private boolean txnCommit(CommitParam param, CommonId txnId, CommonId tableId, CommonId newPartId) {
         // 1、Async call sdk TxnCommit
-        TxnCommit commitRequest = TxnCommit.builder().
-            isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
-            .startTs(param.getStart_ts())
-            .commitTs(param.getCommit_ts())
+        TxnCommit commitRequest = TxnCommit.builder()
+            .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
+            .startTs(param.getStartTs())
+            .commitTs(param.getCommitTs())
             .keys(param.getKeys())
             .build();
-        try{
+        try {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
             return store.txnCommit(commitRequest);
         } catch (ReginSplitException e) {

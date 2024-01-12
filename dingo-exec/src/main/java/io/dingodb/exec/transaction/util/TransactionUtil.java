@@ -16,42 +16,60 @@
 
 package io.dingodb.exec.transaction.util;
 
+import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
+import io.dingodb.exec.Services;
+import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.meta.MetaService;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
+import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Mutation;
+import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
+import io.dingodb.store.api.transaction.data.prewrite.ForUpdateTsCheck;
 import io.dingodb.store.api.transaction.data.prewrite.LockExtraData;
 import io.dingodb.store.api.transaction.data.prewrite.LockExtraDataList;
+import io.dingodb.store.api.transaction.data.prewrite.PessimisticCheck;
+import io.dingodb.store.api.transaction.data.rollback.TxnPessimisticRollBack;
+import io.dingodb.store.api.transaction.exception.ReginSplitException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
 @Slf4j
 public class TransactionUtil {
-    public static final long lock_ttl = 60000l;
+    public static final long lock_ttl = 60000L;
     public static final int max_pre_write_count = 1024;
     public final static String snapshotIsolation = "REPEATABLE-READ";
     public final static String readCommitted = "READ-COMMITTED";
 
     public static int convertIsolationLevel(String transactionIsolation) {
+        // for local test
+        if (transactionIsolation == null) {
+            return 1;
+        }
         if (transactionIsolation.equalsIgnoreCase(snapshotIsolation)) {
             return 1;
-        } else if (transactionIsolation.equalsIgnoreCase(readCommitted)){
+        } else if (transactionIsolation.equalsIgnoreCase(readCommitted)) {
             return 2;
         } else {
             throw new RuntimeException("The set transaction isolation level is not currently supported.");
@@ -116,9 +134,10 @@ public class TransactionUtil {
         return mutations;
     }
 
-    public static List<LockExtraData> toLockExtraDataList(CommonId tableId, CommonId partId, CommonId txnId, int transactionType, int size) {
-        LockExtraDataList lockExtraData = LockExtraDataList.builder().
-            tableId(tableId)
+    public static List<LockExtraData> toLockExtraDataList(CommonId tableId, CommonId partId, CommonId txnId,
+                                                          int transactionType, int size) {
+        LockExtraDataList lockExtraData = LockExtraDataList.builder()
+            .tableId(tableId)
             .partId(partId)
             .serverId(TransactionManager.getServerId())
             .txnId(txnId)
@@ -129,4 +148,119 @@ public class TransactionUtil {
             .collect(Collectors.toList());
         return lockExtraDataList;
     }
+
+    public static byte[] toLockExtraData(CommonId tableId, CommonId partId,
+                                         CommonId txnId, int transactionType) {
+        LockExtraDataList lockExtraData = LockExtraDataList.builder()
+            .tableId(tableId)
+            .partId(partId)
+            .serverId(TransactionManager.getServerId())
+            .txnId(txnId)
+            .transactionType(transactionType).build();
+        return lockExtraData.encode();
+    }
+
+    public static List<PessimisticCheck> toPessimisticCheck(int size) {
+        return IntStream.range(0, size)
+            .mapToObj(i -> PessimisticCheck.DO_PESSIMISTIC_CHECK)
+            .collect(Collectors.toList());
+    }
+
+    public static List<ForUpdateTsCheck> toForUpdateTsChecks(List<Mutation> mutations) {
+        List<ForUpdateTsCheck> forUpdateTsChecks = IntStream.range(0, mutations.size())
+            .mapToObj(i -> new ForUpdateTsCheck(i, mutations.get(i).getForUpdateTs()))
+            .collect(Collectors.toList());
+        return forUpdateTsChecks;
+    }
+
+    public static TxnPessimisticLock pessimisticLock(long timeOut, CommonId txnId, CommonId tableId,
+                                                     CommonId partId, byte[] primaryLockKey,
+                                                     byte[] key, long startTs,
+                                                     long forUpdateTs, int isolationLevel) {
+        TxnPessimisticLock txnPessimisticLock = TxnPessimisticLock.builder()
+            .isolationLevel(IsolationLevel.of(isolationLevel))
+            .primaryLock(primaryLockKey)
+            .mutations(Collections.singletonList(
+                TransactionCacheToMutation.cacheToPessimisticLockMutation(
+                    key,
+                    toLockExtraData(
+                        tableId,
+                        partId,
+                        txnId,
+                        TransactionType.PESSIMISTIC.getCode()
+                    ),
+                    forUpdateTs
+                )
+            ))
+            .lockTtl(TransactionManager.lockTtlTm())
+            .startTs(startTs)
+            .forUpdateTs(forUpdateTs)
+            .build();
+        try {
+            StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
+            boolean result = store.txnPessimisticLock(txnPessimisticLock, timeOut);
+            if (!result) {
+                throw new RuntimeException(txnId + " " + partId + ",txnPessimisticLock false, txnPessimisticLock: "
+                    + txnPessimisticLock.toString());
+            }
+        } catch (ReginSplitException e) {
+            log.error(e.getMessage(), e);
+            CommonId regionId = singleKeySplitRegionId(tableId, txnId, key);
+            StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
+            boolean result = store.txnPessimisticLock(txnPessimisticLock, timeOut);
+            if (!result) {
+                throw new RuntimeException(txnId + " " + partId + ",txnPessimisticLock false, txnPessimisticLock: "
+                    + txnPessimisticLock.toString());
+            }
+        }
+        return txnPessimisticLock;
+    }
+
+    public static boolean PessimisticPrimaryLockRollBack(CommonId txnId, CommonId tableId,
+                                                         CommonId partId, int isolationLevel,
+                                                         long startTs, long forUpdateTs, byte[] primaryKey) {
+        // primaryKeyLock rollback
+        TxnPessimisticRollBack pessimisticRollBack = TxnPessimisticRollBack.builder()
+            .isolationLevel(IsolationLevel.of(isolationLevel))
+            .startTs(startTs)
+            .forUpdateTs(forUpdateTs)
+            .keys(Collections.singletonList(primaryKey))
+            .build();
+        try {
+            StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
+            return store.txnPessimisticLockRollback(pessimisticRollBack);
+        } catch (RuntimeException e) {
+            log.error(e.getMessage(), e);
+            // 2、regin split
+            CommonId regionId = TransactionUtil.singleKeySplitRegionId(tableId, txnId, primaryKey);
+            StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
+            return store.txnPessimisticLockRollback(pessimisticRollBack);
+        }
+    }
+
+    private static String joinPrimaryKey(Object[] keyValues, TupleMapping mapping) {
+
+        if (keyValues == null || mapping == null) {
+            throw new IllegalArgumentException("Parameters cannot be null");
+        }
+        StringJoiner joiner = new StringJoiner("-");
+        try {
+            mapping.stream().forEach(index -> {
+                joiner.add(keyValues[index].toString());
+            });
+        } catch (Exception e) {
+            throw new RuntimeException("Error joining primary key", e);
+        }
+        return Optional.ofNullable(joiner.toString())
+            .map(str -> "'" + str + "'")
+            .orElse("");
+    }
+
+    public static String duplicateEntryKey(CommonId tableId, byte[] key) {
+        TableDefinition tableDefinition = MetaService.root().getTableDefinition(tableId);
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
+        TupleMapping keyMapping = tableDefinition.getKeyMapping();
+        return joinPrimaryKey(codec.decodeKeyPrefix(key), keyMapping);
+    }
+
 }

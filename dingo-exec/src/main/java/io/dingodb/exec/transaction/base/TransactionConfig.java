@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.transaction.base;
 
+import io.dingodb.common.util.Optional;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
@@ -32,14 +33,26 @@ public class TransactionConfig {
     }
 
     public int getTxn_retry_limit() {
-        return Integer.parseInt(sessionVariables.getProperty("txn_retry_cnt"));
+        Optional<String> retryCountOpt = Optional.ofNullable(
+            sessionVariables.getProperty("txn_retry_cnt"));
+        return retryCountOpt
+            .map(Integer::parseInt)
+            .orElse(0);
     }
 
     public boolean isDisable_txn_auto_retry() {
-        return (sessionVariables.getProperty("txn_retry") == "on") ? true : false;
+        return "on".equalsIgnoreCase(sessionVariables.getProperty("txn_retry"));
     }
 
     public boolean isConstraint_check_in_place() {
-        return sessionVariables.getProperty("txn_inert_check") == "on" ? true : false;
+        return "on".equalsIgnoreCase(sessionVariables.getProperty("txn_inert_check"));
+    }
+
+    public long getLockTimeOut() {
+        Optional<String> retryCountOpt = Optional.ofNullable(
+            sessionVariables.getProperty("statement_timeout"));
+        return retryCountOpt
+            .map(Integer::parseInt)
+            .orElse(50000);
     }
 }

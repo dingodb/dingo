@@ -65,7 +65,8 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.PARTITION;
 public class DingoStreamingConverterVisitFun {
     @NonNull
     public static Collection<Vertex> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction, DingoJobVisitor visitor, DingoStreamingConverter rel
+        Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction,
+        DingoJobVisitor visitor, DingoStreamingConverter rel
     ) {
         return convertStreaming(
             job, idGenerator, currentLocation,

@@ -42,7 +42,8 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.ROOT;
 public class DingoTransactionRootVisitFun {
     @NonNull
     public static Collection<Vertex> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction, DingoTransactionRenderJob visitor, RootLeaf rootLeaf) {
+        Job job, IdGenerator idGenerator, Location currentLocation,
+        ITransaction transaction, DingoTransactionRenderJob visitor, RootLeaf rootLeaf) {
         Collection<Vertex> inputs = rootLeaf.getData().accept(visitor);
         if (inputs.size() != 1) {
             throw new IllegalStateException("There must be one input to job root.");

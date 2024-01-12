@@ -26,9 +26,8 @@ import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
@@ -37,23 +36,43 @@ public class TransactionCache {
     private final StoreInstance cache = Services.LOCAL_STORE.getInstance(null, null);
     private final CommonId txnId;
 
+    private CommonId jobId;
+
+    private final boolean pessimisticRollback;
+
     public TransactionCache(CommonId txnId) {
         this.txnId = txnId;
+        this.pessimisticRollback = false;
     }
+
+    public TransactionCache(CommonId txnId, long jobSeqId) {
+        this.txnId = txnId;
+        this.jobId = new CommonId(CommonId.CommonType.JOB, txnId.seq, jobSeqId);
+        this.pessimisticRollback = true;
+    }
+
     public CacheToObject getPrimaryKey() {
         // call StoreService
         CacheToObject primaryKey = null;
-        Iterator<KeyValue> iterator = cache.scan(txnId.encode());
+        Iterator<KeyValue> iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_DATA, txnId));
         if (iterator.hasNext()) {
             KeyValue keyValue = iterator.next();
             Object[] tuple = ByteUtils.decode(keyValue);
-            CommonId txnId = (CommonId) tuple[0];
-            CommonId tableId = (CommonId) tuple[1];
-            CommonId newPartId = (CommonId) tuple[2];
-            int op = (byte) tuple[3];
-            byte[] key = (byte[]) tuple[4];
-            byte[] value = (byte[]) tuple[5];
-            primaryKey = new CacheToObject(TransactionCacheToMutation.cacheToMutation(op, key, value, tableId, newPartId), tableId, newPartId);
+            CommonId.CommonType type = CommonId.CommonType.of((byte) tuple[0]);
+            CommonId txnId = (CommonId) tuple[1];
+            CommonId tableId = (CommonId) tuple[2];
+            CommonId newPartId = (CommonId) tuple[3];
+            int op = (byte) tuple[4];
+            byte[] key = (byte[]) tuple[5];
+            byte[] value = (byte[]) tuple[6];
+            primaryKey = new CacheToObject(TransactionCacheToMutation.cacheToMutation(
+                op,
+                key,
+                value,
+                0L,
+                tableId,
+                newPartId), tableId, newPartId
+            );
             log.info("txnId:{} primary key is {}" , txnId, primaryKey);
         } else {
             throw new RuntimeException(txnId + ",PrimaryKey is null");
@@ -61,13 +80,39 @@ public class TransactionCache {
         return primaryKey;
     }
 
+    public KeyValue get(byte[] key) {
+        return cache.get(key);
+    }
+
+    public List<KeyValue> getKeys(List<byte[]> keys) {
+        return cache.get(keys);
+    }
+
+    public byte[] getScanPrefix(CommonId.CommonType type, CommonId commonId) {
+        byte[] txnByte = commonId.encode();
+        byte[] result = new byte[txnByte.length + CommonId.TYPE_LEN];
+        result[0] = (byte) type.getCode();
+        System.arraycopy(txnByte, 0, result, CommonId.TYPE_LEN, txnByte.length);
+        return result;
+    }
+
     public boolean checkContinue() {
-        Iterator<KeyValue> iterator = cache.scan(txnId.encode());
+        Iterator<KeyValue> iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_DATA, txnId));
+        return iterator.hasNext();
+    }
+
+    public boolean checkPessimisticLockContinue() {
+        Iterator<KeyValue> iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_EXTRA_DATA, jobId));
         return iterator.hasNext();
     }
 
     public Iterator<Object[]> iterator() {
-        Iterator<KeyValue> iterator = cache.scan(txnId.encode());
+        Iterator<KeyValue> iterator;
+        if (pessimisticRollback) {
+            iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_EXTRA_DATA, jobId));
+        } else {
+            iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_DATA, txnId));
+        }
         return Iterators.transform(iterator, wrap(ByteUtils::decode)::apply);
     }
 }
