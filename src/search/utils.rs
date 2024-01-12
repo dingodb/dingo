@@ -101,6 +101,7 @@ pub fn perform_search(
                 index_r.reader_address(),
                 query_str.to_string(),
                 index_r.path.to_string(),
+                use_regrex,
             ),
             || compute_bitmap(index_r, query_str, use_regrex),
         );

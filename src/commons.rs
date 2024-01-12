@@ -7,8 +7,9 @@ use std::sync::Arc;
 
 //**************************** SKIP_INDEX Furry Cache begin *******************************//
 // #[cfg(feature = "use-flurry-cache")]
-pub static CACHE_FOR_SKIP_INDEX: Lazy<FlurryCache<(usize, String, String), Arc<RoaringBitmap>>> =
-    Lazy::new(|| FlurryCache::with_capacity(1000));
+pub static CACHE_FOR_SKIP_INDEX: Lazy<
+    FlurryCache<(usize, String, String, bool), Arc<RoaringBitmap>>,
+> = Lazy::new(|| FlurryCache::with_capacity(1000));
 //**************************** SKIP_INDEX Furry Cache end *******************************//
 
 //******************************** common variables begin ***********************************//
