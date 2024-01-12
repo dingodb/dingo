@@ -41,7 +41,7 @@ public class TxnPreWrite {
     private long startTs;
     // the lock's ttl is timestamp in milisecond.
     @Builder.Default
-    private long lockTtl = 1000l;
+    private long lockTtl = 1000L;
     // the number of keys involved in the transaction
     private long txnSize;
     // When the transaction involves only one region, it's possible to commit the
@@ -51,7 +51,7 @@ public class TxnPreWrite {
     // The max commit ts is reserved for limiting the commit ts of 1PC, which can be used to avoid inconsistency with
     // schema change. This field is unused now.
     @Builder.Default
-    private long maxCommitTs = 0l;  // NOT IMPLEMENTED
+    private long maxCommitTs = 0L;  // NOT IMPLEMENTED
     // for pessimistic transaction
     // check if the keys is locked by pessimistic transaction
     @Builder.Default
@@ -59,9 +59,9 @@ public class TxnPreWrite {
     // fo pessimistic transaction
     // for_update_ts constriants that should be checked when prewriting a pessimistic transaction.
     @Builder.Default
-    List<ForUpdateTsCheck> forUpdateTsChecks = Collections.emptyList();;
+    List<ForUpdateTsCheck> forUpdateTsChecks = Collections.emptyList();
     // for both pessimistic and optimistic transaction
     // the extra_data executor want to store in lock
     @Builder.Default
-    List<LockExtraData> lockExtraDatas = Collections.emptyList();;
+    List<LockExtraData> lockExtraDatas = Collections.emptyList();
 }

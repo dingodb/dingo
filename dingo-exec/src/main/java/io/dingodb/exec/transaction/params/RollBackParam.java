@@ -17,6 +17,7 @@
 package io.dingodb.exec.transaction.params;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
@@ -31,12 +32,13 @@ import java.util.List;
 
 @Getter
 @JsonTypeName("rollback")
+@JsonPropertyOrder({"txnType", "isolationLevel", "startTs", "schema"})
 public class RollBackParam extends AbstractParams {
 
     @JsonProperty("schema")
     private final DingoType schema;
-    @JsonProperty("start_ts")
-    private final long start_ts;
+    @JsonProperty("startTs")
+    private final long startTs;
     @JsonProperty("isolationLevel")
     private final int isolationLevel;
     @JsonProperty("txnType")
@@ -50,11 +52,11 @@ public class RollBackParam extends AbstractParams {
     public RollBackParam(
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("isolationLevel") int isolationLevel,
-        @JsonProperty("start_ts") long start_ts,
+        @JsonProperty("startTs") long startTs,
         @JsonProperty("txnType") TransactionType transactionType
     ) {
         this.schema = schema;
-        this.start_ts = start_ts;
+        this.startTs = startTs;
         this.isolationLevel = isolationLevel;
         this.transactionType = transactionType;
     }

@@ -33,7 +33,8 @@ public interface DingoPartitionServiceProvider {
         private final DingoPartitionServiceProvider serviceProvider;
 
         private Impl() {
-            Iterator<DingoPartitionServiceProvider> iterator = ServiceLoader.load(DingoPartitionServiceProvider.class).iterator();
+            Iterator<DingoPartitionServiceProvider> iterator =
+                ServiceLoader.load(DingoPartitionServiceProvider.class).iterator();
             this.serviceProvider = iterator.next();
             if (iterator.hasNext()) {
                 log.warn("Load multi meta service provider, use {}.", serviceProvider.getClass().getName());

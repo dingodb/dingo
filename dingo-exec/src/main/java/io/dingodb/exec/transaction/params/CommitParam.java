@@ -17,6 +17,7 @@
 package io.dingodb.exec.transaction.params;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
@@ -31,16 +32,17 @@ import java.util.List;
 
 @Getter
 @JsonTypeName("commit")
+@JsonPropertyOrder({"txnType", "isolationLevel", "primaryKey", "startTs", "commitTs", "schema"})
 public class CommitParam extends AbstractParams {
 
     @JsonProperty("schema")
     private final DingoType schema;
     @JsonProperty("isolationLevel")
     private final int isolationLevel;
-    @JsonProperty("start_ts")
-    private final long start_ts;
-    @JsonProperty("commit_ts")
-    private final long commit_ts;
+    @JsonProperty("startTs")
+    private final long startTs;
+    @JsonProperty("commitTs")
+    private final long commitTs;
     @JsonProperty("primaryKey")
     private final byte[] primaryKey;
     @JsonProperty("txnType")
@@ -54,15 +56,15 @@ public class CommitParam extends AbstractParams {
     public CommitParam(
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("isolationLevel") int isolationLevel,
-        @JsonProperty("start_ts") long start_ts,
-        @JsonProperty("commit_ts") long commit_ts,
+        @JsonProperty("startTs") long startTs,
+        @JsonProperty("commitTs") long commitTs,
         @JsonProperty("primaryKey") byte[] primaryKey,
         @JsonProperty("txnType") TransactionType transactionType
     ) {
         this.schema = schema;
         this.isolationLevel = isolationLevel;
-        this.start_ts = start_ts;
-        this.commit_ts = commit_ts;
+        this.startTs = startTs;
+        this.commitTs = commitTs;
         this.primaryKey = primaryKey;
         this.transactionType = transactionType;
     }

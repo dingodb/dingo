@@ -91,7 +91,7 @@ public class TxnImportDataOperation {
         }
 
         try {
-            this.commitTs = TransactionManager.getCommit_ts();
+            this.commitTs = TransactionManager.getCommitTs();
             // commit primary key
             boolean result = commitPrimaryData(primaryObj);
             if (!result) {
@@ -117,7 +117,7 @@ public class TxnImportDataOperation {
         byte[] key = (byte[]) tuples[4];
         byte[] value = (byte[]) tuples[5];
         return new CacheToObject(TransactionCacheToMutation.cacheToMutation(
-            op, key, value, tableId, newPartId), tableId, newPartId
+            op, key, value,0L, tableId, newPartId), tableId, newPartId
         );
     }
 
@@ -158,16 +158,16 @@ public class TxnImportDataOperation {
 
     private static boolean txnPreWrite(PreWriteParam param, CommonId txnId, CommonId tableId, CommonId partId) {
         // 1、call sdk TxnPreWrite
-        param.setTxn_size(param.getMutations().size());
+        param.setTxnSize(param.getMutations().size());
         TxnPreWrite txnPreWrite = TxnPreWrite.builder()
                 .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
             .mutations(param.getMutations())
             .primaryLock(param.getPrimaryKey())
-            .startTs(param.getStart_ts())
+            .startTs(param.getStartTs())
             .lockTtl(TransactionManager.lockTtlTm())
-            .txnSize(param.getTxn_size())
-            .tryOnePc(param.isTry_one_pc())
-            .maxCommitTs(param.getMax_commit_ts())
+            .txnSize(param.getTxnSize())
+            .tryOnePc(param.isTryOnePc())
+            .maxCommitTs(param.getMaxCommitTs())
             .lockExtraDatas(TransactionUtil.toLockExtraDataList(tableId, partId, txnId,
                 param.getTransactionType().getCode(), param.getMutations().size()))
             .build();
@@ -204,7 +204,7 @@ public class TxnImportDataOperation {
             int op = (byte) tuples[3];
             byte[] key = (byte[]) tuples[4];
             byte[] value = (byte[]) tuples[5];
-            Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, tableId, newPartId);
+            Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, 0L, tableId, newPartId);
             CommonId partId = param.getPartId();
             if (partId == null) {
                 partId = newPartId;
@@ -316,8 +316,8 @@ public class TxnImportDataOperation {
         // 1、Async call sdk TxnCommit
         TxnCommit commitRequest = TxnCommit.builder()
                 .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
-                .startTs(param.getStart_ts())
-                .commitTs(param.getCommit_ts())
+                .startTs(param.getStartTs())
+                .commitTs(param.getCommitTs())
                 .keys(param.getKeys())
                 .build();
         try {
@@ -433,7 +433,7 @@ public class TxnImportDataOperation {
         // 1、Async call sdk TxnRollBack
         TxnBatchRollBack rollBackRequest = TxnBatchRollBack.builder()
                 .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
-                .startTs(param.getStart_ts())
+                .startTs(param.getStartTs())
                 .keys(param.getKeys())
                 .build();
         try {

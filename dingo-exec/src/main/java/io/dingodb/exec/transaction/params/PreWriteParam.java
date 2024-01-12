@@ -17,6 +17,7 @@
 package io.dingodb.exec.transaction.params;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
@@ -32,14 +33,15 @@ import java.util.List;
 
 @Getter
 @JsonTypeName("preWrite")
+@JsonPropertyOrder({"txnType", "isolationLevel", "primaryKey", "startTs", "schema"})
 public class PreWriteParam extends AbstractParams {
 
     @JsonProperty("schema")
     private final DingoType schema;
     @JsonProperty("primaryKey")
     private final byte[] primaryKey;
-    @JsonProperty("start_ts")
-    private final long start_ts;
+    @JsonProperty("startTs")
+    private final long startTs;
     @JsonProperty("isolationLevel")
     private final int isolationLevel;
     @JsonProperty("txnType")
@@ -47,24 +49,24 @@ public class PreWriteParam extends AbstractParams {
     @Setter
     private List<Mutation> mutations;
     @Setter
-    private long txn_size;
+    private long txnSize;
     @Setter
     private CommonId tableId;
     @Setter
     private CommonId partId;
-    private boolean try_one_pc = false;
-    private long max_commit_ts = 0l;
+    private boolean tryOnePc = false;
+    private long maxCommitTs = 0L;
 
     public PreWriteParam(
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("primaryKey") byte[] primaryKey,
-        @JsonProperty("start_ts") long start_ts,
+        @JsonProperty("startTs") long startTs,
         @JsonProperty("isolationLevel") int isolationLevel,
         @JsonProperty("txnType") TransactionType transactionType
     ) {
         this.schema = schema;
         this.primaryKey = primaryKey;
-        this.start_ts = start_ts;
+        this.startTs = startTs;
         this.isolationLevel = isolationLevel;
         this.transactionType = transactionType;
     }

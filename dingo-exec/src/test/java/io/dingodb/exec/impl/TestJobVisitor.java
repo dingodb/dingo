@@ -19,8 +19,10 @@ package io.dingodb.exec.impl;
 import io.dingodb.exec.transaction.visitor.data.CommitLeaf;
 import io.dingodb.exec.transaction.visitor.data.Composite;
 import io.dingodb.exec.transaction.visitor.data.Leaf;
+import io.dingodb.exec.transaction.visitor.data.PessimisticRollBackScanLeaf;
 import io.dingodb.exec.transaction.visitor.data.PreWriteLeaf;
 import io.dingodb.exec.transaction.visitor.data.RollBackLeaf;
+import io.dingodb.exec.transaction.visitor.data.PessimisticRollBackLeaf;
 import io.dingodb.exec.transaction.visitor.data.RootLeaf;
 import io.dingodb.exec.transaction.visitor.data.ScanCacheLeaf;
 import io.dingodb.exec.transaction.visitor.data.StreamConverterLeaf;
@@ -87,6 +89,22 @@ public class TestJobVisitor<T> implements Visitor<T> {
         if(rollBackLeaf.getData() != null)
             rollBackLeaf.getData().accept(this);
         System.out.println("visitor rollBackLeaf：" + rollBackLeaf.getName());
+        return null;
+    }
+
+    @Override
+    public T visit(PessimisticRollBackLeaf pessimisticRollBackLeaf) {
+        if(pessimisticRollBackLeaf.getData() != null)
+            pessimisticRollBackLeaf.getData().accept(this);
+        System.out.println("visitor rollBackPessimisticLockLeaf：" + pessimisticRollBackLeaf.getName());
+        return null;
+    }
+
+    @Override
+    public T visit(PessimisticRollBackScanLeaf pessimisticRollBackScanLeaf) {
+        if(pessimisticRollBackScanLeaf.getData() != null)
+            pessimisticRollBackScanLeaf.getData().accept(this);
+        System.out.println("visitor pessimisticRollBackScanLeaf：" + pessimisticRollBackScanLeaf.getName());
         return null;
     }
 

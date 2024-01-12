@@ -61,13 +61,23 @@ public final class DingoValuesVisitFun {
     }
 
     public static List<Vertex> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction, DingoJobVisitor visitor, @NonNull DingoValues rel
+        Job job,
+        IdGenerator idGenerator,
+        Location currentLocation,
+        ITransaction transaction,
+        DingoJobVisitor visitor,
+        @NonNull DingoValues rel
     ) {
         DingoRelStreaming streaming = rel.getStreaming();
         if (streaming.equals(DingoRelStreaming.ROOT)) {
             Task task;
             if (transaction != null) {
-                task = job.getOrCreate(currentLocation, idGenerator, transaction.getType(), IsolationLevel.of(transaction.getIsolationLevel()));
+                task = job.getOrCreate(
+                    currentLocation,
+                    idGenerator,
+                    transaction.getType(),
+                    IsolationLevel.of(transaction.getIsolationLevel())
+                );
             } else {
                 task = job.getOrCreate(currentLocation, idGenerator);
             }
@@ -103,7 +113,12 @@ public final class DingoValuesVisitFun {
                 Vertex vertex = new Vertex(VALUES, param);
                 Task task;
                 if (transaction != null) {
-                    task = job.getOrCreate(currentLocation, idGenerator, transaction.getType(), IsolationLevel.of(transaction.getIsolationLevel()));
+                    task = job.getOrCreate(
+                        currentLocation,
+                        idGenerator,
+                        transaction.getType(),
+                        IsolationLevel.of(transaction.getIsolationLevel())
+                    );
                 } else {
                     task = job.getOrCreate(currentLocation, idGenerator);
                 }

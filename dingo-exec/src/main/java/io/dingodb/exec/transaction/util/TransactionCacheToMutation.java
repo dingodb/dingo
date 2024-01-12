@@ -37,24 +37,26 @@ import java.util.Map;
 @Slf4j
 public class TransactionCacheToMutation {
 
-    public static Mutation cacheToMutation(@Nullable int op, @NonNull byte[] key, byte[] value, CommonId tableId, CommonId partId) {
+    public static Mutation cacheToMutation(@Nullable int op, @NonNull byte[] key,
+                                           byte[] value, long forUpdateTs,
+                                           CommonId tableId, CommonId partId) {
         VectorWithId vectorWithId = null;
         switch (op) {
             case 1:
                 vectorWithId = getVectorWithId(key, value, tableId);
-                return new Mutation(Op.PUT, key, value, vectorWithId);
+                return new Mutation(Op.PUT, key, value, forUpdateTs, vectorWithId);
             case 2:
                 vectorWithId = getVectorWithId(key, value, tableId);
-                return new Mutation(Op.DELETE, key, value, vectorWithId);
+                return new Mutation(Op.DELETE, key, value, forUpdateTs, vectorWithId);
             case 3:
                 vectorWithId = getVectorWithId(key, value, tableId);
-                return new Mutation(Op.PUTIFABSENT, key, value, vectorWithId);
+                return new Mutation(Op.PUTIFABSENT, key, value, forUpdateTs, vectorWithId);
             case 5:
                 vectorWithId = getVectorWithId(key, value, tableId);
-                return new Mutation(Op.LOCK, key, value, vectorWithId);
+                return new Mutation(Op.LOCK, key, value, forUpdateTs, vectorWithId);
             default:
                 log.warn("Op:{},key:{},value:{}", op, key, value);
-                return new Mutation(Op.NONE, key, value, null);
+                return new Mutation(Op.NONE, key, value, forUpdateTs, null);
         }
     }
 
@@ -88,4 +90,7 @@ public class TransactionCacheToMutation {
         return null;
     }
 
+    public static Mutation cacheToPessimisticLockMutation(@NonNull byte[] key, byte[] value, long forUpdateTs) {
+        return new Mutation(Op.LOCK, key, value, forUpdateTs, null);
+    }
 }

@@ -34,8 +34,8 @@ import java.util.NavigableMap;
 
 @Getter
 @JsonTypeName("txn_update")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "mapping", "updates"})
-public class TxnPartUpdateParam extends PartModifyParam {
+@JsonPropertyOrder({"pessimisticTxn", "isolationLevel", "primaryLockKey", "lockTimeOut", "startTs", "forUpdateTs", "table", "part", "schema", "keyMapping", "mapping", "updates"})
+public class TxnPartUpdateParam extends TxnPartModifyParam {
 
     @JsonProperty("mapping")
     private final TupleMapping mapping;
@@ -49,10 +49,17 @@ public class TxnPartUpdateParam extends PartModifyParam {
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("mapping") TupleMapping mapping,
         @JsonProperty("updates") List<SqlExpr> updates,
+        @JsonProperty("pessimisticTxn") boolean pessimisticTxn,
+        @JsonProperty("isolationLevel") int isolationLevel,
+        @JsonProperty("primaryLockKey") byte[] primaryLockKey,
+        @JsonProperty("startTs") long startTs,
+        @JsonProperty("forUpdateTs") long forUpdateTs,
+        @JsonProperty("lockTimeOut") long lockTimeOut,
         TableDefinition tableDefinition,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
     ) {
-        super(tableId, partId, schema, keyMapping, tableDefinition, distributions);
+        super(tableId, partId, schema, keyMapping, tableDefinition, distributions, pessimisticTxn,
+            isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
         this.mapping = mapping;
         this.updates = updates;
     }

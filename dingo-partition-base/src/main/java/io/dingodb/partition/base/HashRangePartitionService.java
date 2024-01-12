@@ -59,7 +59,7 @@ public class HashRangePartitionService implements PartitionService {
         }
 
         CodecService.getDefault().setId(key, new CommonId(CommonId.CommonType.PARTITION, 0, selectNode));
-        return partRanges.floorEntry(new ComparableByteArray(key)).getValue().id();
+        return partRanges.floorEntry(new ComparableByteArray(key, 1)).getValue().id();
     }
 
     @Override

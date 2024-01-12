@@ -54,12 +54,12 @@ public final class IdGeneratorImpl implements IdGenerator {
     }
 
     @Override
-    public @NonNull CommonId getJobId(long start_ts, long jobSeqId) {
-        return new CommonId(io.dingodb.common.CommonId.CommonType.JOB, start_ts, jobSeqId);
+    public @NonNull CommonId getJobId(long startTs, long jobSeqId) {
+        return new CommonId(io.dingodb.common.CommonId.CommonType.JOB, startTs, jobSeqId);
     }
 
     @Override
-    public @NonNull CommonId getJobId(long start_ts) {
-        return new CommonId(io.dingodb.common.CommonId.CommonType.JOB, start_ts, jobSeqId);
+    public @NonNull CommonId getJobId(long startTs) {
+        return new CommonId(io.dingodb.common.CommonId.CommonType.JOB, startTs, jobSeqId);
     }
 }

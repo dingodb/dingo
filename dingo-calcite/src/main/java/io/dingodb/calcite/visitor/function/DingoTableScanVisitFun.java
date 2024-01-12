@@ -44,6 +44,7 @@ import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
+import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -105,12 +106,25 @@ public final class DingoTableScanVisitFun {
 
         List<Vertex> outputs = new ArrayList<>();
 
+        long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
+        // Use current read
+        if (transaction != null && transaction.isPessimistic()
+            && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.ReadCommitted
+            && (visitor.getKind() == SqlKind.INSERT || visitor.getKind() == SqlKind.DELETE
+            || visitor.getKind() == SqlKind.UPDATE)) {
+            scanTs = TsoService.getDefault().tso();
+        }
         // TODO
         for (RangeDistribution rd : distributions) {
             Task task;
             Vertex vertex;
             if (transaction != null) {
-                task = job.getOrCreate(currentLocation, idGenerator, transaction.getType(), IsolationLevel.of(transaction.getIsolationLevel()));
+                task = job.getOrCreate(
+                    currentLocation,
+                    idGenerator,
+                    transaction.getType(),
+                    IsolationLevel.of(transaction.getIsolationLevel())
+                );
                 TxnPartRangeScanParam param = new TxnPartRangeScanParam(
                     tableInfo.getId(),
                     rd.id(),
@@ -127,7 +141,7 @@ public final class DingoTableScanVisitFun {
                     rel.getAggCalls() == null ? null : AggFactory.getAggList(
                         rel.getAggCalls(), DefinitionMapper.mapToDingoType(rel.getSelectedType())),
                     DefinitionMapper.mapToDingoType(rel.getNormalRowType()),
-                    transaction.getStart_ts(),
+                    scanTs,
                     transaction.getIsolationLevel(),
                     false
                 );

@@ -31,15 +31,18 @@ import java.util.stream.Collectors;
 
 public class DingoStreamConverterVisitFun {
     public static Collection<Vertex> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction, DingoTransactionRenderJob visitor, StreamConverterLeaf streamConverterLeaf) {
+        Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction,
+        DingoTransactionRenderJob visitor, StreamConverterLeaf streamConverterLeaf) {
         Collection<Vertex> inputs = streamConverterLeaf.getData().accept(visitor);
         Collection<Vertex> outputs = inputs;
         if (transaction.getChannelMap().size() > 0) {
             outputs = outputs.stream().map(input -> {
                 Location targetLocation = currentLocation;
-                return DingoTransactionExchangeFun.exchange(job, idGenerator, transaction, input, targetLocation, new BooleanType(true));
+                return DingoTransactionExchangeFun.exchange(job, idGenerator, transaction,
+                    input, targetLocation, new BooleanType(true));
             }).collect(Collectors.toList());
-            outputs = DingoCoalesceVisitFun.visit(job, idGenerator, currentLocation, transaction, visitor, outputs, streamConverterLeaf);
+            outputs = DingoCoalesceVisitFun.visit(job, idGenerator, currentLocation,
+                transaction, visitor, outputs, streamConverterLeaf);
         }
 
         return outputs;

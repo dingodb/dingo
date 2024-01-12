@@ -51,6 +51,9 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> {
         final DingoTableModify rel1 = call.rel(0);
         final DingoTableScan rel = call.rel(1);
         TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
+        if (td.getEngine() != null && td.getEngine().contains("TXN")) {
+            return;
+        }
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td);
         RangeDistribution range;
         if (rel.getFilter() == null && (rel.getSelection().size() == rel.getTable().getRowType().getFieldCount())) {

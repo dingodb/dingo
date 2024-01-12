@@ -17,6 +17,7 @@
 package io.dingodb.exec.transaction.params;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.dag.Vertex;
@@ -28,13 +29,14 @@ import lombok.Getter;
 
 @Getter
 @JsonTypeName("scanCache")
+@JsonPropertyOrder({"txnType", "schema"})
 public class ScanCacheParam extends SourceParam {
 
     @JsonProperty("schema")
-    private final DingoType schema;
+    protected final DingoType schema;
     @JsonProperty("txnType")
-    private final TransactionType transactionType;
-    private TransactionCache cache;
+    protected final TransactionType transactionType;
+    protected TransactionCache cache;
 
     public ScanCacheParam(
         @JsonProperty("schema") DingoType schema,

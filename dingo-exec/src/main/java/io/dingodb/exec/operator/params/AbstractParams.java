@@ -17,12 +17,17 @@
 package io.dingodb.exec.operator.params;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.table.Part;
 import io.dingodb.exec.transaction.params.CommitParam;
+import io.dingodb.exec.transaction.params.PessimisticRollBackParam;
+import io.dingodb.exec.transaction.params.PessimisticRollBackScanParam;
 import io.dingodb.exec.transaction.params.PreWriteParam;
 import io.dingodb.exec.transaction.params.RollBackParam;
 import io.dingodb.exec.transaction.params.ScanCacheParam;
@@ -73,11 +78,19 @@ import lombok.Getter;
     @JsonSubTypes.Type(PreWriteParam.class),
     @JsonSubTypes.Type(RollBackParam.class),
     @JsonSubTypes.Type(ScanCacheParam.class),
-    @JsonSubTypes.Type(CompareAndSetParam.class)
+    @JsonSubTypes.Type(CompareAndSetParam.class),
+    @JsonSubTypes.Type(PessimisticLockDeleteParam.class),
+    @JsonSubTypes.Type(PessimisticLockInsertParam.class),
+    @JsonSubTypes.Type(PessimisticLockUpdateParam.class),
+    @JsonSubTypes.Type(PessimisticRollBackParam.class),
+    @JsonSubTypes.Type(PessimisticRollBackScanParam.class)
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class AbstractParams {
 
+    @JsonProperty("part")
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     protected CommonId partId;
 
     protected Part part = null;

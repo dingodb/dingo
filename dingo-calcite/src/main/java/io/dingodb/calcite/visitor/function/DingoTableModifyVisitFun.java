@@ -37,6 +37,9 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.PartDeleteParam;
 import io.dingodb.exec.operator.params.PartInsertParam;
 import io.dingodb.exec.operator.params.PartUpdateParam;
+import io.dingodb.exec.operator.params.PessimisticLockDeleteParam;
+import io.dingodb.exec.operator.params.PessimisticLockInsertParam;
+import io.dingodb.exec.operator.params.PessimisticLockUpdateParam;
 import io.dingodb.exec.operator.params.TxnPartDeleteParam;
 import io.dingodb.exec.operator.params.TxnPartInsertParam;
 import io.dingodb.exec.operator.params.TxnPartUpdateParam;
@@ -52,6 +55,9 @@ import static io.dingodb.calcite.rel.DingoRel.dingo;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_UPDATE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_DELETE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_INSERT;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_UPDATE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_UPDATE;
@@ -75,9 +81,38 @@ public class DingoTableModifyVisitFun {
             switch (rel.getOperation()) {
                 case INSERT:
                     if (transaction != null) {
-                        vertex = new Vertex(TXN_PART_INSERT,
-                            new TxnPartInsertParam(tableId, input.getHint().getPartId(), td.getDingoType(),
-                                td.getKeyMapping(), td, distributions));
+                        boolean pessimisticTxn = transaction.isPessimistic();
+                        if (pessimisticTxn && transaction.getPrimaryKeyLock() == null) {
+                            vertex = new Vertex(PESSIMISTIC_LOCK_INSERT,
+                                new PessimisticLockInsertParam(
+                                    tableId,
+                                    input.getHint().getPartId(),
+                                    td.getDingoType(),
+                                    td.getKeyMapping(),
+                                    transaction.getIsolationLevel(),
+                                    transaction.getStartTs(),
+                                    transaction.getForUpdateTs(),
+                                    true,
+                                    transaction.getPrimaryKeyLock(),
+                                    transaction.getLockTimeOut(),
+                                    td,
+                                    distributions));
+                        } else {
+                            vertex = new Vertex(TXN_PART_INSERT,
+                                new TxnPartInsertParam(
+                                    tableId,
+                                    input.getHint().getPartId(),
+                                    td.getDingoType(),
+                                    td.getKeyMapping(),
+                                    pessimisticTxn,
+                                    transaction.getIsolationLevel(),
+                                    pessimisticTxn ? transaction.getPrimaryKeyLock() : null,
+                                    transaction.getStartTs(),
+                                    pessimisticTxn ? transaction.getForUpdateTs() : 0L,
+                                    transaction.getLockTimeOut(),
+                                    td,
+                                    distributions));
+                        }
                     } else {
                         vertex = new Vertex(PART_INSERT,
                             new PartInsertParam(tableId, input.getHint().getPartId(), td.getDingoType(),
@@ -86,33 +121,105 @@ public class DingoTableModifyVisitFun {
                     break;
                 case UPDATE:
                     if (transaction != null) {
-                        vertex = new Vertex(TXN_PART_UPDATE,
-                            new TxnPartUpdateParam(tableId, input.getHint().getPartId(), td.getDingoType(),
-                                td.getKeyMapping(), TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
-                                rel.getSourceExpressionList().stream()
-                                    .map(SqlExprUtils::toSqlExpr)
-                                    .collect(Collectors.toList()),
-                                td, distributions
-                            )
-                        );
+                        boolean pessimisticTxn = transaction.isPessimistic();
+                        if (pessimisticTxn && transaction.getPrimaryKeyLock() == null) {
+                            vertex = new Vertex(PESSIMISTIC_LOCK_UPDATE,
+                                new PessimisticLockUpdateParam(
+                                    tableId,
+                                    input.getHint().getPartId(),
+                                    td.getDingoType(),
+                                    td.getKeyMapping(),
+                                    TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
+                                    rel.getSourceExpressionList().stream()
+                                        .map(SqlExprUtils::toSqlExpr)
+                                        .collect(Collectors.toList()),
+                                    transaction.getIsolationLevel(),
+                                    transaction.getStartTs(),
+                                    transaction.getForUpdateTs(),
+                                    true,
+                                    transaction.getPrimaryKeyLock(),
+                                    transaction.getLockTimeOut(),
+                                    td,
+                                    distributions
+                                )
+                            );
+                        } else {
+                            vertex = new Vertex(TXN_PART_UPDATE,
+                                new TxnPartUpdateParam(
+                                    tableId,
+                                    input.getHint().getPartId(),
+                                    td.getDingoType(),
+                                    td.getKeyMapping(),
+                                    TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
+                                    rel.getSourceExpressionList().stream()
+                                        .map(SqlExprUtils::toSqlExpr)
+                                        .collect(Collectors.toList()),
+                                    pessimisticTxn,
+                                    transaction.getIsolationLevel(),
+                                    pessimisticTxn ? transaction.getPrimaryKeyLock() : null,
+                                    transaction.getStartTs(),
+                                    pessimisticTxn ? transaction.getForUpdateTs() : 0L,
+                                    transaction.getLockTimeOut(),
+                                    td,
+                                    distributions
+                                )
+                            );
+                        }
                     } else {
                         vertex = new Vertex(PART_UPDATE,
-                            new PartUpdateParam(tableId, input.getHint().getPartId(), td.getDingoType(),
-                                td.getKeyMapping(), TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
+                            new PartUpdateParam(
+                                tableId,
+                                input.getHint().getPartId(),
+                                td.getDingoType(),
+                                td.getKeyMapping(),
+                                TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
                                 rel.getSourceExpressionList().stream()
                                     .map(SqlExprUtils::toSqlExpr)
                                     .collect(Collectors.toList()),
-                                td, distributions
+                                td,
+                                distributions
                             )
                         );
                     }
                     break;
                 case DELETE:
                     if (transaction != null) {
-                        vertex = new Vertex(TXN_PART_DELETE,
-                            new TxnPartDeleteParam(tableId, input.getHint().getPartId(), td.getDingoType(),
-                                td.getKeyMapping(), td, distributions)
-                        );
+                        boolean pessimisticTxn = transaction.isPessimistic();
+                        if (pessimisticTxn && transaction.getPrimaryKeyLock() == null) {
+                            vertex = new Vertex(PESSIMISTIC_LOCK_DELETE,
+                                new PessimisticLockDeleteParam(
+                                    tableId,
+                                    input.getHint().getPartId(),
+                                    td.getDingoType(),
+                                    td.getKeyMapping(),
+                                    transaction.getIsolationLevel(),
+                                    transaction.getStartTs(),
+                                    transaction.getForUpdateTs(),
+                                    true,
+                                    transaction.getPrimaryKeyLock(),
+                                    transaction.getLockTimeOut(),
+                                    td,
+                                    distributions
+                                )
+                            );
+                        } else {
+                            vertex = new Vertex(TXN_PART_DELETE,
+                                new TxnPartDeleteParam(
+                                    tableId,
+                                    input.getHint().getPartId(),
+                                    td.getDingoType(),
+                                    td.getKeyMapping(),
+                                    pessimisticTxn,
+                                    transaction.getIsolationLevel(),
+                                    pessimisticTxn ? transaction.getPrimaryKeyLock() : null,
+                                    transaction.getStartTs(),
+                                    pessimisticTxn ? transaction.getForUpdateTs() : 0L,
+                                    transaction.getLockTimeOut(),
+                                    td,
+                                    distributions
+                                )
+                            );
+                        }
                     } else {
                         vertex = new Vertex(PART_DELETE,
                             new PartDeleteParam(tableId, input.getHint().getPartId(), td.getDingoType(),

@@ -349,7 +349,7 @@ public class LoadDataOperation implements DmlOperation {
         caches.add(tuples);
         if (caches.size() > 50000) {
             try {
-                long startTs = TransactionManager.getStart_ts();
+                long startTs = TransactionManager.getStartTs();
                 CommonId txnId = new CommonId(CommonId.CommonType.TRANSACTION,
                     TransactionManager.getServerId().seq, startTs);
                 List<Object[]> tupleList = getCacheTupleList(caches, txnId);
@@ -366,7 +366,7 @@ public class LoadDataOperation implements DmlOperation {
 
     public void endWriteWithTxn() {
         try {
-            long startTs = TransactionManager.getStart_ts();
+            long startTs = TransactionManager.getStartTs();
             CommonId txnId = new CommonId(
                 CommonId.CommonType.TRANSACTION,
                 TransactionManager.getServerId().seq,
@@ -404,6 +404,7 @@ public class LoadDataOperation implements DmlOperation {
         byte[] partIdByte = partId.encode();
 
         keyValue.setKey(ByteUtils.encode(
+            CommonId.CommonType.TXN_CACHE_DATA,
             keyValue.getKey(),
             Op.PUTIFABSENT.getCode(),
             (txnIdByte.length + tableIdByte.length + partIdByte.length),

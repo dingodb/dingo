@@ -38,7 +38,8 @@ public final class DingoExchangeFun {
     }
 
     public static Vertex exchange(
-        Job job, IdGenerator idGenerator, ITransaction transaction, @NonNull Vertex input, @NonNull Location target, DingoType schema
+        Job job, IdGenerator idGenerator, ITransaction transaction,
+        @NonNull Vertex input, @NonNull Location target, DingoType schema
     ) {
         Task task = input.getTask();
         if (target.equals(task.getLocation())) {
@@ -47,7 +48,12 @@ public final class DingoExchangeFun {
         CommonId id = idGenerator.getOperatorId(task.getId());
         Task rcvTask;
         if (transaction != null) {
-            rcvTask = job.getOrCreate(target, idGenerator, transaction.getType(), IsolationLevel.of(transaction.getIsolationLevel()));
+            rcvTask = job.getOrCreate(
+                target,
+                idGenerator,
+                transaction.getType(),
+                IsolationLevel.of(transaction.getIsolationLevel())
+            );
         } else {
             rcvTask = job.getOrCreate(target, idGenerator);
         }

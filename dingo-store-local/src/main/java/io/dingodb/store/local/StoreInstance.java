@@ -70,7 +70,11 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     @Override
     @SneakyThrows
     public KeyValue get(byte[] key) {
-        return new KeyValue(key, StoreService.db.get(key));
+        byte[] valueBytes = StoreService.db.get(key);
+        if (valueBytes == null) {
+            return null;
+        }
+        return new KeyValue(key, valueBytes);
     }
 
     @Override
@@ -78,7 +82,8 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     public List<KeyValue> get(List<byte[]> keys) {
         List<byte[]> values = StoreService.db.multiGetAsList(keys);
         return IntStream.of(0, keys.size() - 1)
-            .mapToObj(i -> new KeyValue(keys.get(0), values.get(0)))
+            .mapToObj(i -> new KeyValue(keys.get(i), values.get(i)))
+            .filter(kv -> kv.getValue() != null)
             .collect(Collectors.toList());
     }
 

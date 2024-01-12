@@ -93,7 +93,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
 
     public ITransaction createTransaction(boolean pessimistic) {
         if (transaction == null) {
-            long startTs = TransactionManager.getStart_ts();
+            long startTs = TransactionManager.getStartTs();
             String txIsolation;
             if (oneTimeTxIsolation != null) {
                 txIsolation = oneTimeTxIsolation;
@@ -108,11 +108,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     }
 
     public void cleanTransaction() throws SQLException {
-        if(transaction != null) {
-            if (!transaction.isAutoCommit()) {
-                transaction = null;
-                setAutoCommit(true);
-            }
+        if (transaction != null) {
             transaction = null;
             oneTimeTxIsolation = null;
         }
@@ -274,10 +270,6 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             || name.equalsIgnoreCase("onetime_transaction_isolation")) {
             if (transaction != null) {
                 throw new RuntimeException("Transaction characteristics can't be changed while a transaction is in progress");
-            }
-            // optimistic transaction only support REPEATABLE-READ transaction isolation
-            if (value.equalsIgnoreCase("READ-COMMITTED") && getClientInfo("txn_mode").equalsIgnoreCase("optimistic")) {
-                return;
             }
             if (name.startsWith("onetime_transaction_isolation")) {
                 oneTimeTxIsolation = value;

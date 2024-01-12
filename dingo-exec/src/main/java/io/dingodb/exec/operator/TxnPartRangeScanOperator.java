@@ -61,9 +61,9 @@ public class TxnPartRangeScanOperator extends FilterProjectSourceOperator {
         byte[] txnIdByte = txnId.encode();
         byte[] tableIdByte = tableId.encode();
         byte[] partIdByte = partId.encode();
-        byte[] encodeStart = ByteUtils.encode(startKey, Op.NONE.getCode(),
+        byte[] encodeStart = ByteUtils.encode(CommonId.CommonType.TXN_CACHE_DATA, startKey, Op.NONE.getCode(),
             (txnIdByte.length + tableIdByte.length + partIdByte.length), txnIdByte, tableIdByte, partIdByte);
-        byte[] encodeEnd = ByteUtils.encode(endKey, Op.NONE.getCode(),
+        byte[] encodeEnd = ByteUtils.encode(CommonId.CommonType.TXN_CACHE_DATA, endKey, Op.NONE.getCode(),
             (txnIdByte.length + tableIdByte.length + partIdByte.length), txnIdByte, tableIdByte, partIdByte);
         Iterator<KeyValue> localKVIterator;
         Iterator<KeyValue> kvKVIterator;
@@ -71,12 +71,12 @@ public class TxnPartRangeScanOperator extends FilterProjectSourceOperator {
             localKVIterator = Iterators.transform(
                 localStore.scan(new StoreInstance.Range(encodeStart, encodeEnd, includeStart, includeEnd)),
                 wrap(ByteUtils::mapping)::apply);
-            kvKVIterator = kvStore.txnScan(param.getStartTs(), IsolationLevel.of(param.getIsolationLevel()), new StoreInstance.Range(startKey, endKey, includeStart, includeEnd));
+            kvKVIterator = kvStore.txnScan(param.getScanTs(), new StoreInstance.Range(startKey, endKey, includeStart, includeEnd));
         } else {
             localKVIterator = Iterators.transform(
                 localStore.scan(new StoreInstance.Range(encodeStart, encodeEnd, includeStart, includeEnd), coprocessor),
                 wrap(ByteUtils::mapping)::apply);
-            kvKVIterator = kvStore.txnScan(param.getStartTs(), IsolationLevel.of(param.getIsolationLevel()), new StoreInstance.Range(startKey, endKey, includeStart, includeEnd));
+            kvKVIterator = kvStore.txnScan(param.getScanTs(), new StoreInstance.Range(startKey, endKey, includeStart, includeEnd));
         }
 
         KeyValue kv1 = getNextValue(localKVIterator);

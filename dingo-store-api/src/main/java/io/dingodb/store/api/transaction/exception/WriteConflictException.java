@@ -19,7 +19,7 @@ package io.dingodb.store.api.transaction.exception;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
-public class WriteConflictException extends RuntimeException{
+public class WriteConflictException extends RuntimeException {
     public WriteConflictException(String message) {
         super(message);
     }

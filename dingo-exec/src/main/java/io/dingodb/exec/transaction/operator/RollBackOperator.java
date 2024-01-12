@@ -21,7 +21,6 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
-import io.dingodb.exec.transaction.base.TransactionConfig;
 import io.dingodb.exec.transaction.params.RollBackParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.store.api.StoreInstance;
@@ -43,10 +42,12 @@ public class RollBackOperator extends TransactionOperator {
     @Override
     public synchronized boolean push(int pin, @Nullable Object[] tuple, Vertex vertex) {
         RollBackParam param = vertex.getParam();
-        CommonId txnId = (CommonId) tuple[0];
-        CommonId tableId = (CommonId) tuple[1];
-        CommonId newPartId = (CommonId) tuple[2];
-        byte[] key = (byte[]) tuple[4];
+        CommonId.CommonType type = CommonId.CommonType.of((byte) tuple[0]);
+        CommonId txnId = (CommonId) tuple[1];
+        CommonId tableId = (CommonId) tuple[2];
+        CommonId newPartId = (CommonId) tuple[3];
+        int op = (byte) tuple[4];
+        byte[] key = (byte[]) tuple[5];
         param.addKey(key);
         CommonId partId = param.getPartId();
         if (partId == null) {
@@ -80,10 +81,10 @@ public class RollBackOperator extends TransactionOperator {
         // 1、Async call sdk TxnRollBack
         TxnBatchRollBack rollBackRequest = TxnBatchRollBack.builder().
             isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
-            .startTs(param.getStart_ts())
+            .startTs(param.getStartTs())
             .keys(param.getKeys())
             .build();
-        try{
+        try {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
             return store.txnBatchRollback(rollBackRequest);
         } catch (RuntimeException e) {
@@ -95,7 +96,7 @@ public class RollBackOperator extends TransactionOperator {
                 List<byte[]> value = entry.getValue();
                 StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
                 rollBackRequest.setKeys(value);
-                boolean result =store.txnBatchRollback(rollBackRequest);
+                boolean result = store.txnBatchRollback(rollBackRequest);
                 if (!result) {
                     return false;
                 }

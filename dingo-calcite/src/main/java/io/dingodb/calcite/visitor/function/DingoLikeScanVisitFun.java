@@ -73,7 +73,12 @@ public final class DingoLikeScanVisitFun {
             : ps.calcPartitionRange(rel.getPrefix(), rel.getPrefix(), true, true, distributions)) {
             Task task;
             if (transaction != null) {
-                task = job.getOrCreate(currentLocation, idGenerator, transaction.getType(), IsolationLevel.of(transaction.getIsolationLevel()));
+                task = job.getOrCreate(
+                    currentLocation,
+                    idGenerator,
+                    transaction.getType(),
+                    IsolationLevel.of(transaction.getIsolationLevel())
+                );
             } else {
                 task = job.getOrCreate(currentLocation, idGenerator);
             }

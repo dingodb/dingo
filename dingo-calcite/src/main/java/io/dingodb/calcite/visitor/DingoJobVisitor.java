@@ -73,6 +73,7 @@ import io.dingodb.exec.transaction.base.ITransaction;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
@@ -87,23 +88,32 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     private final Job job;
     private final ITransaction transaction;
 
-    private DingoJobVisitor(Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction) {
+    @Getter
+    private final SqlKind kind;
+
+    private DingoJobVisitor(Job job, IdGenerator idGenerator, Location currentLocation,
+                            ITransaction transaction, SqlKind kind) {
         this.job = job;
         this.idGenerator = idGenerator;
         this.currentLocation = currentLocation;
         this.transaction = transaction;
+        this.kind = kind;
     }
 
     public static void renderJob(Job job, RelNode input, Location currentLocation) {
-        renderJob(job, input, currentLocation, false, null);
+        renderJob(job, input, currentLocation, false, null, null);
     }
 
-    public static void renderJob(Job job, RelNode input, Location currentLocation, boolean checkRoot, ITransaction transaction) {
+    public static void renderJob(Job job, RelNode input, Location currentLocation,
+                                 boolean checkRoot, ITransaction transaction, SqlKind kind) {
         IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
-        DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation, transaction);
+        DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation, transaction, kind);
         Collection<Vertex> outputs = dingo(input).accept(visitor);
         if (checkRoot && outputs.size() > 0) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
+        }
+        if (transaction != null && transaction.isPessimistic()) {
+            transaction.setJob(job);
         }
         if (log.isDebugEnabled()) {
             log.info("job = {}", job);

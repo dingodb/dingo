@@ -26,6 +26,10 @@ public class ElementName {
     public static final String STREAM = "StreamConverter";
     public static final String ROLLBACK = "RollBack";
 
+    public static final String PESSIMISTIC_ROLLBACK = "PessimisticRollBack";
+
+    public static final String PESSIMISTIC_ROLLBACK_SCAN = "PessimisticRollBackScan";
+
     public static final String SINGLE_TRANSACTION_PRE_WRITE = "SingleTransactionPreWrite";
     public static final String MULTI_TRANSACTION_PRE_WRITE = "MultiTransactionPreWrite";
 
@@ -36,4 +40,6 @@ public class ElementName {
     public static final String SINGLE_TRANSACTION_ROLLBACK = "SingleTransactionRollBack";
 
     public static final String MULTI_TRANSACTION_ROLLBACK = "MultiTransactionRollBack";
+    public static final String SINGLE_TRANSACTION_PESSIMISTIC_ROLLBACK = "SingleTransactionPessimisticRollBack";
+    public static final String MULTI_TRANSACTION_PESSIMISTIC_ROLLBACK = "MultiTransactionPessimisticRollBack";
 }

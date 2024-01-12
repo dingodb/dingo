@@ -41,14 +41,20 @@ public final class DingoTransactionExchangeFun {
     }
 
     public static Vertex exchange(
-        Job job, IdGenerator idGenerator, ITransaction transaction, @NonNull Vertex input, @NonNull Location target, DingoType schema
+        Job job, IdGenerator idGenerator, ITransaction transaction,
+        @NonNull Vertex input, @NonNull Location target, DingoType schema
     ) {
         Task task = input.getTask();
         if (target.equals(task.getLocation())) {
             return input;
         }
         CommonId id = idGenerator.getOperatorId(task.getId());
-        Task rcvTask = job.getOrCreate(target, idGenerator, transaction.getType(), IsolationLevel.of(transaction.getIsolationLevel()));
+        Task rcvTask = job.getOrCreate(
+            target,
+            idGenerator,
+            transaction.getType(),
+            IsolationLevel.of(transaction.getIsolationLevel())
+        );
         CommonId receiveId = idGenerator.getOperatorId(rcvTask.getId());
         SendParam sendParam = new SendParam(target.getHost(), target.getPort(), receiveId, schema);
         Vertex send = new Vertex(SEND, sendParam);

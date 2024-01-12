@@ -36,13 +36,14 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.COMMIT;
 
 public class DingoCommitVisitFun {
     public static Collection<Vertex> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction, DingoTransactionRenderJob visitor, CommitLeaf commitLeaf) {
+        Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction,
+        DingoTransactionRenderJob visitor, CommitLeaf commitLeaf) {
         Collection<Vertex> inputs = commitLeaf.getData().accept(visitor);
         List<Vertex> outputs = new ArrayList<>();
         for (Vertex input : inputs) {
             CommitParam param = new CommitParam(
                 new BooleanType(true), transaction.getIsolationLevel(),
-                transaction.getStart_ts(), transaction.getCommit_ts(), transaction.getPrimaryKey(),
+                transaction.getStartTs(), transaction.getCommitTs(), transaction.getPrimaryKey(),
                 transaction.getType()
             );
             Vertex vertex = new Vertex(COMMIT, param);

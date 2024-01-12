@@ -31,11 +31,10 @@ import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.transaction.base.ITransaction;
-import io.dingodb.exec.transaction.impl.TransactionManager;
-import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.meta.MetaService;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
@@ -70,6 +69,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -291,26 +291,41 @@ public final class DingoDriverParser extends DingoParser {
         Location currentLocation = MetaService.root().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
         boolean isTxn = checkEngine(relNode, sqlNode, connection.getAutoCommit());
-        // get start_ts for jobSeqId, if transaction is not null ,transaction start_ts is jobDomainId
-        long start_ts = 0l;
+        // get startTs for jobSeqId, if transaction is not null ,transaction startTs is jobDomainId
+        long startTs = 0L;
         long jobSeqId = TsoService.getDefault().tso();
         CommonId txn_Id;
+        boolean pessimisticTxn = false;
         if (connection.getTransaction() != null) {
-            start_ts = connection.getTransaction().getStart_ts();
-            txn_Id = connection.getTransaction().getTxnId();
+            ITransaction transaction = connection.getTransaction();
+            startTs = transaction.getStartTs();
+            txn_Id = transaction.getTxnId();
+            pessimisticTxn = transaction.isPessimistic();
+            if (pessimisticTxn) {
+                transaction.setForUpdateTs(jobSeqId);
+            }
         } else {
             if (isTxn) {
                 ITransaction transaction = connection.createTransaction(false);
                 transaction.setAutoCommit(true);
-                start_ts = transaction.getStart_ts();
+                startTs = transaction.getStartTs();
                 txn_Id = transaction.getTxnId();
+                pessimisticTxn = transaction.isPessimistic();
+                if (pessimisticTxn) {
+                    transaction.setForUpdateTs(jobSeqId);
+                }
             } else {
-                start_ts = jobSeqId;
+                startTs = jobSeqId;
                 txn_Id = CommonId.EMPTY_TRANSACTION;
             }
         }
-        Job job = jobManager.createJob(start_ts, jobSeqId, txn_Id, DefinitionMapper.mapToDingoType(parasType));
-        DingoJobVisitor.renderJob(job, relNode, currentLocation, true, connection.getTransaction());
+        if (pessimisticTxn && connection.getTransaction().getPrimaryKeyLock() == null) {
+            runPessimisticPrimaryKeyJob(jobSeqId, jobManager, connection.getTransaction(), sqlNode, relNode,
+                currentLocation, DefinitionMapper.mapToDingoType(parasType));
+            jobSeqId = connection.getTransaction().getForUpdateTs();
+        }
+        Job job = jobManager.createJob(startTs, jobSeqId, txn_Id, DefinitionMapper.mapToDingoType(parasType));
+        DingoJobVisitor.renderJob(job, relNode, currentLocation, true, connection.getTransaction(), sqlNode.getKind());
         if (explain != null) {
             statementType = Meta.StatementType.CALL;
             String logicalPlan = RelOptUtil.dumpPlan("", relNode, SqlExplainFormat.TEXT,
@@ -339,19 +354,31 @@ public final class DingoDriverParser extends DingoParser {
         );
     }
 
+    private void runPessimisticPrimaryKeyJob(long jobSeqId,
+                                             JobManager jobManager,
+                                             ITransaction transaction,
+                                             SqlNode sqlNode,
+                                             RelNode relNode,
+                                             Location currentLocation,
+                                             DingoType dingoType
+    ) {
+        Job job = jobManager.createJob(transaction.getStartTs(), jobSeqId, transaction.getTxnId(), dingoType);
+        DingoJobVisitor.renderJob(job, relNode, currentLocation, true, transaction, sqlNode.getKind());
+        Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+        if (iterator.hasNext()) {
+            Object[] next = iterator.next();
+        }
+        jobManager.removeJob(job.getJobId());
+    }
+
     private boolean checkEngine(RelNode relNode, SqlNode sqlNode, boolean isAutoCommit) {
-        boolean isTxn = true;
+        boolean isTxn = false;
+        boolean isNotTransactionTable = true;
         Set<RelOptTable> tables = RelOptUtil.findTables(relNode);
-        if (sqlNode.getKind() == SqlKind.INSERT) {
+        if (sqlNode.getKind() == SqlKind.INSERT || sqlNode.getKind() == SqlKind.DELETE) {
             RelNode input = relNode.getInput(0).getInput(0);
             RelOptTable table = input.getTable();
-            String engine = ((DingoTable) ((DingoRelOptTable) table).table()).getTableDefinition().getEngine();
-            if (engine == null || (!engine.equalsIgnoreCase("TXN_LSM") && !engine.equalsIgnoreCase("TXN_BDB"))) {
-                isTxn = false;
-            }
-            if (!isAutoCommit && !isTxn) {
-                throw new RuntimeException("Non-transaction tables cannot be used in transactions");
-            }
+            tables.add(table);
         }
         // for UT test
         if ((sqlNode.getKind() == SqlKind.SELECT || sqlNode.getKind() == SqlKind.DELETE) && tables.size() == 0) {
@@ -364,14 +391,15 @@ public final class DingoDriverParser extends DingoParser {
             } else if (table instanceof DingoRelOptTable) {
                 engine = ((DingoTable) ((DingoRelOptTable) table).table()).getTableDefinition().getEngine();
             }
-            if (engine == null || (!engine.equalsIgnoreCase("TXN_LSM") && !engine.equalsIgnoreCase("TXN_BDB"))) {
-                isTxn = false;
+            if (engine == null || !engine.contains("TXN")) {
+                isNotTransactionTable = false;
             } else {
-                if (!isTxn) {
-                    throw new RuntimeException("Transactional tables cannot be mixed with non-transactional tables");
-                }
+                isTxn = true;
             }
-            if (!isAutoCommit && !isTxn) {
+            if (isTxn && !isNotTransactionTable) {
+                throw new RuntimeException("Transactional tables cannot be mixed with non-transactional tables");
+            }
+            if (!isAutoCommit && !isNotTransactionTable) {
                 throw new RuntimeException("Non-transaction tables cannot be used in transactions");
             }
         }

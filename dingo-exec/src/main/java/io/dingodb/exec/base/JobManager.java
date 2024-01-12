@@ -24,10 +24,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.Iterator;
 
 public interface JobManager {
-    Job createJob(long start_ts, long jobSeqId, CommonId txnId, DingoType parasType);
+    Job createJob(long startTs, long jobSeqId, CommonId txnId, DingoType parasType);
 
-    default Job createJob(long start_ts, long jobSeqId) {
-        return createJob(start_ts, jobSeqId, null,  null);
+    default Job createJob(long startTs, long jobSeqId) {
+        return createJob(startTs, jobSeqId, null,  null);
     }
 
     Job getJob(CommonId jobId);
