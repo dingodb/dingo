@@ -145,6 +145,7 @@ public abstract class BaseTransaction implements ITransaction {
 
     @Override
     public synchronized void close() {
+        cleanUp();
         TransactionManager.unregister(txnId);
         this.closed = true;
         this.status = TransactionStatus.CLOSE;

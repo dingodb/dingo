@@ -91,7 +91,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         return (DingoMeta) meta;
     }
 
-    public ITransaction createTransaction(boolean pessimistic) {
+    public synchronized ITransaction createTransaction(boolean pessimistic) {
         if (transaction == null) {
             long startTs = TransactionManager.getStartTs();
             String txIsolation;
@@ -107,8 +107,9 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         return transaction;
     }
 
-    public void cleanTransaction() throws SQLException {
+    public synchronized void cleanTransaction() throws SQLException {
         if (transaction != null) {
+            transaction.close();
             transaction = null;
             oneTimeTxIsolation = null;
         }
@@ -124,10 +125,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             log.info(e.getMessage(), e);
             throw new SQLException(e);
         } finally {
-            if(this.transaction != null) {
-                this.transaction.close();
-                this.transaction = null;
-            }
+            cleanTransaction();
         }
         createTransaction(pessimistic);
         this.autoCommit = false;
@@ -151,10 +149,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             log.info(e.getMessage(), e);
             throw new SQLException(e);
         } finally {
-            if(this.transaction != null) {
-                this.transaction.close();
-                this.transaction = null;
-            }
+            cleanTransaction();
         }
         if(!autoCommit) {
             createTransaction(false);
@@ -166,6 +161,12 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     @Override
     public boolean getAutoCommit() {
         return autoCommit;
+    }
+
+    @Override
+    public void close() throws SQLException {
+        super.close();
+        cleanTransaction();
     }
 
     @NonNull
@@ -303,6 +304,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     @Override
     public void setClientInfo(Properties properties) {
         sessionVariables.putAll(properties);
+        autoCommit = !("off".equalsIgnoreCase(getClientInfo("autocommit")));
         if (properties.containsKey("wait_timeout")) {
             String value = (String) properties.get("wait_timeout");
             SessionVariableWatched.getInstance().notifyObservers(

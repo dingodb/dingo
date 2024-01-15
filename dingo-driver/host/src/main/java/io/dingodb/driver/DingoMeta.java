@@ -497,9 +497,8 @@ public class DingoMeta extends MetaImpl {
 
     @Override
     public void commit(ConnectionHandle ch) {
-        ITransaction transaction = null;
         try {
-            transaction = ((DingoConnection) connection).getTransaction();
+            ITransaction transaction = ((DingoConnection) connection).getTransaction();
             if (transaction != null) {
                 transaction.commit(jobManager);
             }
@@ -507,22 +506,18 @@ public class DingoMeta extends MetaImpl {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);
         } finally {
-            if (transaction != null) {
-                transaction.close();
-                try {
-                    ((DingoConnection) connection).cleanTransaction();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
+            try {
+                ((DingoConnection) connection).cleanTransaction();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
         }
     }
 
     @Override
     public void rollback(ConnectionHandle ch) {
-        ITransaction transaction = null;
         try {
-            transaction = ((DingoConnection) connection).getTransaction();
+            ITransaction transaction = ((DingoConnection) connection).getTransaction();
             if (transaction != null) {
                 transaction.rollback(jobManager);
             }
@@ -530,13 +525,10 @@ public class DingoMeta extends MetaImpl {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);
         } finally {
-            if (transaction != null) {
-                transaction.close();
-                try {
-                    ((DingoConnection) connection).cleanTransaction();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
+            try {
+                ((DingoConnection) connection).cleanTransaction();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
         }
     }
