@@ -164,10 +164,10 @@ public final class SqlToOperationConverter {
             SqlBeginTx sqlBeginTx = (SqlBeginTx) sqlNode;
             boolean pessimistic = false;
             try {
-                if (sqlBeginTx.txnMode.equalsIgnoreCase(TransactionType.PESSIMISTIC.name())) {
+                if (TransactionType.PESSIMISTIC.name().equalsIgnoreCase(sqlBeginTx.txnMode)) {
                     pessimistic = true;
                 } else if (sqlBeginTx.txnMode.equals("") &&
-                    connection.getClientInfo("txn_mode").equalsIgnoreCase(TransactionType.PESSIMISTIC.name())) {
+                    TransactionType.PESSIMISTIC.name().equalsIgnoreCase(connection.getClientInfo("txn_mode"))) {
                     pessimistic = true;
                 }
             } catch (SQLException e) {

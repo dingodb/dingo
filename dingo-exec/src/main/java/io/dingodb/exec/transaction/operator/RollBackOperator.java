@@ -48,12 +48,12 @@ public class RollBackOperator extends TransactionOperator {
         CommonId newPartId = (CommonId) tuple[3];
         int op = (byte) tuple[4];
         byte[] key = (byte[]) tuple[5];
-        param.addKey(key);
         CommonId partId = param.getPartId();
         if (partId == null) {
             partId = newPartId;
             param.setPartId(partId);
             param.setTableId(tableId);
+            param.addKey(key);
         } else if (partId.equals(newPartId)) {
             param.addKey(key);
             if (param.getKeys().size() == TransactionUtil.max_pre_write_count) {

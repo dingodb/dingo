@@ -53,12 +53,12 @@ public class CommitOperator extends TransactionOperator {
         if (ByteArrayUtils.compare(key, param.getPrimaryKey(), 9) == 0) {
             return true;
         }
-        param.addKey(key);
         CommonId partId = param.getPartId();
         if (partId == null) {
             partId = newPartId;
             param.setPartId(partId);
             param.setTableId(tableId);
+            param.addKey(key);
         } else if (partId.equals(newPartId)) {
             param.addKey(key);
             if (param.getKeys().size() == TransactionUtil.max_pre_write_count) {
