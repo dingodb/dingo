@@ -39,6 +39,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
+import java.util.Properties;
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Slf4j
 public class TestDelete {
@@ -48,7 +50,9 @@ public class TestDelete {
     @BeforeAll
     public static void setupAll() {
         MockMetaServiceProvider.init();
-        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        Properties properties = new Properties();
+        properties.put("usingRelOp", "true");
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties);
     }
 
     @BeforeEach

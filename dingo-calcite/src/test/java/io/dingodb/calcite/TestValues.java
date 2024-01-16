@@ -42,6 +42,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.sql.Date;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
@@ -56,7 +57,9 @@ public class TestValues {
     @BeforeAll
     public static void setupAll() {
         MockMetaServiceProvider.init();
-        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        Properties properties = new Properties();
+        properties.put("usingRelOp", "true");
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties);
     }
 
     private static void assertSelectValues(SqlNode sqlNode) {

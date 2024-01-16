@@ -17,14 +17,13 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
-import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.DingoStreamingConverter;
 import io.dingodb.calcite.rel.DingoTableModify;
-import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.rel.dingo.DingoScanWithRelOp;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.expr.runtime.exception.CastingException;
 import io.dingodb.test.asserts.Assert;
@@ -53,6 +52,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.util.List;
+import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -66,7 +66,9 @@ public class TestInsert {
     @BeforeAll
     public static void setupAll() {
         MockMetaServiceProvider.init();
-        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        Properties properties = new Properties();
+        properties.put("usingRelOp", "true");
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties);
     }
 
     @BeforeEach
@@ -178,8 +180,7 @@ public class TestInsert {
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.INSERT)
             .soleInput().isA(DingoStreamingConverter.class)
-            .soleInput().isA(DingoProject.class)
-            .soleInput().isA(DingoTableScan.class);
+            .soleInput().isA(DingoScanWithRelOp.class);
     }
 
     @Test

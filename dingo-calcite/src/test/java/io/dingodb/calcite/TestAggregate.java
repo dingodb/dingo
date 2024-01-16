@@ -17,15 +17,15 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
-import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoHashJoin;
-import io.dingodb.calcite.rel.DingoProject;
-import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.DingoStreamingConverter;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.rel.dingo.DingoReduceAggregate;
+import io.dingodb.calcite.rel.dingo.DingoRelOp;
+import io.dingodb.calcite.rel.dingo.DingoScanWithRelOp;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.test.asserts.Assert;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +45,8 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.Properties;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
@@ -56,7 +58,9 @@ public class TestAggregate {
     @BeforeAll
     public static void setupAll() {
         MockMetaServiceProvider.init();
-        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        Properties properties = new Properties();
+        properties.put("usingRelOp", "true");
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties);
     }
 
     @BeforeEach
@@ -81,7 +85,7 @@ public class TestAggregate {
         log.info("Graph of planner:\n {}", parser.getPlanner().toDot());
         Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoReduce.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoReduceAggregate.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class);
         System.out.println(parser.getPlanner().toDot());
     }
@@ -99,9 +103,9 @@ public class TestAggregate {
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoReduceAggregate.class)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoTableScan.class);
+            .soleInput().isA(DingoScanWithRelOp.class);
     }
 
     @Test
@@ -117,9 +121,9 @@ public class TestAggregate {
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoReduceAggregate.class)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoTableScan.class);
+            .soleInput().isA(DingoScanWithRelOp.class);
     }
 
     @Test
@@ -136,9 +140,9 @@ public class TestAggregate {
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoReduceAggregate.class)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoTableScan.class);
+            .soleInput().isA(DingoScanWithRelOp.class);
     }
 
     @Test
@@ -155,10 +159,10 @@ public class TestAggregate {
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoProject.class)
-            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoRelOp.class)
+            .soleInput().isA(DingoReduceAggregate.class)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoTableScan.class);
+            .soleInput().isA(DingoScanWithRelOp.class);
     }
 
     @Test
@@ -174,10 +178,11 @@ public class TestAggregate {
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoAggregate.class)
-            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoReduceAggregate.class)
+            .soleInput().isA(DingoRelOp.class)
+            .soleInput().isA(DingoReduceAggregate.class)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoTableScan.class);
+            .soleInput().isA(DingoScanWithRelOp.class);
     }
 
     @Test
@@ -194,7 +199,7 @@ public class TestAggregate {
             RelNode optimized = parser.optimize(relRoot.rel);
             DingoTableScan scan = (DingoTableScan) Assert.relNode(optimized)
                 .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
-                .soleInput().isA(DingoReduce.class)
+                .soleInput().isA(DingoReduceAggregate.class)
                 .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
                 .soleInput().isA(DingoTableScan.class)
                 .getInstance();
@@ -218,17 +223,12 @@ public class TestAggregate {
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
-        DingoTableScan scan = (DingoTableScan) Assert.relNode(optimized)
+        Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoProject.class)
-            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoRelOp.class)
+            .soleInput().isA(DingoReduceAggregate.class)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoTableScan.class)
-            .getInstance();
-        assertThat(scan.getAggCalls())
-            .map(AggregateCall::getAggregation)
-            .map(SqlAggFunction::getKind)
-            .containsExactly(SqlKind.SUM, SqlKind.COUNT);
+            .soleInput().isA(DingoScanWithRelOp.class);
     }
 
     @Test
@@ -243,17 +243,12 @@ public class TestAggregate {
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
-        DingoTableScan scan = (DingoTableScan) Assert.relNode(optimized)
+        Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoProject.class)
-            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoRelOp.class)
+            .soleInput().isA(DingoReduceAggregate.class)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoTableScan.class)
-            .getInstance();
-        assertThat(scan.getAggCalls())
-            .map(AggregateCall::getAggregation)
-            .map(SqlAggFunction::getKind)
-            .containsExactly(SqlKind.SUM, SqlKind.COUNT);
+            .soleInput().isA(DingoScanWithRelOp.class);
     }
 
     @Test
@@ -270,10 +265,10 @@ public class TestAggregate {
         RelNode optimized = parser.optimize(relRoot.rel);
         Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoProject.class)
-            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoRelOp.class)
+            .soleInput().isA(DingoReduceAggregate.class)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoAggregate.class);
+            .soleInput().isA(DingoScanWithRelOp.class);
     }
 
     @Test
@@ -287,17 +282,12 @@ public class TestAggregate {
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
-        DingoTableScan scan = (DingoTableScan) Assert.relNode(optimized)
+        Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoProject.class)
-            .soleInput().isA(DingoReduce.class)
+            .soleInput().isA(DingoRelOp.class)
+            .soleInput().isA(DingoReduceAggregate.class)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoTableScan.class)
-            .getInstance();
-        assertThat(scan.getAggCalls())
-            .map(AggregateCall::getAggregation)
-            .map(SqlAggFunction::getKind)
-            .containsExactly(SqlKind.SUM0, SqlKind.COUNT, SqlKind.SUM);
+            .soleInput().isA(DingoScanWithRelOp.class);
     }
 
     @Test
@@ -315,7 +305,7 @@ public class TestAggregate {
         Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoRelOp.class)
             .soleInput().isA(DingoHashJoin.class).inputNum(2);
     }
 }

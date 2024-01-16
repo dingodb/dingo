@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestSelectivity {
     static Iterator<Integer> iterator;
+
     @BeforeAll
     public static void setupAll() {
         Stream<Integer> stream = Stream.generate(() -> new Random().nextInt(100000)).limit(100000);
@@ -51,9 +52,9 @@ public class TestSelectivity {
             histogram.setRegionMax(val);
             histogram.setRegionMin(val);
             if (val < 10000) {
-                lessThan ++;
+                lessThan++;
             } else if (val == 10000) {
-                equals ++;
+                equals++;
             }
         }
 
@@ -82,16 +83,16 @@ public class TestSelectivity {
     public void testCmSketch() {
         CountMinSketch countMinSketch = new CountMinSketch("dingo", "demo", "id", 0, 3, 5, 1000000);
         String val = "zhangsan";
-        String[] sample = new String[] {"zhangsan", "lisi", "wangwu", "zhaoliu", "laob"};
+        String[] sample = new String[]{"zhangsan", "lisi", "wangwu", "zhaoliu", "laob"};
         String str;
         long count = 0;
         Random random = new Random();
-        for (int i = 0; i < 1000000; i ++) {
+        for (int i = 0; i < 1000000; i++) {
             str = sample[random.nextInt(4)];
             if (str.equals(val)) {
                 count++;
             }
-           countMinSketch.setString(str);
+            countMinSketch.setString(str);
         }
         int estimate = countMinSketch.getEstimatedCountString(val);
         BigDecimal total = new BigDecimal(1000000);

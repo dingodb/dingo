@@ -26,12 +26,11 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class DingoTableScanRule extends ConverterRule {
-
-    private static final List<String> metaSchemaList = new ArrayList<>();
+    public static final List<String> metaSchemaList = Collections.singletonList("INFORMATION_SCHEMA");
 
     public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
@@ -44,7 +43,6 @@ public class DingoTableScanRule extends ConverterRule {
 
     protected DingoTableScanRule(Config config) {
         super(config);
-        metaSchemaList.add("INFORMATION_SCHEMA");
     }
 
     @Override

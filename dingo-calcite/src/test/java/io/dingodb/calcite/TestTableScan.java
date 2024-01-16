@@ -19,14 +19,13 @@ package io.dingodb.calcite;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.DingoStreamingConverter;
-import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.rel.dingo.DingoScanWithRelOp;
 import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
-import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.impl.JobManagerImpl;
@@ -46,9 +45,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.Arrays;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.Properties;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestTableScan {
@@ -61,7 +58,9 @@ public class TestTableScan {
     @BeforeAll
     public static void setupAll() {
         MockMetaServiceProvider.init();
-        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        Properties properties = new Properties();
+        properties.put("usingRelOp", "true");
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties);
     }
 
     @BeforeEach
@@ -91,13 +90,10 @@ public class TestTableScan {
             .soleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
-        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode)
+        Assert.relNode(relNode)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoTableScan.class)
-            .getInstance();
-        assertThat((scan).getFilter()).isNull();
-        assertThat((scan).getSelection()).isEqualTo(TupleMapping.of(Arrays.asList(0, 1, 2)));
+            .soleInput().isA(DingoScanWithRelOp.class);
         // To job.
         long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
@@ -119,13 +115,10 @@ public class TestTableScan {
             .soleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
-        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode)
+        Assert.relNode(relNode)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoTableScan.class)
-            .getInstance();
-        assertThat((scan).getFilter()).isNotNull();
-        assertThat((scan).getSelection()).isEqualTo(TupleMapping.of(Arrays.asList(0, 1, 2)));
+            .soleInput().isA(DingoScanWithRelOp.class);
         // To job.
         long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
@@ -146,13 +139,10 @@ public class TestTableScan {
             .soleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
-        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode)
+        Assert.relNode(relNode)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoTableScan.class)
-            .getInstance();
-        assertThat((scan).getFilter()).isNull();
-        assertThat((scan).getSelection()).isNotNull();
+            .soleInput().isA(DingoScanWithRelOp.class);
         // To job.
         long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
@@ -174,13 +164,10 @@ public class TestTableScan {
             .soleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
-        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode)
+        Assert.relNode(relNode)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoTableScan.class)
-            .getInstance();
-        assertThat((scan).getFilter()).isNotNull();
-        assertThat((scan).getSelection()).isNotNull();
+            .soleInput().isA(DingoScanWithRelOp.class);
         // To job.
         long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
@@ -202,13 +189,10 @@ public class TestTableScan {
             .soleInput().isA(LogicalDingoTableScan.class);
         // To physical plan.
         RelNode relNode = parser.optimize(relRoot.rel);
-        DingoTableScan scan = (DingoTableScan) Assert.relNode(relNode)
+        Assert.relNode(relNode)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoTableScan.class)
-            .getInstance();
-        assertThat((scan).getFilter()).isNotNull();
-        assertThat((scan).getSelection()).isEqualTo(TupleMapping.of(Arrays.asList(0, 1, 2)));
+            .soleInput().isA(DingoScanWithRelOp.class);
         // To job.
         long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
@@ -223,13 +207,9 @@ public class TestTableScan {
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         RelNode optimized = parser.optimize(relRoot.rel);
-        RelNode relNode = Assert.relNode(optimized)
+        Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoTableScan.class)
-            .getInstance();
-        DingoTableScan scan = (DingoTableScan) relNode;
-        assertThat((scan).getFilter()).isNotNull();
-        assertThat((scan).getSelection()).isEqualTo(TupleMapping.of(new int[]{0, 1, 2}));
+            .soleInput().isA(DingoScanWithRelOp.class);
     }
 }

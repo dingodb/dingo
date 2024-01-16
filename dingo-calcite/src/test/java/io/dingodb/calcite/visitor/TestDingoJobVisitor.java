@@ -142,7 +142,7 @@ public class TestDingoJobVisitor {
         AssertJob assertJob = Assert.job(job).taskNum(1);
         AssertTask assertTask =
             assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
-            assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
+        assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
         assertTask.source(0).isCalcDistribution().outputNum(1);
         /*CommonId tableId = MetaService.root()
             .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME)
@@ -180,7 +180,7 @@ public class TestDingoJobVisitor {
         AssertJob assertJob = Assert.job(job).taskNum(1);
         AssertTask assertTask =
             assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
-            assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
+        assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
         assertTask.source(0).isCalcDistribution().outputNum(1);
         /*CommonId tableId = MetaService.root()
             .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME)

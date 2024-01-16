@@ -27,8 +27,8 @@ public interface Operator {
      * Push a new tuple to the operator. Need to be synchronized for there may be multiple thread call on the same
      * operator.
      *
-     * @param content  the input pin no and distribution
-     * @param tuple the tuple pushed in
+     * @param content the input pin no and distribution
+     * @param tuple   the tuple pushed in
      * @return `true` means another push needed, `false` means the task is canceled or finished
      */
     boolean push(Content content, @Nullable Object[] tuple, Vertex vertex);

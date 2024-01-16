@@ -17,13 +17,12 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
-import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoHashJoin;
-import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.DingoStreamingConverter;
-import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoRoot;
+import io.dingodb.calcite.rel.dingo.DingoRelOp;
+import io.dingodb.calcite.rel.dingo.DingoScanWithRelOp;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.asserts.AssertRelNode;
@@ -41,6 +40,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
+import java.util.Properties;
+
 @Slf4j
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestJoin {
@@ -50,7 +51,9 @@ public class TestJoin {
     @BeforeAll
     public static void setupAll() {
         MockMetaServiceProvider.init();
-        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        Properties properties = new Properties();
+        properties.put("usingRelOp", "true");
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties);
     }
 
     @BeforeEach
@@ -74,7 +77,7 @@ public class TestJoin {
         Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoRelOp.class)
             .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.INNER)
             .inputNum(2);
     }
@@ -93,12 +96,12 @@ public class TestJoin {
         RelNode optimized = parser.optimize(relRoot.rel);
         AssertRelNode assertJoin = Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoFilter.class)
+            .soleInput().isA(DingoRelOp.class)
             .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.INNER).inputNum(2);
         assertJoin.input(0).isA(DingoStreamingConverter.class)
-            .soleInput().isA(DingoTableScan.class);
+            .soleInput().isA(DingoScanWithRelOp.class);
         assertJoin.input(1).isA(DingoStreamingConverter.class)
-            .soleInput().isA(DingoTableScan.class);
+            .soleInput().isA(DingoScanWithRelOp.class);
     }
 
     @Test
@@ -114,12 +117,12 @@ public class TestJoin {
         RelNode optimized = parser.optimize(relRoot.rel);
         AssertRelNode assertJoin = Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoFilter.class)
+            .soleInput().isA(DingoRelOp.class)
             .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.INNER).inputNum(2);
         assertJoin.input(0).isA(DingoStreamingConverter.class)
-            .soleInput().isA(DingoTableScan.class);
+            .soleInput().isA(DingoScanWithRelOp.class);
         assertJoin.input(1).isA(DingoStreamingConverter.class)
-            .soleInput().isA(DingoTableScan.class);
+            .soleInput().isA(DingoScanWithRelOp.class);
     }
 
     @Test
@@ -139,8 +142,8 @@ public class TestJoin {
         Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoFilter.class)
-            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoRelOp.class)
+            .soleInput().isA(DingoRelOp.class)
             .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.INNER)
             .inputNum(2);
     }
@@ -159,7 +162,7 @@ public class TestJoin {
         Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoRelOp.class)
             .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.LEFT)
             .inputNum(2);
     }
@@ -178,7 +181,7 @@ public class TestJoin {
         Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoRelOp.class)
             .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.RIGHT)
             .inputNum(2);
     }

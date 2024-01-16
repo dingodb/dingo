@@ -19,13 +19,13 @@ package io.dingodb.calcite;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoHashJoin;
-import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.DingoStreamingConverter;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.rel.dingo.DingoRelOp;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.asserts.AssertRelNode;
@@ -46,6 +46,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
+import java.util.Properties;
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Slf4j
 public class TestUpdate {
@@ -55,7 +57,9 @@ public class TestUpdate {
     @BeforeAll
     public static void setupAll() {
         MockMetaServiceProvider.init();
-        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        Properties properties = new Properties();
+        properties.put("usingRelOp", "true");
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties);
     }
 
     @BeforeEach
@@ -80,7 +84,7 @@ public class TestUpdate {
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.UPDATE)
-            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoRelOp.class)
             .soleInput().isA(DingoGetByKeys.class);
     }
 
@@ -100,7 +104,7 @@ public class TestUpdate {
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.UPDATE)
-            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoRelOp.class)
             .soleInput().isA(DingoGetByKeys.class);
     }
 
@@ -124,7 +128,7 @@ public class TestUpdate {
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.UPDATE)
             .soleInput().isA(DingoStreamingConverter.class)
-            .soleInput().isA(DingoProject.class)
+            .soleInput().isA(DingoRelOp.class)
             .soleInput().isA(DingoHashJoin.class);
         assertJoin.input(0).isA(DingoStreamingConverter.class)
             .soleInput().isA(DingoGetByKeys.class);

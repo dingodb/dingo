@@ -44,6 +44,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.Properties;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
@@ -61,7 +62,9 @@ public class TestRex {
     @BeforeAll
     public static void setupAll() {
         MockMetaServiceProvider.init();
-        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        Properties properties = new Properties();
+        properties.put("usingRelOp", "true");
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties);
     }
 
     @Nonnull

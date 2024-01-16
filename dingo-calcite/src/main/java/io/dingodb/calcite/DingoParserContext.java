@@ -66,6 +66,8 @@ public final class DingoParserContext implements Context {
     @Getter
     private final TimeZone timeZone;
     @Getter
+    private final boolean usingRelOp;
+    @Getter
     private final boolean pushDown;
 
     private final Properties options;
@@ -85,6 +87,9 @@ public final class DingoParserContext implements Context {
 
         String timeZoneId = (options != null ? options.getProperty("timeZone") : null);
         timeZone = (timeZoneId != null ? TimeZone.getTimeZone(timeZoneId) : TimeZone.getDefault());
+
+        String usingRelOpStr = options != null ? options.getProperty("usingRelOp") : null;
+        usingRelOp = Boolean.parseBoolean(usingRelOpStr);
 
         String pushDownStr = (options != null ? options.getProperty("pushDown") : null);
         pushDown = (pushDownStr == null || Boolean.parseBoolean(pushDownStr));
