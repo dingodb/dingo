@@ -184,7 +184,7 @@ public class IndexService {
         VectorContext vectorContext
     ) {
         int i = 0;
-        long id = System.identityHashCode(fork);
+        long id = cache.tso();
         List<OperationContext> contexts = new ArrayList<>(fork.getSubTasks().size());
         DingoCommonId indexId = index.id;
         for (Operation.Task subTask : fork.getSubTasks()) {

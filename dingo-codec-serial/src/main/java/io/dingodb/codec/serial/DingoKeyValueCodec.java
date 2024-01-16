@@ -62,8 +62,8 @@ public class DingoKeyValueCodec implements KeyValueCodec {
 
     @Override
     @SneakyThrows
-    public Object[] decodeKey(byte @NonNull [] bytes) {
-        return keyCodec.decodeKey(bytes);
+    public Object[] decodeKey(byte @NonNull [] key) {
+        return keyCodec.decodeKey(key);
     }
 
     @Override
@@ -85,8 +85,8 @@ public class DingoKeyValueCodec implements KeyValueCodec {
 
     @Override
     @SneakyThrows
-    public byte[] encodeKey(Object[] keys) {
-        Object[] key = (Object[]) keySchema.convertTo(keyMapping.revMap(keys), DingoConverter.INSTANCE);
+    public byte[] encodeKey(Object[] tuple) {
+        Object[] key = (Object[]) keySchema.convertTo(keyMapping.revMap(tuple), DingoConverter.INSTANCE);
         return keyCodec.encodeKey(key);
     }
 
@@ -106,8 +106,11 @@ public class DingoKeyValueCodec implements KeyValueCodec {
 
     @Override
     @SneakyThrows
-    public byte[] encodeKeyPrefix(Object[] record, int columnCount) {
-        return keyCodec.encodeKeyForRangeScan(keyMapping.revMap(record), columnCount);
+    public byte[] encodeKeyPrefix(Object[] tuple, int count) {
+        if (count == 0) {
+            return keyCodec.encodeKeyForRangeScan(tuple, count);
+        }
+        return keyCodec.encodeKeyForRangeScan(keyMapping.revMap(tuple), count);
     }
 
     @Override

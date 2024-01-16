@@ -17,7 +17,6 @@
 package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoTable;
-import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
@@ -26,11 +25,11 @@ import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.utils.IndexValueMapSet;
 import io.dingodb.calcite.utils.IndexValueMapSetVisitor;
-import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptTable;
@@ -39,11 +38,9 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -96,9 +93,9 @@ public class DingoGetByIndexRule extends ConverterRule {
 
     public static @Nullable Map<CommonId, Set> filterScalarIndices(
         @NonNull IndexValueMapSet<Integer, RexNode> mapSet,
-        @NonNull Map<CommonId, TableDefinition> indexTdMap,
+        @NonNull Map<CommonId, Table> indexTdMap,
         TupleMapping selection,
-        TableDefinition td
+        Table td
     ) {
         Set<Map<Integer, RexNode>> set = mapSet.getSet();
         if (set != null) {
@@ -111,10 +108,10 @@ public class DingoGetByIndexRule extends ConverterRule {
             // set2 : a=v and b=v1 => Map1<entry(key = 2, value = v), entry(key = 2, value = v1)>
             for (Map<Integer, RexNode> map : set) {
                 matchIndex = false;
-                for (Map.Entry<CommonId, TableDefinition> index : indexTdMap.entrySet()) {
+                for (Map.Entry<CommonId, Table> index : indexTdMap.entrySet()) {
                     columnNames = index.getValue().getColumns()
-                        .stream().map(ColumnDefinition::getName).collect(Collectors.toList());
-                    indices = td.getColumnIndices(columnNames);
+                        .stream().map(Column::getName).collect(Collectors.toList());
+                    indices = columnNames.stream().map(td.getColumns()::indexOf).collect(Collectors.toList());
                     Map<Integer, RexNode> newMap = new HashMap<>(indices.size());
                     for (int k : map.keySet()) {
                         int originIndex = (selection == null ? k : selection.get(k));
@@ -150,8 +147,8 @@ public class DingoGetByIndexRule extends ConverterRule {
         RexNode rexNode = RexUtil.toDnf(scan.getCluster().getRexBuilder(), scan.getFilter());
         IndexValueMapSetVisitor visitor = new IndexValueMapSetVisitor(rel.getCluster().getRexBuilder());
         IndexValueMapSet<Integer, RexNode> indexValueMapSet = rexNode.accept(visitor);
-        final TableDefinition td = TableUtils.getTableDefinition(scan.getTable());
-        List<Integer> keyIndices = td.getKeyColumnIndices();
+        final Table table = scan.getTable().unwrap(DingoTable.class).getTable();
+        List<Integer> keyIndices = Arrays.stream(table.keyMapping().getMappings()).boxed().collect(Collectors.toList());
         Set<Map<Integer, RexNode>> keyMapSet = filterIndices(indexValueMapSet, keyIndices, scan.getSelection());
         if (keyMapSet != null) {
             RelTraitSet traits = scan.getTraitSet()
@@ -175,10 +172,10 @@ public class DingoGetByIndexRule extends ConverterRule {
         // get all index definition
         // find match first index to use; todo replace
         // new DingoGetIndex
-        Map<CommonId, TableDefinition> indexTdMap = getScalaIndices(scan.getTable());
+        Map<CommonId, Table> indexTdMap = getScalaIndices(scan.getTable());
 
         if (log.isDebugEnabled()) {
-            log.debug("Definition of table = {}", td);
+            log.debug("Definition of table = {}", table);
         }
         if (indexTdMap.size() == 0) {
             return null;
@@ -187,7 +184,7 @@ public class DingoGetByIndexRule extends ConverterRule {
         // index a, index b :  a = v or b = v   ==> matched index a, index b
         // index a, index b :  a = v and b = v  ==> matched first matched index a
         // indexSetMap key = matched indexId , value = index point value
-        Map<CommonId, Set> indexSetMap = filterScalarIndices(indexValueMapSet, indexTdMap, scan.getSelection(), td);
+        Map<CommonId, Set> indexSetMap = filterScalarIndices(indexValueMapSet, indexTdMap, scan.getSelection(), table);
         if (indexSetMap == null) {
             return null;
         }
@@ -205,7 +202,7 @@ public class DingoGetByIndexRule extends ConverterRule {
                 false,
                 indexSetMap,
                 indexTdMap,
-                td.getKeyMapping()
+                table.keyMapping()
             );
         } else {
             return new DingoGetByIndex(
@@ -222,18 +219,17 @@ public class DingoGetByIndexRule extends ConverterRule {
         }
     }
 
-    public static Map<CommonId, TableDefinition> getScalaIndices(RelOptTable relOptTable) {
-        Map<CommonId, TableDefinition> indexTdMap = new HashMap<>();
+    public static Map<CommonId, Table> getScalaIndices(RelOptTable relOptTable) {
+        Map<CommonId, Table> indexTdMap = new HashMap<>();
         DingoTable dingoTable = relOptTable.unwrap(DingoTable.class);
-        Map<CommonId, TableDefinition> indexDefinitions = dingoTable.getIndexTableDefinitions();
-        for (Map.Entry<CommonId, TableDefinition> entry : indexDefinitions.entrySet()) {
-            TableDefinition indexDefinition = entry.getValue();
-            if (indexDefinition.getProperties() == null) {
+        List<IndexTable> indexes = dingoTable.getTable().getIndexes();
+        for (Table index : indexes) {
+            if (index.getProperties() == null) {
                 continue;
             }
-            String indexType = indexDefinition.getProperties().get("indexType").toString();
+            String indexType = index.getProperties().get("indexType").toString();
             if (indexType.equals("scalar")) {
-                indexTdMap.put(entry.getKey(), indexDefinition);
+                indexTdMap.put(index.getTableId(), index);
             }
         }
         return indexTdMap;

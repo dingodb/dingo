@@ -32,10 +32,11 @@ import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.utils.IndexValueMapSet;
 import io.dingodb.calcite.utils.IndexValueMapSetVisitor;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.Pair;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
@@ -45,9 +46,11 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.immutables.value.Value;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rel.LogicalDingoTableScan.dispatchDistanceCondition;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.filterIndices;
@@ -150,10 +153,10 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
 
     private static DingoGetByIndex preScalarRelNode(DingoVector dingoVector,
                                          IndexValueMapSet<Integer, RexNode> indexValueMapSet,
-                                         TableDefinition td,
+                                         Table td,
                                          TupleMapping selection,
                                          RexNode condition) {
-        Map<CommonId, TableDefinition> indexTdMap = getScalaIndices(dingoVector.getTable());
+        Map<CommonId, Table> indexTdMap = getScalaIndices(dingoVector.getTable());
 
         if (indexTdMap.size() == 0) {
             return null;
@@ -177,7 +180,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
                 false,
                 indexSetMap,
                 indexTdMap,
-                td.getKeyMapping()
+                td.keyMapping()
             );
         } else {
             return new DingoGetByIndex(
@@ -208,8 +211,8 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         IndexValueMapSetVisitor visitor = new IndexValueMapSetVisitor(vector.getCluster().getRexBuilder());
         IndexValueMapSet<Integer, RexNode> indexValueMapSet = rexNode.accept(visitor);
         assert dingoTable != null;
-        final TableDefinition td = dingoTable.getTableDefinition();
-        List<Integer> keyIndices = td.getKeyColumnIndices();
+        final Table td = dingoTable.getTable();
+        List<Integer> keyIndices = Arrays.stream(td.keyMapping().getMappings()).boxed().collect(Collectors.toList());
 
         Set<Map<Integer, RexNode>> keyMapSet = filterIndices(indexValueMapSet, keyIndices, selection);
 
@@ -275,28 +278,27 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
     }
 
     private static Pair<Integer, Integer> getVectorIndex(DingoTable dingoTable, int dimension) {
-        Map<CommonId, TableDefinition> indexDefinitions = dingoTable.getIndexTableDefinitions();
-        for (Map.Entry<CommonId, TableDefinition> entry : indexDefinitions.entrySet()) {
-            TableDefinition indexTableDefinition = entry.getValue();
+        List<IndexTable> indexes = dingoTable.getTable().getIndexes();
+        for (Table index : indexes) {
 
-            String indexType = indexTableDefinition.getProperties().get("indexType").toString();
+            String indexType = index.getProperties().get("indexType").toString();
             if (indexType.equals("scalar")) {
                 continue;
             }
 
-            int dimension1 = Integer.parseInt(indexTableDefinition.getProperties().getProperty("dimension"));
+            int dimension1 = Integer.parseInt(index.getProperties().getProperty("dimension"));
             if (dimension != dimension1) {
                 continue;
             }
-            String vectorIdColName = indexTableDefinition.getColumn(0).getName();
-            String vectorColName = indexTableDefinition.getColumn(1).getName();
+            String vectorIdColName = index.getColumns().get(0).getName();
+            String vectorColName = index.getColumns().get(1).getName();
             int vectorIdIndex = 0;
             int vectorIndex = 0;
-            for (int i = 0; i < dingoTable.getTableDefinition().getColumns().size(); i ++) {
-                ColumnDefinition columnDefinition = dingoTable.getTableDefinition().getColumns().get(i);
-                if (columnDefinition.getName().equals(vectorIdColName)) {
+            for (int i = 0; i < dingoTable.getTable().getColumns().size(); i ++) {
+                Column column = dingoTable.getTable().getColumns().get(i);
+                if (column.getName().equals(vectorIdColName)) {
                     vectorIdIndex = i;
-                } else if (columnDefinition.getName().equals(vectorColName)) {
+                } else if (column.getName().equals(vectorColName)) {
                     vectorIndex = i;
                 }
             }
@@ -306,7 +308,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
     }
 
     public static TupleMapping getDefaultSelection(DingoTable dingoTable) {
-        int columnsCount = dingoTable.getTableDefinition().getColumnsCount();
+        int columnsCount = dingoTable.getTable().getColumns().size();
         int[] mappings = new int[columnsCount];
         for (int i = 0; i < columnsCount; i ++) {
             mappings[i] = i;

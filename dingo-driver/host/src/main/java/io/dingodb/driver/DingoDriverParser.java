@@ -32,10 +32,15 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.meta.MetaService;
+import io.dingodb.transaction.api.TableLockService;
+import io.dingodb.transaction.api.LockType;
+import io.dingodb.transaction.api.TableLock;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -73,8 +78,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+
+import static io.dingodb.exec.transaction.base.TransactionType.NONE;
+import static io.dingodb.exec.transaction.base.TransactionType.OPTIMISTIC;
 
 @Slf4j
 public final class DingoDriverParser extends DingoParser {
@@ -290,7 +301,8 @@ public final class DingoDriverParser extends DingoParser {
         extractAutoIncrement(relNode, jobIdPrefix);
         Location currentLocation = MetaService.root().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
-        boolean isTxn = checkEngine(relNode, sqlNode, connection.getAutoCommit());
+        Set<RelOptTable> tables = useTables(relNode, sqlNode);
+        boolean isTxn = checkEngine(relNode, sqlNode, tables, connection.getAutoCommit());
         // get startTs for jobSeqId, if transaction is not null ,transaction startTs is jobDomainId
         long startTs = 0L;
         long jobSeqId = TsoService.getDefault().tso();
@@ -305,18 +317,13 @@ public final class DingoDriverParser extends DingoParser {
                 transaction.setForUpdateTs(jobSeqId);
             }
         } else {
-            if (isTxn) {
-                ITransaction transaction = connection.createTransaction(false);
-                transaction.setAutoCommit(true);
-                startTs = transaction.getStartTs();
-                txn_Id = transaction.getTxnId();
-                pessimisticTxn = transaction.isPessimistic();
-                if (pessimisticTxn) {
-                    transaction.setForUpdateTs(jobSeqId);
-                }
-            } else {
-                startTs = jobSeqId;
-                txn_Id = CommonId.EMPTY_TRANSACTION;
+            ITransaction transaction = connection.createTransaction(isTxn ? OPTIMISTIC : NONE);
+            transaction.setAutoCommit(true);
+            startTs = transaction.getStartTs();
+            txn_Id = transaction.getTxnId();
+            pessimisticTxn = transaction.isPessimistic();
+            if (pessimisticTxn) {
+                transaction.setForUpdateTs(jobSeqId);
             }
         }
         if (pessimisticTxn && connection.getTransaction().getPrimaryKeyLock() == null) {
@@ -324,8 +331,16 @@ public final class DingoDriverParser extends DingoParser {
                 currentLocation, DefinitionMapper.mapToDingoType(parasType));
             jobSeqId = connection.getTransaction().getForUpdateTs();
         }
+        lockTables(tables, startTs, jobSeqId, connection.getTransaction().getFinishedFuture());
         Job job = jobManager.createJob(startTs, jobSeqId, txn_Id, DefinitionMapper.mapToDingoType(parasType));
-        DingoJobVisitor.renderJob(job, relNode, currentLocation, true, connection.getTransaction(), sqlNode.getKind());
+        DingoJobVisitor.renderJob(
+            job,
+            relNode,
+            currentLocation,
+            true,
+            connection.getTransaction().getType() == NONE ? null : connection.getTransaction(),
+            sqlNode.getKind()
+        );
         if (explain != null) {
             statementType = Meta.StatementType.CALL;
             String logicalPlan = RelOptUtil.dumpPlan("", relNode, SqlExplainFormat.TEXT,
@@ -354,13 +369,56 @@ public final class DingoDriverParser extends DingoParser {
         );
     }
 
-    private void runPessimisticPrimaryKeyJob(long jobSeqId,
-                                             JobManager jobManager,
-                                             ITransaction transaction,
-                                             SqlNode sqlNode,
-                                             RelNode relNode,
-                                             Location currentLocation,
-                                             DingoType dingoType
+    private void lockTables(
+        Set<RelOptTable> tables, long startTs, long jobSeqId, CompletableFuture<Void> finishedFuture
+    ) {
+        if (connection.getLockTables() != null && !connection.getLockTables().isEmpty()) {
+            for (RelOptTable table : tables) {
+                if (!connection.getLockTables().contains(table.unwrap(DingoTable.class).getTableId())) {
+                    throw new RuntimeException("Not lock table: " + table.getQualifiedName());
+                }
+            }
+            return;
+        }
+        int ttl = Optional.mapOrGet(connection.getClientInfo("lock_wait_timeout"), Integer::parseInt, () -> 30);
+        int start = Utils.currentSecond();
+        for (RelOptTable table : tables) {
+            CompletableFuture<Boolean> lockFuture = new CompletableFuture<>();
+            TableLock lock = TableLock.builder()
+                .lockTs(startTs)
+                .currentTs(jobSeqId)
+                .type(LockType.ROW)
+                .tableId(table.unwrap(DingoTable.class).getTableId())
+                .lockFuture(lockFuture)
+                .unlockFuture(finishedFuture)
+                .build();
+            TableLockService.getDefault().lock(lock);
+            int nextTtl = (start + ttl) - Utils.currentSecond();
+            if (nextTtl < 0) {
+                throw new RuntimeException("Lock wait timeout exceeded.");
+            }
+            try {
+                lockFuture.get(nextTtl, TimeUnit.SECONDS);
+            } catch (TimeoutException e) {
+                lockFuture.cancel(true);
+                finishedFuture.complete(null);
+                throw new RuntimeException("Lock wait timeout exceeded.");
+            } catch (Exception e) {
+                lockFuture.cancel(true);
+                finishedFuture.complete(null);
+                throw ExceptionUtils.toRuntime(e);
+            }
+        }
+    }
+
+    private void runPessimisticPrimaryKeyJob(
+        long jobSeqId,
+        JobManager jobManager,
+        ITransaction transaction,
+        SqlNode sqlNode,
+        RelNode relNode,
+        Location currentLocation,
+        DingoType dingoType
     ) {
         Job job = jobManager.createJob(transaction.getStartTs(), jobSeqId, transaction.getTxnId(), dingoType);
         DingoJobVisitor.renderJob(job, relNode, currentLocation, true, transaction, sqlNode.getKind());
@@ -371,15 +429,19 @@ public final class DingoDriverParser extends DingoParser {
         jobManager.removeJob(job.getJobId());
     }
 
-    private boolean checkEngine(RelNode relNode, SqlNode sqlNode, boolean isAutoCommit) {
-        boolean isTxn = false;
-        boolean isNotTransactionTable = true;
+    private Set<RelOptTable> useTables(RelNode relNode, SqlNode sqlNode) {
         Set<RelOptTable> tables = RelOptUtil.findTables(relNode);
         if (sqlNode.getKind() == SqlKind.INSERT || sqlNode.getKind() == SqlKind.DELETE) {
             RelNode input = relNode.getInput(0).getInput(0);
             RelOptTable table = input.getTable();
             tables.add(table);
         }
+        return tables;
+    }
+
+    private boolean checkEngine(RelNode relNode, SqlNode sqlNode, Set<RelOptTable> tables, boolean isAutoCommit) {
+        boolean isTxn = false;
+        boolean isNotTransactionTable = true;
         // for UT test
         if ((sqlNode.getKind() == SqlKind.SELECT || sqlNode.getKind() == SqlKind.DELETE) && tables.size() == 0) {
             return false;
@@ -387,9 +449,9 @@ public final class DingoDriverParser extends DingoParser {
         for (RelOptTable table : tables) {
             String engine = null;
             if (table instanceof RelOptTableImpl) {
-                engine = ((DingoTable) ((RelOptTableImpl) table).table()).getTableDefinition().getEngine();
+                engine = ((DingoTable) ((RelOptTableImpl) table).table()).getTable().getEngine();
             } else if (table instanceof DingoRelOptTable) {
-                engine = ((DingoTable) ((DingoRelOptTable) table).table()).getTableDefinition().getEngine();
+                engine = ((DingoTable) ((DingoRelOptTable) table).table()).getTable().getEngine();
             }
             if (engine == null || !engine.contains("TXN")) {
                 isNotTransactionTable = false;

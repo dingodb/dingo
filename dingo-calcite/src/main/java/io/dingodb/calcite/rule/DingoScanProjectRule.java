@@ -120,7 +120,7 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
                                return true;
                             }
                             DingoTable dingoTable = rel.getTable().unwrap(DingoTable.class);
-                            return rel.getRealSelection().size() == dingoTable.getTableDefinition().getColumns().size();
+                            return rel.getRealSelection().size() == dingoTable.getTable().getColumns().size();
                         } )
                         .noInputs()
                 )

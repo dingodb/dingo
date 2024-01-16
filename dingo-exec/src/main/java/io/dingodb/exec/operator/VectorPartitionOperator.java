@@ -26,8 +26,6 @@ import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.io.IOException;
-
 public class VectorPartitionOperator extends FanOutOperator {
     public static final VectorPartitionOperator INSTANCE = new VectorPartitionOperator();
 
@@ -44,8 +42,7 @@ public class VectorPartitionOperator extends FanOutOperator {
         key = param.getCodec().encodeKey(record);
         CodecService.getDefault().setId(key, CommonId.EMPTY_TABLE);
         CommonId partId = PartitionService.getService(
-                Optional.ofNullable(param.getTableDefinition().getPartDefinition())
-                    .map(PartitionDefinition::getFuncName)
+                Optional.ofNullable(param.getTable().getPartitionStrategy())
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
             .calcPartId(key, param.getDistributions());
 

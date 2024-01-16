@@ -57,6 +57,20 @@ public final class Mapping {
             .build();
     }
 
+    public static Column mapping(io.dingodb.meta.entity.Column definition) {
+        return io.dingodb.sdk.common.table.ColumnDefinition.builder()
+            .name(definition.getName())
+            .type(definition.getSqlTypeName())
+            .elementType(definition.getElementTypeName())
+            .precision(definition.getPrecision())
+            .scale(definition.getScale())
+            .nullable(definition.isNullable())
+            .primary(definition.getPrimaryKeyIndex())
+            .defaultValue(definition.getDefaultValueExpr())
+            .state(definition.getState())
+            .build();
+    }
+
     public static TableDefinition mapping(Table table) {
         Properties properties = new Properties();
         Map<String, String> map = table.getProperties();

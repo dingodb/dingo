@@ -21,8 +21,8 @@ import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.TableStatistic;
+import io.dingodb.meta.entity.Table;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptTable;
@@ -42,42 +42,37 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
 public class DingoTable extends AbstractTable implements TranslatableTable {
-    @Getter
-    @EqualsAndHashCode.Include
-    private final CommonId tableId;
+
     @Getter
     private final DingoParserContext context;
     @Getter
-    @EqualsAndHashCode.Include
     private final List<String> names;
-    @Getter
-    @EqualsAndHashCode.Include
-    private final TableDefinition tableDefinition;
-    @Getter
-    private final Map<CommonId, TableDefinition> indexTableDefinitions;
 
     private final TableStatistic tableStatistic;
 
+    @Getter
+    @EqualsAndHashCode.Include
+    private final Table table;
+
     public DingoTable(
-        CommonId tableId,
-        DingoParserContext context,
-        List<String> names,
-        TableDefinition tableDefinition,
-        Map<CommonId, TableDefinition> indexTableDefinitions,
-        TableStatistic tableStatistic
+        @NonNull DingoParserContext context,
+        @NonNull List<String> names,
+        @NonNull TableStatistic tableStatistic,
+        @NonNull Table table
     ) {
         super();
-        this.tableId = tableId;
         this.context = context;
         this.names = names;
-        this.tableDefinition = tableDefinition;
-        this.indexTableDefinitions = indexTableDefinitions;
         this.tableStatistic = tableStatistic;
+        this.table = table;
+    }
+
+    public CommonId getTableId() {
+        return table.getTableId();
     }
 
     public DingoSchema getSchema() {
@@ -86,7 +81,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
 
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-        return DefinitionMapper.mapToRelDataType(tableDefinition, typeFactory);
+        return DefinitionMapper.mapToRelDataType(table, typeFactory);
     }
 
     @Override
@@ -108,7 +103,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
 
     @Override
     public Statistic getStatistic() {
-        List<Integer> keyIndices = Arrays.stream(tableDefinition.getKeyMapping().getMappings())
+        List<Integer> keyIndices = Arrays.stream(table.keyMapping().getMappings())
             .boxed()
             .collect(Collectors.toList());
         List<ImmutableBitSet> keys = ImmutableList.of(ImmutableBitSet.of(keyIndices));

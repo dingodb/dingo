@@ -19,13 +19,11 @@ package io.dingodb.calcite.schema;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.PartitionDetailDefinition;
-import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Table;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,24 +37,10 @@ public class DingoSchema extends AbstractSchema {
     public void createTables(@NonNull TableDefinition tableDefinition,
                              @NonNull List<TableDefinition> indexTableDefinitions) {
         metaService.createTables(tableDefinition, indexTableDefinitions);
-        addTableCache(tableDefinition.getName(), tableDefinition,
-            metaService.getTableIndexDefinitions(tableDefinition.getName()));
     }
 
     public boolean dropTable(@NonNull String tableName) {
-        // Get all index table commonIds
-        CommonId tableId = metaService.getTableId(tableName);
-        if (tableId == null) {
-            return false;
-        }
-        List<CommonId> tableIds = Stream
-            .concat(Stream.of(tableId), metaService.getTableIndexDefinitions(tableId).keySet().stream())
-            .collect(Collectors.toList());
-        if (metaService.dropTables(tableIds)) {
-            tableCache.remove(tableName);
-            return true;
-        }
-        return false;
+        return metaService.dropTable(tableName);
     }
 
     public void addDistribution(String tableName, PartitionDetailDefinition partitionDetail) {

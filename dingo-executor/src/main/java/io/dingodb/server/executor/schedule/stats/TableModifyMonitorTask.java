@@ -18,13 +18,14 @@ package io.dingodb.server.executor.schedule.stats;
 
 import io.dingodb.calcite.stats.StatsOperator;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 public class TableModifyMonitorTask extends StatsOperator implements Runnable {
@@ -44,20 +45,19 @@ public class TableModifyMonitorTask extends StatsOperator implements Runnable {
                 || key.equalsIgnoreCase("information_schema")) {
                 return;
             }
-            Map<String, TableDefinition> tableDefinitionMap = subMetaService.getTableDefinitions();
-            tableDefinitionMap.values().forEach(t -> {
-                CommonId commonId = subMetaService.getTableId(t.getName());
+            Set<Table> tables = subMetaService.getTables();
+            tables.forEach(t -> {
+                CommonId commonId = t.tableId;
                 Long commitCount = 0L;
                 if (commitCountMap.containsKey(commonId)) {
                     commitCount = commitCountMap.get(commonId);
                 }
-                Double totalCount = subMetaService.getTableStatistic(t.getName()).getRowCount();
-                if (autoAnalyzeTriggerPolicy(key, t.getName(), commitCount, totalCount)) {
+                Double totalCount = subMetaService.getTableStatistic(t.name).getRowCount();
+                if (autoAnalyzeTriggerPolicy(key, t.name, commitCount, totalCount)) {
                     if (commitCount > totalCount) {
                         commitCount = totalCount.longValue();
                     }
-                    analyzeTaskList.add(generateAnalyzeTask(key, t.getName(),
-                        totalCount.longValue(), commitCount));
+                    analyzeTaskList.add(generateAnalyzeTask(key, t.name, totalCount.longValue(), commitCount));
                 }
             });
         });

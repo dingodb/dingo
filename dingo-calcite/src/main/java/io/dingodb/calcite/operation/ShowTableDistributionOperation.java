@@ -20,9 +20,11 @@ import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import lombok.Setter;
 import org.apache.calcite.sql.SqlNode;
@@ -71,19 +73,18 @@ public class ShowTableDistributionOperation implements QueryOperation {
     }
 
     private List<List<String>> getDistributions() {
-        CommonId tableId = metaService.getTableId(tableName);
-        if (tableId == null) {
+
+        Table table = metaService.getTable(tableName);
+        if (table == null) {
             throw new RuntimeException("Table " + tableName + " doesn't exist");
         }
-
-        TableDefinition tableDefinition = metaService.getTableDefinition(tableId);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
-            = metaService.getRangeDistribution(tableId);
+            = metaService.getRangeDistribution(table.tableId);
         List<List<String>> regionList = new ArrayList<>();
 
-        List<Integer> keyColumnIndices = tableDefinition.getKeyColumnIndices();
+        TupleMapping keyColumnIndices = table.keyMapping();
         List<RangeDistribution> ranges = new ArrayList<>(rangeDistribution.values());
-        String partName = Optional.ofNullable(tableDefinition.getPartDefinition().getFuncName())
+        String partName = Optional.ofNullable(table.getPartitionStrategy())
             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME);
         boolean hashPartition = partName.equalsIgnoreCase("hash");
         for (int i = 0; i < ranges.size(); i++) {

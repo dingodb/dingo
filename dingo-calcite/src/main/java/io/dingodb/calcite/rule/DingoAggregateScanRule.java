@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.rule;
 
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
@@ -24,6 +25,7 @@ import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.meta.entity.Table;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
@@ -90,8 +92,8 @@ public class DingoAggregateScanRule extends RelRule<RelRule.Config> {
             }
         } else if (isCountNoArgListAgg) {
             // Optimization scenario similar to this SQL: select count(*) from t1
-            TableDefinition td = TableUtils.getTableDefinition(scan.getTable());
-            int firstPrimaryColumnIndex = td.getFirstPrimaryColumnIndex();
+            Table table = scan.getTable().unwrap(DingoTable.class).getTable();
+            int firstPrimaryColumnIndex = table.keyMapping().get(0);
             // selection use first primary key index
             selection = TupleMapping.of(Arrays.asList(firstPrimaryColumnIndex));
         }

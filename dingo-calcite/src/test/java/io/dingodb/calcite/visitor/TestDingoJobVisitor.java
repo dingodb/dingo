@@ -110,9 +110,9 @@ public class TestDingoJobVisitor {
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, scan, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(1);
-        CommonId tableId = MetaService.root()
-            .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME)
-            .getTableId(FULL_TABLE_NAME);
+        MetaService metaService = MetaService.root()
+            .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME);
+        CommonId tableId = metaService.getTable(FULL_TABLE_NAME).getTableId();
         assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0)
             .source(0).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 1))
             .soleOutput().isNull();
@@ -145,9 +145,9 @@ public class TestDingoJobVisitor {
         AssertJob assertJob = Assert.job(job).taskNum(1);
         AssertTask assertTask =
             assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(2);
-        CommonId tableId = MetaService.root()
-            .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME)
-            .getTableId(FULL_TABLE_NAME);
+        MetaService metaService = MetaService.root()
+            .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME);
+        CommonId tableId = metaService.getTable(FULL_TABLE_NAME).getTableId();
         assertTask.source(0).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 1))
             .soleOutput().isNull();
         assertTask.source(1).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 2))
@@ -181,9 +181,9 @@ public class TestDingoJobVisitor {
         AssertJob assertJob = Assert.job(job).taskNum(1);
         AssertTask assertTask =
             assertJob.task(jobSeqId, 0).operatorNum(3).location(MockMetaServiceProvider.LOC_0).sourceNum(2);
-        CommonId tableId = MetaService.root()
-            .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME)
-            .getTableId(FULL_TABLE_NAME);
+        MetaService metaService = MetaService.root()
+            .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME);
+        CommonId tableId = metaService.getTable(FULL_TABLE_NAME).getTableId();
         assertTask.source(0).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 1))
             .soleOutput().isA(CoalesceOperator.class);
         assertTask.source(1).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 2))

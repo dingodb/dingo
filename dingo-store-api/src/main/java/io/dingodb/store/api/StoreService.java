@@ -26,11 +26,11 @@ public interface StoreService {
         return StoreServiceProvider.getDefault().get();
     }
 
-    default StoreInstance getInstance(@NonNull CommonId tableId, CommonId regionId) {
+    default StoreInstance getInstance(CommonId tableId, CommonId regionId) {
         return null;
     }
 
-    default StoreInstance getInstance(@NonNull CommonId tableId, CommonId regionId, TableDefinition tableDefinition) {
+    default StoreInstance getInstance(CommonId tableId, CommonId regionId, CommonId indexId) {
         return null;
     }
 

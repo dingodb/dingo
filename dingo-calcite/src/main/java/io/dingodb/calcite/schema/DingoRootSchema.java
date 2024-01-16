@@ -19,13 +19,15 @@ package io.dingodb.calcite.schema;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.dingodb.calcite.DingoParserContext;
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.util.Optional;
 import io.dingodb.meta.MetaService;
-import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaVersion;
 import org.apache.calcite.schema.Table;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class DingoRootSchema extends AbstractSchema {
@@ -45,7 +47,7 @@ public class DingoRootSchema extends AbstractSchema {
     }
 
     @Override
-    public Table getTable(String name) {
+    public DingoTable getTable(String name) {
         return null;
     }
 
@@ -73,6 +75,14 @@ public class DingoRootSchema extends AbstractSchema {
     @Override
     public synchronized Set<String> getSubSchemaNames() {
         return metaService.getSubMetaServices().keySet();
+    }
+
+    public synchronized Map<String, DingoSchema> getSubSchemas() {
+        Map<String, DingoSchema> schemas = new HashMap<>();
+        metaService.getSubMetaServices().forEach(
+            (k, v) -> schemas.put(k, new DingoSchema(v, context, ImmutableList.of(ROOT_SCHEMA_NAME, v.name())))
+        );
+        return schemas;
     }
 
     @Override

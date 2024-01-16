@@ -22,11 +22,11 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
 import java.util.Map;
@@ -40,7 +40,7 @@ import java.util.NavigableMap;
 public class PartVectorParam extends FilterProjectSourceParam {
 
     private final KeyValueCodec codec;
-    private final TableDefinition tableDefinition;
+    private final Table table;
     private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     private CommonId indexId;
     private CommonId indexRegionId;
@@ -55,7 +55,7 @@ public class PartVectorParam extends FilterProjectSourceParam {
         TupleMapping keyMapping,
         SqlExpr filter,
         TupleMapping selection,
-        TableDefinition tableDefinition,
+        Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
         CommonId indexId,
         CommonId indexRegionId,
@@ -64,8 +64,8 @@ public class PartVectorParam extends FilterProjectSourceParam {
         Map<String, Object> parameterMap
     ) {
         super(tableId, partId, schema, filter, selection, keyMapping);
-        this.codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
-        this.tableDefinition = tableDefinition;
+        this.codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
+        this.table = table;
         this.distributions = distributions;
         this.indexId = indexId;
         this.indexRegionId = indexRegionId;

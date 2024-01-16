@@ -31,17 +31,18 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.MetaServiceProvider;
-import io.dingodb.meta.Table;
 import io.dingodb.meta.TableStatistic;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.Partition;
+import io.dingodb.meta.entity.Table;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -146,6 +147,9 @@ public class LocalMetaService implements MetaService {
             KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
             PartitionDetailDefinition start = null;
             for (PartitionDetailDefinition detail : tableDefinition.getPartDefinition().getDetails()) {
+                if (detail.getOperand().length == 0){
+                    continue;
+                }
                 createDistribution(tableId, start, detail, codec);
                 start = detail;
             }
@@ -156,7 +160,7 @@ public class LocalMetaService implements MetaService {
     @Override
     public boolean dropTable(@NonNull String tableName) {
         tableName = tableName.toUpperCase();
-        CommonId tableId = getTableId(tableName);
+        CommonId tableId = getTable(tableName).getTableId();
         if (tableId != null) {
             tableDefinitions.remove(tableId);
             return true;
@@ -164,13 +168,21 @@ public class LocalMetaService implements MetaService {
         return false;
     }
 
-    @Override
     public boolean dropTables(@NonNull Collection<CommonId> tableIds) {
         tableIds.forEach(tableDefinitions::remove);
         return true;
     }
 
     @Override
+    public boolean truncateTable(@NonNull String tableName) {
+        TableDefinition tableDefinition = tableDefinitions.get(getTableId(tableName));
+        if (tableDefinition != null) {
+            dropTable(tableName);
+        }
+        createTables(tableDefinition, Collections.emptyList());
+        return true;
+    }
+
     public CommonId getTableId(@NonNull String tableName) {
         String tableNameU = tableName.toUpperCase();
         return tableDefinitions.subMap(
@@ -181,7 +193,6 @@ public class LocalMetaService implements MetaService {
             .findAny().map(Map.Entry::getKey).orElse(null);
     }
 
-    @Override
     public Map<String, TableDefinition> getTableDefinitions() {
         return tableDefinitions.subMap(
                 CommonId.prefix(TABLE, id.seq), true,
@@ -190,7 +201,6 @@ public class LocalMetaService implements MetaService {
             .collect(Collectors.toMap(TableDefinition::getName, __ -> __));
     }
 
-    @Override
     public TableDefinition getTableDefinition(@NonNull String tableName) {
         tableName = tableName.toUpperCase();
         return getTableDefinitions().get(tableName);
@@ -200,7 +210,6 @@ public class LocalMetaService implements MetaService {
         return tableDefinitions.get(id);
     }
 
-    @Override
     public List<TableDefinition> getTableDefinitions(@NonNull String name) {
         //TODO:
         return Collections.singletonList(getTableDefinition(name));
@@ -208,47 +217,62 @@ public class LocalMetaService implements MetaService {
 
     @Override
     public Table getTable(String tableName) {
-        return null;
+        CommonId tableId = getTableId(tableName);
+        if (tableId == null) {
+            return null;
+        }
+        return toTable(tableId, getTableDefinition(tableName));
     }
 
     @Override
     public Table getTable(CommonId tableId) {
-        return null;
+        return toTable(tableId, getTableDefinition(tableId));
     }
 
     @Override
-    public Table getTables() {
-        return null;
+    public Set<Table> getTables() {
+        return tableDefinitions.subMap(
+                CommonId.prefix(TABLE, id.seq), true,
+                CommonId.prefix(TABLE, id.seq + 1), false
+            ).entrySet().stream()
+            .map($ -> toTable($.getKey(), $.getValue()))
+            .collect(Collectors.toSet());
     }
 
-    @Override
-    public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id) {
-        //TODO:
-        Map<CommonId, TableDefinition> map = new HashMap<>();
-        map.put(id, getTableDefinition(id));
-        return map;
-    }
-
-    @Override
-    public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull String name) {
-        //TODO:
-        Map<CommonId, TableDefinition> map = new HashMap<>();
-        map.put(getTableId(name), getTableDefinition(name));
-        return map;
+    private Table toTable(CommonId tableId, TableDefinition definition) {
+        List<Column> columns = definition.getColumns().stream().map($ -> Column.builder()
+            .autoIncrement($.isAutoIncrement())
+            .defaultValueExpr($.getDefaultValue())
+            .name($.getName())
+            .sqlTypeName($.getTypeName())
+            .elementTypeName($.getElementType())
+            .precision($.getPrecision())
+            .primaryKeyIndex($.getPrimary())
+            .scale($.getScale())
+            .type($.getType())
+            .state($.getState())
+            .build()
+        ).collect(Collectors.toList());
+        return Table.builder()
+            .tableId(tableId)
+            .columns(columns)
+            .replica(definition.getReplica())
+            .partitionStrategy(definition.getPartDefinition().getFuncName())
+            .partitions(definition.getPartDefinition().getDetails().stream()
+                .map($ -> Partition.builder().id(CommonId.EMPTY_PARTITION).operand($.getOperand()).build())
+                .collect(Collectors.toList())
+            ).engine(definition.getEngine())
+            .version(definition.getVersion())
+            .properties(definition.getProperties())
+            .indexes(Collections.emptyList())
+            .tableType(definition.getTableType())
+            .createSql(definition.getCreateSql())
+            .name(definition.getName())
+            .build();
     }
 
     @Override
     public NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
-        return Parameters.cleanNull(distributions.get(id), defaultDistributions);
-    }
-
-    @Override
-    public NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull CommonId id) {
-        return Parameters.cleanNull(distributions.get(id), defaultDistributions);
-    }
-
-    @Override
-    public NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull String name) {
         return Parameters.cleanNull(distributions.get(id), defaultDistributions);
     }
 
@@ -328,6 +352,11 @@ public class LocalMetaService implements MetaService {
 
     @Override
     public TableStatistic getTableStatistic(@NonNull String tableName) {
+        return () -> 30000d;
+    }
+
+    @Override
+    public TableStatistic getTableStatistic(@NonNull CommonId tableId) {
         return () -> 30000d;
     }
 

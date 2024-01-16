@@ -19,18 +19,14 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.table.Part;
-import io.dingodb.exec.table.PartInKvStore;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
 import java.util.List;
@@ -53,10 +49,10 @@ public class PartUpdateParam extends PartModifyParam {
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("mapping") TupleMapping mapping,
         @JsonProperty("updates") List<SqlExpr> updates,
-        TableDefinition tableDefinition,
+        Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
     ) {
-        super(tableId, partId, schema, keyMapping, tableDefinition, distributions);
+        super(tableId, partId, schema, keyMapping, table, distributions);
         this.mapping = mapping;
         this.updates = updates;
     }

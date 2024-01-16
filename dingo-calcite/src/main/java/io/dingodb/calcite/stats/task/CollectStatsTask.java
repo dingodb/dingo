@@ -27,6 +27,7 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.table.Part;
 import io.dingodb.exec.table.PartInKvStore;
+import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -59,13 +60,13 @@ public class CollectStatsTask implements Callable {
      */
     public CollectStatsTask(RangeDistribution rangeDistribution,
                             CommonId tableId,
-                            TableDefinition td,
+                            Table td,
                             List<Histogram> columnHistograms,
                             List<CountMinSketch> minSketches,
                             List<StatsNormal> statsNormals) {
         Part part = new PartInKvStore(
             Services.KV_STORE.getInstance(tableId, rangeDistribution.id()),
-            CodecService.getDefault().createKeyValueCodec(tableId, td.getDingoType(), td.getKeyMapping())
+            CodecService.getDefault().createKeyValueCodec(tableId, td.tupleType(), td.keyMapping())
         );
         tupleIterator = part.scan(rangeDistribution.getStartKey(), rangeDistribution.getEndKey(),
             rangeDistribution.isWithStart(), true);

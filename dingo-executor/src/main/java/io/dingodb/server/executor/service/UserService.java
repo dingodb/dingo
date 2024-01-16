@@ -29,10 +29,10 @@ import io.dingodb.common.privilege.SchemaPrivDefinition;
 import io.dingodb.common.privilege.TablePrivDefinition;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Optional;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreService;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
@@ -40,7 +40,6 @@ import io.dingodb.verify.service.UserServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,24 +74,27 @@ public class UserService implements io.dingodb.verify.service.UserService {
     private final MetaService metaService = MetaService.root().getSubMetaService("MYSQL");
     private final StoreService storeService = StoreService.getDefault();
 
-    private final CommonId userTblId = metaService.getTableId(userTable);
-    private final CommonId dbPrivTblId = metaService.getTableId(dbPrivilegeTable);
-    private final CommonId tablePrivTblId = metaService.getTableId(tablePrivilegeTable);
+    private final CommonId userTblId = metaService.getTable(userTable).getTableId();
+    private final CommonId dbPrivTblId = metaService.getTable(dbPrivilegeTable).getTableId();
+    private final CommonId tablePrivTblId = metaService.getTable(tablePrivilegeTable).getTableId();
 
-    private final TableDefinition userTd = metaService.getTableDefinition(userTable);
-    private final TableDefinition dbPrivTd = metaService.getTableDefinition(dbPrivilegeTable);
-    private final TableDefinition tablePrivTd = metaService.getTableDefinition(tablePrivilegeTable);
+    private final Table userTd = metaService.getTable(userTable);
+    private final Table dbPrivTd = metaService.getTable(dbPrivilegeTable);
+    private final Table tablePrivTd = metaService.getTable(tablePrivilegeTable);
 
     private final StoreInstance userStore = storeService.getInstance(userTblId, getRegionId(userTblId));
     private final StoreInstance dbPrivStore = storeService.getInstance(dbPrivTblId, getRegionId(dbPrivTblId));
     private final StoreInstance tablePrivStore = storeService.getInstance(tablePrivTblId, getRegionId(tablePrivTblId));
 
-    private final KeyValueCodec userCodec =
-        CodecService.getDefault().createKeyValueCodec(getPartId(userTblId, userStore.id()), userTd);
-    private final KeyValueCodec dbPrivCodec =
-        CodecService.getDefault().createKeyValueCodec(getPartId(dbPrivTblId, dbPrivStore.id()), dbPrivTd);
-    private final KeyValueCodec tablePrivCodec =
-        CodecService.getDefault().createKeyValueCodec(getPartId(tablePrivTblId, tablePrivStore.id()), tablePrivTd);
+    private final KeyValueCodec userCodec = CodecService.getDefault().createKeyValueCodec(
+        getPartId(userTblId, userStore.id()), userTd.tupleType(), userTd.keyMapping()
+    );
+    private final KeyValueCodec dbPrivCodec = CodecService.getDefault().createKeyValueCodec(
+        getPartId(dbPrivTblId, dbPrivStore.id()), dbPrivTd.tupleType(), dbPrivTd.keyMapping()
+    );
+    private final KeyValueCodec tablePrivCodec = CodecService.getDefault().createKeyValueCodec(
+        getPartId(tablePrivTblId, tablePrivStore.id()), tablePrivTd.tupleType(), tablePrivTd.keyMapping()
+    );
 
     @Override
     public boolean existsUser(UserDefinition userDefinition) {
@@ -246,7 +248,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     @Override
     public UserDefinition getUserDefinition(String user, String host) {
-        Object[] keys = new Object[userTd.getColumnsCount()];
+        Object[] keys = new Object[userTd.columns.size()];
         keys[0] = host;
         keys[1] = user;
         Object[] userPrivilege = get(userStore, userCodec, keys);
@@ -305,9 +307,9 @@ public class UserService implements io.dingodb.verify.service.UserService {
     }
 
     private Object[] createUserRow(UserDefinition user) {
-        Object[] row = new Object[userTd.getColumnsCount()];
+        Object[] row = new Object[userTd.columns.size()];
         for (int i = 0; i < userTd.getColumns().size(); i++) {
-            ColumnDefinition column = userTd.getColumn(i);
+            Column column = userTd.columns.get(i);
             switch (column.getName()) {
                 case "USER":
                     row[i] = user.getUser();
@@ -544,7 +546,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
     }
 
     private Object[] getDbPrivilege(String user, String host, String db) {
-        Object[] dbValues = new Object[dbPrivTd.getColumnsCount()];
+        Object[] dbValues = new Object[dbPrivTd.columns.size()];
         dbValues[0] = host;
         dbValues[1] = user;
         dbValues[2] = db;
@@ -566,7 +568,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
                                        String db,
                                        String tableName,
                                        String grantor) {
-        Object[] tpValues = new Object[tablePrivTd.getColumnsCount()];
+        Object[] tpValues = new Object[tablePrivTd.columns.size()];
         tpValues[0] = host;
         tpValues[1] = user;
         tpValues[2] = db;
@@ -772,14 +774,14 @@ public class UserService implements io.dingodb.verify.service.UserService {
     }
 
     private Object[] getUserKeys(PrivilegeDefinition user) {
-        Object[] values = new Object[userTd.getColumnsCount()];
+        Object[] values = new Object[userTd.columns.size()];
         values[0] = user.getHost();
         values[1] = user.getUser();
         return values;
     }
 
     private Object[] getDbPrivilegeKeys(PrivilegeDefinition user, String db) {
-        Object[] values = new Object[dbPrivTd.getColumnsCount()];
+        Object[] values = new Object[dbPrivTd.columns.size()];
         values[0] = user.getHost();
         values[1] = user.getUser();
         if (isNotBlank(db)) {
@@ -789,7 +791,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
     }
 
     private Object[] getTablePrivilegeKeys(PrivilegeDefinition user, String db, String table) {
-        Object[] values = new Object[tablePrivTd.getColumnsCount()];
+        Object[] values = new Object[tablePrivTd.columns.size()];
         values[0] = user.getHost();
         values[1] = user.getUser();
         if (isNotBlank(db)) {

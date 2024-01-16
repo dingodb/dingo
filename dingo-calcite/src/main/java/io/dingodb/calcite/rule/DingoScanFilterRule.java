@@ -68,7 +68,7 @@ public class DingoScanFilterRule extends RelRule<DingoScanFilterRule.Config> imp
                             if (!isFullSelection) {
                                 DingoTable dingoTable = rel.getTable().unwrap(DingoTable.class);
                                 isFullSelection = rel.getRealSelection().size()
-                                    == dingoTable.getTableDefinition().getColumns().size();
+                                    == dingoTable.getTable().getColumns().size();
                             }
                             return isFullSelection && rel.getFilter() == null;
                         })

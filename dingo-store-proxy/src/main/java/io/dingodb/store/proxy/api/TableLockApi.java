@@ -14,33 +14,18 @@
  * limitations under the License.
  */
 
-package io.dingodb.meta;
+package io.dingodb.store.proxy.api;
 
-import io.dingodb.common.CommonId;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.ToString;
+import io.dingodb.common.Location;
+import io.dingodb.common.annotation.ApiDeclaration;
+import io.dingodb.net.Channel;
 
-import java.util.List;
-import java.util.Properties;
+public interface TableLockApi {
 
-@Builder
-@ToString
-@AllArgsConstructor
-public class Table {
+    @ApiDeclaration
+    void lock(Channel channel, io.dingodb.transaction.api.TableLock lock, int ttl);
 
-    public final CommonId tableId;
-    public final List<Column> columns;
-
-    public final int replica;
-    public final String partitionStrategy;
-    public final List<Partition> partitions;
-
-    public final String engine;
-    public final int version;
-
-    public final Properties properties;
-
-    public final List<Table> indexes;
+    @ApiDeclaration
+    void register(Channel channel, Location location);
 
 }

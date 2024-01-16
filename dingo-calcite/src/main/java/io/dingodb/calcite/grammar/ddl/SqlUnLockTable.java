@@ -26,8 +26,6 @@ import java.util.List;
 
 public class SqlUnLockTable extends SqlUnLock {
 
-    public List<String> tableList;
-
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("UNLOCK TABLE", SqlKind.OTHER_DDL);
 
@@ -36,19 +34,12 @@ public class SqlUnLockTable extends SqlUnLock {
      *
      * @param pos
      */
-    public SqlUnLockTable(SqlParserPos pos, List<String> tableList) {
+    public SqlUnLockTable(SqlParserPos pos) {
         super(OPERATOR, pos);
-        this.tableList = tableList;
     }
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword("UNLOCK TABLES");
-        for (int i = 0; i < tableList.size(); i ++) {
-            writer.keyword(tableList.get(i));
-            if (i < tableList.size() - 1) {
-                writer.keyword(",");
-            }
-        }
     }
 }

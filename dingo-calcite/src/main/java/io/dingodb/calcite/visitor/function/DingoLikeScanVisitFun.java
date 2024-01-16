@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.visitor.function;
 
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoLikeScan;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
@@ -36,6 +37,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.params.LikeScanParam;
 import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
@@ -62,10 +64,9 @@ public final class DingoLikeScanVisitFun {
             filter = SqlExprUtils.toSqlExpr(rel.getFilter());
         }
         NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
-        final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
+        final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
         final PartitionService ps = PartitionService.getService(
-            Optional.ofNullable(td.getPartDefinition())
-                .map(PartitionDefinition::getFuncName)
+            Optional.ofNullable(td.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         List<Vertex> outputs = new ArrayList<>();
 
@@ -85,8 +86,8 @@ public final class DingoLikeScanVisitFun {
             LikeScanParam param = new LikeScanParam(
                 tableInfo.getId(),
                 distribution.id(),
-                td.getDingoType(),
-                td.getKeyMapping(),
+                td.tupleType(),
+                td.keyMapping(),
                 Optional.mapOrNull(filter, SqlExpr::copy),
                 rel.getSelection(),
                 rel.getPrefix()

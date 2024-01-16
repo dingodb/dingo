@@ -18,12 +18,11 @@ package io.dingodb.exec.operator.params;
 
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
-import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import lombok.Getter;
@@ -34,15 +33,15 @@ import java.util.NavigableMap;
 public class CalcDistributionParam extends AbstractParams {
 
     private final KeyValueCodec codec;
-    private final TableDefinition tableDefinition;
+    private final Table table;
     private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution;
     private PartitionService ps;
 
     public CalcDistributionParam(
-        TableDefinition tableDefinition,
+        Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution) {
-        this.codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
-        this.tableDefinition = tableDefinition;
+        this.codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
+        this.table = table;
         this.rangeDistribution = rangeDistribution;
     }
 
@@ -50,8 +49,8 @@ public class CalcDistributionParam extends AbstractParams {
     public void init(Vertex vertex) {
         super.init(vertex);
         ps = PartitionService.getService(
-            Optional.ofNullable(tableDefinition.getPartDefinition())
-                .map(PartitionDefinition::getFuncName)
+            Optional.ofNullable(table)
+                .map(Table::getPartitionStrategy)
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME)
         );
     }

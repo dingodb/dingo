@@ -19,9 +19,8 @@ package org.apache.calcite.sql.validate;
 import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
-import io.dingodb.common.CommonId;
-import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -33,7 +32,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.type.converter.DefinitionMapper.mapToRelDataType;
@@ -47,10 +45,7 @@ public class TableFunctionNamespace extends AbstractNamespace {
     private final DingoRelOptTable table;
 
     @Getter
-    private CommonId indexTableId;
-
-    @Getter
-    private TableDefinition indexTableDefinition;
+    private Table index;
 
     public TableFunctionNamespace(SqlValidatorImpl validator, @Nullable SqlBasicCall enclosingNode) {
         super(validator, enclosingNode);
@@ -65,14 +60,14 @@ public class TableFunctionNamespace extends AbstractNamespace {
                 + ((SqlIdentifier) this.function.operand(0)).names.get(0));
         }
         DingoTable dingoTable = table.unwrap(DingoTable.class);
-        List<ColumnDefinition> tableCols = dingoTable.getTableDefinition().getColumns();
-        ArrayList<ColumnDefinition> cols = new ArrayList<>(tableCols.size() + 1);
+        List<Column> tableCols = dingoTable.getTable().getColumns();
+        ArrayList<Column> cols = new ArrayList<>(tableCols.size() + 1);
         cols.addAll(tableCols);
 
         List<SqlNode> operandList = this.function.getOperandList();
 
         if (function.getOperator() instanceof SqlFunctionScanOperator) {
-            this.rowType = DefinitionMapper.mapToRelDataType(dingoTable.getTableDefinition(), validator.typeFactory);
+            this.rowType = DefinitionMapper.mapToRelDataType(dingoTable.getTable(), validator.typeFactory);
             return rowType;
         }
 
@@ -82,43 +77,38 @@ public class TableFunctionNamespace extends AbstractNamespace {
         String indexTableName = "";
         SqlIdentifier columnIdentifier = (SqlIdentifier) operandList.get(1);
         // Get all index table definition
-        Map<CommonId, TableDefinition> indexDefinitions = dingoTable.getIndexTableDefinitions();
-        for (Map.Entry<CommonId, TableDefinition> entry : indexDefinitions.entrySet()) {
-            TableDefinition indexTableDefinition = entry.getValue();
-
-            String indexType = indexTableDefinition.getProperties().get("indexType").toString();
+        Table table = dingoTable.getTable();
+        for (Table index : table.getIndexes()) {
+            String indexType = index.getProperties().get("indexType").toString();
             // Skip if not a vector table
-            if (indexType.equals("scalar")) {
+            if (indexType.equalsIgnoreCase("scalar")) {
                 continue;
             }
 
-            List<String> indexColumns = indexTableDefinition.getColumns().stream().map(ColumnDefinition::getName)
-                .collect(Collectors.toList());
+            List<String> indexColumns = index.getColumns().stream().map(Column::getName).collect(Collectors.toList());
             // Skip if the vector column is not included
             if (!indexColumns.contains(columnIdentifier.getSimple().toUpperCase())) {
                 continue;
             }
 
-            indexTableName = indexTableDefinition.getName();
-            this.indexTableId = entry.getKey();
-            this.indexTableDefinition  = indexTableDefinition;
+            this.index = index;
             break;
         }
 
-        if (indexTableName.isEmpty()) {
+        if (index == null) {
             throw new RuntimeException(columnIdentifier.getSimple() + " vector not found.");
         }
-        cols.add(ColumnDefinition
+        cols.add(Column
             .builder()
             .name(indexTableName.concat("$distance"))
-            .type("FLOAT")
+            .sqlTypeName("FLOAT")
             .build()
         );
 
         RelDataTypeFactory typeFactory = validator.typeFactory;
         RelDataType rowType = typeFactory.createStructType(
             cols.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-            cols.stream().map(ColumnDefinition::getName).map(String::toUpperCase).collect(Collectors.toList())
+            cols.stream().map(Column::getName).map(String::toUpperCase).collect(Collectors.toList())
         );
         this.rowType = rowType;
         return rowType;

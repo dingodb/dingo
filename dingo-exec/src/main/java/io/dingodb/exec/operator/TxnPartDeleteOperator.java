@@ -52,8 +52,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
         CommonId txnId = vertex.getTask().getTxnId();
         CommonId tableId = param.getTableId();
         CommonId partId = PartitionService.getService(
-                Optional.ofNullable(param.getTableDefinition().getPartDefinition())
-                    .map(PartitionDefinition::getFuncName)
+                Optional.ofNullable(param.getTable().getPartitionStrategy())
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
             .calcPartId(keys, param.getDistributions());
         byte[] primaryLockKey = param.getPrimaryLockKey();

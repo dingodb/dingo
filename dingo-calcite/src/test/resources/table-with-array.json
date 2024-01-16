@@ -21,5 +21,10 @@
       "primary": -1,
       "nullable": true
     }
-  ]
+  ],
+    "partition": {
+        "funcName": "RANGE",
+        "details": [
+        ]
+    }
 }

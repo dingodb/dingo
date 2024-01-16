@@ -21,8 +21,10 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.fun.DingoOperatorTable;
 import io.dingodb.calcite.utils.RelDataTypeUtils;
 import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.plan.RelOptCluster;
@@ -124,18 +126,18 @@ public class LogicalDingoTableScan extends TableScan {
             } else {
                 List<Integer> mappingList = new ArrayList<>();
                 for (int index : selection.getMappings()) {
-                    if (dingoTable.getTableDefinition().getColumn(index).getState() == 1) {
+                    if (dingoTable.getTable().getColumns().get(index).getState() == 1) {
                         mappingList.add(index);
                     }
                 }
                 this.selection = TupleMapping.of(mappingList);
             }
         } else {
-            List<Integer> mapping = dingoTable.getTableDefinition()
+            List<Integer> mapping = dingoTable.getTable()
                 .getColumns()
                 .stream()
                 .filter(col -> col.getState() == 1)
-                .map(col -> dingoTable.getTableDefinition().getColumnIndex(col.getName()))
+                .map(col -> dingoTable.getTable().getColumns().indexOf(col))
                 .collect(Collectors.toList());
             this.selection = TupleMapping.of(mapping);
         }
@@ -258,7 +260,7 @@ public class LogicalDingoTableScan extends TableScan {
                     RexCall rexCall = (RexCall) operand;
                     SqlOperator sqlOperator = rexCall.getOperator();
                     String name = sqlOperator.getName();
-                    if (rexCall.getOperands().size() == 0) {
+                    if (rexCall.getOperands().isEmpty()) {
                         continue;
                     }
                     RexNode ref = rexCall.getOperands().get(0);
@@ -266,7 +268,7 @@ public class LogicalDingoTableScan extends TableScan {
                         RexInputRef rexInputRef = (RexInputRef) ref;
                         int colIndex = tupleMapping.get(rexInputRef.getIndex());
 
-                        ColumnDefinition columnDefinition = dingoTable.getTableDefinition().getColumn(colIndex);
+                        Column columnDefinition = dingoTable.getTable().getColumns().get(colIndex);
                         String metricType = getIndexMetricType(dingoTable, columnDefinition.getName());
                         SqlOperator sqlOperator1 = findSqlOperator(metricType);
 
@@ -285,9 +287,9 @@ public class LogicalDingoTableScan extends TableScan {
     }
 
     public static String getIndexMetricType(DingoTable dingoTable, String colName) {
-        Collection<TableDefinition> indexDef = dingoTable.getIndexTableDefinitions().values();
-        for (TableDefinition index : indexDef) {
-            if (index.getColumn(colName) != null) {
+        Collection<IndexTable> indexDef = dingoTable.getTable().getIndexes();
+        for (Table index : indexDef) {
+            if (index.getColumns().contains(colName)) {
                 return index.getProperties().getProperty("metricType");
             }
         }

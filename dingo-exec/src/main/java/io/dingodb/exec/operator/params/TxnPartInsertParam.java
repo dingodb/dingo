@@ -25,6 +25,7 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
 import java.util.NavigableMap;
@@ -45,10 +46,10 @@ public class TxnPartInsertParam extends TxnPartModifyParam {
         @JsonProperty("startTs") long startTs,
         @JsonProperty("forUpdateTs") long forUpdateTs,
         @JsonProperty("lockTimeOut") long lockTimeOut,
-        TableDefinition tableDefinition,
+        Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
     ) {
-        super(tableId, partId, schema, keyMapping, tableDefinition, distributions, pessimisticTxn,
+        super(tableId, partId, schema, keyMapping, table, distributions, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
     }
 

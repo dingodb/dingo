@@ -21,6 +21,7 @@ import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -53,7 +54,7 @@ public class DingoGetByIndexMerge extends DingoGetByIndex implements DingoRel {
                                 @Nullable TupleMapping selection,
                                 boolean isUnique,
                                 Map<CommonId, Set> indexSetMap,
-                                Map<CommonId, TableDefinition> indexTdMap,
+                                Map<CommonId, Table> indexTdMap,
                                 TupleMapping keyMapping) {
         super(cluster, traitSet, hints, table, filter, selection, isUnique, indexSetMap, indexTdMap);
         this.keyMapping = keyMapping;

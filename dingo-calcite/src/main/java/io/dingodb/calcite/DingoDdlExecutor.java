@@ -50,7 +50,13 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.DefinitionUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.transaction.api.LockType;
+import io.dingodb.transaction.api.TableLock;
+import io.dingodb.transaction.api.TableLockService;
+import io.dingodb.tso.TsoService;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
 import io.dingodb.verify.service.UserService;
 import io.dingodb.verify.service.UserServiceProvider;
@@ -84,12 +90,16 @@ import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -254,10 +264,13 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         indexTableDefinition.setPartDefinition(indexDeclaration.getPartDefinition());
         indexTableDefinition.setReplica(indexDeclaration.getReplica());
         indexTableDefinition.setProperties(properties);
+        indexTableDefinition.setEngine(indexDeclaration.getEngine());
 
-        Optional.ifPresent(indexDeclaration.getPartDefinition(),
-            __ -> validatePartitionBy(indexTableDefinition.getKeyColumns().stream()
-                .map(ColumnDefinition::getName).collect(Collectors.toList()), indexTableDefinition, __));
+        validatePartitionBy(
+            indexTableDefinition.getKeyColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
+            indexTableDefinition,
+            indexTableDefinition.getPartDefinition()
+        );
 
         return indexTableDefinition;
     }
@@ -516,7 +529,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         List<TableDefinition> indexTableDefinitions = getIndexDefinitions(create, tableDefinition);
 
         // Validate partition strategy
-        Optional.ifPresent(create.getPartDefinition(), __ -> validatePartitionBy(pks, tableDefinition, __));
+        validatePartitionBy(pks, tableDefinition, tableDefinition.getPartDefinition());
 
         schema.createTables(tableDefinition, indexTableDefinitions);
     }
@@ -544,38 +557,40 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         userService.dropTablePrivilege(schema.name(), tableName);
     }
 
-    public void execute(@NonNull SqlTruncate truncate, CalcitePrepare.Context context) {
+    public void execute(@NonNull SqlTruncate truncate, CalcitePrepare.Context context) throws Exception {
         SqlIdentifier name = (SqlIdentifier) truncate.getOperandList().get(0);
         final Pair<DingoSchema, String> schemaTableName
             = getSchemaAndTableName(name, context);
         final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         String tableName = Parameters.nonNull(schemaTableName.right, "table name").toUpperCase();
-        TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
-        Map<CommonId, TableDefinition> indexDefinitionMap = schema.getMetaService().getTableIndexDefinitions(tableName);
-        if (tableDefinition == null) {
-            throw SqlUtil.newContextException(
-                name.getParserPosition(),
-                RESOURCE.tableNotFound(name.toString()));
+        long tso = TsoService.getDefault().tso();
+        CommonId tableId = schema.getMetaService().getTable(tableName).getTableId();
+        int ttl = Optional.mapOrGet(
+            ((Connection) context).getClientInfo("lock_wait_timeout"), Integer::parseInt, () -> 50
+        );
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        CompletableFuture<Void> unlockFuture = new CompletableFuture<>();
+        TableLock lock = TableLock.builder()
+            .lockTs(tso)
+            .currentTs(tso)
+            .type(LockType.TABLE)
+            .tableId(tableId)
+            .lockFuture(future)
+            .unlockFuture(unlockFuture)
+            .build();
+        TableLockService.getDefault().lock(lock);
+        try {
+            future.get(ttl, TimeUnit.SECONDS);
+            schema.getMetaService().truncateTable(tableName);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            throw new RuntimeException("Lock wait timeout exceeded.");
+        } catch (Exception e) {
+            future.cancel(true);
+            throw e;
+        } finally {
+            unlockFuture.complete(null);
         }
-        if (!schema.dropTable(tableName)) {
-            throw SqlUtil.newContextException(
-                name.getParserPosition(),
-                RESOURCE.tableNotFound(name.toString())
-            );
-        }
-        // partitionDetail operand [x,null,null] error  transform to operand[x]
-        List<TableDefinition> indexTableDefinitions = indexDefinitionMap.values()
-            .stream().map(e -> {
-                if (e.getPartDefinition() == null) {
-                    return e;
-                }
-                e.getPartDefinition().getDetails().forEach(DingoDdlExecutor::transformOperand);
-                return e;
-            }).collect(Collectors.toList());
-        if (tableDefinition.getPartDefinition() != null) {
-            tableDefinition.getPartDefinition().getDetails().forEach(DingoDdlExecutor::transformOperand);
-        }
-        schema.createTables(tableDefinition, indexTableDefinitions);
     }
 
     private static void transformOperand(PartitionDetailDefinition detail) {
@@ -677,9 +692,18 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             = getSchemaAndTableName(sqlAlterTableDistribution.table, context);
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
         DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
-        TableDefinition tableDefinition = schema.getMetaService().getTableDefinition(tableName);
         PartitionDetailDefinition detail = sqlAlterTableDistribution.getPartitionDefinition();
-        DefinitionUtils.checkAndConvertRangePartitionDetail(tableDefinition, detail);
+        Table table = schema.getMetaService().getTable(tableName);
+        List<Column> keyColumns = table.columns.stream()
+            .filter(Column::isPrimary)
+            .sorted(Comparator.comparingInt(Column::getPrimaryKeyIndex))
+            .collect(Collectors.toList());
+        DefinitionUtils.checkAndConvertRangePartition(
+            keyColumns.stream().map(Column::getName).collect(Collectors.toList()),
+            Collections.emptyList(),
+            keyColumns.stream().map(Column::getType).collect(Collectors.toList()),
+            Collections.singletonList(detail.getOperand())
+        );
         schema.addDistribution(tableName, sqlAlterTableDistribution.getPartitionDefinition());
     }
 
@@ -736,18 +760,25 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     public void validatePartitionBy(
         @NonNull List<String> keyList,
         @NonNull TableDefinition tableDefinition,
-        @NonNull PartitionDefinition partDefinition
+        PartitionDefinition partDefinition
     ) {
-        String strategy = partDefinition.getFuncName().toUpperCase();
-        switch (strategy) {
+        if (partDefinition == null) {
+            partDefinition = new PartitionDefinition();
+            tableDefinition.setPartDefinition(partDefinition);
+            partDefinition.setFuncName(DingoPartitionServiceProvider.RANGE_FUNC_NAME);
+            partDefinition.setColumns(keyList);
+            partDefinition.setDetails(new ArrayList<>());
+        }
+        switch (partDefinition.getFuncName().toUpperCase()) {
             case DingoPartitionServiceProvider.RANGE_FUNC_NAME:
                 DefinitionUtils.checkAndConvertRangePartition(tableDefinition);
+                partDefinition.getDetails().add(new PartitionDetailDefinition(null, null, new Object[0]));
                 break;
             case DingoPartitionServiceProvider.HASH_FUNC_NAME:
                 DefinitionUtils.checkAndConvertHashRangePartition(tableDefinition);
                 break;
             default:
-                throw new IllegalStateException("Unsupported " + strategy);
+                throw new IllegalStateException("Unsupported " + partDefinition.getFuncName());
         }
     }
 

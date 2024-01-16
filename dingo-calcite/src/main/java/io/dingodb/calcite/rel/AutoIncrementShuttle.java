@@ -18,6 +18,7 @@ package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.meta.entity.Column;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttle;
@@ -130,10 +131,10 @@ public class AutoIncrementShuttle implements RelShuttle {
                 DingoTable table = modify.getTable().unwrap(DingoTable.class);
                 boolean hasAutoIncrement = false;
                 int autoIncrementColIndex = 0;
-                for (ColumnDefinition columnDefinition : table.getTableDefinition().getColumns()) {
+                for (Column columnDefinition : table.getTable().getColumns()) {
                     if (columnDefinition.isAutoIncrement()) {
                         hasAutoIncrement = true;
-                        autoIncrementColIndex = table.getTableDefinition().getColumnIndex(columnDefinition.getName());
+                        autoIncrementColIndex = table.getTable().getColumns().indexOf(columnDefinition);
                     }
                 }
                 if (hasAutoIncrement && other.getInputs().size() > 0) {

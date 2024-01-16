@@ -21,11 +21,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.exec.dag.Vertex;
+import io.dingodb.meta.entity.Table;
 
 import java.util.NavigableMap;
 
@@ -38,10 +37,10 @@ public class PartDeleteParam extends PartModifyParam {
         @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
-        TableDefinition tableDefinition,
+        Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
     ) {
-        super(tableId, partId, schema, keyMapping, tableDefinition, distributions);
+        super(tableId, partId, schema, keyMapping, table, distributions);
     }
 
     public void inc() {

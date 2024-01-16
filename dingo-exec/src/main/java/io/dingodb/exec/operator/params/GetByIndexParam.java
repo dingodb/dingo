@@ -25,12 +25,12 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.table.PartInKvStore;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreService;
 import lombok.Getter;
 
@@ -53,8 +53,8 @@ public class GetByIndexParam extends FilterProjectSourceParam {
     @JsonProperty("isUnique")
     private final boolean isUnique;
     @JsonProperty("indexDefinition")
-    private final TableDefinition indexDefinition;
-    private final TableDefinition tableDefinition;
+    private final Table index;
+    private final Table table;
     private final KeyValueCodec codec;
     private KeyValueCodec lookupCodec;
     private NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges;
@@ -70,17 +70,17 @@ public class GetByIndexParam extends FilterProjectSourceParam {
         boolean isUnique,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges,
         KeyValueCodec codec,
-        TableDefinition indexDefinition,
-        TableDefinition tableDefinition,
+        Table index,
+        Table table,
         boolean isLookup
     ) {
-        super(tableId, partId, tableDefinition.getDingoType(), filter, selection, keyMapping);
+        super(tableId, partId, table.tupleType(), filter, selection, keyMapping);
         this.indexTableId = indexTableId;
         this.indexValues = indexValues;
         this.isLookup = isLookup;
         this.isUnique = isUnique;
-        this.indexDefinition = indexDefinition;
-        this.tableDefinition = tableDefinition;
+        this.index = index;
+        this.table = table;
         this.codec = codec;
         this.ranges = ranges;
     }
@@ -89,9 +89,9 @@ public class GetByIndexParam extends FilterProjectSourceParam {
     public void init(Vertex vertex) {
         super.init(vertex);
         part = new PartInKvStore(
-            StoreService.getDefault().getInstance(indexTableId, partId, indexDefinition),
+            StoreService.getDefault().getInstance(indexTableId, partId, index.getTableId()),
             codec
         );
-        lookupCodec = CodecService.getDefault().createKeyValueCodec(tableDefinition.getColumns());
+        lookupCodec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
     }
 }

@@ -42,7 +42,7 @@ public class ShowNextAutoIncrementOperation implements QueryOperation {
     @Override
     public Iterator getIterator() {
         List<Object[]> tuples = new ArrayList<>();
-        Long nextAutoIncrement = metaService.getNextAutoIncrement(metaService.getTableId(tableName));
+        Long nextAutoIncrement = metaService.getNextAutoIncrement(metaService.getTable(tableName).getTableId());
         Object[] values = new Object[]{nextAutoIncrement};
         tuples.add(values);
         return tuples.iterator();

@@ -29,6 +29,8 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
@@ -87,11 +89,10 @@ public class TransactionUtil {
     public static CommonId singleKeySplitRegionId(CommonId tableId, CommonId txnId, byte[] key) {
         // 2、regin split
         MetaService root = MetaService.root();
-        TableDefinition tableDefinition = root.getTableDefinition(tableId);
+        Table table = root.getTable(tableId);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution = root.getRangeDistribution(tableId);
         CommonId regionId = PartitionService.getService(
-                Optional.ofNullable(tableDefinition.getPartDefinition())
-                    .map(PartitionDefinition::getFuncName)
+                Optional.ofNullable(table.getPartitionStrategy())
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
             .calcPartId(key, rangeDistribution);
         log.info("{} regin split retry tableId:{} regionId:{}", txnId, tableId, regionId);
@@ -101,20 +102,19 @@ public class TransactionUtil {
     public static Map<CommonId, List<byte[]>> multiKeySplitRegionId(CommonId tableId, CommonId txnId, List<byte[]> keys) {
         // 2、regin split
         MetaService root = MetaService.root();
-        TableDefinition tableDefinition = root.getTableDefinition(tableId);
+        Table table = root.getTable(tableId);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution = root.getRangeDistribution(tableId);
         final PartitionService ps = PartitionService.getService(
-            Optional.ofNullable(tableDefinition.getPartDefinition())
-                .map(PartitionDefinition::getFuncName)
+            Optional.ofNullable(table.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         Map<CommonId, List<byte[]>> partMap = ps.partKeys(keys, rangeDistribution);
         log.info("{} regin split retry tableId:{}", txnId, tableId);
         return partMap;
     }
 
-    public static Map<CommonId, TableDefinition> getIndexDefinitions(CommonId tableId) {
+    public static List<IndexTable> getIndexDefinitions(CommonId tableId) {
         MetaService root = MetaService.root();
-        return root.getTableIndexDefinitions(tableId);
+        return root.getTable(tableId).getIndexes();
     }
     public static List<byte[]> mutationToKey(List<Mutation> mutations) {
         List<byte[]> keys = new ArrayList<>(mutations.size());
@@ -257,9 +257,9 @@ public class TransactionUtil {
     }
 
     public static String duplicateEntryKey(CommonId tableId, byte[] key) {
-        TableDefinition tableDefinition = MetaService.root().getTableDefinition(tableId);
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
-        TupleMapping keyMapping = tableDefinition.getKeyMapping();
+        Table table = MetaService.root().getTable(tableId);
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
+        TupleMapping keyMapping = table.keyMapping();
         return joinPrimaryKey(codec.decodeKeyPrefix(key), keyMapping);
     }
 

@@ -20,9 +20,9 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.StoreService;
@@ -59,7 +59,6 @@ import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.store.proxy.Configuration;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -155,10 +154,10 @@ public class TransactionStoreInstance {
 
     public void getJoinedPrimaryKey(TxnPreWrite txnPreWrite, List<AlreadyExist> keysAlreadyExist) {
         CommonId tableId = LockExtraDataList.decode(txnPreWrite.getLockExtraDatas().get(0).getExtraData()).getTableId();
-        TableDefinition tableDefinition = MetaService.root().getTableDefinition(tableId);
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
+        Table table = MetaService.root().getTable(tableId);
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
         AtomicReference<String> joinedKey = new AtomicReference<>("");
-        TupleMapping keyMapping = tableDefinition.getKeyMapping();
+        TupleMapping keyMapping = table.keyMapping();
         keysAlreadyExist.stream().forEach(
             i -> {
                 Optional.ofNullable(codec.decodeKeyPrefix(i.getKey()))
@@ -167,7 +166,7 @@ public class TransactionStoreInstance {
                     });
             }
         );
-        throw new DuplicateEntryException("Duplicate entry " + joinedKey.get() + " for key '" + tableDefinition.getName() + ".PRIMARY'");
+        throw new DuplicateEntryException("Duplicate entry " + joinedKey.get() + " for key '" + table.getName() + ".PRIMARY'");
     }
 
     public Future txnPreWritePrimaryKey(TxnPreWrite txnPreWrite) {

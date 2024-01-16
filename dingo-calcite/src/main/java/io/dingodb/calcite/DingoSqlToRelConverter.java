@@ -125,8 +125,8 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
                 (RexCall) rexCall,
                 namespace.getTable(),
                 call.getOperandList(),
-                namespace.getIndexTableId(),
-                namespace.getIndexTableDefinition()
+                namespace.getIndex().getTableId(),
+                namespace.getIndex()
             );
         }
 

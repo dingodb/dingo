@@ -20,14 +20,17 @@ import com.google.auto.service.AutoService;
 import io.dingodb.cluster.ClusterServiceProvider;
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
-import io.dingodb.sdk.common.cluster.Executor;
-import io.dingodb.sdk.common.utils.Optional;
-import io.dingodb.sdk.service.cluster.ClusterServiceClient;
-import io.dingodb.sdk.service.connector.CoordinatorServiceConnector;
+import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.sdk.service.CoordinatorService;
+import io.dingodb.sdk.service.Services;
+import io.dingodb.sdk.service.entity.common.Executor;
+import io.dingodb.sdk.service.entity.common.ExecutorState;
+import io.dingodb.sdk.service.entity.common.ExecutorUser;
+import io.dingodb.sdk.service.entity.coordinator.ExecutorHeartbeatRequest;
+import io.dingodb.sdk.service.entity.coordinator.GetExecutorMapRequest;
 import io.dingodb.server.executor.Configuration;
-import io.dingodb.server.executor.common.ClusterHeartbeatExecutor;
+import io.dingodb.tso.TsoService;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -50,34 +53,44 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
     //
     // Cluster service.
     //
+    public static final CoordinatorService coordinatorService = Services.coordinatorService(
+        Services.parse(Configuration.coordinators())
+    );
 
-    private static final CoordinatorServiceConnector connector = getCoordinatorServiceConnector();
-
-    private static final ClusterServiceClient client = new ClusterServiceClient(connector);
+    public static final Executor executor = Executor.builder()
+        .serverLocation(io.dingodb.sdk.service.entity.common.Location.builder()
+            .host(DingoConfiguration.host())
+            .port(DingoConfiguration.port())
+            .build())
+        .executorUser(ExecutorUser.builder()
+            .user(Configuration.user())
+            .keyring(Configuration.keyring())
+            .build())
+        .resourceTag(Configuration.resourceTag())
+        .build();
+    public static final ExecutorHeartbeatRequest executorHeartbeatRequest = ExecutorHeartbeatRequest.builder()
+        .selfExecutormapEpoch(0)
+        .executor(executor)
+        .build();
 
     @Override
     public List<Location> getComputingLocations() {
-        return client.getExecutorMap(1).stream()
-            .map(Executor::serverLocation)
-            .map(location -> new Location(location.getHost(), location.getPort()))
+        return coordinatorService.getExecutorMap(
+                TsoService.getDefault().tso(), GetExecutorMapRequest.builder().build()
+            ).getExecutormap().getExecutors().stream()
+            .filter($ -> $.getState() == ExecutorState.EXECUTOR_NORMAL)
+            .map(io.dingodb.sdk.service.entity.common.Executor::getServerLocation)
+            .map($ -> new Location($.getHost(), $.getPort()))
             .collect(Collectors.toList());
     }
 
     public static void register() {
         Executors.scheduleWithFixedDelayAsync(
             "cluster-heartbeat",
-            () -> client.executorHeartbeat(0, new ClusterHeartbeatExecutor()), 0, 1, TimeUnit.SECONDS
+            () -> coordinatorService.executorHeartbeat(TsoService.getDefault().tso(), executorHeartbeatRequest),
+            0,
+            1,
+            TimeUnit.SECONDS
         );
-    }
-
-    public static CoordinatorServiceConnector getCoordinatorServiceConnector() {
-        return Optional.ofNullable(Configuration.coordinators().split(","))
-            .map(Arrays::stream)
-            .map(ss -> ss
-                .map(s -> s.split(":"))
-                .map(__ -> new io.dingodb.sdk.common.Location(__[0], Integer.parseInt(__[1])))
-                .collect(Collectors.toSet()))
-            .map(CoordinatorServiceConnector::new)
-            .orElseThrow("Create coordinator service connector error.");
     }
 }

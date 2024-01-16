@@ -17,9 +17,14 @@
 package io.dingodb.driver;
 
 import com.google.auto.service.AutoService;
+import io.dingodb.common.CommonId;
+import io.dingodb.meta.entity.Table;
+import io.dingodb.transaction.api.LockType;
+import io.dingodb.transaction.api.TableLock;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 public class TransactionService implements io.dingodb.transaction.api.TransactionService {
 
@@ -40,6 +45,16 @@ public class TransactionService implements io.dingodb.transaction.api.Transactio
     @Override
     public void rollback(Connection connection) throws SQLException {
         connection.rollback();
+    }
+
+    @Override
+    public void lockTable(Connection connection, List<CommonId> tables, LockType type) {
+        ((DingoConnection) connection).lockTables(tables, type);
+    }
+
+    @Override
+    public void unlockTable(Connection connection) {
+        ((DingoConnection) connection).unlockTables();
     }
 
     @AutoService(io.dingodb.transaction.api.TransactionServiceProvider.class)

@@ -18,6 +18,7 @@ package io.dingodb.store.proxy.mapper;
 
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.sdk.service.entity.common.IndexParameter;
 import io.dingodb.sdk.service.entity.common.IndexType;
 import io.dingodb.sdk.service.entity.common.MetricType;
@@ -30,11 +31,57 @@ import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexPara
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexParameterNest.IvfFlatParameter;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexParameterNest.IvfPqParameter;
 import io.dingodb.sdk.service.entity.common.VectorIndexType;
+import io.dingodb.sdk.service.entity.meta.TableDefinition;
 
 import java.util.Map;
+import java.util.Properties;
+
+import static io.dingodb.store.proxy.mapper.Mapper.JSON;
 
 public interface IndexMapper {
-    default void resetIndexParameter(io.dingodb.sdk.service.entity.meta.TableDefinition indexDefinition) {
+
+    default void setIndex(IndexTable.IndexTableBuilder builder, IndexParameter indexParameter) {
+        if (indexParameter.getIndexType() == IndexType.INDEX_TYPE_VECTOR) {
+            switch (indexParameter.getVectorIndexParameter().getVectorIndexType()) {
+                case VECTOR_INDEX_TYPE_FLAT:
+                    builder.indexType(io.dingodb.meta.entity.IndexType.VECTOR_FLAT);
+                    break;
+                case VECTOR_INDEX_TYPE_IVF_FLAT:
+                    builder.indexType(io.dingodb.meta.entity.IndexType.VECTOR_IVF_FLAT);
+                    break;
+                case VECTOR_INDEX_TYPE_IVF_PQ:
+                    builder.indexType(io.dingodb.meta.entity.IndexType.VECTOR_IVF_PQ);
+                    break;
+                case VECTOR_INDEX_TYPE_HNSW:
+                    builder.indexType(io.dingodb.meta.entity.IndexType.VECTOR_HNSW);
+                    break;
+                case VECTOR_INDEX_TYPE_DISKANN:
+                    builder.indexType(io.dingodb.meta.entity.IndexType.VECTOR_DISKANN);
+                    break;
+                case VECTOR_INDEX_TYPE_BRUTEFORCE:
+                    builder.indexType(io.dingodb.meta.entity.IndexType.VECTOR_BRUTEFORCE);
+                    break;
+                default:
+                    throw new IllegalStateException(
+                        "Unexpected value: " + indexParameter.getVectorIndexParameter().getVectorIndexType()
+                    );
+            }
+        } else {
+            builder.indexType(io.dingodb.meta.entity.IndexType.SCALAR);
+        }
+        builder.properties(toMap(
+            Optional.mapOrNull(indexParameter.getVectorIndexParameter(), VectorIndexParameter::getVectorIndexParameter)
+        ));
+    }
+
+    default Properties toMap(Object target) {
+        if (target == null) {
+            return new Properties();
+        }
+        return JSON.convertValue(target, Properties.class);
+    }
+
+    default void resetIndexParameter(TableDefinition indexDefinition) {
         Map<String, String> properties = indexDefinition.getProperties();
         String indexType = properties.get("indexType");
         if (indexType.equals("scalar")) {

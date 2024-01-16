@@ -31,7 +31,7 @@ import io.dingodb.sdk.service.entity.meta.GetIndexRangeRequest;
 import io.dingodb.sdk.service.entity.meta.GetSchemaByNameRequest;
 import io.dingodb.sdk.service.entity.meta.IndexDefinitionWithId;
 import io.dingodb.sdk.service.entity.meta.RangeDistribution;
-import io.dingodb.store.proxy.Configuration;
+import io.dingodb.store.proxy.service.TsoService;
 import lombok.SneakyThrows;
 
 import java.util.List;
@@ -44,6 +44,7 @@ public class IndexCache {
     private final Set<Location> coordinators;
     private final MetaService metaService;
     private final AutoIncrementService autoIncrementService;
+    private final TsoService tsoService;
 
     private final LoadingCache<String, LoadingCache<String, Index>> indexCache = CacheBuilder
         .newBuilder()
@@ -98,6 +99,11 @@ public class IndexCache {
         this.coordinators = coordinators;
         this.metaService = Services.metaService(coordinators);
         this.autoIncrementService = new AutoIncrementService(coordinators);
+        this.tsoService = new TsoService(coordinators);
+    }
+
+    public long tso() {
+        return tsoService.tso();
     }
 
     @SneakyThrows

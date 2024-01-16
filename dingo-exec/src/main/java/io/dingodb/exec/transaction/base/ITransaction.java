@@ -25,6 +25,7 @@ import io.dingodb.net.Channel;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 public interface ITransaction {
@@ -88,4 +89,6 @@ public interface ITransaction {
     void setTransactionConfig(Properties sessionVariables);
 
     long getLockTimeOut();
+
+    CompletableFuture<Void> getFinishedFuture();
 }

@@ -23,9 +23,12 @@ import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.TupleType;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.meta.Column;
-import io.dingodb.meta.Table;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.common.serial.RecordEncoder;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.entity.common.Range;
@@ -37,15 +40,17 @@ import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.sdk.service.entity.meta.TableIdWithPartIds;
 import io.dingodb.store.proxy.service.CodecService;
 import lombok.SneakyThrows;
+import org.checkerframework.common.value.qual.IntRange;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.Mappings;
-import org.mapstruct.ap.internal.util.Strings;
+import org.mapstruct.Named;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.dingodb.partition.DingoPartitionServiceProvider.HASH_FUNC_NAME;
 import static io.dingodb.partition.DingoPartitionServiceProvider.RANGE_FUNC_NAME;
@@ -58,7 +63,7 @@ public interface TableMapper {
     @SneakyThrows
     default PartitionStrategy toPartitionStrategy(String partitionStrategy) {
         return Optional.ofNullable(partitionStrategy)
-            .filter(Strings::isNotEmpty)
+            .filter($ -> $ != null && !$.isEmpty())
             .filter(s -> s.equalsIgnoreCase(HASH_FUNC_NAME))
             .map(s -> PT_STRATEGY_HASH)
             .orElse(PT_STRATEGY_RANGE);
@@ -69,7 +74,7 @@ public interface TableMapper {
     }
 
     default DingoType typeFrom(io.dingodb.sdk.service.entity.meta.ColumnDefinition cd) {
-        return DingoTypeFactory.INSTANCE.fromName(cd.getName(), cd.getElementType(), cd.isNullable());
+        return DingoTypeFactory.INSTANCE.fromName(cd.getSqlType(), cd.getElementType(), cd.isNullable());
     }
 
     @Mappings({
@@ -77,9 +82,12 @@ public interface TableMapper {
         @Mapping(source = "indexOfKey", target = "primaryKeyIndex"),
         @Mapping(source = "autoIncrement", target = "autoIncrement"),
         @Mapping(source = "defaultVal", target = "defaultValueExpr"),
+        @Mapping(source = "sqlType", target = "sqlTypeName"),
+        @Mapping(source = "elementType", target = "elementTypeName"),
     })
     Column columnFrom(io.dingodb.sdk.service.entity.meta.ColumnDefinition columnDefinition);
 
+    @Named("columnsFrom")
     List<Column> columnsFrom(List<io.dingodb.sdk.service.entity.meta.ColumnDefinition> columnDefinitions);
 
     @Mappings({
@@ -105,7 +113,7 @@ public interface TableMapper {
     );
 
     default List<Partition> partitionsTo(
-        List<PartitionDetailDefinition> details, List<DingoCommonId> partIds, RecordEncoder encoder
+        List<PartitionDetailDefinition> details, List<DingoCommonId> partIds, RecordEncoder encoder, byte namespace
     ) {
         List<DingoCommonId> ids = new ArrayList<>(partIds);
         return details.stream()
@@ -113,19 +121,21 @@ public interface TableMapper {
             .map(key -> encoder.encodeKeyPrefix(key, key.length))
             .sorted(ByteArrayUtils::compare)
             .map(k -> Partition.builder()
-                .range(Range.builder().startKey(realKey(k, ids.get(0))).endKey(nextKey(ids.get(0))).build())
-                .id(ids.remove(0))
+                .range(Range.builder()
+                    .startKey(realKey(k, ids.get(0), namespace))
+                    .endKey(nextKey(ids.get(0), namespace)).build()
+                ).id(ids.remove(0))
                 .build()
             ).collect(Collectors.toList());
     }
 
     default PartitionRule partitionTo(
-        PartitionDefinition source, List<DingoCommonId> partIds, RecordEncoder encoder
+        PartitionDefinition source, List<DingoCommonId> partIds, RecordEncoder encoder, byte firstByte
     ) {
         return PartitionRule.builder()
             .strategy(toPartitionStrategy(source.getFuncName()))
             .columns(source.getColumns())
-            .partitions(partitionsTo(source.getDetails(), partIds, encoder))
+            .partitions(partitionsTo(source.getDetails(), partIds, encoder, firstByte))
             .build();
     }
 
@@ -133,17 +143,18 @@ public interface TableMapper {
         return codec.decodeKeyPrefix(CodecService.INSTANCE.setId(key.getStartKey(), 0));
     }
 
-    default io.dingodb.meta.Partition partitionFrom(Partition partition, KeyValueCodec codec) {
-        return io.dingodb.meta.Partition.builder()
+    default io.dingodb.meta.entity.Partition partitionFrom(Partition partition, KeyValueCodec codec) {
+        return io.dingodb.meta.entity.Partition.builder()
             .id(MAPPER.idFrom(partition.getId()))
             .operand(operandFrom(partition.getRange(), codec))
             .build();
     }
 
-    default List<io.dingodb.meta.Partition> partitionFrom(List<Partition> partitions, KeyValueCodec codec) {
+    default List<io.dingodb.meta.entity.Partition> partitionFrom(List<Partition> partitions, KeyValueCodec codec) {
         return partitions.stream().map($ -> partitionFrom($, codec)).collect(Collectors.toList());
     }
 
+    @Mapping(source = "columns", target = "columns", qualifiedByName = "columnsFrom")
     void tableFrom(
         io.dingodb.sdk.service.entity.meta.TableDefinition tableDefinition, @MappingTarget Table.TableBuilder builder
     );
@@ -155,11 +166,29 @@ public interface TableMapper {
         Table.TableBuilder builder = Table.builder();
         tableFrom(tableWithId.getTableDefinition(), builder);
         PartitionRule partitionRule = tableWithId.getTableDefinition().getTablePartition();
-        builder.partitionStrategy(partitionRule.getStrategy().name());
+        builder.partitionStrategy(fromPartitionStrategy(partitionRule.getStrategy()));
         KeyValueCodec codec = CodecService.INSTANCE
             .createKeyValueCodec(columnDefinitionFrom(tableWithId.getTableDefinition().getColumns()));
         builder.partitions(partitionFrom(tableWithId.getTableDefinition().getTablePartition().getPartitions(), codec));
-        builder.indexes(indexes.stream().map($ -> tableFrom($, Collections.emptyList())).collect(Collectors.toList()));
+        builder.indexes(indexes.stream().map($ -> indexTableFrom($, Collections.emptyList())).collect(Collectors.toList()));
+        builder.tableId(MAPPER.idFrom(tableWithId.getTableId()));
+        return builder.build();
+    }
+
+    default IndexTable indexTableFrom(
+        io.dingodb.sdk.service.entity.meta.TableDefinitionWithId tableWithId,
+        List<io.dingodb.sdk.service.entity.meta.TableDefinitionWithId> indexes
+    ) {
+        IndexTable.IndexTableBuilder builder = IndexTable.builder();
+        io.dingodb.sdk.service.entity.meta.TableDefinition definition = tableWithId.getTableDefinition();
+        tableFrom(definition, builder);
+        PartitionRule partitionRule = definition.getTablePartition();
+        builder.partitionStrategy(fromPartitionStrategy(partitionRule.getStrategy()));
+        KeyValueCodec codec = CodecService.INSTANCE
+            .createKeyValueCodec(columnDefinitionFrom(definition.getColumns()));
+        builder.partitions(partitionFrom(definition.getTablePartition().getPartitions(), codec));
+        builder.tableId(MAPPER.idFrom(tableWithId.getTableId()));
+        MAPPER.setIndex(builder, definition.getIndexParameter());
         return builder.build();
     }
 
@@ -168,22 +197,39 @@ public interface TableMapper {
     default TableDefinitionWithId tableTo(
         TableIdWithPartIds ids, TableDefinition tableDefinition
     ) {
+        TupleType keyType = (TupleType) tableDefinition.getKeyType();
+        TupleMapping keyMapping = TupleMapping.of(IntStream.range(0, keyType.fieldCount()).toArray());
         RecordEncoder encoder = new RecordEncoder(
-            1, CodecService.createSchemasForType(tableDefinition.getDingoType(), tableDefinition.getKeyMapping()), 0
+            1, CodecService.createSchemasForType(keyType, keyMapping), 0
         );
+        if (tableDefinition.getEngine() == null) {
+            tableDefinition.setEngine("LSM");
+        }
+        byte namespace = 'r';
+        if (tableDefinition.getEngine().startsWith("TXN")) {
+            namespace = 't';
+        }
+        tableDefinition.setEngine(tableDefinition.getEngine().toUpperCase());
         io.dingodb.sdk.service.entity.meta.TableDefinition definition = tableTo(tableDefinition);
-        definition.setTablePartition(partitionTo(tableDefinition.getPartDefinition(), ids.getPartIds(), encoder));
+        definition.setTablePartition(
+            partitionTo(tableDefinition.getPartDefinition(), ids.getPartIds(), encoder, namespace)
+        );
+        definition.setName(definition.getName().toUpperCase());
         return TableDefinitionWithId.builder().tableDefinition(definition).tableId(ids.getTableId()).build();
     }
 
-    default byte[] realKey(byte[] key, DingoCommonId id) {
-        return CodecService.INSTANCE.setId(key, MAPPER.idFrom(id));
+    default byte[] realKey(byte[] key, DingoCommonId id, byte namespace) {
+        key = CodecService.INSTANCE.setId(key, MAPPER.idFrom(id));
+        key[0] = namespace;
+        return key;
     }
 
-    default byte[] nextKey(DingoCommonId id) {
+    default byte[] nextKey(DingoCommonId id, byte namespace) {
         DingoCommonId nextId = MAPPER.copyId(id);
         nextId.setEntityId(id.getEntityId() + 1);
-        return CodecService.INSTANCE.setId(CodecService.INSTANCE.empty(), MAPPER.idFrom(nextId));
+        byte[] key = CodecService.INSTANCE.setId(CodecService.INSTANCE.empty(), MAPPER.idFrom(nextId));
+        key[0] = namespace;
+        return key;
     }
 
 }

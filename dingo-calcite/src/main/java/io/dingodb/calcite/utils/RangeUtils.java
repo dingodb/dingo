@@ -22,6 +22,7 @@ import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.meta.entity.Table;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
@@ -37,7 +38,7 @@ public final class RangeUtils {
     }
 
     public static @Nullable RangeDistribution createRangeByFilter(
-        TableDefinition table,
+        Table table,
         KeyValueCodec codec,
         @NonNull RexNode sourceFilter,
         TupleMapping selection
@@ -49,7 +50,7 @@ public final class RangeUtils {
                 return null;
             }
         }
-        int firstPrimaryColumnIndex = table.getFirstPrimaryColumnIndex();
+        int firstPrimaryColumnIndex = table.keyMapping().get(0);
         int realIndex;
         if (selection != null) {
             realIndex = selection.find(firstPrimaryColumnIndex);
@@ -69,7 +70,7 @@ public final class RangeUtils {
         byte[] conditionValue;
         for (RexNode filter : filters) {
             conditionValue = calcConditionValue(
-                RuleUtils.checkCondition(filter), codec, realIndex, table.getColumnsCount(), table
+                RuleUtils.checkCondition(filter), codec, realIndex, table.columns.size(), table
             );
             if (conditionValue == null) {
                 return null;
@@ -112,11 +113,13 @@ public final class RangeUtils {
                                              KeyValueCodec codec,
                                              int pkIndex,
                                              int columnCount,
-                                             TableDefinition tableDefinition) {
+                                             Table tableDefinition) {
         if (info == null || info.index != pkIndex) {
             return null;
         }
-        Object value = RexLiteralUtils.convertFromRexLiteral(info.value, tableDefinition.getColumn(pkIndex).getType());
+        Object value = RexLiteralUtils.convertFromRexLiteral(
+            info.value, tableDefinition.getColumns().get(pkIndex).getType()
+        );
         if (value == null) {
             return null;
         }

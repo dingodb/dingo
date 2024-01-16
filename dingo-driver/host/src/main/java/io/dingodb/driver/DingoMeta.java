@@ -29,12 +29,13 @@ import io.dingodb.common.mysql.constant.ServerStatus;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.IndexScan;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.driver.type.converter.AvaticaResultSetConverter;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.verify.privilege.PrivilegeVerify;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -60,7 +61,6 @@ import java.sql.DatabaseMetaData;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -554,7 +554,7 @@ public class DingoMeta extends MetaImpl {
                     String tableType;
                     if (t.getTable() instanceof DingoTable) {
                         DingoTable table = (DingoTable) t.getTable();
-                        tableType = table.getTableDefinition().getTableType();
+                        tableType = table.getTable().tableType;
                     } else {
                         tableType = t.getTable().getJdbcTableType().jdbcName;
                     }
@@ -679,12 +679,12 @@ public class DingoMeta extends MetaImpl {
         // todo: current version, ignore name case
         final CalciteSchema schema = rootSchema.getSubSchema(schemaName, false);
         final CalciteSchema.TableEntry table = schema.getTable(tableName, false);
-        final TableDefinition tableDefinition = ((DingoTable) table.getTable()).getTableDefinition();
-        final TupleMapping mapping = tableDefinition.getKeyMapping();
+        final Table tableDefinition = ((DingoTable) table.getTable()).getTable();
+        final TupleMapping mapping = tableDefinition.keyMapping();
         return createArrayResultSet(
             Linq4j.asEnumerable(IntStream.range(0, mapping.size())
                 .mapToObj(i -> {
-                    ColumnDefinition c = tableDefinition.getColumn(mapping.get(i));
+                    Column c = tableDefinition.getColumns().get(mapping.get(i));
                     return new Object[] {
                         catalog,
                         schemaName,

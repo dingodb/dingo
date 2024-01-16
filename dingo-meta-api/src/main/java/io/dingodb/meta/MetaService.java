@@ -24,12 +24,15 @@ import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.meta.entity.Table;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 public interface MetaService {
 
@@ -100,7 +103,9 @@ public interface MetaService {
      * @param tableDefinition table definition
      */
     @Deprecated
-    void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition);
+    default void createTable(@NonNull String tableName, @NonNull TableDefinition tableDefinition) {
+        createTables(tableDefinition, Collections.emptyList());
+    }
 
     void createTables(@NonNull TableDefinition tableDefinition, @NonNull List<TableDefinition> indexTableDefinitions);
 
@@ -111,70 +116,34 @@ public interface MetaService {
      * @param tableName table name
      * @return true if success
      */
-    @Deprecated
     boolean dropTable(@NonNull String tableName);
 
-    boolean dropTables(@NonNull Collection<CommonId> tableIds);
+    boolean truncateTable(@NonNull String tableName);
 
+//    boolean dropTables(@NonNull Collection<CommonId> tableIds);
+
+    /**
+     * Get table by table name.
+     * Notice: check the table name case, because by default, the table names are converted to uppercase
+     *
+     * @param tableName table name
+     * @return table definition or null if not found.
+     */
     Table getTable(String tableName);
 
     Table getTable(CommonId tableId);
 
-    Table getTables();
-
     /**
-     * Get table id by table name.
-     * Notice: check the table name case, because by default, the table names are converted to uppercase
+     * Returns all table.
      *
-     * @param tableName table name
-     * @return table id or null if not found
+     * @return all table
      */
-    @Deprecated
-    CommonId getTableId(@NonNull String tableName);
-
-    /**
-     * Returns all table definition.
-     *
-     * @return all table definition
-     */
-    @Deprecated
-    Map<String, TableDefinition> getTableDefinitions();
-
-    /**
-     * Get table definition by table name.
-     * Notice: check the table name case, because by default, the table names are converted to uppercase
-     *
-     * @param name table name
-     * @return table definition or null if not found.
-     */
-    @Deprecated
-    TableDefinition getTableDefinition(@NonNull String name);
-
-    /**
-     * Get table definition by table id.
-     *
-     * @param id table id
-     * @return table definition or null if not found.
-     */
-    @Deprecated
-    TableDefinition getTableDefinition(@NonNull CommonId id);
-
-    @Deprecated
-    List<TableDefinition> getTableDefinitions(@NonNull String name);
-
-    @Deprecated
-    Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull String name);
-
-    Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id);
+    Set<Table> getTables();
 
     default void addDistribution(String tableName, PartitionDetailDefinition detail) {
     }
 
     default Map<CommonId, Long> getTableCommitCount() {
-        throw new UnsupportedOperationException();
-    }
-
-    default Map<CommonId, Long> getTableCommitIncrement() {
         throw new UnsupportedOperationException();
     }
 
@@ -186,19 +155,6 @@ public interface MetaService {
      */
     default NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
         // todo
-        throw new UnsupportedOperationException();
-    }
-
-    default NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(CommonId id,
-                                                                                      TableDefinition tableDefinition) {
-        throw new UnsupportedOperationException();
-    }
-
-    default NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull String name) {
-        throw new UnsupportedOperationException();
-    }
-
-    default NavigableMap<ComparableByteArray, RangeDistribution> getIndexRangeDistribution(@NonNull CommonId id) {
         throw new UnsupportedOperationException();
     }
 
@@ -220,6 +176,8 @@ public interface MetaService {
     }
 
     TableStatistic getTableStatistic(@NonNull String tableName);
+
+    TableStatistic getTableStatistic(@NonNull CommonId tableId);
 
     Long getAutoIncrement(CommonId tableId);
 

@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableSet;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -31,7 +30,6 @@ import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.SchemaVersion;
 import org.apache.calcite.schema.Schemas;
-import org.apache.calcite.schema.Table;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Collection;
@@ -40,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -70,37 +69,25 @@ public abstract class AbstractSchema implements Schema {
         return metaService.name();
     }
 
-    protected void addTableCache(String name, TableDefinition td, Map<CommonId, TableDefinition> indexTds) {
-        if (tableCache.containsKey(name)) {
-            return;
-        }
-        CommonId tableId = metaService.getTableId(name);
-        DingoTable table = new DingoTable(
-            tableId,
-            context,
-            ImmutableList.<String>builder().addAll(names).add(name).build(),
-            td,
-            indexTds,
-            metaService.getTableStatistic(name)
-        );
-        tableCache.put(name, table);
-    }
-
     public synchronized CommonId getTableId(String tableName) {
         return tableCache.get(tableName).getTableId();
     }
 
     @Override
-    public synchronized Table getTable(String name) {
+    public synchronized DingoTable getTable(String name) {
         name = name.toUpperCase();
         if (tableCache.get(name) == null) {
-            CommonId tableId = metaService.getTableId(name);
-            if (tableId == null) {
-                return null;
+            io.dingodb.meta.entity.Table table = metaService.getTable(name);
+            if (table != null) {
+                tableCache.put(
+                    name,
+                    new DingoTable(
+                        context,
+                        ImmutableList.<String>builder().addAll(names).add(name).build(),
+                        metaService.getTableStatistic(table.getTableId()),
+                        table
+                ));
             }
-
-            TableDefinition tableDefinition = metaService.getTableDefinition(name);
-            addTableCache(name, tableDefinition, metaService.getTableIndexDefinitions(name));
         }
         return tableCache.get(name);
     }
@@ -108,7 +95,7 @@ public abstract class AbstractSchema implements Schema {
     @Override
     public synchronized Set<String> getTableNames() {
         if (tableNames.isEmpty()) {
-            tableNames.addAll(metaService.getTableDefinitions().keySet());
+            tableNames.addAll(metaService.getTables().stream().map($ -> $.name).collect(Collectors.toSet()));
         }
         return tableNames;
     }
@@ -134,7 +121,7 @@ public abstract class AbstractSchema implements Schema {
     }
 
     @Override
-    public Schema getSubSchema(String name) {
+    public DingoSchema getSubSchema(String name) {
         return null;
     }
 

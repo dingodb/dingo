@@ -22,6 +22,7 @@ import io.dingodb.sdk.common.table.ColumnDefinition;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.common.utils.Parameters;
 import io.dingodb.store.proxy.common.Mapping;
+import io.dingodb.store.proxy.mapper.Mapper;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -60,7 +61,7 @@ public final class Record {
         this(columns.toArray(new Column[columns.size()]), Stream.of(values).map(Value::get).toArray(Value[]::new));
     }
 
-    public Record(Object[] values, List<io.dingodb.common.table.ColumnDefinition> columns) {
+    public Record(Object[] values, List<io.dingodb.meta.entity.Column> columns) {
         this(columns.stream().map(Mapping::mapping).toArray(Column[]::new),
             Stream.of(values).map(Value::get).toArray(Value[]::new));
     }

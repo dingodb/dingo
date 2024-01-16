@@ -52,6 +52,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     private static final int STR_SEQ_INDEX = 2;
 
     public static final CommonId EMPTY_TABLE = new CommonId(CommonType.TABLE, 0, 0);
+    public static final CommonId EMPTY_PARTITION = new CommonId(CommonType.PARTITION, 0, 0);
     public static final CommonId EMPTY_DISTRIBUTE = new CommonId(CommonType.DISTRIBUTION, 0, 0);
     public static final CommonId EMPTY_TRANSACTION = new CommonId(CommonType.TRANSACTION, 0, 0);
     public static final CommonId EMPTY_JOB = new CommonId(CommonType.JOB, 0, 0);
@@ -112,8 +113,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     public final long seq;
 
     private transient volatile byte[] content;
-    @EqualsAndHashCode.Include
-    private final transient String str;
+    private transient String str;
 
     public CommonId(CommonType type, long domain, long seq) {
         this.type = type;
@@ -128,8 +128,9 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     }
 
     @Override
+    @EqualsAndHashCode.Include
     public String toString() {
-        return str;
+        return str == null ? str = type.name() + '_' + domain + '_' + seq : str;
     }
 
     public byte[] encode() {

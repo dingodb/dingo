@@ -14,33 +14,20 @@
  * limitations under the License.
  */
 
-package io.dingodb.meta;
+package io.dingodb.meta.entity;
 
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.NullableType;
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
-@Builder
+@Getter
 @ToString
-@AllArgsConstructor
-public class Column {
-
-    public final String name;
-    public final DingoType type;
-
-    public final int precision;
-    public final int scale;
-
-    public final int primaryKeyIndex;
-
-    public final boolean autoIncrement;
-
-    public final String defaultValueExpr;
-
-    public boolean isNullable() {
-        return type instanceof NullableType && ((NullableType) type).isNullable();
-    }
-
+@SuperBuilder
+public class IndexTable extends Table {
+    @JsonProperty
+    public final IndexType indexType;
+    @JsonProperty
+    public final boolean unique;
 }

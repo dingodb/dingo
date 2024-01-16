@@ -21,6 +21,11 @@ import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.common.type.scalar.FloatType;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -101,44 +106,42 @@ public class DingoGetVectorByDistance extends Filter implements DingoRel {
 
     public RelDataType getVectorRowType() {
         DingoTable dingoTable = table.unwrap(DingoTable.class);
-        List<ColumnDefinition> tableCols = dingoTable.getTableDefinition().getColumns();
-        ArrayList<ColumnDefinition> cols = new ArrayList<>(tableCols.size() + 1);
+        List<Column> tableCols = dingoTable.getTable().getColumns();
+        ArrayList<Column> cols = new ArrayList<>(tableCols.size() + 1);
         cols.addAll(tableCols);
 
         String indexTableName = "";
         // Get all index table definition
-        Map<CommonId, TableDefinition> indexDefinitions = dingoTable.getIndexTableDefinitions();
-        for (Map.Entry<CommonId, TableDefinition> entry : indexDefinitions.entrySet()) {
-            TableDefinition indexTableDefinition = entry.getValue();
-
-            String indexType = indexTableDefinition.getProperties().get("indexType").toString();
+        List<IndexTable> indexes = dingoTable.getTable().getIndexes();
+        for (Table index : indexes) {
+            String indexType = index.getProperties().get("indexType").toString();
             // Skip if not a vector table
             if (indexType.equals("scalar")) {
                 continue;
             }
 
-            List<String> indexColumns = indexTableDefinition.getColumns().stream().map(ColumnDefinition::getName)
-                .collect(Collectors.toList());
+            List<String> indexColumns = index.getColumns().stream().map(Column::getName).collect(Collectors.toList());
             // Skip if the vector column is not included
             if (!indexColumns.contains(((SqlIdentifier) operands.get(1)).getSimple().toUpperCase())) {
                 continue;
             }
 
-            indexTableName = indexTableDefinition.getName();
+            indexTableName = index.getName();
             break;
         }
 
-        cols.add(ColumnDefinition
+        cols.add(Column
             .builder()
             .name(indexTableName.concat("$distance"))
-            .type("FLOAT")
+            .sqlTypeName("FLOAT")
+            .type(DingoTypeFactory.INSTANCE.fromName("FLOAT", null, false))
             .build()
         );
 
         RelDataTypeFactory typeFactory = getCluster().getTypeFactory();
         return typeFactory.createStructType(
             cols.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-            cols.stream().map(ColumnDefinition::getName).map(String::toUpperCase).collect(Collectors.toList())
+            cols.stream().map(Column::getName).map(String::toUpperCase).collect(Collectors.toList())
         );
     }
 

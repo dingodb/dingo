@@ -16,8 +16,7 @@
 
 package io.dingodb.store.proxy.mapper;
 
-import io.dingodb.sdk.service.entity.meta.DingoCommonId;
-import io.dingodb.sdk.service.entity.meta.DropSchemaRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
@@ -28,4 +27,5 @@ import org.mapstruct.factory.Mappers;
 public interface Mapper extends EntityMapper, TableMapper, IndexMapper, RequestResponseMapper, TxnMapper {
     Mapper MAPPER = Mappers.getMapper(Mapper.class);
 
+    ObjectMapper JSON = new ObjectMapper();
 }

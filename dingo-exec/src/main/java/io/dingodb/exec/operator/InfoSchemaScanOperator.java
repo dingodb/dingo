@@ -16,23 +16,26 @@
 
 package io.dingodb.exec.operator;
 
-import io.dingodb.common.partition.PartitionDetailDefinition;
-import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.InfoSchemaScanParam;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.Partition;
+import io.dingodb.meta.entity.Table;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+@Slf4j
 public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
     public static final InfoSchemaScanOperator INSTANCE = new InfoSchemaScanOperator();
 
@@ -85,40 +88,39 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         return metaServiceMap
             .entrySet()
             .stream()
-            .flatMap(schema -> schema.getValue().getTableDefinitions()
-                .values()
+            .flatMap(schema -> schema.getValue().getTables()
                 .stream()
                 .flatMap(td -> {
                     List<Object[]> colRes = new ArrayList<>();
                     for (int i = 0; i < td.getColumns().size(); i ++) {
-                        ColumnDefinition column = td.getColumn(i);
+                        Column column = td.columns.get(i);
                         colRes.add(new Object[]{
                             "def",
                             schema.getKey(),
                             td.getName(),
-                            column.getName(),
+                            column.name,
                             // ordinal position
                             i + 1L,
                             // default value
-                            column.getDefaultValue(),
+                            column.defaultValueExpr,
                             // is null
                             column.isNullable() ? "YES" : "NO",
                             // type name
-                            column.getTypeName(),
-                            (long)column.getPrecision(),
+                            column.type,
+                            (long)column.precision,
                             null,
                             null,
                             null,
                             null,
                             "utf8",
                             "utf8_bin",
-                            column.getType().toString(),
+                            column.type.toString(),
                             // is key
                             column.isPrimary() ? "PRI" : "",
                             "",
                             // privileges fix
                             "select,insert,update,references",
-                            column.getComment(),
+                            column.comment,
                             ""
                         });
                     }
@@ -129,29 +131,21 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
 
     private static Iterator<Object[]> getInformationPartitions(MetaService metaService) {
         Map<String, MetaService> metaServiceMap = metaService.getSubMetaServices();
-        return metaServiceMap.entrySet().stream().flatMap(schema -> schema.getValue().getTableDefinitions()
-            .values()
+        return metaServiceMap.entrySet().stream().flatMap(schema -> schema.getValue().getTables()
             .stream()
-            .flatMap(td -> {
-                if (td.getPartDefinition() == null
-                    || (td.getPartDefinition() != null && td.getPartDefinition().getDetails().size() == 0)) {
-                    List<Object[]> partitionList = new ArrayList<>();
-                    partitionList.add(getPartitionDetail(schema.getKey(), td, null));
-                    return partitionList.stream();
+            .flatMap(table -> {
+                if (table.partitions == null || table.getPartitions().isEmpty()) {
+                    log.warn("The table {} not have partition, please check meta.", table.name);
+                    return Stream.<Object[]>of(getPartitionDetail(schema.getKey(), table, null));
                 } else {
-                    return td.getPartDefinition()
-                        .getDetails()
+                    return table.getPartitions()
                         .stream()
-                        .map(partDetail -> getPartitionDetail(schema.getKey(), td, partDetail))
-                        .collect(Collectors.toList())
-                        .stream();
+                        .map(partition -> getPartitionDetail(schema.getKey(), table, partition));
                 }
             })).iterator();
     }
 
-    private static Object[] getPartitionDetail(String schemaName,
-                                               TableDefinition td,
-                                               PartitionDetailDefinition partDetail) {
+    private static Object[] getPartitionDetail(String schemaName, Table td, Partition partition) {
         return new Object[] {
             "def",
             schemaName,
@@ -173,7 +167,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             // sub part expr
             null,
             // part desc
-            partDetail == null ? null : Arrays.toString(partDetail.getOperand()),
+            partition.operand,
             // table rows
             null,
             // avg row length
@@ -227,10 +221,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         List<Object[]> tuples = metaServiceMap.entrySet()
             .stream()
             .flatMap(e -> {
-                Map<String, TableDefinition> tableDefinitionMap = e.getValue().getTableDefinitions();
-                return tableDefinitionMap
-                    .values()
-                    .stream()
+                Set<Table> tables = e.getValue().getTables();
+                return tables.stream()
                     .map(td -> {
                         Timestamp updateTime = null;
                         if (td.getUpdateTime() > 0) {
@@ -243,7 +235,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                         return new Object[]{"def",
                             e.getKey(),
                             td.getName(),
-                            td.getTableType(),
+                            td.tableType,
                             td.getEngine(),
                             td.getVersion(),
                             td.getRowFormat(),
@@ -259,7 +251,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             0L,
                             // data free
                             null,
-                            td.getAutoIncrement(),
+                            td.autoIncrement,
                             new Timestamp(td.getCreateTime()),
                             updateTime,
                             null,

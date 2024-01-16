@@ -26,8 +26,6 @@ import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.stats.StatsCache;
 import io.dingodb.calcite.stats.TableStats;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.scalar.DateType;
 import io.dingodb.common.type.scalar.DoubleType;
 import io.dingodb.common.type.scalar.FloatType;
@@ -36,6 +34,8 @@ import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.Table;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -83,20 +83,20 @@ public class DingoCostModelV1 extends DingoCostModel {
         String schemaName = dingoTable.getNames().get(1);
 
         CommonId commonId = dingoGetByIndex.getIndexSetMap().keySet().stream().findFirst().get();
-        TableDefinition td = dingoGetByIndex.getIndexTdMap().get(commonId);
+        Table table = dingoGetByIndex.getIndexTdMap().get(commonId);
 
-        List<String> columnList = td.getColumns()
-            .stream().map(ColumnDefinition::getName).collect(Collectors.toList());
-        List<ColumnDefinition> indexCdList = dingoTable.getTableDefinition().getColumns().stream()
+        List<String> columnList = table.getColumns()
+            .stream().map(Column::getName).collect(Collectors.toList());
+        List<Column> indexCdList = dingoTable.getTable().getColumns().stream()
             .filter(cd -> columnList.contains(cd.getName())).collect(Collectors.toList());
         double indexRowSize = getAvgRowSize(indexCdList,
-            dingoTable.getTableDefinition(), schemaName);
+            dingoTable.getTable(), schemaName);
 
         double estimateRowCount = dingoGetByIndex.estimateRowCount(mq);
         double indexScanCost = estimateRowCount * (Math.log(indexRowSize) / Math.log(2)) * scanFactor;
         double indexNetCost = estimateRowCount * indexRowSize * netFactor;
         double indexSideCost = (indexNetCost + indexScanCost) / scanConcurrency;
-        List<ColumnDefinition> selectionCdList = getSelectionCdList(dingoGetByIndex, dingoTable);
+        List<Column> selectionCdList = getSelectionCdList(dingoGetByIndex, dingoTable);
         boolean isNeedLookup = needLookUp(indexCdList, selectionCdList);
         double tableSideCost = 0;
         double doubleReadCost = 0;
@@ -155,8 +155,8 @@ public class DingoCostModelV1 extends DingoCostModel {
     private double getScanAvgRowSize(LogicalDingoTableScan tableScan) {
         DingoTable dingoTable = tableScan.getTable().unwrap(DingoTable.class);
         String schemaName = dingoTable.getNames().get(1);
-        List<ColumnDefinition> selectionCdList = getSelectionCdList(tableScan, dingoTable);
-        return getAvgRowSize(selectionCdList, dingoTable.getTableDefinition(), schemaName);
+        List<Column> selectionCdList = getSelectionCdList(tableScan, dingoTable);
+        return getAvgRowSize(selectionCdList, dingoTable.getTable(), schemaName);
     }
 
     private double getScanCost(double rowCount, double rowSize) {
@@ -173,19 +173,19 @@ public class DingoCostModelV1 extends DingoCostModel {
     }
 
     @NonNull
-    private static List<ColumnDefinition> getSelectionCdList(LogicalDingoTableScan tableScan, DingoTable dingoTable) {
+    private static List<Column> getSelectionCdList(LogicalDingoTableScan tableScan, DingoTable dingoTable) {
         if (tableScan.getRealSelection() == null) {
-            return dingoTable.getTableDefinition().getColumns();
+            return dingoTable.getTable().getColumns();
         }
         int[] selections = tableScan.getSelection().getMappings();
-        List<ColumnDefinition> selectionCdList = new ArrayList<>();
+        List<Column> selectionCdList = new ArrayList<>();
         for (int selection : selections) {
-            selectionCdList.add(dingoTable.getTableDefinition().getColumn(selection));
+            selectionCdList.add(dingoTable.getTable().getColumns().get(selection));
         }
         return selectionCdList;
     }
 
-    public double getAvgRowSize(List<ColumnDefinition> selectionCds, TableDefinition td, String schemaName) {
+    public double getAvgRowSize(List<Column> selectionCds, Table td, String schemaName) {
         TableStats tableStats = StatsCache.statsMap.get(schemaName + "." + td.getName());
         AtomicLong avgRowSize = new AtomicLong();
         if (selectionCds == null) {
@@ -208,7 +208,7 @@ public class DingoCostModelV1 extends DingoCostModel {
         return avgRowSize.get();
     }
 
-    public long getTypeDefaultSize(ColumnDefinition columnDefinition) {
+    public long getTypeDefaultSize(Column columnDefinition) {
         if (columnDefinition.getType() instanceof IntegerType
             || columnDefinition.getType() instanceof FloatType
             || columnDefinition.getType() instanceof LongType
@@ -233,7 +233,7 @@ public class DingoCostModelV1 extends DingoCostModel {
         return 32;
     }
 
-    private static boolean needLookUp(List<ColumnDefinition> indexCdList, List<ColumnDefinition> selectionCdList) {
+    private static boolean needLookUp(List<Column> indexCdList, List<Column> selectionCdList) {
         if (selectionCdList.size() > indexCdList.size()) {
             return true;
         } else {

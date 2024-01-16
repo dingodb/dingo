@@ -20,4 +20,5 @@ plugins {
 }
 
 dependencies {
+    api project(':dingo-common')
 }

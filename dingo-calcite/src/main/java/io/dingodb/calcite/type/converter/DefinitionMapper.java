@@ -23,6 +23,8 @@ import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.NullType;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.util.Optional;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.rel.type.RelDataType;
@@ -197,6 +199,66 @@ public final class DefinitionMapper {
             columns.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
             columns.stream().map(ColumnDefinition::getName).map(String::toUpperCase).collect(Collectors.toList())
         );
+    }
+
+    public static RelDataType mapToRelDataType(Table table, @NonNull RelDataTypeFactory typeFactory) {
+        // make column name uppercase to adapt to calcite
+        List<Column> columns = table.getColumns();
+        return typeFactory.createStructType(
+            columns.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
+            columns.stream().map(Column::getName).map(String::toUpperCase).collect(Collectors.toList())
+        );
+    }
+
+    public static RelDataType mapToRelDataType(
+        @NonNull Column column, @NonNull RelDataTypeFactory typeFactory
+    ) {
+        RelDataType relDataType;
+        SqlTypeName type = SqlTypeName.get(column.getSqlTypeName().toUpperCase());
+
+        if (type == null) {
+            return mapToJavaRelDataType(column.getSqlTypeName().toUpperCase(), typeFactory);
+        }
+
+        switch (type) {
+            case ARRAY:
+                relDataType = typeFactory.createArrayType(
+                    Optional.mapOrGet(
+                        SqlTypeName.get(column.getElementTypeName().toUpperCase()),
+                        typeFactory::createSqlType,
+                        () -> mapToJavaRelDataType(column.getElementTypeName().toUpperCase(), typeFactory)
+                    ),
+                    -1
+                );
+                break;
+            case MULTISET:
+                relDataType = typeFactory.createMultisetType(
+                    Optional.mapOrGet(
+                        SqlTypeName.get(column.getElementTypeName().toUpperCase()),
+                        typeFactory::createSqlType,
+                        () -> mapToJavaRelDataType(column.getElementTypeName().toUpperCase(), typeFactory)
+                    ),
+                    -1
+                );
+                break;
+            case MAP:
+                relDataType = typeFactory.createMapType(
+                    typeFactory.createSqlType(SqlTypeName.VARCHAR),
+                    typeFactory.createSqlType(SqlTypeName.INTEGER)
+                );
+                break;
+            default:
+                if (column.getPrecision() != RelDataType.PRECISION_NOT_SPECIFIED) {
+                    if (column.getScale() != RelDataType.SCALE_NOT_SPECIFIED) {
+                        relDataType = typeFactory.createSqlType(type, column.getPrecision(), column.getScale());
+                    } else {
+                        relDataType = typeFactory.createSqlType(type, column.getPrecision());
+                    }
+                } else {
+                    relDataType = typeFactory.createSqlType(type);
+                }
+        }
+        return typeFactory.createTypeWithNullability(relDataType, column.isNullable());
     }
 
 }

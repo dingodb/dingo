@@ -16,17 +16,15 @@
 
 package io.dingodb.calcite.rule;
 
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoLikeScan;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.RexLiteralUtils;
-import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
-import io.dingodb.common.CommonId;
-import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
@@ -38,8 +36,6 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
-
-import java.io.IOException;
 
 @Slf4j
 @Value.Enclosing
@@ -82,8 +78,8 @@ public class DingoLikeRule extends RelRule<DingoLikeRule.Config> {
     @Override
     public void onMatch(@NonNull RelOptRuleCall call) {
         final DingoTableScan rel = call.rel(0);
-        TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
-        int firstPrimaryColumnIndex = td.getFirstPrimaryColumnIndex();
+        Table td = rel.getTable().unwrap(DingoTable.class).getTable();
+        int firstPrimaryColumnIndex = td.keyMapping().get(0);
         RexCall filter = (RexCall) rel.getFilter();
 
         RexLiteral rexLiteral = (RexLiteral) filter.operands.get(1);
@@ -109,8 +105,8 @@ public class DingoLikeRule extends RelRule<DingoLikeRule.Config> {
             return;
         }
 
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td);
-        Object[] tuple = new Object[td.getColumnsCount()];
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td.tupleType(), td.keyMapping());
+        Object[] tuple = new Object[td.getColumns().size()];
 
         byte[] prefixBytes;
         tuple[firstPrimaryColumnIndex] = RexLiteralUtils.convertFromRexLiteral(

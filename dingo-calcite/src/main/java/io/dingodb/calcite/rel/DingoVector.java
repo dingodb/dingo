@@ -20,6 +20,7 @@ import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -54,7 +55,7 @@ public class DingoVector extends TableFunctionScan implements DingoRel {
     @Getter
     private final CommonId indexTableId;
     @Getter
-    private final TableDefinition indexTableDefinition;
+    private final Table indexTableDefinition;
 
     public DingoVector(
         RelOptCluster cluster,
@@ -63,7 +64,7 @@ public class DingoVector extends TableFunctionScan implements DingoRel {
         DingoRelOptTable table,
         List<SqlNode> operands,
         @NonNull CommonId indexTableId,
-        @NonNull TableDefinition indexTableDefinition
+        @NonNull Table indexTableDefinition
     ) {
         super(cluster, traitSet, Collections.emptyList(), call, null, call.type, null);
         this.call = call;

@@ -21,10 +21,10 @@ import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.expr.runtime.ExprCompiler;
 import io.dingodb.expr.runtime.expr.Expr;
+import io.dingodb.meta.entity.Table;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -39,23 +39,19 @@ public final class TableUtils {
     private TableUtils() {
     }
 
-    public static TableDefinition getTableDefinition(@NonNull RelOptTable table) {
-        return Objects.requireNonNull(table.unwrap(DingoTable.class)).getTableDefinition();
-    }
-
     public static CommonId getTableId(@NonNull RelOptTable table) {
         return Objects.requireNonNull(table.unwrap(DingoTable.class)).getTableId();
     }
 
     public static List<Object[]> getTuplesForMapping(
         @NonNull Collection<Map<Integer, RexNode>> items,
-        @NonNull TableDefinition td,
+        @NonNull int columnCount,
         @NonNull TupleMapping mapping
     ) {
-        final TupleMapping revMapping = mapping.reverse(td.getColumnsCount());
+        final TupleMapping revMapping = mapping.reverse(columnCount);
         return items.stream()
             .map(item -> {
-                Object[] tuple = new Object[td.getColumnsCount()];
+                Object[] tuple = new Object[columnCount];
                 for (Map.Entry<Integer, RexNode> entry : item.entrySet()) {
                     Expr expr = RexConverter.convert(entry.getValue());
                     tuple[entry.getKey()] = ExprCompiler.ADVANCED.visit(expr).eval();
@@ -67,13 +63,13 @@ public final class TableUtils {
 
     public static List<Object[]> getTuplesForKeyMapping(
         @NonNull Collection<Map<Integer, RexNode>> items,
-        @NonNull TableDefinition td
+        @NonNull Table td
     ) {
-        return getTuplesForMapping(items, td, td.getKeyMapping());
+        return getTuplesForMapping(items, td.getColumns().size(), td.keyMapping());
     }
 
-    public static KeyValueCodec getKeyValueCodecForTable(TableDefinition td) {
-        return CodecService.getDefault().createKeyValueCodec(td);
+    public static KeyValueCodec getKeyValueCodecForTable(Table td) {
+        return CodecService.getDefault().createKeyValueCodec(td.tupleType(), td.keyMapping());
     }
 
 }

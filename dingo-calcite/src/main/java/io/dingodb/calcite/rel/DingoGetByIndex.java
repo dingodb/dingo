@@ -18,8 +18,8 @@ package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptCluster;
@@ -40,7 +40,7 @@ public class DingoGetByIndex extends LogicalDingoTableScan implements DingoRel {
     @Getter
     protected final Map<CommonId, Set> indexSetMap;
     @Getter
-    protected final Map<CommonId, TableDefinition> indexTdMap;
+    protected final Map<CommonId, Table> indexTdMap;
 
     @Getter
     private final boolean isUnique;
@@ -54,7 +54,7 @@ public class DingoGetByIndex extends LogicalDingoTableScan implements DingoRel {
         @Nullable TupleMapping selection,
         boolean isUnique,
         Map<CommonId, Set> indexSetMap,
-        Map<CommonId, TableDefinition> indexTdMap
+        Map<CommonId, Table> indexTdMap
     ) {
         super(cluster, traitSet, hints, table, filter, selection);
         this.indexSetMap = indexSetMap;

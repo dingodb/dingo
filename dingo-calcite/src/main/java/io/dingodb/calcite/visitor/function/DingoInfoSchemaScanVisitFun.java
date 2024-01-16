@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.visitor.function;
 
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoInfoSchemaScan;
 import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.utils.TableUtils;
@@ -28,6 +29,7 @@ import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.params.InfoSchemaScanParam;
+import io.dingodb.meta.entity.Table;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
@@ -47,7 +49,7 @@ public final class DingoInfoSchemaScanVisitFun {
         DingoJobVisitor visitor,
         @NonNull DingoInfoSchemaScan rel
     ) {
-        final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
+        final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
         SqlExpr filter = null;
         if (rel.getFilter() != null) {
             filter = SqlExprUtils.toSqlExpr(rel.getFilter());
@@ -59,7 +61,7 @@ public final class DingoInfoSchemaScanVisitFun {
             tableName = td.getName();
         }
         InfoSchemaScanParam param = new InfoSchemaScanParam(
-            td.getDingoType(),
+            td.tupleType(),
             filter,
             rel.getSelection(),
             tableName

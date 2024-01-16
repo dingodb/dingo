@@ -20,6 +20,7 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.meta.entity.Column;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
@@ -54,9 +55,9 @@ public class DingoWithoutPriModifyRule extends RelRule<DingoWithoutPriModifyRule
         LogicalDingoTableScan tableScan = call.rel(1);
         DingoTable dingoTable = tableScan.getTable().unwrap(DingoTable.class);
         assert dingoTable != null;
-        List<ColumnDefinition> columns = dingoTable.getTableDefinition().getColumns();
+        List<Column> columns = dingoTable.getTable().getColumns();
         boolean withoutPri = false;
-        for (ColumnDefinition columnDefinition : columns) {
+        for (Column columnDefinition : columns) {
             if (columnDefinition.isAutoIncrement() && columnDefinition.getState() == 2) {
                 withoutPri = true;
                 break;
@@ -97,9 +98,9 @@ public class DingoWithoutPriModifyRule extends RelRule<DingoWithoutPriModifyRule
         LogicalDingoTableScan tableScan = call.rel(2);
         DingoTable dingoTable = tableScan.getTable().unwrap(DingoTable.class);
         assert dingoTable != null;
-        List<ColumnDefinition> columns = dingoTable.getTableDefinition().getColumns();
+        List<Column> columns = dingoTable.getTable().getColumns();
         boolean withoutPri = false;
-        for (ColumnDefinition columnDefinition : columns) {
+        for (Column columnDefinition : columns) {
             if (columnDefinition.isAutoIncrement() && columnDefinition.getState() == 2) {
                 withoutPri = true;
                 break;

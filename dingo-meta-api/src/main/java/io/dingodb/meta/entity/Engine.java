@@ -14,19 +14,11 @@
  * limitations under the License.
  */
 
-package io.dingodb.meta;
+package io.dingodb.meta.entity;
 
-import io.dingodb.common.CommonId;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.ToString;
-
-@Builder
-@ToString
-@AllArgsConstructor
-public class Partition {
-
-    public final CommonId id;
-    public final Object[] operand;
-
+public enum Engine {
+    LSM,
+    TXN_LSM,
+    BTREE,
+    TXN_BTREE
 }

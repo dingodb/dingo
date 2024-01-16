@@ -57,8 +57,7 @@ public class PessimisticLockDeleteOperator extends PartModifyOperator {
         CommonId jobId = vertex.getTask().getJobId();
         CommonId txnId = vertex.getTask().getTxnId();
         CommonId partId = PartitionService.getService(
-                Optional.ofNullable(param.getTableDefinition().getPartDefinition())
-                    .map(PartitionDefinition::getFuncName)
+                Optional.ofNullable(param.getTable().getPartitionStrategy())
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
             .calcPartId(keys, param.getDistributions());
         ITransaction transaction = TransactionManager.getTransaction(txnId);

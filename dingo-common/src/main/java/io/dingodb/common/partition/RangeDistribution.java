@@ -27,6 +27,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.Arrays;
+
 @Getter
 @Setter
 @Builder
@@ -83,5 +85,13 @@ public class RangeDistribution implements Distribution {
     @Override
     public CommonId id() {
         return id;
+    }
+
+    public byte[] getStartKey() {
+        return startKey == null ? null : Arrays.copyOf(startKey, startKey.length);
+    }
+
+    public byte[] getEndKey() {
+        return endKey == null ? null : Arrays.copyOf(endKey, endKey.length);
     }
 }

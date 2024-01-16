@@ -14,11 +14,25 @@
  * limitations under the License.
  */
 
-package io.dingodb.meta;
+package io.dingodb.test;
 
-public enum Engine {
-    LSM,
-    TXN_LSM,
-    BTREE,
-    TXN_BTREE
+import com.google.auto.service.AutoService;
+import io.dingodb.store.api.StoreService;
+import io.dingodb.store.api.StoreServiceProvider;
+import io.dingodb.store.memory.MemoryStoreService;
+
+@AutoService(StoreServiceProvider.class)
+public class StoreTestLocalServiceProvider implements StoreServiceProvider {
+
+    public static final MemoryStoreService STORE_SERVICE = new MemoryStoreService();
+
+    @Override
+    public StoreService get() {
+        return STORE_SERVICE;
+    }
+
+    @Override
+    public String key() {
+        return "local";
+    }
 }

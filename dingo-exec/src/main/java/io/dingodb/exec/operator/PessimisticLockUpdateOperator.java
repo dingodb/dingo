@@ -86,8 +86,7 @@ public class PessimisticLockUpdateOperator extends PartModifyOperator {
             KeyValue keyValue = wrap(param.getCodec()::encode).apply(newTuple2);
             byte[] primaryKey = keyValue.getKey();
             CommonId partId = PartitionService.getService(
-                    Optional.ofNullable(param.getTableDefinition().getPartDefinition())
-                        .map(PartitionDefinition::getFuncName)
+                    Optional.ofNullable(param.getTable().getPartitionStrategy())
                         .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
                 .calcPartId(keyValue.getKey(), param.getDistributions());
             Future future = null;

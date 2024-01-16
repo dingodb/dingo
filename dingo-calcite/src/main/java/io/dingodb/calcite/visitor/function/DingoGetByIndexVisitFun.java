@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.visitor.function;
 
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
@@ -26,10 +27,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
@@ -40,18 +38,17 @@ import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.GetByIndexParam;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.Utils.calculatePrefixCount;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_INDEX;
@@ -74,23 +71,24 @@ public final class DingoGetByIndexVisitFun {
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         Map<CommonId, Set> indexSetMap = rel.getIndexSetMap();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
-        final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
+        final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
         boolean needLookup = false;
         if (indexSetMap.size() > 1) {
             needLookup = true;
         }
         for (Map.Entry<CommonId, Set> indexValSet : indexSetMap.entrySet()) {
-            TableDefinition indexTd = rel.getIndexTdMap().get(indexValSet.getKey());
-            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> indexRanges
-                = metaService.getIndexRangeDistribution(indexValSet.getKey(),
-                indexTd);
+            CommonId idxId = indexValSet.getKey();
+            Table indexTd = rel.getIndexTdMap().get(idxId);
+            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> indexRanges = metaService
+                .getRangeDistribution(idxId);
 
             PartitionService ps = PartitionService.getService(
-                Optional.ofNullable(indexTd.getPartDefinition())
-                    .map(PartitionDefinition::getFuncName)
+                Optional.ofNullable(indexTd.getPartitionStrategy())
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
 
-            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTd.getColumns());
+            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+                indexTd.tupleType(), indexTd.keyMapping()
+            );
             List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(indexValSet.getValue(), indexTd);
 
             Map<CommonId, List<Object[]>> partMap = new LinkedHashMap<>();
@@ -100,16 +98,15 @@ public final class DingoGetByIndexVisitFun {
                 partMap.putIfAbsent(partId, new LinkedList<>());
                 partMap.get(partId).add(tuple);
             }
-            List<String> columnNames = indexTd.getColumns()
-                .stream().map(ColumnDefinition::getName).collect(Collectors.toList());
-            TupleMapping tupleMapping = TupleMapping.of(td.getColumnIndices(columnNames));
+
+            TupleMapping tupleMapping = td.mapping();
 
             if (!needLookup) {
                 needLookup = isNeedLookUp(rel.getSelection(), tupleMapping);
             }
             for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
                 GetByIndexParam param = new GetByIndexParam(
-                    indexValSet.getKey(),
+                    idxId,
                     entry.getKey(),
                     tableInfo.getId(),
                     tupleMapping,
