@@ -79,7 +79,7 @@ public class TableFunctionNamespace extends AbstractNamespace {
         // Get all index table definition
         Table table = dingoTable.getTable();
         for (Table index : table.getIndexes()) {
-            String indexType = index.getProperties().get("indexType").toString();
+            String indexType = index.getProperties().getOrDefault("indexType", "scalar").toString();
             // Skip if not a vector table
             if (indexType.equalsIgnoreCase("scalar")) {
                 continue;

@@ -114,7 +114,7 @@ public class DingoGetVectorByDistance extends Filter implements DingoRel {
         // Get all index table definition
         List<IndexTable> indexes = dingoTable.getTable().getIndexes();
         for (Table index : indexes) {
-            String indexType = index.getProperties().get("indexType").toString();
+            String indexType = index.getProperties().getProperty("indexType", "scalar").toString();
             // Skip if not a vector table
             if (indexType.equals("scalar")) {
                 continue;

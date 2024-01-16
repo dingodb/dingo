@@ -137,7 +137,7 @@ void TableElement(List<SqlNode> list) :
     Properties properties = null;
     PartitionDefinition partitionDefinition = null;
     int replica = 0;
-    String engine = "";
+    String engine = null;
     String indexType = "scalar";
 }
 {

@@ -71,7 +71,8 @@ fatJar.dependsOn(
     ':dingo-cluster-api:jar',
     ':dingo-store-proxy:jar',
     ':dingo-tool-api:jar',
-    ':dingo-exec:jar'
+    ':dingo-exec:jar',
+    ':dingo-transaction-api:jar'
 )
 
 tasks.named("build") { x ->

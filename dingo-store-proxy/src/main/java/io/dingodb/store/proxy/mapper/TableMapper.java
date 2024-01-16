@@ -202,7 +202,7 @@ public interface TableMapper {
         RecordEncoder encoder = new RecordEncoder(
             1, CodecService.createSchemasForType(keyType, keyMapping), 0
         );
-        if (tableDefinition.getEngine() == null) {
+        if (tableDefinition.getEngine() == null || tableDefinition.getEngine().isEmpty()) {
             tableDefinition.setEngine("LSM");
         }
         byte namespace = 'r';

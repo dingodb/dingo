@@ -281,7 +281,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         List<IndexTable> indexes = dingoTable.getTable().getIndexes();
         for (Table index : indexes) {
 
-            String indexType = index.getProperties().get("indexType").toString();
+            String indexType = index.getProperties().getProperty("indexType", "scalar").toString();
             if (indexType.equals("scalar")) {
                 continue;
             }
