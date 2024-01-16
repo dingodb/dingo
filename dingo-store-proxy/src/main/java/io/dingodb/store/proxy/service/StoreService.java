@@ -68,6 +68,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -132,6 +133,16 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     storeInstance.table.tableId
                 );
                 throw e;
+            } catch (InvocationTargetException e) {
+                if (e.getTargetException() instanceof DingoClientException.InvalidRouteTableException) {
+                    io.dingodb.store.proxy.service.MetaService.ROOT.metaService.cache.invalidDistribution(
+                        storeInstance.tableId
+                    );
+                    io.dingodb.store.proxy.service.MetaService.ROOT.metaService.cache.invalidDistribution(
+                        storeInstance.table.tableId
+                    );
+                }
+                throw e.getTargetException();
             }
         }
     }

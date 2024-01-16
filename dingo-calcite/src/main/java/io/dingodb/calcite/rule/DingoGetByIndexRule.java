@@ -227,7 +227,7 @@ public class DingoGetByIndexRule extends ConverterRule {
             if (index.getProperties() == null) {
                 continue;
             }
-            String indexType = index.getProperties().get("indexType").toString();
+            String indexType = index.getProperties().getProperty("indexType", "scalar").toString();
             if (indexType.equals("scalar")) {
                 indexTdMap.put(index.getTableId(), index);
             }
