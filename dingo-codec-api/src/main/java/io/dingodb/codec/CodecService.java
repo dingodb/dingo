@@ -21,8 +21,10 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
 
+import java.util.Arrays;
 import java.util.List;
 
 public interface CodecService {
@@ -46,7 +48,23 @@ public interface CodecService {
 
     KeyValueCodec createKeyValueCodec(CommonId id, DingoType type, TupleMapping keyMapping);
 
-    KeyValueCodec createKeyValueCodec(CommonId id, List<ColumnDefinition> columns);
+    default KeyValueCodec createKeyValueCodec(CommonId id, List<ColumnDefinition> columns) {
+        int[] mappings = new int[columns.size()];
+        int keyCount = 0;
+        for (int i = 0; i < columns.size(); i++) {
+            int primaryKeyIndex = columns.get(i).getPrimary();
+            if (primaryKeyIndex >= 0) {
+                mappings[primaryKeyIndex] = i;
+                keyCount++;
+            }
+        }
+        TupleMapping keyMapping = TupleMapping.of(Arrays.copyOf(mappings, keyCount));
+        return createKeyValueCodec(
+            id,
+            DingoTypeFactory.tuple((DingoType[]) columns.stream().map(ColumnDefinition::getType).toArray()),
+            keyMapping
+        );
+    }
 
     default KeyValueCodec createKeyValueCodec(CommonId id, TableDefinition tableDefinition) {
         return createKeyValueCodec(id, tableDefinition.getColumns());

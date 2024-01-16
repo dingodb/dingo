@@ -16,20 +16,18 @@
 
 package io.dingodb.calcite.visitor.function;
 
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.RangeUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.utils.TableInfo;
-import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.Location;
-import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
@@ -41,6 +39,7 @@ import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.params.PartRangeScanParam;
 import io.dingodb.exec.operator.params.TxnPartRangeScanParam;
 import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
@@ -70,13 +69,12 @@ public final class DingoTableScanVisitFun {
         ITransaction transaction, DingoJobVisitor visitor, @NonNull DingoTableScan rel
     ) {
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
-        final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
+        final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
 
         NavigableSet<RangeDistribution> distributions;
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
         final PartitionService ps = PartitionService.getService(
-            Optional.ofNullable(td.getPartDefinition())
-                .map(PartitionDefinition::getFuncName)
+            Optional.ofNullable(td.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         SqlExpr filter = null;
         byte[] startKey = null;
@@ -85,7 +83,7 @@ public final class DingoTableScanVisitFun {
         boolean withEnd = false;
         if (rel.getFilter() != null) {
             filter = SqlExprUtils.toSqlExpr(rel.getFilter());
-            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td);
+            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td.tupleType(), td.keyMapping());
             RangeDistribution range = RangeUtils.createRangeByFilter(td, codec, rel.getFilter(), rel.getSelection());
             if (range != null) {
                 startKey = range.getStartKey();
@@ -128,8 +126,8 @@ public final class DingoTableScanVisitFun {
                 TxnPartRangeScanParam param = new TxnPartRangeScanParam(
                     tableInfo.getId(),
                     rd.id(),
-                    td.getDingoType(),
-                    td.getKeyMapping(),
+                    td.tupleType(),
+                    td.keyMapping(),
                     Optional.mapOrNull(filter, SqlExpr::copy),
                     rel.getSelection(),
                     rd.getStartKey(),
@@ -151,8 +149,8 @@ public final class DingoTableScanVisitFun {
                 PartRangeScanParam param = new PartRangeScanParam(
                     tableInfo.getId(),
                     rd.id(),
-                    td.getDingoType(),
-                    td.getKeyMapping(),
+                    td.tupleType(),
+                    td.keyMapping(),
                     Optional.mapOrNull(filter, SqlExpr::copy),
                     rel.getSelection(),
                     rd.getStartKey(),

@@ -21,6 +21,7 @@ import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.meta.entity.Column;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.prepare.RelOptTableImpl;
@@ -114,7 +115,7 @@ public class SelectivityEstimator extends RexVisitorImpl<Double> {
         return rexLiteral.getValue();
     }
 
-    private static CalculateStatistic extractColStats(Pair<String, ColumnDefinition> statsIdentifier) {
+    private static CalculateStatistic extractColStats(Pair<String, Column> statsIdentifier) {
         if (StatsCache.statsMap.containsKey(statsIdentifier.getLeft())) {
             TableStats stats = StatsCache.statsMap.get(statsIdentifier.getLeft());
             for (int i = 0; i < stats.getHistogramList().size(); i ++) {
@@ -131,12 +132,12 @@ public class SelectivityEstimator extends RexVisitorImpl<Double> {
         return null;
     }
 
-    private static Pair<String, ColumnDefinition> extractCol(TableScan tableScan, RexCall pred) {
+    private static Pair<String, Column> extractCol(TableScan tableScan, RexCall pred) {
         RexInputRef rexInputRef = (RexInputRef) pred.getOperands().get(0);
         DingoTable dingoTable = tableScan.getTable().unwrap(DingoTable.class);
         String schemaName = dingoTable.getSchema().name();
-        String tableName = schemaName + "." + dingoTable.getTableDefinition().getName();
-        return Pair.of(tableName, dingoTable.getTableDefinition().getColumn(rexInputRef.getIndex()));
+        String tableName = schemaName + "." + dingoTable.getTable().getName();
+        return Pair.of(tableName, dingoTable.getTable().getColumns().get(rexInputRef.getIndex()));
     }
 
     private boolean predicateMatch(RexCall pred) {

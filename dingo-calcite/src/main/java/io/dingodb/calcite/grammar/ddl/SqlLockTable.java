@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.grammar.ddl;
 
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
@@ -27,7 +28,7 @@ import java.util.List;
 
 public class SqlLockTable extends SqlLock {
 
-    public List<String> tableList;
+    public List<SqlIdentifier> tableList;
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("LOCK TABLE", SqlKind.OTHER_DDL);
@@ -37,7 +38,7 @@ public class SqlLockTable extends SqlLock {
      *
      * @param pos
      */
-    public SqlLockTable(SqlParserPos pos, List<String> tableList) {
+    public SqlLockTable(SqlParserPos pos, List<SqlIdentifier> tableList) {
         super(OPERATOR, pos);
         this.tableList = tableList;
     }
@@ -51,7 +52,7 @@ public class SqlLockTable extends SqlLock {
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword("LOCK TABLES");
         for (int i = 0; i < tableList.size(); i ++) {
-            writer.keyword(tableList.get(i));
+            writer.keyword(tableList.get(i).getSimple());
             if (i < tableList.size() - 1) {
                 writer.keyword(",");
             }

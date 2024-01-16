@@ -22,13 +22,12 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Optional;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreService;
 
-import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -40,23 +39,29 @@ public abstract class StatsOperator {
     public static StoreService storeService = StoreService.getDefault();
     public static MetaService metaService = MetaService.root().getSubMetaService("MYSQL");
 
-    public static CommonId analyzeTaskTblId = metaService.getTableId("analyze_task");
-    public static CommonId bucketsTblId = metaService.getTableId("table_buckets");
-    public static CommonId statsTblId = metaService.getTableId("table_stats");
-    public static CommonId cmSketchTblId = metaService.getTableId("cm_sketch");
+    public static final String ANALYZE_TASK = "analyze_task";
+    public static final String TABLE_BUCKETS = "table_buckets";
+    public static final String TABLE_STATS = "table_stats";
+    public static final String CM_SKETCH = "cm_sketch";
 
-    public static final TableDefinition analyzeTaskTd = metaService.getTableDefinition(analyzeTaskTblId);
-    public static final TableDefinition bucketsTd = metaService.getTableDefinition(bucketsTblId);
-    public static final TableDefinition statsTd = metaService.getTableDefinition(statsTblId);
-    public static final TableDefinition cmSketchTd = metaService.getTableDefinition(cmSketchTblId);
+    public static final Table analyzeTaskTable = metaService.getTable(ANALYZE_TASK);
+    public static final Table bucketsTable = metaService.getTable(TABLE_BUCKETS);
+    public static final Table statsTable = metaService.getTable(TABLE_STATS);
+    public static final Table cmSketchTable = metaService.getTable(CM_SKETCH);
+
+    public static CommonId analyzeTaskTblId = analyzeTaskTable.tableId;
+    public static CommonId bucketsTblId = bucketsTable.tableId;
+    public static CommonId statsTblId = statsTable.tableId;
+    public static CommonId cmSketchTblId = cmSketchTable.tableId;
 
     public static final KeyValueCodec analyzeTaskCodec = CodecService.getDefault()
-        .createKeyValueCodec(analyzeTaskTblId, analyzeTaskTd);
+        .createKeyValueCodec(analyzeTaskTable.tupleType(), analyzeTaskTable.keyMapping());
     public static final KeyValueCodec bucketsCodec = CodecService.getDefault()
-        .createKeyValueCodec(bucketsTblId, bucketsTd);
-    public static final KeyValueCodec statsCodec = CodecService.getDefault().createKeyValueCodec(statsTblId, statsTd);
+        .createKeyValueCodec(bucketsTable.tupleType(), bucketsTable.keyMapping());
+    public static final KeyValueCodec statsCodec = CodecService.getDefault()
+        .createKeyValueCodec(statsTable.tupleType(), statsTable.keyMapping());
     public static final KeyValueCodec cmSketchCodec = CodecService.getDefault()
-        .createKeyValueCodec(cmSketchTblId, cmSketchTd);
+        .createKeyValueCodec(cmSketchTable.tupleType(), cmSketchTable.keyMapping());
 
     public static final StoreInstance analyzeTaskStore = storeService.getInstance(analyzeTaskTblId,
         getRegionId(analyzeTaskTblId));
@@ -114,7 +119,7 @@ public abstract class StatsOperator {
     }
 
     public Object[] getAnalyzeTaskKeys(String schemaName, String tableName) {
-        Object[] values = new Object[analyzeTaskTd.getColumnsCount()];
+        Object[] values = new Object[analyzeTaskTable.getColumns().size()];
         values[0] = schemaName;
         values[1] = tableName;
         return values;

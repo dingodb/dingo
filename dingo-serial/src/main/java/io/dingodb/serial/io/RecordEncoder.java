@@ -358,6 +358,9 @@ public class RecordEncoder {
         be.writeBytes(transactionId);
         be.writeShort(schemaVersion);
         for (DingoSchema schema : schemas) {
+            if (--columnCount < 0) {
+                break;
+            }
             switch (schema.getType()) {
                 case BOOLEAN:
                     be.writeBoolean(Utils.processNullColumn(schema, record[schema.getIndex()]));
@@ -408,9 +411,6 @@ public class RecordEncoder {
                     be.writeStringList(Utils.processNullColumn(schema, record[schema.getIndex()]));
                     break;
                 default:
-            }
-            if (--columnCount < 1) {
-                break;
             }
         }
         return be;

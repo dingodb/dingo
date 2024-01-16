@@ -37,7 +37,6 @@ import org.quartz.impl.StdSchedulerFactory;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
 
 @Slf4j
 public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
@@ -65,13 +64,14 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
     }
 
     private void startScheduler(LockService lockService) {
-        Lock lock = lockService.newLock(__ -> {
+        io.dingodb.sdk.service.LockService.Lock lock = lockService.newLock(__ -> {
             pause();
             startScheduler(lockService);
         });
         CompletableFuture.runAsync(lock::lock).whenComplete((r, e) -> {
             if (e == null) {
                 start();
+                lock.watchDestroy().thenRun(() -> startScheduler(lockService));
             } else {
                 startScheduler(lockService);
             }

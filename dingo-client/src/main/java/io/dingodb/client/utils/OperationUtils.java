@@ -18,8 +18,6 @@ package io.dingodb.client.utils;
 
 import io.dingodb.client.common.Key;
 import io.dingodb.client.common.Record;
-import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.sdk.common.codec.CodecUtils;
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
@@ -65,14 +63,19 @@ public final class OperationUtils {
         return dst;
     }
 
-    public static Object[] mapKey2(Object[] src, Object[] dst, List<io.dingodb.common.table.ColumnDefinition> columns, List<io.dingodb.common.table.ColumnDefinition> keyColumns) {
+    public static Object[] mapKey2(
+        Object[] src,
+        Object[] dst,
+        List<io.dingodb.meta.entity.Column> columns,
+        List<io.dingodb.meta.entity.Column> keyColumns
+    ) {
         if (keyColumns.size() != src.length) {
             throw new IllegalArgumentException(
                 "Key column count is: " + keyColumns.size() + ", but give key count: " + src.length
             );
         }
         for (int i = 0; i < keyColumns.size(); i++) {
-            io.dingodb.common.table.ColumnDefinition column = keyColumns.get(i);
+            io.dingodb.meta.entity.Column column = keyColumns.get(i);
             if ((dst[columns.indexOf(column)] = src[i]) == null && !column.isNullable()) {
                 throw new IllegalArgumentException("Non-null column [" + column.getName() + "] cannot be null");
             }
@@ -92,9 +95,9 @@ public final class OperationUtils {
         }
     }
 
-    public static Object[] mapKeyPrefix(TableDefinition table, Key key) {
-        List<ColumnDefinition> columns = table.getColumns();
-        List<ColumnDefinition> keyColumns = table.getKeyColumns();
+    public static Object[] mapKeyPrefix(io.dingodb.meta.entity.Table table, Key key) {
+        List<io.dingodb.meta.entity.Column> columns = table.getColumns();
+        List<io.dingodb.meta.entity.Column> keyColumns = table.keyColumns();
         Object[] dst = new Object[columns.size()];
         Object[] src = key.getUserKey().toArray();
         if (key.columnOrder) {
@@ -104,8 +107,8 @@ public final class OperationUtils {
         }
     }
 
-    public static List<ColumnDefinition> sortColumns(List<ColumnDefinition> columns) {
-        List<ColumnDefinition> codecOrderColumns = new ArrayList<>(columns);
+    public static List<io.dingodb.meta.entity.Column> sortColumns(List<io.dingodb.meta.entity.Column> columns) {
+        List<io.dingodb.meta.entity.Column> codecOrderColumns = new ArrayList<>(columns);
         codecOrderColumns.sort(sortColumnByPrimaryComparator());
         return codecOrderColumns;
     }
@@ -117,8 +120,8 @@ public final class OperationUtils {
         return c1 < 0 ? 1 : c2 < 0 ? -1 : c1 - c2;
     }
 
-    public static Comparator<ColumnDefinition> sortColumnByPrimaryComparator() {
-        return (c1, c2) -> compareColumnByPrimary(c1.getPrimary(), c2.getPrimary());
+    public static Comparator<io.dingodb.meta.entity.Column> sortColumnByPrimaryComparator() {
+        return (c1, c2) -> compareColumnByPrimary(c1.getPrimaryKeyIndex(), c2.getPrimaryKeyIndex());
     }
 
     public static void checkParameters(List<Column> columns, Object[] record) {

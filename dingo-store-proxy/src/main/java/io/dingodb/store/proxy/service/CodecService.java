@@ -31,6 +31,7 @@ import io.dingodb.sdk.common.codec.CodecUtils;
 import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
 import io.dingodb.sdk.common.serial.BufImpl;
 import io.dingodb.sdk.common.serial.schema.DingoSchema;
+import io.dingodb.sdk.common.utils.TypeSchemaMapper;
 import io.dingodb.store.proxy.common.Mapping;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
@@ -80,7 +81,7 @@ public final class CodecService implements io.dingodb.codec.CodecService {
 
         @Override
         @SneakyThrows
-        public Object[] decodeKey(byte @NonNull [] bytes) {
+        public Object[] decodeKey(byte @NonNull [] key) {
             throw new UnsupportedEncodingException();
         }
 
@@ -92,20 +93,14 @@ public final class CodecService implements io.dingodb.codec.CodecService {
 
         @Override
         @SneakyThrows
-        public byte[] encodeKey(Object[] keys) {
-            return delegate.encodeKey((Object[]) type.convertTo(keys, DingoConverter.INSTANCE));
+        public byte[] encodeKey(Object[] tuple) {
+            return delegate.encodeKey((Object[]) type.convertTo(tuple, DingoConverter.INSTANCE));
         }
 
         @Override
         @SneakyThrows
-        public Object[] mapKeyAndDecodeValue(Object[] keys, byte[] bytes) {
-            throw new UnsupportedEncodingException();
-        }
-
-        @Override
-        @SneakyThrows
-        public byte[] encodeKeyPrefix(Object[] record, int columnCount) {
-            return delegate.encodeKeyPrefix((Object[]) type.convertTo(record, DingoConverter.INSTANCE), columnCount);
+        public byte[] encodeKeyPrefix(Object[] tuple, int count) {
+            return delegate.encodeKeyPrefix((Object[]) type.convertTo(tuple, DingoConverter.INSTANCE), count);
         }
 
         @Override
@@ -146,35 +141,36 @@ public final class CodecService implements io.dingodb.codec.CodecService {
         return new KeyValueCodec(id, new DingoKeyValueCodec(id.seq, createSchemasForType(type, keyMapping)), type);
     }
 
+    public static DingoSchema createSchemaForType(DingoType type, int index, boolean isKey) {
+        DingoSchema schema;
+        if (type instanceof ListType) {
+            ListType listType = (ListType) type;
+            schema = TypeSchemaMapper.getSchemaForTypeName("LIST", listType.getElementType().getType().toString());
+        } else {
+            schema = TypeSchemaMapper.getSchemaForTypeName(type.getType().toString(), null);
+        }
+        schema.setIndex(index);
+        schema.setAllowNull(((NullableType)type).isNullable());
+        schema.setIsKey(isKey);
+        return schema;
+    }
+
     public static List<DingoSchema> createSchemasForType(DingoType type, TupleMapping keyMapping) {
         if (type instanceof TupleType) {
             TupleType tupleType = (TupleType) type;
             DingoType[] fields = tupleType.getFields();
             DingoSchema[] schemas = new DingoSchema[fields.length];
-            int[] mappings = keyMapping.getMappings();
-            int valueIndex = mappings.length;
+            TupleMapping revMappings = keyMapping.reverse(fields.length);
+            int valueIndex = keyMapping.size();
             for (int i = 0; i < fields.length; i++) {
-                DingoType field = fields[i];
-                String typeName;
-                String elementType = "";
-                if (field instanceof ListType) {
-                    ListType listType = (ListType) field;
-                    typeName = "LIST";
-                    elementType = listType.getElementType().getType().toString();
+                int primaryIndex = revMappings.get(i);
+                if (primaryIndex >= 0) {
+                    schemas[primaryIndex] = createSchemaForType(
+                        fields[i], keyMapping.get(primaryIndex), true
+                    );
                 } else {
-                    typeName = field.getType().toString();
+                    schemas[valueIndex++] = createSchemaForType(fields[i], i, false);
                 }
-                DingoSchema schema = CodecUtils.createSchemaForTypeName(typeName, elementType);
-
-                if (keyMapping.contains(i)) {
-                    schema.setIsKey(true);
-                    schemas[getKeyIndex(mappings, i)] = schema;
-                } else {
-                    schema.setIsKey(false);
-                    schemas[valueIndex++] = schema;
-                }
-                schema.setIndex(i);
-                schema.setAllowNull(((NullableType) fields[i]).isNullable());
             }
             return Arrays.<DingoSchema>asList(schemas);
         } else {

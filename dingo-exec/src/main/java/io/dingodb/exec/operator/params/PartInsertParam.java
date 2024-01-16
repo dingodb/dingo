@@ -27,6 +27,7 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
 import java.util.NavigableMap;
@@ -41,10 +42,10 @@ public class PartInsertParam extends PartModifyParam {
         @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
-        TableDefinition tableDefinition,
+        Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
     ) {
-        super(tableId, partId, schema, keyMapping, tableDefinition, distributions);
+        super(tableId, partId, schema, keyMapping, table, distributions);
 
     }
 

@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.visitor.function;
 
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.TableInfo;
@@ -34,6 +35,7 @@ import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.PartCountParam;
 import io.dingodb.exec.operator.params.RemovePartParam;
+import io.dingodb.meta.entity.Table;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
@@ -56,7 +58,7 @@ public final class DingoCountDeleteVisitFun {
         @NonNull DingoPartCountDelete rel
     ) {
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
-        final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
+        final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
         CommonId tableId = tableInfo.getId();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
             = tableInfo.getRangeDistributions();
@@ -67,11 +69,11 @@ public final class DingoCountDeleteVisitFun {
             Vertex vertex;
             if (rel.isDoDeleting()) {
                 RemovePartParam param = new RemovePartParam(
-                    tableId, distribution.id(), td.getDingoType(), td.getKeyMapping());
+                    tableId, distribution.id(), td.tupleType(), td.keyMapping());
                 vertex = new Vertex(REMOVE_PART, param);
             } else {
                 PartCountParam param = new PartCountParam(
-                    tableId, distribution.id(), td.getDingoType(), td.getKeyMapping());
+                    tableId, distribution.id(), td.tupleType(), td.keyMapping());
                 vertex = new Vertex(PART_COUNT, param);
             }
             vertex.setId(idGenerator.getOperatorId(task.getId().seq));

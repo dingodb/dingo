@@ -36,7 +36,7 @@ public class AutoIncrementFun extends BinaryOp {
     @Override
     protected Object evalNonNullValue(@NonNull Object value0, @NonNull Object value1, ExprConfig config) {
         MetaService metaService = MetaService.root().getSubMetaService((String) value0);
-        return metaService.getAutoIncrement(metaService.getTableId((String) value1));
+        return metaService.getAutoIncrement(metaService.getTable((String) value1).getTableId());
     }
 
     @Override

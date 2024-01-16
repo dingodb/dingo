@@ -28,6 +28,8 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
@@ -37,6 +39,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -50,11 +53,11 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> {
     public void onMatch(@NonNull RelOptRuleCall call) {
         final DingoTableModify rel1 = call.rel(0);
         final DingoTableScan rel = call.rel(1);
-        TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
+        Table td = rel.getTable().unwrap(DingoTable.class).getTable();
         if (td.getEngine() != null && td.getEngine().contains("TXN")) {
             return;
         }
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td);
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td.tupleType(), td.keyMapping());
         RangeDistribution range;
         if (rel.getFilter() == null && (rel.getSelection().size() == rel.getTable().getRowType().getFieldCount())) {
             range = RangeDistribution.builder()
@@ -114,7 +117,7 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> {
                                     // Optimize delete of full table data: delete from t1
                                     if(selection.size() == r.getTable().getRowType().getFieldCount()) {
                                         DingoTable dingoTable = r.getTable().unwrap(DingoTable.class);
-                                        Map<CommonId, TableDefinition> indexDefinitions = dingoTable.getIndexTableDefinitions();
+                                        List<IndexTable> indexDefinitions = dingoTable.getTable().getIndexes();
                                         return indexDefinitions.size() == 0;
                                     }
                                 }

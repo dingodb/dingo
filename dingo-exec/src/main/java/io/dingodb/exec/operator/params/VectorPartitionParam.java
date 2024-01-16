@@ -25,14 +25,13 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.exec.dag.Vertex;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -53,14 +52,14 @@ public class VectorPartitionParam extends AbstractParams {
     private Map<CommonId, Integer> partIndices;
     private Integer index;
     private final KeyValueCodec codec;
-    private final TableDefinition tableDefinition;
+    private final Table table;
 
     public VectorPartitionParam(
         CommonId tableId,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
         CommonId indexId,
         Integer index,
-        TableDefinition td
+        Table table
     ) {
         this.tableId = tableId;
         this.distributions = distributions;
@@ -69,7 +68,7 @@ public class VectorPartitionParam extends AbstractParams {
         TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
         TupleMapping outputKeyMapping = TupleMapping.of(new int[] {0});
         this.codec = CodecService.getDefault().createKeyValueCodec(indexId, tupleType, outputKeyMapping);
-        this.tableDefinition = td;
+        this.table = table;
     }
 
 }

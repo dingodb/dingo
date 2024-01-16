@@ -17,10 +17,10 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.grammar.dql.SqlShowColumns;
-import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.SqlLikeUtils;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.Table;
 import lombok.Setter;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.commons.lang3.StringUtils;
@@ -72,15 +72,15 @@ public class ShowColumnsOperation implements QueryOperation {
     }
 
     private List<List<String>> getColumnFields() {
-        TableDefinition tableDefinition = metaService.getTableDefinition(tableName);
-        if (tableDefinition == null) {
+        Table table = metaService.getTable(tableName);
+        if (table == null) {
             throw new RuntimeException("Table " + tableName + " doesn't exist");
         }
 
-        List<ColumnDefinition> columns = tableDefinition.getColumns();
+        List<Column> columns = table.getColumns();
         List<List<String>> columnList = new ArrayList<>();
         boolean haveLike = !StringUtils.isBlank(sqlLikePattern);
-        for (ColumnDefinition column : columns) {
+        for (Column column : columns) {
             if (column.getState() != 1) {
                 continue;
             }
@@ -92,7 +92,7 @@ public class ShowColumnsOperation implements QueryOperation {
             }
 
             columnValues.add(columnName);
-            String type = column.getTypeName();
+            String type = column.getSqlTypeName();
             if (type.equals("VARCHAR")) {
                 if (column.getPrecision() > 0) {
                     type = type + "(" + column.getPrecision() + ")";
@@ -101,7 +101,7 @@ public class ShowColumnsOperation implements QueryOperation {
             columnValues.add(type);
             columnValues.add(column.isNullable() ? "YES" : "NO");
             columnValues.add(column.isPrimary() ? "PRI" : "");
-            columnValues.add(column.getDefaultValue() != null ? column.getDefaultValue() : "NULL");
+            columnValues.add(column.defaultValueExpr != null ? column.defaultValueExpr : "NULL");
 
             columnList.add(columnValues);
         }

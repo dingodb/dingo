@@ -23,7 +23,6 @@ import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.impl.OptimisticTransaction;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
 import io.dingodb.net.Channel;
-import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;

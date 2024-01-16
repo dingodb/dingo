@@ -33,13 +33,13 @@ public final class MetaServiceUtils {
     public static @NonNull CommonId getTableId(RelOptTable table) {
         String tableName = getTableName(table);
         MetaService metaService = getMetaService(table);
-        return metaService.getTableId(tableName);
+        return metaService.getTable(tableName).getTableId();
     }
 
     public static @NonNull TableInfo getTableInfo(RelOptTable table) {
         String tableName = getTableName(table);
         MetaService metaService = getMetaService(table);
-        CommonId tableId = metaService.getTableId(tableName);
+        CommonId tableId = metaService.getTable(tableName).getTableId();
         return new TableInfo(
             tableId,
             metaService.getRangeDistribution(tableId)

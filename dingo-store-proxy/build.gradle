@@ -36,6 +36,7 @@ dependencies {
     implementation project(":dingo-codec-api")
     implementation project(":dingo-partition-api")
     implementation project(":dingo-tso-api")
+    implementation project(":dingo-transaction-api")
 
     implementation group: 'org.mapstruct', name: 'mapstruct', version: 'mapstruct'.v()
 

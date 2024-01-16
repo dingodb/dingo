@@ -182,10 +182,10 @@ public final class SqlToOperationConverter {
             return Optional.of(new LockBlockOperation(connection, sqlLockBlock.getSqlBlockList()));
         } else if (sqlNode instanceof SqlUnLockTable) {
             SqlUnLockTable sqlUnLockTable = (SqlUnLockTable) sqlNode;
-            return Optional.of(new UnlockTableOperation(connection, sqlUnLockTable.tableList));
+            return Optional.of(new UnlockTableOperation(connection));
         } else if (sqlNode instanceof SqlUnLockBlock) {
             SqlUnLockBlock sqlUnLockBlock = (SqlUnLockBlock) sqlNode;
-            return Optional.of(new UnlockBlockOperation(connection, sqlUnLockBlock.getSqlUnBlockList()));
+            return Optional.of(new UnlockBlockOperation(connection));
         } else if (sqlNode instanceof SqlKillQuery) {
             SqlKillQuery killQuery = (SqlKillQuery) sqlNode;
             return Optional.of(new KillQuery(killQuery.getThreadId()));

@@ -16,16 +16,15 @@
 
 package io.dingodb.calcite.visitor.function;
 
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.utils.TableInfo;
-import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.base.IdGenerator;
@@ -44,6 +43,10 @@ import io.dingodb.exec.operator.params.TxnPartDeleteParam;
 import io.dingodb.exec.operator.params.TxnPartInsertParam;
 import io.dingodb.exec.operator.params.TxnPartUpdateParam;
 import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.Table;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -52,6 +55,7 @@ import java.util.NavigableMap;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
+import static io.dingodb.exec.transaction.base.TransactionType.NONE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_UPDATE;
@@ -68,7 +72,7 @@ public class DingoTableModifyVisitFun {
     ) {
         Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
         List<Vertex> outputs = new LinkedList<>();
-        final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
+        final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final CommonId tableId = MetaServiceUtils.getTableId(rel.getTable());
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions =
@@ -87,8 +91,8 @@ public class DingoTableModifyVisitFun {
                                 new PessimisticLockInsertParam(
                                     tableId,
                                     input.getHint().getPartId(),
-                                    td.getDingoType(),
-                                    td.getKeyMapping(),
+                                    td.tupleType(),
+                                    td.keyMapping(),
                                     transaction.getIsolationLevel(),
                                     transaction.getStartTs(),
                                     transaction.getForUpdateTs(),
@@ -102,8 +106,8 @@ public class DingoTableModifyVisitFun {
                                 new TxnPartInsertParam(
                                     tableId,
                                     input.getHint().getPartId(),
-                                    td.getDingoType(),
-                                    td.getKeyMapping(),
+                                    td.tupleType(),
+                                    td.keyMapping(),
                                     pessimisticTxn,
                                     transaction.getIsolationLevel(),
                                     pessimisticTxn ? transaction.getPrimaryKeyLock() : null,
@@ -115,11 +119,16 @@ public class DingoTableModifyVisitFun {
                         }
                     } else {
                         vertex = new Vertex(PART_INSERT,
-                            new PartInsertParam(tableId, input.getHint().getPartId(), td.getDingoType(),
-                                td.getKeyMapping(), td, distributions));
+                            new PartInsertParam(tableId, input.getHint().getPartId(), td.tupleType(),
+                                td.keyMapping(), td, distributions));
                     }
                     break;
                 case UPDATE:
+                    List<String> colNames = td.getColumns().stream()
+                        .map(Column::getName).collect(Collectors.toList());
+                    TupleMapping updateMapping = TupleMapping.of(
+                        rel.getUpdateColumnList().stream().map(colNames::indexOf).collect(Collectors.toList())
+                    );
                     if (transaction != null) {
                         boolean pessimisticTxn = transaction.isPessimistic();
                         if (pessimisticTxn && transaction.getPrimaryKeyLock() == null) {
@@ -127,9 +136,9 @@ public class DingoTableModifyVisitFun {
                                 new PessimisticLockUpdateParam(
                                     tableId,
                                     input.getHint().getPartId(),
-                                    td.getDingoType(),
-                                    td.getKeyMapping(),
-                                    TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
+                                    td.tupleType(),
+                                    td.keyMapping(),
+                                    updateMapping,
                                     rel.getSourceExpressionList().stream()
                                         .map(SqlExprUtils::toSqlExpr)
                                         .collect(Collectors.toList()),
@@ -148,9 +157,9 @@ public class DingoTableModifyVisitFun {
                                 new TxnPartUpdateParam(
                                     tableId,
                                     input.getHint().getPartId(),
-                                    td.getDingoType(),
-                                    td.getKeyMapping(),
-                                    TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
+                                    td.tupleType(),
+                                    td.keyMapping(),
+                                    updateMapping,
                                     rel.getSourceExpressionList().stream()
                                         .map(SqlExprUtils::toSqlExpr)
                                         .collect(Collectors.toList()),
@@ -170,9 +179,9 @@ public class DingoTableModifyVisitFun {
                             new PartUpdateParam(
                                 tableId,
                                 input.getHint().getPartId(),
-                                td.getDingoType(),
-                                td.getKeyMapping(),
-                                TupleMapping.of(td.getColumnIndices(rel.getUpdateColumnList())),
+                                td.tupleType(),
+                                td.keyMapping(),
+                                updateMapping,
                                 rel.getSourceExpressionList().stream()
                                     .map(SqlExprUtils::toSqlExpr)
                                     .collect(Collectors.toList()),
@@ -190,8 +199,8 @@ public class DingoTableModifyVisitFun {
                                 new PessimisticLockDeleteParam(
                                     tableId,
                                     input.getHint().getPartId(),
-                                    td.getDingoType(),
-                                    td.getKeyMapping(),
+                                    td.tupleType(),
+                                    td.keyMapping(),
                                     transaction.getIsolationLevel(),
                                     transaction.getStartTs(),
                                     transaction.getForUpdateTs(),
@@ -207,8 +216,8 @@ public class DingoTableModifyVisitFun {
                                 new TxnPartDeleteParam(
                                     tableId,
                                     input.getHint().getPartId(),
-                                    td.getDingoType(),
-                                    td.getKeyMapping(),
+                                    td.tupleType(),
+                                    td.keyMapping(),
                                     pessimisticTxn,
                                     transaction.getIsolationLevel(),
                                     pessimisticTxn ? transaction.getPrimaryKeyLock() : null,
@@ -222,8 +231,8 @@ public class DingoTableModifyVisitFun {
                         }
                     } else {
                         vertex = new Vertex(PART_DELETE,
-                            new PartDeleteParam(tableId, input.getHint().getPartId(), td.getDingoType(),
-                                td.getKeyMapping(), td, distributions)
+                            new PartDeleteParam(tableId, input.getHint().getPartId(), td.tupleType(),
+                                td.keyMapping(), td, distributions)
                         );
                     }
                     break;

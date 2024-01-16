@@ -32,6 +32,7 @@ import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.PartRangeScanParam;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -55,7 +56,7 @@ public final class DingoFunctionScanVisitFun {
 
         MetaService metaService = MetaService.root().getSubMetaService(relTable.getSchemaName());
         CommonId tableId = dingoTable.getTableId();
-        TableDefinition td = dingoTable.getTableDefinition();
+        Table td = dingoTable.getTable();
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = metaService.getRangeDistribution(tableId);
 
         List<Vertex> outputs = new ArrayList<>();
@@ -64,17 +65,17 @@ public final class DingoFunctionScanVisitFun {
             PartRangeScanParam param = new PartRangeScanParam(
                 tableId,
                 rd.id(),
-                td.getDingoType(),
-                td.getKeyMapping(),
+                td.tupleType(),
+                td.keyMapping(),
                 null,
-                td.getMapping(),
+                td.mapping(),
                 rd.getStartKey(),
                 rd.getEndKey(),
                 rd.isWithStart(),
                 rd.isWithEnd(),
                 null,
                 null,
-                td.getDingoType(),
+                td.tupleType(),
                 false
             );
             Task task = job.getOrCreate(currentLocation, idGenerator);

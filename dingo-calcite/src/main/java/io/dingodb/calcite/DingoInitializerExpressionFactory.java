@@ -19,6 +19,7 @@ package io.dingodb.calcite;
 import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.meta.entity.Column;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.CalciteCatalogReader;
@@ -101,20 +102,20 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
 
     @Override
     public ColumnStrategy generationStrategy(RelOptTable table, int column) {
-        ColumnDefinition columnDefinition = TableUtils.getTableDefinition(table).getColumn(column);
-        if (columnDefinition.getDefaultValue() != null) {
+        Column col = table.unwrap(DingoTable.class).getTable().getColumns().get(column);
+        if (col.getDefaultValueExpr() != null || col.isAutoIncrement()) {
             return ColumnStrategy.DEFAULT;
         } else {
-            return columnDefinition.isNullable() ? ColumnStrategy.NULLABLE : ColumnStrategy.NOT_NULLABLE;
+            return col.isNullable() ? ColumnStrategy.NULLABLE : ColumnStrategy.NOT_NULLABLE;
         }
     }
 
     @Override
     public RexNode newColumnDefaultValue(RelOptTable table, int column, InitializerContext context) {
-        ColumnDefinition definition = TableUtils.getTableDefinition(table).getColumn(column);
-        String defaultValue = definition.getDefaultValue();
+        Column col = table.unwrap(DingoTable.class).getTable().getColumns().get(column);
+        String defaultValue = col.getDefaultValueExpr();
 
-        if (definition.isAutoIncrement()) {
+        if (col.isAutoIncrement()) {
             defaultValue = "AutoIncrementFun("
                 + "'" + ((DingoRelOptTable) table).getSchemaName() + "'"
                 + ", "

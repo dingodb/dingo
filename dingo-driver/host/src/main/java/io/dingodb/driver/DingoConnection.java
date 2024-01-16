@@ -19,11 +19,19 @@ package io.dingodb.driver;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.schema.DingoRootSchema;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.mysql.client.SessionVariableChange;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
+import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
+import io.dingodb.transaction.api.LockType;
+import io.dingodb.transaction.api.TableLock;
+import io.dingodb.transaction.api.TableLockService;
+import io.dingodb.tso.TsoService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +61,9 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
 import java.util.TimeZone;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Slf4j
 public class DingoConnection extends AvaticaConnection implements CalcitePrepare.Context{
@@ -64,6 +75,10 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     private boolean autoCommit = true;
 
     private String oneTimeTxIsolation;
+
+    @Getter
+    private List<CommonId> lockTables;
+    private CompletableFuture<Void> unlockFuture;
 
     @Setter
     @Getter
@@ -91,7 +106,60 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         return (DingoMeta) meta;
     }
 
-    public synchronized ITransaction createTransaction(boolean pessimistic) {
+    public synchronized void lockTables(List<CommonId> tableIds, LockType type) {
+        unlockTables();
+        try {
+            commit();
+        } catch (SQLException e) {
+            throw ExceptionUtils.toRuntime(e);
+        }
+        int ttl = Optional.mapOrGet(getClientInfo("lock_wait_timeout"), Integer::parseInt, () -> 50);
+        int start = Utils.currentSecond();
+        long lockTs = TsoService.getDefault().tso();
+        CompletableFuture<Void> unlockFuture = new CompletableFuture<>();
+        for (CommonId tableId : tableIds) {
+            CompletableFuture<Boolean> lockFuture = new CompletableFuture<>();
+            TableLockService.getDefault().lock(TableLock.builder()
+                .lockTs(lockTs)
+                .currentTs(lockTs)
+                .type(type)
+                .tableId(tableId)
+                .lockFuture(lockFuture)
+                .unlockFuture(unlockFuture)
+                .build());
+            int nextTtl = (start + ttl) - Utils.currentSecond();
+            if (nextTtl < 0) {
+                unlockFuture.complete(null);
+                throw new RuntimeException("Lock wait timeout exceeded.");
+            }
+
+            try {
+                lockFuture.get(nextTtl, TimeUnit.SECONDS);
+            } catch (TimeoutException e) {
+                lockFuture.cancel(true);
+                unlockFuture.complete(null);
+                throw new RuntimeException("Lock wait timeout exceeded.");
+            } catch (Exception e) {
+                lockFuture.cancel(true);
+                unlockFuture.complete(null);
+                throw ExceptionUtils.toRuntime(e);
+            }
+        }
+        if (type == LockType.TABLE || type == LockType.RANGE) {
+            this.lockTables = tableIds;
+            this.unlockFuture = unlockFuture;
+        }
+    }
+
+    public void unlockTables() {
+        if (unlockFuture != null) {
+            unlockFuture.complete(null);
+        }
+        unlockFuture = null;
+        lockTables = null;
+    }
+
+    public ITransaction createTransaction(TransactionType type) {
         if (transaction == null) {
             long startTs = TransactionManager.getStartTs();
             String txIsolation;
@@ -100,7 +168,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             } else {
                 txIsolation = getClientInfo("transaction_isolation");
             }
-            this.transaction = TransactionManager.createTransaction(pessimistic, startTs,
+            this.transaction = TransactionManager.createTransaction(type, startTs,
                 TransactionUtil.convertIsolationLevel(txIsolation));
             transaction.setTransactionConfig(sessionVariables);
         }
@@ -127,7 +195,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         } finally {
             cleanTransaction();
         }
-        createTransaction(pessimistic);
+        createTransaction(pessimistic ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC);
         this.autoCommit = false;
     }
 
@@ -152,7 +220,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             cleanTransaction();
         }
         if(!autoCommit) {
-            createTransaction(false);
+            createTransaction(TransactionType.OPTIMISTIC);
             this.autoCommit = false;
         }
 
@@ -167,6 +235,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     public void close() throws SQLException {
         super.close();
         cleanTransaction();
+        unlockTables();
     }
 
     @NonNull

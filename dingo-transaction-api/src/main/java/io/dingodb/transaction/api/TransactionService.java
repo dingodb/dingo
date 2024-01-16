@@ -16,8 +16,11 @@
 
 package io.dingodb.transaction.api;
 
+import io.dingodb.common.CommonId;
+
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 public interface TransactionService {
     static TransactionService getDefault() {
@@ -27,4 +30,7 @@ public interface TransactionService {
     void begin(Connection connection, boolean pessimistic) throws SQLException;
     void commit(Connection connection) throws SQLException;
     void rollback(Connection connection) throws SQLException;
+
+    void lockTable(Connection connection, List<CommonId> locks, LockType type);
+    void unlockTable(Connection connection);
 }

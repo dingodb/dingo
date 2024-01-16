@@ -16,22 +16,44 @@
 
 package io.dingodb.calcite.operation;
 
+import com.google.common.collect.ImmutableList;
+import io.dingodb.common.CommonId;
+import io.dingodb.common.util.Parameters;
+import io.dingodb.meta.MetaService;
+import io.dingodb.transaction.api.LockType;
+import io.dingodb.transaction.api.TransactionService;
+import org.apache.calcite.sql.SqlIdentifier;
+
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.List;
 
 public class LockTableOperation implements DdlOperation {
 
     private Connection connection;
 
-    private List<String> tableList;
+    private List<SqlIdentifier> tableList;
 
-    public LockTableOperation(Connection connection, List<String> tableList) {
+    public LockTableOperation(Connection connection, List<SqlIdentifier> tableList) {
         this.connection = connection;
         this.tableList = tableList;
     }
 
     @Override
     public void execute() {
-
+        List<CommonId> tables = new ArrayList<>(tableList.size());
+        for (SqlIdentifier sqlIdentifier : tableList) {
+            ImmutableList<String> names = sqlIdentifier.names;
+            MetaService metaService = MetaService.root();
+            String tableName = names.get(0);
+            if (names.size() > 1) {
+                metaService = metaService.getSubMetaService(names.get(0));
+                tableName = names.get(1);
+            } else {
+                metaService = metaService.getSubMetaService(MetaService.DINGO_NAME);
+            }
+            tables.add(Parameters.nonNull(metaService.getTable(tableName), "table not found").getTableId());
+        }
+        TransactionService.getDefault().lockTable(connection, tables, LockType.TABLE);
     }
 }

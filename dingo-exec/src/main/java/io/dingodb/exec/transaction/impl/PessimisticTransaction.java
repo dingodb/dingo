@@ -114,9 +114,7 @@ public class PessimisticTransaction extends BaseTransaction {
 
     @Override
     public void cleanUp() {
-        if (future != null) {
-            future.cancel(true);
-        }
+        super.cleanUp();
         // PessimisticRollback
     }
 

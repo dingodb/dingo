@@ -81,8 +81,8 @@ public class StoreService implements io.dingodb.store.api.StoreService {
         return new io.dingodb.store.local.StoreInstance(regionId);
     }
 
-    @Override
-    public StoreInstance getInstance(@NonNull CommonId tableId, CommonId regionId, TableDefinition tableDefinition) {
-        return new io.dingodb.store.local.StoreInstance(regionId);
-    }
+//    @Override
+//    public StoreInstance getInstance(@NonNull CommonId tableId, CommonId regionId, TableDefinition tableDefinition) {
+//        return new io.dingodb.store.local.StoreInstance(regionId);
+//    }
 }

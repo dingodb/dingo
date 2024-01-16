@@ -30,7 +30,6 @@ import io.dingodb.store.api.StoreService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -57,8 +56,7 @@ public final class PartVectorOperator extends FilterProjectSourceOperator {
             param.getParameterMap());
         for (VectorSearchResponse response : searchResponseList) {
             CommonId regionId = PartitionService.getService(
-                    Optional.ofNullable(param.getTableDefinition().getPartDefinition())
-                        .map(PartitionDefinition::getFuncName)
+                    Optional.ofNullable(param.getTable().getPartitionStrategy())
                         .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
                 .calcPartId(response.getKey(), param.getDistributions());
             StoreInstance storeInstance = StoreService.getDefault().getInstance(param.getTableId(), regionId);

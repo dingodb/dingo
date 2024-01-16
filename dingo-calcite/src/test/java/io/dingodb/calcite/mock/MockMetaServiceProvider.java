@@ -66,10 +66,10 @@ public class MockMetaServiceProvider {
             byte[] partition = {1, 0, 0, 1, 0, 0, 0, 2};
             byte[] end = ByteArrayUtils.MAX;
 
-            CommonId testTableId = metaService.getTableId(test);
-            CommonId test1TableId = metaService.getTableId(test1);
-            CommonId testDateTableId = metaService.getTableId(tableDate);
-            CommonId testArrayTableId = metaService.getTableId(tableArray);
+            CommonId testTableId = metaService.getTable(test).getTableId();
+            CommonId test1TableId = metaService.getTable(test1).getTableId();
+            CommonId testDateTableId = metaService.getTable(tableDate).getTableId();
+            CommonId testArrayTableId = metaService.getTable(tableArray).getTableId();
 
             ((LocalMetaService) metaService).addRangeDistributions(testTableId, begin, partition);
             ((LocalMetaService) metaService).addRangeDistributions(testTableId, partition, end);

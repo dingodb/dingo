@@ -61,6 +61,17 @@ public class Location implements Serializable {
         return this.url;
     }
 
+    public static Location parseUrl(String url) {
+        if (url != null) {
+            String[] location = url.split(":");
+            if (location.length < 2) {
+                return null;
+            }
+            return new Location(location[0], Integer.parseInt(location[1]));
+        }
+        return null;
+    }
+
     public InetSocketAddress toSocketAddress() {
         return new InetSocketAddress(host, port);
     }

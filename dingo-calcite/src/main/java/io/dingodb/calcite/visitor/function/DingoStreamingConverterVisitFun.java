@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.visitor.function;
 
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoStreamingConverter;
 import io.dingodb.calcite.traits.DingoRelPartition;
 import io.dingodb.calcite.traits.DingoRelPartitionByKeys;
@@ -45,6 +46,7 @@ import io.dingodb.exec.operator.params.HashParam;
 import io.dingodb.exec.operator.params.PartitionParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -127,7 +129,7 @@ public class DingoStreamingConverterVisitFun {
     ) {
         List<Vertex> outputs = new LinkedList<>();
         final TableInfo tableInfo = MetaServiceUtils.getTableInfo(partition.getTable());
-        final TableDefinition td = TableUtils.getTableDefinition(partition.getTable());
+        final Table td = partition.getTable().unwrap(DingoTable.class).getTable();
         NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
         for (Vertex input : inputs) {
             Task task = input.getTask();

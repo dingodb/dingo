@@ -25,10 +25,9 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.exec.dag.Vertex;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -44,7 +43,7 @@ public class PartitionParam extends AbstractParams {
     @JsonDeserialize(keyUsing = ByteArrayUtils.ComparableByteArray.JacksonKeyDeserializer.class)
     private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     @JsonProperty("tableDefinition")
-    private final TableDefinition tableDefinition;
+    private final Table table;
     @Setter
     @JsonProperty("partIndices")
     @JsonSerialize(keyUsing = CommonId.JacksonKeySerializer.class)
@@ -56,12 +55,12 @@ public class PartitionParam extends AbstractParams {
 
     public PartitionParam(
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
-        TableDefinition tableDefinition
+        Table table
     ) {
         this.distributions = distributions;
-        this.tableDefinition = tableDefinition;
-        this.codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
-        this.schema = tableDefinition.getDingoType();
+        this.table = table;
+        this.codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
+        this.schema = table.tupleType();
     }
 
 }

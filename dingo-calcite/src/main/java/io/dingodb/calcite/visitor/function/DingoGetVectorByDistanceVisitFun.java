@@ -20,23 +20,22 @@ import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoGetVectorByDistance;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.VectorPointDistanceParam;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.Table;
 import lombok.AllArgsConstructor;
 import org.apache.calcite.sql.SqlNode;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Properties;
 import java.util.function.Supplier;
@@ -72,7 +71,7 @@ public final class DingoGetVectorByDistanceVisitFun {
             }
             MetaService metaService = MetaService.root().getSubMetaService(dingoRelOptTable.getSchemaName());
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
-                = metaService.getIndexRangeDistribution(rel.getIndexTableId());
+                = metaService.getRangeDistribution(rel.getIndexTableId());
 
             int dimension = Integer.parseInt(properties.getOrDefault("dimension", targetVector.size()).toString());
             VectorPointDistanceParam param = new VectorPointDistanceParam(
@@ -96,17 +95,16 @@ public final class DingoGetVectorByDistanceVisitFun {
 
     private static Properties getVectorProperties(DingoRelOptTable dingoRelOptTable, int dimension) {
         DingoTable dingoTable = dingoRelOptTable.unwrap(DingoTable.class);
-        Map<CommonId, TableDefinition> indexDefinitions = dingoTable.getIndexTableDefinitions();
-        for (Map.Entry<CommonId, TableDefinition> entry : indexDefinitions.entrySet()) {
-            TableDefinition indexTableDefinition = entry.getValue();
+        List<IndexTable> indexes = dingoTable.getTable().getIndexes();
+        for (Table index : indexes) {
 
-            String indexType = indexTableDefinition.getProperties().get("indexType").toString();
+            String indexType = index.getProperties().get("indexType").toString();
             if (indexType.equals("scalar")) {
                 continue;
             }
-            int dimension1 = Integer.parseInt(indexTableDefinition.getProperties().getProperty("dimension"));
+            int dimension1 = Integer.parseInt(index.getProperties().getProperty("dimension"));
             if (dimension == dimension1) {
-                return indexTableDefinition.getProperties();
+                return index.getProperties();
             }
         }
         return null;

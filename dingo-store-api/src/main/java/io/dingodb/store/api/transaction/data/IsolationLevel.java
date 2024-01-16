@@ -16,8 +16,6 @@
 
 package io.dingodb.store.api.transaction.data;
 
-import io.dingodb.common.CommonId;
-
 public enum IsolationLevel {
     InvalidIsolationLevel(0),  // this is just a placeholder, not a valid isolation level
     SnapshotIsolation(1),

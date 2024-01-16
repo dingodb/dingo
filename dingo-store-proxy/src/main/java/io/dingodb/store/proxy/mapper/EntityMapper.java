@@ -20,11 +20,11 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.CommonId.CommonType;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.sdk.common.codec.CodecUtils;
+import io.dingodb.sdk.common.serial.schema.DingoSchema;
 import io.dingodb.sdk.service.entity.common.Range;
 import io.dingodb.sdk.service.entity.common.RangeWithOptions;
 import io.dingodb.sdk.service.entity.common.Schema;
 import io.dingodb.sdk.service.entity.common.Type;
-import io.dingodb.sdk.service.entity.meta.ColumnDefinition;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.EntityType;
 import io.dingodb.sdk.service.entity.store.AggregationOperator;
@@ -69,7 +69,9 @@ public interface EntityMapper {
 
     default Map<String, String> mapping(Properties properties) {
         Map<String, String> result = new HashMap<>();
-
+        if (properties == null) {
+            return result;
+        }
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             String key = entry.getKey().toString();
             String value = entry.getValue().toString();
@@ -104,7 +106,7 @@ public interface EntityMapper {
 
     default SchemaWrapper schemaTo(io.dingodb.common.Coprocessor.SchemaWrapper schemaWrapper) {
         return SchemaWrapper.builder()
-            .schema(schemaTo(MAPPER.columnsTo(schemaWrapper.getSchemas())))
+            .schema(schemaTo(CodecUtils.createSchemaForColumnDefinitions(MAPPER.columnsTo(schemaWrapper.getSchemas()))))
             .commonId(schemaWrapper.getCommonId())
             .build();
     }
@@ -116,8 +118,8 @@ public interface EntityMapper {
             .build();
     }
 
-    default List<Schema> schemaTo(List<ColumnDefinition> columns) {
-        return CodecUtils.createSchemaForColumnDefinitions(columns).stream()
+    default List<Schema> schemaTo(List<DingoSchema> schemas) {
+        return schemas.stream()
             .map(schema -> {
                 Type type;
                 switch (schema.getType()) {

@@ -57,6 +57,7 @@ dependencies {
     implementation project(':dingo-verify')
     implementation project(':dingo-partition-api')
     implementation project(':dingo-partition-base')
+    implementation project(':dingo-transaction-api')
     intTestAnnotationProcessor 'org.projectlombok:lombok:' + 'lombok'.v()
     intTestCompileOnly 'org.projectlombok:lombok:' + 'lombok'.v()
     intTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:' + 'junit5'.v()

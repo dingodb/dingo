@@ -17,6 +17,7 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.grammar.ddl.SqlBlock;
+import io.dingodb.transaction.api.TransactionService;
 
 import java.sql.Connection;
 import java.util.List;
@@ -24,15 +25,13 @@ import java.util.List;
 public class UnlockBlockOperation implements DdlOperation {
 
     private Connection connection;
-    private List<SqlBlock> sqlBlockList;
 
-    public UnlockBlockOperation(Connection connection, List<SqlBlock> sqlBlockList) {
+    public UnlockBlockOperation(Connection connection) {
         this.connection = connection;
-        this.sqlBlockList = sqlBlockList;
     }
 
     @Override
     public void execute() {
-
+        TransactionService.getDefault().unlockTable(connection);
     }
 }

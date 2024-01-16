@@ -21,17 +21,55 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 public interface KeyValueCodec {
 
-    Object[] decode(KeyValue keyValue);
-
-    Object[] decodeKey(byte @NonNull [] bytes);
-
+    /**
+     * Encode the given tuple to key value.
+     * @param tuple tuple
+     * @return key value
+     */
     KeyValue encode(Object @NonNull [] tuple);
 
-    byte[] encodeKey(Object[] keys);
+    /**
+     * Decode the given key value to tuple.
+     * @param keyValue key value
+     * @return tuple
+     */
+    Object[] decode(KeyValue keyValue);
 
-    byte[] encodeKeyPrefix(Object[] record, int columnCount);
+    //
 
+    /**
+     * Encode the given tuple to byte array key.
+     * @param tuple key tuple
+     * @return key
+     */
+    byte[] encodeKey(Object[] tuple);
+
+    /**
+     * Decode the given key to tuple.
+     * @param key key
+     * @return key tuple
+     */
+    Object[] decodeKey(byte @NonNull [] key);
+
+    //
+
+    /**
+     * Encode the given tuple to prefix format key.
+     * @param tuple tuple
+     * @param count key element count
+     * @return prefix format key
+     */
+    byte[] encodeKeyPrefix(Object[] tuple, int count);
+
+    /**
+     * Decode the given prefix format key to tuple.
+     * @param keyPrefix prefix format key
+     * @return tuple
+     */
     Object[] decodeKeyPrefix(byte[] keyPrefix);
 
-    Object[] mapKeyAndDecodeValue(Object[] keys, byte[] bytes);
+    @Deprecated
+    default Object[] mapKeyAndDecodeValue(Object[] keys, byte[] bytes) {
+        throw new UnsupportedOperationException();
+    }
 }

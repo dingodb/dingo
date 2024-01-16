@@ -60,6 +60,9 @@ public class TransactionManager {
             case PESSIMISTIC:
                 tran = new PessimisticTransaction(startTs, isolationLevel);
                 break;
+            case NONE:
+                tran = new NoneTransaction(startTs, isolationLevel);
+                break;
             default:
                 log.info("startTs:" + startTs + ", TransactionType: " + trxType.name() + " not supported");
                 throw new ArithmeticException("TransactionType: " + trxType.name() + " not supported");
@@ -75,6 +78,9 @@ public class TransactionManager {
                 break;
             case PESSIMISTIC:
                 tran = new PessimisticTransaction(txnId, isolationLevel);
+                break;
+            case NONE:
+                tran = new NoneTransaction(txnId, isolationLevel);
                 break;
             default:
                 log.info("txnId:" + txnId + ", TransactionType: " + trxType.name() + " not supported");

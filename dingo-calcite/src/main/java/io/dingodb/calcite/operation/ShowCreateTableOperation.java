@@ -20,6 +20,7 @@ import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Table;
 import lombok.Setter;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
@@ -73,10 +74,10 @@ public class ShowCreateTableOperation implements QueryOperation {
     }
 
     private String getCreateTable() {
-        TableDefinition tableDefinition = metaService.getTableDefinition(tableName);
-        if (tableDefinition == null) {
+        Table table = metaService.getTable(tableName);
+        if (table == null) {
             throw new RuntimeException("Table " + tableName + " doesn't exist");
         }
-        return tableDefinition.getCreateSql();
+        return table.getCreateSql();
     }
 }

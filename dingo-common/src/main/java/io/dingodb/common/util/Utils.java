@@ -16,6 +16,7 @@
 
 package io.dingodb.common.util;
 
+import io.dingodb.common.type.TupleMapping;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.Date;
@@ -165,8 +166,8 @@ public final class Utils {
         return characterSet;
     }
 
-    public static String buildKeyStr(List<Integer> keyColumnIndices, Object[] start) {
-        if (start == null) {
+    public static String buildKeyStr(TupleMapping keyColumnIndices, Object[] start) {
+        if (start == null || start.length == 0) {
             return "Infinity";
         }
         StringBuilder builder = new StringBuilder();

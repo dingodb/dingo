@@ -23,11 +23,8 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.environment.ExecutionEnvironment;
-import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
@@ -36,6 +33,8 @@ import io.dingodb.exec.converter.ImportFileConverter;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
@@ -80,9 +79,7 @@ public class LoadDataOperation implements DmlOperation {
 
     private volatile boolean isDone;
     private volatile String errMessage;
-
-    private final CommonId tableId;
-    private final TableDefinition tableDefinition;
+    private final Table table;
     private final KeyValueCodec codec;
     private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     private final DingoType schema;
@@ -134,11 +131,10 @@ public class LoadDataOperation implements DmlOperation {
         this.lineStarting = sqlLoadData.getLineStarting();
         this.ignoreNum = sqlLoadData.getIgnoreNum();
         metaService = MetaService.root().getSubMetaService(schemaName);
-        tableId = metaService.getTableId(sqlLoadData.getTableName());
-        tableDefinition = metaService.getTableDefinition(tableId);
-        codec = CodecService.getDefault().createKeyValueCodec(tableDefinition.getColumns());
-        distributions = metaService.getRangeDistribution(tableId);
-        schema = tableDefinition.getDingoType();
+        table = metaService.getTable(sqlLoadData.getTableName());
+        codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
+        distributions = metaService.getRangeDistribution(table.tableId);
+        schema = table.tupleType();
         this.isTxn = checkEngine();
         this.statementId = UUID.randomUUID().toString();
     }
@@ -322,11 +318,10 @@ public class LoadDataOperation implements DmlOperation {
     public void insertWithoutTxn(Object[] tuples) {
         try {
             CommonId partId = PartitionService.getService(
-                    Optional.ofNullable(tableDefinition.getPartDefinition())
-                        .map(PartitionDefinition::getFuncName)
+                    Optional.ofNullable(table.getPartitionStrategy())
                         .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
                 .calcPartId(tuples, wrap(codec::encodeKey), distributions);
-            StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
+            StoreInstance store = Services.KV_STORE.getInstance(table.getTableId(), partId);
             boolean insert = store.insertIndex(tuples);
             if (insert) {
                 store.insertWithIndex(tuples);
@@ -395,12 +390,11 @@ public class LoadDataOperation implements DmlOperation {
     public Object[] getCacheTuples(Object[] tuples, CommonId txnId) {
         KeyValue keyValue = codec.encode(tuples);
         CommonId partId = PartitionService.getService(
-                Optional.ofNullable(tableDefinition.getPartDefinition())
-                    .map(PartitionDefinition::getFuncName)
+                Optional.ofNullable(table.getPartitionStrategy())
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
             .calcPartId(keyValue.getKey(), distributions);
         byte[] txnIdByte = txnId.encode();
-        byte[] tableIdByte = tableId.encode();
+        byte[] tableIdByte = table.getTableId().encode();
         byte[] partIdByte = partId.encode();
 
         keyValue.setKey(ByteUtils.encode(
@@ -493,7 +487,7 @@ public class LoadDataOperation implements DmlOperation {
 
     private Object[] processHideCol(Object[] tuples) {
         boolean hasHide = false;
-        for (ColumnDefinition colDef : tableDefinition.getColumns()) {
+        for (Column colDef : table.getColumns()) {
             if (colDef.getState() == 2 && colDef.isAutoIncrement()) {
                 hasHide = true;
                 break;
@@ -502,7 +496,7 @@ public class LoadDataOperation implements DmlOperation {
         if (hasHide && schema.fieldCount() - tuples.length == 1) {
             Object[] tupleTmp = new Object[schema.fieldCount()];
             System.arraycopy(tuples, 0, tupleTmp, 0, tuples.length);
-            Long id = metaService.getAutoIncrement(tableId);
+            Long id = metaService.getAutoIncrement(table.getTableId());
             tupleTmp[tuples.length] = id.toString();
             return tupleTmp;
         } else {
@@ -511,7 +505,7 @@ public class LoadDataOperation implements DmlOperation {
     }
 
     private boolean checkEngine() {
-        String engine = tableDefinition.getEngine().toUpperCase();
+        String engine = table.getEngine().toUpperCase();
         if (StringUtils.isNotBlank(engine) && engine.contains("TXN")) {
             return true;
         }

@@ -16,6 +16,8 @@
 
 package io.dingodb.calcite.operation;
 
+import io.dingodb.transaction.api.TransactionService;
+
 import java.sql.Connection;
 import java.util.List;
 
@@ -23,15 +25,12 @@ public class UnlockTableOperation implements DdlOperation {
 
     private Connection connection;
 
-    private List<String> tableList;
-
-    public UnlockTableOperation(Connection connection, List<String> tableList) {
+    public UnlockTableOperation(Connection connection) {
         this.connection = connection;
-        this.tableList = tableList;
     }
 
     @Override
     public void execute() {
-
+        TransactionService.getDefault().unlockTable(connection);
     }
 }

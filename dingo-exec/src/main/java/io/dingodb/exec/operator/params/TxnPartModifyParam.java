@@ -23,6 +23,7 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
 import java.util.NavigableMap;
@@ -47,7 +48,7 @@ public abstract class TxnPartModifyParam extends PartModifyParam {
         CommonId partId,
         DingoType schema,
         TupleMapping keyMapping,
-        TableDefinition tableDefinition,
+        Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
         boolean pessimisticTxn,
         int isolationLevel,
@@ -56,7 +57,7 @@ public abstract class TxnPartModifyParam extends PartModifyParam {
         long forUpdateTs,
         long lockTimeOut
     ) {
-        super(tableId, partId, schema, keyMapping, tableDefinition, distributions);
+        super(tableId, partId, schema, keyMapping, table, distributions);
         this.isolationLevel = isolationLevel;
         this.pessimisticTxn = pessimisticTxn;
         this.primaryLockKey = primaryLockKey;

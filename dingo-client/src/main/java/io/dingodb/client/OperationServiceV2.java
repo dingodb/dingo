@@ -25,15 +25,11 @@ import io.dingodb.client.utils.OperationUtils;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.DefinitionUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
@@ -55,19 +51,16 @@ import io.dingodb.exec.operator.params.RootParam;
 import io.dingodb.exec.operator.params.SumUpParam;
 import io.dingodb.exec.operator.params.ValuesParam;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
-import io.dingodb.sdk.common.partition.PartitionDetail;
-import io.dingodb.sdk.common.table.Column;
-import io.dingodb.sdk.common.table.Table;
 import io.dingodb.sdk.common.utils.Parameters;
-import io.dingodb.store.proxy.common.Mapping;
 import io.dingodb.store.proxy.service.CodecService;
 import io.dingodb.store.proxy.service.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -109,42 +102,46 @@ public class OperationServiceV2 {
 
     }
 
-    public synchronized boolean createTable(String schema, String name, Table table) {
-        MetaService service = getSubMetaService(schema);
-        Optional.ifPresent(table.getPartition(), __ -> checkAndConvertRangePartition(table));
-        service.createTable(name, Mapping.mapping(table));
-        return true;
-    }
-
-    private void checkAndConvertRangePartition(Table table) {
-        List<Column> columns = table.getColumns();
-        List<String> keyNames = new ArrayList<>();
-        List<DingoType> keyTypes = new ArrayList<>();
-        columns.stream().filter(Column::isPrimary)
-            .sorted(Comparator.comparingInt(Column::getPrimary))
-            .peek(col -> keyNames.add(col.getName()))
-            .map(col -> DingoTypeFactory.INSTANCE.fromName(col.getType(), col.getElementType(), col.isNullable()))
-            .forEach(keyTypes::add);
-        DefinitionUtils.checkAndConvertRangePartition(
-            keyNames,
-            table.getPartition().getCols(),
-            keyTypes,
-            table.getPartition().getDetails().stream().map(PartitionDetail::getOperand).collect(Collectors.toList())
-        );
-    }
-
-    public boolean dropTable(String schema, String tableName) {
-        MetaService service = getSubMetaService(schema);
-        return service.dropTable(tableName);
-    }
+//    public synchronized boolean createTable(String schema, String name, TableDefinition table) {
+//        MetaService service = getSubMetaService(schema);
+//        Optional.ifPresent(table.getPartDefinition(), __ -> checkAndConvertRangePartition(table));
+//        service.createTable(name, Mapping.mapping(table));
+//        return true;
+//    }
+//
+//    private void checkAndConvertRangePartition(Table table) {
+//        List<Column> columns = table.getColumns();
+//        List<String> keyNames = new ArrayList<>();
+//        List<DingoType> keyTypes = new ArrayList<>();
+//        columns.stream().filter(Column::isPrimary)
+//            .sorted(Comparator.comparingInt(Column::getPrimary))
+//            .peek(col -> keyNames.add(col.getName()))
+//            .map(col -> DingoTypeFactory.INSTANCE.fromName(col.getType(), col.getElementType(), col.isNullable()))
+//            .forEach(keyTypes::add);
+//        DefinitionUtils.checkAndConvertRangePartition(
+//            keyNames,
+//            table.getPartition().getCols(),
+//            keyTypes,
+//            table.getPartition().getDetails().stream().map(PartitionDetail::getOperand).collect(Collectors.toList())
+//        );
+//    }
+//
+//    public boolean dropTable(String schema, String tableName) {
+//        MetaService service = getSubMetaService(schema);
+//        return service.dropTable(tableName);
+//    }
 
     public MetaService getSubMetaService(String schemaName) {
         schemaName = schemaName.toUpperCase();
         return Parameters.nonNull(metaService.getSubMetaService(schemaName), "Schema not found: " + schemaName);
     }
 
-    public TableDefinition getTableDefinition(String schemaName, String tableName) {
-        return getSubMetaService(schemaName).getTableDefinition(tableName);
+//    public TableDefinition getTableDefinition(String schemaName, String tableName) {
+//        return getSubMetaService(schemaName).getTableDefinition(tableName);
+//    }
+
+    public Table getTable(String schema, String table) {
+        return getSubMetaService(schema).getTable(table);
     }
 
     private long tso() {
@@ -184,10 +181,10 @@ public class OperationServiceV2 {
 
         CommonId jobId = job.getJobId();
         MetaService metaService = getSubMetaService(schema);
-        TableDefinition table = Parameters.nonNull(metaService.getTableDefinition(tableName), "Table not found.");
-        List<ColumnDefinition> columns = table.getColumns();
+        Table table = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
+        List<Column> columns = table.getColumns();
         List<Object[]> tuples = keys.stream()
-            .map(k -> mapKey2(k.getUserKey().toArray(), new Object[columns.size()], columns, table.getKeyColumns()))
+            .map(k -> mapKey2(k.getUserKey().toArray(), new Object[columns.size()], columns, table.keyColumns()))
             .collect(Collectors.toList());
 
         try {
@@ -219,11 +216,11 @@ public class OperationServiceV2 {
         CommonId jobId = job.getJobId();
 
         MetaService metaService = getSubMetaService(schema);
-        TableDefinition table = Parameters.nonNull(metaService.getTableDefinition(tableName), "Table not found.");
-        List<ColumnDefinition> columns = table.getColumns();
+        Table table = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
+        List<Column> columns = table.getColumns();
         List<Object[]> tuples = keys.stream()
             .map(k ->
-                mapKey2(k.getUserKey().toArray(), new Object[columns.size()], columns, table.getKeyColumns()))
+                mapKey2(k.getUserKey().toArray(), new Object[columns.size()], columns, table.keyColumns()))
             .collect(Collectors.toList());
         try {
             Location currentLocation = MetaService.root().currentLocation();
@@ -341,7 +338,7 @@ public class OperationServiceV2 {
         CommonId jobId = job.getJobId();
         try {
             MetaService metaService = getSubMetaService(schema);
-            TableDefinition table = Parameters.nonNull(metaService.getTableDefinition(tableName), "Table not found.");
+            Table table = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
             Location currentLocation = MetaService.root().currentLocation();
             // scan --> coalesce --> root
             List<Vertex> scanOutputs = scan(schema, tableName, job, idGenerator, currentLocation, keyRange);
@@ -365,23 +362,24 @@ public class OperationServiceV2 {
 
     private List<Vertex> scan(String schema, String tableName, Job job, IdGenerator idGenerator, Location currentLocation, OpKeyRange keyRange) {
         MetaService metaService = getSubMetaService(schema);
-        CommonId tableId = Parameters.nonNull(metaService.getTableId(tableName), "Table not found.");
-        TableDefinition td = Parameters.nonNull(metaService.getTableDefinition(tableName), "Table not found.");
+        Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
+        CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
         final PartitionService ps = PartitionService.getService(
-            Optional.ofNullable(td.getPartDefinition())
-                .map(PartitionDefinition::getFuncName)
+            Optional.ofNullable(td.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-        io.dingodb.codec.KeyValueCodec codec = CodecService.INSTANCE.createKeyValueCodec(tableId, td);
+        io.dingodb.codec.KeyValueCodec codec = CodecService.INSTANCE.createKeyValueCodec(
+            tableId, td.tupleType(), td.keyMapping()
+        );
         NavigableSet<io.dingodb.common.partition.RangeDistribution> distributions;
 
         Key start = keyRange.start;
         Object[] dst = new Object[td.getColumns().size()];
         byte[] startBytes = codec.encodeKey(mapKey2(start.getUserKey().toArray(), dst, td.getColumns(),
-            start.columnOrder ? td.getKeyColumns() : OperationUtils.sortColumns(td.getKeyColumns())));
+            start.columnOrder ? td.keyColumns() : OperationUtils.sortColumns(td.keyColumns())));
         Key end = keyRange.end;
         Object[] dst1 = new Object[td.getColumns().size()];
         byte[] endBytes = codec.encodeKey(mapKey2(end.getUserKey().toArray(), dst1, td.getColumns(),
-            end.columnOrder ? td.getKeyColumns() : OperationUtils.sortColumns(td.getKeyColumns())));
+            end.columnOrder ? td.keyColumns() : OperationUtils.sortColumns(td.keyColumns())));
 
         distributions = ps.calcPartitionRange(startBytes, endBytes, keyRange.withStart, keyRange.withEnd,
             MetaService.root().getRangeDistribution(tableId));
@@ -392,8 +390,8 @@ public class OperationServiceV2 {
             PartRangeScanParam param = new PartRangeScanParam(
                 tableId,
                 rd.id(),
-                td.getDingoType(),
-                td.getKeyMapping(),
+                td.tupleType(),
+                td.keyMapping(),
                 null,
                 null,
                 rd.getStartKey(),
@@ -402,7 +400,7 @@ public class OperationServiceV2 {
                 rd.isWithEnd(),
                 null,
                 null,
-                td.getDingoType(),
+                td.tupleType(),
                 true
             );
             Vertex vertex = new Vertex(PART_RANGE_SCAN, param);
@@ -421,15 +419,16 @@ public class OperationServiceV2 {
                                     Location currentLocation,
                                     Key begin, Key end, boolean withBegin, boolean withEnd) {
         MetaService metaService = getSubMetaService(schema);
-        CommonId tableId = Parameters.nonNull(metaService.getTableId(tableName), "Table not found.");
-        TableDefinition td = Parameters.nonNull(metaService.getTableDefinition(tableName), "Table not found.");
-        io.dingodb.codec.KeyValueCodec codec = CodecService.INSTANCE.createKeyValueCodec(tableId, td);
+        CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
+        Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
+        io.dingodb.codec.KeyValueCodec codec = CodecService.INSTANCE.createKeyValueCodec(
+            tableId, td.tupleType(), td.keyMapping()
+        );
 
         byte[] startKey = codec.encodeKeyPrefix(mapKeyPrefix(td, begin), begin.userKey.size());
         byte[] endKey = codec.encodeKeyPrefix(mapKeyPrefix(td, end), end.userKey.size());
         PartitionService ps = PartitionService.getService(
-            Optional.ofNullable(td.getPartDefinition())
-                .map(PartitionDefinition::getFuncName)
+            Optional.ofNullable(td.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         NavigableSet<io.dingodb.common.partition.RangeDistribution> distributions =
             ps.calcPartitionRange(
@@ -440,8 +439,8 @@ public class OperationServiceV2 {
             PartRangeDeleteParam param = new PartRangeDeleteParam(
                 tableId,
                 rd.id(),
-                td.getDingoType(),
-                td.getKeyMapping(),
+                td.tupleType(),
+                td.keyMapping(),
                 rd.getStartKey(),
                 rd.getEndKey(),
                 rd.isWithStart(),
@@ -460,13 +459,13 @@ public class OperationServiceV2 {
 
     private List<Vertex> values(String schema, String tableName, Job job, IdGenerator idGenerator, Location currentLocation, List<Object[]> tuples) {
         MetaService metaService = getSubMetaService(schema);
-        CommonId tableId = Parameters.nonNull(metaService.getTableId(tableName), "Table not found.");
-        TableDefinition td = Parameters.nonNull(metaService.getTableDefinition(tableName), "Table not found.");
+        Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
+        CommonId tableId = td.getTableId();
         PartitionService ps = PartitionService.getService(
-            Optional.ofNullable(td.getPartDefinition())
-                .map(PartitionDefinition::getFuncName)
-                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-        io.dingodb.codec.KeyValueCodec codec = CodecService.INSTANCE.createKeyValueCodec(tableId, td);
+            Optional.ofNullable(td.getPartitionStrategy()).orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+        io.dingodb.codec.KeyValueCodec codec = CodecService.INSTANCE.createKeyValueCodec(
+            td.tupleType(), td.keyMapping()
+        );
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts = metaService.getRangeDistribution(tableId);
 
         List<Vertex> outputs = new LinkedList<>();
@@ -489,20 +488,22 @@ public class OperationServiceV2 {
 
     private List<Vertex> getByKey(String schema, String tableName, Job job, IdGenerator idGenerator, Location currentLocation, List<Object[]> tuples) {
         MetaService metaService = getSubMetaService(schema);
-        CommonId tableId = Parameters.nonNull(metaService.getTableId(tableName), "Table not found.");
-        TableDefinition td = Parameters.nonNull(metaService.getTableDefinition(tableName), "Table not found.");
+        Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
+        CommonId tableId = td.getTableId();
         PartitionService ps = PartitionService.getService(
-            Optional.ofNullable(td.getPartDefinition())
-                .map(PartitionDefinition::getFuncName)
+            Optional.ofNullable(td.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts = metaService.getRangeDistribution(tableId);
-        io.dingodb.codec.KeyValueCodec codec = CodecService.INSTANCE.createKeyValueCodec(tableId, td);
+        io.dingodb.codec.KeyValueCodec codec = CodecService.INSTANCE.createKeyValueCodec(
+            td.tupleType(), td.keyMapping()
+        );
         Map<CommonId, List<Object[]>> partMap = ps.partTuples(tuples, wrap(codec::encodeKey), parts);
 
         List<Vertex> outputs = new LinkedList<>();
         for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
-            GetByKeysParam param = new GetByKeysParam(tableId, entry.getKey(), td.getDingoType(),
-                td.getKeyMapping(), entry.getValue(), null, null);
+            GetByKeysParam param = new GetByKeysParam(
+                tableId, entry.getKey(), td.tupleType(), td.keyMapping(), entry.getValue(), null, null
+            );
             Task task = job.getOrCreate(currentLocation, idGenerator);
             Vertex vertex = new Vertex(GET_BY_KEYS, param);
             OutputHint hint = new OutputHint();
@@ -518,8 +519,8 @@ public class OperationServiceV2 {
     private List<Vertex> partition(String schema, String tableName, Job job, IdGenerator idGenerator, Location currentLocation, List<Vertex> inputs) {
         List<Vertex> outpus = new LinkedList<>();
         MetaService metaService = getSubMetaService(schema);
-        CommonId tableId = Parameters.nonNull(metaService.getTableId(tableName), "Table not found.");
-        TableDefinition td = Parameters.nonNull(metaService.getTableDefinition(tableName), "Table not found.");
+        Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
+        CommonId tableId = td.getTableId();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts = metaService.getRangeDistribution(tableId);
         for (Vertex input : inputs) {
             Task task = input.getTask();
@@ -588,15 +589,15 @@ public class OperationServiceV2 {
 
     private List<Vertex> delete(String schema, String tableName, IdGenerator idGenerator, Location currentLocation, List<Vertex> inputs) {
         MetaService metaService = getSubMetaService(schema);
-        CommonId tableId = Parameters.nonNull(metaService.getTableId(tableName), "Table not found.");
-        TableDefinition td = Parameters.nonNull(metaService.getTableDefinition(tableName), "Table not found.");
+        CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
+        Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         List<Vertex> outputs = new LinkedList<>();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts = metaService.getRangeDistribution(tableId);
 
         for (Vertex input : inputs) {
             Task task = input.getTask();
             PartDeleteParam param = new PartDeleteParam(tableId, input.getHint().getPartId(),
-                td.getDingoType(), td.getKeyMapping(), td, parts);
+                td.tupleType(), td.keyMapping(), td, parts);
             Vertex vertex = new Vertex(PART_DELETE, param);
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);
@@ -614,15 +615,15 @@ public class OperationServiceV2 {
 
     private List<Vertex> insert(String schema, String tableName, IdGenerator idGenerator, Location currentLocation, List<Vertex> inputs) {
         MetaService metaService = getSubMetaService(schema);
-        CommonId tableId = Parameters.nonNull(metaService.getTableId(tableName), "Table not found.");
-        TableDefinition tableDefinition = Parameters.nonNull(metaService.getTableDefinition(tableName), "Table not found.");
+        CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
+        Table tableDefinition = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         List<Vertex> outputs = new LinkedList<>();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts = metaService.getRangeDistribution(tableId);
 
         for (Vertex input : inputs) {
             Task task = input.getTask();
             PartInsertParam insertParam = new PartInsertParam(tableId, input.getHint().getPartId(),
-                tableDefinition.getDingoType(), tableDefinition.getKeyMapping(), tableDefinition, parts);
+                tableDefinition.tupleType(), tableDefinition.keyMapping(), tableDefinition, parts);
             Vertex vertex = new Vertex(PART_INSERT, insertParam);
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);
@@ -640,8 +641,8 @@ public class OperationServiceV2 {
 
     private List<Vertex> compareAndSet(String schema, String tableName, IdGenerator idGenerator, Location currentLocation, List<Vertex> inputs) {
         MetaService metaService = getSubMetaService(schema);
-        CommonId tableId = Parameters.nonNull(metaService.getTableId(tableName), "Table not found.");
-        TableDefinition td = Parameters.nonNull(metaService.getTableDefinition(tableName), "Table not found.");
+        CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
+        Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.common.partition.RangeDistribution> parts = new TreeMap<>();
         MetaService.root().getRangeDistribution(tableId)
             .forEach((k, v) -> parts.put(new ByteArrayUtils.ComparableByteArray(k.getBytes(), k.isIgnoreLen(), k.getPos()), v));
@@ -651,7 +652,7 @@ public class OperationServiceV2 {
         for (Vertex input : inputs) {
             Task task = input.getTask();
             CompareAndSetParam param = new CompareAndSetParam(tableId,
-                input.getHint().getPartId(), td.getDingoType(), td.getKeyMapping(), td, parts);
+                input.getHint().getPartId(), td.tupleType(), td.keyMapping(), td, parts);
             Vertex vertex = new Vertex(COMPARE_AND_SET, param);
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);

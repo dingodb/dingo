@@ -19,6 +19,7 @@ package io.dingodb.calcite.rel;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -41,7 +42,7 @@ public class VectorStreamConvertor extends SingleRel implements DingoRel {
     private Integer vectorIdIndex;
 
     @Getter
-    private TableDefinition indexTableDefinition;
+    private Table indexTableDefinition;
 
     @Getter
     private boolean needRoute;
@@ -58,7 +59,7 @@ public class VectorStreamConvertor extends SingleRel implements DingoRel {
                                  RelNode input,
                                  CommonId indexId,
                                  Integer vectorIdIndex,
-                                 TableDefinition indexTableDefinition,
+                                 Table indexTableDefinition,
                                  boolean needRoute) {
         super(cluster, traits, input);
         this.indexId = indexId;

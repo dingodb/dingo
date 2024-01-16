@@ -34,7 +34,10 @@ public class MemoryStoreService implements StoreService {
     private final Map<CommonId, MemoryStoreInstance> store = new ConcurrentHashMap<>();
 
     @Override
-    public StoreInstance getInstance(@NonNull CommonId tableId, CommonId regionId) {
+    public StoreInstance getInstance(CommonId tableId, CommonId regionId) {
+        if (tableId == null) {
+            return null;
+        }
         return store.computeIfAbsent(tableId, __ -> new MemoryStoreInstance(tableId));
     }
 

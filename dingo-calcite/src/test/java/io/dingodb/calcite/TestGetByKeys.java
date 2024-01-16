@@ -98,7 +98,7 @@ public class TestGetByKeys {
             .getInstance();
         List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(
             getByKeys.getPoints(),
-            TableUtils.getTableDefinition(getByKeys.getTable())
+            getByKeys.getTable().unwrap(DingoTable.class).getTable()
         );
         assertThat(keyTuples)
             .containsExactlyInAnyOrder(new Object[]{1, "A", true, null, null});
@@ -122,7 +122,7 @@ public class TestGetByKeys {
             .getInstance();
         List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(
             getByKeys.getPoints(),
-            TableUtils.getTableDefinition(getByKeys.getTable())
+            getByKeys.getTable().unwrap(DingoTable.class).getTable()
         );
         assertThat(keyTuples)
             .containsExactlyInAnyOrder(new Object[]{1, "A", false, null, null});
@@ -146,7 +146,7 @@ public class TestGetByKeys {
             .getInstance();
         List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(
             getByKeys.getPoints(),
-            TableUtils.getTableDefinition(getByKeys.getTable())
+            getByKeys.getTable().unwrap(DingoTable.class).getTable()
         );
         assertThat(keyTuples)
             .containsExactlyInAnyOrder(

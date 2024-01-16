@@ -103,7 +103,7 @@ public class ShowTest {
     public void showTableDistribution() throws SQLException {
         String sql = "show table {table} distribution";
         MetaService metaService = MetaService.root().getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME);
-        CommonId tableId = metaService.getTableId(tableName);
+        CommonId tableId = metaService.getTable(tableName).getTableId();
         context.execSql(sql).test(is(
             new String[]{"Id", "Type", "Value"},
             ImmutableList.of(

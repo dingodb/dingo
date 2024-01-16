@@ -19,14 +19,13 @@ package io.dingodb.store.memory;
 import io.dingodb.codec.serial.DingoKeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -46,10 +45,8 @@ public class MemoryStoreInstance implements StoreInstance {
 
     public MemoryStoreInstance(CommonId id) {
         this.id = id;
-        TableDefinition tableDefinition = MetaService.root()
-            .getSubMetaService(MetaService.DINGO_NAME)
-            .getTableDefinition(id);
-        codec = new DingoKeyValueCodec(tableDefinition.getDingoType(), tableDefinition.getKeyMapping());
+        Table table = MetaService.root().getSubMetaService(MetaService.DINGO_NAME).getTable(id);
+        codec = new DingoKeyValueCodec(table.tupleType(), table.keyMapping());
     }
 
     @Override

@@ -31,14 +31,14 @@ SqlBeginTx SqlBegin(): {
 
 SqlLock SqlLock(): {
   final Span s;
-  List<String> tableNameList = new ArrayList<>();
+  List<SqlIdentifier> tableNameList = new ArrayList<>();
   List<SqlBlock> sqlBlockList = new ArrayList<>();
 } {
   <LOCK> { s = span(); }
-  (<TABLES> <IDENTIFIER> { tableNameList.add(token.image); }
+  (<TABLES> { tableNameList.add(CompoundIdentifier()); }
    (
      <COMMA>
-     <IDENTIFIER> { tableNameList.add(token.image); }
+     { tableNameList.add(CompoundIdentifier()); }
    )*
    { return new SqlLockTable(s.end(this), tableNameList); }
   |
@@ -84,25 +84,12 @@ SqlEnd SqlEnd(): {
 
 SqlUnLock SqlUnLock(): {
   final Span s;
-  List<String> tableNameList = new ArrayList<>();
-  List<SqlBlock> sqlBlockList = new ArrayList<>();
 } {
   <UNLOCK> { s = span(); }
-  (<TABLES> <IDENTIFIER> { tableNameList.add(token.image); }
-   (
-     <COMMA>
-     <IDENTIFIER> { tableNameList.add(token.image); }
-   )*
-   { return new SqlUnLockTable(s.end(this), tableNameList); }
+  (<TABLES>
+   { return new SqlUnLockTable(s.end(this)); }
   |
    <BLOCKS>
-   {
-     sqlBlockList.add(readBlock());
-   }
-   (
-     <COMMA>
-     { sqlBlockList.add(readBlock()); }
-   )*
-   { return new SqlUnLockBlock(s.end(this), sqlBlockList); }
+   { return new SqlUnLockBlock(s.end(this)); }
   )
 }

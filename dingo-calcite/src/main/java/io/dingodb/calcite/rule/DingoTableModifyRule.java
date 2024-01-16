@@ -16,11 +16,13 @@
 
 package io.dingodb.calcite.rule;
 
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
-import io.dingodb.calcite.utils.TableUtils;
-import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.TupleMapping;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.Table;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
@@ -30,7 +32,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
-import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class DingoTableModifyRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
@@ -47,11 +49,13 @@ public class DingoTableModifyRule extends ConverterRule {
     }
 
     private static void checkUpdateInPart(@NonNull LogicalTableModify rel) {
-        TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
+        Table td = rel.getTable().unwrap(DingoTable.class).getTable();
         List<String> updateList = rel.getUpdateColumnList();
-        if (updateList != null && updateList.stream().anyMatch(c ->
-            Objects.requireNonNull(td.getColumn(c)).isPrimary())
-        ) {
+        TupleMapping keyMapping = td.keyMapping();
+        List<String> keys = keyMapping.stream()
+            .mapToObj(td.getColumns()::get)
+            .map(Column::getName).collect(Collectors.toList());
+        if (updateList != null && updateList.stream().anyMatch(keys::contains)) {
             throw new IllegalStateException(
                 "Update columns " + updateList + " contain primary columns and are not supported."
             );

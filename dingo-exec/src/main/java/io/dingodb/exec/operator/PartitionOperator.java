@@ -47,8 +47,7 @@ public final class PartitionOperator extends FanOutOperator {
             ValueConverter.INSTANCE
         );
         CommonId partId = PartitionService.getService(
-                Optional.ofNullable(param.getTableDefinition().getPartDefinition())
-                    .map(PartitionDefinition::getFuncName)
+                Optional.ofNullable(param.getTable().getPartitionStrategy())
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
             .calcPartId(newTuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
         return param.getPartIndices().get(partId);

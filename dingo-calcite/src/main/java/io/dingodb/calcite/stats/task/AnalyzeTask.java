@@ -32,7 +32,6 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
@@ -53,6 +52,7 @@ import io.dingodb.exec.table.Part;
 import io.dingodb.exec.table.PartInKvStore;
 import io.dingodb.exec.utils.SchemaWrapperUtils;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Table;
 import lombok.Builder;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -102,8 +102,8 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             // get table info
             MetaService metaService = MetaService.root();
             metaService = metaService.getSubMetaService(schemaName);
-            TableDefinition td = metaService.getTableDefinition(tableName);
-            CommonId tableId = metaService.getTableId(tableName);
+            Table td = metaService.getTable(tableName);
+            CommonId tableId = td.getTableId();
 
             startAnalyzeTask(tableId);
             List<RangeDistribution> rangeDistributions = new ArrayList<>(metaService
@@ -159,17 +159,19 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
         endAnalyzeTask(failReason);
     }
 
-    private static List<CompletableFuture<TableStats>> getCompletableFutures(TableDefinition td,
-                                                                             CommonId tableId,
-                                                                             List<RangeDistribution> rangeDistributions,
-                                                                             List<CountMinSketch> cmSketchList,
-                                                                             List<StatsNormal> statsNormals,
-                                                                             List<Histogram> columnHistograms) {
+    private static List<CompletableFuture<TableStats>> getCompletableFutures(
+        Table td,
+        CommonId tableId,
+        List<RangeDistribution> rangeDistributions,
+        List<CountMinSketch> cmSketchList,
+        List<StatsNormal> statsNormals,
+        List<Histogram> columnHistograms
+    ) {
+
         List<CompletableFuture<TableStats>> futureList = rangeDistributions.stream().map(_i -> {
-            Callable<TableStats> collectStatsTask = new CollectStatsTask(_i, tableId, td,
-                columnHistograms,
-                cmSketchList,
-                statsNormals);
+            Callable<TableStats> collectStatsTask = new CollectStatsTask(
+                _i, tableId, td, columnHistograms, cmSketchList, statsNormals
+            );
             return Executors.submit("collect-task", collectStatsTask);
         }).collect(Collectors.toList());
 
@@ -184,7 +186,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
         return futureList;
     }
 
-    private void typeMetricAdaptor(TableDefinition td,
+    private void typeMetricAdaptor(Table td,
                                    List<Histogram> histogramCdList,
                                    List<CountMinSketch> cmSketchCdList,
                                    List<StatsNormal> statsNormals,
@@ -260,7 +262,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
     private void buildHistogram(List<Histogram> histogramList,
                                 List<RangeDistribution> rangeDistributions,
                                 CommonId tableId,
-                                TableDefinition td) {
+                                Table td) {
         if (histogramList.size() > 0) {
             List<Iterator<Object[]>> iteratorList = rangeDistributions.stream().map(rangeDistribution -> {
                 TupleMapping outputKeyMapping = TupleMapping.of(
@@ -288,7 +290,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                     }
                 ).collect(Collectors.toList()));
                 builder.originalSchema(SchemaWrapperUtils.buildSchemaWrapper(
-                    td.getDingoType(), td.getKeyMapping(), tableId.seq));
+                    td.tupleType(), td.keyMapping(), tableId.seq));
                 builder.resultSchema(SchemaWrapperUtils.buildSchemaWrapper(
                     outputSchema, outputKeyMapping, tableId.seq
                 ));

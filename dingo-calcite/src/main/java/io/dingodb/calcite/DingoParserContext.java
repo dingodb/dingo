@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import com.google.common.collect.Multimap;
 import io.dingodb.calcite.grammar.SqlUserDefinedOperators;
+import io.dingodb.calcite.schema.DingoCalciteSchema;
 import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import lombok.Getter;
@@ -88,12 +89,10 @@ public final class DingoParserContext implements Context {
         String pushDownStr = (options != null ? options.getProperty("pushDown") : null);
         pushDown = (pushDownStr == null || Boolean.parseBoolean(pushDownStr));
 
-        rootSchema = CalciteSchema.createRootSchema(
-            false,
-            true,
-            DingoRootSchema.ROOT_SCHEMA_NAME,
-            new DingoRootSchema(this)
-        );
+        rootSchema = DingoCalciteSchema.builder()
+            .schema(new DingoRootSchema(this))
+            .name(DingoRootSchema.ROOT_SCHEMA_NAME)
+            .build();
 
         RelProtoDataType mapType = (RelDataTypeFactory factory) -> factory.createSqlType(SqlTypeName.ANY);
         rootSchema.add("map", mapType);

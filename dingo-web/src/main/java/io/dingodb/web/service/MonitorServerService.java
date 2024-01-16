@@ -17,6 +17,7 @@
 package io.dingodb.web.service;
 
 import io.dingodb.common.Common;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.index.Index;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.Location;
@@ -489,8 +490,8 @@ public class MonitorServerService {
         } else {
             end = null;
         }
-        String startKey = buildKeyStr(tableDefinition.getKeyColumnIndices(), start);
-        String endKey = buildKeyStr(tableDefinition.getKeyColumnIndices(), end);
+        String startKey = buildKeyStr(TupleMapping.of(tableDefinition.getKeyColumnIndices()), start);
+        String endKey = buildKeyStr(TupleMapping.of(tableDefinition.getKeyColumnIndices()), end);
         String range = String.format("[ %s, %s ]", startKey, endKey);
         rangeDistribution.getVoters().remove(rangeDistribution.getLeader());
         regionDtoList.add(new Region(

@@ -76,6 +76,8 @@ public abstract class BaseTransaction implements ITransaction {
     protected boolean autoCommit;
     protected TransactionConfig transactionConfig;
 
+    protected CompletableFuture<Void> finishedFuture = new CompletableFuture<>();
+
     public BaseTransaction(@NonNull CommonId txnId, int isolationLevel) {
         this.isolationLevel = isolationLevel;
         this.txnId = txnId;
@@ -126,7 +128,12 @@ public abstract class BaseTransaction implements ITransaction {
         return false;
     }
 
-    public abstract void cleanUp();
+    public void cleanUp() {
+        if (future != null) {
+            future.cancel(true);
+        }
+        finishedFuture.complete(null);
+    }
 
     public abstract void resolveWriteConflict(JobManager jobManager, Location currentLocation, RuntimeException e);
 

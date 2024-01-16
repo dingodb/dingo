@@ -40,6 +40,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -275,6 +276,16 @@ public class TableDefinition {
             }
         }
         return keyCols;
+    }
+
+    public DingoType getKeyType() {
+        return DingoTypeFactory.tuple(
+            columns.stream()
+                .filter(ColumnDefinition::isPrimary)
+                .sorted(Comparator.comparingInt(ColumnDefinition::getPrimary))
+                .map(ColumnDefinition::getType)
+                .toArray(DingoType[]::new)
+        );
     }
 
     public List<DingoSchema> getDingoSchemaOfValue() {

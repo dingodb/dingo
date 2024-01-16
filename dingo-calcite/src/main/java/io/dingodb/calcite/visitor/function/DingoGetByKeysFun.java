@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.visitor.function;
 
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
@@ -25,9 +26,7 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
@@ -37,6 +36,7 @@ import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.EmptySourceParam;
 import io.dingodb.exec.operator.params.GetByKeysParam;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -61,10 +61,9 @@ public final class DingoGetByKeysFun {
         final TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
             = tableInfo.getRangeDistributions();
-        final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
+        final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
         final PartitionService ps = PartitionService.getService(
-            Optional.ofNullable(td.getPartDefinition())
-                .map(PartitionDefinition::getFuncName)
+            Optional.ofNullable(td.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         final List<Vertex> outputs = new LinkedList<>();
         KeyValueCodec codec = TableUtils.getKeyValueCodecForTable(td);
@@ -83,8 +82,8 @@ public final class DingoGetByKeysFun {
         }
         Map<CommonId, List<Object[]>> partMap = ps.partTuples(keyTuples, wrap(codec::encodeKey), distributions);
         for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
-            GetByKeysParam param = new GetByKeysParam(tableInfo.getId(), entry.getKey(), td.getDingoType(),
-                td.getKeyMapping(), entry.getValue(), SqlExprUtils.toSqlExpr(rel.getFilter()), rel.getSelection()
+            GetByKeysParam param = new GetByKeysParam(tableInfo.getId(), entry.getKey(), td.tupleType(),
+                td.keyMapping(), entry.getValue(), SqlExprUtils.toSqlExpr(rel.getFilter()), rel.getSelection()
             );
             Task task = job.getOrCreate(currentLocation, idGenerator);
             Vertex vertex = new Vertex(GET_BY_KEYS, param);

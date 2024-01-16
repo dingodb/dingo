@@ -23,7 +23,6 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.exec.base.IdGenerator;
@@ -36,6 +35,7 @@ import io.dingodb.exec.fun.vector.VectorTextFun;
 import io.dingodb.exec.operator.params.PartVectorParam;
 import io.dingodb.exec.restful.VectorExtract;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -69,7 +69,7 @@ public final class DingoVectorVisitFun {
 
         MetaService metaService = MetaService.root().getSubMetaService(relTable.getSchemaName());
         CommonId tableId = dingoTable.getTableId();
-        TableDefinition td = dingoTable.getTableDefinition();
+        Table td = dingoTable.getTable();
 
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = metaService.getRangeDistribution(tableId);
         List<SqlNode> operandsList = rel.getOperands();
@@ -87,7 +87,7 @@ public final class DingoVectorVisitFun {
 
         // Get all index table distributions
         NavigableMap<ComparableByteArray, RangeDistribution> indexRangeDistribution =
-            metaService.getIndexRangeDistribution(rel.getIndexTableId());
+            metaService.getRangeDistribution(rel.getIndexTableId());
 
         // TODO: selection
         int rowTypeSize = rel.getRowType().getFieldList().size();
@@ -104,8 +104,8 @@ public final class DingoVectorVisitFun {
             PartVectorParam param = new PartVectorParam(
                 tableId,
                 rangeDistribution.id(),
-                td.getDingoType(),
-                td.getKeyMapping(),
+                td.tupleType(),
+                td.keyMapping(),
                 null,
                 TupleMapping.of(select),
                 td,

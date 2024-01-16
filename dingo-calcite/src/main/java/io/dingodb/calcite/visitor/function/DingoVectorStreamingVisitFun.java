@@ -79,7 +79,7 @@ public final class DingoVectorStreamingVisitFun {
         MetaService metaService = MetaService.root().getSubMetaService(schemaName);
         CommonId indexId = rel.getIndexId();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
-            = metaService.getIndexRangeDistribution(rel.getIndexId());
+            = metaService.getRangeDistribution(rel.getIndexId());
 
         for (Vertex input : inputs) {
             Task task = input.getTask();

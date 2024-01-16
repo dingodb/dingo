@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.visitor.function;
 
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoPartRangeDelete;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.TableInfo;
@@ -36,6 +37,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.PartRangeDeleteParam;
 import io.dingodb.exec.operator.params.TxnPartRangeDeleteParam;
 import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
@@ -60,12 +62,11 @@ public final class DingoRangeDeleteVisitFun {
         ITransaction transaction, DingoJobVisitor visitor, DingoPartRangeDelete rel
     ) {
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
-        final TableDefinition td = TableUtils.getTableDefinition(rel.getTable());
+        final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
         NavigableSet<RangeDistribution> distributions;
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
         final PartitionService ps = PartitionService.getService(
-            Optional.ofNullable(td.getPartDefinition())
-                .map(PartitionDefinition::getFuncName)
+            Optional.ofNullable(td.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         if (rel.isNotBetween()) {
             distributions = new TreeSet<>(RangeUtils.rangeComparator());
@@ -85,8 +86,8 @@ public final class DingoRangeDeleteVisitFun {
                 TxnPartRangeDeleteParam param = new TxnPartRangeDeleteParam(
                     tableInfo.getId(),
                     rd.id(),
-                    td.getDingoType(),
-                    td.getKeyMapping(),
+                    td.tupleType(),
+                    td.keyMapping(),
                     rd.getStartKey(),
                     rd.getEndKey(),
                     rd.isWithStart(),
@@ -96,8 +97,8 @@ public final class DingoRangeDeleteVisitFun {
                 PartRangeDeleteParam param = new PartRangeDeleteParam(
                     tableInfo.getId(),
                     rd.id(),
-                    td.getDingoType(),
-                    td.getKeyMapping(),
+                    td.tupleType(),
+                    td.keyMapping(),
                     rd.getStartKey(),
                     rd.getEndKey(),
                     rd.isWithStart(),
