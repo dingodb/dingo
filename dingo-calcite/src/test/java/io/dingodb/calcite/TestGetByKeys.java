@@ -20,12 +20,11 @@ import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoRoot;
 import io.dingodb.calcite.rel.DingoStreamingConverter;
-import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.rel.dingo.DingoScanWithRelOp;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.utils.TableUtils;
-import io.dingodb.common.type.TupleMapping;
 import io.dingodb.test.asserts.Assert;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -38,8 +37,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,7 +50,9 @@ public class TestGetByKeys {
     @BeforeAll
     public static void setupAll() {
         MockMetaServiceProvider.init();
-        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        Properties properties = new Properties();
+        properties.put("usingRelOp", "true");
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties);
     }
 
     @BeforeEach
@@ -71,13 +72,10 @@ public class TestGetByKeys {
             .soleInput().isA(LogicalFilter.class)
             .soleInput().isA(LogicalDingoTableScan.class);
         RelNode optimized = parser.optimize(relRoot.rel);
-        DingoTableScan scan = (DingoTableScan) Assert.relNode(optimized)
+        Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoTableScan.class)
-            .getInstance();
-        assertThat((scan).getFilter()).isNotNull();
-        assertThat((scan).getSelection()).isEqualTo(TupleMapping.of(Arrays.asList(0, 1, 2, 3, 4)));
+            .soleInput().isA(DingoScanWithRelOp.class);
     }
 
     @Test

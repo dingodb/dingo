@@ -25,6 +25,7 @@ dependencies {
     compileOnly group: 'io.dingodb.expr', name: 'dingo-expr-annotations', version: 'dingo-expr'.v()
 
     api group: 'io.dingodb.expr', name: 'dingo-expr-parser', version: 'dingo-expr'.v()
+    api group: 'io.dingodb.expr', name: 'dingo-expr-rel', version: 'dingo-expr'.v()
     api project(':dingo-cluster-api')
     api project(':dingo-codec-api')
     api project(':dingo-meta-api')

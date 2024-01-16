@@ -17,6 +17,14 @@
 package io.dingodb.calcite.rule;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.rule.dingo.DingoReduceAggregateRule;
+import io.dingodb.calcite.rule.dingo.DingoRelOpRule;
+import io.dingodb.calcite.rule.dingo.DingoScanWithRelOpRule;
+import io.dingodb.calcite.rule.logical.LogicalMergeRelOpScanRule;
+import io.dingodb.calcite.rule.logical.LogicalRelOpFromFilterRule;
+import io.dingodb.calcite.rule.logical.LogicalRelOpFromProjectRule;
+import io.dingodb.calcite.rule.logical.LogicalScanWithRelOpRule;
+import io.dingodb.calcite.rule.logical.LogicalSplitAggregateRule;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.rel.rules.CoreRules;
@@ -24,6 +32,23 @@ import org.apache.calcite.rel.rules.CoreRules;
 import java.util.List;
 
 public final class DingoRules {
+    public static final LogicalScanWithRelOpRule LOGICAL_SCAN_WITH_REL_OP_RULE
+        = LogicalScanWithRelOpRule.DEFAULT.toRule(LogicalScanWithRelOpRule.class);
+    public static final LogicalRelOpFromFilterRule LOGICAL_REL_OP_FROM_FILTER_RULE
+        = LogicalRelOpFromFilterRule.DEFAULT.toRule(LogicalRelOpFromFilterRule.class);
+    public static final LogicalRelOpFromProjectRule LOGICAL_REL_OP_FROM_PROJECT_RULE
+        = LogicalRelOpFromProjectRule.DEFAULT.toRule(LogicalRelOpFromProjectRule.class);
+    public static final LogicalSplitAggregateRule LOGICAL_SPLIT_AGGREGATE_RULE
+        = LogicalSplitAggregateRule.Config.DEFAULT.toRule();
+    public static final LogicalMergeRelOpScanRule LOGICAL_MERGE_REL_OP_SCAN_RULE
+        = LogicalMergeRelOpScanRule.Config.DEFAULT.toRule();
+    public static final DingoRelOpRule DINGO_REL_OP_RULE
+        = DingoRelOpRule.DEFAULT.toRule(DingoRelOpRule.class);
+    public static final DingoScanWithRelOpRule DINGO_SCAN_WITH_REL_OP_RULE
+        = DingoScanWithRelOpRule.DEFAULT.toRule(DingoScanWithRelOpRule.class);
+    public static final DingoReduceAggregateRule DINGO_REDUCE_AGGREGATE_RULE
+        = DingoReduceAggregateRule.DEFAULT.toRule(DingoReduceAggregateRule.class);
+
     public static final DingoAggregateReduceRule DINGO_AGGREGATE_REDUCE_RULE
         = DingoAggregateReduceRule.Config.DEFAULT.toRule();
     public static final DingoAggregateRule DINGO_AGGREGATE_RULE
@@ -92,19 +117,23 @@ public final class DingoRules {
     public static final SubQueryRemoveRule PROJECT_SUB_QUERY_TO_CORRELATE =
         SubQueryRemoveRule.Config.PROJECT.toRule();
 
-    /** Rule that converts a sub-queries from filter expressions into
+    /**
+     * Rule that converts a sub-queries from filter expressions into
      * {@link Correlate} instances.
      *
      * @see #PROJECT_SUB_QUERY_TO_CORRELATE
-     * @see #JOIN_SUB_QUERY_TO_CORRELATE */
+     * @see #JOIN_SUB_QUERY_TO_CORRELATE
+     */
     public static final SubQueryRemoveRule FILTER_SUB_QUERY_TO_CORRELATE =
         SubQueryRemoveRule.Config.FILTER.toRule();
 
-    /** Rule that converts sub-queries from join expressions into
+    /**
+     * Rule that converts sub-queries from join expressions into
      * {@link Correlate} instances.
      *
      * @see #PROJECT_SUB_QUERY_TO_CORRELATE
-     * @see #FILTER_SUB_QUERY_TO_CORRELATE */
+     * @see #FILTER_SUB_QUERY_TO_CORRELATE
+     */
     public static final SubQueryRemoveRule JOIN_SUB_QUERY_TO_CORRELATE =
         SubQueryRemoveRule.Config.JOIN.toRule();
 
@@ -124,9 +153,6 @@ public final class DingoRules {
         CoreRules.FILTER_INTO_JOIN,
         CoreRules.JOIN_EXTRACT_FILTER,
         CoreRules.PROJECT_REMOVE,
-        DINGO_AGGREGATE_REDUCE_RULE,
-        DINGO_AGGREGATE_RULE,
-        DINGO_FILTER_RULE,
         DINGO_HASH_JOIN_DISTRIBUTE_RULE,
         DINGO_GET_BY_INDEX_RULE,
         DINGO_HASH_JOIN_RULE,
@@ -134,7 +160,6 @@ public final class DingoRules {
         DINGO_PART_COUNT_RULE,
         DINGO_PART_DELETE_RULE,
         DINGO_PART_RANGE_DELETE_RULE,
-        DINGO_PROJECT_RULE,
         DINGO_ROOT_RULE,
         DINGO_SCAN_FILTER_RULE,
         DINGO_SCAN_PROJECT_RULE,

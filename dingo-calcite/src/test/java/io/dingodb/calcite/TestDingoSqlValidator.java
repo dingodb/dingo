@@ -30,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,7 +40,9 @@ public class TestDingoSqlValidator {
     @BeforeEach
     public void setupAll() {
         MockMetaServiceProvider.init();
-        DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        Properties properties = new Properties();
+        properties.put("usingRelOp", "true");
+        DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties);
         parser = new DingoParser(context);
     }
 

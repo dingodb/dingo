@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.fun.DingoFunFactory;
 import io.dingodb.exec.type.converter.ExprConverter;
+import io.dingodb.expr.coding.CodingFlag;
 import io.dingodb.expr.coding.ExprCoder;
 import io.dingodb.expr.parser.ExprParser;
 import io.dingodb.expr.parser.exception.ExprParseException;
@@ -63,7 +64,7 @@ public class SqlExpr {
         try {
             compileIn(tupleType, parasType);
             ByteArrayOutputStream os = new ByteArrayOutputStream();
-            if (ExprCoder.INSTANCE.visit(expr, os) == ExprCoder.OK) {
+            if (ExprCoder.INSTANCE.visit(expr, os) == CodingFlag.OK) {
                 return os.toByteArray();
             }
             return null;

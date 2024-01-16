@@ -39,7 +39,6 @@ import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.SqlToOperationConverter;
 import io.dingodb.calcite.rel.DingoCost;
 import io.dingodb.calcite.rel.LogicalDingoRoot;
-import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.rel.LogicalExportData;
 import io.dingodb.calcite.rule.DingoRules;
 import io.dingodb.calcite.traits.DingoConvention;
@@ -64,12 +63,10 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlBasicCall;
-import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -94,7 +91,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static io.dingodb.calcite.rule.DingoRules.DINGO_AGGREGATE_REDUCE_RULE;
+import static io.dingodb.calcite.rule.DingoRules.DINGO_AGGREGATE_RULE;
 import static io.dingodb.calcite.rule.DingoRules.DINGO_AGGREGATE_SCAN_RULE;
+import static io.dingodb.calcite.rule.DingoRules.DINGO_FILTER_RULE;
+import static io.dingodb.calcite.rule.DingoRules.DINGO_PROJECT_RULE;
+import static io.dingodb.calcite.rule.DingoRules.DINGO_REDUCE_AGGREGATE_RULE;
+import static io.dingodb.calcite.rule.DingoRules.DINGO_REL_OP_RULE;
+import static io.dingodb.calcite.rule.DingoRules.DINGO_SCAN_WITH_REL_OP_RULE;
+import static io.dingodb.calcite.rule.DingoRules.LOGICAL_MERGE_REL_OP_SCAN_RULE;
+import static io.dingodb.calcite.rule.DingoRules.LOGICAL_REL_OP_FROM_FILTER_RULE;
+import static io.dingodb.calcite.rule.DingoRules.LOGICAL_REL_OP_FROM_PROJECT_RULE;
+import static io.dingodb.calcite.rule.DingoRules.LOGICAL_SCAN_WITH_REL_OP_RULE;
+import static io.dingodb.calcite.rule.DingoRules.LOGICAL_SPLIT_AGGREGATE_RULE;
 
 // Each sql parsing requires a new instance.
 @Slf4j
@@ -118,11 +127,13 @@ public class DingoParser {
                 return true;
             }
 
-            @Override public boolean isLimitStartCountAllowed() {
+            @Override
+            public boolean isLimitStartCountAllowed() {
                 return true;
             }
 
-            @Override public boolean isOffsetLimitAllowed() {
+            @Override
+            public boolean isOffsetLimitAllowed() {
                 return true;
             }
 
@@ -266,8 +277,23 @@ public class DingoParser {
             // This is needed for `IterativeRuleDriver`.
             builder.add(AbstractConverter.ExpandConversionRule.INSTANCE);
         }
-        if (context.isPushDown()) {
-            builder.add(DINGO_AGGREGATE_SCAN_RULE);
+        if (context.isUsingRelOp()) {
+            builder.add(LOGICAL_SCAN_WITH_REL_OP_RULE);
+            builder.add(LOGICAL_REL_OP_FROM_FILTER_RULE);
+            builder.add(LOGICAL_REL_OP_FROM_PROJECT_RULE);
+            builder.add(LOGICAL_SPLIT_AGGREGATE_RULE);
+            builder.add(LOGICAL_MERGE_REL_OP_SCAN_RULE);
+            builder.add(DINGO_REL_OP_RULE);
+            builder.add(DINGO_SCAN_WITH_REL_OP_RULE);
+            builder.add(DINGO_REDUCE_AGGREGATE_RULE);
+        } else {
+            builder.add(DINGO_FILTER_RULE);
+            builder.add(DINGO_PROJECT_RULE);
+            builder.add(DINGO_AGGREGATE_RULE);
+            builder.add(DINGO_AGGREGATE_REDUCE_RULE);
+            if (context.isPushDown()) {
+                builder.add(DINGO_AGGREGATE_SCAN_RULE);
+            }
         }
         final Program program = Programs.ofRules(builder.build());
         // Seems the only way to prevent rex simplifying in optimization.

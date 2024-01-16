@@ -40,6 +40,9 @@ import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.rel.VectorStreamConvertor;
+import io.dingodb.calcite.rel.dingo.DingoReduceAggregate;
+import io.dingodb.calcite.rel.dingo.DingoRelOp;
+import io.dingodb.calcite.rel.dingo.DingoScanWithRelOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public interface DingoRelVisitor<T> {
@@ -91,4 +94,9 @@ public interface DingoRelVisitor<T> {
 
     T visit(@NonNull DingoExportData rel);
 
+    T visitDingoRelOp(@NonNull DingoRelOp rel);
+
+    T visitDingoScanWithRelOp(@NonNull DingoScanWithRelOp rel);
+
+    T visitDingoAggregateReduce(@NonNull DingoReduceAggregate rel);
 }

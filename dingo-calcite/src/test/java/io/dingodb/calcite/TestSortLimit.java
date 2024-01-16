@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 import java.util.List;
+import java.util.Properties;
 
 import static org.apache.calcite.rel.RelFieldCollation.Direction.ASCENDING;
 import static org.apache.calcite.rel.RelFieldCollation.Direction.DESCENDING;
@@ -54,7 +55,9 @@ public class TestSortLimit {
     @BeforeAll
     public static void setupAll() {
         MockMetaServiceProvider.init();
-        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        Properties properties = new Properties();
+        properties.put("usingRelOp", "true");
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties);
     }
 
     @BeforeEach

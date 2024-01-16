@@ -31,6 +31,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.Properties;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
@@ -46,7 +47,9 @@ public class TestRexWithTable {
     @BeforeAll
     public static void setupAll() {
         MockMetaServiceProvider.init();
-        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME);
+        Properties properties = new Properties();
+        properties.put("usingRelOp", "true");
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties);
     }
 
     @Nonnull

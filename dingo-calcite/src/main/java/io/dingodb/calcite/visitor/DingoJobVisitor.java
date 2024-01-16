@@ -40,6 +40,10 @@ import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.rel.VectorStreamConvertor;
+import io.dingodb.calcite.rel.dingo.DingoReduceAggregate;
+import io.dingodb.calcite.rel.dingo.DingoRelOp;
+import io.dingodb.calcite.rel.dingo.DingoScanWithRelOp;
+import io.dingodb.calcite.visitor.function.DingoAggregateReduceVisitFun;
 import io.dingodb.calcite.visitor.function.DingoAggregateVisitFun;
 import io.dingodb.calcite.visitor.function.DingoCountDeleteVisitFun;
 import io.dingodb.calcite.visitor.function.DingoExportDataVisitFun;
@@ -55,7 +59,9 @@ import io.dingodb.calcite.visitor.function.DingoLikeScanVisitFun;
 import io.dingodb.calcite.visitor.function.DingoProjectVisitFun;
 import io.dingodb.calcite.visitor.function.DingoRangeDeleteVisitFun;
 import io.dingodb.calcite.visitor.function.DingoReduceVisitFun;
+import io.dingodb.calcite.visitor.function.DingoRelOpVisitFun;
 import io.dingodb.calcite.visitor.function.DingoRootVisitFun;
+import io.dingodb.calcite.visitor.function.DingoScanWithRelOpVisitFun;
 import io.dingodb.calcite.visitor.function.DingoSortVisitFun;
 import io.dingodb.calcite.visitor.function.DingoStreamingConverterVisitFun;
 import io.dingodb.calcite.visitor.function.DingoTableModifyVisitFun;
@@ -239,5 +245,20 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     @Override
     public Collection<Vertex> visit(@NonNull DingoExportData rel) {
         return DingoExportDataVisitFun.visit(job, idGenerator, currentLocation, this, rel);
+    }
+
+    @Override
+    public Collection<Vertex> visitDingoRelOp(@NonNull DingoRelOp rel) {
+        return DingoRelOpVisitFun.visit(job, idGenerator, currentLocation, this, rel);
+    }
+
+    @Override
+    public Collection<Vertex> visitDingoScanWithRelOp(@NonNull DingoScanWithRelOp rel) {
+        return DingoScanWithRelOpVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel);
+    }
+
+    @Override
+    public Collection<Vertex> visitDingoAggregateReduce(@NonNull DingoReduceAggregate rel) {
+        return DingoAggregateReduceVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 }

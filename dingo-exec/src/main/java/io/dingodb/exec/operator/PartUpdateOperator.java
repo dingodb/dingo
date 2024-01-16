@@ -78,9 +78,7 @@ public final class PartUpdateOperator extends PartModifyOperator {
                 param.addKeyState(false);
             }
         } catch (Exception ex) {
-            log.error("update operator with expr:{}, exception:{}",
-                updates.get(i) == null ? "None" : updates.get(i).getExprString(),
-                ex, ex);
+            log.error("update operator with exprs: {}", updates, ex);
             throw new RuntimeException("Update Operator catch Exception");
         }
         return true;
