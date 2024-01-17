@@ -16,18 +16,48 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.RangeUtils;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.DistributionSourceParam;
+import io.dingodb.partition.PartitionService;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-public class CalcDistributionOperator extends FanOutOperator {
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.NavigableMap;
+import java.util.NavigableSet;
+import java.util.TreeSet;
+
+public class CalcDistributionOperator extends IteratorSourceOperator {
     public static final CalcDistributionOperator INSTANCE = new CalcDistributionOperator();
 
     private CalcDistributionOperator() {
     }
 
     @Override
-    protected int calcOutputIndex(int pin, Object @NonNull [] tuple, Vertex vertex) {
+    protected @NonNull Iterator<Object[]> createIterator(Vertex vertex) {
+        DistributionSourceParam param = vertex.getParam();
+        PartitionService ps = param.getPs();
+        byte[] startKey = param.getStartKey();
+        byte[] endKey = param.getEndKey();
+        boolean withStart = param.isWithStart();
+        boolean withEnd = param.isWithEnd();
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges = param.getRangeDistribution();
+        NavigableSet<RangeDistribution> distributions;
+        if (param.getFilter() != null || param.isNotBetween()) {
+            if (param.isLogicalNot() || param.isNotBetween()) {
+                distributions = new TreeSet<>(RangeUtils.rangeComparator(0));
+                distributions.addAll(ps.calcPartitionRange(null, startKey, true, !withStart, ranges));
+                distributions.addAll(ps.calcPartitionRange(endKey, null, !withEnd, true, ranges));
+            } else {
+                distributions = ps.calcPartitionRange(startKey, endKey, withStart, withEnd, ranges);
+            }
+        } else {
+            distributions = ps.calcPartitionRange(startKey, endKey, withStart, withEnd, ranges);
+        }
 
-        return 0;
+        return new ArrayList<>(distributions).stream().map(d -> new Object[]{d}).iterator();
     }
 }

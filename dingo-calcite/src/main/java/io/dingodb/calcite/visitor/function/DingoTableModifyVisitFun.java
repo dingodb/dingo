@@ -77,7 +77,7 @@ public class DingoTableModifyVisitFun {
         final CommonId tableId = MetaServiceUtils.getTableId(rel.getTable());
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions =
             tableInfo.getRangeDistributions();
-        // TODO calc distribute
+
         for (Vertex input : inputs) {
 
             Task task = input.getTask();

@@ -41,19 +41,10 @@ import java.util.stream.IntStream;
 @Getter
 @JsonTypeName("txnScan")
 @JsonPropertyOrder({
-    "tableId", "part", "scanTs", "isolationLevel", "schema", "keyMapping", "filter",
-    "selection", "startKey", "endKey", "includeStart", "includeEnd", "prefixScan"
+    "tableId", "part", "scanTs", "isolationLevel", "schema", "keyMapping", "filter", "selection", "prefixScan"
 })
-public class TxnPartRangeScanParam extends FilterProjectSourceParam {
+public class TxnPartRangeScanParam extends FilterProjectParam {
 
-    @JsonProperty("startKey")
-    private final byte[] startKey;
-    @JsonProperty("endKey")
-    private final byte[] endKey;
-    @JsonProperty("includeStart")
-    private final boolean includeStart;
-    @JsonProperty("includeEnd")
-    private final boolean includeEnd;
     @JsonProperty("aggKeys")
     private final TupleMapping aggKeys;
     @JsonProperty("aggList")
@@ -73,15 +64,10 @@ public class TxnPartRangeScanParam extends FilterProjectSourceParam {
 
     public TxnPartRangeScanParam(
         CommonId tableId,
-        CommonId partId,
         DingoType schema,
         TupleMapping keyMapping,
         SqlExpr filter,
         TupleMapping selection,
-        byte[] startKey,
-        byte[] endKey,
-        boolean includeStart,
-        boolean includeEnd,
         TupleMapping aggKeys,
         List<Agg> aggList,
         DingoType outputSchema,
@@ -89,11 +75,7 @@ public class TxnPartRangeScanParam extends FilterProjectSourceParam {
         int isolationLevel,
         boolean pushDown
     ) {
-        super(tableId, partId, schema, filter, selection, keyMapping);
-        this.startKey = startKey;
-        this.endKey = endKey;
-        this.includeStart = includeStart;
-        this.includeEnd = includeEnd;
+        super(tableId, null, schema, filter, selection, keyMapping);
         this.aggKeys = aggKeys;
         this.aggList = aggList;
         this.outputSchema = outputSchema;

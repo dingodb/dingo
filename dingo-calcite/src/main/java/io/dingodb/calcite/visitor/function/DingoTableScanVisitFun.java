@@ -34,14 +34,14 @@ import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.operator.params.DistributionSourceParam;
 import io.dingodb.exec.operator.params.PartRangeScanParam;
 import io.dingodb.exec.operator.params.TxnPartRangeScanParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.meta.entity.Table;
-import io.dingodb.partition.DingoPartitionServiceProvider;
-import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
@@ -52,9 +52,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
-import java.util.NavigableSet;
-import java.util.TreeSet;
 
+import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_RANGE_SCAN;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_RANGE_SCAN;
 
@@ -71,11 +70,7 @@ public final class DingoTableScanVisitFun {
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
 
-        NavigableSet<RangeDistribution> distributions;
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
-        final PartitionService ps = PartitionService.getService(
-            Optional.ofNullable(td.getPartitionStrategy())
-                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         SqlExpr filter = null;
         byte[] startKey = null;
         byte[] endKey = null;
@@ -91,16 +86,14 @@ public final class DingoTableScanVisitFun {
                 withStart = range.isWithStart();
                 withEnd = range.isWithEnd();
             }
-            if (rel.getFilter().getKind() == SqlKind.NOT) {
-                distributions = new TreeSet<>(io.dingodb.common.util.RangeUtils.rangeComparator(0));
-                distributions.addAll(ps.calcPartitionRange(null, startKey, true, !withStart, ranges));
-                distributions.addAll(ps.calcPartitionRange(endKey, null, !withEnd, true, ranges));
-            } else {
-                distributions = ps.calcPartitionRange(startKey, endKey, withStart, withEnd, ranges);
-            }
-        } else {
-            distributions = ps.calcPartitionRange(startKey, endKey, withStart, withEnd, ranges);
         }
+        DistributionSourceParam distributionParam = new DistributionSourceParam(
+            td, ranges, startKey, endKey, withStart, withEnd, filter,
+            Optional.mapOrGet(rel.getFilter(), __ -> __.getKind() == SqlKind.NOT, () -> false), false);
+        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
+        Task task = job.getOrCreate(currentLocation, idGenerator);
+        calcVertex.setId(idGenerator.getOperatorId(task.getId()));
+        task.putVertex(calcVertex);
 
         List<Vertex> outputs = new ArrayList<>();
 
@@ -113,9 +106,8 @@ public final class DingoTableScanVisitFun {
             scanTs = TsoService.getDefault().tso();
         }
         // TODO
-        for (RangeDistribution rd : distributions) {
-            Task task;
-            Vertex vertex;
+        for (int i = 0; i <= Optional.mapOrGet(td.getPartitions(), List::size, () -> 0); i++) {
+            Vertex scanVertex;
             if (transaction != null) {
                 task = job.getOrCreate(
                     currentLocation,
@@ -125,15 +117,10 @@ public final class DingoTableScanVisitFun {
                 );
                 TxnPartRangeScanParam param = new TxnPartRangeScanParam(
                     tableInfo.getId(),
-                    rd.id(),
                     td.tupleType(),
                     td.keyMapping(),
                     Optional.mapOrNull(filter, SqlExpr::copy),
                     rel.getSelection(),
-                    rd.getStartKey(),
-                    rd.getEndKey(),
-                    rd.isWithStart(),
-                    rd.isWithEnd(),
                     rel.getGroupSet() == null ? null
                         : AggFactory.getAggKeys(rel.getGroupSet()),
                     rel.getAggCalls() == null ? null : AggFactory.getAggList(
@@ -143,20 +130,15 @@ public final class DingoTableScanVisitFun {
                     transaction.getIsolationLevel(),
                     false
                 );
-                vertex = new Vertex(TXN_PART_RANGE_SCAN, param);
+                scanVertex = new Vertex(TXN_PART_RANGE_SCAN, param);
             } else {
                 task = job.getOrCreate(currentLocation, idGenerator);
                 PartRangeScanParam param = new PartRangeScanParam(
                     tableInfo.getId(),
-                    rd.id(),
                     td.tupleType(),
                     td.keyMapping(),
                     Optional.mapOrNull(filter, SqlExpr::copy),
                     rel.getSelection(),
-                    rd.getStartKey(),
-                    rd.getEndKey(),
-                    rd.isWithStart(),
-                    rd.isWithEnd(),
                     rel.getGroupSet() == null ? null
                         : AggFactory.getAggKeys(rel.getGroupSet()),
                     rel.getAggCalls() == null ? null : AggFactory.getAggList(
@@ -164,14 +146,16 @@ public final class DingoTableScanVisitFun {
                     DefinitionMapper.mapToDingoType(rel.getNormalRowType()),
                     rel.isPushDown()
                 );
-                vertex = new Vertex(PART_RANGE_SCAN, param);
+                scanVertex = new Vertex(PART_RANGE_SCAN, param);
             }
-            OutputHint hint = new OutputHint();
-            hint.setPartId(rd.id());
-            vertex.setHint(hint);
-            vertex.setId(idGenerator.getOperatorId(task.getId()));
-            task.putVertex(vertex);
-            outputs.add(vertex);
+            task = job.getOrCreate(currentLocation, idGenerator);
+            scanVertex.setHint(new OutputHint());
+            scanVertex.setId(idGenerator.getOperatorId(task.getId()));
+            Edge edge = new Edge(calcVertex, scanVertex);
+            calcVertex.addEdge(edge);
+            scanVertex.addIn(edge);
+            task.putVertex(scanVertex);
+            outputs.add(scanVertex);
         }
 
         return outputs;

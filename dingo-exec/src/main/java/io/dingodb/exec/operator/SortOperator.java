@@ -19,8 +19,10 @@ package io.dingodb.exec.operator;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.data.SortCollation;
 import io.dingodb.exec.operator.params.SortParam;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Comparator;
 import java.util.List;
@@ -32,8 +34,9 @@ public class SortOperator extends SoleOutOperator {
     }
 
     @Override
-    public synchronized boolean push(int pin, Object[] tuple, Vertex vertex) {
+    public synchronized boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
         SortParam param = vertex.getParam();
+        param.setContent(content);
         int limit = param.getLimit();
         int offset = param.getOffset();
         List<SortCollation> collations = param.getCollations();
@@ -65,7 +68,7 @@ public class SortOperator extends SoleOutOperator {
             if (limit >= 0 && c >= limit) {
                 break;
             }
-            if (!edge.transformToNext(tuple)) {
+            if (!edge.transformToNext(param.getContent(), tuple)) {
                 break;
             }
             ++c;

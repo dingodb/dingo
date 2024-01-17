@@ -19,13 +19,16 @@ package io.dingodb.exec;
 import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.operator.AggregateOperator;
+import io.dingodb.exec.operator.CalcDistributionOperator;
 import io.dingodb.exec.operator.CoalesceOperator;
 import io.dingodb.exec.operator.CompareAndSetOperator;
+import io.dingodb.exec.operator.DistributeOperator;
 import io.dingodb.exec.operator.EmptySourceOperator;
 import io.dingodb.exec.operator.ExportDataOperator;
 import io.dingodb.exec.operator.FilterOperator;
 import io.dingodb.exec.operator.GetByIndexOperator;
 import io.dingodb.exec.operator.GetByKeysOperator;
+import io.dingodb.exec.operator.GetDistributionOperator;
 import io.dingodb.exec.operator.HashJoinOperator;
 import io.dingodb.exec.operator.HashOperator;
 import io.dingodb.exec.operator.IndexMergeOperator;
@@ -69,14 +72,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static io.dingodb.exec.utils.OperatorCodeUtils.AGGREGATE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COALESCE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COMMIT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COMPARE_AND_SET;
+import static io.dingodb.exec.utils.OperatorCodeUtils.DISTRIBUTE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.EMPTY_SOURCE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.EXPORT_DATA;
 import static io.dingodb.exec.utils.OperatorCodeUtils.FILTER;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_INDEX;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_KEYS;
+import static io.dingodb.exec.utils.OperatorCodeUtils.GET_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.HASH;
 import static io.dingodb.exec.utils.OperatorCodeUtils.HASH_JOIN;
 import static io.dingodb.exec.utils.OperatorCodeUtils.INDEX_MERGE;
@@ -122,6 +128,7 @@ public final class OperatorFactory {
     static {
         OPERATORS.put(AGGREGATE, AggregateOperator.INSTANCE);
         OPERATORS.put(COALESCE, CoalesceOperator.INSTANCE);
+        OPERATORS.put(CALC_DISTRIBUTION, CalcDistributionOperator.INSTANCE);
         OPERATORS.put(EMPTY_SOURCE, EmptySourceOperator.INSTANCE);
         OPERATORS.put(FILTER, FilterOperator.INSTANCE);
         OPERATORS.put(GET_BY_INDEX, GetByIndexOperator.INSTANCE);
@@ -166,6 +173,8 @@ public final class OperatorFactory {
         OPERATORS.put(PESSIMISTIC_LOCK_INSERT, PessimisticLockInsertOperator.INSTANCE);
         OPERATORS.put(PESSIMISTIC_LOCK_UPDATE, PessimisticLockUpdateOperator.INSTANCE);
         OPERATORS.put(PESSIMISTIC_ROLL_BACK, PessimisticRollBackOperator.INSTANCE);
+        OPERATORS.put(DISTRIBUTE, DistributeOperator.INSTANCE);
+        OPERATORS.put(GET_DISTRIBUTION, GetDistributionOperator.INSTANCE);
     }
 
     private OperatorFactory() {

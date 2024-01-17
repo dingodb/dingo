@@ -35,6 +35,7 @@ import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.operator.params.DistributionSourceParam;
 import io.dingodb.exec.operator.params.LikeScanParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.meta.entity.Table;
@@ -47,6 +48,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
 
+import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.LIKE_SCAN;
 
 public final class DingoLikeScanVisitFun {
@@ -69,6 +71,11 @@ public final class DingoLikeScanVisitFun {
             Optional.ofNullable(td.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         List<Vertex> outputs = new ArrayList<>();
+
+        DistributionSourceParam distributionSourceParam = new DistributionSourceParam(
+            td, distributions, rel.getPrefix(), rel.getPrefix(),
+            true, true, null, false, false);
+        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionSourceParam);
 
         for (RangeDistribution distribution
             : ps.calcPartitionRange(rel.getPrefix(), rel.getPrefix(), true, true, distributions)) {

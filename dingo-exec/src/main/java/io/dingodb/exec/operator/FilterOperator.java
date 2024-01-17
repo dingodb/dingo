@@ -18,7 +18,9 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.FilterParam;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public final class FilterOperator extends SoleOutOperator {
     public static final FilterOperator INSTANCE = new FilterOperator();
@@ -27,12 +29,12 @@ public final class FilterOperator extends SoleOutOperator {
     }
 
     @Override
-    public synchronized boolean push(int pin, Object[] tuple, Vertex vertex) {
+    public synchronized boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
         FilterParam params = vertex.getParam();
         // The eval result may be `null`
         Boolean v = (Boolean) params.getFilter().eval(tuple);
         if (v != null && v) {
-            return vertex.getSoleEdge().transformToNext(tuple);
+            return vertex.getSoleEdge().transformToNext(content, tuple);
         }
         return true;
     }

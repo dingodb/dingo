@@ -22,6 +22,7 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.transaction.params.CommitParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.store.api.StoreInstance;
@@ -42,7 +43,7 @@ public class CommitOperator extends TransactionOperator {
     }
 
     @Override
-    public synchronized boolean push(int pin, @Nullable Object[] tuple, Vertex vertex) {
+    public synchronized boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
         CommitParam param = vertex.getParam();
         CommonId.CommonType type = CommonId.CommonType.of((byte) tuple[0]);
         CommonId txnId = (CommonId) tuple[1];

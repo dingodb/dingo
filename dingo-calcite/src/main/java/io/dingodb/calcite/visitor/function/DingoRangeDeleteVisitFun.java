@@ -23,17 +23,17 @@ import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
-import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
-import io.dingodb.common.util.RangeUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.DistributionSourceParam;
 import io.dingodb.exec.operator.params.PartRangeDeleteParam;
 import io.dingodb.exec.operator.params.TxnPartRangeDeleteParam;
 import io.dingodb.exec.transaction.base.ITransaction;
@@ -46,9 +46,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
-import java.util.NavigableSet;
-import java.util.TreeSet;
 
+import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_RANGE_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_RANGE_DELETE;
 
@@ -63,49 +62,32 @@ public final class DingoRangeDeleteVisitFun {
     ) {
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
-        NavigableSet<RangeDistribution> distributions;
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
-        final PartitionService ps = PartitionService.getService(
-            Optional.ofNullable(td.getPartitionStrategy())
-                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-        if (rel.isNotBetween()) {
-            distributions = new TreeSet<>(RangeUtils.rangeComparator());
-            distributions.addAll(ps.calcPartitionRange(null, rel.getStartKey(), true, !rel.isIncludeStart(), ranges));
-            distributions.addAll(ps.calcPartitionRange(rel.getEndKey(), null, !rel.isIncludeEnd(), true, ranges));
-        } else {
-            distributions = ps.calcPartitionRange(
-                rel.getStartKey(), rel.getEndKey(), rel.isIncludeStart(), rel.isIncludeEnd(), ranges
-            );
-        }
+        DistributionSourceParam distributionParam = new DistributionSourceParam(
+            td, ranges, rel.getStartKey(), rel.getEndKey(), rel.isIncludeStart(), rel.isIncludeEnd(),
+            null, false, rel.isNotBetween());
+        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
+        Task task = job.getOrCreate(currentLocation, idGenerator);
+        calcVertex.setId(idGenerator.getOperatorId(task.getId()));
+        task.putVertex(calcVertex);
 
         List<Vertex> outputs = new ArrayList<>();
 
-        for (RangeDistribution rd : distributions) {
-            Vertex vertex;
+        for (int i = 0; i <= Optional.mapOrGet(td.getPartitions(), List::size, () -> 0); i++) {
+            Vertex deleteVertex;
             if (transaction != null) {
                 TxnPartRangeDeleteParam param = new TxnPartRangeDeleteParam(
                     tableInfo.getId(),
-                    rd.id(),
                     td.tupleType(),
-                    td.keyMapping(),
-                    rd.getStartKey(),
-                    rd.getEndKey(),
-                    rd.isWithStart(),
-                    rd.isWithEnd());
-                vertex = new Vertex(TXN_PART_RANGE_DELETE, param);
+                    td.keyMapping());
+                deleteVertex = new Vertex(TXN_PART_RANGE_DELETE, param);
             } else {
                 PartRangeDeleteParam param = new PartRangeDeleteParam(
                     tableInfo.getId(),
-                    rd.id(),
                     td.tupleType(),
-                    td.keyMapping(),
-                    rd.getStartKey(),
-                    rd.getEndKey(),
-                    rd.isWithStart(),
-                    rd.isWithEnd());
-                vertex = new Vertex(PART_RANGE_DELETE, param);
+                    td.keyMapping());
+                deleteVertex = new Vertex(PART_RANGE_DELETE, param);
             }
-            Task task;
             if (transaction != null) {
                 task = job.getOrCreate(
                     currentLocation,
@@ -116,12 +98,15 @@ public final class DingoRangeDeleteVisitFun {
             } else {
                 task = job.getOrCreate(currentLocation, idGenerator);
             }
-            vertex.setId(idGenerator.getOperatorId(task.getId()));
-            task.putVertex(vertex);
+            deleteVertex.setId(idGenerator.getOperatorId(task.getId()));
+            task.putVertex(deleteVertex);
             OutputHint outputHint = new OutputHint();
             outputHint.setToSumUp(true);
-            vertex.setHint(outputHint);
-            outputs.add(vertex);
+            deleteVertex.setHint(outputHint);
+            Edge edge = new Edge(calcVertex, deleteVertex);
+            calcVertex.addEdge(edge);
+            deleteVertex.addIn(edge);
+            outputs.add(deleteVertex);
         }
 
         return outputs;

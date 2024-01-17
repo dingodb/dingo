@@ -19,46 +19,39 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
-import io.dingodb.common.CommonId;
-import io.dingodb.common.type.DingoType;
+import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.exec.dag.Vertex;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
-@Getter
-@JsonTypeName("rangeDelete")
-@JsonPropertyOrder({
-    "table", "part", "schema", "keyMapping", "filter", "selection"})
-public class PartRangeDeleteParam extends AbstractParams {
+import java.util.List;
+import java.util.NavigableMap;
 
-    @JsonProperty("table")
-    @JsonSerialize(using = CommonId.JacksonSerializer.class)
-    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    private final CommonId tableId;
-    @JsonProperty("schema")
-    private final DingoType schema;
+@Getter
+@JsonTypeName("getDistribution")
+@JsonPropertyOrder({"keyMapping"})
+public class GetDistributionParam extends SourceParam {
+
+    private final List<Object[]> keyTuples;
+    private final Table table;
+    private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     @JsonProperty("keyMapping")
     private final TupleMapping keyMapping;
-
     private KeyValueCodec codec;
 
-    public PartRangeDeleteParam(
-        CommonId tableId,
-        DingoType schema,
-        TupleMapping keyMapping
+    public GetDistributionParam(
+        List<Object[]> keyTuples,
+        TupleMapping keyMapping,
+        Table table,
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
     ) {
-        super();
-        this.tableId = tableId;
-        this.schema = schema;
+        this.keyTuples = keyTuples;
         this.keyMapping = keyMapping;
-    }
-
-    @Override
-    public void init(Vertex vertex) {
-        this.codec = CodecService.getDefault().createKeyValueCodec(schema, keyMapping);
+        this.distributions = distributions;
+        this.table = table;
+        this.codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
     }
 }

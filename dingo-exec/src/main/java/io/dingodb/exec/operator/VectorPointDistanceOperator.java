@@ -22,6 +22,7 @@ import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.VectorPointDistanceParam;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -40,8 +41,9 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
     }
 
     @Override
-    public boolean push(int pin, @Nullable Object[] tuple, Vertex vertex) {
+    public boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
         VectorPointDistanceParam param = vertex.getParam();
+        param.setContent(content);
         param.getCache().add(tuple);
         return true;
     }
@@ -79,7 +81,7 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
             Object[] tuple = cache.get(i);
             Object[] result = Arrays.copyOf(tuple, tuple.length + 1);
             result[tuple.length] = floatArray.get(i);
-            edge.transformToNext(result);
+            edge.transformToNext(param.getContent(), result);
         }
         param.clear();
 

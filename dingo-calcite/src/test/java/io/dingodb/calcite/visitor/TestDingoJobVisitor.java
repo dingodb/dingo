@@ -19,25 +19,21 @@ package io.dingodb.calcite.visitor;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoParserContext;
-import io.dingodb.calcite.schema.DingoRootSchema;
-import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.rel.DingoStreamingConverter;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoValues;
+import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.impl.JobManagerImpl;
-import io.dingodb.exec.operator.CoalesceOperator;
 import io.dingodb.exec.operator.ValuesOperator;
 import io.dingodb.exec.operator.params.ValuesParam;
-import io.dingodb.meta.MetaService;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.asserts.AssertJob;
 import io.dingodb.test.asserts.AssertTask;
@@ -54,7 +50,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static io.dingodb.common.CommonId.CommonType.DISTRIBUTION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDingoJobVisitor {
@@ -110,15 +105,17 @@ public class TestDingoJobVisitor {
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, scan, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(1);
-        MetaService metaService = MetaService.root()
-            .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME);
-        CommonId tableId = metaService.getTable(FULL_TABLE_NAME).getTableId();
+        /*CommonId tableId = MetaService.root()
+            .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME)
+            .getTableId(FULL_TABLE_NAME);*/
         assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0)
-            .source(0).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 1))
-            .soleOutput().isNull();
-        assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_1)
-            .source(1).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 2))
-            .soleOutput().isNull();
+            .source(0).isCalcDistribution().outputNum(1);
+        // assertJob.task(jobSeqId, 0).operatorNum(3).location(MockMetaServiceProvider.LOC_0)
+        //    .source(0).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 1))
+        //    .soleOutput().isNull();
+        // assertJob.task(jobSeqId, 0).operatorNum(3).location(MockMetaServiceProvider.LOC_1)
+        //    .source(1).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 2))
+        //    .soleOutput().isNull();
     }
 
     @Test
@@ -144,14 +141,16 @@ public class TestDingoJobVisitor {
         DingoJobVisitor.renderJob(job, converter, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(1);
         AssertTask assertTask =
-            assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(2);
-        MetaService metaService = MetaService.root()
-            .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME);
-        CommonId tableId = metaService.getTable(FULL_TABLE_NAME).getTableId();
-        assertTask.source(0).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 1))
-            .soleOutput().isNull();
-        assertTask.source(1).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 2))
-            .soleOutput().isNull();
+            assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
+            assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
+        assertTask.source(0).isCalcDistribution().outputNum(1);
+        /*CommonId tableId = MetaService.root()
+            .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME)
+            .getTableId(FULL_TABLE_NAME);*/
+        // assertTask.source(0).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 1))
+        //    .soleOutput().isNull();
+        // assertTask.source(1).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 2))
+        //    .soleOutput().isNull();
         //assertJob.task("0003").operatorNum(2).location(MockMetaServiceProvider.LOC_1)
         //    .soleSource().isPartScan(tableId, new CommonId((byte) 'T', tableId.seq, 2))
         //    .soleOutput().isA(SendOperator.class);
@@ -180,14 +179,16 @@ public class TestDingoJobVisitor {
         DingoJobVisitor.renderJob(job, converter, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(1);
         AssertTask assertTask =
-            assertJob.task(jobSeqId, 0).operatorNum(3).location(MockMetaServiceProvider.LOC_0).sourceNum(2);
-        MetaService metaService = MetaService.root()
-            .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME);
-        CommonId tableId = metaService.getTable(FULL_TABLE_NAME).getTableId();
-        assertTask.source(0).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 1))
-            .soleOutput().isA(CoalesceOperator.class);
-        assertTask.source(1).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 2))
-            .soleOutput().isA(CoalesceOperator.class);
+            assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
+            assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
+        assertTask.source(0).isCalcDistribution().outputNum(1);
+        /*CommonId tableId = MetaService.root()
+            .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME)
+            .getTableId(FULL_TABLE_NAME);*/
+        // assertTask.source(0).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 1))
+        //    .soleOutput().isA(CoalesceOperator.class);
+        // assertTask.source(1).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 2))
+        //    .soleOutput().isA(CoalesceOperator.class);
         //assertJob.task("0003").operatorNum(2).location(MockMetaServiceProvider.LOC_1)
         //    .soleSource().isPartScan(tableId, new CommonId((byte) 'T', tableId.seq, 2))
         //    .soleOutput().isA(SendOperator.class);
@@ -250,6 +251,6 @@ public class TestDingoJobVisitor {
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, partModify, currentLocation);
         Assert.job(job).taskNum(1)
-            .task(jobSeqId, 0).location(MockMetaServiceProvider.LOC_0).operatorNum(4);
+            .task(jobSeqId, 0).location(MockMetaServiceProvider.LOC_0).operatorNum(3);
     }
 }

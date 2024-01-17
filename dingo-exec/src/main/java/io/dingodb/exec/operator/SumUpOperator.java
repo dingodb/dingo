@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.SumUpParam;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -28,7 +29,7 @@ public class SumUpOperator extends SoleOutOperator {
     public static final SumUpOperator INSTANCE = new SumUpOperator();
 
     @Override
-    public synchronized boolean push(int pin, Object @NonNull [] tuple, Vertex vertex) {
+    public synchronized boolean push(Content content, Object @NonNull [] tuple, Vertex vertex) {
         SumUpParam param = vertex.getParam();
         param.accumulate((long) tuple[0]);
         return true;
@@ -39,7 +40,6 @@ public class SumUpOperator extends SoleOutOperator {
         SumUpParam param = vertex.getParam();
         Edge edge = vertex.getSoleEdge();
         edge.transformToNext(new Object[]{param.getSum()});
-        vertex.getSoleEdge().transformToNext(new Object[]{param.getSum()});
         edge.fin(fin);
         // Reset
         param.setSum(0);

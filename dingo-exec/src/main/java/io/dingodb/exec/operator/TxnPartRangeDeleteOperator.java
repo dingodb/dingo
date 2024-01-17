@@ -16,38 +16,75 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.CommonId;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.OperatorProfile;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.PartRangeDeleteParam;
 import io.dingodb.exec.operator.params.TxnPartRangeDeleteParam;
+import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.api.transaction.data.Op;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 @Slf4j
-public final class TxnPartRangeDeleteOperator extends SourceOperator {
+public final class TxnPartRangeDeleteOperator extends SoleOutOperator {
     public static final TxnPartRangeDeleteOperator INSTANCE = new TxnPartRangeDeleteOperator();
 
     private TxnPartRangeDeleteOperator() {
     }
 
     @Override
-    public boolean push(Vertex vertex) {
+    public boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
+        RangeDistribution distribution = content.getDistribution();
         TxnPartRangeDeleteParam param = vertex.getParam();
-        OperatorProfile profile = param.getProfile(vertex.getId());
-        profile.setStartTimeStamp(System.currentTimeMillis());
-        StoreInstance store = Services.LOCAL_STORE.getInstance(param.getTableId(), param.getPartId());
+        CommonId txnId = vertex.getTask().getTxnId();
+        CommonId tableId = param.getTableId();
+        CommonId partId = distribution.getId();
+        boolean withStart = distribution.isWithStart();
+        boolean withEnd = distribution.isWithEnd();
+        StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
+        StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
         final long startTime = System.currentTimeMillis();
         // TODO Set flag in front of the byte key
-        long count = store.delete(new StoreInstance.Range(
-            param.getStartKey(), param.getEndKey(), param.isIncludeStart(), param.isIncludeEnd()));
-        vertex.getSoleEdge().transformToNext(new Object[]{count});
+        byte[] txnIdBytes = txnId.encode();
+        byte[] tableIdBytes = tableId.encode();
+        byte[] partIdBytes = partId.encode();
+        byte[] encodeStart = ByteUtils.encode(
+            CommonId.CommonType.TXN_CACHE_DATA,
+            distribution.getStartKey(),
+            Op.DELETE.getCode(),
+            (txnIdBytes.length + tableIdBytes.length + partIdBytes.length),
+            txnIdBytes,
+            tableIdBytes,
+            partIdBytes
+        );
+        byte[] encodeEnd = ByteUtils.encode(
+            CommonId.CommonType.TXN_CACHE_DATA,
+            distribution.getEndKey(),
+            Op.DELETE.getCode(),
+            (txnIdBytes.length + tableIdBytes.length + partIdBytes.length),
+            txnIdBytes,
+            tableIdBytes,
+            partIdBytes
+        );
+        long count = localStore.delete(new StoreInstance.Range(encodeStart, encodeEnd, withStart, withEnd));
+        kvStore.delete(new StoreInstance.Range(encodeStart, encodeEnd, withStart, withEnd));
+
+        vertex.getSoleEdge().transformToNext(content, new Object[]{count});
         if (log.isDebugEnabled()) {
             log.debug("Delete data by range, delete count: {}, cost: {} ms.",
                 count, System.currentTimeMillis() - startTime);
         }
-        profile.setProcessedTupleCount(count);
-        profile.setEndTimeStamp(System.currentTimeMillis());
         return false;
+    }
+
+    @Override
+    public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
+        vertex.getSoleEdge().fin(fin);
     }
 }

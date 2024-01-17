@@ -18,8 +18,10 @@ package io.dingodb.exec.operator;
 
 import com.google.common.collect.Iterators;
 import io.dingodb.common.Coprocessor;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.PartRangeScanParam;
 import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
@@ -30,22 +32,23 @@ import java.util.Iterator;
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 @Slf4j
-public final class PartRangeScanOperator extends FilterProjectSourceOperator {
+public final class PartRangeScanOperator extends FilterProjectOperator {
     public static final PartRangeScanOperator INSTANCE = new PartRangeScanOperator();
 
     private PartRangeScanOperator() {
     }
 
     @Override
-    protected @NonNull Iterator<Object[]> createSourceIterator(Vertex vertex) {
+    protected @NonNull Iterator<Object[]> createSourceIterator(Content content, Object[] tuple, Vertex vertex) {
+        RangeDistribution distribution = content.getDistribution();
         PartRangeScanParam param = vertex.getParam();
-        byte[] startKey = param.getStartKey();
-        byte[] endKey = param.getEndKey();
-        boolean includeStart = param.isIncludeStart();
-        boolean includeEnd = param.isIncludeEnd();
+        byte[] startKey = distribution.getStartKey();
+        byte[] endKey = distribution.getEndKey();
+        boolean includeStart = distribution.isWithStart();
+        boolean includeEnd = distribution.isWithEnd();
         Coprocessor coprocessor = param.getCoprocessor();
         Iterator<Object[]> iterator;
-        StoreInstance storeInstance = Services.KV_STORE.getInstance(param.getTableId(), param.getPartId());
+        StoreInstance storeInstance = Services.KV_STORE.getInstance(param.getTableId(), distribution.getId());
         if (coprocessor == null) {
             iterator = Iterators.transform(
                 storeInstance.scan(new StoreInstance.Range(startKey, endKey, includeStart, includeEnd)),

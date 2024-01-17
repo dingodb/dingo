@@ -19,48 +19,43 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.dingodb.codec.CodecService;
-import io.dingodb.codec.KeyValueCodec;
-import io.dingodb.common.CommonId;
-import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
+import java.util.Set;
 
 @Getter
 @JsonTypeName("partition")
-@JsonPropertyOrder({"distributions", "keyMapping", "partIndices"})
+@JsonPropertyOrder({"parentIds", "keyMapping", "partIndices"})
 public class PartitionParam extends AbstractParams {
-    @JsonProperty("distributions")
-    @JsonSerialize(keyUsing = ByteArrayUtils.ComparableByteArray.JacksonKeySerializer.class)
-    @JsonDeserialize(keyUsing = ByteArrayUtils.ComparableByteArray.JacksonKeyDeserializer.class)
-    private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
+    @JsonProperty("parentIds")
+    private final List<Long> parentIds;
     @JsonProperty("tableDefinition")
     private final Table table;
     @Setter
     @JsonProperty("partIndices")
-    @JsonSerialize(keyUsing = CommonId.JacksonKeySerializer.class)
-    @JsonDeserialize(keyUsing = CommonId.JacksonKeyDeserializer.class)
-    private Map<CommonId, Integer> partIndices;
-
-    private final KeyValueCodec codec;
-    private final DingoType schema;
+    private Map<Long, Integer> partIndices;
 
     public PartitionParam(
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
+        Set<Long> parentIds,
         Table table
     ) {
-        this.distributions = distributions;
+        this.parentIds = new ArrayList<>(parentIds);
         this.table = table;
-        this.codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
-        this.schema = table.tupleType();
     }
 
+    @Override
+    public void init(Vertex vertex) {
+        super.init(vertex);
+        partIndices = new HashMap<>();
+        for (int i = 0; i < parentIds.size(); i++) {
+            partIndices.put(parentIds.get(i), i);
+        }
+    }
 }

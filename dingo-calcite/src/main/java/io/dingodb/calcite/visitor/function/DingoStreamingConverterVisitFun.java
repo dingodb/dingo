@@ -42,6 +42,7 @@ import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.hash.HashStrategy;
 import io.dingodb.exec.operator.hash.SimpleHashStrategy;
+import io.dingodb.exec.operator.params.DistributionParam;
 import io.dingodb.exec.operator.params.HashParam;
 import io.dingodb.exec.operator.params.PartitionParam;
 import io.dingodb.exec.transaction.base.ITransaction;
@@ -60,6 +61,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
+import static io.dingodb.exec.utils.OperatorCodeUtils.DISTRIBUTE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.HASH;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PARTITION;
 
@@ -131,19 +133,28 @@ public class DingoStreamingConverterVisitFun {
         final TableInfo tableInfo = MetaServiceUtils.getTableInfo(partition.getTable());
         final Table td = partition.getTable().unwrap(DingoTable.class).getTable();
         NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
+        Set<Long> parentIds = distributions.values().stream().map(d -> d.getId().domain).collect(Collectors.toSet());
         for (Vertex input : inputs) {
             Task task = input.getTask();
-            PartitionParam param = new PartitionParam(distributions, td);
-            Vertex vertex = new Vertex(PARTITION, param);
-            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            DistributionParam distributionParam = new DistributionParam(tableInfo.getId(), td, distributions);
+            Vertex distributeVertex = new Vertex(DISTRIBUTE, distributionParam);
+            distributeVertex.setId(idGenerator.getOperatorId(task.getId()));
+            Edge inputEdge = new Edge(input, distributeVertex);
+            input.addEdge(inputEdge);
+            distributeVertex.addIn(inputEdge);
+            task.putVertex(distributeVertex);
+
+            PartitionParam partitionParam = new PartitionParam(parentIds, td);
+            Vertex partitionVertex = new Vertex(PARTITION, partitionParam);
+            partitionVertex.setId(idGenerator.getOperatorId(task.getId()));
             OutputHint hint = new OutputHint();
             hint.setLocation(MetaService.root().currentLocation());
-            vertex.setHint(hint);
-            Edge edge = new Edge(input, vertex);
-            vertex.addIn(edge);
-            task.putVertex(vertex);
-            input.addEdge(edge);
-            outputs.add(vertex);
+            partitionVertex.setHint(hint);
+            Edge edge = new Edge(distributeVertex, partitionVertex);
+            partitionVertex.addIn(edge);
+            task.putVertex(partitionVertex);
+            distributeVertex.addEdge(edge);
+            outputs.add(partitionVertex);
         }
         return outputs;
     }

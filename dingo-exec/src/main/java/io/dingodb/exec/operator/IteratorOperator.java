@@ -18,35 +18,37 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.exec.fin.FinWithException;
-import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.operator.data.Content;
-import io.dingodb.exec.operator.params.SourceParam;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * Source operator has no inputs and only one output.
- */
+import java.util.Iterator;
+
 @Slf4j
-public abstract class SourceOperator extends SoleOutOperator {
+public abstract class IteratorOperator extends SoleOutOperator {
 
     @Override
     public boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
-        return push(vertex);
+        long count = 0;
+        long startTime = System.currentTimeMillis();
+        Iterator<Object[]> iterator = createIterator(content, tuple, vertex);
+        while (iterator.hasNext()) {
+            Object[] newTuple = iterator.next();
+            ++count;
+            if (!vertex.getSoleEdge().transformToNext(content, newTuple)) {
+                break;
+            }
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("IteratorOperator push, count:{}, cost:{}ms.", count, System.currentTimeMillis() - startTime);
+        }
+        return false;
     }
-
-    public abstract boolean push(Vertex vertex);
 
     @Override
-    public  void fin(int pin, Fin fin, Vertex vertex) {
-        SourceParam param = (SourceParam) vertex.getData();
-        if (fin instanceof FinWithException) {
-            vertex.getOutList().forEach(e -> e.fin(fin));
-        } else {
-            vertex.getOutList().forEach(e -> e.fin(new FinWithProfiles(param.getProfiles())));
-        }
-        param.clear();
+    public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
+        vertex.getSoleEdge().fin(fin);
     }
 
+    protected abstract Iterator<Object[]> createIterator(Content content, Object[] tuple, Vertex vertex);
 }

@@ -16,8 +16,11 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.OperatorProfile;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.SourceParam;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -36,9 +39,15 @@ public abstract class IteratorSourceOperator extends SourceOperator {
         Iterator<Object[]> iterator = createIterator(vertex);
         while (iterator.hasNext()) {
             Object[] tuple = iterator.next();
+            Content.ContentBuilder builder = Content.builder();
+            if (tuple[0] instanceof RangeDistribution) {
+                builder.distribution((RangeDistribution) tuple[0]);
+            }
             ++count;
-            if (!vertex.getSoleEdge().transformToNext(tuple)) {
-                break;
+            for (Edge edge : vertex.getOutList()) {
+                if (!edge.transformToNext(builder.build(), tuple)) {
+                    break;
+                }
             }
         }
         if (log.isDebugEnabled()) {

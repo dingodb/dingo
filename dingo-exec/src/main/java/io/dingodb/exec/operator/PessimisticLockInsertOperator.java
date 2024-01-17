@@ -25,6 +25,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.PessimisticLockInsertParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
@@ -52,7 +53,7 @@ public class PessimisticLockInsertOperator extends PartModifyOperator {
     public static final PessimisticLockInsertOperator INSTANCE = new PessimisticLockInsertOperator();
 
     @Override
-    protected boolean pushTuple(@Nullable Object[] tuple, Vertex vertex) {
+    protected boolean pushTuple(Content content, @Nullable Object[] tuple, Vertex vertex) {
         PessimisticLockInsertParam param = vertex.getParam();
         DingoType schema = param.getSchema();
         Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
@@ -60,10 +61,7 @@ public class PessimisticLockInsertOperator extends PartModifyOperator {
         CommonId jobId = vertex.getTask().getJobId();
         CommonId txnId = vertex.getTask().getTxnId();
         CommonId tableId = param.getTableId();
-        CommonId partId = PartitionService.getService(
-                Optional.ofNullable(param.getTable().getPartitionStrategy())
-                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-            .calcPartId(keyValue.getKey(), param.getDistributions());
+        CommonId partId = content.getDistribution().getId();
         ITransaction transaction = TransactionManager.getTransaction(txnId);
         // add
         byte[] primaryKey = keyValue.getKey();

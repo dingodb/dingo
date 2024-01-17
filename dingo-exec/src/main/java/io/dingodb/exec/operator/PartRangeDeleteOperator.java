@@ -16,36 +16,41 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.fin.OperatorProfile;
+import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.PartRangeDeleteParam;
 import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 @Slf4j
-public final class PartRangeDeleteOperator extends SourceOperator {
+public final class PartRangeDeleteOperator extends SoleOutOperator {
     public static final PartRangeDeleteOperator INSTANCE = new PartRangeDeleteOperator();
 
     private PartRangeDeleteOperator() {
     }
 
     @Override
-    public boolean push(Vertex vertex) {
+    public boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
+        RangeDistribution distribution = content.getDistribution();
         PartRangeDeleteParam param = vertex.getParam();
-        OperatorProfile profile = param.getProfile(vertex.getId());
-        profile.setStartTimeStamp(System.currentTimeMillis());
-        StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), param.getPartId());
+        StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), distribution.getId());
         final long startTime = System.currentTimeMillis();
-        long count = store.delete(new StoreInstance.Range(
-            param.getStartKey(), param.getEndKey(), param.isIncludeStart(), param.isIncludeEnd()));
-        vertex.getSoleEdge().transformToNext(new Object[]{count});
+        long count = store.delete(new StoreInstance.Range(distribution.getStartKey(), distribution.getEndKey(),
+            distribution.isWithStart(), distribution.isWithEnd()));
+        vertex.getSoleEdge().transformToNext(content, new Object[]{count});
         if (log.isDebugEnabled()) {
             log.debug("Delete data by range, delete count: {}, cost: {} ms.",
                 count, System.currentTimeMillis() - startTime);
         }
-        profile.setProcessedTupleCount(count);
-        profile.setEndTimeStamp(System.currentTimeMillis());
         return false;
+    }
+
+    @Override
+    public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
+        vertex.getSoleEdge().fin(fin);
     }
 }

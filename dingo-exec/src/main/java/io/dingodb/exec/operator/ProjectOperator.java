@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.ProjectParam;
 
 import java.util.List;
@@ -30,7 +31,7 @@ public final class ProjectOperator extends SoleOutOperator {
     }
 
     @Override
-    public  boolean push(int pin, Object[] tuple, Vertex vertex) {
+    public  boolean push(Content content, Object[] tuple, Vertex vertex) {
         synchronized (vertex) {
             ProjectParam param = vertex.getParam();
             List<SqlExpr> projects = param.getProjects();
@@ -38,7 +39,7 @@ public final class ProjectOperator extends SoleOutOperator {
             for (int i = 0; i < newTuple.length; ++i) {
                 newTuple[i] = projects.get(i).eval(tuple);
             }
-            return vertex.getSoleEdge().transformToNext(newTuple);
+            return vertex.getSoleEdge().transformToNext(content, newTuple);
         }
     }
 
