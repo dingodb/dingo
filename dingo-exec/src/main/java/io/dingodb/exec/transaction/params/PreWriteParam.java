@@ -33,7 +33,7 @@ import java.util.List;
 
 @Getter
 @JsonTypeName("preWrite")
-@JsonPropertyOrder({"txnType", "isolationLevel", "primaryKey", "startTs", "schema"})
+@JsonPropertyOrder({"txnType", "isolationLevel", "primaryKey", "startTs", "timeOut", "schema"})
 public class PreWriteParam extends AbstractParams {
 
     @JsonProperty("schema")
@@ -46,6 +46,8 @@ public class PreWriteParam extends AbstractParams {
     private final int isolationLevel;
     @JsonProperty("txnType")
     private final TransactionType transactionType;
+    @JsonProperty("timeOut")
+    private final long timeOut;
     @Setter
     private List<Mutation> mutations;
     @Setter
@@ -62,13 +64,15 @@ public class PreWriteParam extends AbstractParams {
         @JsonProperty("primaryKey") byte[] primaryKey,
         @JsonProperty("startTs") long startTs,
         @JsonProperty("isolationLevel") int isolationLevel,
-        @JsonProperty("txnType") TransactionType transactionType
+        @JsonProperty("txnType") TransactionType transactionType,
+        @JsonProperty("timeOut") long timeOut
     ) {
         this.schema = schema;
         this.primaryKey = primaryKey;
         this.startTs = startTs;
         this.isolationLevel = isolationLevel;
         this.transactionType = transactionType;
+        this.timeOut = timeOut;
     }
 
     @Override

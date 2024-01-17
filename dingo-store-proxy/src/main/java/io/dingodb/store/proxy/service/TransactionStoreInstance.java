@@ -27,9 +27,11 @@ import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.StoreService;
 import io.dingodb.sdk.service.entity.common.KeyValue;
+import io.dingodb.sdk.service.entity.store.Action;
 import io.dingodb.sdk.service.entity.store.AlreadyExist;
 import io.dingodb.sdk.service.entity.store.LockInfo;
 import io.dingodb.sdk.service.entity.store.Op;
+import io.dingodb.sdk.service.entity.store.TxnBatchGetRequest;
 import io.dingodb.sdk.service.entity.store.TxnBatchGetResponse;
 import io.dingodb.sdk.service.entity.store.TxnBatchRollbackResponse;
 import io.dingodb.sdk.service.entity.store.TxnCheckTxnStatusResponse;
@@ -45,20 +47,24 @@ import io.dingodb.sdk.service.entity.store.TxnScanResponse;
 import io.dingodb.sdk.service.entity.store.WriteConflict;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
+import io.dingodb.store.api.transaction.data.TxnVariables;
 import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatus;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
 import io.dingodb.store.api.transaction.data.prewrite.LockExtraDataList;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
+import io.dingodb.store.api.transaction.data.resolvelock.ResolveLockStatus;
 import io.dingodb.store.api.transaction.data.resolvelock.TxnResolveLock;
 import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
 import io.dingodb.store.api.transaction.data.rollback.TxnPessimisticRollBack;
+import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.PrimaryMismatchException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.store.proxy.Configuration;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -105,11 +111,13 @@ public class TransactionStoreInstance {
         );
     }
 
-    public boolean txnPreWrite(TxnPreWrite txnPreWrite) {
+    public boolean txnPreWrite(TxnPreWrite txnPreWrite, long timeOut) {
         txnPreWrite.getMutations().stream().peek($ -> $.setKey(setId($.getKey()))).forEach($ -> $.getKey()[0] = 't');
-        int retry = 30;
+        int n = 1 ;
+        long start = System.currentTimeMillis();
         IsolationLevel isolationLevel = txnPreWrite.getIsolationLevel();
-        while (retry-- > 0) {
+        List<Long> resolvedLocks = new ArrayList<>();
+        while (true) {
             TxnPrewriteResponse response = storeService.txnPrewrite(MAPPER.preWriteTo(txnPreWrite));
             if (response.getKeysAlreadyExist() != null && response.getKeysAlreadyExist().size() > 0) {
                 getJoinedPrimaryKey(txnPreWrite, response.getKeysAlreadyExist());
@@ -117,9 +125,31 @@ public class TransactionStoreInstance {
             if (response.getTxnResult() == null || response.getTxnResult().isEmpty()) {
                 return true;
             }
-            resolveConflict(response.getTxnResult(), isolationLevel.getCode(), txnPreWrite.getStartTs(), "txnPreWrite");
+            long elapsed = System.currentTimeMillis() - start;
+            if (elapsed > timeOut) {
+                throw new RuntimeException("startTs:"+ txnPreWrite.getStartTs() +" resolve lock timeout");
+            }
+            ResolveLockStatus resolveLockStatus = writeResolveConflict(
+                response.getTxnResult(),
+                isolationLevel.getCode(),
+                txnPreWrite.getStartTs(),
+                resolvedLocks,
+                "txnPreWrite"
+            );
+            if (resolveLockStatus == ResolveLockStatus.LOCK_TTL) {
+                try {
+                    long lockTtl = TxnVariables.WaitFixTime;
+                    if (n < TxnVariables.WaitFixNum) {
+                        lockTtl = TxnVariables.WaitTime * n;
+                    }
+                    Thread.sleep(lockTtl);
+                    n++;
+                    log.info("txnPreWrite lockInfo wait {} ms end.", lockTtl);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
-        return false;
     }
 
     // Join primary key values to string by mapping
@@ -169,8 +199,8 @@ public class TransactionStoreInstance {
         throw new DuplicateEntryException("Duplicate entry " + joinedKey.get() + " for key '" + table.getName() + ".PRIMARY'");
     }
 
-    public Future txnPreWritePrimaryKey(TxnPreWrite txnPreWrite) {
-        if (txnPreWrite(txnPreWrite)) {
+    public Future txnPreWritePrimaryKey(TxnPreWrite txnPreWrite, long timeOut) {
+        if (txnPreWrite(txnPreWrite, timeOut)) {
             return Executors.scheduleWithFixedDelayAsync("txn-heartbeat", () -> heartbeat(txnPreWrite), 1, 1, SECONDS);
         }
         throw new WriteConflictException();
@@ -179,6 +209,9 @@ public class TransactionStoreInstance {
     public boolean txnCommit(TxnCommit txnCommit) {
         txnCommit.getKeys().stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
         TxnCommitResponse response = storeService.txnCommit(MAPPER.commitTo(txnCommit));
+        if (response.getTxnResult() != null && response.getTxnResult().getCommitTsExpired() != null) {
+            throw new CommitTsExpiredException(response.getTxnResult().getCommitTsExpired().toString());
+        }
         return response.getTxnResult() == null;
     }
 
@@ -193,6 +226,7 @@ public class TransactionStoreInstance {
         txnPessimisticLock.getMutations().stream().peek($ -> $.setKey(setId($.getKey()))).forEach($ -> $.getKey()[0] = 't');
         IsolationLevel isolationLevel = txnPessimisticLock.getIsolationLevel();
         long start = System.currentTimeMillis();
+        List<Long> resolvedLocks = new ArrayList<>();
         while (true) {
             TxnPessimisticLockResponse response = storeService.txnPessimisticLock(MAPPER.pessimisticLockTo(txnPessimisticLock));
             if (response.getTxnResult() == null || response.getTxnResult().isEmpty()) {
@@ -202,7 +236,13 @@ public class TransactionStoreInstance {
             if (elapsed > timeOut) {
                 throw new RuntimeException("Lock wait timeout exceeded; try restarting transaction");
             }
-            resolveConflict(response.getTxnResult(), isolationLevel.getCode(), txnPessimisticLock.getStartTs(), "txnPessimisticLock");
+            writeResolveConflict(
+                response.getTxnResult(),
+                isolationLevel.getCode(),
+                txnPessimisticLock.getStartTs(),
+                resolvedLocks,
+                "txnPessimisticLock"
+            );
             long forUpdateTs = TsoService.INSTANCE.tso();
             txnPessimisticLock.setForUpdateTs(forUpdateTs);
         }
@@ -211,30 +251,62 @@ public class TransactionStoreInstance {
     public boolean txnPessimisticLockRollback(TxnPessimisticRollBack txnPessimisticRollBack) {
         txnPessimisticRollBack.getKeys().stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
         TxnPessimisticRollbackResponse response = storeService.txnPessimisticRollback(MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
+        List<Long> resolvedLocks = new ArrayList<>();
         if (response.getTxnResult() != null && response.getTxnResult().size() > 0) {
-            resolveConflict(response.getTxnResult(), txnPessimisticRollBack.getIsolationLevel().getCode(), txnPessimisticRollBack.getStartTs(), "txnPessimisticLockRollback");
+//            writeResolveConflict(
+//                response.getTxnResult(),
+//                txnPessimisticRollBack.getIsolationLevel().getCode(),
+//                txnPessimisticRollBack.getStartTs(),
+//                resolvedLocks,
+//                "txnPessimisticLockRollback"
+//            );
         }
         return response.getTxnResult() == null;
     }
 
-    public Iterator<io.dingodb.common.store.KeyValue> txnScan(long ts, StoreInstance.Range range) {
+    public Iterator<io.dingodb.common.store.KeyValue> txnScan(long ts, StoreInstance.Range range, long timeOut) {
         setId(range.start);
         setId(range.end);
-        return new ScanIterator(ts, range);
+        return new ScanIterator(ts, range, timeOut);
     }
 
-    List<io.dingodb.common.store.KeyValue> txnGet(long startTs, List<byte[]> keys) {
+    List<io.dingodb.common.store.KeyValue> txnGet(long startTs, List<byte[]> keys, long timeOut) {
         keys.forEach(this::setId);
-        int retry = 30;
-        while (retry-- > 0) {
-            TxnBatchGetResponse response = storeService.txnBatchGet(MAPPER.batchGetTo(startTs, IsolationLevel.SnapshotIsolation, keys));
+        int n = 1 ;
+        long start = System.currentTimeMillis();
+        List<Long> resolvedLocks = new ArrayList<>();
+        while (true) {
+            TxnBatchGetRequest txnBatchGetRequest = MAPPER.batchGetTo(startTs, IsolationLevel.SnapshotIsolation, keys);
+            txnBatchGetRequest.setResolveLocks(resolvedLocks);
+            TxnBatchGetResponse response = storeService.txnBatchGet(txnBatchGetRequest);
             if (response.getTxnResult() == null) {
                 return response.getKvs().stream().map(MAPPER::kvFrom).collect(Collectors.toList());
             }
-            throw new RuntimeException("Txn get conflict startTs:" + startTs);
-//            resolveConflict(singletonList(response.getTxnResult()), IsolationLevel., startTs , "txnGet");
+            long elapsed = System.currentTimeMillis() - start;
+            if (elapsed > timeOut) {
+                throw new RuntimeException("startTs:"+ start +" resolve lock timeout");
+            }
+            ResolveLockStatus resolveLockStatus = readResolveConflict(
+                singletonList(response.getTxnResult()),
+                IsolationLevel.SnapshotIsolation.getCode(),
+                startTs,
+                resolvedLocks,
+                "txnScan"
+            );
+            if (resolveLockStatus == ResolveLockStatus.LOCK_TTL) {
+                try {
+                    long lockTtl = TxnVariables.WaitFixTime;
+                    if (n < TxnVariables.WaitFixNum) {
+                        lockTtl = TxnVariables.WaitTime * n;
+                    }
+                    Thread.sleep(lockTtl);
+                    n++;
+                    log.info("txnBatchGet lockInfo wait {} ms end.", lockTtl);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
-        throw new RuntimeException("Txn get conflict startTs:" + startTs);
     }
 
     public boolean txnBatchRollback(TxnBatchRollBack txnBatchRollBack) {
@@ -253,76 +325,83 @@ public class TransactionStoreInstance {
         return storeService.txnResolveLock(MAPPER.resolveTxnTo(txnResolveLock));
     }
 
-    private void resolveConflict(List<TxnResultInfo> txnResult, int isolationLevel, long startTs, String funName) {
+    private ResolveLockStatus writeResolveConflict(List<TxnResultInfo> txnResult, int isolationLevel,
+                                              long startTs, List<Long> resolvedLocks, String funName) {
+        ResolveLockStatus resolveLockStatus = ResolveLockStatus.NONE;
         for (TxnResultInfo txnResultInfo : txnResult) {
             log.info("{} txnResultInfo : {}", funName, txnResultInfo);
             LockInfo lockInfo = txnResultInfo.getLocked();
             if (lockInfo != null) {
                 // CheckTxnStatus
-                log.info("{} lockInfo : {}", funName,lockInfo);
-                // pessimistic lock
-                if (lockInfo.getLockType() == Op.Lock && lockInfo.getForUpdateTs() != 0) {
-                    TxnPessimisticRollBack pessimisticRollBack = TxnPessimisticRollBack.builder().
-                        isolationLevel(IsolationLevel.of(isolationLevel))
-                        .startTs(lockInfo.getLockTs())
-                        .forUpdateTs(lockInfo.getForUpdateTs())
-                        .keys(Collections.singletonList(lockInfo.getKey()))
-                        .build();
-                    txnPessimisticLockRollback(pessimisticRollBack);
+                log.info("{} lockInfo : {}", funName, lockInfo);
+                long currentTs = TsoService.INSTANCE.tso();
+                TxnCheckStatus txnCheckStatus = TxnCheckStatus.builder().
+                    isolationLevel(IsolationLevel.of(isolationLevel)).
+                    primaryKey(lockInfo.getPrimaryLock()).
+                    lockTs(lockInfo.getLockTs()).
+                    callerStartTs(startTs).
+                    currentTs(currentTs).
+                    build();
+                TxnCheckTxnStatusResponse statusResponse = txnCheckTxnStatus(txnCheckStatus);
+                log.info("{} txnCheckStatus : {}", funName, statusResponse);
+                TxnResultInfo resultInfo = statusResponse.getTxnResult();
+                // success
+                if (resultInfo == null) {
+                    long lockTtl = statusResponse.getLockTtl();
+                    long commitTs = statusResponse.getCommitTs();
+                    if (lockTtl > 0) {
+                        // wait
+                        resolveLockStatus = ResolveLockStatus.LOCK_TTL;
+                    } else if (commitTs > 0) {
+                        // resolveLock store commit
+                        TxnResolveLock resolveLockRequest = TxnResolveLock.builder().
+                            isolationLevel(IsolationLevel.of(isolationLevel)).
+                            startTs(lockInfo.getLockTs()).
+                            commitTs(commitTs).
+                            keys(singletonList(lockInfo.getKey())).
+                            build();
+                        TxnResolveLockResponse txnResolveLockRes = txnResolveLock(resolveLockRequest);
+                        log.info("{} txnResolveLockResponse: {}", funName, txnResolveLockRes);
+                        resolveLockStatus = ResolveLockStatus.COMMIT;
+                    } else if (lockTtl == 0 && commitTs == 0) {
+                        // resolveLock store rollback
+                        TxnResolveLock resolveLockRequest = TxnResolveLock.builder().
+                            isolationLevel(IsolationLevel.of(isolationLevel)).
+                            startTs(lockInfo.getLockTs()).
+                            commitTs(commitTs).
+                            keys(singletonList(lockInfo.getKey())).
+                            build();
+                        TxnResolveLockResponse txnResolveLockRes = txnResolveLock(resolveLockRequest);
+                        log.info("{} txnResolveLockResponse: {}", funName, txnResolveLockRes);
+                        resolveLockStatus = ResolveLockStatus.ROLLBACK;
+                    }
                 } else {
-                    long currentTs = TsoService.INSTANCE.tso();
-                    TxnCheckStatus txnCheckStatus = TxnCheckStatus.builder().
-                        isolationLevel(IsolationLevel.of(isolationLevel)).
-                        primaryKey(lockInfo.getPrimaryLock()).
-                        lockTs(lockInfo.getLockTs()).
-                        callerStartTs(startTs).
-                        currentTs(currentTs).
-                        build();
-                    TxnCheckTxnStatusResponse statusResponse = txnCheckTxnStatus(txnCheckStatus);
-                    log.info("{} txnCheckStatus : {}", funName, statusResponse);
-                    TxnResultInfo resultInfo = statusResponse.getTxnResult();
-                    // success
-                    if (resultInfo == null) {
-                        long lockTtl = statusResponse.getLockTtl();
-                        long commitTs = statusResponse.getCommitTs();
-                        if (lockTtl > 0) {
-                            // wait
-                            try {
-                                Thread.sleep(lockTtl);
-                                log.info("{} lockInfo wait {} ms end.", funName, lockTtl);
-                            } catch (InterruptedException e) {
-                                throw new RuntimeException(e);
-                            }
-                        } else if (commitTs > 0) {
-                            // resolveLock store commit
-                            TxnResolveLock resolveLockRequest = TxnResolveLock.builder().
-                                isolationLevel(IsolationLevel.of(isolationLevel)).
-                                startTs(lockInfo.getLockTs()).
-                                commitTs(commitTs).
-                                keys(singletonList(lockInfo.getKey())).
-                                build();
-                            TxnResolveLockResponse txnResolveLockRes = txnResolveLock(resolveLockRequest);
-                            log.info("{} txnResolveLockResponse: {}", funName, txnResolveLockRes);
-                        } else if (lockTtl == 0 && commitTs == 0) {
-                            // resolveLock store rollback
-                            TxnResolveLock resolveLockRequest = TxnResolveLock.builder().
-                                isolationLevel(IsolationLevel.of(isolationLevel)).
-                                startTs(lockInfo.getLockTs()).
-                                commitTs(commitTs).
-                                keys(singletonList(lockInfo.getKey())).
-                                build();
-                            TxnResolveLockResponse txnResolveLockRes = txnResolveLock(resolveLockRequest);
-                            log.info("{} txnResolveLockResponse: {}", funName, txnResolveLockRes);
+                    // pessimistic lock
+                    Action action = statusResponse.getAction();
+                    if (lockInfo.getLockType() == Op.Lock && lockInfo.getForUpdateTs() != 0) {
+                        if (action == Action.LockNotExistRollback
+                        || action == Action.TTLExpirePessimisticRollback
+                        || action == Action.TTLExpireRollback) {
+                            TxnPessimisticRollBack pessimisticRollBack = TxnPessimisticRollBack.builder().
+                                isolationLevel(IsolationLevel.of(isolationLevel))
+                                .startTs(lockInfo.getLockTs())
+                                .forUpdateTs(lockInfo.getForUpdateTs())
+                                .keys(Collections.singletonList(lockInfo.getKey()))
+                                .build();
+                            txnPessimisticLockRollback(pessimisticRollBack);
+                            resolveLockStatus = ResolveLockStatus.PESSIMISTIC_ROLLBACK;
+                        } else {
+                            resolveLockStatus = ResolveLockStatus.LOCK_TTL;
                         }
-                    } else {
-                        // 1、PrimaryMismatch  or  TxnNotFound
-                        if (resultInfo.getPrimaryMismatch() != null) {
-                            throw new PrimaryMismatchException(resultInfo.getPrimaryMismatch().toString());
-                        } else if (resultInfo.getTxnNotFound() != null) {
-                            throw new RuntimeException(resultInfo.getTxnNotFound().toString());
-                        } else if (resultInfo.getLocked() != null) {
-                            throw new RuntimeException(resultInfo.getLocked().toString());
-                        }
+                        continue;
+                    }
+                    // 1、PrimaryMismatch  or  TxnNotFound
+                    if (resultInfo.getPrimaryMismatch() != null) {
+                        throw new PrimaryMismatchException(resultInfo.getPrimaryMismatch().toString());
+                    } else if (resultInfo.getTxnNotFound() != null) {
+                        throw new RuntimeException(resultInfo.getTxnNotFound().toString());
+                    } else if (resultInfo.getLocked() != null) {
+                        throw new RuntimeException(resultInfo.getLocked().toString());
                     }
                 }
             } else {
@@ -333,22 +412,125 @@ public class TransactionStoreInstance {
                 }
             }
         }
+        return resolveLockStatus;
+    }
+
+    private ResolveLockStatus readResolveConflict(List<TxnResultInfo> txnResult, int isolationLevel,
+                                              long startTs, List<Long> resolvedLocks, String funName) {
+        ResolveLockStatus resolveLockStatus = ResolveLockStatus.NONE;
+        for (TxnResultInfo txnResultInfo : txnResult) {
+            log.info("{} txnResultInfo : {}", funName, txnResultInfo);
+            LockInfo lockInfo = txnResultInfo.getLocked();
+            if (lockInfo != null) {
+                // CheckTxnStatus
+                log.info("{} lockInfo : {}", funName, lockInfo);
+                long currentTs = TsoService.INSTANCE.tso();
+                TxnCheckStatus txnCheckStatus = TxnCheckStatus.builder().
+                    isolationLevel(IsolationLevel.of(isolationLevel)).
+                    primaryKey(lockInfo.getPrimaryLock()).
+                    lockTs(lockInfo.getLockTs()).
+                    callerStartTs(startTs).
+                    currentTs(currentTs).
+                    build();
+                TxnCheckTxnStatusResponse statusResponse = txnCheckTxnStatus(txnCheckStatus);
+                log.info("{} txnCheckStatus : {}", funName, statusResponse);
+                TxnResultInfo resultInfo = statusResponse.getTxnResult();
+                // success
+                if (statusResponse.getAction() == Action.MinCommitTSPushed && statusResponse.getLockTtl() > 0) {
+                    resolvedLocks.add(lockInfo.getLockTs());
+                    resolveLockStatus = ResolveLockStatus.MIN_COMMIT_TS_PUSHED;
+                    continue;
+                }
+                if (resultInfo == null) {
+                    long lockTtl = statusResponse.getLockTtl();
+                    long commitTs = statusResponse.getCommitTs();
+                    if (lockTtl > 0) {
+                        // wait
+                        Action action = statusResponse.getAction();
+                        switch (action) {
+                            case MinCommitTSPushed:
+                                resolvedLocks.add(currentTs);
+                                resolveLockStatus = ResolveLockStatus.LOCK_TTL;
+                                break;
+                            default:
+                                break;
+                        }
+                    } else if (commitTs > 0) {
+                        // resolveLock store commit
+                        TxnResolveLock resolveLockRequest = TxnResolveLock.builder().
+                            isolationLevel(IsolationLevel.of(isolationLevel)).
+                            startTs(lockInfo.getLockTs()).
+                            commitTs(commitTs).
+                            keys(singletonList(lockInfo.getKey())).
+                            build();
+                        TxnResolveLockResponse txnResolveLockRes = txnResolveLock(resolveLockRequest);
+                        log.info("{} txnResolveLockResponse: {}", funName, txnResolveLockRes);
+                        resolveLockStatus = ResolveLockStatus.COMMIT;
+                    } else if (lockTtl == 0 && commitTs == 0) {
+                        // resolveLock store rollback
+                        TxnResolveLock resolveLockRequest = TxnResolveLock.builder().
+                            isolationLevel(IsolationLevel.of(isolationLevel)).
+                            startTs(lockInfo.getLockTs()).
+                            commitTs(commitTs).
+                            keys(singletonList(lockInfo.getKey())).
+                            build();
+                        TxnResolveLockResponse txnResolveLockRes = txnResolveLock(resolveLockRequest);
+                        log.info("{} txnResolveLockResponse: {}", funName, txnResolveLockRes);
+                        resolveLockStatus = ResolveLockStatus.ROLLBACK;
+                    }
+                } else {
+                    // pessimistic lock
+                    Action action = statusResponse.getAction();
+                    if (lockInfo.getLockType() == Op.Lock && lockInfo.getForUpdateTs() != 0
+                        && (action == Action.LockNotExistRollback
+                        || action == Action.TTLExpirePessimisticRollback
+                        || action == Action.TTLExpireRollback)) {
+                        TxnPessimisticRollBack pessimisticRollBack = TxnPessimisticRollBack.builder().
+                            isolationLevel(IsolationLevel.of(isolationLevel))
+                            .startTs(lockInfo.getLockTs())
+                            .forUpdateTs(lockInfo.getForUpdateTs())
+                            .keys(Collections.singletonList(lockInfo.getKey()))
+                            .build();
+                        txnPessimisticLockRollback(pessimisticRollBack);
+                        resolveLockStatus = ResolveLockStatus.PESSIMISTIC_ROLLBACK;
+                        continue;
+                    }
+                    // 1、PrimaryMismatch  or  TxnNotFound
+                    if (resultInfo.getPrimaryMismatch() != null) {
+                        throw new PrimaryMismatchException(resultInfo.getPrimaryMismatch().toString());
+                    } else if (resultInfo.getTxnNotFound() != null) {
+                        throw new RuntimeException(resultInfo.getTxnNotFound().toString());
+                    } else if (resultInfo.getLocked() != null) {
+                        throw new RuntimeException(resultInfo.getLocked().toString());
+                    }
+                }
+            } else {
+                WriteConflict writeConflict = txnResultInfo.getWriteConflict();
+                log.info("{} writeConflict : {}", funName, writeConflict);
+                if (writeConflict != null) {
+                    throw new WriteConflictException(writeConflict.toString());
+                }
+            }
+        }
+        return resolveLockStatus;
     }
 
     public class ScanIterator implements Iterator<io.dingodb.common.store.KeyValue> {
         private final long startTs;
         private final StoreInstance.Range range;
+        private final long timeOut;
 
         private boolean withStart;
         private boolean hasMore = true;
         private StoreInstance.Range current;
         private Iterator<KeyValue> keyValues;
 
-        public ScanIterator(long startTs, StoreInstance.Range range) {
+        public ScanIterator(long startTs, StoreInstance.Range range, long timeOut) {
             this.startTs = startTs;
             this.range = range;
             this.current = range;
             this.withStart = range.withStart;
+            this.timeOut = timeOut;
             fetch();
         }
 
@@ -356,13 +538,40 @@ public class TransactionStoreInstance {
             if (!hasMore) {
                 return;
             }
-            int retry = 30;
-            while (retry-- > 0) {
+            int n = 1 ;
+            long start = System.currentTimeMillis();
+            List<Long> resolvedLocks = new ArrayList<>();
+            while (true) {
                 TxnScanRequest txnScanRequest = MAPPER.scanTo(startTs, IsolationLevel.SnapshotIsolation, current);
                 txnScanRequest.setLimit(1024);
+                txnScanRequest.setResolveLocks(resolvedLocks);
                 TxnScanResponse txnScanResponse = storeService.txnScan(txnScanRequest);
                 if (txnScanResponse.getTxnResult() != null) {
-                    throw new RuntimeException("Txn get conflict startTs:" + startTs);
+                    long elapsed = System.currentTimeMillis() - start;
+                    if (elapsed > timeOut) {
+                        throw new RuntimeException("startTs:"+ txnScanRequest.getStartTs() +" resolve lock timeout");
+                    }
+                    ResolveLockStatus resolveLockStatus = readResolveConflict(
+                        singletonList(txnScanResponse.getTxnResult()),
+                        IsolationLevel.SnapshotIsolation.getCode(),
+                        startTs,
+                        resolvedLocks,
+                        "txnScan"
+                    );
+                    if (resolveLockStatus == ResolveLockStatus.LOCK_TTL) {
+                        try {
+                            long lockTtl = TxnVariables.WaitFixTime;
+                            if (n < TxnVariables.WaitFixNum) {
+                                lockTtl = TxnVariables.WaitTime * n;
+                            }
+                            Thread.sleep(lockTtl);
+                            n++;
+                            log.info("txnScan lockInfo wait {} ms end.", lockTtl);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    continue;
                 }
                 keyValues = Optional.ofNullable(txnScanResponse.getKvs()).map(List::iterator).orElseGet(Collections::emptyIterator);
                 hasMore = txnScanResponse.isHasMore();

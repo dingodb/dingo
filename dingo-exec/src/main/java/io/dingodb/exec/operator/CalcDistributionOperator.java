@@ -48,7 +48,7 @@ public class CalcDistributionOperator extends IteratorSourceOperator {
         NavigableSet<RangeDistribution> distributions;
         if (param.getFilter() != null || param.isNotBetween()) {
             if (param.isLogicalNot() || param.isNotBetween()) {
-                distributions = new TreeSet<>(RangeUtils.rangeComparator(0));
+                distributions = new TreeSet<>(RangeUtils.rangeComparator(1));
                 distributions.addAll(ps.calcPartitionRange(null, startKey, true, !withStart, ranges));
                 distributions.addAll(ps.calcPartitionRange(endKey, null, !withEnd, true, ranges));
             } else {

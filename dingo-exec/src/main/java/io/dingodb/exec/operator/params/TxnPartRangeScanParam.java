@@ -41,7 +41,7 @@ import java.util.stream.IntStream;
 @Getter
 @JsonTypeName("txnScan")
 @JsonPropertyOrder({
-    "tableId", "part", "scanTs", "isolationLevel", "schema", "keyMapping", "filter", "selection", "prefixScan"
+    "tableId", "part", "scanTs", "isolationLevel", "timeOut", "schema", "keyMapping", "filter", "selection", "prefixScan"
 })
 public class TxnPartRangeScanParam extends FilterProjectParam {
 
@@ -58,6 +58,8 @@ public class TxnPartRangeScanParam extends FilterProjectParam {
     private final long scanTs;
     @JsonProperty("isolationLevel")
     private final int isolationLevel;
+    @JsonProperty("timeOut")
+    private final long timeOut;
 
     private Coprocessor coprocessor = null;
     private KeyValueCodec codec;
@@ -73,6 +75,7 @@ public class TxnPartRangeScanParam extends FilterProjectParam {
         DingoType outputSchema,
         long scanTs,
         int isolationLevel,
+        long timeOut,
         boolean pushDown
     ) {
         super(tableId, null, schema, filter, selection, keyMapping);
@@ -81,6 +84,7 @@ public class TxnPartRangeScanParam extends FilterProjectParam {
         this.outputSchema = outputSchema;
         this.scanTs = scanTs;
         this.isolationLevel = isolationLevel;
+        this.timeOut = timeOut;
         this.pushDown = pushDown;
     }
 

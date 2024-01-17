@@ -41,6 +41,7 @@ import io.dingodb.store.api.transaction.exception.ReginSplitException;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.Future;
 
@@ -59,8 +60,26 @@ public class PessimisticLockDeleteOperator extends PartModifyOperator {
         CommonId txnId = vertex.getTask().getTxnId();
         CommonId partId = content.getDistribution().getId();
         ITransaction transaction = TransactionManager.getTransaction(txnId);
+        StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, partId);
+        byte[] jobIdByte = jobId.encode();
+        byte[] txnIdByte = txnId.encode();
+        byte[] tableIdByte = tableId.encode();
+        byte[] partIdByte = partId.encode();
+        int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
+        // for check deadLock
+        byte[] deadLockKeyBytes = ByteUtils.encode(
+            CommonId.CommonType.TXN_CACHE_BLOCK_LOCK,
+            keys,
+            Op.LOCK.getCode(),
+            len,
+            jobIdByte,
+            tableIdByte,
+            partIdByte
+        );
+        KeyValue deadLockKeyValue = new KeyValue(deadLockKeyBytes, null);
+        store.put(deadLockKeyValue);
         // add
-        byte[] primaryKey = keys;
+        byte[] primaryKey = Arrays.copyOf(keys, keys.length);
         long startTs = param.getStartTs();
         Future future = null;
         TxnPessimisticLock txnPessimisticLock = TxnPessimisticLock.builder().
@@ -81,12 +100,12 @@ public class PessimisticLockDeleteOperator extends PartModifyOperator {
             .forUpdateTs(jobId.seq)
             .build();
         try {
-            StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
+            store = Services.KV_STORE.getInstance(tableId, partId);
             future = store.txnPessimisticLockPrimaryKey(txnPessimisticLock, param.getLockTimeOut());
         } catch (ReginSplitException e) {
             log.error(e.getMessage(), e);
             CommonId regionId = TransactionUtil.singleKeySplitRegionId(tableId, txnId, primaryKey);
-            StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
+            store = Services.KV_STORE.getInstance(tableId, regionId);
             future = store.txnPessimisticLockPrimaryKey(txnPessimisticLock, param.getLockTimeOut());
         } catch (Throwable e) {
             log.error(e.getMessage(), e);
@@ -100,24 +119,26 @@ public class PessimisticLockDeleteOperator extends PartModifyOperator {
                 txnPessimisticLock.getForUpdateTs(),
                 primaryKey
             );
+            store = Services.LOCAL_STORE.getInstance(tableId, partId);
+            // delete deadLockKey
+            store.deletePrefix(deadLockKeyBytes);
             throw new RuntimeException(e.getMessage());
         }
         if (future == null) {
             // primaryKeyLock rollback
             TransactionUtil.PessimisticPrimaryLockRollBack(txnId, tableId, partId, param.getIsolationLevel(),
                 startTs, txnPessimisticLock.getForUpdateTs(), primaryKey);
+            store = Services.LOCAL_STORE.getInstance(tableId, partId);
+            // delete deadLockKey
+            store.deletePrefix(deadLockKeyBytes);
             throw new RuntimeException(txnId + " future is null " + partId + ",txnPessimisticLockPrimaryKey false");
         }
         long forUpdateTs = txnPessimisticLock.getForUpdateTs();
         transaction.setForUpdateTs(forUpdateTs);
         transaction.setPrimaryKeyFuture(future);
-        StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, partId);
-        byte[] jobIdByte = jobId.encode();
-        byte[] txnIdByte = txnId.encode();
-        byte[] tableIdByte = tableId.encode();
-        byte[] partIdByte = partId.encode();
-        byte[] forUpdateTsByte = PrimitiveCodec.encodeLong(forUpdateTs);
-        int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
+        store = Services.LOCAL_STORE.getInstance(tableId, partId);
+        // get lock success, delete deadLockKey
+        store.deletePrefix(deadLockKeyBytes);
         // lockKeyValue  [11_txnId_tableId_partId_a_lock, forUpdateTs1]
         transaction.setPrimaryKeyLock(
             ByteUtils.encode(

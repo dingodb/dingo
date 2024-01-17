@@ -94,6 +94,8 @@ public class LoadDataOperation implements DmlOperation {
     private boolean txnRetry;
     private int txnRetryCnt;
 
+    private long timeOut;
+
     private final AtomicLong count = new AtomicLong(0);
 
     private final BlockingQueue<Object> queue = new ArrayBlockingQueue<>(10000);
@@ -120,8 +122,13 @@ public class LoadDataOperation implements DmlOperation {
             if (retryCntStr == null) {
                 retryCntStr = "0";
             }
+            String timeOutStr = connection.getClientInfo("statement_timeout");
+            if (timeOutStr == null) {
+                timeOutStr = "50000";
+            }
             txnRetry = "on".equalsIgnoreCase(txnRetryStr);
             txnRetryCnt = Integer.parseInt(retryCntStr);
+            timeOut = Integer.parseInt(timeOutStr);
         } catch (SQLException e) {
             txnRetry = false;
             txnRetryCnt = 0;
@@ -349,7 +356,7 @@ public class LoadDataOperation implements DmlOperation {
                     TransactionManager.getServerId().seq, startTs);
                 List<Object[]> tupleList = getCacheTupleList(caches, txnId);
                 TxnImportDataOperation txnImportDataOperation = new TxnImportDataOperation(
-                    startTs, txnId, txnRetry, txnRetryCnt
+                    startTs, txnId, txnRetry, txnRetryCnt, timeOut
                 );
                 txnImportDataOperation.insertByTxn(tupleList);
                 count.addAndGet(tuples.length);
@@ -367,7 +374,7 @@ public class LoadDataOperation implements DmlOperation {
                 TransactionManager.getServerId().seq,
                 startTs);
             TxnImportDataOperation txnImportDataOperation = new TxnImportDataOperation(
-                startTs, txnId, txnRetry, txnRetryCnt
+                startTs, txnId, txnRetry, txnRetryCnt, timeOut
             );
             List<Object[]> caches = ExecutionEnvironment.memoryCache
                 .computeIfAbsent(statementId, e -> new ArrayList<>());

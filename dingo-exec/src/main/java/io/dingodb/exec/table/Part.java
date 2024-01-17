@@ -77,9 +77,9 @@ public interface Part {
             .collect(Collectors.toList());
     }
 
-    public boolean txnPreWrite(@NonNull TxnPreWrite txnPreWrite);
+    public boolean txnPreWrite(@NonNull TxnPreWrite txnPreWrite, long timeOut);
 
-    public Future txnPreWritePrimaryKey(@NonNull TxnPreWrite txnPreWrite);
+    public Future txnPreWritePrimaryKey(@NonNull TxnPreWrite txnPreWrite, long timeOut);
 
     public boolean txnCommit(@NonNull TxnCommit commitRequest);
 

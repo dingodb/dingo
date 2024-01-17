@@ -159,7 +159,7 @@ public final class PreWriteOperator extends TransactionOperator {
         }
         try {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
-            return store.txnPreWrite(txnPreWrite);
+            return store.txnPreWrite(txnPreWrite, param.getTimeOut());
         } catch (ReginSplitException e) {
             log.error(e.getMessage(), e);
             // 2、regin split
@@ -173,7 +173,7 @@ public final class PreWriteOperator extends TransactionOperator {
                 List<byte[]> value = entry.getValue();
                 StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
                 txnPreWrite.setMutations(TransactionUtil.keyToMutation(value, param.getMutations()));
-                boolean result = store.txnPreWrite(txnPreWrite);
+                boolean result = store.txnPreWrite(txnPreWrite, param.getTimeOut());
                 if (!result) {
                     return false;
                 }

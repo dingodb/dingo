@@ -80,7 +80,7 @@ public class HashRangePartitionService implements PartitionService {
             log.trace("commonId:" + commonId);
             map.computeIfAbsent(commonId, k -> new TreeMap<>()).put(key, value);
         }
-        NavigableSet<RangeDistribution> distributions = new TreeSet<>(RangeUtils.rangeComparator(0));
+        NavigableSet<RangeDistribution> distributions = new TreeSet<>(RangeUtils.rangeComparator(1));
         for (Map.Entry<CommonId, NavigableMap<ComparableByteArray, RangeDistribution>> entry : map.entrySet()) {
             NavigableMap<ComparableByteArray, RangeDistribution> subMap = entry.getValue();
             byte [] newStartKey;
@@ -109,7 +109,7 @@ public class HashRangePartitionService implements PartitionService {
                 .withStart(newWithStart)
                 .withEnd(newWithEnd)
                 .build();
-            NavigableSet<RangeDistribution> subRanges = RangeUtils.getSubRangeDistribution(subMap.values(), range, 0);
+            NavigableSet<RangeDistribution> subRanges = RangeUtils.getSubRangeDistribution(subMap.values(), range, 1);
             subRanges.descendingSet().stream().skip(1).forEach(rd -> {
                 if (Arrays.equals(rd.getEndKey(), subMap.lastEntry().getValue().getEndKey())) {
                     rd.setWithEnd(true);

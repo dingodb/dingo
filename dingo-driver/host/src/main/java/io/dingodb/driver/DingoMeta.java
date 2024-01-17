@@ -416,7 +416,7 @@ public class DingoMeta extends MetaImpl {
                 }
                 if (transaction != null) {
                     transaction.addSql(signature.sql);
-                    if (connection.getAutoCommit()) {
+                    if (transaction.isAutoCommit()) {
                         ((DingoConnection) connection).cleanTransaction();
                     }
                 }
@@ -425,7 +425,7 @@ public class DingoMeta extends MetaImpl {
             boolean done = fetchMaxRowCount == 0 || !iterator.hasNext();
             if (transaction != null) {
                 transaction.addSql(signature.sql);
-                if (connection.getAutoCommit()) {
+                if (transaction.isAutoCommit()) {
                     connection.commit();
                 }
             }

@@ -58,13 +58,15 @@ public class TxnImportDataOperation {
 
     boolean retry;
     int retryCnt;
+    long timeOut;
 
-    public TxnImportDataOperation(Long startTs, CommonId txnId, boolean retry, int retryCnt) {
+    public TxnImportDataOperation(Long startTs, CommonId txnId, boolean retry, int retryCnt, long timeOut) {
         dingoType = new BooleanType(true);
         this.startTs = startTs;
         this.txnId = txnId;
         this.retry = retry;
         this.retryCnt = retryCnt;
+        this.timeOut = timeOut;
     }
 
     public void insertByTxn(List<Object[]> tupleList) {
@@ -138,7 +140,7 @@ public class TxnImportDataOperation {
             .build();
         try {
             StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
-            this.future = store.txnPreWritePrimaryKey(txnPreWrite);
+            this.future = store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
         } catch (ReginSplitException e) {
             log.error(e.getMessage(), e);
             CommonId regionId = TransactionUtil.singleKeySplitRegionId(
@@ -147,7 +149,7 @@ public class TxnImportDataOperation {
                 cacheToObject.getMutation().getKey()
             );
             StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
-            this.future = store.txnPreWritePrimaryKey(txnPreWrite);
+            this.future = store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
         }
         if (this.future == null) {
             throw new RuntimeException(txnId + " future is null "
@@ -173,7 +175,7 @@ public class TxnImportDataOperation {
             .build();
         try {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
-            return store.txnPreWrite(txnPreWrite);
+            return store.txnPreWrite(txnPreWrite, param.getTimeOut());
         } catch (ReginSplitException e) {
             log.error(e.getMessage(), e);
             // 2、regin split
@@ -184,7 +186,7 @@ public class TxnImportDataOperation {
                 List<byte[]> value = entry.getValue();
                 StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
                 txnPreWrite.setMutations(TransactionUtil.keyToMutation(value, param.getMutations()));
-                boolean result = store.txnPreWrite(txnPreWrite);
+                boolean result = store.txnPreWrite(txnPreWrite ,param.getTimeOut());
                 if (!result) {
                     return false;
                 }
@@ -195,7 +197,7 @@ public class TxnImportDataOperation {
 
     private void preWriteSecondKey(List<Object[]> secondList) {
         PreWriteParam param = new PreWriteParam(dingoType, primaryKey, startTs,
-            isolationLevel, TransactionType.OPTIMISTIC);
+            isolationLevel, TransactionType.OPTIMISTIC, timeOut);
         param.init(null);
         for (Object[] tuples : secondList) {
             CommonId txnId = (CommonId) tuples[0];

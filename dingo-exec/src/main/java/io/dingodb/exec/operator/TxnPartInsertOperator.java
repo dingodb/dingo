@@ -81,6 +81,18 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             if (!(ByteArrayUtils.compare(keyValueKey, primaryLockKeyBytes, 9) == 0)) {
                 // This key appears for the first time in the current transaction
                 if (oldKeyValue == null) {
+                    // for check deadLock
+                    byte[] deadLockKeyBytes = ByteUtils.encode(
+                        CommonId.CommonType.TXN_CACHE_BLOCK_LOCK,
+                        keyValue.getKey(),
+                        Op.LOCK.getCode(),
+                        len,
+                        jobIdByte,
+                        tableIdByte,
+                        partIdByte
+                    );
+                    KeyValue deadLockKeyValue = new KeyValue(deadLockKeyBytes, null);
+                    store.put(deadLockKeyValue);
                     TxnPessimisticLock txnPessimisticLock = TransactionUtil.pessimisticLock(
                         param.getLockTimeOut(),
                         txnId,
@@ -96,6 +108,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     if (newForUpdateTs != forUpdateTs) {
                         forUpdateTsByte = PrimitiveCodec.encodeLong(newForUpdateTs);
                     }
+                    // get lock success, delete deadLockKey
+                    store.deletePrefix(deadLockKeyBytes);
                     // lockKeyValue
                     KeyValue lockKeyValue = new KeyValue(lockKey, forUpdateTsByte);
                     // extraKeyValue
