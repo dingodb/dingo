@@ -223,12 +223,8 @@ public class DingoGetByIndexRule extends ConverterRule {
         Map<CommonId, Table> indexTdMap = new HashMap<>();
         DingoTable dingoTable = relOptTable.unwrap(DingoTable.class);
         List<IndexTable> indexes = dingoTable.getTable().getIndexes();
-        for (Table index : indexes) {
-            if (index.getProperties() == null) {
-                continue;
-            }
-            String indexType = index.getProperties().getProperty("indexType", "scalar").toString();
-            if (indexType.equals("scalar")) {
+        for (IndexTable index : indexes) {
+            if (!index.getIndexType().isVector) {
                 indexTdMap.put(index.getTableId(), index);
             }
         }

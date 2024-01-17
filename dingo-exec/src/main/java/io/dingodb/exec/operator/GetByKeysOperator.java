@@ -40,7 +40,7 @@ public final class GetByKeysOperator extends FilterProjectOperator {
         GetByKeysParam param = vertex.getParam();
         StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), content.getDistribution().getId());
         KeyValue keyValue = store.get(param.getCodec().encodeKey(tuple));
-        if (keyValue == null) {
+        if (keyValue == null || keyValue.getValue() == null) {
             return Collections.emptyIterator();
         }
         Object[] result = param.getCodec().decode(keyValue);

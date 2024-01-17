@@ -16,10 +16,10 @@
 
 package io.dingodb.driver.mysql.command;
 
-import io.dingodb.common.mysql.DingoArray;
 import io.dingodb.common.mysql.ExtendedClientCapabilities;
 import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.driver.DingoConnection;
+import io.dingodb.driver.common.DingoArray;
 import io.dingodb.driver.mysql.MysqlConnection;
 import io.dingodb.driver.mysql.packet.ColumnPacket;
 import io.dingodb.driver.mysql.packet.ColumnsNumberPacket;

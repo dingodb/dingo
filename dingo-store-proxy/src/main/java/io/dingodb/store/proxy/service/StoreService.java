@@ -544,7 +544,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         ) {
 
             List<VectorWithId> vectors = new ArrayList<>();
-            IndexTable indexTable = tableMap.get(MAPPER.idTo(indexId));
+            IndexTable indexTable = tableMap.get(indexId);
 
             Vector vector = Vector.builder()
                 .dimension(Integer.parseInt(indexTable.getProperties().getProperty("dimension")))

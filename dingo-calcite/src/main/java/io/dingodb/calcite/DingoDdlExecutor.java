@@ -91,6 +91,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -535,7 +536,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     @SuppressWarnings({"unused", "MethodMayBeStatic"})
-    public void execute(SqlDropTable drop, CalcitePrepare.Context context) {
+    public void execute(SqlDropTable drop, CalcitePrepare.Context context) throws Exception {
         log.info("DDL execute: {}", drop);
         final Pair<DingoSchema, String> schemaTableName
             = getSchemaAndTableName(drop.name, context);
@@ -544,17 +545,43 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final boolean existed;
         assert schema != null;
         assert tableName != null;
-        existed = schema.dropTable(tableName);
-        if (!existed && !drop.ifExists) {
-            String schemaName = schema.getMetaService().name();
-            throw DINGO_RESOURCE.unknownTable(schemaName + "." + tableName).ex();
-        }
+        int ttl = Optional.mapOrGet(
+            ((Connection) context).getClientInfo("lock_wait_timeout"), Integer::parseInt, () -> 50
+        );
+        long tso = TsoService.getDefault().tso();
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        CompletableFuture<Void> unlockFuture = new CompletableFuture<>();
+        TableLock lock = TableLock.builder()
+            .lockTs(tso)
+            .currentTs(tso)
+            .type(LockType.TABLE)
+            .tableId(schema.getMetaService().getTable(tableName).getTableId())
+            .lockFuture(future)
+            .unlockFuture(unlockFuture)
+            .build();
+        TableLockService.getDefault().lock(lock);
+        try {
+            future.get(ttl, TimeUnit.SECONDS);
+            existed = schema.dropTable(tableName);
+            if (!existed && !drop.ifExists) {
+                String schemaName = schema.getMetaService().name();
+                throw DINGO_RESOURCE.unknownTable(schemaName + "." + tableName).ex();
+            }
 
-        env.getTableIdMap().computeIfPresent(schema.id(), (k, v) -> {
-            v.remove(tableName);
-            return v;
-        });
-        userService.dropTablePrivilege(schema.name(), tableName);
+            env.getTableIdMap().computeIfPresent(schema.id(), (k, v) -> {
+                v.remove(tableName);
+                return v;
+            });
+            userService.dropTablePrivilege(schema.name(), tableName);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            throw new RuntimeException("Lock wait timeout exceeded.");
+        } catch (Exception e) {
+            future.cancel(true);
+            throw e;
+        } finally {
+            unlockFuture.complete(null);
+        }
     }
 
     public void execute(@NonNull SqlTruncate truncate, CalcitePrepare.Context context) throws Exception {

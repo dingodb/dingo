@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.mysql;
-
-import org.apache.commons.lang3.StringUtils;
+package io.dingodb.driver.common;
 
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
@@ -101,6 +100,6 @@ public class DingoArray implements Array {
 
     @Override
     public String toString() {
-        return StringUtils.join(list);
+        return list.toString();
     }
 }

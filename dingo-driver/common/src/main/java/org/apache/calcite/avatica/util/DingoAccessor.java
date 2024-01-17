@@ -16,8 +16,8 @@
 
 package org.apache.calcite.avatica.util;
 
-import io.dingodb.common.mysql.DingoArray;
-import org.apache.calcite.avatica.ColumnMetaData;
+import io.dingodb.driver.common.DingoArray;
+import org.apache.calcite.avatica.ColumnMetaData.AvaticaType;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -35,7 +35,6 @@ import java.sql.SQLXML;
 import java.sql.Struct;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.sql.Types;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
@@ -167,33 +166,7 @@ public class DingoAccessor implements Cursor.Accessor {
 
     @Override
     public Array getArray() throws SQLException {
-        final Object o = getObject();
-        if (o == null) {
-            return null;
-        }
-        // If it's not an Array already, assume it is a List.
-        List<Object> list = (List<Object>) o;
-        ColumnMetaData.ScalarType arrayElementType
-            = ColumnMetaData.scalar(Types.INTEGER, "INTEGER", ColumnMetaData.Rep.PRIMITIVE_INT);
-        if (list.size() > 0) {
-            Object item = list.get(0);
-            if (item instanceof Float) {
-                list = list.stream().map(e -> new BigDecimal(Float.toString((Float)e))).collect(Collectors.toList());
-                arrayElementType
-                    = ColumnMetaData.scalar(Types.FLOAT, "FLOAT", ColumnMetaData.Rep.PRIMITIVE_FLOAT);
-            } else if (item instanceof Time) {
-                arrayElementType
-                    = ColumnMetaData.scalar(Types.TIME, "TIME", ColumnMetaData.Rep.JAVA_SQL_TIME);
-            } else if (item instanceof Date) {
-                arrayElementType
-                    = ColumnMetaData.scalar(Types.DATE, "DATE", ColumnMetaData.Rep.JAVA_SQL_DATE);
-            }
-        }
-
-        TimeZone timeZone = TimeZone.getDefault();
-        ArrayFactoryImpl factory = new ArrayFactoryImpl(timeZone);
-        ResultSet resultSet = factory.create(arrayElementType, list);
-        return new DingoArray(list, calendar, resultSet);
+        return null;
     }
 
     @Override
@@ -257,14 +230,37 @@ public class DingoAccessor implements Cursor.Accessor {
     }
 
     public static class ArrayAccessor extends DingoAccessor {
-        public ArrayAccessor(AbstractCursor cursor, int index, Calendar calendar) {
+        private final AvaticaType component;
+
+        public ArrayAccessor(AbstractCursor cursor, int index, Calendar calendar, AvaticaType component) {
             super(cursor.createGetter(index), calendar);
+            this.component = component;
         }
 
-        public ArrayAccessor(AbstractCursor cursor, int index) {
+        public ArrayAccessor(AbstractCursor cursor, int index, AvaticaType component) {
             super(cursor.createGetter(index), null);
+            this.component = component;
         }
 
+        @Override
+        public Array getArray() throws SQLException {
+            final Object o = getObject();
+            if (o == null) {
+                return null;
+            }
+            // If it's not an Array already, assume it is a List.
+            List<Object> list = (List<Object>) o;
+            if (!list.isEmpty()) {
+                Object item = list.get(0);
+                if (item instanceof Float) {
+                    list = list.stream().map(e -> new BigDecimal(Float.toString((Float)e))).collect(Collectors.toList());
+                }
+            }
+
+            TimeZone timeZone = TimeZone.getDefault();
+            ArrayFactoryImpl factory = new ArrayFactoryImpl(timeZone);
+            ResultSet resultSet = factory.create(component, list);
+            return new DingoArray(list, calendar, resultSet);        }
     }
 
 }

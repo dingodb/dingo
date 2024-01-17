@@ -20,6 +20,7 @@ import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import org.apache.calcite.rel.type.RelDataType;
@@ -78,10 +79,9 @@ public class TableFunctionNamespace extends AbstractNamespace {
         SqlIdentifier columnIdentifier = (SqlIdentifier) operandList.get(1);
         // Get all index table definition
         Table table = dingoTable.getTable();
-        for (Table index : table.getIndexes()) {
-            String indexType = index.getProperties().getOrDefault("indexType", "scalar").toString();
+        for (IndexTable index : table.getIndexes()) {
             // Skip if not a vector table
-            if (indexType.equalsIgnoreCase("scalar")) {
+            if (!index.getIndexType().isVector) {
                 continue;
             }
 
@@ -100,7 +100,7 @@ public class TableFunctionNamespace extends AbstractNamespace {
         }
         cols.add(Column
             .builder()
-            .name(indexTableName.concat("$distance"))
+            .name(index.getName().concat("$distance"))
             .sqlTypeName("FLOAT")
             .build()
         );

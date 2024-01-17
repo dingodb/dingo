@@ -29,7 +29,6 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.VectorPointDistanceParam;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.IndexTable;
-import io.dingodb.meta.entity.Table;
 import lombok.AllArgsConstructor;
 import org.apache.calcite.sql.SqlNode;
 
@@ -96,10 +95,8 @@ public final class DingoGetVectorByDistanceVisitFun {
     private static Properties getVectorProperties(DingoRelOptTable dingoRelOptTable, int dimension) {
         DingoTable dingoTable = dingoRelOptTable.unwrap(DingoTable.class);
         List<IndexTable> indexes = dingoTable.getTable().getIndexes();
-        for (Table index : indexes) {
-
-            String indexType = index.getProperties().getProperty("indexType", "scalar").toString();
-            if (indexType.equals("scalar")) {
+        for (IndexTable index : indexes) {
+            if (!index.getIndexType().isVector) {
                 continue;
             }
             int dimension1 = Integer.parseInt(index.getProperties().getProperty("dimension"));
