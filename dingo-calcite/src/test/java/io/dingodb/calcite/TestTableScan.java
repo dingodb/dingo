@@ -103,7 +103,7 @@ public class TestTableScan {
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
-        assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(4);
+        assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(3);
     }
 
     @Test
@@ -131,7 +131,7 @@ public class TestTableScan {
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
-        assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(4);
+        assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(3);
     }
 
     @Test
@@ -158,7 +158,7 @@ public class TestTableScan {
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
-        assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(4);
+        assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(3);
     }
 
     @Test
@@ -186,7 +186,7 @@ public class TestTableScan {
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
-        assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(4);
+        assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(3);
     }
 
     @Test
@@ -214,7 +214,7 @@ public class TestTableScan {
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
-        assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(4);
+        assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(3);
     }
 
     @Test

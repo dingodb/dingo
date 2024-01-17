@@ -25,23 +25,19 @@ public final class OperatorCodeUtils {
     public static final Long SINK = 2L;
 
     // source
-    public static final CommonId PART_RANGE_SCAN = new CommonId(CommonId.CommonType.OP, SOURCE, 1);
-    public static final CommonId PART_RANGE_DELETE = new CommonId(CommonId.CommonType.OP, SOURCE, 2);
+    public static final CommonId CALC_DISTRIBUTION = new CommonId(CommonId.CommonType.OP, SOURCE, 1);
+    public static final CommonId GET_DISTRIBUTION = new CommonId(CommonId.CommonType.OP, SOURCE, 2);
     public static final CommonId LIKE_SCAN = new CommonId(CommonId.CommonType.OP, SOURCE, 3);
     public static final CommonId EMPTY_SOURCE = new CommonId(CommonId.CommonType.OP, SOURCE, 4);
-    public static final CommonId GET_BY_INDEX = new CommonId(CommonId.CommonType.OP, SOURCE, 5);
-    public static final CommonId GET_BY_KEYS = new CommonId(CommonId.CommonType.OP, SOURCE, 6);
-    public static final CommonId PART_COUNT = new CommonId(CommonId.CommonType.OP, SOURCE, 7);
-    public static final CommonId PART_VECTOR = new CommonId(CommonId.CommonType.OP, SOURCE, 8);
-    public static final CommonId RECEIVE = new CommonId(CommonId.CommonType.OP, SOURCE, 9);
-    public static final CommonId REMOVE_PART = new CommonId(CommonId.CommonType.OP, SOURCE, 10);
-    public static final CommonId VALUES = new CommonId(CommonId.CommonType.OP, SOURCE, 11);
+    public static final CommonId PART_COUNT = new CommonId(CommonId.CommonType.OP, SOURCE, 5);
+    public static final CommonId PART_VECTOR = new CommonId(CommonId.CommonType.OP, SOURCE, 6);
+    public static final CommonId RECEIVE = new CommonId(CommonId.CommonType.OP, SOURCE, 7);
+    public static final CommonId REMOVE_PART = new CommonId(CommonId.CommonType.OP, SOURCE, 8);
+    public static final CommonId VALUES = new CommonId(CommonId.CommonType.OP, SOURCE, 9);
     // txn source
-    public static final CommonId TXN_PART_RANGE_SCAN = new CommonId(CommonId.CommonType.OP, SOURCE, 12);
-    public static final CommonId TXN_PART_RANGE_DELETE = new CommonId(CommonId.CommonType.OP, SOURCE, 13);
-    public static final CommonId TXN_LIKE_SCAN = new CommonId(CommonId.CommonType.OP, SOURCE, 14);
-    public static final CommonId SCAN_CACHE = new CommonId(CommonId.CommonType.OP, SOURCE, 15);
-    public static final CommonId INFO_SCHEMA_SCAN = new CommonId(CommonId.CommonType.OP, SOURCE, 16);
+    public static final CommonId TXN_LIKE_SCAN = new CommonId(CommonId.CommonType.OP, SOURCE, 11);
+    public static final CommonId SCAN_CACHE = new CommonId(CommonId.CommonType.OP, SOURCE, 12);
+    public static final CommonId INFO_SCHEMA_SCAN = new CommonId(CommonId.CommonType.OP, SOURCE, 13);
 
     // op
     public static final CommonId PROJECT = new CommonId(CommonId.CommonType.OP, OP, 20);
@@ -73,6 +69,14 @@ public final class OperatorCodeUtils {
     public static final CommonId PESSIMISTIC_LOCK_UPDATE = new CommonId(CommonId.CommonType.OP, OP, 45);
     public static final CommonId PESSIMISTIC_ROLL_BACK = new CommonId(CommonId.CommonType.OP, OP, 46);
     public static final CommonId EXPORT_DATA = new CommonId(CommonId.CommonType.OP, OP, 47);
+
+    public static final CommonId DISTRIBUTE = new CommonId(CommonId.CommonType.OP, OP, 48);
+    public static final CommonId PART_RANGE_SCAN = new CommonId(CommonId.CommonType.OP, OP, 49);
+    public static final CommonId PART_RANGE_DELETE = new CommonId(CommonId.CommonType.OP, OP, 50);
+    public static final CommonId TXN_PART_RANGE_SCAN = new CommonId(CommonId.CommonType.OP, OP, 51);
+    public static final CommonId GET_BY_INDEX = new CommonId(CommonId.CommonType.OP, OP, 52);
+    public static final CommonId GET_BY_KEYS = new CommonId(CommonId.CommonType.OP, OP, 53);
+    public static final CommonId TXN_PART_RANGE_DELETE = new CommonId(CommonId.CommonType.OP, OP, 54);
 
     // sink
     public static final CommonId ROOT = new CommonId(CommonId.CommonType.OP, SINK, 80);

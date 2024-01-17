@@ -16,20 +16,10 @@
 
 package io.dingodb.exec.operator;
 
-import io.dingodb.common.CommonId;
-import io.dingodb.common.partition.PartitionDefinition;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.util.Optional;
-import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.PartitionParam;
-import io.dingodb.partition.DingoPartitionServiceProvider;
-import io.dingodb.partition.PartitionService;
 import org.checkerframework.checker.nullness.qual.NonNull;
-
-import java.util.Arrays;
-
-import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 public final class PartitionOperator extends FanOutOperator {
     public static final PartitionOperator INSTANCE = new PartitionOperator();
@@ -39,18 +29,9 @@ public final class PartitionOperator extends FanOutOperator {
     }
 
     @Override
-    protected int calcOutputIndex(int pin, Object @NonNull [] tuple, Vertex vertex) {
+    protected int calcOutputIndex(Content content, Object @NonNull [] tuple, Vertex vertex) {
         PartitionParam param = vertex.getParam();
-        DingoType schema = param.getSchema();
-        Object[] newTuple = (Object[]) schema.convertFrom(
-            Arrays.copyOf(tuple, schema.fieldCount()),
-            ValueConverter.INSTANCE
-        );
-        CommonId partId = PartitionService.getService(
-                Optional.ofNullable(param.getTable().getPartitionStrategy())
-                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-            .calcPartId(newTuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
-        return param.getPartIndices().get(partId);
+        return param.getPartIndices().get(content.getDistribution().getId().domain);
     }
 
 }

@@ -23,6 +23,7 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.PessimisticLockDeleteParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
@@ -50,16 +51,13 @@ public class PessimisticLockDeleteOperator extends PartModifyOperator {
     public static final PessimisticLockDeleteOperator INSTANCE = new PessimisticLockDeleteOperator();
 
     @Override
-    protected boolean pushTuple(@Nullable Object[] tuple, Vertex vertex) {
+    protected boolean pushTuple(Content content, @Nullable Object[] tuple, Vertex vertex) {
         PessimisticLockDeleteParam param = vertex.getParam();
         byte[] keys = wrap(param.getCodec()::encodeKey).apply(tuple);
         CommonId tableId = param.getTableId();
         CommonId jobId = vertex.getTask().getJobId();
         CommonId txnId = vertex.getTask().getTxnId();
-        CommonId partId = PartitionService.getService(
-                Optional.ofNullable(param.getTable().getPartitionStrategy())
-                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-            .calcPartId(keys, param.getDistributions());
+        CommonId partId = content.getDistribution().getId();
         ITransaction transaction = TransactionManager.getTransaction(txnId);
         // add
         byte[] primaryKey = keys;

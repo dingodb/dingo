@@ -39,9 +39,11 @@ import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.impl.IdGeneratorImpl;
 import io.dingodb.exec.impl.JobManagerImpl;
+import io.dingodb.exec.operator.params.DistributionSourceParam;
 import io.dingodb.exec.operator.params.CoalesceParam;
 import io.dingodb.exec.operator.params.CompareAndSetParam;
 import io.dingodb.exec.operator.params.GetByKeysParam;
+import io.dingodb.exec.operator.params.GetDistributionParam;
 import io.dingodb.exec.operator.params.PartDeleteParam;
 import io.dingodb.exec.operator.params.PartInsertParam;
 import io.dingodb.exec.operator.params.PartRangeDeleteParam;
@@ -68,6 +70,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
@@ -75,9 +78,11 @@ import static io.dingodb.client.utils.OperationUtils.mapKey2;
 import static io.dingodb.client.utils.OperationUtils.mapKeyPrefix;
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 import static io.dingodb.common.util.Utils.sole;
+import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COALESCE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COMPARE_AND_SET;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_KEYS;
+import static io.dingodb.exec.utils.OperatorCodeUtils.GET_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PARTITION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_INSERT;
@@ -381,35 +386,35 @@ public class OperationServiceV2 {
         byte[] endBytes = codec.encodeKey(mapKey2(end.getUserKey().toArray(), dst1, td.getColumns(),
             end.columnOrder ? td.keyColumns() : OperationUtils.sortColumns(td.keyColumns())));
 
-        distributions = ps.calcPartitionRange(startBytes, endBytes, keyRange.withStart, keyRange.withEnd,
-            MetaService.root().getRangeDistribution(tableId));
+        DistributionSourceParam distributionParam = new DistributionSourceParam(
+            td, MetaService.root().getRangeDistribution(tableId),
+            startBytes, endBytes, keyRange.withStart, keyRange.withEnd, null, false, false);
+        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
+        Task task = job.getOrCreate(currentLocation, idGenerator);
+        calcVertex.setId(idGenerator.getOperatorId(task.getId()));
+        task.putVertex(calcVertex);
 
         List<Vertex> outputs = new ArrayList<>();
-        for (io.dingodb.common.partition.RangeDistribution rd : distributions) {
-            Task task = job.getOrCreate(currentLocation, idGenerator);
+        for (int i = 0; i <= td.getPartitions().size(); i++) {
+            task = job.getOrCreate(currentLocation, idGenerator);
             PartRangeScanParam param = new PartRangeScanParam(
                 tableId,
-                rd.id(),
                 td.tupleType(),
                 td.keyMapping(),
                 null,
                 null,
-                rd.getStartKey(),
-                rd.getEndKey(),
-                rd.isWithStart(),
-                rd.isWithEnd(),
                 null,
                 null,
                 td.tupleType(),
                 true
             );
-            Vertex vertex = new Vertex(PART_RANGE_SCAN, param);
-            OutputHint hint = new OutputHint();
-            hint.setPartId(rd.id());
-            vertex.setHint(hint);
-            vertex.setId(idGenerator.getOperatorId(task.getId()));
-            task.putVertex(vertex);
-            outputs.add(vertex);
+            Vertex scanVertex = new Vertex(PART_RANGE_SCAN, param);
+            scanVertex.setId(idGenerator.getOperatorId(task.getId()));
+            Edge edge = new Edge(calcVertex, scanVertex);
+            calcVertex.addEdge(edge);
+            scanVertex.addIn(edge);
+            task.putVertex(scanVertex);
+            outputs.add(scanVertex);
         }
         return outputs;
     }
@@ -434,25 +439,28 @@ public class OperationServiceV2 {
             ps.calcPartitionRange(
                 startKey, endKey, withBegin, withEnd,
                 MetaService.root().getRangeDistribution(tableId));
+        DistributionSourceParam distributionParam = new DistributionSourceParam(
+            td, MetaService.root().getRangeDistribution(tableId),
+            startKey, endKey, withBegin, withEnd, null, false, false);
+        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
+        Task task = job.getOrCreate(currentLocation, idGenerator);
+        calcVertex.setId(idGenerator.getOperatorId(task.getId()));
+        task.putVertex(calcVertex);
+
         List<Vertex> outputs = new ArrayList<>();
-        for (io.dingodb.common.partition.RangeDistribution rd : distributions) {
-            PartRangeDeleteParam param = new PartRangeDeleteParam(
-                tableId,
-                rd.id(),
-                td.tupleType(),
-                td.keyMapping(),
-                rd.getStartKey(),
-                rd.getEndKey(),
-                rd.isWithStart(),
-                rd.isWithEnd());
-            Vertex vertex = new Vertex(PART_RANGE_DELETE, param);
-            Task task = job.getOrCreate(currentLocation, idGenerator);
-            vertex.setId(idGenerator.getOperatorId(task.getId()));
-            task.putVertex(vertex);
+        for (int i = 0; i <= td.getPartitions().size(); i++) {
+            PartRangeDeleteParam param = new PartRangeDeleteParam(tableId, td.tupleType(), td.keyMapping());
+            Vertex deleteVertex = new Vertex(PART_RANGE_DELETE, param);
+            task = job.getOrCreate(currentLocation, idGenerator);
+            deleteVertex.setId(idGenerator.getOperatorId(task.getId()));
+            Edge edge = new Edge(calcVertex, deleteVertex);
+            calcVertex.addEdge(edge);
+            deleteVertex.addIn(edge);
+            task.putVertex(deleteVertex);
             OutputHint hint = new OutputHint();
             hint.setToSumUp(true);
-            vertex.setHint(hint);
-            outputs.add(vertex);
+            deleteVertex.setHint(hint);
+            outputs.add(deleteVertex);
         }
         return outputs;
     }
@@ -502,7 +510,7 @@ public class OperationServiceV2 {
         List<Vertex> outputs = new LinkedList<>();
         for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
             GetByKeysParam param = new GetByKeysParam(
-                tableId, entry.getKey(), td.tupleType(), td.keyMapping(), entry.getValue(), null, null
+                tableId, td.tupleType(), td.keyMapping(), null, null, td
             );
             Task task = job.getOrCreate(currentLocation, idGenerator);
             Vertex vertex = new Vertex(GET_BY_KEYS, param);
@@ -522,9 +530,10 @@ public class OperationServiceV2 {
         Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         CommonId tableId = td.getTableId();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts = metaService.getRangeDistribution(tableId);
+        Set<Long> parentIds = parts.values().stream().map(d -> d.getId().domain).collect(Collectors.toSet());
         for (Vertex input : inputs) {
             Task task = input.getTask();
-            PartitionParam partitionParam = new PartitionParam(parts, td);
+            PartitionParam partitionParam = new PartitionParam(parentIds, td);
             Vertex vertex = new Vertex(PARTITION, partitionParam);
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             OutputHint hint = new OutputHint();

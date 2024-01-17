@@ -16,18 +16,15 @@
 
 package io.dingodb.exec.operator;
 
-import io.dingodb.common.CommonId;
-import io.dingodb.common.partition.PartitionDefinition;
-import io.dingodb.common.util.Optional;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.PartDeleteParam;
-import io.dingodb.partition.DingoPartitionServiceProvider;
-import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
+import lombok.extern.slf4j.Slf4j;
 
-import static io.dingodb.common.util.NoBreakFunctions.wrap;
-
+@Slf4j
 public final class PartDeleteOperator extends PartModifyOperator {
     public static final PartDeleteOperator INSTANCE = new PartDeleteOperator();
 
@@ -35,13 +32,10 @@ public final class PartDeleteOperator extends PartModifyOperator {
     }
 
     @Override
-    protected boolean pushTuple(Object[] tuple, Vertex vertex) {
+    protected boolean pushTuple(Content content, Object[] tuple, Vertex vertex) {
         PartDeleteParam param = vertex.getParam();
-        CommonId partId = PartitionService.getService(
-                Optional.ofNullable(param.getTable().getPartitionStrategy())
-                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-                .calcPartId(tuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
-        StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), partId);
+        RangeDistribution distribution = content.getDistribution();
+        StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), distribution.getId());
         if (store.deleteWithIndex(tuple)) {
             if (store.deleteIndex(tuple)) {
                 param.inc();

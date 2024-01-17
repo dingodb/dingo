@@ -17,9 +17,11 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.ValuesParam;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Collections;
 import java.util.Iterator;
 
 public final class ValuesOperator extends IteratorSourceOperator {

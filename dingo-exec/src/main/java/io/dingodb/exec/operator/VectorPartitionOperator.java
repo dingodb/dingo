@@ -21,6 +21,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.VectorPartitionParam;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
@@ -33,7 +34,7 @@ public class VectorPartitionOperator extends FanOutOperator {
     }
 
     @Override
-    protected int calcOutputIndex(int pin, Object @NonNull [] tuple, Vertex vertex) {
+    protected int calcOutputIndex(Content content, Object @NonNull [] tuple, Vertex vertex) {
         VectorPartitionParam param = vertex.getParam();
         // extract vector id from tuple
         Long vectorId = (Long) tuple[param.getIndex()];
@@ -48,5 +49,4 @@ public class VectorPartitionOperator extends FanOutOperator {
 
         return param.getPartIndices().get(partId);
     }
-
 }

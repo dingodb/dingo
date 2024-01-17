@@ -17,18 +17,17 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.HashParam;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class HashOperator extends FanOutOperator {
     public static final HashOperator INSTANCE = new HashOperator();
 
-    private HashOperator() {
-
-    }
+    private HashOperator() {}
 
     @Override
-    protected int calcOutputIndex(int pin, Object @NonNull [] tuple, Vertex vertex) {
+    protected int calcOutputIndex(Content content, Object @NonNull [] tuple, Vertex vertex) {
         HashParam param = vertex.getParam();
         return param.getStrategy().selectOutput(param.getKeyMapping().revMap(tuple));
     }

@@ -18,6 +18,7 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.operator.data.Content;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -27,7 +28,7 @@ public abstract class SinkOperator extends AbstractOperator {
     protected abstract boolean push(Object[] tuple, Vertex vertex);
 
     @Override
-    public synchronized boolean push(int pin, @Nullable Object[] tuple, Vertex vertex) {
+    public synchronized boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
         return push(tuple, vertex);
     }
 

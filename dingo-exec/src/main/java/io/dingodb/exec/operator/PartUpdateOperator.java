@@ -16,25 +16,20 @@
 
 package io.dingodb.exec.operator;
 
-import io.dingodb.common.CommonId;
-import io.dingodb.common.partition.PartitionDefinition;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.PartUpdateParam;
-import io.dingodb.partition.DingoPartitionServiceProvider;
-import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 import java.util.List;
-
-import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 @Slf4j
 public final class PartUpdateOperator extends PartModifyOperator {
@@ -44,8 +39,9 @@ public final class PartUpdateOperator extends PartModifyOperator {
     }
 
     @Override
-    public boolean pushTuple(Object[] tuple, Vertex vertex) {
+    public boolean pushTuple(Content content, Object[] tuple, Vertex vertex) {
         PartUpdateParam param = vertex.getParam();
+        RangeDistribution distribution = content.getDistribution();
         DingoType schema = param.getSchema();
         TupleMapping mapping = param.getMapping();
         List<SqlExpr> updates = param.getUpdates();
@@ -67,13 +63,9 @@ public final class PartUpdateOperator extends PartModifyOperator {
                     updated = true;
                 }
             }
-            CommonId partId = PartitionService.getService(
-                    Optional.ofNullable(param.getTable().getPartitionStrategy())
-                        .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-                    .calcPartId(newTuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
             Object[] newTuple2 = (Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE);
             Object[] oldTuple = Arrays.copyOf(tuple, tupleSize);
-            StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), partId);
+            StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), distribution.getId());
             if (store.insertIndex(newTuple2)) {
                 if (store.updateWithIndex(newTuple2, oldTuple)) {
                     store.deleteIndex(newTuple2, oldTuple);

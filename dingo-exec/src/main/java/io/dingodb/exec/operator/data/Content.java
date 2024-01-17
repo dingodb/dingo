@@ -14,22 +14,21 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.operator;
+package io.dingodb.exec.operator.data;
 
-import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.fin.Fin;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import io.dingodb.common.partition.RangeDistribution;
+import lombok.Builder;
+import lombok.Getter;
 
-public class StoreOperator extends SoleOutOperator {
+@Getter
+@Builder
+public class Content {
 
-    @Override
-    public boolean push(int pin, @Nullable Object[] tuple, Vertex vertex) {
+    private int pin;
+    private RangeDistribution distribution;
 
-        return false;
-    }
-
-    @Override
-    public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
-
+    public Content setPin(int pin) {
+        this.pin = pin;
+        return this;
     }
 }

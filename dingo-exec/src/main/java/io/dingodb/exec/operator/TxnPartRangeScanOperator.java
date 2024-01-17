@@ -20,10 +20,12 @@ import com.google.common.base.Objects;
 import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.TxnPartRangeScanParam;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.store.api.StoreInstance;
@@ -38,23 +40,24 @@ import java.util.List;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
-public class TxnPartRangeScanOperator extends FilterProjectSourceOperator {
+public class TxnPartRangeScanOperator extends FilterProjectOperator {
     public static final TxnPartRangeScanOperator INSTANCE = new TxnPartRangeScanOperator();
 
     private TxnPartRangeScanOperator() {
     }
 
     @Override
-    protected @NonNull Iterator<Object[]> createSourceIterator(Vertex vertex) {
+    protected @NonNull Iterator<Object[]> createSourceIterator(Content content, Object[] tuple, Vertex vertex) {
+        RangeDistribution distribution = content.getDistribution();
         TxnPartRangeScanParam param = vertex.getParam();
-        byte[] startKey = param.getStartKey();
-        byte[] endKey = param.getEndKey();
-        boolean includeStart = param.isIncludeStart();
-        boolean includeEnd = param.isIncludeEnd();
+        byte[] startKey = distribution.getStartKey();
+        byte[] endKey = distribution.getEndKey();
+        boolean includeStart = distribution.isWithStart();
+        boolean includeEnd = distribution.isWithEnd();
         Coprocessor coprocessor = param.getCoprocessor();
         CommonId txnId = vertex.getTask().getTxnId();
         CommonId tableId = param.getTableId();
-        CommonId partId = param.getPartId();
+        CommonId partId = distribution.getId();
         StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
         StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
 

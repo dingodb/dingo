@@ -16,30 +16,34 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.store.KeyValue;
+import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.GetByKeysParam;
+import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Slf4j
-public final class GetByKeysOperator extends FilterProjectSourceOperator {
+public final class GetByKeysOperator extends FilterProjectOperator {
     public static final GetByKeysOperator INSTANCE = new GetByKeysOperator();
 
     private GetByKeysOperator() {
     }
 
     @Override
-    protected @NonNull Iterator<Object[]> createSourceIterator(Vertex vertex) {
+    protected @NonNull Iterator<Object[]> createSourceIterator(Content content, Object[] tuple, Vertex vertex) {
         GetByKeysParam param = vertex.getParam();
-        return param.getKeyTuples().stream()
-            .map(param.getPart()::get)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList())
-            .iterator();
+        StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), content.getDistribution().getId());
+        KeyValue keyValue = store.get(param.getCodec().encodeKey(tuple));
+        if (keyValue == null) {
+            return Collections.emptyIterator();
+        }
+        Object[] result = param.getCodec().decode(keyValue);
+        return Collections.singletonList(result).iterator();
     }
-
 }

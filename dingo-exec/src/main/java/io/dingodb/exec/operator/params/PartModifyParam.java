@@ -50,6 +50,7 @@ public abstract class PartModifyParam extends AbstractParams {
     protected long count;
     protected Table table;
     protected KeyValueCodec codec;
+    @Setter
     protected NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     protected List<Boolean> keyState;
 

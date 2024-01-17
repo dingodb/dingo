@@ -18,17 +18,14 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.PrimitiveCodec;
-import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.TxnPartDeleteParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
-import io.dingodb.partition.DingoPartitionServiceProvider;
-import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
@@ -46,15 +43,13 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
     }
 
     @Override
-    protected boolean pushTuple(Object[] tuple, Vertex vertex) {
+    protected boolean pushTuple(Content content, Object[] tuple, Vertex vertex) {
         TxnPartDeleteParam param = vertex.getParam();
+        param.setContent(content);
         byte[] keys = wrap(param.getCodec()::encodeKey).apply(tuple);
         CommonId txnId = vertex.getTask().getTxnId();
         CommonId tableId = param.getTableId();
-        CommonId partId = PartitionService.getService(
-                Optional.ofNullable(param.getTable().getPartitionStrategy())
-                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-            .calcPartId(keys, param.getDistributions());
+        CommonId partId = content.getDistribution().getId();
         byte[] primaryLockKey = param.getPrimaryLockKey();
         StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, partId);
         byte[] txnIdBytes = vertex.getTask().getTxnId().encode();

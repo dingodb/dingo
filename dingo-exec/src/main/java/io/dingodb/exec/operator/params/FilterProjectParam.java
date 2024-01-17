@@ -17,48 +17,62 @@
 package io.dingodb.exec.operator.params;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.dingodb.codec.CodecService;
-import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.SqlExpr;
 import lombok.Getter;
 
 @Getter
-@JsonTypeName("rangeDelete")
-@JsonPropertyOrder({
-    "table", "part", "schema", "keyMapping", "filter", "selection"})
-public class PartRangeDeleteParam extends AbstractParams {
+public abstract class FilterProjectParam extends AbstractParams {
 
-    @JsonProperty("table")
+    @JsonProperty("tableId")
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    private final CommonId tableId;
-    @JsonProperty("schema")
-    private final DingoType schema;
+    protected final CommonId tableId;
+    protected final DingoType schema;
+    @JsonProperty("filter")
+    protected SqlExpr filter;
+    @JsonProperty("selection")
+    protected TupleMapping selection;
     @JsonProperty("keyMapping")
-    private final TupleMapping keyMapping;
+    protected final TupleMapping keyMapping;
 
-    private KeyValueCodec codec;
-
-    public PartRangeDeleteParam(
+    public FilterProjectParam(
         CommonId tableId,
+        CommonId partId,
         DingoType schema,
+        SqlExpr filter,
+        TupleMapping selection,
         TupleMapping keyMapping
     ) {
-        super();
+        super(partId, null);
         this.tableId = tableId;
         this.schema = schema;
+        this.filter = filter;
+        this.selection = selection;
         this.keyMapping = keyMapping;
     }
 
     @Override
     public void init(Vertex vertex) {
-        this.codec = CodecService.getDefault().createKeyValueCodec(schema, keyMapping);
+        if (filter != null) {
+            if (selection != null) {
+                filter.compileIn(schema.select(selection), vertex.getParasType());
+            } else {
+                filter.compileIn(schema, vertex.getParasType());
+            }
+        }
+    }
+
+    @Override
+    public void setParas(Object[] paras) {
+        super.setParas(paras);
+        if (filter != null) {
+            filter.setParas(paras);
+        }
     }
 }

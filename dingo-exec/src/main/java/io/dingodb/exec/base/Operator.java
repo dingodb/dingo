@@ -18,6 +18,7 @@ package io.dingodb.exec.base;
 
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.operator.data.Content;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public interface Operator {
@@ -26,12 +27,11 @@ public interface Operator {
      * Push a new tuple to the operator. Need to be synchronized for there may be multiple thread call on the same
      * operator.
      *
-     * @param pin   the input pin no
+     * @param content  the input pin no and distribution
      * @param tuple the tuple pushed in
      * @return `true` means another push needed, `false` means the task is canceled or finished
      */
-
-    boolean push(int pin, @Nullable Object[] tuple, Vertex vertex);
+    boolean push(Content content, @Nullable Object[] tuple, Vertex vertex);
 
     void fin(int pin, @Nullable Fin fin, Vertex vertex);
 

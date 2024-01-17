@@ -16,20 +16,20 @@
 
 package io.dingodb.exec.operator;
 
-import io.dingodb.common.CommonId;
-import io.dingodb.common.partition.PartitionDefinition;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.PartInsertParam;
-import io.dingodb.partition.DingoPartitionServiceProvider;
-import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.api.transaction.exception.ReginSplitException;
+import lombok.extern.slf4j.Slf4j;
 
-import static io.dingodb.common.util.NoBreakFunctions.wrap;
+import java.util.Arrays;
 
+@Slf4j
 public final class PartInsertOperator extends PartModifyOperator {
     public static final PartInsertOperator INSTANCE = new PartInsertOperator();
 
@@ -38,14 +38,11 @@ public final class PartInsertOperator extends PartModifyOperator {
 
     @SuppressWarnings("ConstantConditions")
     @Override
-    public boolean pushTuple(Object[] tuple, Vertex vertex) {
+    public boolean pushTuple(Content content, Object[] tuple, Vertex vertex) {
         PartInsertParam param = vertex.getParam();
+        RangeDistribution distribution = content.getDistribution();
         DingoType schema = param.getSchema();
-        CommonId partId = PartitionService.getService(
-                Optional.ofNullable(param.getTable().getPartitionStrategy())
-                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-            .calcPartId(tuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
-        StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), partId);
+        StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), distribution.getId());
         Object[] keyValue = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
         boolean insert = store.insertIndex(keyValue);
         if (insert) {

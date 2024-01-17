@@ -19,43 +19,33 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.exec.Services;
-import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.table.PartInKvStore;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
-
-import java.util.List;
 
 @Getter
 @JsonTypeName("get")
 @JsonPropertyOrder({"table", "part", "schema", "keyMapping", "keys", "filter", "selection"})
-public class GetByKeysParam extends FilterProjectSourceParam {
+public class GetByKeysParam extends FilterProjectParam {
 
-    private final List<Object[]> keyTuples;
+    private KeyValueCodec codec;
+    private Table table;
 
     public GetByKeysParam(
         CommonId tableId,
-        CommonId partId,
         DingoType schema,
         TupleMapping keyMapping,
-        List<Object[]> keyTuples,
         SqlExpr filter,
-        TupleMapping selection
+        TupleMapping selection,
+        Table table
     ) {
-        super(tableId, partId, schema, filter, selection, keyMapping);
-        this.keyTuples = keyTuples;
+        super(tableId, null, schema, filter, selection, keyMapping);
+        this.codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
+        this.table = table;
     }
 
-    @Override
-    public void init(Vertex vertex) {
-        super.init(vertex);
-        part = new PartInKvStore(
-            Services.KV_STORE.getInstance(tableId, partId),
-            CodecService.getDefault().createKeyValueCodec(schema, keyMapping)
-        );
-    }
 }

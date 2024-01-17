@@ -32,9 +32,8 @@ import lombok.Getter;
 @Getter
 @JsonTypeName("txnRangeDelete")
 @JsonPropertyOrder({
-    "table", "part", "schema", "keyMapping", "filter", "selection",
-    "startKey", "endKey", "includeStart", "includeEnd"})
-public class TxnPartRangeDeleteParam extends SourceParam {
+    "table", "part", "schema", "keyMapping", "filter", "selection"})
+public class TxnPartRangeDeleteParam extends AbstractParams {
 
     @JsonProperty("table")
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
@@ -45,34 +44,17 @@ public class TxnPartRangeDeleteParam extends SourceParam {
     @JsonProperty("keyMapping")
     private final TupleMapping keyMapping;
 
-    @JsonProperty("startKey")
-    private final byte[] startKey;
-    @JsonProperty("endKey")
-    private final byte[] endKey;
-    @JsonProperty("includeStart")
-    private final boolean includeStart;
-    @JsonProperty("includeEnd")
-    private final boolean includeEnd;
     private KeyValueCodec codec;
 
     public TxnPartRangeDeleteParam(
         CommonId tableId,
-        CommonId partId,
         DingoType schema,
-        TupleMapping keyMapping,
-        byte[] startKey,
-        byte[] endKey,
-        boolean includeStart,
-        boolean includeEnd
+        TupleMapping keyMapping
     ) {
-        super(partId, null);
+        super();
         this.tableId = tableId;
         this.schema = schema;
         this.keyMapping = keyMapping;
-        this.startKey = startKey;
-        this.endKey = endKey;
-        this.includeStart = includeStart;
-        this.includeEnd = includeEnd;
     }
 
     @Override

@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.table.Part;
 import io.dingodb.exec.transaction.params.CommitParam;
 import io.dingodb.exec.transaction.params.PessimisticRollBackParam;
@@ -32,6 +33,7 @@ import io.dingodb.exec.transaction.params.PreWriteParam;
 import io.dingodb.exec.transaction.params.RollBackParam;
 import io.dingodb.exec.transaction.params.ScanCacheParam;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @JsonTypeInfo(
@@ -83,7 +85,10 @@ import lombok.Getter;
     @JsonSubTypes.Type(PessimisticLockInsertParam.class),
     @JsonSubTypes.Type(PessimisticLockUpdateParam.class),
     @JsonSubTypes.Type(PessimisticRollBackParam.class),
-    @JsonSubTypes.Type(PessimisticRollBackScanParam.class)
+    @JsonSubTypes.Type(PessimisticRollBackScanParam.class),
+    @JsonSubTypes.Type(DistributionSourceParam.class),
+    @JsonSubTypes.Type(DistributionParam.class),
+    @JsonSubTypes.Type(GetDistributionParam.class)
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class AbstractParams {
@@ -91,9 +96,13 @@ public abstract class AbstractParams {
     @JsonProperty("part")
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    @Setter
     protected CommonId partId;
 
     protected Part part = null;
+
+    @Setter
+    protected Content content;
 
     public AbstractParams() {
     }

@@ -25,11 +25,13 @@ import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.DistributionSourceParam;
 import io.dingodb.exec.operator.params.PartRangeScanParam;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
@@ -40,6 +42,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
 
+import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_RANGE_SCAN;
 
 @Slf4j
@@ -59,35 +62,36 @@ public final class DingoFunctionScanVisitFun {
         Table td = dingoTable.getTable();
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = metaService.getRangeDistribution(tableId);
 
+        DistributionSourceParam distributionParam = new DistributionSourceParam(td, ranges, null, null,
+            true, true, null, false, false);
+        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
+        Task task = job.getOrCreate(currentLocation, idGenerator);
+        calcVertex.setId(idGenerator.getOperatorId(task.getId()));
+        task.putVertex(calcVertex);
+
         List<Vertex> outputs = new ArrayList<>();
 
-        for (RangeDistribution rd : ranges.values()) {
+        for (int i = 0; i <= Optional.mapOrGet(td.getPartitions(), List::size, () -> 0); i++) {
             PartRangeScanParam param = new PartRangeScanParam(
                 tableId,
-                rd.id(),
                 td.tupleType(),
                 td.keyMapping(),
                 null,
                 td.mapping(),
-                rd.getStartKey(),
-                rd.getEndKey(),
-                rd.isWithStart(),
-                rd.isWithEnd(),
                 null,
                 null,
                 td.tupleType(),
                 false
             );
-            Task task = job.getOrCreate(currentLocation, idGenerator);
-            Vertex vertex = new Vertex(PART_RANGE_SCAN, param);
-            OutputHint hint = new OutputHint();
-            hint.setPartId(rd.id());
-            vertex.setHint(hint);
-            vertex.setId(idGenerator.getOperatorId(task.getId()));
-            task.putVertex(vertex);
-            outputs.add(vertex);
+            task = job.getOrCreate(currentLocation, idGenerator);
+            Vertex scanVertex = new Vertex(PART_RANGE_SCAN, param);
+            scanVertex.setId(idGenerator.getOperatorId(task.getId()));
+            Edge edge = new Edge(calcVertex, scanVertex);
+            calcVertex.addEdge(edge);
+            scanVertex.addIn(edge);
+            task.putVertex(scanVertex);
+            outputs.add(scanVertex);
         }
-
         return outputs;
     }
 }

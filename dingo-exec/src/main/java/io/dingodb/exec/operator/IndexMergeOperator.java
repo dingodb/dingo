@@ -16,16 +16,14 @@
 
 package io.dingodb.exec.operator;
 
-import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.IndexMergeParam;
 import io.dingodb.exec.tuple.TupleKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class IndexMergeOperator extends SoleOutOperator {
@@ -35,7 +33,7 @@ public class IndexMergeOperator extends SoleOutOperator {
     }
 
     @Override
-    public boolean push(int pin, @Nullable Object[] tuple, Vertex vertex) {
+    public boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
         IndexMergeParam params = vertex.getParam();
         Object[] keyTuple = params.getKeyMapping().revMap(tuple);
         params.getHashMap().put(new TupleKey(keyTuple), params.getSelection().revMap(tuple));
@@ -45,21 +43,12 @@ public class IndexMergeOperator extends SoleOutOperator {
     @Override
     public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
         Edge edge = vertex.getSoleEdge();
-        IndexMergeParam params = vertex.getParam();
-        ConcurrentHashMap<TupleKey, Object[]> hashMap = params.getHashMap();
-        hashMap.values().forEach(edge::transformToNext);
+        IndexMergeParam param = vertex.getParam();
+        ConcurrentHashMap<TupleKey, Object[]> hashMap = param.getHashMap();
+        hashMap.values().forEach(v -> edge.transformToNext(param.getContent(), v));
         edge.fin(fin);
         // Reset
-        hashMap.clear();
-    }
-
-    private TupleMapping transformSelection(TupleMapping selection) {
-        List<Integer> mappings = new ArrayList<>();
-        for (int i = 0; i < selection.size(); i ++) {
-            mappings.add(i);
-        }
-
-        return TupleMapping.of(mappings);
+        param.clear();
     }
 
 }

@@ -24,6 +24,8 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.tuple.TupleKey;
 import lombok.Getter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
@@ -39,10 +41,23 @@ public class IndexMergeParam extends AbstractParams {
 
     public IndexMergeParam(TupleMapping keyMapping, TupleMapping selection) {
         this.keyMapping = keyMapping;
-        this.selection = selection;
+        this.selection = transformSelection(selection);
     }
 
     public void init(Vertex vertex) {
         hashMap = new ConcurrentHashMap<>();
+    }
+
+    private TupleMapping transformSelection(TupleMapping selection) {
+        List<Integer> mappings = new ArrayList<>();
+        for (int i = 0; i < selection.size(); i ++) {
+            mappings.add(i);
+        }
+
+        return TupleMapping.of(mappings);
+    }
+
+    public void clear() {
+        hashMap.clear();
     }
 }

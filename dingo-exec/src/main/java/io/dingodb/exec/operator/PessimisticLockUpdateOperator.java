@@ -26,6 +26,7 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.PessimisticLockUpdateParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
@@ -56,7 +57,7 @@ public class PessimisticLockUpdateOperator extends PartModifyOperator {
     public static final PessimisticLockUpdateOperator INSTANCE = new PessimisticLockUpdateOperator();
 
     @Override
-    protected boolean pushTuple(@Nullable Object[] tuple, Vertex vertex) {
+    protected boolean pushTuple(Content content, @Nullable Object[] tuple, Vertex vertex) {
         PessimisticLockUpdateParam param = vertex.getParam();
         DingoType schema = param.getSchema();
         // add
@@ -85,10 +86,7 @@ public class PessimisticLockUpdateOperator extends PartModifyOperator {
             Object[] newTuple2 = (Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE);
             KeyValue keyValue = wrap(param.getCodec()::encode).apply(newTuple2);
             byte[] primaryKey = keyValue.getKey();
-            CommonId partId = PartitionService.getService(
-                    Optional.ofNullable(param.getTable().getPartitionStrategy())
-                        .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-                .calcPartId(keyValue.getKey(), param.getDistributions());
+            CommonId partId = content.getDistribution().getId();
             Future future = null;
             TxnPessimisticLock txnPessimisticLock = TxnPessimisticLock.builder().
                 isolationLevel(IsolationLevel.of(param.getIsolationLevel()))

@@ -21,6 +21,7 @@ import io.dingodb.exec.OperatorFactory;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.CalcDistributionOperator;
 import io.dingodb.exec.operator.PartRangeScanOperator;
 import io.dingodb.exec.operator.SoleOutOperator;
 import io.dingodb.exec.operator.SourceOperator;
@@ -62,5 +63,9 @@ public final class AssertOperator extends Assert<Operator, AssertOperator> {
         return isA(PartRangeScanOperator.class)
             /*.prop("tableId", tableId)
             .prop("partId", partId)*/;
+    }
+
+    public AssertOperator isCalcDistribution() {
+        return isA(CalcDistributionOperator.class);
     }
 }

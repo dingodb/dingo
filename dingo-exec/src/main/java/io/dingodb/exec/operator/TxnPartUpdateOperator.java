@@ -27,6 +27,7 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.TxnPartUpdateParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
@@ -52,8 +53,9 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
     }
 
     @Override
-    protected boolean pushTuple(Object[] tuple, Vertex vertex) {
+    protected boolean pushTuple(Content content, Object[] tuple, Vertex vertex) {
         TxnPartUpdateParam param = vertex.getParam();
+        param.setContent(content);
         DingoType schema = param.getSchema();
         TupleMapping mapping = param.getMapping();
         List<SqlExpr> updates = param.getUpdates();
@@ -77,10 +79,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             KeyValue keyValue = wrap(param.getCodec()::encode).apply(newTuple2);
             CommonId txnId = vertex.getTask().getTxnId();
             CommonId tableId = param.getTableId();
-            CommonId partId = PartitionService.getService(
-                    Optional.ofNullable(param.getTable().getPartitionStrategy())
-                        .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-                .calcPartId(keyValue.getKey(), param.getDistributions());
+            CommonId partId = content.getDistribution().getId();
             byte[] primaryLockKey = param.getPrimaryLockKey();
             StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, partId);
             byte[] txnIdBytes = vertex.getTask().getTxnId().encode();

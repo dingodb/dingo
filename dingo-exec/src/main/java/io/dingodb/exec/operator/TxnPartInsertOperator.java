@@ -18,19 +18,16 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.PrimitiveCodec;
-import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.operator.params.TxnPartInsertParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
-import io.dingodb.partition.DingoPartitionServiceProvider;
-import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
@@ -51,17 +48,15 @@ public class TxnPartInsertOperator extends PartModifyOperator {
     }
 
     @Override
-    protected boolean pushTuple(Object[] tuple, Vertex vertex) {
+    protected boolean pushTuple(Content content, Object[] tuple, Vertex vertex) {
         TxnPartInsertParam param = vertex.getParam();
+        param.setContent(content);
         DingoType schema = param.getSchema();
         Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
         KeyValue keyValue = wrap(param.getCodec()::encode).apply(newTuple);
         CommonId txnId = vertex.getTask().getTxnId();
         CommonId tableId = param.getTableId();
-        CommonId partId = PartitionService.getService(
-                Optional.ofNullable(param.getTable().getPartitionStrategy())
-                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-            .calcPartId(keyValue.getKey(), param.getDistributions());
+        CommonId partId = content.getDistribution().getId();
         byte[] primaryLockKey = param.getPrimaryLockKey();
         StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, partId);
         byte[] txnIdByte = txnId.encode();
