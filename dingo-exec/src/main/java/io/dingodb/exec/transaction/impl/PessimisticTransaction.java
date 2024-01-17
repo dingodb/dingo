@@ -180,7 +180,7 @@ public class PessimisticTransaction extends BaseTransaction {
                 cacheToObject.getTableId(),
                 cacheToObject.getPartId()
             );
-            boolean result = store.txnPreWrite(txnPreWrite);
+            boolean result = store.txnPreWrite(txnPreWrite, getLockTimeOut());
             if (!result) {
                 throw new RuntimeException(txnId + " " + cacheToObject.getPartId()
                     + ",preWritePrimaryKey false,PrimaryKey:" + primaryKey.toString());
@@ -193,7 +193,7 @@ public class PessimisticTransaction extends BaseTransaction {
                 cacheToObject.getMutation().getKey()
             );
             StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
-            boolean result = store.txnPreWrite(txnPreWrite);
+            boolean result = store.txnPreWrite(txnPreWrite, getLockTimeOut());
             if (!result) {
                 throw new RuntimeException(txnId + " " + regionId + ",preWritePrimaryKey false,PrimaryKey:"
                     + primaryKey.toString());

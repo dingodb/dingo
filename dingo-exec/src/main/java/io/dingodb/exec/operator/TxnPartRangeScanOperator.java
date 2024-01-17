@@ -74,12 +74,12 @@ public class TxnPartRangeScanOperator extends FilterProjectOperator {
             localKVIterator = Iterators.transform(
                 localStore.scan(new StoreInstance.Range(encodeStart, encodeEnd, includeStart, includeEnd)),
                 wrap(ByteUtils::mapping)::apply);
-            kvKVIterator = kvStore.txnScan(param.getScanTs(), new StoreInstance.Range(startKey, endKey, includeStart, includeEnd));
+            kvKVIterator = kvStore.txnScan(param.getScanTs(), new StoreInstance.Range(startKey, endKey, includeStart, includeEnd), param.getTimeOut());
         } else {
             localKVIterator = Iterators.transform(
                 localStore.scan(new StoreInstance.Range(encodeStart, encodeEnd, includeStart, includeEnd), coprocessor),
                 wrap(ByteUtils::mapping)::apply);
-            kvKVIterator = kvStore.txnScan(param.getScanTs(), new StoreInstance.Range(startKey, endKey, includeStart, includeEnd));
+            kvKVIterator = kvStore.txnScan(param.getScanTs(), new StoreInstance.Range(startKey, endKey, includeStart, includeEnd), param.getTimeOut());
         }
 
         KeyValue kv1 = getNextValue(localKVIterator);

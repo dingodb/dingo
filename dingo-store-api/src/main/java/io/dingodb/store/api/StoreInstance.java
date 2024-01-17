@@ -223,33 +223,33 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default Iterator<KeyValue> txnScan(long startTs, Range range) {
+    default Iterator<KeyValue> txnScan(long startTs, Range range, long timeOut) {
         throw new UnsupportedOperationException();
     }
 
-    default KeyValue txnGet(long startTs, byte[] key) {
-        return txnGet(startTs, Collections.singletonList(key)).get(0);
+    default KeyValue txnGet(long startTs, byte[] key, long timeOut) {
+        return txnGet(startTs, Collections.singletonList(key), timeOut).get(0);
     }
 
-    default List<KeyValue> txnGet(long startTs, List<byte[]> keys) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    default boolean txnPreWrite(TxnPreWrite txnPreWrite) {
-        return txnPreWrite(txnPreWrite.getStartTs(), txnPreWrite);
-    }
-
-    default boolean txnPreWrite(long requestTs, TxnPreWrite txnPreWrite) {
+    default List<KeyValue> txnGet(long startTs, List<byte[]> keys, long timeOut) {
         throw new UnsupportedOperationException();
     }
 
     @Deprecated
-    default Future txnPreWritePrimaryKey(TxnPreWrite txnPreWrite) {
-        return txnPreWritePrimaryKey(System.identityHashCode(txnPreWrite), txnPreWrite);
+    default boolean txnPreWrite(TxnPreWrite txnPreWrite, long timeOut) {
+        return txnPreWrite(txnPreWrite.getStartTs(), txnPreWrite, timeOut);
     }
 
-    default Future txnPreWritePrimaryKey(long requestTs, TxnPreWrite txnPreWrite) {
+    default boolean txnPreWrite(long requestTs, TxnPreWrite txnPreWrite, long timeOut) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    default Future txnPreWritePrimaryKey(TxnPreWrite txnPreWrite, long timeOut) {
+        return txnPreWritePrimaryKey(System.identityHashCode(txnPreWrite), txnPreWrite, timeOut);
+    }
+
+    default Future txnPreWritePrimaryKey(long requestTs, TxnPreWrite txnPreWrite, long timeOut) {
         throw new UnsupportedOperationException();
     }
 

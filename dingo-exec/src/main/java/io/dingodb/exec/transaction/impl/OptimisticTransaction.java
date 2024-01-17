@@ -132,12 +132,12 @@ public class OptimisticTransaction extends BaseTransaction {
         Future future = null;
         try {
             StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
-            future = store.txnPreWritePrimaryKey(txnPreWrite);
+            future = store.txnPreWritePrimaryKey(txnPreWrite, getLockTimeOut());
         } catch (ReginSplitException e) {
             log.error(e.getMessage(), e);
             CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, cacheToObject.getMutation().getKey());
             StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
-            future = store.txnPreWritePrimaryKey(txnPreWrite);
+            future = store.txnPreWritePrimaryKey(txnPreWrite ,getLockTimeOut());
         }
         if (future == null) {
             throw new RuntimeException(txnId + " future is null " + cacheToObject.getPartId() + ",preWritePrimaryKey false,PrimaryKey:" + primaryKey);

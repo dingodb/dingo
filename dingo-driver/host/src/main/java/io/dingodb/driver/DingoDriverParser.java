@@ -37,6 +37,7 @@ import io.dingodb.common.util.Utils;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.meta.MetaService;
 import io.dingodb.transaction.api.TableLockService;
 import io.dingodb.transaction.api.LockType;
@@ -302,43 +303,37 @@ public final class DingoDriverParser extends DingoParser {
         Location currentLocation = MetaService.root().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
         Set<RelOptTable> tables = useTables(relNode, sqlNode);
-        boolean isTxn = checkEngine(relNode, sqlNode, tables, connection.getAutoCommit());
+        boolean isTxn = checkEngine(relNode, sqlNode, tables, connection.getAutoCommit(), connection.getTransaction());
         // get startTs for jobSeqId, if transaction is not null ,transaction startTs is jobDomainId
         long startTs = 0L;
         long jobSeqId = TsoService.getDefault().tso();
         CommonId txn_Id;
         boolean pessimisticTxn = false;
+        ITransaction transaction;
         if (connection.getTransaction() != null) {
-            ITransaction transaction = connection.getTransaction();
-            startTs = transaction.getStartTs();
-            txn_Id = transaction.getTxnId();
-            pessimisticTxn = transaction.isPessimistic();
-            if (pessimisticTxn) {
-                transaction.setForUpdateTs(jobSeqId);
-            }
+            transaction = connection.getTransaction();
         } else {
-            ITransaction transaction = connection.createTransaction(isTxn ? OPTIMISTIC : NONE);
-            transaction.setAutoCommit(true);
-            startTs = transaction.getStartTs();
-            txn_Id = transaction.getTxnId();
-            pessimisticTxn = transaction.isPessimistic();
-            if (pessimisticTxn) {
-                transaction.setForUpdateTs(jobSeqId);
-            }
+            transaction = connection.createTransaction(isTxn ? OPTIMISTIC : NONE, true);
         }
-        if (pessimisticTxn && connection.getTransaction().getPrimaryKeyLock() == null) {
-            runPessimisticPrimaryKeyJob(jobSeqId, jobManager, connection.getTransaction(), sqlNode, relNode,
+        startTs = transaction.getStartTs();
+        txn_Id = transaction.getTxnId();
+        pessimisticTxn = transaction.isPessimistic();
+        if (pessimisticTxn) {
+            transaction.setForUpdateTs(jobSeqId);
+        }
+        if (pessimisticTxn && transaction.getPrimaryKeyLock() == null) {
+            runPessimisticPrimaryKeyJob(jobSeqId, jobManager, transaction, sqlNode, relNode,
                 currentLocation, DefinitionMapper.mapToDingoType(parasType));
-            jobSeqId = connection.getTransaction().getForUpdateTs();
+            jobSeqId = transaction.getForUpdateTs();
         }
-        lockTables(tables, startTs, jobSeqId, connection.getTransaction().getFinishedFuture());
+        lockTables(tables, startTs, jobSeqId, transaction.getFinishedFuture());
         Job job = jobManager.createJob(startTs, jobSeqId, txn_Id, DefinitionMapper.mapToDingoType(parasType));
         DingoJobVisitor.renderJob(
             job,
             relNode,
             currentLocation,
             true,
-            connection.getTransaction().getType() == NONE ? null : connection.getTransaction(),
+            transaction.getType() == NONE ? null : connection.getTransaction(),
             sqlNode.getKind()
         );
         if (explain != null) {
@@ -439,9 +434,9 @@ public final class DingoDriverParser extends DingoParser {
         return tables;
     }
 
-    private boolean checkEngine(RelNode relNode, SqlNode sqlNode, Set<RelOptTable> tables, boolean isAutoCommit) {
+    private boolean checkEngine(RelNode relNode, SqlNode sqlNode, Set<RelOptTable> tables, boolean isAutoCommit, ITransaction transaction) {
         boolean isTxn = false;
-        boolean isNotTransactionTable = true;
+        boolean isNotTransactionTable = false;
         // for UT test
         if ((sqlNode.getKind() == SqlKind.SELECT || sqlNode.getKind() == SqlKind.DELETE) && tables.size() == 0) {
             return false;
@@ -454,14 +449,14 @@ public final class DingoDriverParser extends DingoParser {
                 engine = ((DingoTable) ((DingoRelOptTable) table).table()).getTable().getEngine();
             }
             if (engine == null || !engine.contains("TXN")) {
-                isNotTransactionTable = false;
+                isNotTransactionTable = true;
             } else {
                 isTxn = true;
             }
-            if (isTxn && !isNotTransactionTable) {
+            if (isTxn && isNotTransactionTable) {
                 throw new RuntimeException("Transactional tables cannot be mixed with non-transactional tables");
             }
-            if (!isAutoCommit && !isNotTransactionTable) {
+            if (transaction != null && transaction.getType() != NONE && isNotTransactionTable) {
                 throw new RuntimeException("Non-transaction tables cannot be used in transactions");
             }
         }

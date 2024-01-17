@@ -33,9 +33,11 @@ import io.dingodb.net.Channel;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
+import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.ReginSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
+import io.dingodb.tso.TsoService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -166,21 +168,31 @@ public abstract class BaseTransaction implements ITransaction {
     @Override
     public boolean commitPrimaryKey(CacheToObject cacheToObject) {
         // 1、call sdk commitPrimaryKey
-        TxnCommit commitRequest = TxnCommit.builder()
-            .isolationLevel(IsolationLevel.of(isolationLevel))
-            .startTs(startTs)
-            .commitTs(commitTs)
-            .keys(Collections.singletonList(primaryKey))
-            .build();
-        try {
-            StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
-            return store.txnCommit(commitRequest);
-        } catch (ReginSplitException e) {
-            log.error(e.getMessage(), e);
-            // 2、regin split
-            CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, primaryKey);
-            StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
-            return store.txnCommit(commitRequest);
+        long start = System.currentTimeMillis();
+        while (true) {
+            TxnCommit commitRequest = TxnCommit.builder()
+                .isolationLevel(IsolationLevel.of(isolationLevel))
+                .startTs(startTs)
+                .commitTs(commitTs)
+                .keys(Collections.singletonList(primaryKey))
+                .build();
+            try {
+                StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
+                return store.txnCommit(commitRequest);
+            } catch (ReginSplitException e) {
+                log.error(e.getMessage(), e);
+                // 2、regin split
+                CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, primaryKey);
+                StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
+                return store.txnCommit(commitRequest);
+            } catch (CommitTsExpiredException e) {
+                log.error(e.getMessage(), e);
+                this.commitTs = TransactionManager.getCommitTs();
+            }
+            long elapsed = System.currentTimeMillis() - start;
+            if (elapsed > getLockTimeOut()) {
+                return false;
+            }
         }
     }
 

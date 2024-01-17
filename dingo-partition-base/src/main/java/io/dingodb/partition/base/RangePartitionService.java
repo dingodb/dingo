@@ -60,7 +60,7 @@ public class RangePartitionService implements PartitionService {
             .withStart(withStart)
             .withEnd(withEnd)
             .build();
-        NavigableSet<RangeDistribution> subRanges = RangeUtils.getSubRangeDistribution(ranges.values(), range, 0);
+        NavigableSet<RangeDistribution> subRanges = RangeUtils.getSubRangeDistribution(ranges.values(), range, 1);
         subRanges.descendingSet().stream().skip(1).forEach(rd -> {
             if (Arrays.equals(rd.getEndKey(), ranges.firstKey().getBytes())) {
                 rd.setWithEnd(true);

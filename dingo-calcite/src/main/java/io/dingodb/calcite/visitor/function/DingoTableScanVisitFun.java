@@ -128,6 +128,7 @@ public final class DingoTableScanVisitFun {
                     DefinitionMapper.mapToDingoType(rel.getNormalRowType()),
                     scanTs,
                     transaction.getIsolationLevel(),
+                    transaction.getLockTimeOut(),
                     false
                 );
                 scanVertex = new Vertex(TXN_PART_RANGE_SCAN, param);

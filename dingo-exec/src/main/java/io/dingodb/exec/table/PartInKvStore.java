@@ -187,10 +187,10 @@ public final class PartInKvStore implements Part {
         }
     }
 
-    public boolean txnPreWrite(@NonNull TxnPreWrite txnPreWrite) {
+    public boolean txnPreWrite(@NonNull TxnPreWrite txnPreWrite, long timeOut) {
         final long startTime = System.currentTimeMillis();
         try {
-            return store.txnPreWrite(txnPreWrite);
+            return store.txnPreWrite(txnPreWrite, timeOut);
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("PartInKvStore txnPreWrite cost: {}ms.", System.currentTimeMillis() - startTime);
@@ -199,10 +199,10 @@ public final class PartInKvStore implements Part {
     }
 
     @Override
-    public Future txnPreWritePrimaryKey(@NonNull TxnPreWrite txnPreWrite) {
+    public Future txnPreWritePrimaryKey(@NonNull TxnPreWrite txnPreWrite, long timeOut) {
         final long startTime = System.currentTimeMillis();
         try {
-            return store.txnPreWritePrimaryKey(txnPreWrite);
+            return store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
         } finally {
             if (log.isDebugEnabled()) {
                 log.debug("PartInKvStore txnPreWritePrimaryKey cost: {}ms.", System.currentTimeMillis() - startTime);

@@ -31,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.mysql.InformationSchemaConstant.GLOBAL_VAR_PREFIX_BEGIN;
@@ -58,7 +59,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     public Map<String, String> getGlobalVariables() {
         RangeResponse response = versionService.kvRange(rangeRequest());
         List<KeyValue> res = response.getKvs()
-            .stream().map(Kv::getKv)
+            .stream().filter(Objects::nonNull).map(Kv::getKv)
             .collect(Collectors.toList());
         Map<String, String> variableMap = new LinkedHashMap<>();
         try {

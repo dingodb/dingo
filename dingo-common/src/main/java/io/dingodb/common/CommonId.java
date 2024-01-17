@@ -68,9 +68,11 @@ public class CommonId implements Comparable<CommonId>, Serializable {
         INDEX(3),
         // TODO
         DISTRIBUTION(2),
+
         TXN_CACHE_DATA(10),
         TXN_CACHE_LOCK(11),
         TXN_CACHE_EXTRA_DATA(12),
+        TXN_CACHE_BLOCK_LOCK(13),
 
         OP(20),
         TRANSACTION(60),
