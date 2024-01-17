@@ -279,10 +279,9 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
 
     private static Pair<Integer, Integer> getVectorIndex(DingoTable dingoTable, int dimension) {
         List<IndexTable> indexes = dingoTable.getTable().getIndexes();
-        for (Table index : indexes) {
+        for (IndexTable index : indexes) {
 
-            String indexType = index.getProperties().getProperty("indexType", "scalar").toString();
-            if (indexType.equals("scalar")) {
+            if (!index.getIndexType().isVector) {
                 continue;
             }
 

@@ -40,7 +40,6 @@ import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.sdk.service.entity.meta.TableIdWithPartIds;
 import io.dingodb.store.proxy.service.CodecService;
 import lombok.SneakyThrows;
-import org.checkerframework.common.value.qual.IntRange;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.Mappings;
@@ -205,11 +204,8 @@ public interface TableMapper {
         if (tableDefinition.getEngine() == null || tableDefinition.getEngine().isEmpty()) {
             tableDefinition.setEngine("LSM");
         }
-        byte namespace = 'r';
-        if (tableDefinition.getEngine().startsWith("TXN")) {
-            namespace = 't';
-        }
         tableDefinition.setEngine(tableDefinition.getEngine().toUpperCase());
+        byte namespace = (byte) (tableDefinition.getEngine().startsWith("TXN") ? 't' : 'r');
         io.dingodb.sdk.service.entity.meta.TableDefinition definition = tableTo(tableDefinition);
         definition.setTablePartition(
             partitionTo(tableDefinition.getPartDefinition(), ids.getPartIds(), encoder, namespace)

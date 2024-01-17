@@ -16,6 +16,7 @@
 
 package io.dingodb.store.proxy.meta;
 
+import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
@@ -84,7 +85,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     public static final MetaService ROOT = new MetaService();
 
-//    @AutoService(MetaServiceProvider.class)
+    @AutoService(MetaServiceProvider.class)
     public static class Provider implements MetaServiceProvider {
         @Override
         public io.dingodb.meta.MetaService root() {
@@ -100,6 +101,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
     public final io.dingodb.sdk.service.MetaService service;
     public final TsoService tsoService = TsoService.getDefault();
     public final MetaCache cache;
+
+    private Map<String, MetaService> metaServiceCache;
 
     public MetaService() {
         Set<Location> coordinators = Configuration.coordinatorSet();
@@ -161,11 +164,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public void createSubMetaService(String name) {
+    public synchronized void createSubMetaService(String name) {
         if (id != ROOT_SCHEMA_ID) {
             throw new UnsupportedOperationException();
         }
         service.createSchema(tso(), CreateSchemaRequest.builder().parentSchemaId(id).schemaName(name).build());
+        metaServiceCache = null;
     }
 
     @Override
@@ -173,13 +177,20 @@ public class MetaService implements io.dingodb.meta.MetaService {
         if (id != ROOT_SCHEMA_ID) {
             return Collections.emptyMap();
         }
-        return service.getSchemas(tso(), GetSchemasRequest.builder().schemaId(id).build()).getSchemas().stream()
-            .map(schema -> new MetaService(schema.getId(), schema.getName(), service, cache))
-            .collect(Collectors.toMap(MetaService::name, Function.identity()));
+        if (metaServiceCache == null) {
+            metaServiceCache = service.getSchemas(
+                    tso(), GetSchemasRequest.builder().schemaId(id).build()
+                ).getSchemas().stream()
+                .filter($ -> $.getId() != null && $.getId().getEntityId() != 0)
+                .peek($ -> $.getId().setEntityType(EntityType.ENTITY_TYPE_SCHEMA))
+                .map(schema -> new MetaService(schema.getId(), schema.getName().toUpperCase(), service, cache))
+                .collect(Collectors.toMap(MetaService::name, Function.identity()));
+        }
+        return metaServiceCache;
     }
 
     @Override
-    public MetaService getSubMetaService(String name) {
+    public synchronized MetaService getSubMetaService(String name) {
         if (id != ROOT_SCHEMA_ID) {
             return null;
         }
@@ -192,6 +203,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             throw new UnsupportedOperationException();
         }
         service.dropSchema(tso(), DropSchemaRequest.builder().schemaId(getSubMetaService(name).id).build());
+        metaServiceCache = null;
         return true;
     }
 

@@ -96,7 +96,9 @@ public class DingoResultSet extends AvaticaResultSet {
             if (columnMetaData.type.id == Types.ARRAY) {
                 ColumnMetaData.ArrayType arrayType = (ColumnMetaData.ArrayType) columnMetaData.type;
                 if (arrayType.getComponent().id == Types.FLOAT) {
-                    this.accessorList.set(i, new DingoAccessor.ArrayAccessor((AbstractCursor) cursor, i));
+                    this.accessorList.set(i, new DingoAccessor.ArrayAccessor(
+                        (AbstractCursor) cursor, i, arrayType.getComponent())
+                    );
                 }
             }
         }
@@ -115,7 +117,9 @@ public class DingoResultSet extends AvaticaResultSet {
             if (columnMetaData.type.id == Types.ARRAY) {
                 ColumnMetaData.ArrayType arrayType = (ColumnMetaData.ArrayType) columnMetaData.type;
                 if (arrayType.getComponent().id == Types.FLOAT) {
-                    this.accessorList.set(i, new DingoAccessor.ArrayAccessor((AbstractCursor) cursor, i));
+                    this.accessorList.set(i, new DingoAccessor.ArrayAccessor(
+                        (AbstractCursor) cursor, i, arrayType.getComponent()
+                    ));
                 }
             }
         }

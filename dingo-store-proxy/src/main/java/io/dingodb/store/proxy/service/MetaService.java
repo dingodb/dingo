@@ -47,7 +47,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         io.dingodb.store.proxy.meta.MetaService.ROOT
     );
 
-    @AutoService(MetaServiceProvider.class)
+//    @AutoService(MetaServiceProvider.class)
     public static class Provider implements MetaServiceProvider {
         @Override
         public io.dingodb.meta.MetaService root() {
@@ -114,6 +114,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public Map<String, io.dingodb.meta.MetaService> getSubMetaServices() {
         return metaServiceClient.getSubMetaServices().values().stream()
+            .filter($ -> $.id().getEntityId() != 0)
             .collect(Collectors.toMap(
                 MetaServiceClient::name,
                 $ -> new MetaService($, metaService.getSubMetaService($.name()))

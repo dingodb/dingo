@@ -145,8 +145,8 @@ public final class DefinitionUtils {
                 "Partition values count must be non-negative number, but values count is " + hashNum
             );
         }
-        List<PartitionDetailDefinition> newDetails = new ArrayList<>(hashNum - 1);
-        for(int i = 0; i < hashNum - 1; i++) {
+        List<PartitionDetailDefinition> newDetails = new ArrayList<>(hashNum);
+        for(int i = 0; i < hashNum; i++) {
             newDetails.add(new PartitionDetailDefinition(null, null, new Object[0]));
         }
         partDefinition.setDetails(newDetails);

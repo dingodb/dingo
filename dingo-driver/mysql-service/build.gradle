@@ -30,6 +30,7 @@ dependencies {
     implementation project(":dingo-common")
 
     implementation project(":dingo-driver:dingo-driver-host")
+    implementation project(":dingo-driver:dingo-driver-common")
     implementation project(':dingo-verify')
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'

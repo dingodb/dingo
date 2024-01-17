@@ -17,6 +17,7 @@
 package io.dingodb.meta.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.NullableType;
 import lombok.AllArgsConstructor;
@@ -45,9 +46,11 @@ public class Column {
     public final String elementTypeName;
 
     @JsonProperty
-    public final int precision;
+    @Builder.Default
+    public final int precision = ColumnDefinition.DEFAULT_PRECISION;
     @JsonProperty
-    public final int scale;
+    @Builder.Default
+    public final int scale = ColumnDefinition.DEFAULT_SCALE;
 
     @JsonProperty
     public final int primaryKeyIndex;

@@ -20,12 +20,8 @@ plugins {
 }
 
 dependencies {
-    annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    api group: 'org.apache.calcite.avatica', name: 'avatica-server', version: 'avatica'.v()
-    implementation project(':dingo-calcite')
-    implementation project(':dingo-verify')
-    implementation project(':dingo-meta-api')
-    implementation project(':dingo-transaction-api')
-    implementation project(":dingo-driver:dingo-driver-common")
+    api group: 'org.apache.calcite.avatica', name: 'avatica-core', version: 'avatica'.v()
+
+    implementation project(':dingo-common')
+
 }
