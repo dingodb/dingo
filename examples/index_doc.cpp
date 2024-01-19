@@ -109,7 +109,7 @@ void test_bm25_search()
     tantivy_load_index(index_path);
     
     cout<<"========== execute bm25_search without filter =========="<<endl;
-    rust::cxxbridge1::Vec<RowIdWithScore> result0 = tantivy_bm25_search("./temp", "Ancient", 5, false);
+    rust::cxxbridge1::Vec<RowIdWithScore> result0 = tantivy_bm25_search(index_path, "Ancient", 5, false);
     for (size_t i = 0; i < result0.size(); i++)
     {
         cout << "row_id: " << result0[i].row_id 
@@ -123,7 +123,7 @@ void test_bm25_search()
     std::vector<u_int8_t> row_ids_bitmap;
     row_ids_bitmap.push_back(0); // 00000001 -> row_id: 0
     row_ids_bitmap.push_back(32); // 00100000 -> row_id: 13
-    rust::cxxbridge1::Vec<RowIdWithScore> result = tantivy_bm25_search_with_filter("./temp", "Ancient", row_ids_bitmap, 5, false);
+    rust::cxxbridge1::Vec<RowIdWithScore> result = tantivy_bm25_search_with_filter(index_path, "Ancient", row_ids_bitmap, 5, false);
     for (size_t i = 0; i < result.size(); i++)
     {
         cout << "row_id: " << result[i].row_id 

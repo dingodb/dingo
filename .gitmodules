@@ -16,7 +16,7 @@
 	url = https://github.com/google/googletest.git
 [submodule "contrib/tantivy"]
 	path = contrib/tantivy
-	url = git@github.com:MochiXu/tantivy.git
+	url = git@git.moqi.ai:rust/tantivy.git
 [submodule "contrib/cang-jie"]
 	path = contrib/cang-jie
-	url = git@github.com:MochiXu/cang-jie.git
+	url = git@git.moqi.ai:rust/cang-jie.git
