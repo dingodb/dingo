@@ -23,7 +23,6 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
@@ -37,6 +36,8 @@ import io.dingodb.exec.restful.VectorExtract;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlLiteral;
@@ -68,14 +69,14 @@ public final class DingoVectorVisitFun {
         DingoTable dingoTable = relTable.unwrap(DingoTable.class);
 
         MetaService metaService = MetaService.root().getSubMetaService(relTable.getSchemaName());
+        assert dingoTable != null;
         CommonId tableId = dingoTable.getTableId();
         Table td = dingoTable.getTable();
 
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = metaService.getRangeDistribution(tableId);
-        List<SqlNode> operandsList = rel.getOperands();
+        List<Object> operandsList = rel.getOperands();
 
-        Float[] floatArray;
-        floatArray = getVectorFloats(operandsList);
+        Float[] floatArray = getVectorFloats(operandsList);
 
         if (!(operandsList.get(3) instanceof SqlNumericLiteral)) {
             throw new IllegalArgumentException("Top n not number.");
@@ -86,28 +87,20 @@ public final class DingoVectorVisitFun {
         List<Vertex> outputs = new ArrayList<>();
 
         // Get all index table distributions
-        NavigableMap<ComparableByteArray, RangeDistribution> indexRangeDistribution =
+        NavigableMap<ComparableByteArray, RangeDistribution> indexRanges =
             metaService.getRangeDistribution(rel.getIndexTableId());
-
-        // TODO: selection
-        int rowTypeSize = rel.getRowType().getFieldList().size();
-        int[] select = new int[rowTypeSize];
-        for (int i = 0; i < rowTypeSize; i++) {
-            select[i] = i;
-        }
-
         // Get query additional parameters
         Map<String, Object> parameterMap = getParameterMap(operandsList);
 
         // Create tasks based on partitions
-        for (RangeDistribution rangeDistribution : indexRangeDistribution.values()) {
+        for (RangeDistribution rangeDistribution : indexRanges.values()) {
             PartVectorParam param = new PartVectorParam(
                 tableId,
                 rangeDistribution.id(),
                 td.tupleType(),
                 td.keyMapping(),
                 null,
-                TupleMapping.of(select),
+                rel.getSelection(),
                 td,
                 ranges,
                 rel.getIndexTableId(),
@@ -129,8 +122,19 @@ public final class DingoVectorVisitFun {
         return outputs;
     }
 
-    public static Float[] getVectorFloats(List<SqlNode> operandsList) {
+    public static Float[] getVectorFloats(List<Object> operandsList) {
         Float[] floatArray = null;
+        Object call = operandsList.get(2);
+        if (call instanceof RexCall) {
+            RexCall rexCall = (RexCall) call;
+            floatArray = new Float[rexCall.getOperands().size()];
+            int vectorDimension = rexCall.getOperands().size();
+            for (int i = 0; i < vectorDimension; i++) {
+                RexLiteral literal = (RexLiteral) rexCall.getOperands().get(i);
+                floatArray[i] = literal.getValueAs(Float.class);
+            }
+            return floatArray;
+        }
         SqlBasicCall basicCall = (SqlBasicCall) operandsList.get(2);
         if (basicCall.getOperator() instanceof SqlArrayValueConstructor) {
             List<SqlNode> operands = basicCall.getOperandList();
@@ -188,17 +192,17 @@ public final class DingoVectorVisitFun {
         return floatArray;
     }
 
-    private static Map<String, Object> getParameterMap(List<SqlNode> operandsList) {
+    private static Map<String, Object> getParameterMap(List<Object> operandsList) {
         Map<String, Object> parameterMap = new HashMap<>();
         if (operandsList.size() >= 5) {
-            SqlNode sqlNode = operandsList.get(4);
-            if (sqlNode != null && sqlNode instanceof SqlBasicCall) {
+            SqlNode sqlNode = (SqlNode) operandsList.get(4);
+            if (sqlNode instanceof SqlBasicCall) {
                 SqlBasicCall sqlBasicCall = (SqlBasicCall) operandsList.get(4);
                 if (sqlBasicCall.getOperator().getName().equals("MAP")) {
                     List<SqlNode> operandList = sqlBasicCall.getOperandList();
                     String currentName = "";
                     for (int i = 0; i < operandList.size(); i++) {
-                        if ((i == 0 || i % 2 == 0) && operandList.get(i) instanceof SqlIdentifier) {
+                        if ((i % 2 == 0) && operandList.get(i) instanceof SqlIdentifier) {
                             currentName = ((SqlIdentifier) operandList.get(i)).getSimple();
                         } else {
                             SqlNode node = operandList.get(i);

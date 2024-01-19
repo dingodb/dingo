@@ -29,14 +29,13 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.VectorPointDistanceParam;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import lombok.AllArgsConstructor;
-import org.apache.calcite.sql.SqlNode;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
-import java.util.Properties;
 import java.util.function.Supplier;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
@@ -44,6 +43,9 @@ import static io.dingodb.calcite.visitor.function.DingoVectorVisitFun.getVectorF
 import static io.dingodb.exec.utils.OperatorCodeUtils.VECTOR_POINT_DISTANCE;
 
 public final class DingoGetVectorByDistanceVisitFun {
+
+    private DingoGetVectorByDistanceVisitFun() {
+    }
 
     public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator,
@@ -64,35 +66,44 @@ public final class DingoGetVectorByDistanceVisitFun {
         public Vertex get() {
             DingoRelOptTable dingoRelOptTable = (DingoRelOptTable) rel.getTable();
             List<Float> targetVector = getTargetVector(rel.getOperands());
-            Properties properties = getVectorProperties(dingoRelOptTable, targetVector.size());
-            if (properties == null) {
+            IndexTable indexTable = getVectorIndexTable(dingoRelOptTable, targetVector.size());
+            if (indexTable == null) {
                 throw new RuntimeException("not found vector index");
             }
             MetaService metaService = MetaService.root().getSubMetaService(dingoRelOptTable.getSchemaName());
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
                 = metaService.getRangeDistribution(rel.getIndexTableId());
 
-            int dimension = Integer.parseInt(properties.getOrDefault("dimension", targetVector.size()).toString());
+            int dimension = Integer.parseInt(indexTable.getProperties()
+                .getOrDefault("dimension", targetVector.size()).toString());
+            String algType;
+            if (indexTable.indexType == IndexType.VECTOR_FLAT) {
+                algType = "FLAT";
+            } else if (indexTable.indexType == IndexType.VECTOR_HNSW) {
+                algType = "HNSW";
+            } else {
+                algType = "";
+            }
             VectorPointDistanceParam param = new VectorPointDistanceParam(
                 distributions.firstEntry().getValue(),
                 rel.getVectorIndex(),
                 rel.getIndexTableId(),
                 targetVector,
                 dimension,
-                properties.getProperty("type"),
-                properties.getProperty("metricType")
+                algType,
+                indexTable.getProperties().getProperty("metricType")
             );
 
             return new Vertex(VECTOR_POINT_DISTANCE, param);
         }
     }
 
-    public static List<Float> getTargetVector(List<SqlNode> operandList) {
+    public static List<Float> getTargetVector(List<Object> operandList) {
         Float[] vector = getVectorFloats(operandList);
         return Arrays.asList(vector);
     }
 
-    private static Properties getVectorProperties(DingoRelOptTable dingoRelOptTable, int dimension) {
+    private static IndexTable getVectorIndexTable(DingoRelOptTable dingoRelOptTable, int dimension) {
         DingoTable dingoTable = dingoRelOptTable.unwrap(DingoTable.class);
         List<IndexTable> indexes = dingoTable.getTable().getIndexes();
         for (IndexTable index : indexes) {
@@ -101,7 +112,7 @@ public final class DingoGetVectorByDistanceVisitFun {
             }
             int dimension1 = Integer.parseInt(index.getProperties().getProperty("dimension"));
             if (dimension == dimension1) {
-                return index.getProperties();
+                return index;
             }
         }
         return null;

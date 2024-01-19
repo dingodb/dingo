@@ -20,32 +20,19 @@ import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
 import io.dingodb.expr.runtime.type.Type;
 import io.dingodb.expr.runtime.type.Types;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.List;
-
-public class VectorL2DistanceFun extends BinaryVectorVectorFun {
-    public static final VectorL2DistanceFun INSTANCE = new VectorL2DistanceFun();
-
-    public static final String NAME = "l2Distance";
-
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+public class VectorDistanceFun extends BinaryVectorVectorFun {
+    public static final VectorDistanceFun INSTANCE = new VectorDistanceFun();
+    public static final String NAME = "distance";
     private static final long serialVersionUID = -8016553875879480268L;
 
-    private VectorL2DistanceFun() {
-    }
-
-    private static double l2DistanceCombine(@NonNull List<Float> vectorA, List<Number> vectorB) {
-        double distance = 0.0;
-        for (int i = 0; i < vectorA.size(); i++) {
-            distance += Math.pow(vectorA.get(i) - vectorB.get(i).floatValue(), 2);
-        }
-        return distance;
-    }
-
     @Override
-    protected Object evalNonNullValue(@NonNull Object value0, @NonNull Object value1, ExprConfig config) {
-        double distance = l2DistanceCombine((List<Float>) value0, (List<Number>) value1);
-        return (float) distance;
+    public Object evalValue(Object value0, Object value1, ExprConfig config) {
+        return null;
     }
 
     @Override
@@ -62,5 +49,4 @@ public class VectorL2DistanceFun extends BinaryVectorVectorFun {
     public BinaryOp getOp(Object key) {
         return INSTANCE;
     }
-
 }

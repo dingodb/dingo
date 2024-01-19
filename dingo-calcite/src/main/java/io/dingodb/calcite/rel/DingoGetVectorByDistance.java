@@ -19,13 +19,9 @@ package io.dingodb.calcite.rel;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.common.type.scalar.FloatType;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
-import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -39,16 +35,15 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.type.converter.DefinitionMapper.mapToRelDataType;
+import static org.apache.calcite.sql.validate.TableFunctionNamespace.getVectorIndexTable;
 
 public class DingoGetVectorByDistance extends Filter implements DingoRel {
     @Getter
@@ -64,13 +59,13 @@ public class DingoGetVectorByDistance extends Filter implements DingoRel {
     protected final RelOptTable table;
 
     @Getter
-    protected final List<SqlNode> operands;
+    protected final List<Object> operands;
 
     public DingoGetVectorByDistance(RelOptCluster cluster, RelTraitSet traits,
                                     RelNode child,
                                     RexNode condition,
                                     RelOptTable table,
-                                    List<SqlNode> operands,
+                                    List<Object> operands,
                                     Integer vectorIdIndex,
                                     Integer vectorIndex,
                                     CommonId indexTableId) {
@@ -106,28 +101,18 @@ public class DingoGetVectorByDistance extends Filter implements DingoRel {
 
     public RelDataType getVectorRowType() {
         DingoTable dingoTable = table.unwrap(DingoTable.class);
+        assert dingoTable != null;
         List<Column> tableCols = dingoTable.getTable().getColumns();
         ArrayList<Column> cols = new ArrayList<>(tableCols.size() + 1);
+
         cols.addAll(tableCols);
 
-        String indexTableName = "";
-        // Get all index table definition
-        List<IndexTable> indexes = dingoTable.getTable().getIndexes();
-        for (IndexTable index : indexes) {
-            // Skip if not a vector table
-            if (!index.getIndexType().isVector) {
-                continue;
-            }
+        IndexTable indexTable = getVectorIndexTable(
+            dingoTable.getTable(),
+            ((SqlIdentifier) operands.get(1)).getSimple().toUpperCase()
+        );
 
-            List<String> indexColumns = index.getColumns().stream().map(Column::getName).collect(Collectors.toList());
-            // Skip if the vector column is not included
-            if (!indexColumns.contains(((SqlIdentifier) operands.get(1)).getSimple().toUpperCase())) {
-                continue;
-            }
-
-            indexTableName = index.getName();
-            break;
-        }
+        String indexTableName = indexTable.getName();
 
         cols.add(Column
             .builder()

@@ -165,7 +165,7 @@ public class DingoGetByIndexRule extends ConverterRule {
             );
         }
         //The update index column will not use indexes for now, and will be changed in the next version
-        if (scan.isForUpdate()) {
+        if (scan.isForDml()) {
             return null;
         }
 
@@ -222,9 +222,13 @@ public class DingoGetByIndexRule extends ConverterRule {
     public static Map<CommonId, Table> getScalaIndices(RelOptTable relOptTable) {
         Map<CommonId, Table> indexTdMap = new HashMap<>();
         DingoTable dingoTable = relOptTable.unwrap(DingoTable.class);
+        assert dingoTable != null;
         List<IndexTable> indexes = dingoTable.getTable().getIndexes();
         for (IndexTable index : indexes) {
-            if (!index.getIndexType().isVector) {
+            if (index.getProperties() == null) {
+                continue;
+            }
+            if (!index.indexType.isVector) {
                 indexTdMap.put(index.getTableId(), index);
             }
         }

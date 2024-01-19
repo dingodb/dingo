@@ -20,6 +20,7 @@ import io.dingodb.exec.fun.mysql.GlobalVariableFun;
 import io.dingodb.exec.fun.mysql.VersionFun;
 import io.dingodb.exec.fun.special.ThrowFun;
 import io.dingodb.exec.fun.vector.VectorCosineDistanceFun;
+import io.dingodb.exec.fun.vector.VectorDistanceFun;
 import io.dingodb.exec.fun.vector.VectorIPDistanceFun;
 import io.dingodb.exec.fun.vector.VectorImageFun;
 import io.dingodb.exec.fun.vector.VectorL2DistanceFun;
@@ -48,6 +49,7 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerBinaryFun(VectorL2DistanceFun.NAME, VectorL2DistanceFun.INSTANCE);
         registerBinaryFun(VectorIPDistanceFun.NAME, VectorIPDistanceFun.INSTANCE);
         registerBinaryFun(VectorCosineDistanceFun.NAME, VectorCosineDistanceFun.INSTANCE);
+        registerBinaryFun(VectorDistanceFun.NAME, VectorDistanceFun.INSTANCE);
         registerNullaryFun(VersionFun.NAME, VersionFun.INSTANCE);
     }
 

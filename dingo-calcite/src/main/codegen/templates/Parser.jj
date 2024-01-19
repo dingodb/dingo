@@ -3780,6 +3780,16 @@ List<Object> Expression2(ExprContext exprContext) :
                     list.add(new SqlParserUtil.ToTreeListItem(op, getPos()));
                 }
                 AddExpression2b(list, ExprContext.ACCEPT_SUB_QUERY)
+                {
+                   if ((op == SqlUserDefinedOperators.L2_DISTANCE
+                        || op == SqlUserDefinedOperators.IP_DISTANCE
+                        || op == SqlUserDefinedOperators.COSINE_SIMILARITY)
+                        && list.size() == 3) {
+                       SqlNode call = op.createCall(s.end(this), (SqlNode)list.get(0), (SqlNode)list.get(2));
+                       list.clear();
+                       list.add(call);
+                   }
+                }
             |
                 <LBRACKET>
                 e = Expression(ExprContext.ACCEPT_SUB_QUERY)
@@ -7611,6 +7621,9 @@ SqlBinaryOperator BinaryRowOperator() :
 |   LOOKAHEAD(2) <IMMEDIATELY> <PRECEDES> { return SqlStdOperatorTable.IMMEDIATELY_PRECEDES; }
 |   <IMMEDIATELY> <SUCCEEDS> { return SqlStdOperatorTable.IMMEDIATELY_SUCCEEDS; }
 |   op = BinaryMultisetOperator() { return op; }
+|   <L2DISTANCE> { return SqlUserDefinedOperators.L2_DISTANCE; }
+|   <COSINESIMILARITY> { return SqlUserDefinedOperators.COSINE_SIMILARITY; }
+|   <IPDISTANCE> { return SqlUserDefinedOperators.IP_DISTANCE; }
 }
 
 /**
@@ -8586,6 +8599,9 @@ void NonReservedKeyWord2of3() :
 |   < PERCENT_REMAINDER: "%" >
 |   < CONCAT: "||" >
 |   < NAMED_ARGUMENT_ASSIGNMENT: "=>" >
+|   < L2DISTANCE: "<->" >
+|   < COSINESIMILARITY: "<=>" >
+|   < IPDISTANCE: "<*>" >
 |   < DOUBLE_PERIOD: ".." >
 |   < QUOTE: "'" >
 |   < DOUBLE_QUOTE: "\"" >

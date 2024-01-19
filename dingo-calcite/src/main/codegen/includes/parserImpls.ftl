@@ -227,7 +227,12 @@ void TableElement(List<SqlNode> list) :
         }
     |
         <UNIQUE> { s.add(this); }
-        [<KEY>] [<INDEX>] name = SimpleIdentifier()
+        (
+          <KEY>
+          |
+          <INDEX>
+        )?
+        [ name = SimpleIdentifier() ]
         columnList = ParenthesizedSimpleIdentifierList() {
               list.add(SqlDdlNodes.unique(s.end(columnList), name, columnList));
         }
@@ -330,7 +335,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     int ttl = -1;
     PartitionDefinition partitionDefinition = null;
     int replica = 0;
-    String engine = null;
+    String engine = "LSM";
     Properties properties = null;
     int autoIncrement = 1;
     String charset = "utf8";
@@ -340,11 +345,12 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     [ tableElementList = TableElementList() ]
-    [ <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "LSM";} } ]
-    [ <TTL> <EQ> [ <MINUS> {ttl = positiveInteger("-" + getNextToken().image, "ttl");} ]
+    (
+     <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "LSM";} }
+     |
+     <TTL> <EQ> [ <MINUS> {ttl = positiveInteger("-" + getNextToken().image, "ttl");} ]
         { ttl = positiveInteger(getNextToken().image, "ttl"); }
-    ]
-    [
+     |
        <PARTITION> <BY>
        {
            partitionDefinition = new PartitionDefinition();
@@ -352,17 +358,23 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
            partitionDefinition.setColumns(readNames());
            partitionDefinition.setDetails(readPartitionDetails());
        }
-    ]
-    [
+    |
         <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
-    ]
-    [ <WITH> properties = readProperties() ]
-    [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
-    [ <AUTO_INCREMENT> <EQ> {autoIncrement = positiveInteger(getNextToken().image, "auto_increment"); }]
-    [ <DEFAULT_> ]
-    [ <CHARSET> <EQ> { charset = getNextToken().image; } ]
-    [ <COLLATE> <EQ> { collate = getNextToken().image; } ]
-    [ <COMMENT> <EQ> { comment = getNextToken().image; }]
+    |
+     <WITH> properties = readProperties()
+    |
+     <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
+    |
+     <AUTO_INCREMENT> <EQ> {autoIncrement = positiveInteger(getNextToken().image, "auto_increment"); }
+    |
+     <DEFAULT_>
+    |
+     <CHARSET> <EQ> { charset = getNextToken().image; }
+    |
+     <COLLATE> <EQ> { collate = getNextToken().image; }
+    |
+     <COMMENT> <EQ> { comment = getNextToken().image; }
+    )*
     {
         return DingoSqlDdlNodes.createTable(
             s.end(this), replace, ifNotExists, id, tableElementList, query, ttl, partitionDefinition, replica,

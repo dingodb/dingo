@@ -44,7 +44,10 @@ public final class RootOperator extends SinkOperator {
             return false;
         }
         if (log.isDebugEnabled()) {
-            log.debug("Put tuple {} into root queue.", param.getSchema().format(tuple));
+            // if table has hide primary key then field count > tuple
+            if (param.getSchema().fieldCount() == tuple.length) {
+                log.debug("Put tuple {} into root queue.", param.getSchema().format(tuple));
+            }
         }
         param.forcePut(tuple);
         return true;

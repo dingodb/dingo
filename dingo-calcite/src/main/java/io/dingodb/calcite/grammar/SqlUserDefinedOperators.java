@@ -16,8 +16,14 @@
 
 package io.dingodb.calcite.grammar;
 
+import io.dingodb.exec.fun.vector.VectorCosineDistanceFun;
+import io.dingodb.exec.fun.vector.VectorIPDistanceFun;
+import io.dingodb.exec.fun.vector.VectorL2DistanceFun;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql2rel.SqlCosineSimilarityOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
+import org.apache.calcite.sql2rel.SqlIPDistanceOperator;
+import org.apache.calcite.sql2rel.SqlL2DistanceOperator;
 import org.apache.calcite.sql2rel.SqlLikeBinaryOperator;
 import org.apache.calcite.sql2rel.SqlVectorOperator;
 
@@ -31,8 +37,15 @@ public class SqlUserDefinedOperators {
 
     public static SqlFunctionScanOperator SCAN = new SqlFunctionScanOperator("SCAN", SqlKind.COLLECTION_TABLE);
 
-    public static String VECTOR_NAME = "VECTOR";
-
     public static SqlVectorOperator VECTOR = new SqlVectorOperator("VECTOR", SqlKind.COLLECTION_TABLE);
+
+    public static SqlCosineSimilarityOperator COSINE_SIMILARITY
+        = new SqlCosineSimilarityOperator(VectorCosineDistanceFun.NAME, SqlKind.OTHER_FUNCTION);
+
+    public static SqlIPDistanceOperator IP_DISTANCE
+        = new SqlIPDistanceOperator(VectorIPDistanceFun.NAME, SqlKind.OTHER_FUNCTION);
+
+    public static SqlL2DistanceOperator L2_DISTANCE
+        = new SqlL2DistanceOperator(VectorL2DistanceFun.NAME, SqlKind.OTHER_FUNCTION);
 
 }

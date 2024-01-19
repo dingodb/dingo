@@ -73,7 +73,7 @@ public class DingoTableScanRule extends ConverterRule {
                 scan.getGroupSet(),
                 scan.getGroupSets(),
                 scan.isPushDown(),
-                scan.isForUpdate()
+                scan.isForDml()
             );
         }
     }

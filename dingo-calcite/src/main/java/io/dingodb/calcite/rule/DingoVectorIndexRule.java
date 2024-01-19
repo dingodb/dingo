@@ -136,7 +136,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
             dingoTableScan,
             vector.getIndexTableId(),
             vectorIdPair.getKey(),
-            vector.getIndexTableDefinition(),
+            vector.getIndexTable(),
             false);
         return new DingoGetVectorByDistance(
             vector.getCluster(),
@@ -240,7 +240,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
             scan,
             vector.getIndexTableId(),
             vectorIdPair.getKey(),
-            vector.getIndexTableDefinition(),
+            vector.getIndexTable(),
             false);
         DingoGetVectorByDistance dingoVectorGetDistance = new DingoGetVectorByDistance(
             vector.getCluster(),

@@ -136,6 +136,7 @@ public final class DingoParserContext implements Context {
         SqlLikeBinaryOperator.register();
         SqlFunctionScanOperator.register(this);
         SqlVectorOperator.register(this);
+        // select user from user ; user is default special operator
         eliminateUserOperator(tableInstance);
 
         this.options = options;

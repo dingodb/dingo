@@ -18,6 +18,7 @@ package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.rel.DingoVector;
+import io.dingodb.calcite.rel.LogicalDingoVector;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import lombok.extern.slf4j.Slf4j;
@@ -51,8 +52,8 @@ public class DingoFunctionScanRule extends ConverterRule {
             .replace(DingoConvention.INSTANCE)
             .replace(DingoRelStreaming.of(rel.getTable()));
 
-        if (rel instanceof DingoVector) {
-            DingoVector vector = (DingoVector) rel;
+        if (rel instanceof LogicalDingoVector && !(rel instanceof DingoVector)) {
+            LogicalDingoVector vector = (LogicalDingoVector) rel;
             return new DingoVector(
                 vector.getCluster(),
                 traits,
@@ -60,7 +61,9 @@ public class DingoFunctionScanRule extends ConverterRule {
                 vector.getTable(),
                 vector.getOperands(),
                 vector.getIndexTableId(),
-                vector.getIndexTableDefinition()
+                vector.getIndexTable(),
+                vector.getSelection(),
+                vector.getFilter()
             );
         } else if (rel instanceof DingoFunctionScan) {
             DingoFunctionScan scan = (DingoFunctionScan) rel;

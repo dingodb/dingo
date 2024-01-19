@@ -17,79 +17,45 @@
 package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.DingoRelOptTable;
+import io.dingodb.calcite.utils.RelDataTypeUtils;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Table;
-import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
-import org.apache.calcite.rel.core.TableFunctionScan;
-import org.apache.calcite.rel.metadata.RelColumnMapping;
+import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.lang.reflect.Type;
-import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
 
-public class DingoVector extends TableFunctionScan implements DingoRel {
-
-    @Getter
-    private final RexCall call;
-    @Getter
-    private final DingoRelOptTable table;
-    @Getter
-    private final List<SqlNode> operands;
-    @Getter
-    private final CommonId indexTableId;
-    @Getter
-    private final Table indexTableDefinition;
+public class DingoVector extends LogicalDingoVector implements DingoRel {
 
     public DingoVector(
         RelOptCluster cluster,
         RelTraitSet traitSet,
         RexCall call,
         DingoRelOptTable table,
-        List<SqlNode> operands,
+        List<Object> operands,
         @NonNull CommonId indexTableId,
-        @NonNull Table indexTableDefinition
+        @NonNull Table indexTable,
+        TupleMapping selection,
+        RexNode filter
     ) {
-        super(cluster, traitSet, Collections.emptyList(), call, null, call.type, null);
-        this.call = call;
-        this.table = table;
-        this.operands = operands;
-        this.indexTableId = indexTableId;
-        this.indexTableDefinition = indexTableDefinition;
+        super(cluster, traitSet, call, table, operands, indexTableId, indexTable, selection, filter);
     }
 
     @Override
     public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, @NonNull RelMetadataQuery mq) {
-        // Assume that part scan has half cost.
         return DingoCost.FACTORY.makeCost(Integer.MAX_VALUE, 0, 0);
-    }
-
-    @Override
-    public TableFunctionScan copy(
-        RelTraitSet traitSet,
-        List<RelNode> inputs,
-        RexNode rexCall,
-        @Nullable Type elementType,
-        RelDataType rowType,
-        @Nullable Set<RelColumnMapping> columnMappings
-    ) {
-        return new DingoVector(getCluster(), traitSet, call, table, operands, indexTableId, indexTableDefinition);
     }
 
     @Override
@@ -104,4 +70,15 @@ public class DingoVector extends TableFunctionScan implements DingoRel {
         return visitor.visit(this);
     }
 
+    public RelDataType getNormalRowType() {
+        return getNormalSelectedType();
+    }
+
+    private RelDataType getNormalSelectedType() {
+        return RelDataTypeUtils.mapType(
+            getCluster().getTypeFactory(),
+            getTableType(),
+            selection
+        );
+    }
 }
