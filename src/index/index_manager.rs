@@ -1,8 +1,8 @@
 use std::sync::Mutex;
 use std::{path::Path, sync::Arc};
 
-use cxx::let_cxx_string;
 use cxx::CxxString;
+use cxx::{let_cxx_string, CxxVector};
 use tantivy::schema::IndexRecordOption;
 use tantivy::schema::Schema;
 use tantivy::schema::TextFieldIndexing;
@@ -12,6 +12,7 @@ use tantivy::schema::INDEXED;
 
 use crate::commons::LOG_CALLBACK;
 use crate::logger::ffi_logger::callback_with_thread_info;
+use crate::search::index_r::*;
 use crate::tokenizer::parse_and_register::get_custom_tokenizer;
 use crate::tokenizer::parse_and_register::register_tokenizer_to_index;
 use crate::tokenizer::parse_and_register::TokenizerType;
@@ -20,7 +21,7 @@ use crate::{ERROR, INFO};
 use super::index_w::*;
 use crate::common::index_utils::*;
 
-use tantivy::{Document, Index};
+use tantivy::{Document, Index, Term};
 
 /// Creates an index using a specified tokenizer (e.g., Chinese, English, Japanese, etc.).
 ///
@@ -259,6 +260,90 @@ pub fn tantivy_index_doc(
     }
 }
 
+/// Delete a group of row_ids.
+///
+/// Arguments:
+/// - `index_path`: The directory path for building the index.
+/// - `row_ids`: a group of row_ids that needs to be deleted.
+///
+/// Returns:
+/// - A bool value represent operation success.
+pub fn tantivy_delete_row_ids(
+    index_path: &CxxString,
+    row_ids: &CxxVector<u32>,
+) -> Result<bool, String> {
+    // Parse parameter.
+    let index_path_str = match index_path.to_str() {
+        Ok(content) => content.to_string(),
+        Err(e) => {
+            return Err(format!(
+                "Can't parse parameter index_path: {}, exception: {}",
+                index_path,
+                e.to_string()
+            ));
+        }
+    };
+    let row_ids: Vec<u32> = row_ids.iter().map(|s| *s as u32).collect();
+
+    // get index writer from CACHE
+    let index_w = match get_index_w(index_path_str.clone()) {
+        Ok(content) => content,
+        Err(e) => {
+            ERROR!("{}", e);
+            return Err(e);
+        }
+    };
+
+    // get schema from index writer.
+    let schema = index_w.index.schema();
+    let row_id_field = match schema.get_field("row_id") {
+        Ok(row_id_field_) => row_id_field_,
+        Err(e) => {
+            ERROR!("Failed to get row_id field: {}", e.to_string());
+            return Err(e.to_string());
+        }
+    };
+    let terms = row_ids
+        .iter()
+        .map(|row_id| Term::from_field_u64(row_id_field, *row_id as u64))
+        .collect();
+    match index_w.delete_terms(terms) {
+        Ok(_opstamp) => {
+            // something need to do.
+        }
+        Err(e) => {
+            ERROR!("{}", e);
+            return Err(e);
+        }
+    }
+    // after delete_term, need commit.
+    match index_w.commit() {
+        Ok(_) => {
+            //
+        }
+        Err(e) => {
+            let error_info = format!("Failed to commit index writer: {}", e.to_string());
+            ERROR!("{}", error_info);
+            return Err(error_info);
+        }
+    }
+    // get index reader from CACHE
+    let index_r = match get_index_r(index_path_str.clone()) {
+        Ok(content) => content,
+        Err(e) => {
+            ERROR!("{}", e);
+            return Err(e);
+        }
+    };
+    match index_r.reload() {
+        Ok(_) => Ok(true),
+        Err(e) => {
+            ERROR!("{}", e);
+            return Err(e);
+        }
+    }
+}
+
 /// Commits the changes to the index, writing it to the file system.
 ///
 /// Arguments:
@@ -338,5 +423,6 @@ pub fn tantivy_writer_free(index_path: &CxxString) -> Result<bool, String> {
         return Err(e);
     };
 
+    INFO!("Index writer:[{}] has been freed", index_path_str);
     Ok(true)
 }

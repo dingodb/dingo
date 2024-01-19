@@ -28,17 +28,97 @@ pub mod ffi {
     }
 
     extern "Rust" {
-        // fn tantivy_logger_initialize(log_path: &CxxString, log_level: &CxxString, console_logging: bool, callback: LogCallback, enable_callback: bool, only_tantivy_search: bool) -> Result<bool>;
+        /// Creates an index using a specified tokenizer (e.g., Chinese, English, Japanese, etc.).
+        ///
+        /// Arguments:
+        /// - `index_path`: The directory path for building the index.
+        /// - `tokenizer_with_parameter`: A str contains tokenizer name and parameters.
+        ///
+        /// Returns:
+        /// - A bool value represent operation success.
         fn tantivy_create_index_with_tokenizer(
             index_path: &CxxString,
             tokenizer_with_parameter: &CxxString,
         ) -> Result<bool>;
+
+        /// Creates an index using the default tokenizer.
+        ///
+        /// Arguments:
+        /// - `index_path`: The directory path for building the index.
+        ///
+        /// Returns:
+        /// - A bool value represent operation success.
         fn tantivy_create_index(index_path: &CxxString) -> Result<bool>;
-        fn tantivy_load_index(index_path: &CxxString) -> Result<bool>;
+
+        /// Indexes a document.
+        ///
+        /// Arguments:
+        /// - `index_path`: The directory path for building the index.
+        /// - `row_id`: Row ID associated with the document.
+        /// - `doc`: The text data of the document.
+        ///
+        /// Returns:
+        /// - A bool value represent operation success.        
         fn tantivy_index_doc(index_path: &CxxString, row_id: u64, doc: &CxxString) -> Result<bool>;
+
+        /// Delete a group of row_ids.
+        ///
+        /// Arguments:
+        /// - `index_path`: The directory path for building the index.
+        /// - `row_ids`: a group of row_ids that needs to be deleted.
+        ///
+        /// Returns:
+        /// - A bool value represent operation success.
+        fn tantivy_delete_row_ids(index_path: &CxxString, row_ids: &CxxVector<u32>)
+            -> Result<bool>;
+
+        /// Commits the changes to the index, writing it to the file system.
+        ///
+        /// Arguments:
+        /// - `index_path`: The directory path for building the index.
+        ///
+        /// Returns:
+        /// - A bool value represent operation success.
         fn tantivy_writer_commit(index_path: &CxxString) -> Result<bool>;
-        fn tantivy_reader_free(index_path: &CxxString) -> Result<bool>;
+
+        /// Frees the index writer and waits for all merging threads to complete.
+        ///
+        /// Arguments:
+        /// - `index_path`: The directory path for building the index.
+        ///
+        /// Returns:
+        /// - A bool value represent operation success.
         fn tantivy_writer_free(index_path: &CxxString) -> Result<bool>;
+
+        /// Loads an index from a specified directory.
+        ///
+        /// Arguments:
+        /// - `index_path`: The directory path for building the index.
+        ///
+        /// Returns:
+        /// - A bool value represent operation success.
+        fn tantivy_load_index(index_path: &CxxString) -> Result<bool>;
+
+        /// Frees the index reader.
+        ///
+        /// Arguments:
+        /// - `index_path`: The directory path for building the index.
+        ///
+        /// Returns:
+        /// - A bool value represent operation success.
+        fn tantivy_reader_free(index_path: &CxxString) -> Result<bool>;
+
+        /// Determines if a query string appears within a specified row ID range.
+        ///
+        /// Arguments:
+        /// - `index_path`: The directory path for building the index.
+        /// - `query`: Query string.
+        /// - `lrange`: The left (inclusive) boundary of the row ID range.
+        /// - `rrange`: The right (inclusive) boundary of the row ID range.
+        /// - `use_regrex`: Whether use regex searcher.
+        ///
+        /// Returns:
+        /// - A bool value represent whether granule hitted.
         fn tantivy_search_in_rowid_range(
             index_path: &CxxString,
             query: &CxxString,
@@ -46,6 +126,18 @@ pub mod ffi {
             rrange: u64,
             use_regex: bool,
         ) -> Result<bool>;
+
+        /// Counts the occurrences of a query string within a specified row ID range.
+        ///
+        /// Arguments:
+        /// - `index_path`: The directory path for building the index.
+        /// - `query`: Query string.
+        /// - `lrange`: The left (inclusive) boundary of the row ID range.
+        /// - `rrange`: The right (inclusive) boundary of the row ID range.
+        /// - `use_regrex`: Whether use regex searcher.
+        ///
+        /// Returns:
+        /// - The count of occurrences of the query string within the row ID range.
         fn tantivy_count_in_rowid_range(
             index_path: &CxxString,
             query: &CxxString,
@@ -53,19 +145,43 @@ pub mod ffi {
             rrange: u64,
             use_regex: bool,
         ) -> Result<u64>;
-        fn tantivy_search_bm25_with_filter(
+
+        /// Execute bm25_search with filter row_ids.
+        ///
+        /// Arguments:
+        /// - `index_path`: The directory path for building the index.
+        /// - `query`: Query string.
+        /// - `u8_bitmap`: A vector<u8> bitmap represent row_ids need to be filtered.
+        /// - `top_k`: Try to search `k` results.
+        /// - `need_text`: Whether need return origin doc content.
+        ///
+        /// Returns:
+        /// - A group of RowIdWithScore Objects.
+        fn tantivy_bm25_search_with_filter(
             index_path: &CxxString,
             query: &CxxString,
-            row_ids: &CxxVector<u32>,
+            u8_bitmap: &CxxVector<u8>,
             top_k: u32,
             need_text: bool,
         ) -> Result<Vec<RowIdWithScore>>;
-        fn tantivy_search_bm25(
+
+        /// Execute bm25_search.
+        ///
+        /// Arguments:
+        /// - `index_path`: The directory path for building the index.
+        /// - `query`: Query string.
+        /// - `top_k`: Try to search `k` results.
+        /// - `need_text`: Whether need return origin doc content.
+        ///
+        /// Returns:
+        /// - A group of RowIdWithScore Objects.
+        fn tantivy_bm25_search(
             index_path: &CxxString,
             query: &CxxString,
             top_k: u32,
             need_text: bool,
         ) -> Result<Vec<RowIdWithScore>>;
+
     }
 }
 

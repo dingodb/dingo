@@ -73,7 +73,7 @@ fn main() {
         .search(
             &query,
             &TopDocsWithFilter::with_limit(10)
-                .with_filter(Arc::new(row_id_bitmap))
+                .with_alive(Arc::new(row_id_bitmap))
                 .with_searcher(searcher.clone())
                 .with_text_field(text)
                 .with_stored_text(true),

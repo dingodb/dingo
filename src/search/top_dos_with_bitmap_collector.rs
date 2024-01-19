@@ -31,7 +31,7 @@ static INITIAL_HEAP_SIZE: usize = 1000;
 
 pub struct TopCollectorWithFilter {
     pub limit: usize,
-    pub row_id_bitmap: Arc<RoaringBitmap>,
+    pub row_id_bitmap: Option<Arc<RoaringBitmap>>,
     pub searcher: Option<Searcher>,
     pub text_field: Option<Field>,
     pub need_text: bool,
@@ -44,7 +44,7 @@ impl TopCollectorWithFilter {
         assert!(limit >= 1, "Limit must be strictly greater than 0.");
         Self {
             limit,
-            row_id_bitmap: Arc::new(RoaringBitmap::new()),
+            row_id_bitmap: None,
             searcher: None,
             text_field: None,
             need_text: false,
@@ -52,9 +52,9 @@ impl TopCollectorWithFilter {
         }
     }
 
-    // `row_id_bitmap` is used to filter out row ids.
-    pub fn with_filter(mut self, row_id_bitmap: Arc<RoaringBitmap>) -> TopCollectorWithFilter {
-        self.row_id_bitmap = Arc::clone(&row_id_bitmap);
+    // `row_id_bitmap` is used to mark aive row_ids.
+    pub fn with_alive(mut self, row_id_bitmap: Arc<RoaringBitmap>) -> TopCollectorWithFilter {
+        self.row_id_bitmap = Some(Arc::clone(&row_id_bitmap));
         self
     }
 
@@ -113,7 +113,7 @@ impl fmt::Debug for TopDocsWithFilter {
             f,
             "TopDocsWithFilter(limit:{}, row_ids_size:{}, text_field_is_some:{}, searcher_is_some:{}, need_text:{}, initial_heap_size:{})",
             self.0.limit,
-            self.0.row_id_bitmap.len(),
+            if self.0.row_id_bitmap.is_some() {self.0.row_id_bitmap.clone().unwrap().len()} else {0},
             self.0.text_field.is_some(),
             self.0.searcher.is_some(),
             self.0.need_text,
@@ -127,8 +127,8 @@ impl TopDocsWithFilter {
         TopDocsWithFilter(TopCollectorWithFilter::with_limit(limit))
     }
 
-    pub fn with_filter(self, row_id_bitmap: Arc<RoaringBitmap>) -> TopDocsWithFilter {
-        TopDocsWithFilter(self.0.with_filter(row_id_bitmap))
+    pub fn with_alive(self, row_id_bitmap: Arc<RoaringBitmap>) -> TopDocsWithFilter {
+        TopDocsWithFilter(self.0.with_alive(row_id_bitmap))
     }
 
     pub fn with_searcher(self, searcher: Searcher) -> TopDocsWithFilter {
@@ -214,7 +214,14 @@ impl Collector for TopDocsWithFilter {
             let mut threshold = Score::MIN;
             weight.for_each_pruning(threshold, reader, &mut |doc, score| {
                 let row_id = row_id_field_reader.get_val(doc);
-                if self.0.row_id_bitmap.contains(row_id as u32) {
+                if self.0.row_id_bitmap.is_some()
+                    && !self
+                        .0
+                        .row_id_bitmap
+                        .clone()
+                        .unwrap()
+                        .contains(row_id as u32)
+                {
                     return threshold;
                 }
                 if alive_bitset.is_deleted(doc) {
@@ -241,7 +248,14 @@ impl Collector for TopDocsWithFilter {
         } else {
             weight.for_each_pruning(Score::MIN, reader, &mut |doc, score| {
                 let row_id = row_id_field_reader.get_val(doc);
-                if self.0.row_id_bitmap.contains(row_id as u32) {
+                if self.0.row_id_bitmap.is_some()
+                    && !self
+                        .0
+                        .row_id_bitmap
+                        .clone()
+                        .unwrap()
+                        .contains(row_id as u32)
+                {
                     return Score::MIN;
                 }
                 let heap_item = RowIdWithScore {

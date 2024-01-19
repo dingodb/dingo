@@ -7,3 +7,8 @@ It is based on the [wiki_560w](https://myscale-example-datasets.s3.amazonaws.com
 ```bash
 wget https://myscale-example-datasets.s3.amazonaws.com/wiki_560w.json
 ```
+
+use valgrind
+```
+valgrind --read-var-info=yes --leak-check=full --show-leak-kinds=all -s ./query_benchmark --ps 1 --ebd=10 --efw=0 --it=100000 --ip=/home/mochix/tantivy_search_memory/cpp_pool1_no_cache/index_path --mpt=3 --sb=false> valgrind.txt 2>&1
+```

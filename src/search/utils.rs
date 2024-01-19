@@ -158,6 +158,18 @@ pub fn like_to_regex(like_pattern: &str) -> String {
     regex_pattern
 }
 
+// convert u8_bitmap to row_ids
+pub fn u8_bitmap_to_row_ids(bitmap: &[u8]) -> Vec<u32> {
+    let mut row_ids = Vec::new();
+    for (i, &byte) in bitmap.iter().enumerate() {
+        for j in 0..8 {
+            if byte & (1 << j) != 0 {
+                row_ids.push((i * 8 + j) as u32);
+            }
+        }
+    }
+    row_ids
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -195,5 +207,56 @@ mod tests {
 
         // testing combinations of escaped and unescaped characters.
         assert_eq!(like_to_regex("a%b_c\\%d\\_e\\\\"), "a.*b.c%d_e\\\\");
+    }
+
+    #[test]
+    fn test_u8_bitmap_to_row_ids() {
+        // empty bitmap
+        let bitmap_empty: Vec<u8> = Vec::new();
+        let row_ids_empty: Vec<u32> = Vec::new();
+        assert_eq!(u8_bitmap_to_row_ids(&bitmap_empty), row_ids_empty);
+
+        // bitmap with many zero
+        let mut bitmap_a: Vec<u8> = vec![0, 0, 0, 0, 0];
+        bitmap_a.extend(vec![0; 1000]);
+        assert_eq!(u8_bitmap_to_row_ids(&bitmap_a), row_ids_empty);
+
+        // full bitmap
+        let bitmap_b: Vec<u8> = vec![255];
+        assert_eq!(u8_bitmap_to_row_ids(&bitmap_b), [0, 1, 2, 3, 4, 5, 6, 7]);
+
+        let bitmap_c: Vec<u8> = vec![255, 255];
+        assert_eq!(
+            u8_bitmap_to_row_ids(&bitmap_c),
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+        );
+
+        // 00001100, 00010000
+        let bitmap_d: Vec<u8> = vec![12, 16];
+        assert_eq!(u8_bitmap_to_row_ids(&bitmap_d), [2, 3, 12]);
+
+        // 00000001, 00000000, 00000010, 00000100
+        let bitmap_e: Vec<u8> = vec![1, 0, 2, 4];
+        assert_eq!(u8_bitmap_to_row_ids(&bitmap_e), [0, 17, 26]);
+
+        // 00100010, 01000001, 10000000
+        let bitmap_f: Vec<u8> = vec![34, 65, 128];
+        assert_eq!(u8_bitmap_to_row_ids(&bitmap_f), [1, 5, 8, 14, 23]);
+
+        // large u8 bitmap, contains 8 element.
+        let bitmap_g: Vec<u8> = vec![
+            0b00000001, 0b00000010, 0b00000100, 0b00001000, 0b00010000, 0b00100000, 0b01000000,
+            0b10000000, 0b00000000, 0b00000000,
+        ];
+        assert_eq!(
+            u8_bitmap_to_row_ids(&bitmap_g),
+            [0, 9, 18, 27, 36, 45, 54, 63]
+        );
+
+        let bitmap_h: Vec<u8> = vec![0, 32];
+        assert_eq!(
+            u8_bitmap_to_row_ids(&bitmap_h),
+            [13]
+        );
     }
 }

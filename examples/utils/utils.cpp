@@ -11,87 +11,17 @@ using namespace std;
 INITIALIZE_EASYLOGGINGPP
 
 namespace Utils {
+
+    int log_level = 0;
+
     std::string getCurrentDateTime() {
         auto now = std::chrono::system_clock::now(); // get current time.
         auto now_c = std::chrono::system_clock::to_time_t(now); // convert to `time_t`
         std::ostringstream oss;
-        oss << std::put_time(std::localtime(&now_c), "%Y-%m-%d %H:%M:%S"); // format
+        oss << std::put_time(std::localtime(&now_c), "%Y-%m-%d %H:%M:%S");
         return oss.str();
     }
 
-
-    void tantivy_log_callback(int level, const char* thread_id, const char* thread_name, const char* message)
-    {
-        string threadId(thread_id);
-        string threadName(thread_name);
-        string msg(message);
-
-
-        switch(level) {
-            case -2: // -2 -> fatal
-                if (log_level >= -2 )
-                    std::cout << getCurrentDateTime() <<" - FATAL [" + threadId + ":" + threadName + "] " + msg << endl;
-                break;
-            case -1: // -1 -> error
-                if (log_level >= -1 )
-                    std::cout << getCurrentDateTime() << " - ERROR [" + threadId + ":" + threadName + "] " + msg << endl;
-                break;
-            case 0: // 0 -> warning
-                if (log_level >= 0 )
-                    std::cout << getCurrentDateTime() << " - WARNING [" + threadId + ":" + threadName + "] " + msg << endl;
-                break;
-            case 1: // 1 -> info
-                if (log_level >= 1 )
-                    std::cout << getCurrentDateTime() << " - INFO [" + threadId + ":" + threadName + "] " + msg << endl;
-                break;
-            case 2: // 2 -> debug
-                if (log_level >= 2 )
-                    std::cout << getCurrentDateTime() << " - DEBUG [" + threadId + ":" + threadName + "] " + msg << endl;
-                break;
-            case 3: // 3 -> tracing
-                if (log_level >= 3 )
-                    std::cout << getCurrentDateTime() << " - TRACING [" + threadId + ":" + threadName + "] " + msg << endl;
-                break;
-            default:
-                std::cout << getCurrentDateTime() << " - DEBUG [" + threadId + ":" + threadName + "] " + msg << endl;
-        }
-    };
-
-
-    void mylog(int level,  std::string message)
-    {
-
-
-        switch(level) {
-            case -2: // -2 -> fatal
-                if (log_level >= -2 )
-                    std::cout << getCurrentDateTime() <<" - FATAL " + message << endl;
-                break;
-            case -1: // -1 -> error
-                if (log_level >= -1 )
-                    std::cout << getCurrentDateTime() << " - ERROR " + message << endl;
-                break;
-            case 0: // 0 -> warning
-                if (log_level >= 0 )
-                    std::cout << getCurrentDateTime() << " - WARNING " + message << endl;
-                break;
-            case 1: // 1 -> info
-                if (log_level >= 1 )
-                    std::cout << getCurrentDateTime() << " - INFO " + message << endl;
-                break;
-            case 2: // 2 -> debug
-                if (log_level >= 2 )
-                    std::cout << getCurrentDateTime() << " - DEBUG " + message << endl;
-                break;
-            case 3: // 3 -> tracing
-                if (log_level >= 3 )
-                    std::cout << getCurrentDateTime() << " - TRACING " + message << endl;
-                break;
-            default:
-                std::cout << getCurrentDateTime() << " - DEBUG " + message << endl;
-        }
-    };
-    
     void tantivy_easylogging_callback(int level, const char* thread_id, const char* thread_name, const char* message)
     {
         string threadId(thread_id);
@@ -152,7 +82,7 @@ namespace Utils {
         defaultConf.set(log_level, el::ConfigurationType::ToStandardOutput, "true");
         // apply config to logger
         el::Loggers::reconfigureLogger("default", defaultConf);
-        // 记录一条信息
+
         LOG(INFO) << "initialize easylogger finished.";
     }
 } // namespace Utils

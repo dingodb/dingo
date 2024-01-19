@@ -1,11 +1,11 @@
 use std::sync::{Arc, Mutex};
 
-use crate::commons::LOG_CALLBACK;
 use crate::logger::ffi_logger::callback_with_thread_info;
 use crate::WARNING;
+use crate::commons::LOG_CALLBACK;
 use flurry::HashMap;
 use once_cell::sync::Lazy;
-use tantivy::{Document, Index, IndexWriter, Opstamp};
+use tantivy::{Document, Index, IndexWriter, Opstamp, Term};
 
 pub struct IndexW {
     pub path: String,
@@ -42,6 +42,40 @@ impl IndexW {
         }
     }
 
+    // wrapper for IndexWriter.delete_term
+    #[deprecated]
+    #[allow(dead_code)]
+    pub fn delete_term(&self, term: Term) -> Result<Opstamp, String> {
+        match self.writer.lock() {
+            Ok(mut writer) => {
+                if let Some(writer) = writer.as_mut() {
+                    Ok(writer.delete_term(term))
+                } else {
+                    Err("IndexWriter is not available for delete_term".to_string())
+                }
+            }
+            Err(e) => Err(format!("Lock error: {}", e)),
+        }
+    }
+
+    // wrapper for IndexWriter.delete_term
+    pub fn delete_terms(&self, terms: Vec<Term>) -> Result<Opstamp, String> {
+        match self.writer.lock() {
+            Ok(mut writer) => {
+                if let Some(writer) = writer.as_mut() {
+                    let mut opstamp: Opstamp = 0;
+                    for term in terms {
+                        opstamp = writer.delete_term(term)
+                    }
+                    Ok(opstamp)
+                } else {
+                    Err("IndexWriter is not available for delete_term".to_string())
+                }
+            }
+            Err(e) => Err(format!("Lock error: {}", e)),
+        }
+    }
+
     // wrapper for IndexWriter.wait_merging_threads.
     pub fn wait_merging_threads(&self) -> Result<(), String> {
         // use Interior Mutability
@@ -71,7 +105,10 @@ pub fn get_index_w(key: String) -> Result<Arc<IndexW>, String> {
     let pinned = INDEXW_CACHE.pin();
     match pinned.get(&key) {
         Some(result) => Ok(result.clone()),
-        None => Err(format!("Index doesn't exist with given key: [{}]", key)),
+        None => Err(format!(
+            "Index Writer doesn't exist with given key: [{}]",
+            key
+        )),
     }
 }
 

@@ -23,6 +23,9 @@ impl IndexR {
     pub fn reader_address(&self) -> usize {
         &self.reader as *const IndexReader as usize
     }
+    pub fn reload(&self) -> Result<(), String> {
+        self.reader.reload().map_err(|e| e.to_string())
+    }
 }
 
 // cache store IndexW for thread safe
@@ -33,7 +36,10 @@ pub fn get_index_r(key: String) -> Result<Arc<IndexR>, String> {
     let pinned = INDEXR_CACHE.pin();
     match pinned.get(&key) {
         Some(result) => Ok(result.clone()),
-        None => Err(format!("Index doesn't exist with given key: [{}]", key)),
+        None => Err(format!(
+            "Index Reader doesn't exist with given key: [{}]",
+            key
+        )),
     }
 }
 

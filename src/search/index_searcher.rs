@@ -14,6 +14,7 @@ use tantivy::query::QueryParser;
 use super::index_r::*;
 use super::top_dos_with_bitmap_collector::TopDocsWithFilter;
 use super::utils::perform_search;
+use super::utils::u8_bitmap_to_row_ids;
 use crate::common::index_utils::*;
 
 use tantivy::{Index, ReloadPolicy};
@@ -275,10 +276,21 @@ pub fn tantivy_count_in_rowid_range(
     }
 }
 
-pub fn tantivy_search_bm25_with_filter(
+/// Execute bm25_search with filter row_ids.
+///
+/// Arguments:
+/// - `index_path`: The directory path for building the index.
+/// - `query`: Query string.
+/// - `u8_bitmap`: A vector<u8> bitmap represent row_ids need to be filtered.
+/// - `top_k`: Try to search `k` results.
+/// - `need_text`: Whether need return origin doc content.
+///
+/// Returns:
+/// - A group of RowIdWithScore Objects.
+pub fn tantivy_bm25_search_with_filter(
     index_path: &CxxString,
     query: &CxxString,
-    row_ids: &CxxVector<u32>,
+    u8_bitmap: &CxxVector<u8>,
     top_k: u32,
     need_text: bool,
 ) -> Result<Vec<RowIdWithScore>, String> {
@@ -304,8 +316,9 @@ pub fn tantivy_search_bm25_with_filter(
         }
     };
 
-    let row_ids: Vec<u32> = row_ids.iter().map(|s| *s).collect();
-
+    let u8_bitmap: Vec<u8> = u8_bitmap.iter().map(|s| *s).collect();
+    let row_ids: Vec<u32> = u8_bitmap_to_row_ids(&u8_bitmap);
+    // INFO!("alive row_ids is: {:?}", row_ids);
     // get index reader from CACHE
     let index_r = match get_index_r(index_path_str.clone()) {
         Ok(content) => content,
@@ -333,14 +346,18 @@ pub fn tantivy_search_bm25_with_filter(
 
     let searcher = index_r.reader.searcher();
 
-    let mut filter_bitmap = RoaringBitmap::new();
-    filter_bitmap.extend(row_ids);
-
-    let top_docs_collector = TopDocsWithFilter::with_limit(top_k as usize)
-        .with_filter(Arc::new(filter_bitmap))
+    let mut top_docs_collector = TopDocsWithFilter::with_limit(top_k as usize)
         .with_searcher(searcher.clone())
         .with_text_field(text)
         .with_stored_text(need_text);
+
+    let mut alive_bitmap = RoaringBitmap::new();
+    alive_bitmap.extend(row_ids);
+
+    // if u8_bitmap is empty, we regards that don't use alive_bitmap.
+    if u8_bitmap.len()!=0 {
+        top_docs_collector = top_docs_collector.with_alive(Arc::new(alive_bitmap));
+    }
 
     let query_parser = QueryParser::for_index(index_r.reader.searcher().index(), vec![text]);
     let text_query = match query_parser.parse_query(&query_str) {
@@ -366,13 +383,23 @@ pub fn tantivy_search_bm25_with_filter(
     Ok(searched_result)
 }
 
-pub fn tantivy_search_bm25(
+/// Execute bm25_search.
+///
+/// Arguments:
+/// - `index_path`: The directory path for building the index.
+/// - `query`: Query string.
+/// - `top_k`: Try to search `k` results.
+/// - `need_text`: Whether need return origin doc content.
+///
+/// Returns:
+/// - A group of RowIdWithScore Objects.
+pub fn tantivy_bm25_search(
     index_path: &CxxString,
     query: &CxxString,
     top_k: u32,
     need_text: bool,
 ) -> Result<Vec<RowIdWithScore>, String> {
-    let cxx_vector: UniquePtr<CxxVector<u32>> = CxxVector::new();
-    let cxx_vector: &CxxVector<u32> = cxx_vector.as_ref().unwrap();
-    tantivy_search_bm25_with_filter(index_path, query, cxx_vector, top_k, need_text)
+    let cxx_vector: UniquePtr<CxxVector<u8>> = CxxVector::new();
+    let cxx_vector: &CxxVector<u8> = cxx_vector.as_ref().unwrap();
+    tantivy_bm25_search_with_filter(index_path, query, cxx_vector, top_k, need_text)
 }

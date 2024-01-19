@@ -71,7 +71,9 @@
         "mutex": "cpp",
         "shared_mutex": "cpp",
         "variant": "cpp",
-        "complex": "cpp"
+        "complex": "cpp",
+        "csignal": "cpp",
+        "bitset": "cpp"
     },
     "rust-analyzer.linkedProjects": [
         "./Cargo.toml"

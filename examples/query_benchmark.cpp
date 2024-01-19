@@ -13,20 +13,17 @@
 #include <utils.h>
 #include <unistd.h>
 #include <boost/program_options.hpp>
-// #include <easylogging++.h>
 
-// #include <jemalloc/jemalloc.h>
 using json = nlohmann::json;
-
 using namespace std;
 using namespace Utils;
 namespace  bpo = boost::program_options;
 
-// 记录 benchmark 时延
+// record bench_task latency 
 std::vector<double> ms_latencies;
 std::mutex ms_latencies_mutex;
 
-// 标记是否正在进行 benchmark
+// mark whether bench_task is running
 bool is_benchmarking;
 std::mutex is_benchmarking_mutex;
 
@@ -54,7 +51,7 @@ void from_json(const json &j, Doc &doc)
     j.at("body").get_to(doc.body);
 }
 
-size_t index_docs_from_json(const std::string &json_file_path, const std::string &index_path)
+size_t index_docs_from_json(const std::string &json_file_path, const std::string &index_path, const bool use_delete)
 {
     std::ifstream file(json_file_path);
 
@@ -65,6 +62,9 @@ size_t index_docs_from_json(const std::string &json_file_path, const std::string
     // from json file to Doc vector
     std::vector<Doc> docs = j.get<std::vector<Doc>>();
 
+    LOG(INFO) << "Cooling 10s, and then create/build index.";
+    sleep(10);
+
     tantivy_create_index(index_path);
 
     // index all docs
@@ -73,11 +73,11 @@ size_t index_docs_from_json(const std::string &json_file_path, const std::string
     {
         tantivy_index_doc(index_path, row_id, doc.body.c_str());
         row_id += 1;
-        // each doc call commit will slower the index build time.
-        // tantivy_writer_commit(indexW);
     }
     tantivy_writer_commit(index_path);
-    tantivy_writer_free(index_path);
+    if(!use_delete){
+        tantivy_writer_free(index_path);
+    }
     return row_id;
 }
 
@@ -100,7 +100,7 @@ double calculate_ms_percentile(int percentile) {
 
     std::sort(ms_latencies.begin(), ms_latencies.end());
     int index = percentile * ms_latencies.size() / 100;
-    return std::round(ms_latencies[index] * 1000.0) / 1000.0; // 四舍五入到三位小数
+    return std::round(ms_latencies[index] * 1000.0) / 1000.0; // keep 3 decimal places
 }
 
 double calculate_ms_average() {
@@ -110,23 +110,27 @@ double calculate_ms_average() {
     }
     double sum = std::accumulate(ms_latencies.begin(), ms_latencies.end(), 0.0);
     double average = sum / ms_latencies.size();
-    return std::round(average * 1000.0) / 1000.0; // 四舍五入到三位小数
+    return std::round(average * 1000.0) / 1000.0; // keep 3 decimal places
 }
 
 
 // benchmark
-// 未超时则继续放入任务
 void run_benchmark(size_t idx,                              // iter id
                    const std::vector<std::string>& terms,   // query terms
                    size_t each_benchmark_duration,          // benchmark time should smaller than each_benchmark_duration
                    ThreadPool& pool,                        // thread pool
-                   std::string& index_path,             // index reader
+                   std::string& index_path,                 // index reader
                    std::atomic<int>& query_count,           // how many terms have been queried
                    const std::vector<size_t>& row_id_range, // row_id_range for queried
                    size_t row_id_step,                      // row_id_step is similar wih granule range 8192
                    std::atomic<size_t> &finished_tasks,     // how many tasks have been finished
                    std::atomic<size_t> &enqueue_tasks_count, // record enqueue task size.
-                   std::size_t max_pending_tasks )          // 
+                   std::size_t max_pending_tasks,            // `bench_task` max count in queue
+                   bool use_bm25_search,                     // test `bm25_search`, rather than `skip-index`
+                   bool use_topk_delete,                   // whether use random delete when test `bm25_search`. 
+                   bool verify_delete_correct,               // when use topk_delete, verify it's results.
+                   std::size_t bm25_search_topk,             // bm25_search topk
+                   bool only_random_delete)                  // only use random k delete
 {
     // mark benchmark should stop.
     std::atomic<bool> flag_break = false;
@@ -138,7 +142,7 @@ void run_benchmark(size_t idx,                              // iter id
             break;
         }
         for (size_t i = 0; i < terms.size(); i++) {
-            // edge1. 判断 benchmark 是否超时, 超时了就需要及时停止
+            // edge1. handle benchmark task time out.
             auto current = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::seconds>(current - benchmark_start).count();
             if(duration >= each_benchmark_duration){
@@ -146,7 +150,7 @@ void run_benchmark(size_t idx,                              // iter id
                 break;
             }
 
-            // edge2. 约束 pending queue 长度不超过 max_pending_tasks
+            // edge2. pending queue size should not bigger than `max_pending_tasks`
             while ((enqueue_tasks_count-finished_tasks) >= max_pending_tasks)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -154,19 +158,51 @@ void run_benchmark(size_t idx,                              // iter id
 
 
             std::string term = std::string(terms[i]);
-            pool.enqueue([idx, term, &row_id_range, row_id_step, index_path, &query_count, &finished_tasks](){
+            pool.enqueue([idx, term, &row_id_range, row_id_step, index_path, &query_count, &finished_tasks, use_bm25_search, use_topk_delete, verify_delete_correct, bm25_search_topk, only_random_delete](){
                 auto start_query = std::chrono::high_resolution_clock::now();
-                for (size_t j = 0; j < row_id_range.size(); j++) {
-                    tantivy_search_in_rowid_range(index_path, term.c_str(), row_id_range[j], row_id_range[j] + row_id_step, false);
+                if(use_bm25_search){
+                    // for bm25_search test
+                    if(only_random_delete){
+                        // just delete random row ids.
+                        std::vector<u_int32_t> delete_row_ids = randomExtractK<size_t, u_int32_t>(row_id_range, bm25_search_topk);
+                        tantivy_delete_row_ids(index_path, delete_row_ids);
+                    }else{
+                        // Step1. first bm25 search.
+                        rust::cxxbridge1::Vec<RowIdWithScore> result = tantivy_bm25_search(index_path, term, bm25_search_topk, false);
+                        std::vector<uint32_t> row_ids;
+                        for (size_t i = 0; i < result.size(); i++)
+                            row_ids.push_back(static_cast<uint32_t>(result[i].row_id));
+                        if(use_topk_delete){
+                            // Step2. delete row_ids in first step.
+                            tantivy_delete_row_ids(index_path, row_ids);
+                            if(verify_delete_correct){
+                                // Step3. research for verify result.
+                                rust::cxxbridge1::Vec<RowIdWithScore> result_after_delete = tantivy_bm25_search(index_path, term, bm25_search_topk, false);
+                                std::vector<uint32_t> row_ids_after_delete;
+                                for (size_t i = 0; i < result_after_delete.size(); i++)
+                                    row_ids_after_delete.push_back(static_cast<uint32_t>(result_after_delete[i].row_id));
+                                size_t intersection = intersection_size(row_ids, row_ids_after_delete);
+                                if(intersection!=0){
+                                    LOG(ERROR) << "Error happend with delete operation, intersection size:"<< intersection;
+                                }
+                            }
+
+                        }
+                    }
+                } else {
+                    // for skip-index test.
+                    for (size_t j = 0; j < row_id_range.size(); j++) {
+                        tantivy_search_in_rowid_range(index_path, term, row_id_range[j], row_id_range[j] + row_id_step, false);
+                    }
                 }
                 query_count++;
                 auto end_query = std::chrono::high_resolution_clock::now();
                 double latency = std::chrono::duration_cast<std::chrono::nanoseconds>(end_query - start_query).count() / 1000000.0;
                 record_millis_latency(latency);
-                // 标记 task 已经完成
+                // mark this bench_task finished.
                 finished_tasks+=1;
             });
-            // task 以及入队
+            // bench_task has been enqueued.
             enqueue_tasks_count += 1;
         }
     }
@@ -175,7 +211,7 @@ void run_benchmark(size_t idx,                              // iter id
 int main(int argc, char* argv[])
 {
     initialize_easy_logger(el::Level::Info);
-    log_level = 1;
+    log_level = 2;
 
     LOG(INFO) << "After 10s, program will start";
     LOG(INFO) << "##### PID:" << std::to_string(getpid());
@@ -192,6 +228,12 @@ int main(int argc, char* argv[])
     std::string query_term_path;
     std::string dataset_path;
     size_t max_pending_tasks;
+    bool use_bm25_search;
+    bool use_topk_delete;
+    bool verify_delete_correct;
+    size_t bm25_search_topk;
+    bool only_random_delete;
+
 
     bpo::options_description desc("Benchmark Options");
     desc.add_options()
@@ -205,6 +247,11 @@ int main(int argc, char* argv[])
     ("query-term-path,qtp", bpo::value<std::string>(&query_term_path)->default_value("/home/mochix/workspace_github/tantivy-search/examples/query_terms.json"), "query terms file path")
     ("dataset-path,dp", bpo::value<std::string>(&dataset_path)->default_value("/home/mochix/workspace_github/tantivy-search/examples/wiki_560w.json"), "dataset file path")
     ("max-pending-tasks,mpt", bpo::value<std::size_t>(&max_pending_tasks)->default_value(1000), "max pending tasks")
+    ("use-bm25-search,ubs", bpo::value<bool>(&use_bm25_search)->default_value(false), "test bm25 search, not skip-index")
+    ("use-topk-delete,utd", bpo::value<bool>(&use_topk_delete)->default_value(false), "use topk delete")
+    ("verify-delete-correct,vdc", bpo::value<bool>(&verify_delete_correct)->default_value(true), "verify whether delete is correct")
+    ("bm25-search-topk,bst", bpo::value<size_t>(&bm25_search_topk)->default_value(10), "select TopK docs by tantivy_bm25_search interface")
+    ("only-random-delete,ord", bpo::value<bool>(&only_random_delete)->default_value(false), "only delete operation in a single bench_task")
     ("help", "this is help message");
 
    try {
@@ -228,10 +275,15 @@ int main(int argc, char* argv[])
     LOG(INFO) << "##### Query Term Path: " << query_term_path;
     LOG(INFO) << "##### Dataset Path: " << dataset_path;
     LOG(INFO) << "##### Max Pending Tasks: " << std::to_string(max_pending_tasks);
+    LOG(INFO) << "##### Use BM25 Search: " << use_bm25_search;
+    LOG(INFO) << "##### Use TopK Delete: " << use_topk_delete;
+    LOG(INFO) << "##### Verify Delete Correct: " << verify_delete_correct;
+    LOG(INFO) << "##### BM25 Search TopK: " << bm25_search_topk;
+    LOG(INFO) << "##### Only Random Delete: " << only_random_delete;
 
     size_t total_rows = 5600000;
     size_t row_id_step = 8192;
-    tantivy_logger_initialize("./log", "info", false, tantivy_log_callback, false, false);
+    tantivy_logger_initialize("./log", "info", false, tantivy_easylogging_callback, true, false);
 
     ThreadPool pool(pool_size);
     std::atomic<int> query_count(0);
@@ -248,7 +300,7 @@ int main(int argc, char* argv[])
     if (!skip_build_index)
     {
         LOG(INFO) << "Starting index docs from dataset:" << dataset_path;
-        total_rows = index_docs_from_json(dataset_path, index_path);
+        total_rows = index_docs_from_json(dataset_path, index_path, use_topk_delete||only_random_delete);
         LOG(INFO) << std::to_string(total_rows) << " docs has been indexed.";
 
     }
@@ -274,7 +326,7 @@ int main(int argc, char* argv[])
             double p50 = calculate_ms_percentile(50);
             double p70 = calculate_ms_percentile(70);
             double p99 = calculate_ms_percentile(99);
-            double average_latency = calculate_ms_percentile(99);
+            double average_latency = calculate_ms_average();
             std::ostringstream oss;
             oss << "queue: " << pool.getTaskQueueSize() 
                 << ", query: " << query_count << "(" << query_count/terms.size() << ")"
@@ -291,15 +343,32 @@ int main(int argc, char* argv[])
     LOG(INFO) << "Starting benchmark, pool:"<< pool_size << " iter times:"<< iter_times;
     for (size_t i = 0; i < iter_times; i++)
     {
-        std::atomic<size_t> finished_tasks = 0; // 已经完成的 task 数量
-        std::atomic<size_t> enqueue_tasks_count = 0; // 已经入队的 task 数量
+        std::atomic<size_t> finished_tasks = 0; // already finished task count
+        std::atomic<size_t> enqueue_tasks_count = 0; // task which just enqueued
         LOG(INFO) << "[iter-"<<i<<"] Loading tantivy index from index_path after " << each_free_wait << " sec.";
         sleep(each_free_wait);
         setBenchmarking(true);
         reporter_start = std::chrono::high_resolution_clock::now();
         tantivy_load_index(index_path);
         if (!skip_benchmark){
-            run_benchmark(i, terms, each_benchmark_duration, pool, index_path, query_count, row_id_range, row_id_step, finished_tasks, enqueue_tasks_count, max_pending_tasks);
+            run_benchmark(
+                i, 
+                terms, 
+                each_benchmark_duration, 
+                pool, 
+                index_path, 
+                query_count, 
+                row_id_range, 
+                row_id_step, 
+                finished_tasks, 
+                enqueue_tasks_count, 
+                max_pending_tasks,
+                use_bm25_search,
+                use_topk_delete,
+                verify_delete_correct,
+                bm25_search_topk,
+                only_random_delete
+            );
         }
         while (pool.getTaskQueueSize()>0 || finished_tasks < enqueue_tasks_count)
         {
@@ -316,7 +385,7 @@ int main(int argc, char* argv[])
     is_finished = true;
     reporter.join();
 
-    mylog(1, "Waiting 10s stop this program");
+    LOG(INFO) << "Waiting 10s stop this program";
     sleep(10);
 
     return 0;
