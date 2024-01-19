@@ -17,37 +17,35 @@
 package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoTable;
-import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.rel.LogicalDingoVector;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.rules.SubstitutionRule;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
 @Value.Enclosing
-public class DingoScanFilterRule extends RelRule<DingoScanFilterRule.Config> implements SubstitutionRule {
-    protected DingoScanFilterRule(Config config) {
+public class DingoVectorFilterRule extends RelRule<DingoVectorFilterRule.Config> implements SubstitutionRule {
+
+    public DingoVectorFilterRule(Config config) {
         super(config);
     }
 
     @Override
-    public void onMatch(@NonNull RelOptRuleCall call) {
+    public void onMatch(RelOptRuleCall call) {
         final LogicalFilter filter = call.rel(0);
-        final LogicalDingoTableScan scan = call.rel(1);
+        final LogicalDingoVector vector = call.rel(1);
         call.transformTo(
-            new LogicalDingoTableScan(
-                scan.getCluster(),
-                scan.getTraitSet(),
-                scan.getHints(),
-                scan.getTable(),
-                filter.getCondition(),
-                scan.getRealSelection(),
-                scan.getAggCalls(),
-                scan.getGroupSet(),
-                scan.getGroupSets(),
-                scan.isPushDown(),
-                scan.isForDml()
+            new LogicalDingoVector(
+                vector.getCluster(),
+                vector.getTraitSet(),
+                vector.getCall(),
+                vector.getTable(),
+                vector.getOperands(),
+                vector.getIndexTableId(),
+                vector.getIndexTable(),
+                vector.getSelection(),
+                filter.getCondition()
             )
         );
     }
@@ -59,28 +57,29 @@ public class DingoScanFilterRule extends RelRule<DingoScanFilterRule.Config> imp
 
     @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = ImmutableDingoScanFilterRule.Config.builder()
+        DingoVectorFilterRule.Config DEFAULT = ImmutableDingoVectorFilterRule.Config.builder()
             .operandSupplier(b0 ->
                 b0.operand(LogicalFilter.class).oneInput(b1 ->
-                    b1.operand(LogicalDingoTableScan.class)
+                    b1.operand(LogicalDingoVector.class)
                         .predicate(rel -> {
                             boolean isFullSelection = rel.getRealSelection() == null;
                             if (!isFullSelection) {
                                 DingoTable dingoTable = rel.getTable().unwrap(DingoTable.class);
+                                assert dingoTable != null;
                                 isFullSelection = rel.getRealSelection().size()
                                     == dingoTable.getTable().getColumns().size();
                             }
                             return isFullSelection && rel.getFilter() == null;
-                        })
+                        } )
                         .noInputs()
                 )
             )
-            .description("DingoScanFilterRule")
+            .description("DingoVectorFilterRule")
             .build();
 
         @Override
-        default DingoScanFilterRule toRule() {
-            return new DingoScanFilterRule(this);
+        default DingoVectorFilterRule toRule() {
+            return new DingoVectorFilterRule(this);
         }
     }
 }

@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.rel.DingoVector;
+import io.dingodb.calcite.rel.LogicalDingoVector;
 import io.dingodb.calcite.traits.DingoConvention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -42,6 +43,7 @@ import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -108,9 +110,11 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
 
         RelTraitSet traits = cluster.traitSetOf(DingoConvention.NONE);
         RexNode rexCall = bb.convertExpression(call);
+        assert validator != null;
         TableFunctionNamespace namespace = (TableFunctionNamespace) validator.getNamespace(call);
         RelNode callRel = null;
         if (operator instanceof SqlFunctionScanOperator) {
+            assert namespace != null;
             callRel = new DingoFunctionScan(
                 cluster,
                 traits,
@@ -119,14 +123,18 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
                 call.getOperandList()
             );
         } else if (operator instanceof SqlVectorOperator) {
-            callRel = new DingoVector(
+            assert namespace != null;
+            List<Object> operands = new ArrayList<>(call.getOperandList());
+            callRel = new LogicalDingoVector(
                 cluster,
                 traits,
                 (RexCall) rexCall,
                 namespace.getTable(),
-                call.getOperandList(),
+                operands,
                 namespace.getIndex().getTableId(),
-                namespace.getIndex()
+                namespace.getIndex(),
+                null,
+                null
             );
         }
 

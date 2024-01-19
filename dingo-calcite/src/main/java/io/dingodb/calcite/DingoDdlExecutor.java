@@ -87,6 +87,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
+import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -265,7 +266,13 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         indexTableDefinition.setPartDefinition(indexDeclaration.getPartDefinition());
         indexTableDefinition.setReplica(indexDeclaration.getReplica());
         indexTableDefinition.setProperties(properties);
-        indexTableDefinition.setEngine(indexDeclaration.getEngine());
+        String engine;
+        if (StringUtils.isNotBlank(indexDeclaration.getEngine())) {
+            engine = indexDeclaration.getEngine();
+        } else {
+            engine = tableDefinition.getEngine();
+        }
+        indexTableDefinition.setEngine(engine);
 
         validatePartitionBy(
             indexTableDefinition.getKeyColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList()),

@@ -42,11 +42,11 @@ public class PartVectorParam extends FilterProjectSourceParam {
     private final KeyValueCodec codec;
     private final Table table;
     private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
-    private CommonId indexId;
-    private CommonId indexRegionId;
-    private Float[] floatArray;
-    private int topN;
-    private Map<String, Object> parameterMap;
+    private final CommonId indexId;
+    private final CommonId indexRegionId;
+    private final Float[] floatArray;
+    private final int topN;
+    private final Map<String, Object> parameterMap;
 
     public PartVectorParam(
         CommonId tableId,

@@ -30,11 +30,11 @@ import java.util.Properties;
 
 public class ShowVariablesOperation implements QueryOperation {
 
-    private String sqlLikePattern;
+    private final String sqlLikePattern;
 
-    private boolean isGlobal;
+    private final boolean isGlobal;
 
-    private Connection connection;
+    private final Connection connection;
 
     public ShowVariablesOperation(String sqlLikePattern, boolean isGlobal, Connection connection) {
         this.sqlLikePattern = sqlLikePattern;

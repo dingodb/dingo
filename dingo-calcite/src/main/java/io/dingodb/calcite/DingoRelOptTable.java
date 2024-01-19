@@ -57,7 +57,7 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
     private final String user;
     private final String host;
 
-    DingoRelOptTable(@NonNull DingoTable table, String user, String host) {
+    public DingoRelOptTable(@NonNull DingoTable table, String user, String host) {
         super();
         DingoParserContext context = table.getContext();
         RelOptSchema relOptSchema = context.getCatalogReader().unwrap(RelOptSchema.class);

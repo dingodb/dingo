@@ -18,8 +18,6 @@ package io.dingodb.exec.operator;
 
 import com.google.common.primitives.Bytes;
 import io.dingodb.common.exception.DingoSqlException;
-import io.dingodb.common.mysql.MysqlByteUtil;
-import io.dingodb.common.util.ByteUtils;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
@@ -121,7 +119,7 @@ public class ExportDataOperator extends SoleOutOperator {
                     writer.write(line.toString().getBytes(charset));
                     writer.write("]".getBytes());
                 } else if (val instanceof String) {
-                    byte[] bytes = val.toString().getBytes();
+                    byte[] bytes = val.toString().getBytes(charset);
                     bytes = escaped(bytes, terminated, lineTerminated, escaped);
                     writer.write(bytes);
                 } else if (val instanceof LinkedHashMap) {

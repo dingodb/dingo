@@ -36,7 +36,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.List;
 
 public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
-    public static final double ASSUME_PARTS = 3.0d;
 
     public DingoTableScan(
         RelOptCluster cluster,
@@ -60,9 +59,9 @@ public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
         @Nullable ImmutableBitSet groupSet,
         @Nullable ImmutableList<ImmutableBitSet> groupSets,
         boolean pushDown,
-        boolean forModify
+        boolean forDml
     ) {
-        super(cluster, traitSet, hints, table, filter, selection, aggCalls, groupSet, groupSets, pushDown, forModify);
+        super(cluster, traitSet, hints, table, filter, selection, aggCalls, groupSet, groupSets, pushDown, forDml);
     }
 
     @Override
@@ -83,7 +82,7 @@ public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
             groupSet,
             groupSets,
             pushDown,
-            forUpdate
+            forDml
         );
     }
 

@@ -51,13 +51,13 @@ public class DingoModifyIndexRule extends RelRule<RelRule.Config> implements Sub
                 RelNode input1 = relSubset.getRelList().get(0);
                 if (input1 instanceof LogicalDingoTableScan) {
                     LogicalDingoTableScan scan = (LogicalDingoTableScan) input1;
-                    scan.setForUpdate(true);
+                    scan.setForDml(true);
                 }
             } else if (relSubset.getRelList().size() == 2) {
                 RelNode input1 = relSubset.getRelList().get(1);
                 if (input1 instanceof LogicalDingoTableScan) {
                     LogicalDingoTableScan scan = (LogicalDingoTableScan) input1;
-                    scan.setForUpdate(true);
+                    scan.setForDml(true);
                 }
             }
         }

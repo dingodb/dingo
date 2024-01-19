@@ -33,6 +33,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.type.converter.DefinitionMapper.mapToRelDataType;
@@ -50,16 +51,15 @@ public class TableFunctionNamespace extends AbstractNamespace {
 
     public TableFunctionNamespace(SqlValidatorImpl validator, @Nullable SqlBasicCall enclosingNode) {
         super(validator, enclosingNode);
+        assert enclosingNode != null;
         this.function = enclosingNode;
-        table = (DingoRelOptTable) validator.catalogReader.getTable(((SqlIdentifier) this.function.operand(0)).names);
+        table = (DingoRelOptTable) Objects.requireNonNull(
+            validator.catalogReader.getTable(((SqlIdentifier) this.function.operand(0)).names)
+        );
     }
 
     @Override
     protected RelDataType validateImpl(RelDataType targetRowType) {
-        if (table == null) {
-            throw new RuntimeException("Table is not exist: "
-                + ((SqlIdentifier) this.function.operand(0)).names.get(0));
-        }
         DingoTable dingoTable = table.unwrap(DingoTable.class);
         List<Column> tableCols = dingoTable.getTable().getColumns();
         ArrayList<Column> cols = new ArrayList<>(tableCols.size() + 1);
@@ -75,33 +75,17 @@ public class TableFunctionNamespace extends AbstractNamespace {
         if (operandList.size() < 4) {
             throw new RuntimeException("Incorrect parameter count for vector function.");
         }
-        String indexTableName = "";
         SqlIdentifier columnIdentifier = (SqlIdentifier) operandList.get(1);
         // Get all index table definition
         Table table = dingoTable.getTable();
-        for (IndexTable index : table.getIndexes()) {
-            // Skip if not a vector table
-            if (!index.getIndexType().isVector) {
-                continue;
-            }
 
-            List<String> indexColumns = index.getColumns().stream().map(Column::getName).collect(Collectors.toList());
-            // Skip if the vector column is not included
-            if (!indexColumns.contains(columnIdentifier.getSimple().toUpperCase())) {
-                continue;
-            }
-
-            this.index = index;
-            break;
-        }
-
-        if (index == null) {
-            throw new RuntimeException(columnIdentifier.getSimple() + " vector not found.");
-        }
+        this.index = getVectorIndexTable(table, columnIdentifier.getSimple().toUpperCase());
         cols.add(Column
             .builder()
             .name(index.getName().concat("$distance"))
             .sqlTypeName("FLOAT")
+            .precision(-1)
+            .scale(-2147483648)
             .build()
         );
 
@@ -117,5 +101,22 @@ public class TableFunctionNamespace extends AbstractNamespace {
     @Override
     public @Nullable SqlNode getNode() {
         return function;
+    }
+
+    public static IndexTable getVectorIndexTable(Table table, String vectorColName) {
+        for (IndexTable index : table.getIndexes()) {
+            if (!index.getIndexType().isVector) {
+                continue;
+            }
+
+            List<String> indexColumns = index.getColumns().stream().map(Column::getName).collect(Collectors.toList());
+            // Skip if the vector column is not included
+            if (!indexColumns.contains(vectorColName)) {
+                continue;
+            }
+
+            return index;
+        }
+        throw new RuntimeException(vectorColName + " vector not found.");
     }
 }

@@ -146,6 +146,12 @@ public final class DingoRules {
     public static final DingoWithoutPriModifyRule WITHOUT_PRI_UPDATE_RULE =
         DingoWithoutPriModifyRule.Config.UPDATE.toRule();
 
+    public static final DingoVectorProjectRule DINGO_VECTOR_PROJECT_RULE
+        = DingoVectorProjectRule.Config.DEFAULT.toRule();
+
+    public static final DingoVectorFilterRule DINGO_VECTOR_FILTER_RULE
+        = DingoVectorFilterRule.Config.DEFAULT.toRule();
+
     private static final List<RelOptRule> rules = ImmutableList.of(
         CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN,
         // CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES,
@@ -184,6 +190,8 @@ public final class DingoRules {
         EXPORT_DATA_RULE,
         WITHOUT_PRI_DELETE_RULE,
         WITHOUT_PRI_UPDATE_RULE
+        //DINGO_VECTOR_PROJECT_RULE,
+        //DINGO_VECTOR_FILTER_RULE
     );
 
     private DingoRules() {

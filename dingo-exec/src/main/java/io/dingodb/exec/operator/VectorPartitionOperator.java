@@ -39,7 +39,7 @@ public class VectorPartitionOperator extends FanOutOperator {
         // extract vector id from tuple
         Long vectorId = (Long) tuple[param.getIndex()];
         Object[] record = new Object[] {vectorId};
-        byte[] key = null;
+        byte[] key;
         key = param.getCodec().encodeKey(record);
         CodecService.getDefault().setId(key, CommonId.EMPTY_TABLE);
         CommonId partId = PartitionService.getService(

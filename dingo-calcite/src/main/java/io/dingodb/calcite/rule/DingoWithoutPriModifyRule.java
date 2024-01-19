@@ -18,7 +18,6 @@ package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
-import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Column;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -83,9 +82,9 @@ public class DingoWithoutPriModifyRule extends RelRule<DingoWithoutPriModifyRule
             tableScan.getGroupSet(),
             tableScan.getGroupSets(),
             tableScan.isPushDown(),
-            tableScan.isForUpdate()
+            tableScan.isForDml()
         );
-        newScan.setSelection(actualSelection);
+        newScan.setSelectionForDml(actualSelection);
         List<RelNode> inputs = new ArrayList<>();
         inputs.add(newScan);
         LogicalTableModify newModify = modify.copy(modify.getTraitSet(), inputs);
@@ -126,9 +125,9 @@ public class DingoWithoutPriModifyRule extends RelRule<DingoWithoutPriModifyRule
             tableScan.getGroupSet(),
             tableScan.getGroupSets(),
             tableScan.isPushDown(),
-            tableScan.isForUpdate()
+            tableScan.isForDml()
         );
-        newScan.setSelection(actualSelection);
+        newScan.setSelectionForDml(actualSelection);
 
         LogicalProject logicalProject = LogicalProject.create(newScan, project.getHints(),
             project.getProjects(), project.getRowType());

@@ -17,12 +17,15 @@
 package io.dingodb.exec.fun.vector;
 
 import io.dingodb.expr.runtime.ExprConfig;
+import io.dingodb.expr.runtime.op.BinaryOp;
 import io.dingodb.expr.runtime.type.Type;
 import io.dingodb.expr.runtime.type.Types;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -40,14 +43,34 @@ public class VectorIPDistanceFun extends BinaryVectorVectorFun {
         return 1 - dotProduct;
     }
 
-    @Override
-    public Type getType() {
-        return Types.FLOAT;
+    public static double innerProductCombine(List<Float> vectorA, List<Number> vectorB) {
+        double dotProduct = 0.0;
+        for (int i = 0; i < vectorA.size(); i++) {
+            dotProduct += vectorA.get(i) * vectorB.get(i).floatValue();
+        }
+        return 1 - dotProduct;
     }
 
     @Override
     protected Object evalNonNullValue(@NonNull Object value0, @NonNull Object value1, ExprConfig config) {
-        double distance = innerProduct((List<Float>) value0, (List<Float>) value1);
-        return (float) distance;
+        double distance = innerProductCombine((List<Float>) value0, (List<Number>) value1);
+        BigDecimal distanceAccurate = new BigDecimal(distance);
+        distanceAccurate = distanceAccurate.setScale(2, RoundingMode.HALF_UP);
+        return distanceAccurate.floatValue();
+    }
+
+    @Override
+    public @NonNull String getName() {
+        return NAME;
+    }
+
+    @Override
+    public Type getType() {
+        return Types.LIST_FLOAT;
+    }
+
+    @Override
+    public BinaryOp getOp(Object key) {
+        return INSTANCE;
     }
 }

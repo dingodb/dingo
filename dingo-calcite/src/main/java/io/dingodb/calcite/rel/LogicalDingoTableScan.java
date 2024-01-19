@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.fun.DingoOperatorTable;
 import io.dingodb.calcite.utils.RelDataTypeUtils;
-import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
@@ -54,6 +53,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rule.DingoVectorIndexRule.getDefaultSelection;
@@ -77,7 +77,7 @@ public class LogicalDingoTableScan extends TableScan {
     @Getter
     @Setter
     // temporary constant
-    protected boolean forUpdate = false;
+    protected boolean forDml;
 
     @Getter
     @Setter
@@ -108,7 +108,7 @@ public class LogicalDingoTableScan extends TableScan {
         @Nullable ImmutableBitSet groupSet,
         @Nullable ImmutableList<ImmutableBitSet> groupSets,
         boolean pushDown,
-        boolean forModify
+        boolean forDml
     ) {
         super(cluster, traitSet, hints, table);
         this.filter = filter;
@@ -119,9 +119,10 @@ public class LogicalDingoTableScan extends TableScan {
         DingoTable dingoTable = table.unwrap(DingoTable.class);
         assert dingoTable != null;
         this.realSelection = selection;
+        this.forDml = forDml;
         // If the columns of the table contain hide and delete, the data shows that they need to be deleted
         if (selection != null) {
-            if (forUpdate) {
+            if (forDml) {
                 this.selection = selection;
             } else {
                 List<Integer> mappingList = new ArrayList<>();
@@ -289,7 +290,9 @@ public class LogicalDingoTableScan extends TableScan {
     public static String getIndexMetricType(DingoTable dingoTable, String colName) {
         Collection<IndexTable> indexDef = dingoTable.getTable().getIndexes();
         for (Table index : indexDef) {
-            if (index.getColumns().contains(colName)) {
+            Optional<Column> columnOptional = index.getColumns()
+                .stream().filter(column -> column.getName().equalsIgnoreCase(colName)).findFirst();
+            if (columnOptional.isPresent()) {
                 return index.getProperties().getProperty("metricType");
             }
         }
@@ -327,9 +330,9 @@ public class LogicalDingoTableScan extends TableScan {
         throw new RuntimeException("found not distance fun");
     }
 
-    public void setSelection(TupleMapping selection) {
+    public void setSelectionForDml(TupleMapping selection) {
         this.selection = selection;
         this.realSelection = selection;
-        this.forUpdate = true;
+        this.forDml = true;
     }
 }

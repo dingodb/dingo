@@ -24,6 +24,7 @@ import io.dingodb.exec.fun.mysql.GlobalVariableFun;
 import io.dingodb.exec.fun.mysql.VersionFun;
 import io.dingodb.exec.fun.special.ThrowFun;
 import io.dingodb.exec.fun.vector.VectorCosineDistanceFun;
+import io.dingodb.exec.fun.vector.VectorDistanceFun;
 import io.dingodb.exec.fun.vector.VectorIPDistanceFun;
 import io.dingodb.exec.fun.vector.VectorImageFun;
 import io.dingodb.exec.fun.vector.VectorL2DistanceFun;
@@ -294,6 +295,13 @@ public class DingoOperatorTable implements SqlOperatorTable {
         );
         registerFunction(
             VectorCosineDistanceFun.NAME,
+            FLOAT,
+            DingoInferTypes.FLOAT,
+            family(SqlTypeFamily.ARRAY, SqlTypeFamily.ARRAY),
+            SqlFunctionCategory.NUMERIC
+        );
+        registerFunction(
+            VectorDistanceFun.NAME,
             FLOAT,
             DingoInferTypes.FLOAT,
             family(SqlTypeFamily.ARRAY, SqlTypeFamily.ARRAY),

@@ -24,6 +24,7 @@ import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.verify.auth.IdentityAuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaStatement;
+import org.apache.calcite.avatica.ConnectionPropertiesImpl;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
@@ -648,7 +649,8 @@ public class ServerMeta implements Meta {
         DingoConnection connection = DingoDriver.INSTANCE.createConnection(null, properties);
         loadGlobalVariables(connection);
         connectionMap.put(ch.id, connection);
-
+        // connection with init db
+        connectionUrlSync(ch, properties);
         if (SecurityConfiguration.isAuth()) {
             Authentication authentication = Authentication.builder()
                 .username(info.get("user"))
@@ -715,5 +717,20 @@ public class ServerMeta implements Meta {
     @Override
     public ConnectionProperties connectionSync(@NonNull ConnectionHandle ch, ConnectionProperties connProps) {
         return getConnectionMeta(ch).connectionSync(ch, connProps);
+    }
+
+    /**
+     * use schema.
+     * @param ch ch
+     * @param info db
+     */
+    public void connectionUrlSync(ConnectionHandle ch, Properties info) {
+        if (info.containsKey("dbname")) {
+            String schemaName = (String) info.get("dbname");
+            connectionSync(
+                ch,
+                new ConnectionPropertiesImpl(null, null, null, null, schemaName)
+            );
+        }
     }
 }

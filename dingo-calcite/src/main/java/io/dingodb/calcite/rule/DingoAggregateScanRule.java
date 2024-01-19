@@ -21,8 +21,6 @@ import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.SqlExprUtils;
-import io.dingodb.calcite.utils.TableUtils;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Table;
@@ -109,7 +107,7 @@ public class DingoAggregateScanRule extends RelRule<RelRule.Config> {
                 aggregate.getGroupSet(),
                 aggregate.getGroupSets(),
                 scan.isPushDown(),
-                scan.isForUpdate()
+                scan.isForDml()
             )
         );
     }

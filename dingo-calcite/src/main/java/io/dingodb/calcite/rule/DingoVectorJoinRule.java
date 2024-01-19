@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
@@ -27,11 +26,9 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalJoin;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.immutables.value.Value;
 
