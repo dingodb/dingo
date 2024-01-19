@@ -42,6 +42,10 @@ public interface CodecService {
         return key;
     }
 
+    default byte[] setId(byte[] key, long id) {
+        return key;
+    }
+
     default KeyValue setId(KeyValue keyValue, CommonId id) {
         return new KeyValue(setId(keyValue.getKey(), id), keyValue.getValue());
     }

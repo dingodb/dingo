@@ -16,11 +16,9 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.codec.PrimitiveCodec;
-import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Content;
@@ -31,8 +29,6 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
-import io.dingodb.partition.DingoPartitionServiceProvider;
-import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Op;
@@ -54,12 +50,16 @@ public class PessimisticLockDeleteOperator extends PartModifyOperator {
     @Override
     protected boolean pushTuple(Content content, @Nullable Object[] tuple, Vertex vertex) {
         PessimisticLockDeleteParam param = vertex.getParam();
+        CommonId txnId = vertex.getTask().getTxnId();
+        ITransaction transaction = TransactionManager.getTransaction(txnId);
+        if (transaction == null || transaction.getPrimaryKeyLock() != null) {
+            return false;
+        }
         byte[] keys = wrap(param.getCodec()::encodeKey).apply(tuple);
         CommonId tableId = param.getTableId();
         CommonId jobId = vertex.getTask().getJobId();
-        CommonId txnId = vertex.getTask().getTxnId();
         CommonId partId = content.getDistribution().getId();
-        ITransaction transaction = TransactionManager.getTransaction(txnId);
+        CodecService.getDefault().setId(keys, partId.domain);
         StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, partId);
         byte[] jobIdByte = jobId.encode();
         byte[] txnIdByte = txnId.encode();
@@ -72,7 +72,7 @@ public class PessimisticLockDeleteOperator extends PartModifyOperator {
             keys,
             Op.LOCK.getCode(),
             len,
-            jobIdByte,
+            txnIdByte,
             tableIdByte,
             partIdByte
         );
@@ -110,7 +110,7 @@ public class PessimisticLockDeleteOperator extends PartModifyOperator {
         } catch (Throwable e) {
             log.error(e.getMessage(), e);
             // primaryKeyLock rollback
-            TransactionUtil.PessimisticPrimaryLockRollBack(
+            TransactionUtil.pessimisticPrimaryLockRollBack(
                 txnId,
                 tableId,
                 partId,
@@ -126,7 +126,7 @@ public class PessimisticLockDeleteOperator extends PartModifyOperator {
         }
         if (future == null) {
             // primaryKeyLock rollback
-            TransactionUtil.PessimisticPrimaryLockRollBack(txnId, tableId, partId, param.getIsolationLevel(),
+            TransactionUtil.pessimisticPrimaryLockRollBack(txnId, tableId, partId, param.getIsolationLevel(),
                 startTs, txnPessimisticLock.getForUpdateTs(), primaryKey);
             store = Services.LOCAL_STORE.getInstance(tableId, partId);
             // delete deadLockKey
@@ -140,16 +140,7 @@ public class PessimisticLockDeleteOperator extends PartModifyOperator {
         // get lock success, delete deadLockKey
         store.deletePrefix(deadLockKeyBytes);
         // lockKeyValue  [11_txnId_tableId_partId_a_lock, forUpdateTs1]
-        transaction.setPrimaryKeyLock(
-            ByteUtils.encode(
-                CommonId.CommonType.TXN_CACHE_LOCK,
-                keys,
-                Op.LOCK.getCode(),
-                len,
-                txnIdByte,
-                tableIdByte,
-                partIdByte)
-        );
+        transaction.setPrimaryKeyLock(primaryKey);
         // extraKeyValue  [12_jobId_tableId_partId_a_none, value]
         byte[] extraKeyBytes = ByteUtils.encode(
             CommonId.CommonType.TXN_CACHE_EXTRA_DATA,

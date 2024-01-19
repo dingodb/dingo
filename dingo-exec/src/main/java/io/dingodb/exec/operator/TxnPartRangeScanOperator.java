@@ -18,6 +18,7 @@ package io.dingodb.exec.operator;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Iterators;
+import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.partition.RangeDistribution;
@@ -58,6 +59,8 @@ public class TxnPartRangeScanOperator extends FilterProjectOperator {
         CommonId txnId = vertex.getTask().getTxnId();
         CommonId tableId = param.getTableId();
         CommonId partId = distribution.getId();
+        CodecService.getDefault().setId(startKey, partId.domain);
+        CodecService.getDefault().setId(endKey, partId.domain);
         StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
         StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
 

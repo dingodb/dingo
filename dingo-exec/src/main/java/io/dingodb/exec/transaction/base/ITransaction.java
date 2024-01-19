@@ -60,7 +60,7 @@ public interface ITransaction {
 
     void rollBackPessimisticLock(JobManager jobManager);
 
-    void close();
+    void close(JobManager jobManager);
 
     void addSql(String sql);
 

@@ -19,9 +19,7 @@ package io.dingodb.exec.transaction.util;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
@@ -61,8 +59,8 @@ import java.util.stream.IntStream;
 public class TransactionUtil {
     public static final long lock_ttl = 60000L;
     public static final int max_pre_write_count = 1024;
-    public final static String snapshotIsolation = "REPEATABLE-READ";
-    public final static String readCommitted = "READ-COMMITTED";
+    public static final String snapshotIsolation = "REPEATABLE-READ";
+    public static final String readCommitted = "READ-COMMITTED";
 
     public static int convertIsolationLevel(String transactionIsolation) {
         // for local test
@@ -216,7 +214,7 @@ public class TransactionUtil {
         return txnPessimisticLock;
     }
 
-    public static boolean PessimisticPrimaryLockRollBack(CommonId txnId, CommonId tableId,
+    public static boolean pessimisticPrimaryLockRollBack(CommonId txnId, CommonId tableId,
                                                          CommonId partId, int isolationLevel,
                                                          long startTs, long forUpdateTs, byte[] primaryKey) {
         // primaryKeyLock rollback

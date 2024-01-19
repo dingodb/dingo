@@ -25,6 +25,7 @@ public class ElementName {
     public static final String COMMIT_PRIMARY_KEY = "CommitPrimaryKey";
     public static final String STREAM = "StreamConverter";
     public static final String ROLLBACK = "RollBack";
+    public static final String CLEAN_CACHE = "CleanCache";
 
     public static final String PESSIMISTIC_ROLLBACK = "PessimisticRollBack";
 
@@ -42,4 +43,7 @@ public class ElementName {
     public static final String MULTI_TRANSACTION_ROLLBACK = "MultiTransactionRollBack";
     public static final String SINGLE_TRANSACTION_PESSIMISTIC_ROLLBACK = "SingleTransactionPessimisticRollBack";
     public static final String MULTI_TRANSACTION_PESSIMISTIC_ROLLBACK = "MultiTransactionPessimisticRollBack";
+
+    public static final String SINGLE_TRANSACTION_CLEAN_CACHE = "SingleTransactionCleanCache";
+    public static final String MULTI_TRANSACTION_CLEAN_CACHE = "MultiTransactionCleanCache";
 }

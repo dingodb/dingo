@@ -37,7 +37,6 @@ import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.ReginSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
-import io.dingodb.tso.TsoService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -52,6 +51,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -77,6 +77,7 @@ public abstract class BaseTransaction implements ITransaction {
     protected List<String> sqlList;
     protected boolean autoCommit;
     protected TransactionConfig transactionConfig;
+    protected Future commitFuture;
 
     protected CompletableFuture<Void> finishedFuture = new CompletableFuture<>();
 
@@ -130,11 +131,28 @@ public abstract class BaseTransaction implements ITransaction {
         return false;
     }
 
-    public void cleanUp() {
+    public void cleanUp(JobManager jobManager) {
         if (future != null) {
             future.cancel(true);
         }
         finishedFuture.complete(null);
+        if (getType() == TransactionType.NONE) {
+            return;
+        }
+        if (getSqlList().size() == 0 || !cache.checkCleanContinue()) {
+            log.warn("{} The current {} has no data to cleanUp",txnId, transactionOf());
+            return;
+        }
+        Location currentLocation = MetaService.root().currentLocation();
+        CompletableFuture<Void> cleanUp_future = CompletableFuture.runAsync(() ->
+            cleanUpJobRun(jobManager, currentLocation), Executors.executor("exec-txnCleanUp")
+        ).exceptionally(
+            ex -> {
+                ex.printStackTrace();
+                log.error(ex.toString(), ex);
+                return null;
+            }
+        );
     }
 
     public abstract void resolveWriteConflict(JobManager jobManager, Location currentLocation, RuntimeException e);
@@ -153,8 +171,8 @@ public abstract class BaseTransaction implements ITransaction {
     }
 
     @Override
-    public synchronized void close() {
-        cleanUp();
+    public synchronized void close(JobManager jobManager) {
+        cleanUp(jobManager);
         TransactionManager.unregister(txnId);
         this.closed = true;
         this.status = TransactionStatus.CLOSE;
@@ -198,17 +216,20 @@ public abstract class BaseTransaction implements ITransaction {
 
     @Override
     public synchronized void commit(JobManager jobManager) {
-        long preWriteStart = System.currentTimeMillis();
         // begin
         // nothing
         // commit
         if (status != TransactionStatus.START) {
             throw new RuntimeException(txnId + ":" + transactionOf() + " unavailable status is " + status);
         }
+        if (getType() == TransactionType.NONE) {
+            return;
+        }
         if (getSqlList().size() == 0 || !cache.checkContinue()) {
             log.warn("{} The current {} has no data to commit",txnId, transactionOf());
             return;
         }
+        long preWriteStart = System.currentTimeMillis();
         Location currentLocation = MetaService.root().currentLocation();
         AtomicReference<CommonId> jobId = new AtomicReference<>(CommonId.EMPTY_JOB);
         this.status = TransactionStatus.PRE_WRITE_START;
@@ -272,7 +293,7 @@ public abstract class BaseTransaction implements ITransaction {
             boolean result = commitPrimaryKey(cacheToObject);
             if (!result) {
                 throw new RuntimeException(txnId + " " + cacheToObject.getPartId()
-                    + ",txnCommitPrimaryKey false, commit_ts:"+ commitTs +",PrimaryKey:"
+                    + ",txnCommitPrimaryKey false, commit_ts:" + commitTs +",PrimaryKey:"
                     + primaryKey.toString());
             }
             CompletableFuture<Void> commit_future = CompletableFuture.runAsync(() ->
@@ -284,6 +305,7 @@ public abstract class BaseTransaction implements ITransaction {
                     return null;
                 }
             );
+            commitFuture = commit_future;
 //            commit_future.get();
             this.status = TransactionStatus.COMMIT;
         } catch (Throwable t) {
@@ -294,7 +316,27 @@ public abstract class BaseTransaction implements ITransaction {
             log.info("{} {} Commit End Status:{}, Cost:{}ms", txnId, transactionOf(),
                 status, (System.currentTimeMillis() - preWriteStart));
             jobManager.removeJob(jobId.get());
-            cleanUp();
+//            cleanUp();
+        }
+    }
+
+    private void cleanUpJobRun(JobManager jobManager, Location currentLocation) {
+        // 1、getTso
+        long cleanUpTs = TransactionManager.nextTimestamp();
+        // 2、generator job、task、cleanCacheOperator
+        Job job = jobManager.createJob(startTs, cleanUpTs, txnId, null);
+        DingoTransactionRenderJob.renderCleanCacheJob(job, currentLocation, this, true);
+        // 3、run cleanCache
+        if (commitFuture != null) {
+            try {
+                commitFuture.get();
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+        Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+        if (iterator.hasNext()) {
+            Object[] next = iterator.next();
         }
     }
 
@@ -312,11 +354,14 @@ public abstract class BaseTransaction implements ITransaction {
 
     @Override
     public synchronized void rollback(JobManager jobManager) {
-        long rollBackStart = System.currentTimeMillis();
+        if (getType() == TransactionType.NONE) {
+            return;
+        }
         if (getSqlList().size() == 0 || !cache.checkContinue()) {
             log.warn("{} The current {} has no data to rollback",txnId, transactionOf());
             return;
         }
+        long rollBackStart = System.currentTimeMillis();
         log.info("{} {} RollBack Start", txnId, transactionOf());
         Location currentLocation = MetaService.root().currentLocation();
         CommonId jobId = CommonId.EMPTY_JOB;
@@ -338,7 +383,7 @@ public abstract class BaseTransaction implements ITransaction {
             log.info("{} {} RollBack End Status:{}, Cost:{}ms", txnId, transactionOf(),
                 status, (System.currentTimeMillis() - rollBackStart));
             jobManager.removeJob(jobId);
-            cleanUp();
+//            cleanUp();
         }
     }
 

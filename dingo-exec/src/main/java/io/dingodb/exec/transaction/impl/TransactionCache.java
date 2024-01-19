@@ -24,6 +24,7 @@ import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.store.api.StoreInstance;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
@@ -36,20 +37,32 @@ public class TransactionCache {
     private final StoreInstance cache = Services.LOCAL_STORE.getInstance(null, null);
     private final CommonId txnId;
 
+    @Setter
     private CommonId jobId;
 
     private final boolean pessimisticRollback;
 
+    private final boolean cleanCache;
+
     public TransactionCache(CommonId txnId) {
         this.txnId = txnId;
         this.pessimisticRollback = false;
+        this.cleanCache = false;
     }
 
     public TransactionCache(CommonId txnId, long jobSeqId) {
         this.txnId = txnId;
         this.jobId = new CommonId(CommonId.CommonType.JOB, txnId.seq, jobSeqId);
         this.pessimisticRollback = true;
+        this.cleanCache = false;
     }
+
+    public TransactionCache(CommonId txnId, boolean cleanCache) {
+        this.txnId = txnId;
+        this.pessimisticRollback = false;
+        this.cleanCache = cleanCache;
+    }
+
 
     public CacheToObject getPrimaryKey() {
         // call StoreService
@@ -101,6 +114,11 @@ public class TransactionCache {
         return iterator.hasNext();
     }
 
+    public boolean checkCleanContinue() {
+        Iterator<KeyValue> iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_DATA, txnId));
+        return iterator.hasNext();
+    }
+
     public boolean checkPessimisticLockContinue() {
         Iterator<KeyValue> iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_EXTRA_DATA, jobId));
         return iterator.hasNext();
@@ -110,9 +128,13 @@ public class TransactionCache {
         Iterator<KeyValue> iterator;
         if (pessimisticRollback) {
             iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_EXTRA_DATA, jobId));
+            return Iterators.transform(iterator, wrap(ByteUtils::decode)::apply);
+        } else if (cleanCache) {
+            iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_DATA, txnId));
+            return Iterators.transform(iterator, wrap(ByteUtils::decodeTxnCleanUp)::apply);
         } else {
             iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_DATA, txnId));
+            return Iterators.transform(iterator, wrap(ByteUtils::decode)::apply);
         }
-        return Iterators.transform(iterator, wrap(ByteUtils::decode)::apply);
     }
 }

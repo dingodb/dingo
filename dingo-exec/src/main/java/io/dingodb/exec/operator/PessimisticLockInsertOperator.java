@@ -16,12 +16,10 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.codec.PrimitiveCodec;
-import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
@@ -33,8 +31,6 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
-import io.dingodb.partition.DingoPartitionServiceProvider;
-import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Op;
@@ -56,14 +52,18 @@ public class PessimisticLockInsertOperator extends PartModifyOperator {
     @Override
     protected boolean pushTuple(Content content, @Nullable Object[] tuple, Vertex vertex) {
         PessimisticLockInsertParam param = vertex.getParam();
+        CommonId txnId = vertex.getTask().getTxnId();
+        ITransaction transaction = TransactionManager.getTransaction(txnId);
+        if (transaction == null || transaction.getPrimaryKeyLock() != null) {
+            return false;
+        }
         DingoType schema = param.getSchema();
         Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
         KeyValue keyValue = wrap(param.getCodec()::encode).apply(newTuple);
         CommonId jobId = vertex.getTask().getJobId();
-        CommonId txnId = vertex.getTask().getTxnId();
         CommonId tableId = param.getTableId();
         CommonId partId = content.getDistribution().getId();
-        ITransaction transaction = TransactionManager.getTransaction(txnId);
+        CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
         StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, partId);
         byte[] jobIdByte = jobId.encode();
         byte[] txnIdByte = txnId.encode();
@@ -76,7 +76,7 @@ public class PessimisticLockInsertOperator extends PartModifyOperator {
             keyValue.getKey(),
             Op.LOCK.getCode(),
             len,
-            jobIdByte,
+            txnIdByte,
             tableIdByte,
             partIdByte
         );
@@ -114,7 +114,7 @@ public class PessimisticLockInsertOperator extends PartModifyOperator {
         } catch (Throwable e) {
             log.error(e.getMessage(), e);
             // primaryKeyLock rollback
-            TransactionUtil.PessimisticPrimaryLockRollBack(
+            TransactionUtil.pessimisticPrimaryLockRollBack(
                 txnId,
                 tableId,
                 partId,
@@ -128,9 +128,9 @@ public class PessimisticLockInsertOperator extends PartModifyOperator {
             store.deletePrefix(deadLockKeyBytes);
             throw new RuntimeException(e.getMessage());
         }
-        if(future == null) {
+        if (future == null) {
             // primaryKeyLock rollback
-            TransactionUtil.PessimisticPrimaryLockRollBack(
+            TransactionUtil.pessimisticPrimaryLockRollBack(
                 txnId,
                 tableId,
                 partId,
@@ -151,16 +151,7 @@ public class PessimisticLockInsertOperator extends PartModifyOperator {
         // get lock success, delete deadLockKey
         store.deletePrefix(deadLockKeyBytes);
         // lockKeyValue  [11_txnId_tableId_partId_a_lock, forUpdateTs1]
-        transaction.setPrimaryKeyLock(
-            ByteUtils.encode(
-            CommonId.CommonType.TXN_CACHE_LOCK,
-            keyValue.getKey(),
-            Op.LOCK.getCode(),
-            len,
-            txnIdByte,
-            tableIdByte,
-            partIdByte)
-        );
+        transaction.setPrimaryKeyLock(primaryKey);
         // extraKeyValue  [12_jobId_tableId_partId_a_none, value]
         byte[] extraKeyBytes = ByteUtils.encode(
             CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
