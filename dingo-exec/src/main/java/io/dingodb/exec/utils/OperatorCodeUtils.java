@@ -77,7 +77,9 @@ public final class OperatorCodeUtils {
     public static final CommonId GET_BY_INDEX = new CommonId(CommonId.CommonType.OP, OP, 52);
     public static final CommonId GET_BY_KEYS = new CommonId(CommonId.CommonType.OP, OP, 53);
     public static final CommonId TXN_PART_RANGE_DELETE = new CommonId(CommonId.CommonType.OP, OP, 54);
+    public static final CommonId TXN_CLEAN_CACHE = new CommonId(CommonId.CommonType.OP, OP, 55);
     public static final CommonId PIPE_OP = new CommonId(CommonId.CommonType.OP, OP, 60);
+
     public static final CommonId CACHE_OP = new CommonId(CommonId.CommonType.OP, OP, 61);
     public static final CommonId SCAN_WITH_NO_OP = new CommonId(CommonId.CommonType.OP, OP, 62);
     public static final CommonId SCAN_WITH_PIPE_OP = new CommonId(CommonId.CommonType.OP, OP, 63);

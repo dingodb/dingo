@@ -125,6 +125,12 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         }
 
         @Override
+        protected void finalize() throws Throwable {
+            super.finalize();
+            iterator.close();
+        }
+
+        @Override
         public boolean hasNext() {
             return hasNext = iterator.isValid() && compareWithoutLen(iterator.key(), end) < 0;
         }

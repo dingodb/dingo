@@ -34,6 +34,7 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.driver.type.converter.AvaticaResultSetConverter;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.verify.privilege.PrivilegeVerify;
@@ -410,14 +411,15 @@ public class DingoMeta extends MetaImpl {
                 if (transaction != null && transaction.isPessimistic() && transaction.getPrimaryKeyLock() != null
                     && (sh.signature.statementType == StatementType.DELETE
                     || sh.signature.statementType == StatementType.INSERT
-                    || sh.signature.statementType == StatementType.UPDATE)) {
+                    || sh.signature.statementType == StatementType.UPDATE
+                    || sh.signature.statementType == StatementType.IS_DML)) {
                     // rollback pessimistic lock
                     transaction.rollBackPessimisticLock(jobManager);
                 }
                 if (transaction != null) {
                     transaction.addSql(signature.sql);
-                    if (transaction.isAutoCommit()) {
-                        ((DingoConnection) connection).cleanTransaction();
+                    if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
+                        cleanTransaction();
                     }
                 }
                 throw ExceptionUtils.toRuntime(e);
@@ -425,7 +427,7 @@ public class DingoMeta extends MetaImpl {
             boolean done = fetchMaxRowCount == 0 || !iterator.hasNext();
             if (transaction != null) {
                 transaction.addSql(signature.sql);
-                if (transaction.isAutoCommit()) {
+                if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
                     connection.commit();
                 }
             }
@@ -495,6 +497,24 @@ public class DingoMeta extends MetaImpl {
         return false;
     }
 
+    public synchronized void cleanTransaction() throws SQLException {
+        try {
+            ITransaction transaction = ((DingoConnection) connection).getTransaction();
+            if (transaction != null) {
+                transaction.close(jobManager);
+            }
+        } catch (Throwable e) {
+            log.error(e.getMessage(), e);
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                ((DingoConnection) connection).cleanTransaction();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     @Override
     public void commit(ConnectionHandle ch) {
         try {
@@ -507,7 +527,7 @@ public class DingoMeta extends MetaImpl {
             throw new RuntimeException(e);
         } finally {
             try {
-                ((DingoConnection) connection).cleanTransaction();
+                cleanTransaction();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -526,7 +546,7 @@ public class DingoMeta extends MetaImpl {
             throw new RuntimeException(e);
         } finally {
             try {
-                ((DingoConnection) connection).cleanTransaction();
+                cleanTransaction();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

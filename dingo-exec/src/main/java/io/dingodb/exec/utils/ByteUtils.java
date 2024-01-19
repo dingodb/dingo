@@ -140,4 +140,9 @@ public final class ByteUtils {
         return destKey;
     }
 
+    public static Object[] decodeTxnCleanUp(KeyValue keyValue) {
+        Object[] result = new Object[1];
+        result[0] = keyValue;
+        return result;
+    }
 }

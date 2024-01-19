@@ -50,8 +50,8 @@ public class PessimisticRollBackOperator extends TransactionOperator {
     @Override
     public synchronized boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
         PessimisticRollBackParam param = vertex.getParam();
-        CommonId txnId = (CommonId) tuple[0];
-        long forUpdateTs = (long) tuple[1];
+        CommonId.CommonType type = CommonId.CommonType.of((byte) tuple[0]);
+        CommonId txnId = (CommonId) tuple[1];
         CommonId tableId = (CommonId) tuple[2];
         CommonId newPartId = (CommonId) tuple[3];
         int op = (byte) tuple[4];

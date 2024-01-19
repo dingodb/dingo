@@ -56,8 +56,6 @@ public class PessimisticTransaction extends BaseTransaction {
     @Setter
     private long forUpdateTs = 0L;
 
-    @Getter
-    @Setter
     private byte[] primaryKeyLock;
 
     public PessimisticTransaction(long startTs, int isolationLevel) {
@@ -81,6 +79,7 @@ public class PessimisticTransaction extends BaseTransaction {
     @Override
     public synchronized void rollBackPessimisticLock(JobManager jobManager) {
         long rollBackStart = System.currentTimeMillis();
+        cache.setJobId(job.getJobId());
         if(!cache.checkPessimisticLockContinue()) {
             log.warn("{} The current {} has no data to rollBackPessimisticLock",txnId, transactionOf());
             return;
@@ -106,6 +105,7 @@ public class PessimisticTransaction extends BaseTransaction {
             this.status = TransactionStatus.ROLLBACK_PESSIMISTIC_LOCK_FAIL;
             throw new RuntimeException(t);
         } finally {
+            this.status = TransactionStatus.START;
             log.info("{} {}  RollBackPessimisticLock End Status:{}, Cost:{}ms",
                 txnId, transactionOf(), status, (System.currentTimeMillis() - rollBackStart));
             jobManager.removeJob(jobId);
@@ -113,8 +113,20 @@ public class PessimisticTransaction extends BaseTransaction {
     }
 
     @Override
-    public void cleanUp() {
-        super.cleanUp();
+    public synchronized byte[] getPrimaryKeyLock() {
+        return primaryKeyLock;
+    }
+
+    @Override
+    public synchronized void setPrimaryKeyLock(byte[] primaryKeyLock) {
+        if (this.primaryKeyLock == null) {
+            this.primaryKeyLock = primaryKeyLock;
+        }
+    }
+
+    @Override
+    public void cleanUp(JobManager jobManager) {
+        super.cleanUp(jobManager);
         // PessimisticRollback
     }
 

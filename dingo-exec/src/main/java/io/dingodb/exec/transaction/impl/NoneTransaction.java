@@ -102,11 +102,11 @@ public class NoneTransaction extends BaseTransaction {
 
     @Override
     public synchronized void commit(JobManager jobManager) {
-        cleanUp();
+        cleanUp(jobManager);
     }
 
     @Override
     public synchronized void rollback(JobManager jobManager) {
-        cleanUp();
+        cleanUp(jobManager);
     }
 }

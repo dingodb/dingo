@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.partition.PartitionDefinition;
@@ -80,6 +81,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             CommonId txnId = vertex.getTask().getTxnId();
             CommonId tableId = param.getTableId();
             CommonId partId = content.getDistribution().getId();
+            CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
             byte[] primaryLockKey = param.getPrimaryLockKey();
             StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, partId);
             byte[] txnIdBytes = vertex.getTask().getTxnId().encode();
@@ -101,10 +103,9 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     tableIdBytes,
                     partIdBytes
                 );
-                byte[] primaryLockKeyBytes = (byte[]) ByteUtils.decodePessimisticExtraKey(primaryLockKey)[5];
                 byte[] lockKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, dataKey);
                 KeyValue oldKeyValue = store.get(lockKey);
-                if (!(ByteArrayUtils.compare(keyValueKey, primaryLockKeyBytes, 9) == 0)) {
+                if (!(ByteArrayUtils.compare(keyValueKey, primaryLockKey, 9) == 0)) {
                     // This key appears for the first time in the current transaction
                     if (oldKeyValue == null) {
                         // for check deadLock
@@ -113,7 +114,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                             keyValue.getKey(),
                             Op.LOCK.getCode(),
                             len,
-                            jobIdByte,
+                            txnIdBytes,
                             tableIdBytes,
                             partIdBytes
                         );

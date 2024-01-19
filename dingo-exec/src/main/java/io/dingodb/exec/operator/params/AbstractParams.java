@@ -26,12 +26,14 @@ import io.dingodb.common.CommonId;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Content;
 import io.dingodb.exec.table.Part;
+import io.dingodb.exec.transaction.params.CleanCacheParam;
 import io.dingodb.exec.transaction.params.CommitParam;
 import io.dingodb.exec.transaction.params.PessimisticRollBackParam;
 import io.dingodb.exec.transaction.params.PessimisticRollBackScanParam;
 import io.dingodb.exec.transaction.params.PreWriteParam;
 import io.dingodb.exec.transaction.params.RollBackParam;
 import io.dingodb.exec.transaction.params.ScanCacheParam;
+import io.dingodb.exec.transaction.params.ScanCleanCacheParam;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -91,7 +93,9 @@ import lombok.Setter;
     @JsonSubTypes.Type(PessimisticRollBackScanParam.class),
     @JsonSubTypes.Type(DistributionSourceParam.class),
     @JsonSubTypes.Type(DistributionParam.class),
-    @JsonSubTypes.Type(GetDistributionParam.class)
+    @JsonSubTypes.Type(GetDistributionParam.class),
+    @JsonSubTypes.Type(ScanCleanCacheParam.class),
+    @JsonSubTypes.Type(CleanCacheParam.class)
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class AbstractParams {

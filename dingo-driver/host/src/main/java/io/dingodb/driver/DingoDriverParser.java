@@ -313,7 +313,7 @@ public final class DingoDriverParser extends DingoParser {
         if (connection.getTransaction() != null) {
             transaction = connection.getTransaction();
         } else {
-            transaction = connection.createTransaction(isTxn ? OPTIMISTIC : NONE, true);
+            transaction = connection.createTransaction(isTxn ? OPTIMISTIC : NONE, connection.getAutoCommit());
         }
         startTs = transaction.getStartTs();
         txn_Id = transaction.getTxnId();

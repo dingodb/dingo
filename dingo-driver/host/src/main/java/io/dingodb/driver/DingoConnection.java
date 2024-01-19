@@ -178,15 +178,14 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
 
     public synchronized void cleanTransaction() throws SQLException {
         if (transaction != null) {
-            transaction.close();
             transaction = null;
             oneTimeTxIsolation = null;
         }
     }
 
-    public void beginTransaction(boolean pessimistic) throws SQLException{
+    public void beginTransaction(boolean pessimistic) throws SQLException {
         try {
-            if(this.transaction != null) {
+            if (this.transaction != null) {
                 // commit
                 this.transaction.commit(getMeta().getJobManager());
             }
@@ -194,7 +193,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             log.info(e.getMessage(), e);
             throw new SQLException(e);
         } finally {
-            cleanTransaction();
+            getMeta().cleanTransaction();
         }
         createTransaction(pessimistic ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC, false);
     }
@@ -209,7 +208,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         }
         this.autoCommit = autoCommit;
         try {
-            if(this.transaction != null) {
+            if (this.transaction != null) {
                 // commit
                 this.transaction.commit(getMeta().getJobManager());
             }
@@ -217,9 +216,9 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             log.info(e.getMessage(), e);
             throw new SQLException(e);
         } finally {
-            cleanTransaction();
+            getMeta().cleanTransaction();
         }
-        if(!autoCommit) {
+        if (!autoCommit) {
             createTransaction(TransactionType.OPTIMISTIC, false);
             this.autoCommit = false;
         }
@@ -234,7 +233,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     @Override
     public void close() throws SQLException {
         super.close();
-        cleanTransaction();
+        getMeta().cleanTransaction();
         unlockTables();
     }
 

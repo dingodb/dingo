@@ -225,6 +225,7 @@ public class TransactionStoreInstance {
     public boolean txnPessimisticLock(TxnPessimisticLock txnPessimisticLock, long timeOut) {
         txnPessimisticLock.getMutations().stream().peek($ -> $.setKey(setId($.getKey()))).forEach($ -> $.getKey()[0] = 't');
         IsolationLevel isolationLevel = txnPessimisticLock.getIsolationLevel();
+        int n = 1 ;
         long start = System.currentTimeMillis();
         List<Long> resolvedLocks = new ArrayList<>();
         while (true) {
@@ -236,13 +237,26 @@ public class TransactionStoreInstance {
             if (elapsed > timeOut) {
                 throw new RuntimeException("Lock wait timeout exceeded; try restarting transaction");
             }
-            writeResolveConflict(
+            ResolveLockStatus resolveLockStatus = writeResolveConflict(
                 response.getTxnResult(),
                 isolationLevel.getCode(),
                 txnPessimisticLock.getStartTs(),
                 resolvedLocks,
                 "txnPessimisticLock"
             );
+            if (resolveLockStatus == ResolveLockStatus.LOCK_TTL) {
+                try {
+                    long lockTtl = TxnVariables.WaitFixTime;
+                    if (n < TxnVariables.WaitFixNum) {
+                        lockTtl = TxnVariables.WaitTime * n;
+                    }
+                    Thread.sleep(lockTtl);
+                    n++;
+                    log.info("txnPessimisticLock lockInfo wait {} ms end.", lockTtl);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
             long forUpdateTs = TsoService.INSTANCE.tso();
             txnPessimisticLock.setForUpdateTs(forUpdateTs);
         }

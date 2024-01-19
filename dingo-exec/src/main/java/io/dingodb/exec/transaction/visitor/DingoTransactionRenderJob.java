@@ -22,6 +22,7 @@ import io.dingodb.exec.base.Job;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.impl.IdGeneratorImpl;
 import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.exec.transaction.visitor.data.CleanCacheLeaf;
 import io.dingodb.exec.transaction.visitor.data.CommitLeaf;
 import io.dingodb.exec.transaction.visitor.data.Composite;
 import io.dingodb.exec.transaction.visitor.data.Element;
@@ -33,14 +34,17 @@ import io.dingodb.exec.transaction.visitor.data.RollBackLeaf;
 import io.dingodb.exec.transaction.visitor.data.PessimisticRollBackLeaf;
 import io.dingodb.exec.transaction.visitor.data.RootLeaf;
 import io.dingodb.exec.transaction.visitor.data.ScanCacheLeaf;
+import io.dingodb.exec.transaction.visitor.data.ScanCleanCacheLeaf;
 import io.dingodb.exec.transaction.visitor.data.StreamConverterLeaf;
 import io.dingodb.exec.transaction.visitor.data.TransactionElements;
+import io.dingodb.exec.transaction.visitor.function.DingoCleanCacheVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoCommitVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoPessimisticRollBackScanVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoPreWriteVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoPessimisticRollBackVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoRollBackVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoScanCacheVisitFun;
+import io.dingodb.exec.transaction.visitor.function.DingoScanCleanCacheVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoStreamConverterVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoTransactionRootVisitFun;
 import lombok.Getter;
@@ -165,6 +169,30 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
         }
     }
 
+    public static void renderCleanCacheJob(Job job, Location currentLocation,
+                                                        ITransaction transaction, boolean checkRoot) {
+        IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
+        DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
+            job,
+            idGenerator,
+            currentLocation,
+            transaction
+        );
+        Element element;
+        if (transaction.getChannelMap().size() > 0) {
+            element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_CLEAN_CACHE);
+        } else {
+            element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_CLEAN_CACHE);
+        }
+        Collection<Vertex> outputs = element.accept(visitor);
+        if (checkRoot && outputs.size() > 0) {
+            throw new IllegalStateException("There root of plan must be `DingoRoot`.");
+        }
+        if (log.isDebugEnabled()) {
+            log.info("job = {}", job);
+        }
+    }
+
     @Override
     public Collection<Vertex> visit(Leaf leaf) {
         return Collections.emptyList();
@@ -211,6 +239,18 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
     public Collection<Vertex> visit(PessimisticRollBackScanLeaf pessimisticRollBackScanLeaf) {
         return DingoPessimisticRollBackScanVisitFun.visit(job, idGenerator, currentLocation,
             transaction, this, pessimisticRollBackScanLeaf);
+    }
+
+    @Override
+    public Collection<Vertex> visit(ScanCleanCacheLeaf scanCleanCacheLeaf) {
+        return DingoScanCleanCacheVisitFun.visit(job, idGenerator, currentLocation,
+            transaction, this, scanCleanCacheLeaf);
+    }
+
+    @Override
+    public Collection<Vertex> visit(CleanCacheLeaf cleanCacheLeaf) {
+        return DingoCleanCacheVisitFun.visit(job, idGenerator, currentLocation,
+            transaction, this, cleanCacheLeaf);
     }
 
     @Override

@@ -67,6 +67,7 @@ import io.dingodb.exec.operator.TxnPartUpdateOperator;
 import io.dingodb.exec.operator.ValuesOperator;
 import io.dingodb.exec.operator.VectorPartitionOperator;
 import io.dingodb.exec.operator.VectorPointDistanceOperator;
+import io.dingodb.exec.transaction.operator.CleanCacheOperator;
 import io.dingodb.exec.transaction.operator.CommitOperator;
 import io.dingodb.exec.transaction.operator.PessimisticRollBackOperator;
 import io.dingodb.exec.transaction.operator.PreWriteOperator;
@@ -121,6 +122,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.SCAN_WITH_PIPE_OP;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SEND;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SORT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SUM_UP;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_CLEAN_CACHE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_LIKE_SCAN;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_INSERT;
@@ -190,6 +192,7 @@ public final class OperatorFactory {
         OPERATORS.put(PESSIMISTIC_ROLL_BACK, PessimisticRollBackOperator.INSTANCE);
         OPERATORS.put(DISTRIBUTE, DistributeOperator.INSTANCE);
         OPERATORS.put(GET_DISTRIBUTION, GetDistributionOperator.INSTANCE);
+        OPERATORS.put(TXN_CLEAN_CACHE, CleanCacheOperator.INSTANCE);
     }
 
     private OperatorFactory() {
