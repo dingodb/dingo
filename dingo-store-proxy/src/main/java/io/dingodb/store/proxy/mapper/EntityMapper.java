@@ -21,6 +21,7 @@ import io.dingodb.common.CommonId.CommonType;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.sdk.common.codec.CodecUtils;
 import io.dingodb.sdk.common.serial.schema.DingoSchema;
+import io.dingodb.sdk.service.entity.common.CoprocessorV2;
 import io.dingodb.sdk.service.entity.common.Range;
 import io.dingodb.sdk.service.entity.common.RangeWithOptions;
 import io.dingodb.sdk.service.entity.common.Schema;
@@ -30,7 +31,6 @@ import io.dingodb.sdk.service.entity.meta.EntityType;
 import io.dingodb.sdk.service.entity.store.AggregationOperator;
 import io.dingodb.sdk.service.entity.store.AggregationType;
 import io.dingodb.sdk.service.entity.store.Coprocessor;
-import io.dingodb.sdk.service.entity.store.SchemaWrapper;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.proxy.service.CodecService;
 import org.mapstruct.Mapping;
@@ -104,9 +104,21 @@ public interface EntityMapper {
     })
     Coprocessor coprocessorTo(io.dingodb.common.Coprocessor coprocessor);
 
-    default SchemaWrapper schemaTo(io.dingodb.common.Coprocessor.SchemaWrapper schemaWrapper) {
-        return SchemaWrapper.builder()
-            .schema(schemaTo(CodecUtils.createSchemaForColumnDefinitions(MAPPER.columnsTo(schemaWrapper.getSchemas()))))
+    @Mappings({
+        @Mapping(target = "selectionColumns", source = "selection"),
+    })
+    CoprocessorV2 coprocessorTo(io.dingodb.common.CoprocessorV2 coprocessor);
+
+    default io.dingodb.sdk.service.entity.store.SchemaWrapper toSchemaWrapper(io.dingodb.common.SchemaWrapper schemaWrapper) {
+        return io.dingodb.sdk.service.entity.store.SchemaWrapper.builder()
+            .schema(toSchemas(CodecUtils.createSchemaForColumnDefinitions(MAPPER.columnsTo(schemaWrapper.getSchemas()))))
+            .commonId(schemaWrapper.getCommonId())
+            .build();
+    }
+
+    default io.dingodb.sdk.service.entity.common.SchemaWrapper toSchemaWrapper1(io.dingodb.common.SchemaWrapper schemaWrapper) {
+        return io.dingodb.sdk.service.entity.common.SchemaWrapper.builder()
+            .schema(toSchemas(CodecUtils.createSchemaForColumnDefinitions(MAPPER.columnsTo(schemaWrapper.getSchemas()))))
             .commonId(schemaWrapper.getCommonId())
             .build();
     }
@@ -118,7 +130,7 @@ public interface EntityMapper {
             .build();
     }
 
-    default List<Schema> schemaTo(List<DingoSchema> schemas) {
+    default List<Schema> toSchemas(List<DingoSchema> schemas) {
         return schemas.stream()
             .map(schema -> {
                 Type type;

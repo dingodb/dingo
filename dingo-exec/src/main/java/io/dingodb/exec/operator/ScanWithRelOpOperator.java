@@ -19,10 +19,11 @@ package io.dingodb.exec.operator;
 import com.google.common.collect.Iterators;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.exec.Services;
+import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.operator.data.Context;
-import io.dingodb.exec.operator.params.ScanWithNoOpParam;
+import io.dingodb.exec.operator.params.ScanWithRelOpParam;
 import io.dingodb.store.api.StoreInstance;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +42,7 @@ public abstract class ScanWithRelOpOperator extends SoleOutOperator {
         @NonNull Context context,
         @NonNull Vertex vertex
     ) {
-        ScanWithNoOpParam param = vertex.getParam();
+        ScanWithRelOpParam param = vertex.getParam();
         RangeDistribution rd = context.getDistribution();
         byte[] startKey = rd.getStartKey();
         byte[] endKey = rd.getEndKey();
@@ -49,17 +50,25 @@ public abstract class ScanWithRelOpOperator extends SoleOutOperator {
         boolean includeEnd = rd.isWithEnd();
         StoreInstance storeInstance = Services.KV_STORE.getInstance(param.getTableId(), rd.getId());
         return Iterators.transform(
-            storeInstance.scan(new StoreInstance.Range(startKey, endKey, includeStart, includeEnd)),
+            storeInstance.scan(
+                vertex.getStartTs(),
+                new StoreInstance.Range(startKey, endKey, includeStart, includeEnd),
+                param.getCoprocessor()
+            ),
             wrap(param.getCodec()::decode)::apply
         );
     }
 
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        long count = 0;
+        long count;
         long startTime = System.currentTimeMillis();
         Iterator<Object[]> iterator = createIterator(context, vertex);
-        count = doPush(context, vertex, iterator);
+        if (((ScanWithRelOpParam) vertex.getParam()).getCoprocessor() != null) {
+            count = doPushDown(context, vertex, iterator);
+        } else {
+            count = doPush(context, vertex, iterator);
+        }
         if (log.isDebugEnabled()) {
             log.debug("count: {}, cost: {}ms.", count, System.currentTimeMillis() - startTime);
         }
@@ -67,9 +76,25 @@ public abstract class ScanWithRelOpOperator extends SoleOutOperator {
     }
 
     @Override
-    public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
+    public void fin(int pin, @Nullable Fin fin, @NonNull Vertex vertex) {
         vertex.getSoleEdge().fin(fin);
     }
 
     protected abstract long doPush(Context context, @NonNull Vertex vertex, @NonNull Iterator<Object[]> sourceIterator);
+
+    protected long doPushDown(Context context, @NonNull Vertex vertex, @NonNull Iterator<Object[]> sourceIterator) {
+        Edge edge = vertex.getSoleEdge();
+        long count = 0;
+        while (sourceIterator.hasNext()) {
+            Object[] tuple = sourceIterator.next();
+            if (log.isInfoEnabled()) {
+                log.info("Got {} tuple(s).", count);
+            }
+            ++count;
+            if (!edge.transformToNext(context, tuple)) {
+                break;
+            }
+        }
+        return count;
+    }
 }

@@ -17,7 +17,7 @@
 package io.dingodb.exec.utils;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.common.Coprocessor;
+import io.dingodb.common.SchemaWrapper;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
@@ -33,7 +33,7 @@ public class TestSchemaWrapperUtils {
     public void testBuildSchemaWrapper() {
         DingoType type = DingoTypeFactory.INSTANCE.tuple("INT", "LONG", "STRING", "DOUBLE|NULL");
         TupleMapping mapping = TupleMapping.of(ImmutableList.of(0, 2));
-        Coprocessor.SchemaWrapper sw = SchemaWrapperUtils.buildSchemaWrapper(type, mapping, 1);
+        SchemaWrapper sw = SchemaWrapperUtils.buildSchemaWrapper(type, mapping, 1);
         assertThat(sw.getCommonId()).isEqualTo(1);
         List<ColumnDefinition> columns = sw.getSchemas();
         assertThat(columns).hasSize(4);

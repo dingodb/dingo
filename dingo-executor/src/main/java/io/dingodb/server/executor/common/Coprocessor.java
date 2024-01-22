@@ -77,7 +77,7 @@ public class Coprocessor implements io.dingodb.sdk.service.store.Coprocessor {
     @AllArgsConstructor
     public static class SchemaWrapper implements io.dingodb.sdk.service.store.Coprocessor.SchemaWrapper {
 
-        private final io.dingodb.common.Coprocessor.SchemaWrapper schemaWrapper;
+        private final io.dingodb.common.SchemaWrapper schemaWrapper;
 
         @Override
         public List<Column> getSchemas() {
