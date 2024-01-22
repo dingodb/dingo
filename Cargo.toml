@@ -43,7 +43,8 @@ cxx-build = "1.0.111"
 
 [features]
 use-flurry-cache = []
-default = ["use-flurry-cache"]
+use-shared-search-pool = []
+default = ["use-flurry-cache", "use-shared-search-pool"]
 
 [profile.release]
 debug = true

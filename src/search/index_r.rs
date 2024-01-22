@@ -4,8 +4,8 @@ use crate::commons::LOG_CALLBACK;
 use crate::logger::ffi_logger::callback_with_thread_info;
 use crate::WARNING;
 use flurry::HashMap;
-use once_cell::sync::Lazy;
-use tantivy::{Index, IndexReader};
+use once_cell::sync::{Lazy, OnceCell};
+use tantivy::{Executor, Index, IndexReader};
 
 impl Drop for IndexR {
     fn drop(&mut self) {
@@ -59,6 +59,7 @@ pub fn set_index_r(key: String, value: Arc<IndexR>) -> Result<(), String> {
     }
     Ok(())
 }
+
 pub fn remove_index_r(key: String) -> Result<(), String> {
     let pinned = INDEXR_CACHE.pin();
     if pinned.contains_key(&key) {
@@ -73,4 +74,17 @@ pub fn remove_index_r(key: String) -> Result<(), String> {
         )
     }
     Ok(())
+}
+
+// shared thread pool for index searching.
+static INDEX_SHARED_THREAD_POOL: OnceCell<Arc<Executor>> = OnceCell::new();
+
+pub fn get_shared_multithread_executor(num_threads: usize) -> Result<Arc<Executor>, String> {
+    let res: Result<&Arc<Executor>, String> = INDEX_SHARED_THREAD_POOL.get_or_try_init(|| {
+        Executor::multi_thread(num_threads, "tantivy-search-")
+            .map(Arc::new)
+            .map_err(|e| e.to_string())
+    });
+
+    res.map(|executor| executor.clone())
 }

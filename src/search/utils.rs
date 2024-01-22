@@ -254,9 +254,6 @@ mod tests {
         );
 
         let bitmap_h: Vec<u8> = vec![0, 32];
-        assert_eq!(
-            u8_bitmap_to_row_ids(&bitmap_h),
-            [13]
-        );
+        assert_eq!(u8_bitmap_to_row_ids(&bitmap_h), [13]);
     }
 }

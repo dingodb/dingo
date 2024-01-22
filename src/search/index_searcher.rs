@@ -4,6 +4,8 @@ use crate::tokenizer::parse_and_register::get_custom_tokenizer;
 use crate::tokenizer::parse_and_register::register_tokenizer_to_index;
 use crate::RowIdWithScore;
 use crate::ERROR;
+use crate::TRACE;
+use crate::WARNING;
 use cxx::CxxString;
 use cxx::CxxVector;
 use cxx::UniquePtr;
@@ -96,11 +98,33 @@ pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
         return Err(error_info);
     }
 
-    // Set the multithreaded executor for search.
-    if let Err(e) = index.set_default_multithread_executor() {
-        let error_info = format!("Failed to set default multithread executor: {}", e);
-        ERROR!("{}", error_info);
-        return Err(error_info);
+    #[cfg(feature = "use-shared-search-pool")]
+    {
+        // Set the multithreaded executor for search.
+        match get_shared_multithread_executor(2) {
+            Ok(shared_thread_pool) => {
+                index
+                    .set_shared_multithread_executor(shared_thread_pool)
+                    .map_err(|e| e.to_string())?;
+                TRACE!("Using shared multithread");
+            }
+            Err(e) => {
+                WARNING!("Failed to use shared multithread executor, due to: {}", e);
+                index.set_default_multithread_executor().map_err(|e| {
+                    let error_info = format!("Failed to set default multithread executor: {}", e);
+                    ERROR!("{}", error_info);
+                    error_info
+                })?;
+            }
+        }
+    }
+    #[cfg(not(feature = "use-shared-search-pool"))]
+    {
+        index.set_default_multithread_executor().map_err(|e| {
+            let error_info = format!("Failed to set default multithread executor: {}", e);
+            ERROR!("{}", error_info);
+            error_info
+        })?;
     }
 
     // Create a reader for the index with an appropriate reload policy.
@@ -355,7 +379,7 @@ pub fn tantivy_bm25_search_with_filter(
     alive_bitmap.extend(row_ids);
 
     // if u8_bitmap is empty, we regards that don't use alive_bitmap.
-    if u8_bitmap.len()!=0 {
+    if u8_bitmap.len() != 0 {
         top_docs_collector = top_docs_collector.with_alive(Arc::new(alive_bitmap));
     }
 
