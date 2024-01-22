@@ -16,7 +16,7 @@
 
 package io.dingodb.exec.utils;
 
-import io.dingodb.common.Coprocessor;
+import io.dingodb.common.SchemaWrapper;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.ListType;
@@ -53,7 +53,7 @@ public final class SchemaWrapperUtils {
             .build();
     }
 
-    public static Coprocessor.SchemaWrapper buildSchemaWrapper(
+    public static SchemaWrapper buildSchemaWrapper(
         DingoType schema,
         @Nullable TupleMapping keyMapping,
         long id
@@ -70,7 +70,7 @@ public final class SchemaWrapperUtils {
                 return mapDingoType((NullableType) t, reverseMapping.get(i));
             })
             .collect(Collectors.toList());
-        return Coprocessor.SchemaWrapper.builder()
+        return SchemaWrapper.builder()
             .schemas(columnDefinitions)
             .commonId(id)
             .build();

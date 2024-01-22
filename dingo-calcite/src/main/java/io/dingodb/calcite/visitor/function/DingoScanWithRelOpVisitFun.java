@@ -18,6 +18,7 @@ package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.dingo.DingoScanWithRelOp;
+import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
@@ -137,8 +138,7 @@ public final class DingoScanWithRelOpVisitFun {
                 ScanWithNoOpParam param = new ScanWithNoOpParam(
                     tableInfo.getId(),
                     td.tupleType(),
-                    td.keyMapping(),
-                    rel.isPushDown()
+                    td.keyMapping()
                 );
                 vertex = new Vertex(SCAN_WITH_NO_OP, param);
             } else {
@@ -147,6 +147,7 @@ public final class DingoScanWithRelOpVisitFun {
                     td.tupleType(),
                     td.keyMapping(),
                     relOp,
+                    DefinitionMapper.mapToDingoType(rel.getRowType()),
                     rel.isPushDown()
                 );
                 if (relOp instanceof PipeOp) {

@@ -16,9 +16,8 @@
 
 package io.dingodb.common;
 
-import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.table.ColumnDefinition;
 import lombok.Builder;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 import java.util.Collections;
@@ -26,28 +25,10 @@ import java.util.List;
 
 @Getter
 @Builder
-@EqualsAndHashCode
-public class Coprocessor {
+public class SchemaWrapper {
+    public static final SchemaWrapper DEFAULT_WRAPPER = builder().build();
 
     @Builder.Default
-    private int schemaVersion = 1;
-
-    @Builder.Default
-    private SchemaWrapper originalSchema = SchemaWrapper.DEFAULT_WRAPPER;
-
-    @Builder.Default
-    private SchemaWrapper resultSchema = SchemaWrapper.DEFAULT_WRAPPER;
-
-    @Builder.Default
-    private List<Integer> selection = Collections.emptyList();
-
-    @Builder.Default
-    private byte[] expression = ByteArrayUtils.EMPTY_BYTES;
-
-    @Builder.Default
-    private List<Integer> groupBy = Collections.emptyList();
-
-    @Builder.Default
-    private List<AggregationOperator> aggregations = Collections.emptyList();
-
+    private List<ColumnDefinition> schemas = Collections.emptyList();
+    private long commonId;
 }

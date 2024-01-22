@@ -18,9 +18,9 @@ package io.dingodb.store.api;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
+import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.vector.VectorSearchResponse;
-import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
@@ -144,6 +144,16 @@ public interface StoreInstance {
     }
 
     default Iterator<KeyValue> scan(long requestTs, Range range, Coprocessor coprocessor) {
+        if (coprocessor == null) {
+            return scan(requestTs, range);
+        }
+        throw new UnsupportedOperationException();
+    }
+
+    default Iterator<KeyValue> scan(long requestTs, Range range, CoprocessorV2 coprocessor) {
+        if (coprocessor == null) {
+            return scan(requestTs, range);
+        }
         throw new UnsupportedOperationException();
     }
 
@@ -265,6 +275,7 @@ public interface StoreInstance {
     default Future txnPessimisticLockPrimaryKey(TxnPessimisticLock txnPessimisticLock, long timeOut) {
         throw new UnsupportedOperationException();
     }
+
     default boolean txnPessimisticLock(TxnPessimisticLock txnPessimisticLock, long timeOut) {
         throw new UnsupportedOperationException();
     }

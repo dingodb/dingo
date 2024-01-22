@@ -21,6 +21,7 @@ import com.google.common.collect.Iterators;
 import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
+import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.converter.DingoConverter;
@@ -150,7 +151,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
     public io.dingodb.store.api.StoreInstance getInstance(@NonNull CommonId tableId, CommonId regionId) {
         return (io.dingodb.store.api.StoreInstance) java.lang.reflect.Proxy.newProxyInstance(
             getClass().getClassLoader(),
-            new Class[] {io.dingodb.store.api.StoreInstance.class},
+            new Class[]{io.dingodb.store.api.StoreInstance.class},
             new Proxy(new StoreInstance(tableId, regionId))
         );
     }
@@ -161,7 +162,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
     ) {
         return (io.dingodb.store.api.StoreInstance) java.lang.reflect.Proxy.newProxyInstance(
             getClass().getClassLoader(),
-            new Class[] {io.dingodb.store.api.StoreInstance.class},
+            new Class[]{io.dingodb.store.api.StoreInstance.class},
             new Proxy(new StoreInstance(tableId, regionId, indexId))
         );
     }
@@ -242,7 +243,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 table.tupleType(), table.keyMapping()
             );
             this.storeService = storeService(tableId, regionId);
-            this.transactionStoreInstance = new TransactionStoreInstance(storeService,partitionId);
+            this.transactionStoreInstance = new TransactionStoreInstance(storeService, partitionId);
         }
 
         public StoreInstance(CommonId tableId, CommonId regionId, CommonId indexId) {
@@ -259,7 +260,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 table.tupleType(), table.keyMapping()
             );
             this.storeService = storeService(tableId, regionId);
-            this.transactionStoreInstance = new TransactionStoreInstance(storeService,partitionId);
+            this.transactionStoreInstance = new TransactionStoreInstance(storeService, partitionId);
         }
 
         @Override
@@ -311,11 +312,11 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             KeyValue oldKv = setId(tableCodec.encode(oldRecord));
             KeyValue newKv = setId(tableCodec.encode(newRecord));
             return storeService.kvBatchCompareAndSet(
-                    requestTs,
-                    KvBatchCompareAndSetRequest.builder()
-                        .kvs(Collections.singletonList(MAPPER.kvTo(newKv)))
-                        .expectValues(Collections.singletonList(oldKv.getValue())).build()
-                ).getKeyStates().get(0);
+                requestTs,
+                KvBatchCompareAndSetRequest.builder()
+                    .kvs(Collections.singletonList(MAPPER.kvTo(newKv)))
+                    .expectValues(Collections.singletonList(oldKv.getValue())).build()
+            ).getKeyStates().get(0);
         }
 
         @Override
@@ -347,7 +348,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     PartitionService ps = PartitionService.getService(
                         Optional.ofNullable(index.getPartitionStrategy())
                             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-                    regionId = MAPPER.idTo(ps.calcPartId(vectorCodec.encodeKey(new Object[]{id}),distribution));
+                    regionId = MAPPER.idTo(ps.calcPartId(vectorCodec.encodeKey(new Object[]{id}), distribution));
 
                     result = indexService(MAPPER.idTo(indexId), regionId).vectorDelete(
                         requestTs,
@@ -528,6 +529,21 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 coordinators, MAPPER.idTo(tableId), MAPPER.idTo(regionId)
             );
             return Iterators.transform(new ScanIterator(
+                requestTs,
+                regionId,
+                channelProvider,
+                MAPPER.rangeTo(partitionId.seq, range),
+                MAPPER.coprocessorTo(coprocessor),
+                30
+            ), MAPPER::kvFrom);
+        }
+
+        @Override
+        public Iterator<KeyValue> scan(long requestTs, Range range, CoprocessorV2 coprocessor) {
+            ChannelProvider channelProvider = Services.regionChannelProvider(
+                coordinators, MAPPER.idTo(tableId), MAPPER.idTo(regionId)
+            );
+            return Iterators.transform(new ScanIteratorV2(
                 requestTs,
                 regionId,
                 channelProvider,

@@ -27,8 +27,7 @@ import java.util.List;
 @Getter
 @Builder
 @EqualsAndHashCode
-public class Coprocessor {
-
+public class CoprocessorV2 {
     @Builder.Default
     private int schemaVersion = 1;
 
@@ -42,12 +41,5 @@ public class Coprocessor {
     private List<Integer> selection = Collections.emptyList();
 
     @Builder.Default
-    private byte[] expression = ByteArrayUtils.EMPTY_BYTES;
-
-    @Builder.Default
-    private List<Integer> groupBy = Collections.emptyList();
-
-    @Builder.Default
-    private List<AggregationOperator> aggregations = Collections.emptyList();
-
+    private byte[] relExpr = ByteArrayUtils.EMPTY_BYTES;
 }
