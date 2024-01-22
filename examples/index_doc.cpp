@@ -121,7 +121,7 @@ void test_bm25_search()
 
     cout<<"========== execute bm25_search with u8_bitmap[32] =========="<<endl;
     std::vector<u_int8_t> row_ids_bitmap;
-    row_ids_bitmap.push_back(0); // 00000001 -> row_id: 0
+    row_ids_bitmap.push_back(0); // 00000000 -> row_id: none
     row_ids_bitmap.push_back(32); // 00100000 -> row_id: 13
     rust::cxxbridge1::Vec<RowIdWithScore> result = tantivy_bm25_search_with_filter(index_path, "Ancient", row_ids_bitmap, 5, false);
     for (size_t i = 0; i < result.size(); i++)
