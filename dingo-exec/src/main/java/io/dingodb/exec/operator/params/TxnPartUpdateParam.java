@@ -35,7 +35,7 @@ import java.util.NavigableMap;
 
 @Getter
 @JsonTypeName("txn_update")
-@JsonPropertyOrder({"pessimisticTxn", "isolationLevel", "primaryLockKey", "lockTimeOut", "startTs", "forUpdateTs", "table", "part", "schema", "keyMapping", "mapping", "updates"})
+@JsonPropertyOrder({"pessimisticTxn", "isolationLevel", "primaryLockKey", "lockTimeOut", "startTs", "forUpdateTs", "table", "schema", "keyMapping", "mapping", "updates"})
 public class TxnPartUpdateParam extends TxnPartModifyParam {
 
     @JsonProperty("mapping")
@@ -45,7 +45,6 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
 
     public TxnPartUpdateParam(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("mapping") TupleMapping mapping,
@@ -59,7 +58,7 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
     ) {
-        super(tableId, partId, schema, keyMapping, table, distributions, pessimisticTxn,
+        super(tableId, schema, keyMapping, table, distributions, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
         this.mapping = mapping;
         this.updates = updates;

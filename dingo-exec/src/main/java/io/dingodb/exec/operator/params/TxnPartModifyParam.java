@@ -45,7 +45,6 @@ public abstract class TxnPartModifyParam extends PartModifyParam {
 
     public TxnPartModifyParam(
         CommonId tableId,
-        CommonId partId,
         DingoType schema,
         TupleMapping keyMapping,
         Table table,
@@ -57,7 +56,7 @@ public abstract class TxnPartModifyParam extends PartModifyParam {
         long forUpdateTs,
         long lockTimeOut
     ) {
-        super(tableId, partId, schema, keyMapping, table, distributions);
+        super(tableId, schema, keyMapping, table, distributions);
         this.isolationLevel = isolationLevel;
         this.pessimisticTxn = pessimisticTxn;
         this.primaryLockKey = primaryLockKey;

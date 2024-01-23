@@ -38,13 +38,12 @@ public class CompareAndSetParam extends PartModifyParam {
 
     public CompareAndSetParam(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
     ) {
-        super(tableId, partId, schema, keyMapping, table, distributions);
+        super(tableId, schema, keyMapping, table, distributions);
     }
 
     @Override

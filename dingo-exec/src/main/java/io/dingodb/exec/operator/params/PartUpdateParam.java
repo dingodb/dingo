@@ -34,7 +34,7 @@ import java.util.NavigableMap;
 
 @Getter
 @JsonTypeName("update")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "mapping", "updates"})
+@JsonPropertyOrder({"table", "schema", "keyMapping", "mapping", "updates"})
 public class PartUpdateParam extends PartModifyParam {
 
     @JsonProperty("mapping")
@@ -44,7 +44,6 @@ public class PartUpdateParam extends PartModifyParam {
 
     public PartUpdateParam(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("mapping") TupleMapping mapping,
@@ -52,7 +51,7 @@ public class PartUpdateParam extends PartModifyParam {
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
     ) {
-        super(tableId, partId, schema, keyMapping, table, distributions);
+        super(tableId, schema, keyMapping, table, distributions);
         this.mapping = mapping;
         this.updates = updates;
     }

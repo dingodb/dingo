@@ -32,12 +32,11 @@ import java.util.NavigableMap;
 
 @Getter
 @JsonTypeName("pessimistic_lock_delete")
-@JsonPropertyOrder({"isolationLevel", "startTs", "forUpdateTs", "lockTimeOut", "pessimisticTxn", "table", "part", "schema", "keyMapping"})
+@JsonPropertyOrder({"isolationLevel", "startTs", "forUpdateTs", "lockTimeOut", "pessimisticTxn", "table", "schema", "keyMapping"})
 public class PessimisticLockDeleteParam extends TxnPartModifyParam {
 
     public PessimisticLockDeleteParam(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("isolationLevel") int isolationLevel,
@@ -49,7 +48,7 @@ public class PessimisticLockDeleteParam extends TxnPartModifyParam {
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
     ) {
-        super(tableId, partId, schema, keyMapping, table, distributions, pessimisticTxn,
+        super(tableId, schema, keyMapping, table, distributions, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
     }
     public void inc() {

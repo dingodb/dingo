@@ -90,7 +90,6 @@ public class DingoTableModifyVisitFun {
                             vertex = new Vertex(PESSIMISTIC_LOCK_INSERT,
                                 new PessimisticLockInsertParam(
                                     tableId,
-                                    input.getHint().getPartId(),
                                     td.tupleType(),
                                     td.keyMapping(),
                                     transaction.getIsolationLevel(),
@@ -105,7 +104,6 @@ public class DingoTableModifyVisitFun {
                             vertex = new Vertex(TXN_PART_INSERT,
                                 new TxnPartInsertParam(
                                     tableId,
-                                    input.getHint().getPartId(),
                                     td.tupleType(),
                                     td.keyMapping(),
                                     pessimisticTxn,
@@ -118,9 +116,10 @@ public class DingoTableModifyVisitFun {
                                     distributions));
                         }
                     } else {
-                        vertex = new Vertex(PART_INSERT,
-                            new PartInsertParam(tableId, input.getHint().getPartId(), td.tupleType(),
-                                td.keyMapping(), td, distributions));
+                        vertex = new Vertex(
+                            PART_INSERT,
+                            new PartInsertParam(tableId, td.tupleType(), td.keyMapping(), td, distributions)
+                        );
                     }
                     break;
                 case UPDATE:
@@ -135,7 +134,6 @@ public class DingoTableModifyVisitFun {
                             vertex = new Vertex(PESSIMISTIC_LOCK_UPDATE,
                                 new PessimisticLockUpdateParam(
                                     tableId,
-                                    input.getHint().getPartId(),
                                     td.tupleType(),
                                     td.keyMapping(),
                                     updateMapping,
@@ -156,7 +154,6 @@ public class DingoTableModifyVisitFun {
                             vertex = new Vertex(TXN_PART_UPDATE,
                                 new TxnPartUpdateParam(
                                     tableId,
-                                    input.getHint().getPartId(),
                                     td.tupleType(),
                                     td.keyMapping(),
                                     updateMapping,
@@ -178,7 +175,6 @@ public class DingoTableModifyVisitFun {
                         vertex = new Vertex(PART_UPDATE,
                             new PartUpdateParam(
                                 tableId,
-                                input.getHint().getPartId(),
                                 td.tupleType(),
                                 td.keyMapping(),
                                 updateMapping,
@@ -198,7 +194,6 @@ public class DingoTableModifyVisitFun {
                             vertex = new Vertex(PESSIMISTIC_LOCK_DELETE,
                                 new PessimisticLockDeleteParam(
                                     tableId,
-                                    input.getHint().getPartId(),
                                     td.tupleType(),
                                     td.keyMapping(),
                                     transaction.getIsolationLevel(),
@@ -215,7 +210,6 @@ public class DingoTableModifyVisitFun {
                             vertex = new Vertex(TXN_PART_DELETE,
                                 new TxnPartDeleteParam(
                                     tableId,
-                                    input.getHint().getPartId(),
                                     td.tupleType(),
                                     td.keyMapping(),
                                     pessimisticTxn,
@@ -231,7 +225,7 @@ public class DingoTableModifyVisitFun {
                         }
                     } else {
                         vertex = new Vertex(PART_DELETE,
-                            new PartDeleteParam(tableId, input.getHint().getPartId(), td.tupleType(),
+                            new PartDeleteParam(tableId, td.tupleType(),
                                 td.keyMapping(), td, distributions)
                         );
                     }

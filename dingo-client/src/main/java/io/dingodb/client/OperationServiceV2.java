@@ -30,7 +30,6 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.OutputHint;
@@ -41,8 +40,10 @@ import io.dingodb.exec.impl.IdGeneratorImpl;
 import io.dingodb.exec.impl.JobManagerImpl;
 import io.dingodb.exec.operator.params.CoalesceParam;
 import io.dingodb.exec.operator.params.CompareAndSetParam;
+import io.dingodb.exec.operator.params.DistributionParam;
 import io.dingodb.exec.operator.params.DistributionSourceParam;
 import io.dingodb.exec.operator.params.GetByKeysParam;
+import io.dingodb.exec.operator.params.GetDistributionParam;
 import io.dingodb.exec.operator.params.PartDeleteParam;
 import io.dingodb.exec.operator.params.PartInsertParam;
 import io.dingodb.exec.operator.params.PartRangeDeleteParam;
@@ -54,8 +55,6 @@ import io.dingodb.exec.operator.params.ValuesParam;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
-import io.dingodb.partition.DingoPartitionServiceProvider;
-import io.dingodb.partition.PartitionService;
 import io.dingodb.sdk.common.utils.Parameters;
 import io.dingodb.store.proxy.service.CodecService;
 import io.dingodb.store.proxy.service.TsoService;
@@ -68,19 +67,19 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import static io.dingodb.client.utils.OperationUtils.mapKey2;
 import static io.dingodb.client.utils.OperationUtils.mapKeyPrefix;
-import static io.dingodb.common.util.NoBreakFunctions.wrap;
 import static io.dingodb.common.util.Utils.sole;
 import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COALESCE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COMPARE_AND_SET;
+import static io.dingodb.exec.utils.OperatorCodeUtils.DISTRIBUTE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_KEYS;
+import static io.dingodb.exec.utils.OperatorCodeUtils.GET_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PARTITION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_INSERT;
@@ -105,43 +104,10 @@ public class OperationServiceV2 {
 
     }
 
-//    public synchronized boolean createTable(String schema, String name, TableDefinition table) {
-//        MetaService service = getSubMetaService(schema);
-//        Optional.ifPresent(table.getPartDefinition(), __ -> checkAndConvertRangePartition(table));
-//        service.createTable(name, Mapping.mapping(table));
-//        return true;
-//    }
-//
-//    private void checkAndConvertRangePartition(Table table) {
-//        List<Column> columns = table.getColumns();
-//        List<String> keyNames = new ArrayList<>();
-//        List<DingoType> keyTypes = new ArrayList<>();
-//        columns.stream().filter(Column::isPrimary)
-//            .sorted(Comparator.comparingInt(Column::getPrimary))
-//            .peek(col -> keyNames.add(col.getName()))
-//            .map(col -> DingoTypeFactory.INSTANCE.fromName(col.getType(), col.getElementType(), col.isNullable()))
-//            .forEach(keyTypes::add);
-//        DefinitionUtils.checkAndConvertRangePartition(
-//            keyNames,
-//            table.getPartition().getCols(),
-//            keyTypes,
-//            table.getPartition().getDetails().stream().map(PartitionDetail::getOperand).collect(Collectors.toList())
-//        );
-//    }
-//
-//    public boolean dropTable(String schema, String tableName) {
-//        MetaService service = getSubMetaService(schema);
-//        return service.dropTable(tableName);
-//    }
-
     public MetaService getSubMetaService(String schemaName) {
         schemaName = schemaName.toUpperCase();
         return Parameters.nonNull(metaService.getSubMetaService(schemaName), "Schema not found: " + schemaName);
     }
-
-//    public TableDefinition getTableDefinition(String schemaName, String tableName) {
-//        return getSubMetaService(schemaName).getTableDefinition(tableName);
-//    }
 
     public Table getTable(String schema, String table) {
         return getSubMetaService(schema).getTable(table);
@@ -151,7 +117,13 @@ public class OperationServiceV2 {
         return TsoService.INSTANCE.tso();
     }
 
-    public DeleteRangeResult rangeDelete(String schema, String tableName, Key begin, Key end, boolean withBegin, boolean withEnd) {
+    public DeleteRangeResult rangeDelete(String schema,
+                                         String tableName,
+                                         Key begin,
+                                         Key end,
+                                         boolean withBegin,
+                                         boolean withEnd
+    ) {
         long jobSeqId = tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId, CommonId.EMPTY_TRANSACTION, null);
         IdGeneratorImpl idGenerator = new IdGeneratorImpl(job.getJobId().seq);
@@ -160,7 +132,16 @@ public class OperationServiceV2 {
         try {
             Location currentLocation = MetaService.root().currentLocation();
             // rangeDelete --> root
-            List<Vertex> rangeDeleteOutputs = rangeDelete(schema, tableName, job, idGenerator, currentLocation, begin, end, withBegin, withEnd);
+            List<Vertex> rangeDeleteOutputs = rangeDelete(
+                schema,
+                tableName,
+                job,
+                idGenerator,
+                currentLocation,
+                begin,
+                end,
+                withBegin,
+                withEnd);
             List<Vertex> root = root(job, idGenerator, currentLocation, rangeDeleteOutputs);
             if (root.size() > 0) {
                 throw new IllegalStateException("There root of plan must be `DingoRoot`");
@@ -192,7 +173,7 @@ public class OperationServiceV2 {
 
         try {
             Location currentLocation = MetaService.root().currentLocation();
-            // getByKey --> root
+            // distribution --> getByKey --> root
             List<Vertex> byKeyOutputs = getByKey(schema, tableName, job, idGenerator, currentLocation, tuples);
             List<Vertex> root = root(job, idGenerator, currentLocation, byKeyOutputs);
             if (root.size() > 0) {
@@ -363,17 +344,19 @@ public class OperationServiceV2 {
         }
     }
 
-    private List<Vertex> scan(String schema, String tableName, Job job, IdGenerator idGenerator, Location currentLocation, OpKeyRange keyRange) {
+    private List<Vertex> scan(String schema,
+                              String tableName,
+                              Job job,
+                              IdGenerator idGenerator,
+                              Location currentLocation,
+                              OpKeyRange keyRange
+    ) {
         MetaService metaService = getSubMetaService(schema);
         Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
-        final PartitionService ps = PartitionService.getService(
-            Optional.ofNullable(td.getPartitionStrategy())
-                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         io.dingodb.codec.KeyValueCodec codec = CodecService.INSTANCE.createKeyValueCodec(
             tableId, td.tupleType(), td.keyMapping()
         );
-        NavigableSet<io.dingodb.common.partition.RangeDistribution> distributions;
 
         Key start = keyRange.start;
         Object[] dst = new Object[td.getColumns().size()];
@@ -420,7 +403,8 @@ public class OperationServiceV2 {
     private List<Vertex> rangeDelete(String schema, String tableName,
                                     Job job, IdGenerator idGenerator,
                                     Location currentLocation,
-                                    Key begin, Key end, boolean withBegin, boolean withEnd) {
+                                    Key begin, Key end, boolean withBegin, boolean withEnd
+    ) {
         MetaService metaService = getSubMetaService(schema);
         CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
         Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
@@ -430,13 +414,6 @@ public class OperationServiceV2 {
 
         byte[] startKey = codec.encodeKeyPrefix(mapKeyPrefix(td, begin), begin.userKey.size());
         byte[] endKey = codec.encodeKeyPrefix(mapKeyPrefix(td, end), end.userKey.size());
-        PartitionService ps = PartitionService.getService(
-            Optional.ofNullable(td.getPartitionStrategy())
-                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-        NavigableSet<io.dingodb.common.partition.RangeDistribution> distributions =
-            ps.calcPartitionRange(
-                startKey, endKey, withBegin, withEnd,
-                MetaService.root().getRangeDistribution(tableId));
         DistributionSourceParam distributionParam = new DistributionSourceParam(
             td, MetaService.root().getRangeDistribution(tableId),
             startKey, endKey, withBegin, withEnd, null, false, false);
@@ -463,84 +440,96 @@ public class OperationServiceV2 {
         return outputs;
     }
 
-    private List<Vertex> values(String schema, String tableName, Job job, IdGenerator idGenerator, Location currentLocation, List<Object[]> tuples) {
-        MetaService metaService = getSubMetaService(schema);
-        Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
-        CommonId tableId = td.getTableId();
-        PartitionService ps = PartitionService.getService(
-            Optional.ofNullable(td.getPartitionStrategy()).orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-        io.dingodb.codec.KeyValueCodec codec = CodecService.INSTANCE.createKeyValueCodec(
-            td.tupleType(), td.keyMapping()
-        );
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts = metaService.getRangeDistribution(tableId);
-
+    private List<Vertex> values(String schema,
+                                String tableName,
+                                Job job,
+                                IdGenerator idGenerator,
+                                Location currentLocation,
+                                List<Object[]> tuples
+    ) {
         List<Vertex> outputs = new LinkedList<>();
-        Map<CommonId, List<Object[]>> partMap = ps.partTuples(tuples, wrap(codec::encodeKey), parts);
-        for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
-            ValuesParam valuesParam = new ValuesParam(entry.getValue(), null);
-            Vertex values = new Vertex(VALUES, valuesParam);
-            Task task = job.getOrCreate(currentLocation, idGenerator);
-            values.setId(idGenerator.getOperatorId(task.getId()));
-            OutputHint hint = new OutputHint();
-            hint.setPartId(entry.getKey());
-            hint.setLocation(currentLocation);
-            values.setHint(hint);
-            task.putVertex(values);
+        ValuesParam valuesParam = new ValuesParam(tuples, null);
+        Vertex values = new Vertex(VALUES, valuesParam);
+        Task task = job.getOrCreate(currentLocation, idGenerator);
+        values.setId(idGenerator.getOperatorId(task.getId()));
+        OutputHint hint = new OutputHint();
+        hint.setLocation(currentLocation);
+        values.setHint(hint);
+        task.putVertex(values);
 
-            outputs.add(values);
-        }
+        outputs.add(values);
         return outputs;
     }
 
-    private List<Vertex> getByKey(String schema, String tableName, Job job, IdGenerator idGenerator, Location currentLocation, List<Object[]> tuples) {
+    private List<Vertex> getByKey(String schema,
+                                  String tableName,
+                                  Job job,
+                                  IdGenerator idGenerator,
+                                  Location currentLocation,
+                                  List<Object[]> tuples
+    ) {
         MetaService metaService = getSubMetaService(schema);
         Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         CommonId tableId = td.getTableId();
-        PartitionService ps = PartitionService.getService(
-            Optional.ofNullable(td.getPartitionStrategy())
-                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts = metaService.getRangeDistribution(tableId);
-        io.dingodb.codec.KeyValueCodec codec = CodecService.INSTANCE.createKeyValueCodec(
-            td.tupleType(), td.keyMapping()
-        );
-        Map<CommonId, List<Object[]>> partMap = ps.partTuples(tuples, wrap(codec::encodeKey), parts);
-
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
+            metaService.getRangeDistribution(tableId);
         List<Vertex> outputs = new LinkedList<>();
-        for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
-            GetByKeysParam param = new GetByKeysParam(
-                tableId, td.tupleType(), td.keyMapping(), null, null, td
-            );
-            Task task = job.getOrCreate(currentLocation, idGenerator);
-            Vertex vertex = new Vertex(GET_BY_KEYS, param);
-            OutputHint hint = new OutputHint();
-            hint.setPartId(entry.getKey());
-            vertex.setHint(hint);
-            vertex.setId(idGenerator.getOperatorId(task.getId()));
-            task.putVertex(vertex);
-            outputs.add(vertex);
-        }
+
+        GetDistributionParam distributionParam = new GetDistributionParam(tuples, td.keyMapping(), td, parts);
+        Vertex distributionVertex = new Vertex(GET_DISTRIBUTION, distributionParam);
+        Task task = job.getOrCreate(currentLocation, idGenerator);
+        distributionVertex.setId(idGenerator.getOperatorId(task.getId()));
+        task.putVertex(distributionVertex);
+
+        GetByKeysParam param = new GetByKeysParam(
+            tableId, td.tupleType(), td.keyMapping(), null, null, td
+        );
+        Vertex vertex = new Vertex(GET_BY_KEYS, param);
+        OutputHint hint = new OutputHint();
+        vertex.setHint(hint);
+        vertex.setId(idGenerator.getOperatorId(task.getId()));
+        Edge edge = new Edge(distributionVertex, vertex);
+        distributionVertex.addEdge(edge);
+        vertex.addIn(edge);
+        task.putVertex(vertex);
+        outputs.add(vertex);
         return outputs;
     }
 
-    private List<Vertex> partition(String schema, String tableName, Job job, IdGenerator idGenerator, Location currentLocation, List<Vertex> inputs) {
+    private List<Vertex> partition(String schema,
+                                   String tableName,
+                                   Job job,
+                                   IdGenerator idGenerator,
+                                   Location currentLocation,
+                                   List<Vertex> inputs
+    ) {
         List<Vertex> outpus = new LinkedList<>();
         MetaService metaService = getSubMetaService(schema);
         Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         CommonId tableId = td.getTableId();
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts = metaService.getRangeDistribution(tableId);
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
+            metaService.getRangeDistribution(tableId);
         Set<Long> parentIds = parts.values().stream().map(d -> d.getId().domain).collect(Collectors.toSet());
         for (Vertex input : inputs) {
             Task task = input.getTask();
+            DistributionParam distributionParam = new DistributionParam(tableId, td, parts);
+            Vertex distributeVertex = new Vertex(DISTRIBUTE, distributionParam);
+            distributeVertex.setId(idGenerator.getOperatorId(task.getId()));
+            Edge inputEdge = new Edge(input, distributeVertex);
+            input.addEdge(inputEdge);
+            distributeVertex.addIn(inputEdge);
+            task.putVertex(distributeVertex);
+
             PartitionParam partitionParam = new PartitionParam(parentIds, td);
             Vertex vertex = new Vertex(PARTITION, partitionParam);
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             OutputHint hint = new OutputHint();
             hint.setLocation(currentLocation);
             vertex.setHint(hint);
-            Edge edge = new Edge(input, vertex);
+            Edge edge = new Edge(distributeVertex, vertex);
             vertex.addIn(edge);
             task.putVertex(vertex);
-            input.addEdge(edge);
+            distributeVertex.addEdge(edge);
             outpus.add(vertex);
         }
         return outpus;
@@ -594,17 +583,22 @@ public class OperationServiceV2 {
         return outputs;
     }
 
-    private List<Vertex> delete(String schema, String tableName, IdGenerator idGenerator, Location currentLocation, List<Vertex> inputs) {
+    private List<Vertex> delete(String schema,
+                                String tableName,
+                                IdGenerator idGenerator,
+                                Location currentLocation,
+                                List<Vertex> inputs
+    ) {
         MetaService metaService = getSubMetaService(schema);
         CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
         Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         List<Vertex> outputs = new LinkedList<>();
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts = metaService.getRangeDistribution(tableId);
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
+            metaService.getRangeDistribution(tableId);
 
         for (Vertex input : inputs) {
             Task task = input.getTask();
-            PartDeleteParam param = new PartDeleteParam(tableId, input.getHint().getPartId(),
-                td.tupleType(), td.keyMapping(), td, parts);
+            PartDeleteParam param = new PartDeleteParam(tableId, td.tupleType(), td.keyMapping(), td, parts);
             Vertex vertex = new Vertex(PART_DELETE, param);
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);
@@ -620,16 +614,22 @@ public class OperationServiceV2 {
         return outputs;
     }
 
-    private List<Vertex> insert(String schema, String tableName, IdGenerator idGenerator, Location currentLocation, List<Vertex> inputs) {
+    private List<Vertex> insert(String schema,
+                                String tableName,
+                                IdGenerator idGenerator,
+                                Location currentLocation,
+                                List<Vertex> inputs
+    ) {
         MetaService metaService = getSubMetaService(schema);
         CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
         Table tableDefinition = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         List<Vertex> outputs = new LinkedList<>();
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts = metaService.getRangeDistribution(tableId);
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
+            metaService.getRangeDistribution(tableId);
 
         for (Vertex input : inputs) {
             Task task = input.getTask();
-            PartInsertParam insertParam = new PartInsertParam(tableId, input.getHint().getPartId(),
+            PartInsertParam insertParam = new PartInsertParam(tableId,
                 tableDefinition.tupleType(), tableDefinition.keyMapping(), tableDefinition, parts);
             Vertex vertex = new Vertex(PART_INSERT, insertParam);
             vertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -646,20 +646,25 @@ public class OperationServiceV2 {
         return outputs;
     }
 
-    private List<Vertex> compareAndSet(String schema, String tableName, IdGenerator idGenerator, Location currentLocation, List<Vertex> inputs) {
+    private List<Vertex> compareAndSet(String schema,
+                                       String tableName,
+                                       IdGenerator idGenerator,
+                                       Location currentLocation,
+                                       List<Vertex> inputs
+    ) {
         MetaService metaService = getSubMetaService(schema);
         CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
         Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
-        NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.common.partition.RangeDistribution> parts = new TreeMap<>();
-        MetaService.root().getRangeDistribution(tableId)
-            .forEach((k, v) -> parts.put(new ByteArrayUtils.ComparableByteArray(k.getBytes(), k.isIgnoreLen(), k.getPos()), v));
+        NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.common.partition.RangeDistribution> parts =
+            new TreeMap<>();
+        MetaService.root().getRangeDistribution(tableId).forEach((k, v) -> parts.put(
+            new ByteArrayUtils.ComparableByteArray(k.getBytes(), k.isIgnoreLen(), k.getPos()), v));
 
         List<Vertex> outputs = new LinkedList<>();
 
         for (Vertex input : inputs) {
             Task task = input.getTask();
-            CompareAndSetParam param = new CompareAndSetParam(tableId,
-                input.getHint().getPartId(), td.tupleType(), td.keyMapping(), td, parts);
+            CompareAndSetParam param = new CompareAndSetParam(tableId, td.tupleType(), td.keyMapping(), td, parts);
             Vertex vertex = new Vertex(COMPARE_AND_SET, param);
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);

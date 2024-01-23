@@ -34,18 +34,17 @@ import java.util.NavigableMap;
 
 @Getter
 @JsonTypeName("insert")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping"})
+@JsonPropertyOrder({"table", "schema", "keyMapping"})
 public class PartInsertParam extends PartModifyParam {
 
     public PartInsertParam(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
     ) {
-        super(tableId, partId, schema, keyMapping, table, distributions);
+        super(tableId, schema, keyMapping, table, distributions);
 
     }
 

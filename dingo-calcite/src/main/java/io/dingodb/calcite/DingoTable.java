@@ -21,6 +21,7 @@ import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.util.Optional;
 import io.dingodb.meta.TableStatistic;
 import io.dingodb.meta.entity.Table;
 import lombok.EqualsAndHashCode;
@@ -96,7 +97,8 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
             null,
             null,
             null,
-            ((DingoParserContext) context.getCluster().getPlanner().getContext()).isPushDown(),
+            ((DingoParserContext) context.getCluster().getPlanner().getContext()).isPushDown()
+                && Optional.mapOrGet(table.engine, __ -> !__.contains("TXN"), () -> true),
             false
         );
     }
