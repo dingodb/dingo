@@ -32,12 +32,11 @@ import java.util.NavigableMap;
 
 @Getter
 @JsonTypeName("txn_insert")
-@JsonPropertyOrder({"pessimisticTxn", "isolationLevel", "primaryLockKey", "lockTimeOut", "startTs", "forUpdateTs", "table", "part", "schema", "keyMapping"})
+@JsonPropertyOrder({"pessimisticTxn", "isolationLevel", "primaryLockKey", "lockTimeOut", "startTs", "forUpdateTs", "table", "schema", "keyMapping"})
 public class TxnPartInsertParam extends TxnPartModifyParam {
 
     public TxnPartInsertParam(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("pessimisticTxn") boolean pessimisticTxn,
@@ -49,7 +48,7 @@ public class TxnPartInsertParam extends TxnPartModifyParam {
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
     ) {
-        super(tableId, partId, schema, keyMapping, table, distributions, pessimisticTxn,
+        super(tableId, schema, keyMapping, table, distributions, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
     }
 

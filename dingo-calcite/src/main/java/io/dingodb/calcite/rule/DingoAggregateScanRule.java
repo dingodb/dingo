@@ -55,6 +55,9 @@ public class DingoAggregateScanRule extends RelRule<RelRule.Config> {
         RelOptCluster cluster = aggregate.getCluster();
         RexNode filter = scan.getFilter();
         TupleMapping selection = scan.getSelection();
+        if (!scan.isPushDown()) {
+            return;
+        }
         boolean isCountNoArgListAgg = aggregate.getAggCallList() != null && aggregate.getAggCallList().size() == 1
             && aggregate.getAggCallList().get(0).toString().equalsIgnoreCase("COUNT()")
             && selection == null;

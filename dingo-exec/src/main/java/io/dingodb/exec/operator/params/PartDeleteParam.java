@@ -29,18 +29,17 @@ import io.dingodb.meta.entity.Table;
 import java.util.NavigableMap;
 
 @JsonTypeName("delete")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping"})
+@JsonPropertyOrder({"table", "schema", "keyMapping"})
 public class PartDeleteParam extends PartModifyParam {
 
     public PartDeleteParam(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
     ) {
-        super(tableId, partId, schema, keyMapping, table, distributions);
+        super(tableId, schema, keyMapping, table, distributions);
     }
 
     public void inc() {

@@ -35,7 +35,7 @@ import java.util.NavigableMap;
 
 @Getter
 @JsonTypeName("pessimistic_lock_update")
-@JsonPropertyOrder({"isolationLevel", "startTs", "lockTtl", "lockTimeOut", "pessimisticTxn", "table", "part", "schema", "keyMapping"})
+@JsonPropertyOrder({"isolationLevel", "startTs", "lockTtl", "lockTimeOut", "pessimisticTxn", "table", "schema", "keyMapping"})
 public class PessimisticLockUpdateParam extends TxnPartModifyParam {
 
     @JsonProperty("mapping")
@@ -45,7 +45,6 @@ public class PessimisticLockUpdateParam extends TxnPartModifyParam {
 
     public PessimisticLockUpdateParam(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("mapping") TupleMapping mapping,
@@ -59,7 +58,7 @@ public class PessimisticLockUpdateParam extends TxnPartModifyParam {
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
     ) {
-        super(tableId, partId, schema, keyMapping, table, distributions, pessimisticTxn,
+        super(tableId, schema, keyMapping, table, distributions, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
         this.mapping = mapping;
         this.updates = updates;

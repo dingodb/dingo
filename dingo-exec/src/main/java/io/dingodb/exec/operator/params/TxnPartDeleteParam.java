@@ -29,12 +29,11 @@ import io.dingodb.meta.entity.Table;
 import java.util.NavigableMap;
 
 @JsonTypeName("txn_delete")
-@JsonPropertyOrder({"pessimisticTxn", "isolationLevel", "primaryLockKey", "lockTimeOut", "startTs", "forUpdateTs", "table", "part", "schema", "keyMapping"})
+@JsonPropertyOrder({"pessimisticTxn", "isolationLevel", "primaryLockKey", "lockTimeOut", "startTs", "forUpdateTs", "table", "schema", "keyMapping"})
 public class TxnPartDeleteParam extends TxnPartModifyParam {
 
     public TxnPartDeleteParam(
         @JsonProperty("table") CommonId tableId,
-        @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("pessimisticTxn") boolean pessimisticTxn,
@@ -46,7 +45,7 @@ public class TxnPartDeleteParam extends TxnPartModifyParam {
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
     ) {
-        super(tableId, partId, schema, keyMapping, table, distributions, pessimisticTxn,
+        super(tableId, schema, keyMapping, table, distributions, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
     }
 

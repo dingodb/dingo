@@ -56,13 +56,12 @@ public abstract class PartModifyParam extends AbstractParams {
 
     public PartModifyParam(
         CommonId tableId,
-        CommonId partId,
         DingoType schema,
         TupleMapping keyMapping,
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
     ) {
-        super(partId, null);
+        super();
         this.tableId = tableId;
         this.schema = schema;
         this.keyMapping = keyMapping;
