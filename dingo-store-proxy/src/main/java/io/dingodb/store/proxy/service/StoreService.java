@@ -103,7 +103,6 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
     private StoreService() {
         String coordinators = DingoConfiguration.instance().find("coordinators", String.class);
-//        metaService = new MetaServiceClient(coordinators);
         this.coordinators = Services.parse(coordinators);
         metaService = MetaService.root();
     }
@@ -126,19 +125,19 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             try {
                 return method.invoke(storeInstance, args);
             } catch (DingoClientException.InvalidRouteTableException e) {
-                io.dingodb.store.proxy.service.MetaService.ROOT.metaService.cache.invalidDistribution(
+                io.dingodb.store.proxy.meta.MetaService.ROOT.cache.invalidDistribution(
                     storeInstance.tableId
                 );
-                io.dingodb.store.proxy.service.MetaService.ROOT.metaService.cache.invalidDistribution(
+                io.dingodb.store.proxy.meta.MetaService.ROOT.cache.invalidDistribution(
                     storeInstance.table.tableId
                 );
                 throw e;
             } catch (InvocationTargetException e) {
                 if (e.getTargetException() instanceof DingoClientException.InvalidRouteTableException) {
-                    io.dingodb.store.proxy.service.MetaService.ROOT.metaService.cache.invalidDistribution(
+                    io.dingodb.store.proxy.meta.MetaService.ROOT.cache.invalidDistribution(
                         storeInstance.tableId
                     );
-                    io.dingodb.store.proxy.service.MetaService.ROOT.metaService.cache.invalidDistribution(
+                    io.dingodb.store.proxy.meta.MetaService.ROOT.cache.invalidDistribution(
                         storeInstance.table.tableId
                     );
                 }

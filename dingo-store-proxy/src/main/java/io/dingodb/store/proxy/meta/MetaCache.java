@@ -31,32 +31,37 @@ import io.dingodb.sdk.service.MetaService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.entity.common.Location;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
+import io.dingodb.sdk.service.entity.meta.EntityType;
 import io.dingodb.sdk.service.entity.meta.GetIndexRangeRequest;
 import io.dingodb.sdk.service.entity.meta.GetSchemaByNameRequest;
+import io.dingodb.sdk.service.entity.meta.GetSchemasRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableByNameRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableByNameResponse;
 import io.dingodb.sdk.service.entity.meta.GetTableRangeRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableRequest;
 import io.dingodb.sdk.service.entity.meta.GetTablesRequest;
+import io.dingodb.sdk.service.entity.meta.Schema;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.store.proxy.service.TsoService;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static io.dingodb.common.util.ByteArrayUtils.greatThan;
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 
+@Slf4j
 public class MetaCache {
 
     @EqualsAndHashCode
@@ -70,8 +75,10 @@ public class MetaCache {
     private final MetaService metaService;
     private final TsoService tsoService;
 
+    private final LoadingCache<String, Optional<Schema>> schemaCache;
     private final LoadingCache<Names, Optional<Table>> tableNameCache;
     private final LoadingCache<CommonId, Table> tableIdCache;
+    private Map<String, io.dingodb.store.proxy.meta.MetaService> metaServices;
 
     private final LoadingCache<CommonId, NavigableMap<ComparableByteArray, RangeDistribution>> distributionCache;
 
@@ -82,10 +89,31 @@ public class MetaCache {
         this.tableNameCache = buildTableNameCache();
         this.tableIdCache = buildTableIdCache();
         this.distributionCache = buildDistributionCache();
+        this.schemaCache = buildSchemaCache();
     }
 
     private long tso() {
         return tsoService.tso();
+    }
+
+    public void clear() {
+        schemaCache.invalidateAll();
+        tableNameCache.invalidateAll();
+        tableIdCache.invalidateAll();
+        metaServices = null;
+    }
+
+    private LoadingCache<String, Optional<Schema>> buildSchemaCache() {
+        return CacheBuilder.newBuilder()
+            .expireAfterAccess(60, TimeUnit.MINUTES).expireAfterWrite(60, TimeUnit.MINUTES)
+            .build(new CacheLoader<String, Optional<Schema>>() {
+                @Override
+                public Optional<Schema> load(String names) throws Exception {
+                    return Optional.ofNullable(metaService.getSchemaByName(
+                        tso(), GetSchemaByNameRequest.builder().schemaName(names).build()
+                    ).getSchema());
+                }
+            });
     }
 
     private LoadingCache<Names, Optional<Table>> buildTableNameCache() {
@@ -201,16 +229,40 @@ public class MetaCache {
             .build();
     }
 
-    public synchronized void invalidTable(String schema, String table) {
+    public void invalidTable(String schema, String table) {
+        log.info("Invalid table {}.{}", schema, table);
         tableNameCache.invalidate(new Names(schema, table));
     }
 
-    public synchronized void invalidTable(CommonId tableId) {
+    public void invalidTable(String fullName) {
+        log.info("Invalid table {}", fullName);
+        String[] names = fullName.split("\\.");
+        tableNameCache.invalidate(new Names(names[0], names[1]));
+    }
+
+    public void invalidTable(CommonId tableId) {
         tableIdCache.invalidate(tableId);
     }
 
-    public synchronized void invalidDistribution(CommonId id) {
+    public void invalidDistribution(CommonId id) {
+        log.info("Invalid table distribution {}", id);
         distributionCache.invalidate(id);
+    }
+
+    public void invalidMetaServices() {
+        log.info("Invalid meta services");
+        metaServices = null;
+    }
+
+    public void invalidSchema(String schema) {
+        log.info("Invalid schema {}", schema);
+        schemaCache.invalidate(schema);
+    }
+
+    @SneakyThrows
+    public void refreshTable(String schema, Table table) {
+        tableNameCache.put(new Names(schema, table.name), Optional.of(table));
+        table.indexes.forEach($ -> tableIdCache.put($.tableId, $));
     }
 
     @SneakyThrows
@@ -221,6 +273,29 @@ public class MetaCache {
     @SneakyThrows
     public Table getTable(CommonId tableId) {
         return tableIdCache.get(tableId);
+    }
+
+    @SneakyThrows
+    public Set<Table> getTables(String schema) {
+        return schemaCache.get(schema)
+            .ifAbsent(() -> schemaCache.invalidate(schema))
+            .map(Schema::getTableIds)
+            .map(ids -> ids.stream().map(MAPPER::idFrom).map(this::getTable).collect(Collectors.toSet()))
+            .orElseGet(Collections::emptySet);
+    }
+
+    public Map<String, io.dingodb.store.proxy.meta.MetaService> getMetaServices() {
+        if (metaServices == null) {
+            metaServices = metaService.getSchemas(
+                    tso(), GetSchemasRequest.builder().schemaId(io.dingodb.store.proxy.meta.MetaService.ROOT.id).build()
+                ).getSchemas().stream()
+                .filter($ -> $.getId() != null && $.getId().getEntityId() != 0)
+                .peek($ -> $.getId().setEntityType(EntityType.ENTITY_TYPE_SCHEMA))
+                .map(schema -> new io.dingodb.store.proxy.meta.MetaService(
+                    schema.getId(), schema.getName().toUpperCase(), metaService, this
+                )).collect(Collectors.toMap(io.dingodb.store.proxy.meta.MetaService::name, Function.identity()));
+        }
+        return metaServices;
     }
 
     @SneakyThrows

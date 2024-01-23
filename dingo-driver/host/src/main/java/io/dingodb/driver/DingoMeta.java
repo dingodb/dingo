@@ -24,10 +24,6 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.metrics.DingoMetrics;
-import io.dingodb.common.mysql.constant.ErrorCode;
-import io.dingodb.common.mysql.constant.ServerStatus;
-import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.Index;
 import io.dingodb.common.table.IndexScan;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -59,7 +55,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Field;
 import java.sql.DatabaseMetaData;
-import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;

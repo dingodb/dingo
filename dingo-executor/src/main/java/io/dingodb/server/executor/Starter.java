@@ -18,6 +18,7 @@ package io.dingodb.server.executor;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
@@ -30,9 +31,12 @@ import io.dingodb.net.NetService;
 import io.dingodb.scheduler.SchedulerService;
 import io.dingodb.server.executor.service.ClusterService;
 import io.dingodb.store.proxy.service.AutoIncrementService;
+import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ServiceLoader;
+
+import static io.dingodb.common.CommonId.CommonType.EXECUTOR;
 
 @Slf4j
 public class Starter {
@@ -56,6 +60,7 @@ public class Starter {
             return;
         }
         DingoConfiguration.parse(config);
+        DingoConfiguration.instance().setServerId(new CommonId(EXECUTOR, 0, TsoService.getDefault().tso()));
         Configuration.instance();
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         env.setRole(DingoRole.EXECUTOR);
@@ -63,9 +68,8 @@ public class Starter {
         NetService.getDefault().listenPort(DingoConfiguration.host(), DingoConfiguration.port());
         DriverProxyServer driverProxyServer = new DriverProxyServer();
         driverProxyServer.start();
-
         // Register cluster heartbeat.
-        ClusterService.register();
+        ClusterService.DEFAULT_INSTANCE.register();
 
         Services.initControlMsgService();
         Services.initNetService();

@@ -177,7 +177,7 @@ public class DingoGetByIndexRule extends ConverterRule {
         if (log.isDebugEnabled()) {
             log.debug("Definition of table = {}", table);
         }
-        if (indexTdMap.size() == 0) {
+        if (indexTdMap.isEmpty()) {
             return null;
         }
 

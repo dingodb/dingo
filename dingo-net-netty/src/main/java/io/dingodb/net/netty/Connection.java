@@ -46,9 +46,11 @@ import static io.dingodb.common.codec.PrimitiveCodec.readString;
 import static io.dingodb.common.util.DebugLog.debug;
 import static io.dingodb.net.netty.Constant.API_T;
 import static io.dingodb.net.netty.Constant.AUTH;
+import static io.dingodb.net.netty.Constant.CLIENT;
 import static io.dingodb.net.netty.Constant.COMMAND_T;
 import static io.dingodb.net.netty.Constant.HANDSHAKE;
 import static io.dingodb.net.netty.Constant.PING_C;
+import static io.dingodb.net.netty.Constant.S2C;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Slf4j
@@ -58,7 +60,7 @@ public class Connection {
     private final Map<Long, Channel> channels = new ConcurrentHashMap<>();
     private final AtomicLong channelIdSeq = new AtomicLong(0);
     private final String channelType;
-    private final boolean alwaysCreate;
+    private final long direction;
     @Getter
     private final Channel channel;
     @Getter
@@ -72,19 +74,29 @@ public class Connection {
 
     private ScheduledFuture<?> heartbeatFuture;
 
-    public Connection(String chanelType, Location remote, SocketChannel socket, boolean alwaysCreate) {
+    public Connection(String chanelType, Location remote, SocketChannel socket) {
         this.channelType = chanelType;
         this.socket = socket;
-        this.alwaysCreate = alwaysCreate;
         this.remote = remote;
         this.channel = createChannel(0);
         this.channels.put(0L, channel);
+        this.direction = CLIENT.equals(chanelType) ? Constant.C2S : S2C;
     }
 
     protected Channel getChannel(long channelId) {
         Channel channel = channels.get(channelId);
-        if (channel == null && alwaysCreate) {
-            channel = createChannel(channelId);
+        if (channel == null) {
+            // if current connection direction is server to client, always create client to server channel
+            // if current connection direction is client to server, always create server to client channel
+            if (direction == S2C) {
+                if ((S2C & channelId) != S2C) {
+                    channel = createChannel(channelId);
+                }
+            } else {
+                if ((S2C & channelId) == S2C) {
+                    channel = createChannel(channelId);
+                }
+            }
         }
         return channel;
     }
@@ -166,7 +178,7 @@ public class Connection {
     }
 
     public Channel newChannel() {
-        return createChannel(channelIdSeq.incrementAndGet());
+        return createChannel(channelIdSeq.incrementAndGet() | direction);
     }
 
     public synchronized void addCloseListener(Consumer<Connection> consumer) {

@@ -60,7 +60,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     public static final CommonId EMPTY_TASK = new CommonId(CommonType.TASK, 0, 0);
     public static final CommonId EMPTY_TXN_INSTANCE = new CommonId(CommonType.TXN_INSTANCE, 0, 0);
 
-    // data 0 -> 19, op 20 -> 59 , exec 60 -> 79
+    // data 0 -> 19, op 20 -> 59 , exec 60 -> 79, listen,notify 80-90, cluster 120-127
     public enum CommonType {
         SCHEMA(0),
         TABLE(1),
@@ -78,7 +78,15 @@ public class CommonId implements Comparable<CommonId>, Serializable {
         TRANSACTION(60),
         TXN_INSTANCE(61),
         JOB(62),
-        TASK(63);
+        TASK(63),
+
+        CLUSTER(80),
+        SCHEMA_NOTIFY(81),
+        TABLE_NOTIFY(82),
+
+        EXECUTOR(120),
+        SDK(121),
+        ;
 
         public final int code;
 
@@ -104,6 +112,13 @@ public class CommonId implements Comparable<CommonId>, Serializable {
                 case 61: return TXN_INSTANCE;
                 case 62: return JOB;
                 case 63: return TASK;
+
+                case 80: return CLUSTER;
+                case 81: return SCHEMA_NOTIFY;
+                case 82: return TABLE_NOTIFY;
+
+                case 120: return EXECUTOR;
+                case 121: return SDK;
                 default:
                     throw new IllegalStateException("Unexpected value: " + code);
             }

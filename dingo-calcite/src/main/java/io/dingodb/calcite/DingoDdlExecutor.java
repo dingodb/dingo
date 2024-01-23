@@ -92,7 +92,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -115,7 +114,7 @@ import static org.apache.calcite.util.Static.RESOURCE;
 public class DingoDdlExecutor extends DdlExecutorImpl {
     public static final DingoDdlExecutor INSTANCE = new DingoDdlExecutor();
 
-    private static final Pattern namePattern = Pattern.compile("^[A-Z_][A-Z\\d_]+$");
+    private static final Pattern namePattern = Pattern.compile("^[A-Z_][A-Z\\d_]*$");
 
     private final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
@@ -417,18 +416,34 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void execute(SqlCreateSchema schema, CalcitePrepare.Context context) {
         DingoRootSchema rootSchema = (DingoRootSchema) context.getMutableRootSchema().schema;
-        rootSchema.createSubSchema(schema.name.names.get(0));
+        String schemaName = schema.name.names.get(0).toUpperCase();
+        if (rootSchema.getSubSchema(schemaName) == null) {
+            rootSchema.createSubSchema(schemaName);
+        } else if (!schema.ifNotExists) {
+            throw SqlUtil.newContextException(
+                schema.name.getParserPosition(),
+                RESOURCE.schemaExists(schemaName)
+            );
+        }
+
     }
 
     public void execute(SqlDropSchema schema, CalcitePrepare.Context context) {
         DingoRootSchema rootSchema = (DingoRootSchema) context.getMutableRootSchema().schema;
-        String schemaName = schema.name.names.get(0);
+        String schemaName = schema.name.names.get(0).toUpperCase();
         if (schemaName.equalsIgnoreCase(context.getDefaultSchemaPath().get(0))) {
             throw new RuntimeException("Schema used.");
         }
         Schema subSchema = rootSchema.getSubSchema(schemaName);
         if (subSchema == null) {
-            throw DINGO_RESOURCE.unknownSchema(schemaName).ex();
+            if (!schema.ifExists) {
+                throw SqlUtil.newContextException(
+                    schema.name.getParserPosition(),
+                    RESOURCE.schemaNotFound(schemaName)
+                );
+            } else {
+                return;
+            }
         }
         if (subSchema.getTableNames().isEmpty()) {
             rootSchema.dropSubSchema(schemaName);
@@ -555,6 +570,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         int ttl = Optional.mapOrGet(
             ((Connection) context).getClientInfo("lock_wait_timeout"), Integer::parseInt, () -> 50
         );
+        CommonId tableId = mapOrNull(schema.getMetaService().getTable(tableName), Table::getTableId);
+        if (tableId == null) {
+            if (drop.ifExists) {
+                return;
+            } else {
+                throw DINGO_RESOURCE.unknownTable(schema.name() + "." + tableName).ex();
+            }
+        }
         long tso = TsoService.getDefault().tso();
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         CompletableFuture<Void> unlockFuture = new CompletableFuture<>();
@@ -562,19 +585,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .lockTs(tso)
             .currentTs(tso)
             .type(LockType.TABLE)
-            .tableId(schema.getMetaService().getTable(tableName).getTableId())
+            .tableId(tableId)
             .lockFuture(future)
             .unlockFuture(unlockFuture)
             .build();
         TableLockService.getDefault().lock(lock);
         try {
             future.get(ttl, TimeUnit.SECONDS);
-            existed = schema.dropTable(tableName);
-            if (!existed && !drop.ifExists) {
-                String schemaName = schema.getMetaService().name();
-                throw DINGO_RESOURCE.unknownTable(schemaName + "." + tableName).ex();
-            }
-
+            schema.dropTable(tableName);
             env.getTableIdMap().computeIfPresent(schema.id(), (k, v) -> {
                 v.remove(tableName);
                 return v;

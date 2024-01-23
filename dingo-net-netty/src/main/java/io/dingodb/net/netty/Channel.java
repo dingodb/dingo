@@ -183,6 +183,11 @@ public class Channel implements io.dingodb.net.Channel {
     }
 
     @Override
+    public Channel cloneChannel() {
+        return connection.newChannel();
+    }
+
+    @Override
     public NettyBufferOutputStream getOutputStream(int size) {
         return new NettyBufferOutputStream(connection, size);
     }

@@ -39,11 +39,10 @@ import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.impl.IdGeneratorImpl;
 import io.dingodb.exec.impl.JobManagerImpl;
-import io.dingodb.exec.operator.params.DistributionSourceParam;
 import io.dingodb.exec.operator.params.CoalesceParam;
 import io.dingodb.exec.operator.params.CompareAndSetParam;
+import io.dingodb.exec.operator.params.DistributionSourceParam;
 import io.dingodb.exec.operator.params.GetByKeysParam;
-import io.dingodb.exec.operator.params.GetDistributionParam;
 import io.dingodb.exec.operator.params.PartDeleteParam;
 import io.dingodb.exec.operator.params.PartInsertParam;
 import io.dingodb.exec.operator.params.PartRangeDeleteParam;
@@ -82,7 +81,6 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COALESCE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COMPARE_AND_SET;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_KEYS;
-import static io.dingodb.exec.utils.OperatorCodeUtils.GET_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PARTITION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_INSERT;
@@ -99,7 +97,7 @@ public class OperationServiceV2 {
 
     public OperationServiceV2(String coordinatorSvr) {
         DingoConfiguration.instance().getConfigMap("store").put("coordinators", coordinatorSvr);
-        metaService = io.dingodb.store.proxy.service.MetaService.ROOT;
+        metaService = MetaService.root();
         jobManager = JobManagerImpl.INSTANCE;
     }
 

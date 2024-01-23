@@ -70,7 +70,8 @@ fatJar.dependsOn([
         ':dingo-net-api:jar',
         ':dingo-net-netty:jar',
         ':dingo-serial:jar',
-        ':dingo-verify:jar'
+        ':dingo-verify:jar',
+        ":dingo-driver:dingo-driver-common:jar"
 ])
 
 tasks.named("build") { x ->

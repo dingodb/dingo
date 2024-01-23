@@ -19,17 +19,24 @@ package io.dingodb.common.util;
 import io.dingodb.common.type.TupleMapping;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import static io.dingodb.common.util.Parameters.cleanNull;
 
 public final class Utils {
     private Utils() {
@@ -121,6 +128,24 @@ public final class Utils {
 
     public static int currentSecond() {
         return (int) (System.currentTimeMillis() / 1000);
+    }
+
+    public static Throwable extractThrowable(Throwable throwable) {
+        if (throwable instanceof UndeclaredThrowableException) {
+            return cleanNull(
+                extractThrowable(((UndeclaredThrowableException) throwable).getUndeclaredThrowable()), throwable
+            );
+        }
+        if (throwable instanceof ExecutionException) {
+            return cleanNull(extractThrowable(throwable.getCause()), throwable);
+        }
+        if (throwable instanceof CompletionException) {
+            return cleanNull(extractThrowable(throwable.getCause()), throwable);
+        }
+        if (throwable instanceof InvocationTargetException) {
+            return cleanNull(extractThrowable(((InvocationTargetException) throwable).getTargetException()), throwable);
+        }
+        return throwable;
     }
 
     public static int calculatePrefixCount(Object[] tuple) {

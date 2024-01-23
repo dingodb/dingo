@@ -21,10 +21,10 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.TableStatistic;
 import io.dingodb.meta.entity.Table;
-import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.entity.common.Location;
@@ -42,13 +42,15 @@ import io.dingodb.sdk.service.entity.meta.GenerateTableIdsRequest;
 import io.dingodb.sdk.service.entity.meta.GetSchemasRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableByNameRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableMetricsRequest;
-import io.dingodb.sdk.service.entity.meta.GetTablesBySchemaRequest;
+import io.dingodb.sdk.service.entity.meta.GetTableMetricsResponse;
 import io.dingodb.sdk.service.entity.meta.GetTablesRequest;
 import io.dingodb.sdk.service.entity.meta.Partition;
 import io.dingodb.sdk.service.entity.meta.ReservedSchemaIds;
 import io.dingodb.sdk.service.entity.meta.Schema;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.sdk.service.entity.meta.TableIdWithPartIds;
+import io.dingodb.sdk.service.entity.meta.TableMetrics;
+import io.dingodb.sdk.service.entity.meta.TableMetricsWithId;
 import io.dingodb.sdk.service.entity.meta.TableWithPartCount;
 import io.dingodb.store.proxy.Configuration;
 import io.dingodb.store.proxy.service.AutoIncrementService;
@@ -65,7 +67,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -93,7 +94,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
     }
 
-    private static Pattern pattern = Pattern.compile("^[A-Z_][A-Z\\d_]+$");
+    private static Pattern pattern = Pattern.compile("^[A-Z_][A-Z\\d_]*$");
     private static Pattern warnPattern = Pattern.compile(".*[a-z]+.*");
 
     public final DingoCommonId id;
@@ -101,8 +102,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     public final io.dingodb.sdk.service.MetaService service;
     public final TsoService tsoService = TsoService.getDefault();
     public final MetaCache cache;
-
-    private Map<String, MetaService> metaServiceCache;
+    public final MetaServiceApiImpl api = MetaServiceApiImpl.INSTANCE;
 
     public MetaService() {
         Set<Location> coordinators = Configuration.coordinatorSet();
@@ -119,7 +119,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         this.cache = new MetaCache(coordinators);
     }
 
-    private MetaService(DingoCommonId id, String name, io.dingodb.sdk.service.MetaService service, MetaCache cache) {
+    protected MetaService(DingoCommonId id, String name, io.dingodb.sdk.service.MetaService service, MetaCache cache) {
         this.service = service;
         this.id = id;
         this.name = name;
@@ -168,8 +168,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
         if (id != ROOT_SCHEMA_ID) {
             throw new UnsupportedOperationException();
         }
-        service.createSchema(tso(), CreateSchemaRequest.builder().parentSchemaId(id).schemaName(name).build());
-        metaServiceCache = null;
+        name = cleanSchemaName(name);
+        api.createSchema(tso(), CreateSchemaRequest.builder().parentSchemaId(id).schemaName(name).build());
     }
 
     @Override
@@ -177,16 +177,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         if (id != ROOT_SCHEMA_ID) {
             return Collections.emptyMap();
         }
-        if (metaServiceCache == null) {
-            metaServiceCache = service.getSchemas(
-                    tso(), GetSchemasRequest.builder().schemaId(id).build()
-                ).getSchemas().stream()
-                .filter($ -> $.getId() != null && $.getId().getEntityId() != 0)
-                .peek($ -> $.getId().setEntityType(EntityType.ENTITY_TYPE_SCHEMA))
-                .map(schema -> new MetaService(schema.getId(), schema.getName().toUpperCase(), service, cache))
-                .collect(Collectors.toMap(MetaService::name, Function.identity()));
-        }
-        return metaServiceCache;
+        return cache.getMetaServices();
     }
 
     @Override
@@ -194,6 +185,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         if (id != ROOT_SCHEMA_ID) {
             return null;
         }
+        name = cleanSchemaName(name);
         return getSubMetaServices().get(name);
     }
 
@@ -202,8 +194,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
         if (id != ROOT_SCHEMA_ID) {
             throw new UnsupportedOperationException();
         }
-        service.dropSchema(tso(), DropSchemaRequest.builder().schemaId(getSubMetaService(name).id).build());
-        metaServiceCache = null;
+        name = cleanSchemaName(name);
+        if (getSubMetaService(name) == null) {
+            return false;
+        }
+        api.dropSchema(tso(), DropSchemaRequest.builder().schemaId(getSubMetaService(name).id).build());
         return true;
     }
 
@@ -211,7 +206,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     public void createTables(
         @NonNull TableDefinition tableDefinition, @NonNull List<TableDefinition> indexTableDefinitions
     ) {
-        cleanTableName(tableDefinition.getName());
+        String tableName = cleanTableName(tableDefinition.getName());
         indexTableDefinitions.forEach($ -> cleanTableName($.getName()));
         // Generate new table ids.
         List<TableIdWithPartIds> tableIds = service.generateTableIds(tso(), GenerateTableIdsRequest.builder()
@@ -230,7 +225,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .filter(__ -> __.getTableId().getEntityType() == EntityType.ENTITY_TYPE_TABLE).findAny())
             .ifPresent(tableIds::remove)
             .orElseThrow(() -> new RuntimeException("Can not generate table id."));
-        String tableName = tableDefinition.getName().toUpperCase();
         List<TableDefinitionWithId> tables = Stream.concat(
                 Stream.of(MAPPER.tableTo(tableId, tableDefinition)),
                 indexTableDefinitions.stream()
@@ -239,8 +233,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
                     .peek(td -> td.getTableDefinition().setName(tableName + "." + td.getTableDefinition().getName()))
             )
             .collect(Collectors.toList());
-        service.createTables(
-            tso(), CreateTablesRequest.builder().schemaId(id).tableDefinitionWithIds(tables).build()
+        api.createTables(
+            tso(), name, tableName, CreateTablesRequest.builder().schemaId(id).tableDefinitionWithIds(tables).build()
         );
     }
 
@@ -289,7 +283,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         List<TableDefinitionWithId> tables = new ArrayList<>();
         tables.add(table);
         tables.addAll(indexes);
-        service.dropTables(tso(), DropTablesRequest.builder().tableIds(oldIds).build());
+        api.dropTables(tso(), name, tableName, DropTablesRequest.builder().tableIds(oldIds).build());
         cache.invalidTable(name, tableName);
         service.createTables(
             tso(),
@@ -316,16 +310,14 @@ public class MetaService implements io.dingodb.meta.MetaService {
             return false;
         }
         List<CommonId> indexIds = table.getIndexes().stream().map(Table::getTableId).collect(Collectors.toList());
-        boolean result = dropTables(
-            Stream.concat(Stream.of(table.getTableId()), indexIds.stream()).collect(Collectors.toList())
+        List<CommonId> tableIds = Stream.concat(
+            Stream.of(table.getTableId()), indexIds.stream()).collect(Collectors.toList()
         );
-        cache.invalidTable(name, tableName);
-        cache.invalidTable(table.getTableId());
-        indexIds.forEach(cache::invalidTable);
-        return result;
+        api.dropTables(tso(), name, tableName, DropTablesRequest.builder().tableIds(MAPPER.idTo(tableIds)).build());
+        return true;
     }
 
-    public boolean dropTables(@NonNull Collection<CommonId> tableIds) {
+    private boolean dropTables(@NonNull Collection<CommonId> tableIds) {
         service.dropTables(tso(), DropTablesRequest.builder()
             .tableIds(MAPPER.idTo(tableIds)).build()
         );
@@ -344,29 +336,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public Set<Table> getTables() {
-        List<TableDefinitionWithId> tablesWithIds = service.getTablesBySchema(
-            tso(), GetTablesBySchemaRequest.builder().schemaId(id).build()
-        ).getTableDefinitionWithIds();
-        if (tablesWithIds == null) {
-            return Collections.emptySet();
-        }
-        return tablesWithIds.stream()
-            .map(tableWithId -> MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId())))
-            .collect(Collectors.toSet());
-    }
-
-    private List<TableDefinitionWithId> getIndexes(TableDefinitionWithId tableWithId, DingoCommonId tableId) {
-        return service.getTables(tso(), GetTablesRequest.builder().tableId(tableId).build())
-            .getTableDefinitionWithIds().stream()
-            .filter($ -> !$.getTableDefinition().getName().equalsIgnoreCase(tableWithId.getTableDefinition().getName()))
-            .peek($ -> {
-                String name1 = $.getTableDefinition().getName();
-                String[] split = name1.split("\\.");
-                if (split.length > 1) {
-                    name1 = split[split.length - 1];
-                }
-                $.getTableDefinition().setName(name1);
-            }).collect(Collectors.toList());
+        return cache.getTables(name);
     }
 
     @Override
@@ -448,37 +418,47 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public TableStatistic getTableStatistic(@NonNull CommonId tableId) {
-        DingoCommonId id = MAPPER.idTo(tableId);
         return new TableStatistic() {
-
-            private final long tso = tso();
 
             @Override
             public byte[] getMinKey() {
-                return service.getTableMetrics(
-                    tso, GetTableMetricsRequest.builder().tableId(id).build()
-                ).getTableMetrics().getTableMetrics().getMinKey();
+                return Optional.ofNullable(service.getTableMetrics(
+                    tso(), GetTableMetricsRequest.builder().tableId(MAPPER.idTo(tableId)).build()
+                )).map(GetTableMetricsResponse::getTableMetrics)
+                    .map(TableMetricsWithId::getTableMetrics)
+                    .map(TableMetrics::getMinKey)
+                    .orNull();
             }
 
             @Override
             public byte[] getMaxKey() {
-                return service.getTableMetrics(
-                    tso, GetTableMetricsRequest.builder().tableId(id).build()
-                ).getTableMetrics().getTableMetrics().getMaxKey();
+                return Optional.ofNullable(service.getTableMetrics(
+                        tso(), GetTableMetricsRequest.builder().tableId(MAPPER.idTo(tableId)).build()
+                    )).map(GetTableMetricsResponse::getTableMetrics)
+                    .map(TableMetricsWithId::getTableMetrics)
+                    .map(TableMetrics::getMaxKey)
+                    .orNull();
             }
 
             @Override
             public long getPartCount() {
-                return service.getTableMetrics(
-                    tso, GetTableMetricsRequest.builder().tableId(id).build()
-                ).getTableMetrics().getTableMetrics().getPartCount();
+                return Optional.ofNullable(service.getTableMetrics(
+                        tso(), GetTableMetricsRequest.builder().tableId(MAPPER.idTo(tableId)).build()
+                    )).map(GetTableMetricsResponse::getTableMetrics)
+                    .map(TableMetricsWithId::getTableMetrics)
+                    .map(TableMetrics::getPartCount)
+                    .orElse(0);
             }
 
             @Override
             public Double getRowCount() {
-                return (double) service.getTableMetrics(
-                    tso, GetTableMetricsRequest.builder().tableId(id).build()
-                ).getTableMetrics().getTableMetrics().getRowsCount();
+                return Optional.ofNullable(service.getTableMetrics(
+                    tso(), GetTableMetricsRequest.builder().tableId(MAPPER.idTo(tableId)).build()
+                )).map(GetTableMetricsResponse::getTableMetrics)
+                    .map(TableMetricsWithId::getTableMetrics)
+                    .map(TableMetrics::getRowsCount)
+                    .map(Long::doubleValue)
+                    .orElse(0.0);
             }
         };
     }
