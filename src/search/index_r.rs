@@ -1,22 +1,22 @@
 use std::sync::Arc;
 
-use crate::commons::LOG_CALLBACK;
+use crate::DEBUG;
+use crate::{commons::LOG_CALLBACK, INFO, WARNING};
 use crate::logger::ffi_logger::callback_with_thread_info;
-use crate::WARNING;
 use flurry::HashMap;
 use once_cell::sync::{Lazy, OnceCell};
 use tantivy::{Executor, Index, IndexReader};
-
-impl Drop for IndexR {
-    fn drop(&mut self) {
-        println!("IndexR has been dropped.");
-    }
-}
 
 pub struct IndexR {
     pub path: String,
     pub index: Index,
     pub reader: IndexReader,
+}
+
+impl Drop for IndexR {
+    fn drop(&mut self) {
+        INFO!("IndexR has been dropped. index_path:[{}]", self.path);
+    }
 }
 
 impl IndexR {
@@ -65,10 +65,10 @@ pub fn remove_index_r(key: String) -> Result<(), String> {
     if pinned.contains_key(&key) {
         pinned.remove(&key);
     } else {
-        WARNING!(
+        DEBUG!(
             "{}",
             format!(
-                "Index doesn't exist, can't remove it with given key: [{}]",
+                "IndexR with given key [{}] already removed",
                 key
             )
         )

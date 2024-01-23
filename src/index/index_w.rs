@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use crate::commons::LOG_CALLBACK;
+use crate::{commons::LOG_CALLBACK, INFO};
 use crate::logger::ffi_logger::callback_with_thread_info;
 use crate::WARNING;
 use flurry::HashMap;
@@ -93,7 +93,7 @@ impl IndexW {
 
 impl Drop for IndexW {
     fn drop(&mut self) {
-        println!("IndexW has been dropped.");
+        INFO!("IndexW has been dropped. index_path:[{}]", self.path);
     }
 }
 
@@ -136,7 +136,7 @@ pub fn remove_index_w(key: String) -> Result<(), String> {
         WARNING!(
             "{}",
             format!(
-                "Index doesn't exist, can't remove it with given key: [{}]",
+                "IndexW doesn't exist, can't remove it with given key: [{}]",
                 key
             )
         )

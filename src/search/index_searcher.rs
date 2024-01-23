@@ -4,7 +4,7 @@ use crate::tokenizer::parse_and_register::get_custom_tokenizer;
 use crate::tokenizer::parse_and_register::register_tokenizer_to_index;
 use crate::RowIdWithScore;
 use crate::ERROR;
-use crate::TRACE;
+use crate::INFO;
 use crate::WARNING;
 use cxx::CxxString;
 use cxx::CxxVector;
@@ -106,7 +106,7 @@ pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
                 index
                     .set_shared_multithread_executor(shared_thread_pool)
                     .map_err(|e| e.to_string())?;
-                TRACE!("Using shared multithread");
+                INFO!("Using shared multithread with index_path: [{}]", index_path_str.clone());
             }
             Err(e) => {
                 WARNING!("Failed to use shared multithread executor, due to: {}", e);
