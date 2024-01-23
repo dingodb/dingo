@@ -75,7 +75,8 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
             );
             byte[] lockKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, dataKey);
             KeyValue oldKeyValue = store.get(lockKey);
-            if (!(ByteArrayUtils.compare(keyValueKey, primaryLockKey, 9) == 0)) {
+            byte[] primaryLockKeyBytes = (byte[]) ByteUtils.decodePessimisticExtraKey(primaryLockKey)[5];
+            if (!(ByteArrayUtils.compare(keyValueKey, primaryLockKeyBytes, 9) == 0)) {
                 // This key appears for the first time in the current transaction
                 if (oldKeyValue == null) {
                     // for check deadLock
@@ -95,7 +96,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                         txnId,
                         tableId,
                         partId,
-                        primaryLockKey,
+                        primaryLockKeyBytes,
                         keyValueKey,
                         param.getStartTs(),
                         forUpdateTs,
@@ -141,7 +142,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                     }
                 } else {
                     // primary lock existed ：
-                    repeatKey(param, txnId, primaryLockKey, store, dataKey, jobIdByte, tableIdBytes, partIdBytes, len);
+                    repeatKey(param, txnId, primaryLockKeyBytes, store, dataKey, jobIdByte, tableIdBytes, partIdBytes, len);
                 }
             }
         } else {
