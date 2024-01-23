@@ -18,25 +18,17 @@ package io.dingodb.store.proxy.service;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.LinkedRunner;
-import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.net.Channel;
-import io.dingodb.net.NetService;
-import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.sdk.service.LockService;
-import io.dingodb.sdk.service.entity.common.KeyValue;
-import io.dingodb.sdk.service.entity.version.Kv;
-import io.dingodb.store.proxy.Configuration;
-import io.dingodb.store.proxy.api.TableLockApi;
+import io.dingodb.store.proxy.meta.MetaServiceApiImpl;
 import io.dingodb.transaction.api.LockType;
 import io.dingodb.transaction.api.TableLock;
 import io.dingodb.transaction.api.TableLockServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -44,8 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -54,7 +46,7 @@ import static io.dingodb.transaction.api.LockType.RANGE;
 import static io.dingodb.transaction.api.LockType.TABLE;
 
 @Slf4j
-public class TableLockService implements TableLockApi, io.dingodb.transaction.api.TableLockService {
+public class TableLockService implements io.dingodb.transaction.api.TableLockService {
 
     @AutoService(TableLockServiceProvider.class)
     public static final class LockServiceProvider implements TableLockServiceProvider {
@@ -66,7 +58,6 @@ public class TableLockService implements TableLockApi, io.dingodb.transaction.ap
     }
 
     public static final TableLockService INSTANCE = new TableLockService();
-    private final LockService lockService;
     private LockService.Lock lock;
 
     private class TableLocks {
@@ -79,28 +70,20 @@ public class TableLockService implements TableLockApi, io.dingodb.transaction.ap
     private final LinkedRunner runner = new LinkedRunner("lock");
     private final HashSet<io.dingodb.transaction.api.TableLock> waitLocks = new HashSet<>();
 
-    private final Map<Location, Channel> channels = new HashMap<>();
-    private final LinkedRunner apiRunner = new LinkedRunner("lock-api");
-
-    private Location leader;
-    private Channel leaderChannel;
+    private final Map<CommonId, TableLock> tableOrRangeTables = new ConcurrentHashMap<>();
 
     private TableLockService() {
-        ApiRegistry.getDefault().register(TableLockApi.class, this);
-        LockService lockService = new LockService("table-lock", Configuration.coordinators());
-        this.lockService = lockService;
-        lock = this.lockService.newLock(DingoConfiguration.location().url());
-        register();
     }
 
-    public TableLockService(String coordinators) {
-        ApiRegistry.getDefault().register(TableLockApi.class, this);
-        lockService = new LockService("table-lock", coordinators);
-        lock = lockService.newLock();
-        register();
+    public TableLock getTableOrRangeLock(CommonId tableId) {
+        return tableOrRangeTables.get(tableId);
     }
 
-    public void lock(io.dingodb.transaction.api.TableLock lock) {
+    public List<TableLock> getTableOrRangeLocks() {
+        return new ArrayList<>(tableOrRangeTables.values());
+    }
+
+    public void lock(TableLock lock) {
         runner.forceFollow(() -> {
             TableLocks tableLocks = this.tableLocks.computeIfAbsent(lock.tableId, k -> new TableLocks());
             tableLocks.runner.forceFollow(() -> {
@@ -158,14 +141,23 @@ public class TableLockService implements TableLockApi, io.dingodb.transaction.ap
             }
         }
         if (locked) {
-            if (lock.type == TABLE) {
-                broadcastLock(lock, null);
+            if (lock.type == TABLE || lock.type == RANGE) {
+                tableOrRangeTables.put(tableId, lock);
+                lock.unlockFuture.whenCompleteAsync((v, r) -> tableOrRangeTables.remove(tableId));
+                try {
+                    MetaServiceApiImpl.INSTANCE.lockTable(lock.lockTs, lock);
+                } catch (Exception e) {
+                    log.error("Lock table {} error.", tableId, e);
+                    locked = false;
+                }
             }
+        }
+        if (locked) {
             future.complete(true);
             locks.add(lock);
             tableLocks.lockQueue.pollFirst();
             waitLocks.remove(lock);
-            lock.unlockFuture.whenComplete((v, e) -> unlock(lock));
+            lock.unlockFuture.whenCompleteAsync((v, e) -> unlock(lock));
             if (log.isDebugEnabled()) {
                 log.debug("Locked {}", lock);
             }
@@ -184,102 +176,8 @@ public class TableLockService implements TableLockApi, io.dingodb.transaction.ap
                 }
                 return;
             }
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
             tableLocks.runner.forceFollow(() -> lock(lock.tableId));
-            if (waitLocks.size() == 1) {
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(5));
-            }
-        }
-    }
-
-    public void register() {
-        while (!lock.tryLock()) {
-            try {
-                Kv kv = lockService.listLock().stream()
-                    .filter($ -> $.getKv().getValue().length != 0)
-                    .min(Comparator.comparingLong(Kv::getCreateRevision)).get();
-                Location location = Location.parseUrl(new String(kv.getKv().getValue()));
-                Channel channel = NetService.getDefault().newChannel(location);
-                TableLockApi tableLockApi = ApiRegistry.getDefault().proxy(TableLockApi.class, channel);
-                tableLockApi.register(null, DingoConfiguration.location());
-                this.leader = location;
-                this.leaderChannel = channel;
-                return;
-            } catch (Exception ignore) {
-            }
-        }
-    }
-
-    public void register(Channel channel, Location location) {
-        apiRunner.forceFollow(() -> {
-            channels.put(location, channel);
-            channel.setCloseListener(ch -> channels.remove(location));
-        });
-    }
-
-    @Override
-    public void lock(Channel channel, io.dingodb.transaction.api.TableLock lock, int ttl) {
-        if (lock.type != TABLE && lock.type != RANGE) {
-            throw new RuntimeException("Supported only table and range.");
-        }
-        CompletableFuture<Boolean> lockFuture = new CompletableFuture<>();
-        CompletableFuture<Void> unlockFuture = new CompletableFuture<>();
-        lock = io.dingodb.transaction.api.TableLock.builder()
-            .lockTs(lock.lockTs)
-            .currentTs(lock.currentTs)
-            .tableId(lock.tableId)
-            .type(lock.type)
-            .lockFuture(lockFuture)
-            .unlockFuture(unlockFuture)
-            .build();
-        lock(lock);
-        try {
-            channel.setCloseListener(ch -> unlockFuture.complete(null));
-            lockFuture.get(1, TimeUnit.SECONDS);
-        } catch (TimeoutException e) {
-            lockFuture.cancel(true);
-            throw new RuntimeException("Timeout.");
-        } catch (Exception e) {
-            lockFuture.cancel(true);
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void broadcastLock(TableLock lock, Location requestLockLocation) {
-        if (this.lock.tryLock()) {
-            List<Location> broadcastList = lockService.listLock().stream()
-                .map(Kv::getKv)
-                .map(KeyValue::getValue)
-                .filter($ -> $.length == 0)
-                .map(String::new)
-                .map(Location::parseUrl)
-                .filter($ -> !$.equals(requestLockLocation))
-                .filter($ -> !$.equals(DingoConfiguration.location())).collect(Collectors.toList());
-            for (Location location : broadcastList) {
-                Channel channel = NetService.getDefault().newChannel(location);
-                try {
-                    TableLockApi tableLockApi = ApiRegistry.getDefault().proxy(TableLockApi.class, channel);
-                    tableLockApi.lock(null, lock, 1);
-                    lock.unlockFuture.thenRun(channel::close);
-                } catch (Exception e) {
-                    channel.close();
-                    throw new RuntimeException(e);
-                }
-            }
-        } else {
-            Channel channel = NetService.getDefault().newChannel(leader);
-            lock.unlockFuture.thenRun(channel::close);
-            TableLockApi tableLockApi = ApiRegistry.getDefault().proxy(TableLockApi.class, channel);
-            while (true) {
-                try {
-                    tableLockApi.lock(null, lock, 3);
-                    return;
-                } catch (Exception ignore) {
-                    if (lock.lockFuture.isCancelled()) {
-                        channel.close();
-                        return;
-                    }
-                }
-            }
         }
     }
 

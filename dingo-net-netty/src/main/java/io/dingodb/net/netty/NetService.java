@@ -39,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static io.dingodb.common.concurrent.Executors.executor;
 import static io.dingodb.common.util.Optional.ifPresent;
+import static io.dingodb.net.netty.Constant.CLIENT;
 
 @Slf4j
 public class NetService implements io.dingodb.net.NetService {
@@ -150,7 +151,7 @@ public class NetService implements io.dingodb.net.NetService {
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) {
-                            connection.ifAbsentSet(new Connection("client", location, ch, true));
+                            connection.ifAbsentSet(new Connection(CLIENT, location, ch));
                             NettyHandlers.initChannelPipeline(ch, connection.get());
                         }
                     });

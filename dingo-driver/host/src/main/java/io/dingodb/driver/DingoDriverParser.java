@@ -37,11 +37,10 @@ import io.dingodb.common.util.Utils;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.transaction.base.ITransaction;
-import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.meta.MetaService;
-import io.dingodb.transaction.api.TableLockService;
 import io.dingodb.transaction.api.LockType;
 import io.dingodb.transaction.api.TableLock;
+import io.dingodb.transaction.api.TableLockService;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -375,7 +374,7 @@ public final class DingoDriverParser extends DingoParser {
             }
             return;
         }
-        int ttl = Optional.mapOrGet(connection.getClientInfo("lock_wait_timeout"), Integer::parseInt, () -> 30);
+        int ttl = Optional.mapOrGet(connection.getClientInfo("lock_wait_timeout"), Integer::parseInt, () -> 50);
         int start = Utils.currentSecond();
         for (RelOptTable table : tables) {
             CompletableFuture<Boolean> lockFuture = new CompletableFuture<>();

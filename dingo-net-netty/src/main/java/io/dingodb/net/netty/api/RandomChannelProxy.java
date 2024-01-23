@@ -18,6 +18,7 @@ package io.dingodb.net.netty.api;
 
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.util.Utils;
 import io.dingodb.net.Message;
 import io.dingodb.net.netty.Channel;
 import io.dingodb.net.netty.NetService;
@@ -27,6 +28,8 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -36,7 +39,7 @@ import static io.dingodb.net.netty.Constant.API_CANCEL;
 
 @Slf4j
 @Accessors(fluent = true)
-public class RandomChannelProxy<T> implements ApiProxy<T> {
+public class RandomChannelProxy<T> implements ApiProxy<T>, InvocationHandler {
 
     private static final NetService netService = NetServiceProvider.NET_SERVICE_INSTANCE;
 
@@ -80,4 +83,13 @@ public class RandomChannelProxy<T> implements ApiProxy<T> {
         ch.send(buffer);
     }
 
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        try {
+            return ApiProxy.super.invoke(proxy, method, args);
+        } catch (Exception e) {
+            log.error("Invoke proxy method [{}] error.", method.toGenericString(), e);
+            throw Utils.extractThrowable(e);
+        }
+    }
 }

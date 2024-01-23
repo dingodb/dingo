@@ -17,6 +17,7 @@
 package io.dingodb.net.netty.api;
 
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.util.Utils;
 import io.dingodb.net.Message;
 import io.dingodb.net.netty.Channel;
 import io.netty.buffer.ByteBuf;
@@ -24,6 +25,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -33,7 +35,7 @@ import static io.dingodb.net.netty.Constant.API_CANCEL;
 
 @Slf4j
 @Accessors(fluent = true)
-public class FixedChannelProxy<T> implements  ApiProxy<T> {
+public class FixedChannelProxy<T> implements ApiProxy<T>, InvocationHandler {
 
     @Getter
     private final Channel channel;
@@ -57,11 +59,6 @@ public class FixedChannelProxy<T> implements  ApiProxy<T> {
     }
 
     @Override
-    public synchronized Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        return ApiProxy.super.invoke(proxy, method, args);
-    }
-
-    @Override
     public void invoke(Channel ch, ByteBuf buffer, CompletableFuture<Object> future) throws InterruptedException {
         future.whenCompleteAsync((r, e) -> {
             if (e instanceof CancellationException) {
@@ -71,4 +68,13 @@ public class FixedChannelProxy<T> implements  ApiProxy<T> {
         ch.send(buffer);
     }
 
+    @Override
+    public synchronized Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        try {
+            return ApiProxy.super.invoke(proxy, method, args);
+        } catch (Exception e) {
+            log.error("Invoke proxy method [{}] error.", method.toGenericString(), e);
+            throw Utils.extractThrowable(e);
+        }
+    }
 }

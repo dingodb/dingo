@@ -41,7 +41,7 @@ public class GetDistributionOperator extends SourceOperator {
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
 
         for (Object[] keyTuple : param.getKeyTuples()) {
-            CommonId partId = ps.calcPartId(param.getCodec().encode(keyTuple).getKey(), param.getDistributions());
+            CommonId partId = ps.calcPartId(param.getCodec().encodeKey(keyTuple), param.getDistributions());
             RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
             Content content = Content.builder().distribution(distribution).build();
             vertex.getSoleEdge().transformToNext(content, keyTuple);

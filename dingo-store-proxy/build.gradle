@@ -33,6 +33,7 @@ dependencies {
     implementation project(":dingo-common")
     implementation project(":dingo-store-api")
     implementation project(":dingo-meta-api")
+    implementation project(":dingo-cluster-api")
     implementation project(":dingo-codec-api")
     implementation project(":dingo-partition-api")
     implementation project(":dingo-tso-api")

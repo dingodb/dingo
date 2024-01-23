@@ -30,6 +30,9 @@ import lombok.Getter;
 
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Consumer;
+
+import static io.dingodb.net.netty.Constant.SERVER;
 
 @Getter
 @Builder
@@ -38,6 +41,7 @@ public class NettyServer {
     public final String host;
     public final int port;
     private final Set<Connection> connections = new CopyOnWriteArraySet<>();
+    private final Consumer<Connection> onConnect;
 
     private EventLoopGroup eventLoopGroup;
     private ServerBootstrap server;
@@ -63,10 +67,13 @@ public class NettyServer {
             @Override
             protected void initChannel(SocketChannel ch) {
                 Connection connection = new Connection(
-                    "server", new Location(ch.remoteAddress().getHostName(), ch.remoteAddress().getPort()), ch, true
+                    SERVER, new Location(ch.remoteAddress().getHostName(), ch.remoteAddress().getPort()), ch
                 );
                 NettyHandlers.initChannelPipelineWithHandshake(ch, connection);
                 connections.add(connection);
+                if (onConnect != null) {
+                    onConnect.accept(connection);
+                }
                 ch.closeFuture().addListener(f -> connections.remove(connection)).addListener(f -> connection.close());
             }
         };

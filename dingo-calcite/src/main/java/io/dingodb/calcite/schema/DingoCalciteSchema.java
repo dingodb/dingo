@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import io.dingodb.common.util.Optional;
 import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.schema.Function;
 import org.apache.calcite.schema.Schema;
@@ -33,6 +34,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 
+@Slf4j
 public class DingoCalciteSchema extends CalciteSchema {
 
     public final AbstractSchema schema;

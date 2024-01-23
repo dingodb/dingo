@@ -66,6 +66,8 @@ public interface Channel extends AutoCloseable {
      */
     Location remoteLocation();
 
+    Channel cloneChannel();
+
     BufferOutputStream getOutputStream(int size);
 
     /**

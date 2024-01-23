@@ -22,6 +22,7 @@ import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.common.CommonId;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.rel.type.RelProtoDataType;
@@ -51,10 +52,6 @@ public abstract class AbstractSchema implements Schema {
     @Getter
     protected final List<String> names;
 
-    protected final Map<String, DingoTable> tableCache = new ConcurrentHashMap<>();
-
-    protected final Set<String> tableNames = new CopyOnWriteArraySet<>();
-
     AbstractSchema(MetaService metaService, DingoParserContext context, List<String> names) {
         this.metaService = metaService;
         this.context = context;
@@ -70,34 +67,27 @@ public abstract class AbstractSchema implements Schema {
     }
 
     public synchronized CommonId getTableId(String tableName) {
-        return tableCache.get(tableName).getTableId();
+        return metaService.getTable(tableName.toUpperCase()).getTableId();
     }
 
     @Override
     public synchronized DingoTable getTable(String name) {
         name = name.toUpperCase();
-        if (tableCache.get(name) == null) {
-            io.dingodb.meta.entity.Table table = metaService.getTable(name);
-            if (table != null) {
-                tableCache.put(
-                    name,
-                    new DingoTable(
-                        context,
-                        ImmutableList.<String>builder().addAll(names).add(name).build(),
-                        metaService.getTableStatistic(table.getTableId()),
-                        table
-                ));
-            }
+        Table table = metaService.getTable(name);
+        if (table == null) {
+            return null;
         }
-        return tableCache.get(name);
+        return new DingoTable(
+            context,
+            ImmutableList.<String>builder().addAll(names).add(name).build(),
+            metaService.getTableStatistic(table.getTableId()),
+            table
+        );
     }
 
     @Override
     public synchronized Set<String> getTableNames() {
-        if (tableNames.isEmpty()) {
-            tableNames.addAll(metaService.getTables().stream().map($ -> $.name).collect(Collectors.toSet()));
-        }
-        return tableNames;
+        return metaService.getTables().stream().map(Table::getName).collect(Collectors.toSet());
     }
 
     @Override

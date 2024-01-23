@@ -24,7 +24,6 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.util.Optional;
 import io.dingodb.meta.MetaService;
 import org.apache.calcite.schema.SchemaVersion;
-import org.apache.calcite.schema.Table;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,6 +35,9 @@ public class DingoRootSchema extends AbstractSchema {
     public static final String DEFAULT_SCHEMA_NAME = MetaService.DINGO_NAME;
 
     private static final MetaService ROOT_META_SERVICE = MetaService.root();
+
+    private Map<String, MetaService> metaServiceCache = new HashMap<>();
+    private Map<String, DingoSchema> cache = new HashMap<>();
 
     public DingoRootSchema(DingoParserContext context) {
         super(ROOT_META_SERVICE, context, ImmutableList.of(ROOT_SCHEMA_NAME));
@@ -74,15 +76,18 @@ public class DingoRootSchema extends AbstractSchema {
 
     @Override
     public synchronized Set<String> getSubSchemaNames() {
-        return metaService.getSubMetaServices().keySet();
+        return getSubSchemas().keySet();
     }
 
     public synchronized Map<String, DingoSchema> getSubSchemas() {
-        Map<String, DingoSchema> schemas = new HashMap<>();
-        metaService.getSubMetaServices().forEach(
-            (k, v) -> schemas.put(k, new DingoSchema(v, context, ImmutableList.of(ROOT_SCHEMA_NAME, v.name())))
-        );
-        return schemas;
+        if (metaServiceCache != metaService.getSubMetaServices()) {
+            Map<String, DingoSchema> schemas = new HashMap<>();
+            metaService.getSubMetaServices().forEach(
+                (k, v) -> schemas.put(k, new DingoSchema(v, context, ImmutableList.of(ROOT_SCHEMA_NAME, v.name())))
+            );
+            cache = schemas;
+        }
+        return cache;
     }
 
     @Override

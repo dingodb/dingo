@@ -59,6 +59,8 @@ import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 
 public interface TableMapper {
 
+    String LSM = "LSM";
+
     @SneakyThrows
     default PartitionStrategy toPartitionStrategy(String partitionStrategy) {
         return Optional.ofNullable(partitionStrategy)
@@ -153,7 +155,10 @@ public interface TableMapper {
         return partitions.stream().map($ -> partitionFrom($, codec)).collect(Collectors.toList());
     }
 
-    @Mapping(source = "columns", target = "columns", qualifiedByName = "columnsFrom")
+    @Mappings({
+        @Mapping(source = "columns", target = "columns", qualifiedByName = "columnsFrom"),
+        @Mapping(target = "engine", defaultValue = LSM)
+    })
     void tableFrom(
         io.dingodb.sdk.service.entity.meta.TableDefinition tableDefinition, @MappingTarget Table.TableBuilder builder
     );
@@ -202,7 +207,7 @@ public interface TableMapper {
             1, CodecService.createSchemasForType(keyType, keyMapping), 0
         );
         if (tableDefinition.getEngine() == null || tableDefinition.getEngine().isEmpty()) {
-            tableDefinition.setEngine("LSM");
+            tableDefinition.setEngine(LSM);
         }
         tableDefinition.setEngine(tableDefinition.getEngine().toUpperCase());
         byte namespace = (byte) (tableDefinition.getEngine().startsWith("TXN") ? 't' : 'r');

@@ -53,4 +53,10 @@ public class Constant {
 
     public static final String AUTH = "auth";
     public static final String HANDSHAKE = "handshake";
+
+    public static final String CLIENT = "client";
+    public static final String SERVER = "server";
+
+    public static final long C2S = 0;
+    public static final long S2C = Long.MIN_VALUE;
 }

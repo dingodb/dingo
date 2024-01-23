@@ -22,7 +22,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.ChannelProvider;
 import io.dingodb.sdk.service.StoreService;
-import io.dingodb.sdk.service.StoreServiceDescriptors;
+import io.dingodb.sdk.service.desc.store.StoreServiceDescriptors;
 import io.dingodb.sdk.service.caller.RpcCaller;
 import io.dingodb.sdk.service.entity.common.KeyValue;
 import io.dingodb.sdk.service.entity.common.RangeWithOptions;

@@ -17,20 +17,24 @@
 package io.dingodb.transaction.api;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.config.DingoConfiguration;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @Getter
 @Builder
 @ToString
+@EqualsAndHashCode
 @AllArgsConstructor
 public class TableLock implements Comparable<TableLock> {
 
+    @Builder.Default
+    public final CommonId serverId = DingoConfiguration.serverId();
     public final CommonId tableId;
     public final long lockTs;
     public final long currentTs;
@@ -39,7 +43,9 @@ public class TableLock implements Comparable<TableLock> {
     public final byte[] start;
     public final byte[] end;
 
+    @EqualsAndHashCode.Exclude
     public transient final CompletableFuture<Boolean> lockFuture;
+    @EqualsAndHashCode.Exclude
     public transient final CompletableFuture<Void> unlockFuture;
 
     @Override
