@@ -151,7 +151,7 @@ public class PessimisticLockInsertOperator extends PartModifyOperator {
         // get lock success, delete deadLockKey
         store.deletePrefix(deadLockKeyBytes);
         // lockKeyValue  [11_txnId_tableId_partId_a_lock, forUpdateTs1]
-        transaction.setPrimaryKeyLock(primaryKey);
+        transaction.setPrimaryKeyLock(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, deadLockKeyBytes));
         // extraKeyValue  [12_jobId_tableId_partId_a_none, value]
         byte[] extraKeyBytes = ByteUtils.encode(
             CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
