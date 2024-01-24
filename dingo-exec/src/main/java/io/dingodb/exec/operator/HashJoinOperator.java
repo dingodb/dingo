@@ -21,7 +21,7 @@ import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.data.TupleWithJoinFlag;
 import io.dingodb.exec.operator.params.HashJoinParam;
 import io.dingodb.exec.tuple.TupleKey;
@@ -38,7 +38,7 @@ public class HashJoinOperator extends SoleOutOperator {
     }
 
     @Override
-    public boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         Edge edge = vertex.getSoleEdge();
         HashJoinParam param = vertex.getParam();
         TupleMapping leftMapping = param.getLeftMapping();
@@ -46,8 +46,8 @@ public class HashJoinOperator extends SoleOutOperator {
         int leftLength = param.getLeftLength();
         int rightLength = param.getRightLength();
         boolean leftRequired = param.isLeftRequired();
-        int pin = content.getPin();
-        param.setContent(content);
+        int pin = context.getPin();
+        param.setContext(context);
         if (pin == 0) { // left
             waitRightFinFlag(param);
             TupleKey leftKey = new TupleKey(leftMapping.revMap(tuple));
@@ -57,14 +57,14 @@ public class HashJoinOperator extends SoleOutOperator {
                     Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
                     System.arraycopy(t.getTuple(), 0, newTuple, leftLength, rightLength);
                     t.setJoined(true);
-                    if (!edge.transformToNext(content, newTuple)) {
+                    if (!edge.transformToNext(context, newTuple)) {
                         return false;
                     }
                 }
             } else if (leftRequired) {
                 Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
                 Arrays.fill(newTuple, leftLength, leftLength + rightLength, null);
-                return edge.transformToNext(content, newTuple);
+                return edge.transformToNext(context, newTuple);
             }
         } else if (pin == 1) { //right
             TupleKey rightKey = new TupleKey(rightMapping.revMap(tuple));
@@ -96,7 +96,7 @@ public class HashJoinOperator extends SoleOutOperator {
                             Object[] newTuple = new Object[leftLength + rightLength];
                             Arrays.fill(newTuple, 0, leftLength, null);
                             System.arraycopy(t.getTuple(), 0, newTuple, leftLength, rightLength);
-                            if (!edge.transformToNext(param.getContent(), newTuple)) {
+                            if (!edge.transformToNext(param.getContext(), newTuple)) {
                                 break outer;
                             }
                         }

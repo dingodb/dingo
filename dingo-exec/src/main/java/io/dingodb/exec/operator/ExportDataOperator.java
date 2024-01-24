@@ -21,7 +21,7 @@ import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.ExportDataParam;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -51,7 +51,7 @@ public class ExportDataOperator extends SoleOutOperator {
     private final Map<String, FileOutputStream> fileMap = new ConcurrentHashMap<>();
 
     @Override
-    public boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         ExportDataParam param = vertex.getParam();
         writeFiles(tuple, param);
         return true;

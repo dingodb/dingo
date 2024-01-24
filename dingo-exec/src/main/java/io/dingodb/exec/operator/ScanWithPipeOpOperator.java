@@ -19,7 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.RelOpUtils;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.ScanWithRelOpParam;
 import io.dingodb.expr.rel.PipeOp;
 import lombok.AccessLevel;
@@ -35,14 +35,14 @@ public final class ScanWithPipeOpOperator extends ScanWithRelOpOperator {
     public static ScanWithPipeOpOperator INSTANCE = new ScanWithPipeOpOperator();
 
     @Override
-    protected long doPush(Content content, @NonNull Vertex vertex, @NonNull Iterator<Object[]> sourceIterator) {
+    protected long doPush(Context context, @NonNull Vertex vertex, @NonNull Iterator<Object[]> sourceIterator) {
         PipeOp relOp = (PipeOp) ((ScanWithRelOpParam) vertex.getParam()).getRelOp();
         Edge edge = vertex.getSoleEdge();
         long count = 0;
         while (sourceIterator.hasNext()) {
             Object[] tuple = sourceIterator.next();
             ++count;
-            if (!RelOpUtils.processWithPipeOp(relOp, tuple, edge, content)) {
+            if (!RelOpUtils.processWithPipeOp(relOp, tuple, edge, context)) {
                 break;
             }
         }

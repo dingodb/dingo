@@ -19,6 +19,7 @@ package io.dingodb.calcite.visitor.function;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoStreamingConverter;
 import io.dingodb.calcite.traits.DingoRelPartition;
+import io.dingodb.calcite.traits.DingoRelPartitionByIndex;
 import io.dingodb.calcite.traits.DingoRelPartitionByKeys;
 import io.dingodb.calcite.traits.DingoRelPartitionByTable;
 import io.dingodb.calcite.traits.DingoRelStreaming;
@@ -42,11 +43,13 @@ import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.hash.HashStrategy;
 import io.dingodb.exec.operator.hash.SimpleHashStrategy;
+import io.dingodb.exec.operator.params.CopyParam;
 import io.dingodb.exec.operator.params.DistributionParam;
 import io.dingodb.exec.operator.params.HashParam;
 import io.dingodb.exec.operator.params.PartitionParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -61,6 +64,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
+import static io.dingodb.exec.utils.OperatorCodeUtils.COPY;
 import static io.dingodb.exec.utils.OperatorCodeUtils.DISTRIBUTE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.HASH;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PARTITION;
@@ -105,6 +109,8 @@ public class DingoStreamingConverterVisitFun {
                         outputs = partition(idGenerator, outputs, (DingoRelPartitionByTable) partition);
                     } else if (partition instanceof DingoRelPartitionByKeys) {
                         outputs = hash(idGenerator, outputs, (DingoRelPartitionByKeys) partition);
+                    } else if (partition instanceof DingoRelPartitionByIndex) {
+                        outputs = copy(idGenerator, outputs, (DingoRelPartitionByIndex) partition, transaction);
                     } else {
                         throw new IllegalStateException("Not supported.");
                     }
@@ -155,6 +161,58 @@ public class DingoStreamingConverterVisitFun {
             task.putVertex(partitionVertex);
             distributeVertex.addEdge(edge);
             outputs.add(partitionVertex);
+        }
+        return outputs;
+    }
+
+    private static @NonNull Collection<Vertex> copy(
+        IdGenerator idGenerator,
+        @NonNull Collection<Vertex> inputs,
+        @NonNull DingoRelPartitionByIndex copy,
+        ITransaction transaction
+    ) {
+        List<Vertex> outputs = new LinkedList<>();
+        final TableInfo tableInfo = MetaServiceUtils.getTableInfo(copy.getTable());
+        final Table table = copy.getTable().unwrap(DingoTable.class).getTable();
+        NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
+        for (Vertex input : inputs) {
+            Task task = input.getTask();
+            CopyParam copyParam = new CopyParam();
+            Vertex copyVertex = new Vertex(COPY, copyParam);
+            copyVertex.setId(idGenerator.getOperatorId(task.getId()));
+            Edge inputEdge = new Edge(input, copyVertex);
+            input.addEdge(inputEdge);
+            copyVertex.addIn(inputEdge);
+            task.putVertex(copyVertex);
+
+            DistributionParam distributionParam = new DistributionParam(table.tableId, table, distributions);
+            Vertex distributionVertex = new Vertex(DISTRIBUTE, distributionParam);
+            distributionVertex.setId(idGenerator.getOperatorId(task.getId()));
+            Edge copyEdge = new Edge(copyVertex, distributionVertex);
+            copyVertex.addEdge(copyEdge);
+            distributionVertex.addIn(copyEdge);
+            OutputHint hint = new OutputHint();
+            hint.setLocation(MetaService.root().currentLocation());
+            distributionVertex.setHint(hint);
+            task.putVertex(distributionVertex);
+            outputs.add(distributionVertex);
+
+            if (transaction != null) {
+                for (IndexTable index : table.getIndexes()) {
+                    distributions = MetaService.root().getRangeDistribution(index.tableId);
+                    distributionParam = new DistributionParam(index.tableId, table, distributions, index);
+                    distributionVertex = new Vertex(DISTRIBUTE, distributionParam);
+                    distributionVertex.setId(idGenerator.getOperatorId(task.getId()));
+                    copyEdge = new Edge(copyVertex, distributionVertex);
+                    copyVertex.addEdge(copyEdge);
+                    distributionVertex.addIn(copyEdge);
+                    hint = new OutputHint();
+                    hint.setLocation(MetaService.root().currentLocation());
+                    distributionVertex.setHint(hint);
+                    task.putVertex(distributionVertex);
+                    outputs.add(distributionVertex);
+                }
+            }
         }
         return outputs;
     }

@@ -26,9 +26,9 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
 import java.util.List;
@@ -120,6 +120,23 @@ public class Table {
 
     public TupleMapping mapping() {
         return TupleMapping.of(IntStream.range(0, columns.size()).toArray());
+    }
+
+    public int getColumnIndex(String name) {
+        int i = 0;
+        for (Column column : columns) {
+            if (column.getName().equalsIgnoreCase(name)) {
+                return i;
+            }
+            ++i;
+        }
+        return -1;
+    }
+
+    public List<Integer> getColumnIndices(@NonNull List<String> names) {
+        return names.stream()
+            .map(this::getColumnIndex)
+            .collect(Collectors.toList());
     }
 
 }

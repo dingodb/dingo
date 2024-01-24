@@ -18,7 +18,7 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -28,14 +28,14 @@ import java.util.Iterator;
 public abstract class IteratorOperator extends SoleOutOperator {
 
     @Override
-    public boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         long count = 0;
         long startTime = System.currentTimeMillis();
-        Iterator<Object[]> iterator = createIterator(content, tuple, vertex);
+        Iterator<Object[]> iterator = createIterator(context, tuple, vertex);
         while (iterator.hasNext()) {
             Object[] newTuple = iterator.next();
             ++count;
-            if (!vertex.getSoleEdge().transformToNext(content, newTuple)) {
+            if (!vertex.getSoleEdge().transformToNext(context, newTuple)) {
                 break;
             }
         }
@@ -50,5 +50,5 @@ public abstract class IteratorOperator extends SoleOutOperator {
         vertex.getSoleEdge().fin(fin);
     }
 
-    protected abstract Iterator<Object[]> createIterator(Content content, Object[] tuple, Vertex vertex);
+    protected abstract Iterator<Object[]> createIterator(Context context, Object[] tuple, Vertex vertex);
 }

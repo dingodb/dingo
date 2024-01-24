@@ -77,6 +77,7 @@ public class TestDelete {
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.DELETE)
+            .soleInput().isA(DingoStreamingConverter.class)
             .soleInput().isA(DingoGetByKeys.class);
     }
 }

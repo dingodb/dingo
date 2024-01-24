@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.table.Part;
 import io.dingodb.exec.transaction.params.CleanCacheParam;
 import io.dingodb.exec.transaction.params.CommitParam;
@@ -95,7 +95,8 @@ import lombok.Setter;
     @JsonSubTypes.Type(DistributionParam.class),
     @JsonSubTypes.Type(GetDistributionParam.class),
     @JsonSubTypes.Type(ScanCleanCacheParam.class),
-    @JsonSubTypes.Type(CleanCacheParam.class)
+    @JsonSubTypes.Type(CleanCacheParam.class),
+    @JsonSubTypes.Type(CopyParam.class)
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class AbstractParams {
@@ -109,7 +110,7 @@ public abstract class AbstractParams {
     protected Part part = null;
 
     @Setter
-    protected Content content;
+    protected Context context;
 
     public AbstractParams() {
     }

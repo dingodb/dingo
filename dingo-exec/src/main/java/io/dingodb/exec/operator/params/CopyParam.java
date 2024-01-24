@@ -16,28 +16,15 @@
 
 package io.dingodb.exec.operator.params;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.common.CommonId;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.TupleMapping;
-import io.dingodb.meta.entity.Table;
+import lombok.Getter;
 
-@JsonTypeName("delete")
-@JsonPropertyOrder({"table", "schema", "keyMapping"})
-public class PartDeleteParam extends PartModifyParam {
+@Getter
+@JsonTypeName("copy")
+@JsonPropertyOrder()
+public class CopyParam extends AbstractParams {
 
-    public PartDeleteParam(
-        @JsonProperty("table") CommonId tableId,
-        @JsonProperty("schema") DingoType schema,
-        @JsonProperty("keyMapping") TupleMapping keyMapping,
-        Table table
-    ) {
-        super(tableId, schema, keyMapping, table);
-    }
-
-    public void inc() {
-        count++;
+    public CopyParam() {
     }
 }

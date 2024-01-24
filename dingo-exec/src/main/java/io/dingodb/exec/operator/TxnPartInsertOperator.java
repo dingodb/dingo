@@ -17,6 +17,7 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.store.KeyValue;
@@ -25,10 +26,13 @@ import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnPartInsertParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
@@ -38,6 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
@@ -49,18 +54,30 @@ public class TxnPartInsertOperator extends PartModifyOperator {
     }
 
     @Override
-    protected boolean pushTuple(Content content, Object[] tuple, Vertex vertex) {
+    protected boolean pushTuple(Context context, Object[] tuple, Vertex vertex) {
         TxnPartInsertParam param = vertex.getParam();
-        param.setContent(content);
-        DingoType schema = param.getSchema();
-        Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
-        KeyValue keyValue = wrap(param.getCodec()::encode).apply(newTuple);
-        CommonId txnId = vertex.getTask().getTxnId();
+        param.setContext(context);
         CommonId tableId = param.getTableId();
-        CommonId partId = content.getDistribution().getId();
+        CommonId txnId = vertex.getTask().getTxnId();
+        CommonId partId = context.getDistribution().getId();
+        DingoType schema = param.getSchema();
+        StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, partId);
+        KeyValueCodec codec = param.getCodec();
+        if (context.getIndexId() != null) {
+            Table indexTable = MetaService.root().getTable(context.getIndexId());
+            List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
+                .map(Column::getName)
+                .collect(Collectors.toList()));
+            Object[] finalTuple = tuple;
+            tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
+            schema = indexTable.tupleType();
+            store = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
+            codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
+        }
+        Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
+        KeyValue keyValue = wrap(codec::encode).apply(newTuple);
         CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
         byte[] primaryLockKey = param.getPrimaryLockKey();
-        StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, partId);
         byte[] txnIdByte = txnId.encode();
         byte[] tableIdByte = tableId.encode();
         byte[] partIdByte = partId.encode();
@@ -128,13 +145,17 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     );
                     // write data
                     keyValue.setKey(dataKey);
-                    if (store.put(lockKeyValue) && store.put(extraKeyValue) && store.put(keyValue)) {
+                    if (store.put(lockKeyValue)
+                        && store.put(extraKeyValue)
+                        && store.put(keyValue)
+                        && context.getIndexId() == null
+                    ) {
                         param.inc();
                     }
                 } else {
                     // This key appears repeatedly in the current transaction
                     repeatKey(param, keyValue, txnId, keyValueKey, store, dataKey,
-                        jobIdByte, tableIdByte, partIdByte, len);
+                        jobIdByte, tableIdByte, partIdByte, len, context);
                 }
             } else {
                 // primary lock not existed ：
@@ -143,13 +164,13 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     // first put primary lock
                     // put lock data
                     KeyValue lockKeyValue = new KeyValue(lockKey, forUpdateTsByte);
-                    if (store.put(lockKeyValue)) {
+                    if (store.put(lockKeyValue) && context.getIndexId() == null) {
                         param.inc();
                     }
                 } else {
                     // primary lock existed ：
                     repeatKey(param, keyValue, txnId, primaryLockKeyBytes, store, dataKey,
-                        jobIdByte, tableIdByte, partIdByte, len);
+                        jobIdByte, tableIdByte, partIdByte, len, context);
                 }
             }
         } else {
@@ -166,7 +187,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             byte[] deleteKey = Arrays.copyOf(keyValue.getKey(), keyValue.getKey().length);
             deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
             store.delete(deleteKey);
-            if (store.put(keyValue)) {
+            if (store.put(keyValue) && context.getIndexId() == null) {
                 param.inc();
             }
         }
@@ -175,7 +196,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
 
     private static void repeatKey(TxnPartInsertParam param, KeyValue keyValue, CommonId txnId, byte[] key,
                                   StoreInstance store, byte[] dataKey, byte[] jobIdByte,
-                                  byte[] tableIdByte, byte[] partIdByte, int len) {
+                                  byte[] tableIdByte, byte[] partIdByte, int len, Context context) {
         // lock existed ：
         // 1、multi sql
         // 2、signal sql: insert into values(1, 'a'),(1, 'b');
@@ -214,7 +235,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 keyValue.setKey(dataKey);
                 deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
                 store.deletePrefix(deleteKey);
-                if (store.put(extraKeyValue) && store.put(keyValue)) {
+                if (store.put(extraKeyValue) && store.put(keyValue) && context.getIndexId() == null) {
                     param.inc();
                 }
             }

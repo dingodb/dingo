@@ -19,7 +19,7 @@ package io.dingodb.exec.dag;
 import io.dingodb.common.CommonId;
 import io.dingodb.exec.OperatorFactory;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -39,11 +39,11 @@ public class Edge {
     }
 
     public boolean transformToNext(Object[] tuple) {
-        return transformToNext(Content.builder().build(), tuple);
+        return transformToNext(Context.builder().build(), tuple);
     }
 
-    public boolean transformToNext(Content content, Object[] tuple) {
-        return OperatorFactory.getInstance(next.getOp()).push(content.setPin(previous.getPin()), tuple, next);
+    public boolean transformToNext(Context context, Object[] tuple) {
+        return OperatorFactory.getInstance(next.getOp()).push(context.setPin(previous.getPin()), tuple, next);
     }
 
     public void fin(Fin fin) {

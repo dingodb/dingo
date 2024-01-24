@@ -17,6 +17,7 @@
 package io.dingodb.calcite.traits;
 
 import com.google.common.collect.ImmutableSet;
+import io.dingodb.common.CommonId;
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -48,6 +49,11 @@ public class DingoRelStreaming implements RelTrait {
 
     public static @NonNull DingoRelStreaming of(@NonNull List<Integer> keys) {
         DingoRelPartition partition = DingoRelPartition.of(keys);
+        return new DingoRelStreaming(ImmutableSet.of(partition), partition);
+    }
+
+    public static @NonNull DingoRelStreaming of(@NonNull CommonId indexId, @NonNull RelOptTable table) {
+        DingoRelPartition partition = DingoRelPartition.of(indexId, table);
         return new DingoRelStreaming(ImmutableSet.of(partition), partition);
     }
 

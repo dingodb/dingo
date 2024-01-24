@@ -80,7 +80,7 @@ public class DingoTableModifyRule extends ConverterRule {
         }
         RelTraitSet traits = modify.getTraitSet()
             .replace(DingoConvention.INSTANCE)
-            .replace(DingoRelStreaming.of(modify.getTable()));
+            .replace(DingoRelStreaming.of(null, modify.getTable()));
         return new DingoTableModify(
             modify.getCluster(),
             traits,

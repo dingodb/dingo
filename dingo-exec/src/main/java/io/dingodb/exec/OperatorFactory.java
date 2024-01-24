@@ -23,6 +23,7 @@ import io.dingodb.exec.operator.CacheOpOperator;
 import io.dingodb.exec.operator.CalcDistributionOperator;
 import io.dingodb.exec.operator.CoalesceOperator;
 import io.dingodb.exec.operator.CompareAndSetOperator;
+import io.dingodb.exec.operator.CopyOperator;
 import io.dingodb.exec.operator.DistributeOperator;
 import io.dingodb.exec.operator.EmptySourceOperator;
 import io.dingodb.exec.operator.ExportDataOperator;
@@ -83,6 +84,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COALESCE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COMMIT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COMPARE_AND_SET;
+import static io.dingodb.exec.utils.OperatorCodeUtils.COPY;
 import static io.dingodb.exec.utils.OperatorCodeUtils.DISTRIBUTE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.EMPTY_SOURCE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.EXPORT_DATA;
@@ -193,6 +195,7 @@ public final class OperatorFactory {
         OPERATORS.put(DISTRIBUTE, DistributeOperator.INSTANCE);
         OPERATORS.put(GET_DISTRIBUTION, GetDistributionOperator.INSTANCE);
         OPERATORS.put(TXN_CLEAN_CACHE, CleanCacheOperator.INSTANCE);
+        OPERATORS.put(COPY, CopyOperator.INSTANCE);
     }
 
     private OperatorFactory() {

@@ -20,7 +20,7 @@ import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PartRangeDeleteParam;
 import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
@@ -34,14 +34,14 @@ public final class PartRangeDeleteOperator extends SoleOutOperator {
     }
 
     @Override
-    public boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
-        RangeDistribution distribution = content.getDistribution();
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
+        RangeDistribution distribution = context.getDistribution();
         PartRangeDeleteParam param = vertex.getParam();
         StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), distribution.getId());
         final long startTime = System.currentTimeMillis();
         long count = store.delete(new StoreInstance.Range(distribution.getStartKey(), distribution.getEndKey(),
             distribution.isWithStart(), distribution.isWithEnd()));
-        vertex.getSoleEdge().transformToNext(content, new Object[]{count});
+        vertex.getSoleEdge().transformToNext(context, new Object[]{count});
         if (log.isDebugEnabled()) {
             log.debug("Delete data by range, delete count: {}, cost: {} ms.",
                 count, System.currentTimeMillis() - startTime);

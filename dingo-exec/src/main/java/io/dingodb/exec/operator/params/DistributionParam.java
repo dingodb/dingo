@@ -27,6 +27,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -43,6 +44,7 @@ public class DistributionParam extends AbstractParams {
     private final CommonId tableId;
     private final Table table;
     private final KeyValueCodec codec;
+    private IndexTable indexTable;
     @Setter
     private NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
 
@@ -51,10 +53,20 @@ public class DistributionParam extends AbstractParams {
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
     ) {
+        this(tableId, table, distributions, null);
+    }
+
+    public DistributionParam(
+        CommonId tableId,
+        Table table,
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
+        IndexTable indexTable
+    ) {
         this.tableId = tableId;
         this.table = table;
         this.distributions = distributions;
         this.codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
+        this.indexTable = indexTable;
     }
 
 }

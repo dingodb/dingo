@@ -17,7 +17,7 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PartitionParam;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -29,9 +29,9 @@ public final class PartitionOperator extends FanOutOperator {
     }
 
     @Override
-    protected int calcOutputIndex(Content content, Object @NonNull [] tuple, Vertex vertex) {
+    protected int calcOutputIndex(Context context, Object @NonNull [] tuple, Vertex vertex) {
         PartitionParam param = vertex.getParam();
-        return param.getPartIndices().get(content.getDistribution().getId().domain);
+        return param.getPartIndices().get(context.getDistribution().getId().domain);
     }
 
 }

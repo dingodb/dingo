@@ -17,7 +17,7 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,12 +31,12 @@ public final class ScanWithNoOpOperator extends ScanWithRelOpOperator {
     public static ScanWithNoOpOperator INSTANCE = new ScanWithNoOpOperator();
 
     @Override
-    protected long doPush(Content content, @NonNull Vertex vertex, @NonNull Iterator<Object[]> sourceIterator) {
+    protected long doPush(Context context, @NonNull Vertex vertex, @NonNull Iterator<Object[]> sourceIterator) {
         long count = 0;
         while (sourceIterator.hasNext()) {
             Object[] tuple = sourceIterator.next();
             ++count;
-            if (!vertex.getSoleEdge().transformToNext(content, tuple)) {
+            if (!vertex.getSoleEdge().transformToNext(context, tuple)) {
                 break;
             }
         }

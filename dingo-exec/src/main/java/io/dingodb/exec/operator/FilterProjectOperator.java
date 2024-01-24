@@ -20,7 +20,7 @@ import com.google.common.collect.Iterators;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.FilterProjectParam;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -29,9 +29,9 @@ import java.util.Iterator;
 public abstract class FilterProjectOperator extends IteratorOperator {
 
     @Override
-    protected Iterator<Object[]> createIterator(Content content, Object[] tuple, Vertex vertex) {
+    protected Iterator<Object[]> createIterator(Context context, Object[] tuple, Vertex vertex) {
         FilterProjectParam param = vertex.getParam();
-        Iterator<Object[]> iterator = createSourceIterator(content, tuple, vertex);
+        Iterator<Object[]> iterator = createSourceIterator(context, tuple, vertex);
         SqlExpr filter = param.getFilter();
         TupleMapping selection = param.getSelection();
         if (selection != null) {
@@ -49,5 +49,5 @@ public abstract class FilterProjectOperator extends IteratorOperator {
         return iterator;
     }
 
-    protected abstract @NonNull Iterator<Object[]> createSourceIterator(Content content, Object[] tuple, Vertex vertex);
+    protected abstract @NonNull Iterator<Object[]> createSourceIterator(Context context, Object[] tuple, Vertex vertex);
 }

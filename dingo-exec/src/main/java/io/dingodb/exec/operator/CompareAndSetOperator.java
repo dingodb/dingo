@@ -21,7 +21,7 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.CompareAndSetParam;
 import io.dingodb.store.api.StoreInstance;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -35,11 +35,11 @@ public class CompareAndSetOperator extends PartModifyOperator {
     }
 
     @Override
-    protected boolean pushTuple(Content content, @Nullable Object[] tuple, Vertex vertex) {
+    protected boolean pushTuple(Context context, @Nullable Object[] tuple, Vertex vertex) {
         CompareAndSetParam param = vertex.getParam();
         DingoType schema = param.getSchema();
 
-        RangeDistribution distribution = content.getDistribution();
+        RangeDistribution distribution = context.getDistribution();
         int tupleSize = schema.fieldCount();
         Object[] oldTuple = Arrays.copyOf(tuple, tupleSize);
         Object[] newTuple = Arrays.copyOfRange(tuple, oldTuple.length, tuple.length);

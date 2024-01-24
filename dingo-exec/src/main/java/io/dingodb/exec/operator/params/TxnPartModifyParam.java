@@ -18,15 +18,10 @@ package io.dingodb.exec.operator.params;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
-
-import java.util.NavigableMap;
 
 @Getter
 public abstract class TxnPartModifyParam extends PartModifyParam {
@@ -48,7 +43,6 @@ public abstract class TxnPartModifyParam extends PartModifyParam {
         DingoType schema,
         TupleMapping keyMapping,
         Table table,
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
         boolean pessimisticTxn,
         int isolationLevel,
         byte[] primaryLockKey,
@@ -56,7 +50,7 @@ public abstract class TxnPartModifyParam extends PartModifyParam {
         long forUpdateTs,
         long lockTimeOut
     ) {
-        super(tableId, schema, keyMapping, table, distributions);
+        super(tableId, schema, keyMapping, table);
         this.isolationLevel = isolationLevel;
         this.pessimisticTxn = pessimisticTxn;
         this.primaryLockKey = primaryLockKey;

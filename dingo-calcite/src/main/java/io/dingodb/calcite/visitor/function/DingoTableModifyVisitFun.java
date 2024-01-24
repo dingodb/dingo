@@ -20,13 +20,10 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
-import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.OutputHint;
@@ -43,19 +40,15 @@ import io.dingodb.exec.operator.params.TxnPartDeleteParam;
 import io.dingodb.exec.operator.params.TxnPartInsertParam;
 import io.dingodb.exec.operator.params.TxnPartUpdateParam;
 import io.dingodb.exec.transaction.base.ITransaction;
-import io.dingodb.exec.transaction.base.TransactionType;
-import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.NavigableMap;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
-import static io.dingodb.exec.transaction.base.TransactionType.NONE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_UPDATE;
@@ -73,10 +66,7 @@ public class DingoTableModifyVisitFun {
         Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
         List<Vertex> outputs = new LinkedList<>();
         final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
-        TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final CommonId tableId = MetaServiceUtils.getTableId(rel.getTable());
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions =
-            tableInfo.getRangeDistributions();
 
         for (Vertex input : inputs) {
 
@@ -98,8 +88,7 @@ public class DingoTableModifyVisitFun {
                                     true,
                                     transaction.getPrimaryKeyLock(),
                                     transaction.getLockTimeOut(),
-                                    td,
-                                    distributions));
+                                    td));
                         } else {
                             vertex = new Vertex(TXN_PART_INSERT,
                                 new TxnPartInsertParam(
@@ -112,13 +101,12 @@ public class DingoTableModifyVisitFun {
                                     transaction.getStartTs(),
                                     pessimisticTxn ? transaction.getForUpdateTs() : 0L,
                                     transaction.getLockTimeOut(),
-                                    td,
-                                    distributions));
+                                    td));
                         }
                     } else {
                         vertex = new Vertex(
                             PART_INSERT,
-                            new PartInsertParam(tableId, td.tupleType(), td.keyMapping(), td, distributions)
+                            new PartInsertParam(tableId, td.tupleType(), td.keyMapping(), td)
                         );
                     }
                     break;
@@ -146,8 +134,7 @@ public class DingoTableModifyVisitFun {
                                     true,
                                     transaction.getPrimaryKeyLock(),
                                     transaction.getLockTimeOut(),
-                                    td,
-                                    distributions
+                                    td
                                 )
                             );
                         } else {
@@ -166,8 +153,7 @@ public class DingoTableModifyVisitFun {
                                     transaction.getStartTs(),
                                     pessimisticTxn ? transaction.getForUpdateTs() : 0L,
                                     transaction.getLockTimeOut(),
-                                    td,
-                                    distributions
+                                    td
                                 )
                             );
                         }
@@ -181,8 +167,7 @@ public class DingoTableModifyVisitFun {
                                 rel.getSourceExpressionList().stream()
                                     .map(SqlExprUtils::toSqlExpr)
                                     .collect(Collectors.toList()),
-                                td,
-                                distributions
+                                td
                             )
                         );
                     }
@@ -202,8 +187,7 @@ public class DingoTableModifyVisitFun {
                                     true,
                                     transaction.getPrimaryKeyLock(),
                                     transaction.getLockTimeOut(),
-                                    td,
-                                    distributions
+                                    td
                                 )
                             );
                         } else {
@@ -218,15 +202,13 @@ public class DingoTableModifyVisitFun {
                                     transaction.getStartTs(),
                                     pessimisticTxn ? transaction.getForUpdateTs() : 0L,
                                     transaction.getLockTimeOut(),
-                                    td,
-                                    distributions
+                                    td
                                 )
                             );
                         }
                     } else {
                         vertex = new Vertex(PART_DELETE,
-                            new PartDeleteParam(tableId, td.tupleType(),
-                                td.keyMapping(), td, distributions)
+                            new PartDeleteParam(tableId, td.tupleType(), td.keyMapping(), td)
                         );
                     }
                     break;

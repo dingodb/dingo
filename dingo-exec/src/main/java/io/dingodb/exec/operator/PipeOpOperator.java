@@ -19,7 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.RelOpUtils;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.RelOpParam;
 import io.dingodb.expr.rel.PipeOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -36,8 +36,8 @@ public final class PipeOpOperator extends RelOpOperator {
     }
 
     @Override
-    protected boolean doPush(Content content, @NonNull Vertex vertex, Object[] tuple) {
+    protected boolean doPush(Context context, @NonNull Vertex vertex, Object[] tuple) {
         PipeOp relOp = (PipeOp) ((RelOpParam) vertex.getParam()).getRelOp();
-        return RelOpUtils.processWithPipeOp(relOp, tuple, vertex.getSoleEdge(), content);
+        return RelOpUtils.processWithPipeOp(relOp, tuple, vertex.getSoleEdge(), context);
     }
 }

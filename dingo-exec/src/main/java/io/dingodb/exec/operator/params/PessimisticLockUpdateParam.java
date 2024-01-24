@@ -20,18 +20,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
 import java.util.List;
-import java.util.NavigableMap;
 
 @Getter
 @JsonTypeName("pessimistic_lock_update")
@@ -55,10 +51,9 @@ public class PessimisticLockUpdateParam extends TxnPartModifyParam {
         @JsonProperty("pessimisticTxn") boolean pessimisticTxn,
         @JsonProperty("primaryLockKey") byte[] primaryLockKey,
         @JsonProperty("lockTimeOut") long lockTimeOut,
-        Table table,
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
+        Table table
     ) {
-        super(tableId, schema, keyMapping, table, distributions, pessimisticTxn,
+        super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
         this.mapping = mapping;
         this.updates = updates;

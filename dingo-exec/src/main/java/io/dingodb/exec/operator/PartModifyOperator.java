@@ -20,7 +20,7 @@ import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PartModifyParam;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -29,8 +29,8 @@ public abstract class PartModifyOperator extends SoleOutOperator {
     }
 
     @Override
-    public synchronized boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
-        return pushTuple(content, tuple, vertex);
+    public synchronized boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
+        return pushTuple(context, tuple, vertex);
     }
 
     @Override
@@ -45,5 +45,5 @@ public abstract class PartModifyOperator extends SoleOutOperator {
         param.reset();
     }
 
-    protected abstract boolean pushTuple(Content content, @Nullable Object[] tuple, Vertex vertex);
+    protected abstract boolean pushTuple(Context context, @Nullable Object[] tuple, Vertex vertex);
 }

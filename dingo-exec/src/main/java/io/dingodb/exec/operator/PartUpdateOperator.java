@@ -23,7 +23,7 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PartUpdateParam;
 import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
@@ -39,9 +39,9 @@ public final class PartUpdateOperator extends PartModifyOperator {
     }
 
     @Override
-    public boolean pushTuple(Content content, Object[] tuple, Vertex vertex) {
+    public boolean pushTuple(Context context, Object[] tuple, Vertex vertex) {
         PartUpdateParam param = vertex.getParam();
-        RangeDistribution distribution = content.getDistribution();
+        RangeDistribution distribution = context.getDistribution();
         DingoType schema = param.getSchema();
         TupleMapping mapping = param.getMapping();
         List<SqlExpr> updates = param.getUpdates();
