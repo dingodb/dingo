@@ -101,6 +101,28 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
         throw ExceptionUtils.wrongSignatureType(this, signature);
     }
 
+    public void setTxnId(@NonNull JobManager jobManager, @NonNull CommonId txnId) {
+        Meta.Signature signature = getSignature();
+        if (signature instanceof DingoSignature) {
+            CommonId jobId = ((DingoSignature) signature).getJobId();
+            Job job = jobManager.getJob(jobId);
+            job.setTxnId(txnId);
+        }
+    }
+
+    public String getSql() {
+        Meta.Signature signature = getSignature();
+        return signature.sql;
+    }
+
+    public boolean isDml() {
+        Meta.Signature sh = getSignature();
+        return (sh.statementType == Meta.StatementType.DELETE
+            || sh.statementType == Meta.StatementType.INSERT
+            || sh.statementType == Meta.StatementType.UPDATE
+            || sh.statementType == Meta.StatementType.IS_DML);
+    }
+
     public void removeJob(JobManager jobManager) {
         Meta.Signature signature = getSignature();
         DingoStatementUtils.removeJobInSignature(jobManager, signature);

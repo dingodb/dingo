@@ -31,7 +31,9 @@ import io.dingodb.exec.base.Task;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.expr.json.runtime.Parser;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
+import io.dingodb.tso.TsoService;
 import lombok.Getter;
+import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -47,13 +49,13 @@ public final class JobImpl implements Job {
     @Getter
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    private final CommonId jobId;
+    private CommonId jobId;
 
     @JsonProperty("txnId")
     @Getter
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    private final CommonId txnId;
+    private CommonId txnId;
 
     @Getter
     @JsonProperty("tasks")
@@ -112,5 +114,13 @@ public final class JobImpl implements Job {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void setTxnId(CommonId txnId) {
+        this.txnId = txnId;
+        long jobSeqId = TsoService.getDefault().tso();
+        this.jobId = new CommonId(CommonId.CommonType.JOB, txnId.seq, jobSeqId);
+        getTasks().values().forEach( v -> v.setTxnId(txnId));
     }
 }

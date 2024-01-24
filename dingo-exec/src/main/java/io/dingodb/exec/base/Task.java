@@ -82,4 +82,9 @@ public interface Task {
     default void setParas(Object[] paras) {
         getVertexes().values().forEach(v -> v.setParas(paras));
     }
+    default void setStartTs(long startTs) {
+        getVertexes().values().forEach(v -> v.setStartTs(startTs));
+    }
+    void setTxnId(CommonId txnId);
+
 }

@@ -362,13 +362,51 @@ public class DingoMeta extends MetaImpl {
         @NonNull List<List<TypedValue>> parameterValues
     ) throws NoSuchStatementException {
         final List<Long> updateCounts = new ArrayList<>();
-        for (List<TypedValue> parameterValue : parameterValues) {
-            ExecuteResult executeResult = execute(sh, parameterValue, -1);
-            final long updateCount =
-                executeResult.resultSets.size() == 1
-                    ? executeResult.resultSets.get(0).updateCount
-                    : -1L;
-            updateCounts.add(updateCount);
+        ITransaction transaction = ((DingoConnection) connection).getTransaction();
+        DingoPreparedStatement statement = (DingoPreparedStatement) ((DingoConnection) connection).getStatement(sh);
+        try {
+            for (List<TypedValue> parameterValue : parameterValues) {
+                ExecuteResult executeResult = execute(sh, parameterValue, -1);
+                final long updateCount =
+                    executeResult.resultSets.size() == 1
+                        ? executeResult.resultSets.get(0).updateCount
+                        : -1L;
+                updateCounts.add(updateCount);
+            }
+        } catch (Throwable throwable) {
+            log.error("run job exception:{}", throwable, throwable);
+            if (transaction != null && transaction.isPessimistic()
+                && transaction.getPrimaryKeyLock() != null
+                && statement.isDml()) {
+                // rollback pessimistic lock
+                transaction.rollBackPessimisticLock(jobManager);
+            }
+            if (transaction != null) {
+                transaction.addSql(statement.getSql());
+                if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
+                    try {
+                        cleanTransaction();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+            throw ExceptionUtils.toRuntime(throwable);
+        }
+        if (transaction != null) {
+            transaction.addSql(statement.getSql());
+            if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
+                try {
+                    connection.commit();
+                    transaction = ((DingoConnection) connection).createTransaction(
+                        transaction.getType(),
+                        true
+                    );
+                    statement.setTxnId(jobManager, transaction.getTxnId());
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
         return new ExecuteBatchResult(Longs.toArray(updateCounts));
     }
