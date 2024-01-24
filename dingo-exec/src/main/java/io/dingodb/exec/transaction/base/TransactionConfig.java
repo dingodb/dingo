@@ -50,9 +50,9 @@ public class TransactionConfig {
 
     public long getLockTimeOut() {
         Optional<String> retryCountOpt = Optional.ofNullable(
-            sessionVariables.getProperty("statement_timeout"));
-        return retryCountOpt
+            sessionVariables.getProperty("lock_wait_timeout"));
+        return (retryCountOpt
             .map(Integer::parseInt)
-            .orElse(50000);
+            .orElse(50)) * 1000;
     }
 }

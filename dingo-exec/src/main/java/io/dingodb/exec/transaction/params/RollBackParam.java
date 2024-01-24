@@ -48,6 +48,7 @@ public class RollBackParam extends AbstractParams {
     private CommonId tableId;
     @Setter
     private CommonId partId;
+    private List<Long> forUpdateTsList;
 
     public RollBackParam(
         @JsonProperty("schema") DingoType schema,
@@ -65,9 +66,14 @@ public class RollBackParam extends AbstractParams {
     public void init(Vertex vertex) {
         super.init(vertex);
         keys = new ArrayList<>();
+        forUpdateTsList = new ArrayList<>();
     }
 
     public void addKey(byte[] key) {
         keys.add(key);
+    }
+
+    public void addForUpdateTs(long forUpdateTs) {
+        forUpdateTsList.add(forUpdateTs);
     }
 }
