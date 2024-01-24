@@ -42,6 +42,7 @@ import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -72,9 +73,10 @@ public final class TaskImpl implements Task {
     private final CommonId jobId;
     @JsonProperty("txnId")
     @Getter
+    @Setter
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    private final CommonId txnId;
+    private CommonId txnId;
     @JsonProperty("location")
     @Getter
     private final Location location;
@@ -204,6 +206,7 @@ public final class TaskImpl implements Task {
         }
         activeThreads = new CountDownLatch(runList.size());
         setParas(paras);
+        setStartTs(txnId.seq);
         for (CommonId operatorId : runList) {
             Vertex vertex = vertexes.get(operatorId);
             Operator operator = OperatorFactory.getInstance(vertex.getOp());

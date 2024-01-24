@@ -22,6 +22,7 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 public abstract class TxnPartModifyParam extends PartModifyParam {
@@ -32,7 +33,7 @@ public abstract class TxnPartModifyParam extends PartModifyParam {
     @JsonProperty("primaryLockKey")
     private final byte[] primaryLockKey;
     @JsonProperty("startTs")
-    private final long startTs;
+    private long startTs;
     @JsonProperty("forUpdateTs")
     private final long forUpdateTs;
     @JsonProperty("lockTimeOut")
@@ -57,5 +58,9 @@ public abstract class TxnPartModifyParam extends PartModifyParam {
         this.startTs = startTs;
         this.forUpdateTs = forUpdateTs;
         this.lockTimeOut = lockTimeOut;
+    }
+
+    public void setStartTs(long startTs) {
+        this.startTs = startTs;
     }
 }

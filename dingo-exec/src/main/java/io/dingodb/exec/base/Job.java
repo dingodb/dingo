@@ -75,4 +75,6 @@ public interface Job {
     default boolean cancel() {
         return getRoot().cancel();
     }
+
+    default void setTxnId(CommonId txnId) {}
 }

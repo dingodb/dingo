@@ -127,6 +127,10 @@ public abstract class AbstractParams {
     public void setParas(Object[] paras) {
     }
 
+    public void setStartTs(long startTs) {
+
+    }
+
     public void destroy() {
 
     }

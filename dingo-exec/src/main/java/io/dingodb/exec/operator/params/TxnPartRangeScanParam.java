@@ -33,6 +33,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.utils.SchemaWrapperUtils;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -55,7 +56,7 @@ public class TxnPartRangeScanParam extends FilterProjectParam {
     @JsonProperty("pushDown")
     private final boolean pushDown;
     @JsonProperty("scanTs")
-    private final long scanTs;
+    private long scanTs;
     @JsonProperty("isolationLevel")
     private final int isolationLevel;
     @JsonProperty("timeOut")
@@ -137,5 +138,10 @@ public class TxnPartRangeScanParam extends FilterProjectParam {
             codec = CodecService.getDefault().createKeyValueCodec(outputSchema, outputKeyMapping);
         }
         codec = CodecService.getDefault().createKeyValueCodec(schema, keyMapping);
+    }
+
+    @Override
+    public void setStartTs(long startTs) {
+       this.scanTs = startTs;
     }
 }

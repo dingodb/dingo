@@ -115,6 +115,10 @@ public class Vertex {
         data.setParas(paras);
     }
 
+    public void setStartTs(long startTs) {
+        data.setStartTs(startTs);
+    }
+
     public <T> T getParam() {
         return (T) data;
     }
