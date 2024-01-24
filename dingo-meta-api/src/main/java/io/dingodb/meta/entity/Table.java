@@ -31,6 +31,7 @@ import lombok.experimental.SuperBuilder;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -99,6 +100,16 @@ public class Table {
 
     public TupleType tupleType() {
         return DingoTypeFactory.tuple(columns.stream().map(Column::getType).toArray(DingoType[]::new));
+    }
+
+    public DingoType onlyKeyType() {
+        return DingoTypeFactory.tuple(
+            columns.stream()
+                .filter(Column::isPrimary)
+                .sorted(Comparator.comparingInt(Column::getPrimaryKeyIndex))
+                .map(Column::getType)
+                .toArray(DingoType[]::new)
+        );
     }
 
     public List<Column> keyColumns() {

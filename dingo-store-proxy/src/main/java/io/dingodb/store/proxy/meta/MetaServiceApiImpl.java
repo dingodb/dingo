@@ -140,6 +140,7 @@ public class MetaServiceApiImpl implements MetaServiceApi {
                     lockService.watchLock(currentLock, this::lock);
                 } catch (Exception e) {
                     leaderChannel.close();
+                    throw e;
                 }
                 log.info("Current {}, leader: {}.", ID, leaderId);
                 listen(leaderLocation);
@@ -202,7 +203,10 @@ public class MetaServiceApiImpl implements MetaServiceApi {
             dropSchemaCommonId,
             null,
             location,
-            msg -> MetaService.ROOT.cache.invalidMetaServices(),
+            msg -> {
+                MetaService.ROOT.cache.invalidMetaServices();
+                MetaService.ROOT.cache.invalidSchema(new String(msg.content()));
+            },
             () -> log.info("Close listen drop schema {}", location)
         );
     }
@@ -381,34 +385,35 @@ public class MetaServiceApiImpl implements MetaServiceApi {
 
     @Override
     @SneakyThrows
-    public void createSchema(long requestId, CreateSchemaRequest request) {
+    public void createSchema(long requestId, String schema, CreateSchemaRequest request) {
         if (!isReady()) {
             throw new RuntimeException("Offline, please wait and retry.");
         }
         if (isLeader()) {
             proxyService.createSchema(requestId, request);
-            createSchemaListener.accept(Message.EMPTY);
+            createSchemaListener.accept(new Message(schema.getBytes(StandardCharsets.UTF_8)));
             MetaService.ROOT.cache.invalidMetaServices();
         } else {
             try (Channel channel = leaderChannel.cloneChannel()) {
-                proxy(channel).createSchema(requestId, request);
+                proxy(channel).createSchema(requestId, schema, request);
             }
         }
     }
 
     @Override
     @SneakyThrows
-    public void dropSchema(long requestId, DropSchemaRequest request) {
+    public void dropSchema(long requestId, String schema, DropSchemaRequest request) {
         if (!isReady()) {
             throw new RuntimeException("Offline, please wait and retry.");
         }
         if (isLeader()) {
             proxyService.dropSchema(requestId, request);
-            dropSchemaListener.accept(Message.EMPTY);
+            dropSchemaListener.accept(new Message(schema.getBytes(StandardCharsets.UTF_8)));
             MetaService.ROOT.cache.invalidMetaServices();
+            MetaService.ROOT.cache.invalidSchema(schema);
         } else {
             try (Channel channel = leaderChannel.cloneChannel()) {
-                proxy(channel).dropSchema(requestId, request);
+                proxy(channel).dropSchema(requestId, schema, request);
             }
         }
     }

@@ -18,13 +18,20 @@ package io.dingodb.store.proxy.meta;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.TupleType;
+import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Utils;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.TableStatistic;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.partition.PartitionService;
+import io.dingodb.sdk.common.serial.RecordEncoder;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.entity.common.Location;
@@ -32,6 +39,8 @@ import io.dingodb.sdk.service.entity.common.Region;
 import io.dingodb.sdk.service.entity.common.RegionDefinition;
 import io.dingodb.sdk.service.entity.coordinator.GetRegionMapRequest;
 import io.dingodb.sdk.service.entity.coordinator.QueryRegionRequest;
+import io.dingodb.sdk.service.entity.coordinator.RegionCmd.RequestNest.SplitRequest;
+import io.dingodb.sdk.service.entity.coordinator.SplitRegionRequest;
 import io.dingodb.sdk.service.entity.meta.CreateSchemaRequest;
 import io.dingodb.sdk.service.entity.meta.CreateTablesRequest;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
@@ -67,11 +76,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.dingodb.common.CommonId.CommonType.TABLE;
+import static io.dingodb.partition.DingoPartitionServiceProvider.HASH_FUNC_NAME;
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 
 @Slf4j
@@ -169,7 +181,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             throw new UnsupportedOperationException();
         }
         name = cleanSchemaName(name);
-        api.createSchema(tso(), CreateSchemaRequest.builder().parentSchemaId(id).schemaName(name).build());
+        api.createSchema(tso(), name, CreateSchemaRequest.builder().parentSchemaId(id).schemaName(name).build());
     }
 
     @Override
@@ -198,7 +210,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         if (getSubMetaService(name) == null) {
             return false;
         }
-        api.dropSchema(tso(), DropSchemaRequest.builder().schemaId(getSubMetaService(name).id).build());
+        api.dropSchema(tso(), name, DropSchemaRequest.builder().schemaId(getSubMetaService(name).id).build());
         return true;
     }
 
@@ -340,7 +352,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
+    public NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
         return cache.getRangeDistribution(id);
     }
 
@@ -375,6 +387,53 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
 
         return metrics;
+    }
+
+    @Override
+    public void addDistribution(String tableName, PartitionDetailDefinition detail) {
+        tableName = cleanTableName(tableName);
+        Table table = getTable(tableName);
+        if (table == null) {
+            throw new RuntimeException("Table not found.");
+        }
+        PartitionService partitionService = PartitionService.getService(table.partitionStrategy);
+        TupleType keyType = (TupleType) table.onlyKeyType();
+        TupleMapping keyMapping = TupleMapping.of(IntStream.range(0, keyType.fieldCount()).toArray());
+        RecordEncoder encoder = new RecordEncoder(
+            1, CodecService.createSchemasForType(keyType, keyMapping), 0
+        );
+        byte[] key = encoder.encodeKeyPrefix(detail.getOperand(), detail.getOperand().length);
+        CommonId commonId = partitionService.calcPartId(key, getRangeDistribution(table.tableId));
+        encoder.resetKeyPrefix(key, commonId.domain);
+        Services.coordinatorService(Configuration.coordinatorSet()).splitRegion(
+            tso(),
+            SplitRegionRequest.builder()
+                .splitRequest(SplitRequest.builder().splitFromRegionId(commonId.seq).splitWatershedKey(key).build())
+                .build()
+        );
+        ComparableByteArray comparableKey = new ComparableByteArray(
+            key, table.partitionStrategy == HASH_FUNC_NAME ? 0 : 9
+        );
+
+        Utils.loop(() -> !checkSplitFinish(comparableKey, table), TimeUnit.SECONDS.toNanos(1), 60);
+        if (checkSplitFinish(comparableKey, table)) {
+            return;
+        }
+        log.warn("Add distribution wait timeout, refresh distributions run in the background.");
+        Executors.execute("wait-split", () -> {
+            Utils.loop(() -> !checkSplitFinish(comparableKey, table), TimeUnit.SECONDS.toNanos(1));
+        });
+    }
+
+    private boolean checkSplitFinish(ComparableByteArray comparableKey, Table table) {
+        return Utils.returned(
+            comparableKey.compareTo(cache.getRangeDistribution(table.tableId).floorKey(comparableKey)) == 0,
+            finish -> {
+                if (!finish) {
+                    cache.invalidDistribution(table.tableId);
+                }
+            }
+        );
     }
 
     @Override

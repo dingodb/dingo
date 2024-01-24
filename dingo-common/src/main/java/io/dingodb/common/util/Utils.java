@@ -19,12 +19,10 @@ package io.dingodb.common.util;
 import io.dingodb.common.type.TupleMapping;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.sql.Date;
 import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.List;
 import java.util.TimeZone;
@@ -72,10 +70,26 @@ public final class Utils {
         }
     }
 
+    public static void loop(@NonNull Supplier<Boolean> predicate, int times) {
+        while (predicate.get() && times-- > 0) {
+        }
+    }
+
     public static void loop(@NonNull Supplier<Boolean> predicate, long nanos) {
         while (predicate.get()) {
             LockSupport.parkNanos(nanos);
         }
+    }
+
+    public static void loop(@NonNull Supplier<Boolean> predicate, long nanos, int times) {
+        while (predicate.get() && times-- > 0) {
+            LockSupport.parkNanos(nanos);
+        }
+    }
+
+    public static <T> T returned(T target, Consumer<T> task) {
+        task.accept(target);
+        return target;
     }
 
     public static void noBreakLoop(NoBreakFunctions.Supplier<Boolean> predicate) {

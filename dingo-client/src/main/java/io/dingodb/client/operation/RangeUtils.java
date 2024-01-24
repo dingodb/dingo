@@ -118,9 +118,15 @@ public class RangeUtils {
     }
 
     public static Comparator<Operation.Task> getComparator() {
+        return getComparator(SKIP_LONG_POS);
+    }
+
+    public static Comparator<Operation.Task> getComparator(int pos) {
         return (e1, e2) -> ByteArrayUtils.compare(
             e1.<OpRange>parameters().getStartKey(),
-            e2.<OpRange>parameters().getStartKey(), SKIP_LONG_POS);
+            e2.<OpRange>parameters().getStartKey(),
+            pos
+        );
     }
 
     public static NavigableSet<Operation.Task> getSubTasks(TableInfo tableInfo, OpRange range) {
@@ -144,25 +150,30 @@ public class RangeUtils {
             .build();
 
         NavigableSet<RangeDistribution> distributions;
+        final int pos;
         if (Optional.of(tableInfo.definition.getPartition())
             .map(Partition::getFuncName)
             .filter(f -> !f.equalsIgnoreCase(HASH_FUNC_NAME))
             .isPresent()
         ) {
+            pos = SKIP_LONG_POS;
             distributions = io.dingodb.common.util.RangeUtils.getSubRangeDistribution(src, rangeDistribution);
-            if (distributions.size() > 0) {
+            if (!distributions.isEmpty()) {
                 RangeDistribution last = distributions.last();
                 last.setEndKey(tableInfo.codec.resetPrefix(last.getEndKey(), last.getId().domain));
             }
         } else {
-            distributions = new TreeSet<>(io.dingodb.common.util.RangeUtils.rangeComparator());
-            Map<Long, List<RangeDistribution>> groupedMap = src
-                .stream()
+            pos = 0;
+            distributions = new TreeSet<>(io.dingodb.common.util.RangeUtils.rangeComparator(pos));
+            Map<Long, List<RangeDistribution>> groupedMap = src.stream()
                 .collect(Collectors.groupingBy(rd -> rd.getId().domain));
             for (Map.Entry<Long, List<RangeDistribution>> entry : groupedMap.entrySet()) {
                 NavigableSet<RangeDistribution> distribution =
                     io.dingodb.common.util.RangeUtils.getSubRangeDistribution(entry.getValue(), rangeDistribution);
-                if (distribution.size() > 0) {
+                distribution.stream()
+                    .peek($ -> $.setStartKey(tableInfo.codec.resetPrefix($.getStartKey(), entry.getKey())))
+                    .forEach($ -> $.setEndKey(tableInfo.codec.resetPrefix($.getEndKey(), entry.getKey())));
+                if (!distribution.isEmpty()) {
                     RangeDistribution last = distribution.last();
                     last.setEndKey(tableInfo.codec.resetPrefix(last.getEndKey(), entry.getKey()));
                 }
@@ -176,7 +187,7 @@ public class RangeUtils {
                     mapping(rd.id()),
                     wrap(new OpRange(rd.getStartKey(), rd.getEndKey(), rd.isWithStart(), rd.isWithEnd()))
                 ))
-                .collect(Collectors.toCollection(() -> new TreeSet<>(getComparator())));
+                .collect(Collectors.toCollection(() -> new TreeSet<>(getComparator(pos))));
         } else {
             return distributions.stream()
                 .map(rd -> new Operation.Task(
@@ -188,7 +199,7 @@ public class RangeUtils {
                         rd.isWithEnd(),
                         coprocessor))
                 ))
-                .collect(Collectors.toCollection(() -> new TreeSet<>(getComparator())));
+                .collect(Collectors.toCollection(() -> new TreeSet<>(getComparator(pos))));
         }
     }
 
