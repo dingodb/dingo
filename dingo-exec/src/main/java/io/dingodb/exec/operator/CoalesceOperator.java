@@ -21,7 +21,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.CoalesceParam;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -35,11 +35,11 @@ public final class CoalesceOperator extends SoleOutOperator {
     }
 
     @Override
-    public boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         if (log.isDebugEnabled()) {
-            log.debug("Got tuple from pin {}.", content.getPin());
+            log.debug("Got tuple from pin {}.", context.getPin());
         }
-        return vertex.getSoleEdge().transformToNext(content, tuple);
+        return vertex.getSoleEdge().transformToNext(context, tuple);
     }
 
     @Override

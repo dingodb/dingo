@@ -20,7 +20,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.SourceParam;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -32,7 +32,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public abstract class SourceOperator extends SoleOutOperator {
 
     @Override
-    public boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         return push(vertex);
     }
 

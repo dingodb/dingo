@@ -25,7 +25,7 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PessimisticLockUpdateParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
@@ -53,7 +53,7 @@ public class PessimisticLockUpdateOperator extends PartModifyOperator {
     public static final PessimisticLockUpdateOperator INSTANCE = new PessimisticLockUpdateOperator();
 
     @Override
-    protected boolean pushTuple(Content content, @Nullable Object[] tuple, Vertex vertex) {
+    protected boolean pushTuple(Context context, @Nullable Object[] tuple, Vertex vertex) {
         PessimisticLockUpdateParam param = vertex.getParam();
         CommonId txnId = vertex.getTask().getTxnId();
         ITransaction transaction = TransactionManager.getTransaction(txnId);
@@ -85,7 +85,7 @@ public class PessimisticLockUpdateOperator extends PartModifyOperator {
             Object[] newTuple2 = (Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE);
             KeyValue keyValue = wrap(param.getCodec()::encode).apply(newTuple2);
             byte[] primaryKey = Arrays.copyOf(keyValue.getKey(), keyValue.getKey().length);
-            CommonId partId = content.getDistribution().getId();
+            CommonId partId = context.getDistribution().getId();
             CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
             StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, partId);
             byte[] jobIdByte = jobId.encode();

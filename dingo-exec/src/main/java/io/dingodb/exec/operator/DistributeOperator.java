@@ -18,15 +18,15 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.DistributionParam;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.transaction.exception.ReginSplitException;
@@ -46,7 +46,7 @@ public class DistributeOperator extends SoleOutOperator {
     }
 
     @Override
-    public boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         DistributionParam param = vertex.getParam();
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         while (retry-- > 0) {
@@ -54,13 +54,19 @@ public class DistributeOperator extends SoleOutOperator {
                 if (tuple.length > param.getTable().columns.size()) {
                     tuple = Arrays.copyOfRange(tuple, 0, param.getTable().columns.size());
                 }
+                IndexTable indexTable = param.getIndexTable();
+                Context.ContextBuilder builder = Context.builder();
+                if (param.getTableId().type.code == CommonId.CommonType.INDEX.code
+                    && indexTable != null) {
+                    builder.indexId(param.getTableId());
+                }
                 CommonId partId = PartitionService.getService(
                         Optional.ofNullable(param.getTable().getPartitionStrategy())
                             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
                     .calcPartId(tuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
                 RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
 
-                return vertex.getSoleEdge().transformToNext(Content.builder().distribution(distribution).build(), tuple);
+                return vertex.getSoleEdge().transformToNext(builder.distribution(distribution).build(), tuple);
             } catch (ReginSplitException e) {
                 log.error(e.getMessage());
                 NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions =

@@ -19,7 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.GetByKeysParam;
 import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
@@ -36,9 +36,9 @@ public final class GetByKeysOperator extends FilterProjectOperator {
     }
 
     @Override
-    protected @NonNull Iterator<Object[]> createSourceIterator(Content content, Object[] tuple, Vertex vertex) {
+    protected @NonNull Iterator<Object[]> createSourceIterator(Context context, Object[] tuple, Vertex vertex) {
         GetByKeysParam param = vertex.getParam();
-        StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), content.getDistribution().getId());
+        StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), context.getDistribution().getId());
         KeyValue keyValue = store.get(param.getCodec().encodeKey(tuple));
         if (keyValue == null || keyValue.getValue() == null) {
             return Collections.emptyIterator();

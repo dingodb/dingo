@@ -17,7 +17,7 @@
 package io.dingodb.exec.expr;
 
 import io.dingodb.exec.dag.Edge;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.expr.rel.CacheOp;
 import io.dingodb.expr.rel.PipeOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -26,10 +26,10 @@ public final class RelOpUtils {
     private RelOpUtils() {
     }
 
-    public static boolean processWithPipeOp(@NonNull PipeOp op, Object[] tuple, Edge edge, Content content) {
+    public static boolean processWithPipeOp(@NonNull PipeOp op, Object[] tuple, Edge edge, Context context) {
         Object[] out = op.put(tuple);
         if (out != null) {
-            return edge.transformToNext(content, out);
+            return edge.transformToNext(context, out);
         }
         return true;
     }

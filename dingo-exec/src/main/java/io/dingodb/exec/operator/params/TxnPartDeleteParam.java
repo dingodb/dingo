@@ -20,13 +20,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.entity.Table;
-
-import java.util.NavigableMap;
 
 @JsonTypeName("txn_delete")
 @JsonPropertyOrder({"pessimisticTxn", "isolationLevel", "primaryLockKey", "lockTimeOut", "startTs", "forUpdateTs", "table", "schema", "keyMapping"})
@@ -42,10 +38,9 @@ public class TxnPartDeleteParam extends TxnPartModifyParam {
         @JsonProperty("startTs") long startTs,
         @JsonProperty("forUpdateTs") long forUpdateTs,
         @JsonProperty("lockTimeOut") long lockTimeOut,
-        Table table,
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
+        Table table
     ) {
-        super(tableId, schema, keyMapping, table, distributions, pessimisticTxn,
+        super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
     }
 

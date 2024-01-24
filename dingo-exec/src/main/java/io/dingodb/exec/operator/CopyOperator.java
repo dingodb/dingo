@@ -14,27 +14,27 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.base;
+package io.dingodb.exec.operator;
 
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.operator.data.Context;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-public interface Operator {
+public class CopyOperator extends FanOutOperator {
+    public static final CopyOperator INSTANCE = new CopyOperator();
 
-    /**
-     * Push a new tuple to the operator. Need to be synchronized for there may be multiple thread call on the same
-     * operator.
-     *
-     * @param context the input pin no and distribution
-     * @param tuple   the tuple pushed in
-     * @return `true` means another push needed, `false` means the task is canceled or finished
-     */
-    boolean push(Context context, @Nullable Object[] tuple, Vertex vertex);
+    private CopyOperator() {
+    }
 
-    void fin(int pin, @Nullable Fin fin, Vertex vertex);
+    @Override
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
+        vertex.getOutList().forEach(o -> o.transformToNext(context, tuple));
+        return true;
+    }
 
-    void setParas(Object[] paras);
-
+    @Override
+    protected int calcOutputIndex(Context context, Object @NonNull [] tuple, Vertex vertex) {
+        return 0;
+    }
 }

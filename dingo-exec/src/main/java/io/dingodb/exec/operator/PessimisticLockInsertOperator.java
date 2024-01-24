@@ -23,7 +23,7 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PessimisticLockInsertParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
@@ -50,7 +50,7 @@ public class PessimisticLockInsertOperator extends PartModifyOperator {
     public static final PessimisticLockInsertOperator INSTANCE = new PessimisticLockInsertOperator();
 
     @Override
-    protected boolean pushTuple(Content content, @Nullable Object[] tuple, Vertex vertex) {
+    protected boolean pushTuple(Context context, @Nullable Object[] tuple, Vertex vertex) {
         PessimisticLockInsertParam param = vertex.getParam();
         CommonId txnId = vertex.getTask().getTxnId();
         ITransaction transaction = TransactionManager.getTransaction(txnId);
@@ -62,7 +62,7 @@ public class PessimisticLockInsertOperator extends PartModifyOperator {
         KeyValue keyValue = wrap(param.getCodec()::encode).apply(newTuple);
         CommonId jobId = vertex.getTask().getJobId();
         CommonId tableId = param.getTableId();
-        CommonId partId = content.getDistribution().getId();
+        CommonId partId = context.getDistribution().getId();
         CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
         StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, partId);
         byte[] jobIdByte = jobId.encode();

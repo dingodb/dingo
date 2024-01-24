@@ -21,13 +21,10 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PartInsertParam;
 import io.dingodb.store.api.StoreInstance;
-import io.dingodb.store.api.transaction.exception.ReginSplitException;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.Arrays;
 
 @Slf4j
 public final class PartInsertOperator extends PartModifyOperator {
@@ -38,9 +35,9 @@ public final class PartInsertOperator extends PartModifyOperator {
 
     @SuppressWarnings("ConstantConditions")
     @Override
-    public boolean pushTuple(Content content, Object[] tuple, Vertex vertex) {
+    public boolean pushTuple(Context context, Object[] tuple, Vertex vertex) {
         PartInsertParam param = vertex.getParam();
-        RangeDistribution distribution = content.getDistribution();
+        RangeDistribution distribution = context.getDistribution();
         DingoType schema = param.getSchema();
         StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), distribution.getId());
         Object[] keyValue = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);

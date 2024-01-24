@@ -58,8 +58,7 @@ public abstract class PartModifyParam extends AbstractParams {
         CommonId tableId,
         DingoType schema,
         TupleMapping keyMapping,
-        Table table,
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
+        Table table
     ) {
         super();
         this.tableId = tableId;
@@ -67,7 +66,6 @@ public abstract class PartModifyParam extends AbstractParams {
         this.keyMapping = keyMapping;
         this.codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
         this.table = table;
-        this.distributions = distributions;
     }
 
     @Override

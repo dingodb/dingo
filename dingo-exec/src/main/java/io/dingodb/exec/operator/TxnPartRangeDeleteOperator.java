@@ -21,9 +21,7 @@ import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.exec.fin.OperatorProfile;
-import io.dingodb.exec.operator.data.Content;
-import io.dingodb.exec.operator.params.PartRangeDeleteParam;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnPartRangeDeleteParam;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.store.api.StoreInstance;
@@ -39,8 +37,8 @@ public final class TxnPartRangeDeleteOperator extends SoleOutOperator {
     }
 
     @Override
-    public boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
-        RangeDistribution distribution = content.getDistribution();
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
+        RangeDistribution distribution = context.getDistribution();
         TxnPartRangeDeleteParam param = vertex.getParam();
         CommonId txnId = vertex.getTask().getTxnId();
         CommonId tableId = param.getTableId();
@@ -75,7 +73,7 @@ public final class TxnPartRangeDeleteOperator extends SoleOutOperator {
         long count = localStore.delete(new StoreInstance.Range(encodeStart, encodeEnd, withStart, withEnd));
         kvStore.delete(new StoreInstance.Range(encodeStart, encodeEnd, withStart, withEnd));
 
-        vertex.getSoleEdge().transformToNext(content, new Object[]{count});
+        vertex.getSoleEdge().transformToNext(context, new Object[]{count});
         if (log.isDebugEnabled()) {
             log.debug("Delete data by range, delete count: {}, cost: {} ms.",
                 count, System.currentTimeMillis() - startTime);

@@ -68,7 +68,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import static io.dingodb.client.utils.OperationUtils.mapKey2;
@@ -593,12 +592,10 @@ public class OperationServiceV2 {
         CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
         Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         List<Vertex> outputs = new LinkedList<>();
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
-            metaService.getRangeDistribution(tableId);
 
         for (Vertex input : inputs) {
             Task task = input.getTask();
-            PartDeleteParam param = new PartDeleteParam(tableId, td.tupleType(), td.keyMapping(), td, parts);
+            PartDeleteParam param = new PartDeleteParam(tableId, td.tupleType(), td.keyMapping(), td);
             Vertex vertex = new Vertex(PART_DELETE, param);
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);
@@ -624,13 +621,11 @@ public class OperationServiceV2 {
         CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
         Table tableDefinition = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         List<Vertex> outputs = new LinkedList<>();
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
-            metaService.getRangeDistribution(tableId);
 
         for (Vertex input : inputs) {
             Task task = input.getTask();
             PartInsertParam insertParam = new PartInsertParam(tableId,
-                tableDefinition.tupleType(), tableDefinition.keyMapping(), tableDefinition, parts);
+                tableDefinition.tupleType(), tableDefinition.keyMapping(), tableDefinition);
             Vertex vertex = new Vertex(PART_INSERT, insertParam);
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);
@@ -655,16 +650,12 @@ public class OperationServiceV2 {
         MetaService metaService = getSubMetaService(schema);
         CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
         Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
-        NavigableMap<ByteArrayUtils.ComparableByteArray, io.dingodb.common.partition.RangeDistribution> parts =
-            new TreeMap<>();
-        MetaService.root().getRangeDistribution(tableId).forEach((k, v) -> parts.put(
-            new ByteArrayUtils.ComparableByteArray(k.getBytes(), k.isIgnoreLen(), k.getPos()), v));
 
         List<Vertex> outputs = new LinkedList<>();
 
         for (Vertex input : inputs) {
             Task task = input.getTask();
-            CompareAndSetParam param = new CompareAndSetParam(tableId, td.tupleType(), td.keyMapping(), td, parts);
+            CompareAndSetParam param = new CompareAndSetParam(tableId, td.tupleType(), td.keyMapping(), td);
             Vertex vertex = new Vertex(COMPARE_AND_SET, param);
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);

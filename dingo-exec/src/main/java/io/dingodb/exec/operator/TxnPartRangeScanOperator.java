@@ -26,11 +26,10 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnPartRangeScanParam;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.store.api.StoreInstance;
-import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Op;
 import lombok.AllArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -48,8 +47,8 @@ public class TxnPartRangeScanOperator extends FilterProjectOperator {
     }
 
     @Override
-    protected @NonNull Iterator<Object[]> createSourceIterator(Content content, Object[] tuple, Vertex vertex) {
-        RangeDistribution distribution = content.getDistribution();
+    protected @NonNull Iterator<Object[]> createSourceIterator(Context context, Object[] tuple, Vertex vertex) {
+        RangeDistribution distribution = context.getDistribution();
         TxnPartRangeScanParam param = vertex.getParam();
         byte[] startKey = distribution.getStartKey();
         byte[] endKey = distribution.getEndKey();

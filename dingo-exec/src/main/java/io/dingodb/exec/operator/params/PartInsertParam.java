@@ -19,18 +19,11 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.codec.CodecService;
-import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
-
-import java.util.NavigableMap;
 
 @Getter
 @JsonTypeName("insert")
@@ -41,10 +34,9 @@ public class PartInsertParam extends PartModifyParam {
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
-        Table table,
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
+        Table table
     ) {
-        super(tableId, schema, keyMapping, table, distributions);
+        super(tableId, schema, keyMapping, table);
 
     }
 

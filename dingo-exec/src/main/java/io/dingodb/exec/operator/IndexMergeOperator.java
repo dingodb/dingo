@@ -19,7 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.IndexMergeParam;
 import io.dingodb.exec.tuple.TupleKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -33,7 +33,7 @@ public class IndexMergeOperator extends SoleOutOperator {
     }
 
     @Override
-    public boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         IndexMergeParam params = vertex.getParam();
         Object[] keyTuple = params.getKeyMapping().revMap(tuple);
         params.getHashMap().put(new TupleKey(keyTuple), params.getSelection().revMap(tuple));
@@ -45,7 +45,7 @@ public class IndexMergeOperator extends SoleOutOperator {
         Edge edge = vertex.getSoleEdge();
         IndexMergeParam param = vertex.getParam();
         ConcurrentHashMap<TupleKey, Object[]> hashMap = param.getHashMap();
-        hashMap.values().forEach(v -> edge.transformToNext(param.getContent(), v));
+        hashMap.values().forEach(v -> edge.transformToNext(param.getContext(), v));
         edge.fin(fin);
         // Reset
         param.clear();

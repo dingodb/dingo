@@ -16,18 +16,20 @@
 
 package io.dingodb.exec.operator.data;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import lombok.Builder;
 import lombok.Getter;
 
 @Getter
 @Builder
-public class Content {
+public class Context {
 
     private int pin;
+    private CommonId indexId;
     private RangeDistribution distribution;
 
-    public Content setPin(int pin) {
+    public Context setPin(int pin) {
         this.pin = pin;
         return this;
     }

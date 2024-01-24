@@ -48,10 +48,9 @@ public class PartUpdateParam extends PartModifyParam {
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("mapping") TupleMapping mapping,
         @JsonProperty("updates") List<SqlExpr> updates,
-        Table table,
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
+        Table table
     ) {
-        super(tableId, schema, keyMapping, table, distributions);
+        super(tableId, schema, keyMapping, table);
         this.mapping = mapping;
         this.updates = updates;
     }

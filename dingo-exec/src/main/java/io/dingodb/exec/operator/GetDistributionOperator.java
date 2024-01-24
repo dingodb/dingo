@@ -20,7 +20,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.GetDistributionParam;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
@@ -43,8 +43,8 @@ public class GetDistributionOperator extends SourceOperator {
         for (Object[] keyTuple : param.getKeyTuples()) {
             CommonId partId = ps.calcPartId(param.getCodec().encodeKey(keyTuple), param.getDistributions());
             RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
-            Content content = Content.builder().distribution(distribution).build();
-            vertex.getSoleEdge().transformToNext(content, keyTuple);
+            Context context = Context.builder().distribution(distribution).build();
+            vertex.getSoleEdge().transformToNext(context, keyTuple);
         }
 
         return false;

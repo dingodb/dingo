@@ -17,16 +17,20 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnPartDeleteParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
@@ -34,6 +38,7 @@ import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
@@ -44,16 +49,27 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
     }
 
     @Override
-    protected boolean pushTuple(Content content, Object[] tuple, Vertex vertex) {
+    protected boolean pushTuple(Context context, Object[] tuple, Vertex vertex) {
         TxnPartDeleteParam param = vertex.getParam();
-        param.setContent(content);
-        byte[] keys = wrap(param.getCodec()::encodeKey).apply(tuple);
+        param.setContext(context);
         CommonId txnId = vertex.getTask().getTxnId();
         CommonId tableId = param.getTableId();
-        CommonId partId = content.getDistribution().getId();
+        CommonId partId = context.getDistribution().getId();
+        StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, partId);
+        KeyValueCodec codec = param.getCodec();
+        if (context.getIndexId() != null) {
+            Table indexTable = MetaService.root().getTable(context.getIndexId());
+            List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
+                .map(Column::getName)
+                .collect(Collectors.toList()));
+            Object[] finalTuple = tuple;
+            tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
+            store = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
+            codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
+        }
+        byte[] keys = wrap(codec::encodeKey).apply(tuple);
         CodecService.getDefault().setId(keys, partId.domain);
         byte[] primaryLockKey = param.getPrimaryLockKey();
-        StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, partId);
         byte[] txnIdBytes = vertex.getTask().getTxnId().encode();
         byte[] tableIdBytes = tableId.encode();
         byte[] partIdBytes = partId.encode();
@@ -123,12 +139,26 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                         null);
                     // write data
                     KeyValue dataKeyValue = new KeyValue(dataKey, null);
-                    if (store.put(lockKeyValue) && store.put(extraKeyValue) && store.put(dataKeyValue)) {
+                    if (store.put(lockKeyValue)
+                        && store.put(extraKeyValue)
+                        && store.put(dataKeyValue)
+                        && context.getIndexId() == null
+                    ) {
                         param.inc();
                     }
                 } else {
                     // This key appears repeatedly in the current transaction
-                    repeatKey(param, txnId, keyValueKey, store, dataKey, jobIdByte, tableIdBytes, partIdBytes, len);
+                    repeatKey(
+                        param,
+                        txnId,
+                        keyValueKey,
+                        store,
+                        dataKey,
+                        jobIdByte,
+                        tableIdBytes,
+                        partIdBytes,
+                        len,
+                        context);
                 }
             } else {
                 // primary lock not existed ：
@@ -137,12 +167,21 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                     // first put primary lock
                     // put lock data
                     KeyValue lockKeyValue = new KeyValue(lockKey, forUpdateTsByte);
-                    if (store.put(lockKeyValue)) {
+                    if (store.put(lockKeyValue) && context.getIndexId() == null) {
                         param.inc();
                     }
                 } else {
                     // primary lock existed ：
-                    repeatKey(param, txnId, primaryLockKeyBytes, store, dataKey, jobIdByte, tableIdBytes, partIdBytes, len);
+                    repeatKey(param,
+                        txnId,
+                        primaryLockKeyBytes,
+                        store,
+                        dataKey,
+                        jobIdByte,
+                        tableIdBytes,
+                        partIdBytes,
+                        len,
+                        context);
                 }
             }
         } else {
@@ -161,7 +200,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
             store.deletePrefix(insertKey);
             insertKey[insertKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
             store.deletePrefix(insertKey);
-            if (store.put(keyValue)) {
+            if (store.put(keyValue) && context.getIndexId() == null) {
                 param.inc();
             }
         }
@@ -171,7 +210,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
 
     private static void repeatKey(TxnPartDeleteParam param, CommonId txnId, byte[] key,
                                   StoreInstance store, byte[] dataKey, byte[] jobIdByte,
-                                  byte[] tableIdByte, byte[] partIdByte, int len) {
+                                  byte[] tableIdByte, byte[] partIdByte, int len, Context context) {
         // lock existed ：
         // 1、multi sql
         byte[] deleteKey = Arrays.copyOf(dataKey, dataKey.length);
@@ -209,7 +248,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
             KeyValue dataKeyValue = new KeyValue(dataKey, null);
             store.deletePrefix(deleteKey);
             store.deletePrefix(updateKey);
-            if (store.put(extraKeyValue) && store.put(dataKeyValue)) {
+            if (store.put(extraKeyValue) && store.put(dataKeyValue) && context.getIndexId() == null) {
                 param.inc();
             }
         } else {

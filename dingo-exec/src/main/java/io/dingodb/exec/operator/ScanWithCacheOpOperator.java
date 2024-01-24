@@ -18,7 +18,7 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.RelOpUtils;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.ScanWithRelOpParam;
 import io.dingodb.expr.rel.CacheOp;
 import lombok.AccessLevel;
@@ -34,7 +34,7 @@ public final class ScanWithCacheOpOperator extends ScanWithRelOpOperator {
     public static ScanWithCacheOpOperator INSTANCE = new ScanWithCacheOpOperator();
 
     @Override
-    protected long doPush(Content content, @NonNull Vertex vertex, @NonNull Iterator<Object[]> sourceIterator) {
+    protected long doPush(Context context, @NonNull Vertex vertex, @NonNull Iterator<Object[]> sourceIterator) {
         CacheOp relOp = (CacheOp) ((ScanWithRelOpParam) vertex.getParam()).getRelOp();
         long count = 0;
         while (sourceIterator.hasNext()) {

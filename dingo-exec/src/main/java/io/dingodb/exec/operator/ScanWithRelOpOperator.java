@@ -21,7 +21,7 @@ import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.ScanWithNoOpParam;
 import io.dingodb.store.api.StoreInstance;
 import lombok.AccessLevel;
@@ -38,11 +38,11 @@ import static io.dingodb.common.util.NoBreakFunctions.wrap;
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class ScanWithRelOpOperator extends SoleOutOperator {
     protected static @NonNull Iterator<Object[]> createIterator(
-        @NonNull Content content,
+        @NonNull Context context,
         @NonNull Vertex vertex
     ) {
         ScanWithNoOpParam param = vertex.getParam();
-        RangeDistribution rd = content.getDistribution();
+        RangeDistribution rd = context.getDistribution();
         byte[] startKey = rd.getStartKey();
         byte[] endKey = rd.getEndKey();
         boolean includeStart = rd.isWithStart();
@@ -55,11 +55,11 @@ public abstract class ScanWithRelOpOperator extends SoleOutOperator {
     }
 
     @Override
-    public boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         long count = 0;
         long startTime = System.currentTimeMillis();
-        Iterator<Object[]> iterator = createIterator(content, vertex);
-        count = doPush(content, vertex, iterator);
+        Iterator<Object[]> iterator = createIterator(context, vertex);
+        count = doPush(context, vertex, iterator);
         if (log.isDebugEnabled()) {
             log.debug("count: {}, cost: {}ms.", count, System.currentTimeMillis() - startTime);
         }
@@ -71,5 +71,5 @@ public abstract class ScanWithRelOpOperator extends SoleOutOperator {
         vertex.getSoleEdge().fin(fin);
     }
 
-    protected abstract long doPush(Content content, @NonNull Vertex vertex, @NonNull Iterator<Object[]> sourceIterator);
+    protected abstract long doPush(Context context, @NonNull Vertex vertex, @NonNull Iterator<Object[]> sourceIterator);
 }

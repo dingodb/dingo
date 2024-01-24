@@ -19,7 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -27,16 +27,16 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 @Slf4j
 public abstract class FanOutOperator extends AbstractOperator {
 
-    protected abstract int calcOutputIndex(Content content, Object @NonNull [] tuple, Vertex vertex);
+    protected abstract int calcOutputIndex(Context context, Object @NonNull [] tuple, Vertex vertex);
 
     @Override
-    public boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         /*int index = calcOutputIndex(content, tuple, vertex);
         if (log.isDebugEnabled()) {
             log.debug("Tuple is pushing to output {}.", index);
         }
         return vertex.getOutList().get(index).transformToNext(content, tuple);*/
-        return vertex.getSoleEdge().transformToNext(content, tuple);
+        return vertex.getSoleEdge().transformToNext(context, tuple);
     }
 
     @Override

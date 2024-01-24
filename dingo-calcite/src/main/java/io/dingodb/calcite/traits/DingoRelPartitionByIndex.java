@@ -14,23 +14,29 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.operator;
+package io.dingodb.calcite.traits;
 
-import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.data.Context;
+import io.dingodb.common.CommonId;
 import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.apache.calcite.plan.RelOptTable;
 
-@Slf4j
-@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public abstract class RelOpOperator extends SoleOutOperator {
-    protected abstract boolean doPush(Context context, @NonNull Vertex vertex, Object[] tuple);
+import java.util.List;
+
+@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+public class DingoRelPartitionByIndex extends DingoRelPartition {
+    @EqualsAndHashCode.Include
+    @Getter
+    private final CommonId indexId;
+    @EqualsAndHashCode.Include
+    @Getter
+    private final RelOptTable table;
 
     @Override
-    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        return doPush(context, vertex, tuple);
+    public String toString() {
+        return "INDEX_ID(" + indexId + ", TABLE(" + table.getQualifiedName() + ")";
     }
 }

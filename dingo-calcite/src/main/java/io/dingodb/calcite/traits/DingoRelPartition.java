@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.traits;
 
+import io.dingodb.common.CommonId;
 import lombok.EqualsAndHashCode;
 import org.apache.calcite.plan.RelOptTable;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -33,5 +34,9 @@ public abstract class DingoRelPartition {
 
     public static @NonNull DingoRelPartition of(@NonNull List<Integer> keys) {
         return new DingoRelPartitionByKeys(keys);
+    }
+
+    public static @NonNull DingoRelPartition of(@NonNull CommonId indexId, @NonNull RelOptTable table) {
+        return new DingoRelPartitionByIndex(indexId, table);
     }
 }

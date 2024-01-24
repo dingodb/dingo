@@ -19,7 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PartDeleteParam;
 import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
@@ -32,9 +32,9 @@ public final class PartDeleteOperator extends PartModifyOperator {
     }
 
     @Override
-    protected boolean pushTuple(Content content, Object[] tuple, Vertex vertex) {
+    protected boolean pushTuple(Context context, Object[] tuple, Vertex vertex) {
         PartDeleteParam param = vertex.getParam();
-        RangeDistribution distribution = content.getDistribution();
+        RangeDistribution distribution = context.getDistribution();
         StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), distribution.getId());
         if (store.deleteWithIndex(tuple)) {
             if (store.deleteIndex(tuple)) {

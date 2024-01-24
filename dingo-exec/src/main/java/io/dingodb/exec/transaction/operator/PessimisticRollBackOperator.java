@@ -23,8 +23,7 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
-import io.dingodb.exec.operator.data.Content;
-import io.dingodb.exec.transaction.base.TransactionConfig;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.transaction.params.PessimisticRollBackParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
@@ -48,7 +47,7 @@ public class PessimisticRollBackOperator extends TransactionOperator {
     }
 
     @Override
-    public synchronized boolean push(Content content, @Nullable Object[] tuple, Vertex vertex) {
+    public synchronized boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         PessimisticRollBackParam param = vertex.getParam();
         CommonId.CommonType type = CommonId.CommonType.of((byte) tuple[0]);
         CommonId txnId = (CommonId) tuple[1];

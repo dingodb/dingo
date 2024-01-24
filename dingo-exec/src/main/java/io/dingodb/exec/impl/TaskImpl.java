@@ -36,7 +36,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.TaskStatus;
 import io.dingodb.exec.operator.SourceOperator;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
@@ -212,7 +212,7 @@ public final class TaskImpl implements Task {
             Executors.execute("operator-" + jobId + "-" + id + "-" + operatorId, () -> {
                 final long startTime = System.currentTimeMillis();
                 try {
-                    while (operator.push(Content.builder().pin(0).build(), null, vertex)) {
+                    while (operator.push(Context.builder().pin(0).build(), null, vertex)) {
                         log.info("Operator {} need another pushing.", vertex.getId());
                     }
                     operator.fin(0, null, vertex);

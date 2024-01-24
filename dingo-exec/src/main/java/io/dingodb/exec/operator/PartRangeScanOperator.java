@@ -21,7 +21,7 @@ import io.dingodb.common.Coprocessor;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.data.Content;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PartRangeScanParam;
 import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
@@ -39,8 +39,8 @@ public final class PartRangeScanOperator extends FilterProjectOperator {
     }
 
     @Override
-    protected @NonNull Iterator<Object[]> createSourceIterator(Content content, Object[] tuple, Vertex vertex) {
-        RangeDistribution distribution = content.getDistribution();
+    protected @NonNull Iterator<Object[]> createSourceIterator(Context context, Object[] tuple, Vertex vertex) {
+        RangeDistribution distribution = context.getDistribution();
         PartRangeScanParam param = vertex.getParam();
         byte[] startKey = distribution.getStartKey();
         byte[] endKey = distribution.getEndKey();
