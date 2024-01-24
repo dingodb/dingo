@@ -23,7 +23,12 @@ import io.dingodb.common.codec.protostuff.TimestampSchema;
 import io.dingodb.common.error.CommonError;
 import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.util.StackTraces;
+import io.protostuff.ByteArrayInput;
 import io.protostuff.ByteBufferInput;
+import io.protostuff.CodedInput;
+import io.protostuff.GraphByteArrayInput;
+import io.protostuff.GraphCodedInput;
+import io.protostuff.GraphProtostuffOutput;
 import io.protostuff.Input;
 import io.protostuff.LinkedBuffer;
 import io.protostuff.ProtostuffOutput;
@@ -33,13 +38,16 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 
+@Slf4j
 public final class ProtostuffCodec {
     private static final ProtostuffCodec INSTANCE = new ProtostuffCodec();
 
@@ -64,19 +72,19 @@ public final class ProtostuffCodec {
     }
 
     public static <T> T read(byte[] bytes) {
-        return INSTANCE.readMessage(ByteBuffer.wrap(bytes), null);
+        return INSTANCE.readMessage(bytes, 0, null);
     }
 
     public static <T> T read(byte[] bytes, T source) {
-        return INSTANCE.readMessage(ByteBuffer.wrap(bytes), source);
+        return INSTANCE.readMessage(bytes, 0, source);
     }
 
     public static <T> T read(ByteBuffer buffer) {
-        return INSTANCE.readMessage(buffer, null);
+        return INSTANCE.readMessage(buffer.array(), buffer.position(), null);
     }
 
     public static <T> T read(ByteBuffer buffer, T source) {
-        return INSTANCE.readMessage(buffer, source);
+        return INSTANCE.readMessage(buffer.array(), buffer.position(), source);
     }
 
     public static byte[] write(Object value) {
@@ -84,23 +92,26 @@ public final class ProtostuffCodec {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> T readMessage(ByteBuffer buffer, T source) {
+    private <T> T readMessage(byte[] content, int pos, T source) {
         ProtostuffWrapper wrapper = new ProtostuffWrapper(source);
-        final Input input = new ByteBufferInput(buffer, true);
+        GraphCodedInput input = new GraphCodedInput(new CodedInput(content, pos, content.length - pos, true));
         try {
             schema.mergeFrom(input, wrapper);
         } catch (final IOException e) {
+            log.error("Protosutff read error, thread: {}.", Thread.currentThread(), e);
             CommonError.EXEC.throwFormatError("protostuff read", Thread.currentThread(), e.getMessage());
         }
         return (T) wrapper.value;
     }
 
     private byte[] writeMessage(Object value) {
-        final ProtostuffOutput output = new ProtostuffOutput(buffer.get());
+        final ProtostuffOutput protostuffOutput = new ProtostuffOutput(buffer.get());
+        GraphProtostuffOutput graphProtostuffOutput = new GraphProtostuffOutput(protostuffOutput);
         try {
-            schema.writeTo(output, new ProtostuffWrapper(value));
-            return output.toByteArray();
+            schema.writeTo(graphProtostuffOutput, new ProtostuffWrapper(value));
+            return protostuffOutput.toByteArray();
         } catch (final IOException e) {
+            log.error("Protosutff write error, thread: {}.", Thread.currentThread(), e);
             CommonError.EXEC.throwFormatError("protostuff write", Thread.currentThread(), e.getMessage());
         } finally {
             buffer.get().clear();

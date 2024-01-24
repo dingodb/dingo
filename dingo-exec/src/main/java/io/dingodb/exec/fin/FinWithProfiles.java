@@ -32,7 +32,6 @@ import java.util.List;
 public class FinWithProfiles implements Fin {
     public static final Parser PARSER = Parser.JSON;
 
-    @Getter
     @JsonValue
     List<OperatorProfile> profiles;
 
@@ -51,6 +50,13 @@ public class FinWithProfiles implements Fin {
         return new FinWithProfiles(profiles);
     }
 
+    public synchronized List<OperatorProfile> getProfiles() {
+        if (profiles == null) {
+            profiles = new LinkedList<>();
+        }
+        return profiles;
+    }
+
     @Override
     public void writeStream(@NonNull OutputStream os) throws IOException {
         PARSER.writeStream(os, this);
@@ -58,6 +64,9 @@ public class FinWithProfiles implements Fin {
 
     @Override
     public String detail() {
+        if (profiles == null) {
+            profiles = new LinkedList<>();
+        }
         StringBuilder builder = new StringBuilder();
         for (OperatorProfile profile : profiles) {
             builder.append(profile.detail()).append("\n");

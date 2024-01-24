@@ -52,12 +52,12 @@ public class ReceiveParam extends SourceParam {
     @JsonProperty("schema")
     private final DingoType schema;
 
-    private String tag;
-    private TxRxCodec codec;
-    private BlockingQueue<Object[]> tupleQueue;
-    private ReceiveEndpoint endpoint;
+    private transient String tag;
+    private transient TxRxCodec codec;
+    private transient BlockingQueue<Object[]> tupleQueue;
+    private transient ReceiveEndpoint endpoint;
     @Setter
-    private Fin finObj = null;
+    private transient Fin finObj = null;
 
     public ReceiveParam(
         @JsonProperty("host") String host,

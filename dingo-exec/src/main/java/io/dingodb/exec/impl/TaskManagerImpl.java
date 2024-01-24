@@ -43,11 +43,11 @@ public final class TaskManagerImpl implements TaskManager {
         CommonId jobId = task.getJobId();
         CommonId id = task.getId();
         String taskFullId = taskFullId(jobId, id);
+        task.init();
         taskMap.put(id, task);
         if (log.isDebugEnabled()) {
             log.debug("Added task \"{}\". # of job:tasks: {}.", taskFullId, taskMap.size());
         }
-        task.init();
     }
 
     @Override

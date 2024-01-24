@@ -56,7 +56,7 @@ public class GetByIndexParam extends FilterProjectSourceParam {
     private final Table index;
     private final Table table;
     private final KeyValueCodec codec;
-    private KeyValueCodec lookupCodec;
+    private transient KeyValueCodec lookupCodec;
     private NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges;
 
     public GetByIndexParam(

@@ -37,7 +37,7 @@ public class IndexMergeParam extends AbstractParams {
     private final TupleMapping keyMapping;
     @JsonProperty("selection")
     private final TupleMapping selection;
-    private ConcurrentHashMap<TupleKey, Object[]> hashMap;
+    private transient ConcurrentHashMap<TupleKey, Object[]> hashMap;
 
     public IndexMergeParam(TupleMapping keyMapping, TupleMapping selection) {
         this.keyMapping = keyMapping;

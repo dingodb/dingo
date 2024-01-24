@@ -55,8 +55,8 @@ public class PartRangeScanParam extends FilterProjectParam {
     @JsonProperty("pushDown")
     private final boolean pushDown;
 
-    private Coprocessor coprocessor = null;
-    private KeyValueCodec codec;
+    private transient Coprocessor coprocessor = null;
+    private transient KeyValueCodec codec;
 
     public PartRangeScanParam(
         CommonId tableId,

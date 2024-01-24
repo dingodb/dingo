@@ -44,7 +44,7 @@ public class ReduceParam extends AbstractParams {
     @JsonDeserialize(contentAs = AbstractAgg.class)
     private final List<Agg> aggList;
 
-    private AggCache cache;
+    private transient AggCache cache;
 
     public ReduceParam(TupleMapping keys, List<Agg> aggList) {
         this.keys = keys;

@@ -42,8 +42,8 @@ public class SqlExpr {
     private final String exprString;
     @JsonProperty("type")
     private final DingoType type;
-    private final SqlExprEvalContext etx;
-    private Expr expr;
+    private transient SqlExprEvalContext etx = new SqlExprEvalContext();
+    private transient Expr expr;
 
     @JsonCreator
     public SqlExpr(
@@ -53,7 +53,7 @@ public class SqlExpr {
         this.exprString = exprString;
         this.type = type;
         // TODO: Runtime env
-        this.etx = new SqlExprEvalContext();
+//        this.etx = new SqlExprEvalContext();
     }
 
     private Expr getExpr() throws ExprParseException {
@@ -77,6 +77,7 @@ public class SqlExpr {
         try {
             CompileContext context = new SqlExprCompileContext(tupleType, parasType);
             expr = ExprCompiler.ADVANCED.visit(getExpr(), context);
+            etx = new SqlExprEvalContext();
         } catch (ExprParseException | ExprCompileException e) {
             throw new IllegalStateException(e);
         }

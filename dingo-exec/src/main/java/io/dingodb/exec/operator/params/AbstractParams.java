@@ -107,10 +107,10 @@ public abstract class AbstractParams {
     @Setter
     protected CommonId partId;
 
-    protected Part part = null;
+    protected transient Part part = null;
 
     @Setter
-    protected Context context;
+    protected transient Context context;
 
     public AbstractParams() {
     }
@@ -121,7 +121,7 @@ public abstract class AbstractParams {
     }
 
     public void init(Vertex vertex) {
-
+        // todo move param initialize to init
     }
 
     public void setParas(Object[] paras) {

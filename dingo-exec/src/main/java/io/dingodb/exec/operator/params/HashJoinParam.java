@@ -50,10 +50,10 @@ public class HashJoinParam extends AbstractParams {
     private final boolean rightRequired;
 
     @Setter
-    private boolean rightFinFlag;
-    private ConcurrentHashMap<TupleKey, List<TupleWithJoinFlag>> hashMap;
+    private transient boolean rightFinFlag;
+    private transient ConcurrentHashMap<TupleKey, List<TupleWithJoinFlag>> hashMap;
     @Setter
-    private CompletableFuture<Void> future;
+    private transient CompletableFuture<Void> future;
 
     public HashJoinParam(
         TupleMapping leftMapping,
@@ -69,13 +69,13 @@ public class HashJoinParam extends AbstractParams {
         this.rightLength = rightLength;
         this.leftRequired = leftRequired;
         this.rightRequired = rightRequired;
-        rightFinFlag = false;
-        this.future = new CompletableFuture<>();
     }
 
     @Override
     public void init(Vertex vertex) {
+        rightFinFlag = false;
         hashMap = new ConcurrentHashMap<>();
+        future = new CompletableFuture<>();
     }
 
     public void clear() {

@@ -24,6 +24,7 @@ import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.DebugLog;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.entity.Table;
@@ -34,6 +35,7 @@ import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.EntityType;
 import io.dingodb.sdk.service.entity.meta.GetIndexRangeRequest;
 import io.dingodb.sdk.service.entity.meta.GetSchemaByNameRequest;
+import io.dingodb.sdk.service.entity.meta.GetSchemaByNameResponse;
 import io.dingodb.sdk.service.entity.meta.GetSchemasRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableByNameRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableByNameResponse;
@@ -59,6 +61,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.DebugLog.debug;
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 
 @Slf4j
@@ -111,7 +114,7 @@ public class MetaCache {
                 public Optional<Schema> load(String names) throws Exception {
                     return Optional.ofNullable(metaService.getSchemaByName(
                         tso(), GetSchemaByNameRequest.builder().schemaName(names).build()
-                    ).getSchema());
+                    )).map(GetSchemaByNameResponse::getSchema);
                 }
             });
     }
@@ -230,12 +233,12 @@ public class MetaCache {
     }
 
     public void invalidTable(String schema, String table) {
-        log.info("Invalid table {}.{}", schema, table);
+        debug(log, "Invalid table {}.{}", schema, table);
         tableNameCache.invalidate(new Names(schema, table));
     }
 
     public void invalidTable(String fullName) {
-        log.info("Invalid table {}", fullName);
+        debug(log, "Invalid table {}", fullName);
         String[] names = fullName.split("\\.");
         tableNameCache.invalidate(new Names(names[0], names[1]));
     }
@@ -245,17 +248,17 @@ public class MetaCache {
     }
 
     public void invalidDistribution(CommonId id) {
-        log.info("Invalid table distribution {}", id);
+        debug(log, "Invalid table distribution {}", id);
         distributionCache.invalidate(id);
     }
 
     public void invalidMetaServices() {
-        log.info("Invalid meta services");
+        debug(log, "Invalid meta services");
         metaServices = null;
     }
 
     public void invalidSchema(String schema) {
-        log.info("Invalid schema {}", schema);
+        debug(log, "Invalid schema {}", schema);
         schemaCache.invalidate(schema);
     }
 

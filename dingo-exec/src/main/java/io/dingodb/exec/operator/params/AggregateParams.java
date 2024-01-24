@@ -42,7 +42,7 @@ public class AggregateParams extends AbstractParams {
     @JsonDeserialize(contentAs = AbstractAgg.class)
     private final List<Agg> aggList;
     @Getter
-    private AggCache cache;
+    private transient AggCache cache;
 
     public AggregateParams(@JsonProperty("keys") TupleMapping keyMapping,
                            @JsonProperty("aggregates") List<Agg> aggList) {

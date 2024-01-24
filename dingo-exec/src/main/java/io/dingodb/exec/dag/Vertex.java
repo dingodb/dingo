@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.dag;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -37,7 +38,7 @@ import java.util.List;
 import static io.dingodb.common.util.Utils.sole;
 
 @Getter
-@JsonPropertyOrder({"id", "op", "params"})
+@JsonPropertyOrder({"id", "op", "params", "outList", "inList", "hint", "pin"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Vertex {
 
@@ -73,6 +74,27 @@ public class Vertex {
         this.data = (AbstractParams) data;
         this.outList = outList;
         this.inList = inList;
+    }
+
+    @JsonCreator
+    public Vertex(
+        @JsonProperty("id") CommonId id,
+        @JsonProperty("task") Task task,
+        @JsonProperty("op") CommonId op,
+        @JsonProperty("data") AbstractParams data,
+        @JsonProperty("outList") List<Edge> outList,
+        @JsonProperty("inList") List<Edge> inList,
+        @JsonProperty("hint") OutputHint hint,
+        @JsonProperty("pin") int pin
+    ) {
+        this.id = id;
+        this.task = task;
+        this.op = op;
+        this.data = data;
+        this.outList = outList;
+        this.inList = inList;
+        this.hint = hint;
+        this.pin = pin;
     }
 
     public void init() {

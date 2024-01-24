@@ -34,8 +34,9 @@ public class CoalesceParam extends AbstractParams {
 
     @JsonProperty("inputNum")
     private final int inputNum;
-    private boolean[] finFlags;
-    private final List<OperatorProfile> profiles = new LinkedList<>();
+
+    private transient boolean[] finFlags;
+    private transient List<OperatorProfile> profiles;
 
     public CoalesceParam(int inputNum) {
         this.inputNum = inputNum;
@@ -43,6 +44,7 @@ public class CoalesceParam extends AbstractParams {
 
     @Override
     public void init(Vertex vertex) {
+        profiles = new LinkedList<>();
         finFlags = new boolean[inputNum];
     }
 
@@ -53,6 +55,9 @@ public class CoalesceParam extends AbstractParams {
     }
 
     public synchronized void addProfiles(List<OperatorProfile> profiles) {
+        if (this.profiles == null) {
+            this.profiles = new LinkedList<>();
+        }
         this.profiles.addAll(profiles);
     }
 

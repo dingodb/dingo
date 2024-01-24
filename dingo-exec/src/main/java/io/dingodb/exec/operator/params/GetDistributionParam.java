@@ -24,6 +24,7 @@ import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
@@ -40,7 +41,7 @@ public class GetDistributionParam extends SourceParam {
     private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     @JsonProperty("keyMapping")
     private final TupleMapping keyMapping;
-    private KeyValueCodec codec;
+    private transient KeyValueCodec codec;
 
     public GetDistributionParam(
         List<Object[]> keyTuples,
@@ -52,6 +53,12 @@ public class GetDistributionParam extends SourceParam {
         this.keyMapping = keyMapping;
         this.distributions = distributions;
         this.table = table;
+    }
+
+    @Override
+    public void init(Vertex vertex) {
+        super.init(vertex);
         this.codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
+
     }
 }

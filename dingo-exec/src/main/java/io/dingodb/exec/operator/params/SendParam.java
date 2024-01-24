@@ -49,9 +49,10 @@ public class SendParam extends AbstractParams {
     private final CommonId receiveId;
     @JsonProperty("schema")
     private final DingoType schema;
-    private final List<Object[]> tupleList;
-    private TxRxCodec codec;
-    private SendEndpoint endpoint;
+
+    private transient List<Object[]> tupleList;
+    private transient TxRxCodec codec;
+    private transient SendEndpoint endpoint;
 
     @Setter
     private transient int maxBufferSize;
@@ -61,12 +62,12 @@ public class SendParam extends AbstractParams {
         this.port = port;
         this.receiveId = receiveId;
         this.schema = schema;
-        this.tupleList = new LinkedList<>();
         this.maxBufferSize = 4096;
     }
 
     @Override
     public void init(Vertex vertex) {
+        tupleList = new LinkedList<>();
         codec = new TxRxCodecImpl(schema);
         endpoint = new SendEndpoint(host, port, TagUtils.tag(vertex.getTask().getJobId(), receiveId));
         endpoint.init();

@@ -41,6 +41,7 @@ import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
+import io.protostuff.Tag;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -97,11 +98,12 @@ public final class TaskImpl implements Task {
     @JsonProperty("isolationLevel")
     @Getter
     private final IsolationLevel isolationLevel;
-    private final transient AtomicInteger status;
     private CommonId rootOperatorId = null;
-    private CountDownLatch activeThreads = null;
+
+    private transient AtomicInteger status = new AtomicInteger(Status.BORN);
+    private transient CountDownLatch activeThreads = null;
     @Getter
-    private TaskStatus taskInitStatus;
+    private transient TaskStatus taskInitStatus;
 
     @JsonCreator
     public TaskImpl(
@@ -119,7 +121,6 @@ public final class TaskImpl implements Task {
         this.location = location;
         this.parasType = parasType;
         this.runList = new LinkedList<>();
-        this.status = new AtomicInteger(Status.BORN);
         this.vertexes = new HashMap<>();
         this.transactionType = transactionType;
         this.isolationLevel = isolationLevel;
@@ -153,6 +154,7 @@ public final class TaskImpl implements Task {
 
     @Override
     public void init() {
+        status = new AtomicInteger(Status.BORN);
         boolean isStatusOK = true;
         String statusErrMsg = "";
         this.getVertexes().forEach((id, v) -> {
