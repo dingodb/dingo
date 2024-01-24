@@ -75,22 +75,27 @@ public class DingoClient {
         return true;
     }
 
+    @Deprecated
     public boolean createTable(Table table) {
         return createTable(schema, table);
     }
 
+    @Deprecated
     public boolean createTable(String schema, Table table) {
         return operationService.createTable(schema, table.getName(), table);
     }
 
+    @Deprecated
     public boolean dropTable(String tableName) {
         return dropTable(schema, tableName);
     }
 
+    @Deprecated
     public boolean dropTable(String schema, String table) {
         return operationService.dropTable(schema, table);
     }
 
+    @Deprecated
     public boolean dropTables(String schema, List<String> tables) {
         return operationService.dropTables(schema, tables);
     }

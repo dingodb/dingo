@@ -43,6 +43,9 @@ dependencies {
     implementation group: 'io.springfox', name: 'springfox-boot-starter', version: '3.0.0'
     implementation group: 'org.mapstruct', name: 'mapstruct', version: 'mapstruct'.v()
 
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-parser', version: 'dingo-expr'.v()
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-rel', version: 'dingo-expr'.v()
+
     implementation project(":dingo-net-api")
     implementation project(":dingo-net-netty")
     implementation project(":dingo-common")

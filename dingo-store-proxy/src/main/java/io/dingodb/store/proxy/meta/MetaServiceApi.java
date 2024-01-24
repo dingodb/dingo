@@ -57,9 +57,9 @@ public interface MetaServiceApi {
     void dropTables(long requestId, String schema, String table, DropTablesRequest request) throws Exception;
 
     @ApiDeclaration
-    void createSchema(long requestId, CreateSchemaRequest request) throws Exception;
+    void createSchema(long requestId, String schema, CreateSchemaRequest request) throws Exception;
 
     @ApiDeclaration
-    void dropSchema(long requestId, DropSchemaRequest request) throws Exception;
+    void dropSchema(long requestId, String schema, DropSchemaRequest request) throws Exception;
 
 }
