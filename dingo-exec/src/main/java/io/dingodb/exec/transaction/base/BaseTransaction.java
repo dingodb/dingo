@@ -148,7 +148,6 @@ public abstract class BaseTransaction implements ITransaction {
             cleanUpJobRun(jobManager, currentLocation), Executors.executor("exec-txnCleanUp")
         ).exceptionally(
             ex -> {
-                ex.printStackTrace();
                 log.error(ex.toString(), ex);
                 return null;
             }
@@ -292,15 +291,15 @@ public abstract class BaseTransaction implements ITransaction {
             this.commitTs = TransactionManager.getCommitTs();
             boolean result = commitPrimaryKey(cacheToObject);
             if (!result) {
+                rollback(jobManager);
                 throw new RuntimeException(txnId + " " + cacheToObject.getPartId()
                     + ",txnCommitPrimaryKey false, commit_ts:" + commitTs +",PrimaryKey:"
                     + primaryKey.toString());
             }
             CompletableFuture<Void> commit_future = CompletableFuture.runAsync(() ->
-                commitJobRun(jobManager, currentLocation, jobId), Executors.executor("exec-txnCommit")
+                commitJobRun(jobManager, currentLocation), Executors.executor("exec-txnCommit")
             ).exceptionally(
                 ex -> {
-                    ex.printStackTrace();
                     log.error(ex.toString(), ex);
                     return null;
                 }
@@ -321,34 +320,45 @@ public abstract class BaseTransaction implements ITransaction {
     }
 
     private void cleanUpJobRun(JobManager jobManager, Location currentLocation) {
-        // 1、getTso
-        long cleanUpTs = TransactionManager.nextTimestamp();
-        // 2、generator job、task、cleanCacheOperator
-        Job job = jobManager.createJob(startTs, cleanUpTs, txnId, null);
-        DingoTransactionRenderJob.renderCleanCacheJob(job, currentLocation, this, true);
-        // 3、run cleanCache
-        if (commitFuture != null) {
-            try {
+        CommonId jobId = CommonId.EMPTY_JOB;
+        try {
+            // 1、getTso
+            long cleanUpTs = TransactionManager.nextTimestamp();
+            // 2、generator job、task、cleanCacheOperator
+            Job job = jobManager.createJob(startTs, cleanUpTs, txnId, null);
+            jobId = job.getJobId();
+            DingoTransactionRenderJob.renderCleanCacheJob(job, currentLocation, this, true);
+            // 3、run cleanCache
+            if (commitFuture != null) {
                 commitFuture.get();
-            } catch (Exception e) {
-                log.error(e.getMessage(), e);
             }
-        }
-        Iterator<Object[]> iterator = jobManager.createIterator(job, null);
-        if (iterator.hasNext()) {
-            Object[] next = iterator.next();
+            Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+            if (iterator.hasNext()) {
+                Object[] next = iterator.next();
+            }
+        } catch (Throwable throwable) {
+            log.error(throwable.getMessage(), throwable);
+        } finally {
+            jobManager.removeJob(jobId);
         }
     }
 
-    private void commitJobRun(JobManager jobManager, Location currentLocation, AtomicReference<CommonId> jobId) {
-        // 5、generator job、task、CommitOperator
-        job = jobManager.createJob(startTs, commitTs, txnId, null);
-        jobId.set(job.getJobId());
-        DingoTransactionRenderJob.renderCommitJob(job, currentLocation, this, true);
-        // 6、run Commit
-        Iterator<Object[]> iterator = jobManager.createIterator(job, null);
-        if (iterator.hasNext()) {
-            Object[] next = iterator.next();
+    private void commitJobRun(JobManager jobManager, Location currentLocation) {
+        CommonId jobId = CommonId.EMPTY_JOB;
+        try {
+            // 5、generator job、task、CommitOperator
+            job = jobManager.createJob(startTs, commitTs, txnId, null);
+            jobId = job.getJobId();
+            DingoTransactionRenderJob.renderCommitJob(job, currentLocation, this, true);
+            // 6、run Commit
+            Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+            if (iterator.hasNext()) {
+                Object[] next = iterator.next();
+            }
+        } catch (Throwable throwable) {
+            log.error(throwable.getMessage(), throwable);
+        } finally {
+            jobManager.removeJob(jobId);
         }
     }
 

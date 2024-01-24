@@ -18,8 +18,8 @@ package io.dingodb.store.api.transaction.data;
 
 public class TxnVariables {
     public static final long TimeOut = 50000L;
-    public static final long WaitTime = 2000L;
-    public static final long WaitFixTime = 5000L;
+    public static final long WaitTime = 100L;
+    public static final long WaitFixTime = 1000L;
 
-    public static final int WaitFixNum = 6;
+    public static final int WaitFixNum = 11;
 }

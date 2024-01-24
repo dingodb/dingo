@@ -95,12 +95,12 @@ public class PessimisticRollBackOperator extends TransactionOperator {
             newKey[newKey.length - 2] = (byte) op;
             store.put(new KeyValue(newKey, value));
         }
-        param.addKey(key);
         CommonId partId = param.getPartId();
         if (partId == null) {
             partId = newPartId;
             param.setPartId(partId);
             param.setTableId(tableId);
+            param.addKey(key);
         } else if (partId.equals(newPartId)) {
             param.addKey(key);
             if (param.getKeys().size() == TransactionUtil.max_pre_write_count) {
