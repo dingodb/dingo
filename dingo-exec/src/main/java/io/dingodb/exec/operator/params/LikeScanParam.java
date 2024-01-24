@@ -37,7 +37,7 @@ public class LikeScanParam extends FilterProjectSourceParam {
 
     @JsonProperty("prefix")
     private final byte[] prefix;
-    private KeyValueCodec codec;
+    private transient KeyValueCodec codec;
 
     public LikeScanParam(
         @JsonProperty("table") CommonId tableId,

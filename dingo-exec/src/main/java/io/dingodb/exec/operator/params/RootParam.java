@@ -43,8 +43,8 @@ public class RootParam extends AbstractParams {
     @JsonProperty("selection")
     private final @Nullable TupleMapping selection;
     @Setter
-    private Fin errorFin;
-    private BlockingQueue<Object[]> tupleQueue;
+    private transient Fin errorFin;
+    private transient BlockingQueue<Object[]> tupleQueue;
 
     public RootParam(DingoType schema, @Nullable TupleMapping selection) {
         this.schema = schema;

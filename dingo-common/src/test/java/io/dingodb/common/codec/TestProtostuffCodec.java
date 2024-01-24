@@ -18,6 +18,7 @@ package io.dingodb.common.codec;
 
 import io.dingodb.common.codec.pojo.School;
 import io.dingodb.common.codec.pojo.Student;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -37,9 +38,9 @@ public class TestProtostuffCodec {
 
     @Test
     public void test() {
-        Student stu1 = new Student(20, null, 200);
-        Student stu2 = new Student(21, null, 30);
-        Student stu3 = new Student(22, null, 10);
+        Student stu1 = new Student(20, null, 200, null);
+        Student stu2 = new Student(21, null, 30, null);
+        Student stu3 = new Student(22, null, 10, null);
         List<Student> students = new ArrayList<Student>();
         students.add(stu1);
         students.add(null);
@@ -51,6 +52,15 @@ public class TestProtostuffCodec {
         School deserialValue = ProtostuffCodec.read(bytes);
         System.out.println("After:==> " + deserialValue.toString());
         Assertions.assertEquals(school.toString(), deserialValue.toString());
+    }
+
+    @Test
+    public void testNest() {
+        Student studentA = new Student(1, null, 1, null);
+        Student studentB = new Student(2, null, 2, null);
+        studentA.setStudent(studentB);
+        studentB.setStudent(studentA);
+        ProtostuffCodec.read(ProtostuffCodec.write(studentA));
     }
 
     @Test

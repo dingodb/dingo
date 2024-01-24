@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.SortCollation;
 import lombok.Getter;
 import lombok.NonNull;
@@ -40,7 +41,7 @@ public class SortParam extends AbstractParams {
     @JsonProperty("offset")
     private final int offset;
     private final List<Object[]> cache;
-    private final Comparator<Object[]> comparator;
+    private transient Comparator<Object[]> comparator;
 
     @JsonCreator
     public SortParam(
@@ -52,6 +53,20 @@ public class SortParam extends AbstractParams {
         this.limit = limit;
         this.offset = offset;
         this.cache = new LinkedList<>();
+        if (!collations.isEmpty()) {
+            Comparator<Object[]> c = collations.get(0).makeComparator();
+            for (int i = 1; i < collations.size(); ++i) {
+                c = c.thenComparing(collations.get(i).makeComparator());
+            }
+            comparator = c;
+        } else {
+            comparator = null;
+        }
+    }
+
+    @Override
+    public void init(Vertex vertex) {
+        super.init(vertex);
         if (!collations.isEmpty()) {
             Comparator<Object[]> c = collations.get(0).makeComparator();
             for (int i = 1; i < collations.size(); ++i) {

@@ -19,6 +19,7 @@ package io.dingodb.exec.impl.message;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.exec.impl.JobImpl;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,15 +37,17 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 public abstract class TaskMessage {
     public static TaskMessage fromBytes(byte[] bytes) throws JsonProcessingException {
-        String str = new String(bytes, StandardCharsets.UTF_8);
-        if (log.isDebugEnabled()) {
-            log.debug("TaskMessage deserialized, content: {}", str);
-        }
-        return JobImpl.PARSER.parse(str, TaskMessage.class);
+//        String str = new String(bytes, StandardCharsets.UTF_8);
+//        if (log.isDebugEnabled()) {
+//            log.debug("TaskMessage deserialized, content: {}", str);
+//        }
+//        return JobImpl.PARSER.parse(str, TaskMessage.class);
+        return ProtostuffCodec.read(bytes);
     }
 
     public byte[] toBytes() {
-        return toString().getBytes(StandardCharsets.UTF_8);
+//        return toString().getBytes(StandardCharsets.UTF_8);
+        return ProtostuffCodec.write(this);
     }
 
     @Override

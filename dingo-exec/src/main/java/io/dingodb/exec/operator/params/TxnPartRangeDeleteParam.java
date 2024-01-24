@@ -44,7 +44,7 @@ public class TxnPartRangeDeleteParam extends AbstractParams {
     @JsonProperty("keyMapping")
     private final TupleMapping keyMapping;
 
-    private KeyValueCodec codec;
+    private transient KeyValueCodec codec;
 
     public TxnPartRangeDeleteParam(
         CommonId tableId,

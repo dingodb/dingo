@@ -37,7 +37,7 @@ public class TxnLikeScanParam extends FilterProjectSourceParam {
 
     @JsonProperty("prefix")
     private final byte[] prefix;
-    private KeyValueCodec codec;
+    private transient KeyValueCodec codec;
 
     public TxnLikeScanParam(
         @JsonProperty("table") CommonId tableId,

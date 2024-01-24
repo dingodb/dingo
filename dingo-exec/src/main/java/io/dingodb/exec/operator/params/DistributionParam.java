@@ -27,6 +27,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
@@ -42,8 +43,9 @@ public class DistributionParam extends AbstractParams {
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     private final CommonId tableId;
+
     private final Table table;
-    private final KeyValueCodec codec;
+    private transient KeyValueCodec codec;
     private IndexTable indexTable;
     @Setter
     private NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
@@ -65,8 +67,12 @@ public class DistributionParam extends AbstractParams {
         this.tableId = tableId;
         this.table = table;
         this.distributions = distributions;
-        this.codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
         this.indexTable = indexTable;
     }
 
+    @Override
+    public void init(Vertex vertex) {
+        super.init(vertex);
+        codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
+    }
 }

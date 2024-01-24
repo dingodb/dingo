@@ -54,10 +54,10 @@ public class ScanWithNoOpParam extends AbstractParams {
     @JsonProperty("pushDown")
     protected final boolean pushDown;
 
-    protected final DingoRelConfig config;
+    protected transient DingoRelConfig config;
 
     @Getter
-    protected KeyValueCodec codec;
+    protected transient KeyValueCodec codec;
 
     public ScanWithNoOpParam(
         CommonId tableId,
@@ -70,12 +70,12 @@ public class ScanWithNoOpParam extends AbstractParams {
         this.schema = schema;
         this.keyMapping = keyMapping;
         this.pushDown = pushDown;
-        config = new DingoRelConfig();
     }
 
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
+        config = new DingoRelConfig();
         codec = CodecService.getDefault().createKeyValueCodec(schema, keyMapping);
     }
 

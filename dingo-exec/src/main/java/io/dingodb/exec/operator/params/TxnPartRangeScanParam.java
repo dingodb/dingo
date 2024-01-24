@@ -61,8 +61,8 @@ public class TxnPartRangeScanParam extends FilterProjectParam {
     @JsonProperty("timeOut")
     private final long timeOut;
 
-    private Coprocessor coprocessor = null;
-    private KeyValueCodec codec;
+    private transient Coprocessor coprocessor = null;
+    private transient KeyValueCodec codec;
 
     public TxnPartRangeScanParam(
         CommonId tableId,

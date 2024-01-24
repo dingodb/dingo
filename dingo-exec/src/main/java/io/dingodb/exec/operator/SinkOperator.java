@@ -28,13 +28,17 @@ public abstract class SinkOperator extends AbstractOperator {
     protected abstract boolean push(Object[] tuple, Vertex vertex);
 
     @Override
-    public synchronized boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        return push(tuple, vertex);
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
+        synchronized (vertex) {
+            return push(tuple, vertex);
+        }
     }
 
     @Override
-    public synchronized void fin(int pin, @Nullable Fin fin, Vertex vertex) {
-        fin(fin, vertex);
+    public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
+        synchronized (vertex) {
+            fin(fin, vertex);
+        }
     }
 
     protected abstract void fin(Fin fin, Vertex vertex);

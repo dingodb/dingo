@@ -18,8 +18,10 @@ package io.dingodb.net.netty;
 
 import io.dingodb.common.Location;
 import io.dingodb.common.annotation.ApiDeclaration;
+import io.dingodb.common.codec.ProtostuffCodec;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
+import io.dingodb.net.netty.api.HandshakeApi;
 import io.dingodb.net.service.FileTransferService;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,11 @@ public class NetServiceTest {
         default CompletableFuture<String> test() {
             return CompletableFuture.completedFuture("test");
         }
+    }
+
+    @Test
+    public void testCodec() {
+        ProtostuffCodec.read(ProtostuffCodec.write(HandshakeApi.Handshake.INSTANCE));
     }
 
     @Test
