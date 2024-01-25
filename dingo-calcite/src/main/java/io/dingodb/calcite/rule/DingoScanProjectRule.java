@@ -22,6 +22,7 @@ import io.dingodb.calcite.grammar.SqlUserDefinedOperators;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoVector;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.scalar.FloatType;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
@@ -211,6 +212,7 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
             .builder()
             .name("STORE")
             .sqlTypeName("FLOAT")
+            .type(new FloatType(false))
             .precision(-1)
             .scale(-2147483648)
             .build()
@@ -238,7 +240,8 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
             useIndex.getTableId(),
             useIndex,
             scan.getSelection(),
-            scan.getFilter()
+            scan.getFilter(),
+            scan.getHints()
             );
     }
 

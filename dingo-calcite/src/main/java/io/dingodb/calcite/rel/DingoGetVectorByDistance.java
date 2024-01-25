@@ -16,12 +16,11 @@
 
 package io.dingodb.calcite.rel;
 
-import io.dingodb.calcite.DingoTable;
+import io.dingodb.calcite.utils.RelDataTypeUtils;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.meta.entity.Column;
-import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.common.type.TupleMapping;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -33,24 +32,22 @@ import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeFieldImpl;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-
-import static io.dingodb.calcite.type.converter.DefinitionMapper.mapToRelDataType;
-import static org.apache.calcite.sql.validate.TableFunctionNamespace.getVectorIndexTable;
 
 public class DingoGetVectorByDistance extends Filter implements DingoRel {
     @Getter
     protected CommonId indexTableId;
 
+    protected Table indexTable;
+
     @Getter
-    protected Integer vectorIdIndex;
+    protected Integer vectorPriIdIndex;
 
     @Getter
     protected Integer vectorIndex;
@@ -61,6 +58,9 @@ public class DingoGetVectorByDistance extends Filter implements DingoRel {
     @Getter
     protected final List<Object> operands;
 
+    @Getter
+    protected final TupleMapping selection;
+
     public DingoGetVectorByDistance(RelOptCluster cluster, RelTraitSet traits,
                                     RelNode child,
                                     RexNode condition,
@@ -68,19 +68,27 @@ public class DingoGetVectorByDistance extends Filter implements DingoRel {
                                     List<Object> operands,
                                     Integer vectorIdIndex,
                                     Integer vectorIndex,
-                                    CommonId indexTableId) {
+                                    CommonId indexTableId,
+                                    TupleMapping selection,
+                                    Table indexTable) {
         super(cluster, traits, child, condition);
         this.table = table;
         this.operands = operands;
-        this.vectorIdIndex = vectorIdIndex;
+        this.vectorPriIdIndex = vectorIdIndex;
         this.vectorIndex = vectorIndex;
         this.indexTableId = indexTableId;
+        this.selection = selection;
+        this.indexTable = indexTable;
     }
 
     @Override
     public Filter copy(RelTraitSet traitSet, RelNode input, RexNode condition) {
-        return new DingoGetVectorByDistance(getCluster(), traitSet, input, condition,
-            table, operands, vectorIdIndex, vectorIndex, indexTableId);
+        return new DingoGetVectorByDistance(
+            getCluster(),
+            traitSet,
+            input,
+            condition,
+            table, operands, vectorPriIdIndex, vectorIndex, indexTableId, selection, indexTable);
     }
 
     @Override
@@ -96,37 +104,22 @@ public class DingoGetVectorByDistance extends Filter implements DingoRel {
 
     @Override
     protected RelDataType deriveRowType() {
-        return getVectorRowType();
+        return RelDataTypeUtils.mapType(
+            getCluster().getTypeFactory(),
+            getTableType(),
+            selection
+        );
     }
 
-    public RelDataType getVectorRowType() {
-        DingoTable dingoTable = table.unwrap(DingoTable.class);
-        assert dingoTable != null;
-        List<Column> tableCols = dingoTable.getTable().getColumns();
-        ArrayList<Column> cols = new ArrayList<>(tableCols.size() + 1);
-
-        cols.addAll(tableCols);
-
-        IndexTable indexTable = getVectorIndexTable(
-            dingoTable.getTable(),
-            ((SqlIdentifier) operands.get(1)).getSimple().toUpperCase()
-        );
-
-        String indexTableName = indexTable.getName();
-
-        cols.add(Column
-            .builder()
-            .name(indexTableName.concat("$distance"))
-            .sqlTypeName("FLOAT")
-            .type(DingoTypeFactory.INSTANCE.fromName("FLOAT", null, false))
-            .build()
-        );
-
-        RelDataTypeFactory typeFactory = getCluster().getTypeFactory();
-        return typeFactory.createStructType(
-            cols.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-            cols.stream().map(Column::getName).map(String::toUpperCase).collect(Collectors.toList())
-        );
+    public RelDataType getTableType() {
+        RelDataType relDataType = table.getRowType();
+        RelDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
+        builder.addAll(relDataType.getFieldList());
+        builder.add(new RelDataTypeFieldImpl(
+            indexTable.getName() + "$distance",
+            relDataType.getFieldCount(),
+            getCluster().getTypeFactory().createSqlType(SqlTypeName.get("FLOAT"))));
+        return builder.build();
     }
 
     @Override

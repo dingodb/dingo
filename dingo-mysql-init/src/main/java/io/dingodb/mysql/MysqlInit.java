@@ -246,7 +246,6 @@ public final class MysqlInit {
         values.add(new Object[]{"thread_concurrency", "10"});
         values.add(new Object[]{"time_zone", "SYSTEM"});
         values.add(new Object[]{"system_time_zone", "UTC"});
-        values.add(new Object[]{"character_set_client", "utf8"});
         values.add(new Object[]{"sql_mode", ""});
         values.add(new Object[]{"query_cache_type", "OFF"});
         values.add(new Object[]{"query_cache_size", "16777216"});
@@ -254,7 +253,6 @@ public final class MysqlInit {
         values.add(new Object[]{"net_write_timeout", "60"});
         values.add(new Object[]{"net_read_timeout", "60"});
         values.add(new Object[]{"lower_case_table_names", "0"});
-        values.add(new Object[]{"license", "GPL"});
         values.add(new Object[]{"version", "5.7.24"});
         values.add(new Object[]{"version_compile_os", "Linux"});
         values.add(new Object[]{"version_compile_machine", "x86_64"});

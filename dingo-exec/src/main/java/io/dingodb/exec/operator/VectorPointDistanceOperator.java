@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.vector.VectorCalcDistance;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
@@ -51,6 +52,7 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
     public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
         Edge edge = vertex.getSoleEdge();
         VectorPointDistanceParam param = vertex.getParam();
+        TupleMapping selection = param.getSelection();
         List<Object[]> cache = param.getCache();
         if (fin instanceof FinWithException) {
             edge.fin(fin);
@@ -80,7 +82,7 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
             Object[] tuple = cache.get(i);
             Object[] result = Arrays.copyOf(tuple, tuple.length + 1);
             result[tuple.length] = floatArray.get(i);
-            edge.transformToNext(param.getContext(), result);
+            edge.transformToNext(param.getContext(), selection.revMap(result));
         }
         param.clear();
 

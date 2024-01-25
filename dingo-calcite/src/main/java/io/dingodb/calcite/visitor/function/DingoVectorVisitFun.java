@@ -19,31 +19,45 @@ package io.dingodb.calcite.visitor.function;
 import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoVector;
+import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.fun.vector.VectorImageFun;
 import io.dingodb.exec.fun.vector.VectorTextFun;
 import io.dingodb.exec.operator.params.PartVectorParam;
 import io.dingodb.exec.restful.VectorExtract;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.fun.SqlArrayValueConstructor;
+import org.apache.calcite.util.mapping.Mapping;
+import org.apache.calcite.util.mapping.Mappings;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -54,6 +68,7 @@ import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.Utils.isNeedLookUp;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_VECTOR;
 
 @Slf4j
@@ -89,6 +104,42 @@ public final class DingoVectorVisitFun {
         // Get all index table distributions
         NavigableMap<ComparableByteArray, RangeDistribution> indexRanges =
             metaService.getRangeDistribution(rel.getIndexTableId());
+
+        //todo replace start
+        IndexTable indexTable = (IndexTable) rel.getIndexTable();
+        boolean pushDown = pushDown(rel.getFilter(), dingoTable.getTable(), indexTable);
+        RexNode rexFilter = rel.getFilter();
+        TupleMapping selection = rel.getSelection();
+
+        List<Column> columnNames = indexTable.getColumns();
+        List<Integer> indexOriSelectionList = columnNames
+            .stream().map(dingoTable.getTable().columns::indexOf)
+            .collect(Collectors.toList());
+        boolean isLookUp = isNeedLookUp(selection, TupleMapping.of(indexOriSelectionList));
+        boolean isTxn = dingoTable.getTable().getEngine().contains("TXN");
+        if (pushDown && isTxn) {
+            List<Integer> indexList = indexTable
+                .getColumns()
+                .stream()
+                .filter(col -> col.getState() == 1)
+                .map(col -> indexTable.getColumns().indexOf(col))
+                .collect(Collectors.toList());
+            selection = TupleMapping.of(indexList);
+
+            Mapping mapping = Mappings.target(indexOriSelectionList, dingoTable.getTable().getColumns().size());
+            rexFilter = RexUtil.apply(mapping, rexFilter);
+        } else {
+            TupleMapping realSelection = rel.getRealSelection();
+            List<Integer> selectedColumns = realSelection.stream().boxed().collect(Collectors.toList());
+            Mapping mapping = Mappings.target(selectedColumns, dingoTable.getTable().getColumns().size() + 1);
+            rexFilter = (rexFilter != null) ? RexUtil.apply(mapping, rexFilter) : null;
+        }
+        SqlExpr filter = null;
+        if (rexFilter != null) {
+            filter = SqlExprUtils.toSqlExpr(rexFilter);
+        }
+        //todo replace end
+
         // Get query additional parameters
         Map<String, Object> parameterMap = getParameterMap(operandsList);
 
@@ -97,9 +148,9 @@ public final class DingoVectorVisitFun {
             PartVectorParam param = new PartVectorParam(
                 tableId,
                 rangeDistribution.id(),
-                td.tupleType(),
+                rel.tupleType(),
                 td.keyMapping(),
-                null,
+                Optional.mapOrNull(filter, SqlExpr::copy),
                 rel.getSelection(),
                 td,
                 ranges,
@@ -217,4 +268,27 @@ public final class DingoVectorVisitFun {
 
         return parameterMap;
     }
+
+    private static boolean pushDown(RexNode filter, Table table, IndexTable indexTable) {
+        List<Integer> inputRefList = new ArrayList<>();
+        RexVisitorImpl<Void> visitor = new RexVisitorImpl<Void>(true) {
+            @Override
+            public Void visitInputRef(@NonNull RexInputRef inputRef) {
+                if (!inputRefList.contains(inputRef.getIndex())) {
+                    inputRefList.add(inputRef.getIndex());
+                }
+                return super.visitInputRef(inputRef);
+            }
+        };
+        filter.accept(visitor);
+        List<Column> selectionName = inputRefList.stream()
+            .map(i -> table.getColumns().get(i))
+            .collect(Collectors.toList());
+
+        java.util.Optional<Column> optional = selectionName.stream()
+            .filter(column -> !indexTable.getColumns().contains(column))
+            .findFirst();
+        return !optional.isPresent();
+    }
+
 }

@@ -190,9 +190,11 @@ public final class MessageProcess {
                 } catch (NoSuchStatementException e) {
                     throw new RuntimeException(e);
                 }
-                ExecuteStatementPacket statementPacket = new ExecuteStatementPacket(paramCount);
+                ExecuteStatementPacket statementPacket = new ExecuteStatementPacket(paramCount,
+                    preparedStatement.getTypes());
                 statementPacket.read(array);
                 commands.executeStatement(statementPacket, preparedStatement, isSelect, packetId, mysqlConnection);
+                preparedStatement.setBoundTypes(statementPacket.types);
                 break;
             case NativeConstants.COM_STMT_SEND_LONG_DATA:
                 // send blob data

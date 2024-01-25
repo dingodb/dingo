@@ -16,18 +16,21 @@
 
 package io.dingodb.calcite.stats.task;
 
+import com.google.common.collect.Iterators;
 import io.dingodb.calcite.stats.CountMinSketch;
 import io.dingodb.calcite.stats.Histogram;
 import io.dingodb.calcite.stats.StatsNormal;
 import io.dingodb.calcite.stats.TableStats;
 import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.table.Part;
 import io.dingodb.exec.table.PartInKvStore;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -37,12 +40,14 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.NoBreakFunctions.wrap;
+
 /**
  * collect region statistic. If the table has multiple partitions,
  * create multiple concurrent tasks,Then merge region statistics
  */
 @Slf4j
-public class CollectStatsTask implements Callable {
+public class CollectStatsTask implements Callable<TableStats> {
     Iterator<Object[]> tupleIterator;
     List<Histogram> columnHistogramList;
     List<CountMinSketch> minSketchList;
@@ -51,25 +56,41 @@ public class CollectStatsTask implements Callable {
     /**
      * collect stats task by one region.
      * statistic type: histogram(only int), countMinSketch, statsNormal
-     * @param rangeDistribution region distribution
+     * @param region region distribution
      * @param tableId tableId
      * @param td tableDefinition
      * @param columnHistograms columnHistogram :  Unified template (All region histograms must have the same parameters)
      * @param minSketches minSketch : Unified template
      * @param statsNormals statsNormal : distinct val,null count
      */
-    public CollectStatsTask(RangeDistribution rangeDistribution,
+    public CollectStatsTask(RangeDistribution region,
                             CommonId tableId,
                             Table td,
                             List<Histogram> columnHistograms,
                             List<CountMinSketch> minSketches,
-                            List<StatsNormal> statsNormals) {
-        Part part = new PartInKvStore(
-            Services.KV_STORE.getInstance(tableId, rangeDistribution.id()),
-            CodecService.getDefault().createKeyValueCodec(tableId, td.tupleType(), td.keyMapping())
-        );
-        tupleIterator = part.scan(rangeDistribution.getStartKey(), rangeDistribution.getEndKey(),
-            rangeDistribution.isWithStart(), true);
+                            List<StatsNormal> statsNormals,
+                            long scanTs,
+                            long timeout) {
+        boolean isTxn = td.getEngine().contains("TXN");
+        StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, region.id());
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableId, td.tupleType(), td.keyMapping());
+        if (!isTxn) {
+            Part part = new PartInKvStore(
+                kvStore,
+                codec
+            );
+            tupleIterator = part.scan(region.getStartKey(), region.getEndKey(),
+                region.isWithStart(), true);
+        } else {
+            Iterator<KeyValue> iterator = kvStore.txnScan(
+                scanTs,
+                new StoreInstance.Range(region.getStartKey(), region.getEndKey(), region.isWithStart(), true),
+                timeout
+            );
+            tupleIterator = Iterators.transform(iterator,
+                wrap(codec::decode)::apply
+            );
+        }
         this.minSketchList = minSketches.stream().map(CountMinSketch::copy)
             .collect(Collectors.toList());
         columnHistogramList = columnHistograms.stream().map(Histogram::copy)

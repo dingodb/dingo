@@ -25,7 +25,7 @@ import java.util.List;
 
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
 
-public class VariableValidator {
+public final class VariableValidator {
 
     private static final List<Object> SWITCH = new ArrayList<>();
     private static final List<Object> TX_ISOLATION = new ArrayList<>();
@@ -36,12 +36,15 @@ public class VariableValidator {
         SWITCH.add("1");
         SWITCH.add("on");
         SWITCH.add("off");
-        TX_ISOLATION.add("read-uncommitted");
+        //TX_ISOLATION.add("read-uncommitted");
         TX_ISOLATION.add("read-committed");
         TX_ISOLATION.add("repeatable-read");
-        TX_ISOLATION.add("serializable");
+        //TX_ISOLATION.add("serializable");
         TX_MODE.add("pessimistic");
         TX_MODE.add("optimistic");
+    }
+
+    private VariableValidator() {
     }
 
     public static String validator(String name, String value, String scope) {

@@ -39,6 +39,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.GetByIndexParam;
 import io.dingodb.exec.operator.params.IndexMergeParam;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
@@ -54,6 +55,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.Utils.calculatePrefixCount;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_INDEX;
@@ -99,7 +101,10 @@ public final class DingoGetByIndexMergeVisitFun {
                 partMap.get(partId).add(tuple);
             }
 
-            TupleMapping tupleMapping = indexTd.mapping();
+            List<Column> columnNames = indexTd.getColumns();
+            TupleMapping tupleMapping = TupleMapping.of(
+                columnNames.stream().map(td.columns::indexOf).collect(Collectors.toList())
+            );
             TupleMapping lookupKeyMapping = indexMergeMapping(td.keyMapping(), rel.getSelection());
 
             for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {

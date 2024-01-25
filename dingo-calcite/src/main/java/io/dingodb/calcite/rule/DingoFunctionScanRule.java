@@ -63,7 +63,8 @@ public class DingoFunctionScanRule extends ConverterRule {
                 vector.getIndexTableId(),
                 vector.getIndexTable(),
                 vector.getSelection(),
-                vector.getFilter()
+                vector.getFilter(),
+                vector.hints
             );
         } else if (rel instanceof DingoFunctionScan) {
             DingoFunctionScan scan = (DingoFunctionScan) rel;

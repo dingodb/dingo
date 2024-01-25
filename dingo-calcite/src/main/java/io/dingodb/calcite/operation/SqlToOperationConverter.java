@@ -155,7 +155,7 @@ public final class SqlToOperationConverter {
             if (StringUtils.isEmpty(analyze.getSchemaName())) {
                 analyze.setSchemaName(getSchemaName(context));
             }
-            return Optional.of(new AnalyzeTableOperation(analyze));
+            return Optional.of(new AnalyzeTableOperation(analyze, connection));
         } else if (sqlNode instanceof SqlCommit) {
             return Optional.of(new CommitTxOperation(connection));
         } else if (sqlNode instanceof SqlRollback) {

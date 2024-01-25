@@ -16,9 +16,37 @@
 
 package io.dingodb.calcite.stats;
 
+import io.dingodb.calcite.DingoTable;
+import io.dingodb.calcite.rel.LogicalDingoTableScan;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class StatsCache {
+public final class StatsCache {
     public static volatile Map<String, TableStats> statsMap = new ConcurrentHashMap<>();
+
+    private StatsCache() {
+    }
+
+    public static double getTableRowCount(String schemaName, String tableName) {
+        return getTableRowCount(schemaName + "." + tableName);
+    }
+
+    public static double getTableRowCount(LogicalDingoTableScan scan) {
+        DingoTable dingoTable = scan.getTable().unwrap(DingoTable.class);
+        assert dingoTable != null;
+        if (dingoTable.getNames().size() > 2) {
+            return getTableRowCount(dingoTable.getNames().get(1), dingoTable.getNames().get(2));
+        } else {
+            return 100;
+        }
+    }
+
+    public static double getTableRowCount(String key) {
+        TableStats tableStats = statsMap.get(key);
+        if (tableStats != null) {
+            return tableStats.getRowCount();
+        }
+        return 100;
+    }
 }

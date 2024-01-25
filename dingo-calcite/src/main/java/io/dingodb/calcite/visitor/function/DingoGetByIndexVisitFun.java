@@ -38,6 +38,7 @@ import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.GetByIndexParam;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
@@ -49,13 +50,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.Utils.calculatePrefixCount;
+import static io.dingodb.common.util.Utils.isNeedLookUp;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_INDEX;
 
 public final class DingoGetByIndexVisitFun {
 
-    public DingoGetByIndexVisitFun() {
+    private DingoGetByIndexVisitFun() {
     }
 
     @NonNull
@@ -98,8 +101,10 @@ public final class DingoGetByIndexVisitFun {
                 partMap.putIfAbsent(partId, new LinkedList<>());
                 partMap.get(partId).add(tuple);
             }
-
-            TupleMapping tupleMapping = td.mapping();
+            List<Column> columnNames = indexTd.getColumns();
+            TupleMapping tupleMapping = TupleMapping.of(
+                columnNames.stream().map(td.columns::indexOf).collect(Collectors.toList())
+            );
 
             if (!needLookup) {
                 needLookup = isNeedLookUp(rel.getSelection(), tupleMapping);
@@ -131,18 +136,6 @@ public final class DingoGetByIndexVisitFun {
             }
         }
         return outputs;
-    }
-
-    private static boolean isNeedLookUp(TupleMapping selection, TupleMapping keyMapping) {
-        if (selection == null) {
-            return true;
-        }
-        for (int index : selection.getMappings()) {
-            if (!keyMapping.contains(index)) {
-                return true;
-            }
-        }
-        return false;
     }
 
 }

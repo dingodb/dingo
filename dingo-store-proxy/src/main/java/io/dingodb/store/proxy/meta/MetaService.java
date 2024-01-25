@@ -468,9 +468,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
             @Override
             public Double getRowCount() {
-                return (double) service.getTableMetrics(
-                    tso, GetTableMetricsRequest.builder().tableId(tableId).build()
-                ).getTableMetrics().getTableMetrics().getRowsCount();
+                return 0D;
             }
         };
     }
@@ -511,13 +509,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
             @Override
             public Double getRowCount() {
-                return Optional.ofNullable(service.getTableMetrics(
-                    tso(), GetTableMetricsRequest.builder().tableId(MAPPER.idTo(tableId)).build()
-                )).map(GetTableMetricsResponse::getTableMetrics)
-                    .map(TableMetricsWithId::getTableMetrics)
-                    .map(TableMetrics::getRowsCount)
-                    .map(Long::doubleValue)
-                    .orElse(0.0);
+                return 0D;
             }
         };
     }

@@ -114,6 +114,7 @@ public class RefreshStatsTask extends StatsOperator implements Runnable {
                 statsMap.putIfAbsent(statsNormalKey, tableStats);
             }
         });
+        statsMap.values().forEach(TableStats::initRowCount);
         StatsCache.statsMap = statsMap;
         if (log.isDebugEnabled()) {
             log.debug("load stats" + statsMap);

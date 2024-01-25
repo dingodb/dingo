@@ -91,7 +91,8 @@ public final class DingoGetVectorByDistanceVisitFun {
                 targetVector,
                 dimension,
                 algType,
-                indexTable.getProperties().getProperty("metricType")
+                indexTable.getProperties().getProperty("metricType"),
+                rel.getSelection()
             );
 
             return new Vertex(VECTOR_POINT_DISTANCE, param);

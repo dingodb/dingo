@@ -46,6 +46,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -99,7 +100,7 @@ public class DingoGetByIndexRule extends ConverterRule {
     ) {
         Set<Map<Integer, RexNode>> set = mapSet.getSet();
         if (set != null) {
-            List<String> columnNames;
+            List<Column> columnList;
             List<Integer> indices;
             Map<CommonId, Set> indexMap = new HashMap<>();
             boolean matchIndex;
@@ -109,9 +110,8 @@ public class DingoGetByIndexRule extends ConverterRule {
             for (Map<Integer, RexNode> map : set) {
                 matchIndex = false;
                 for (Map.Entry<CommonId, Table> index : indexTdMap.entrySet()) {
-                    columnNames = index.getValue().getColumns()
-                        .stream().map(Column::getName).collect(Collectors.toList());
-                    indices = columnNames.stream().map(td.getColumns()::indexOf).collect(Collectors.toList());
+                    columnList = index.getValue().getColumns();
+                    indices = columnList.stream().map(td.getColumns()::indexOf).collect(Collectors.toList());
                     Map<Integer, RexNode> newMap = new HashMap<>(indices.size());
                     for (int k : map.keySet()) {
                         int originIndex = (selection == null ? k : selection.get(k));
@@ -147,7 +147,7 @@ public class DingoGetByIndexRule extends ConverterRule {
         RexNode rexNode = RexUtil.toDnf(scan.getCluster().getRexBuilder(), scan.getFilter());
         IndexValueMapSetVisitor visitor = new IndexValueMapSetVisitor(rel.getCluster().getRexBuilder());
         IndexValueMapSet<Integer, RexNode> indexValueMapSet = rexNode.accept(visitor);
-        final Table table = scan.getTable().unwrap(DingoTable.class).getTable();
+        final Table table = Objects.requireNonNull(scan.getTable().unwrap(DingoTable.class)).getTable();
         List<Integer> keyIndices = Arrays.stream(table.keyMapping().getMappings()).boxed().collect(Collectors.toList());
         Set<Map<Integer, RexNode>> keyMapSet = filterIndices(indexValueMapSet, keyIndices, scan.getSelection());
         if (keyMapSet != null) {

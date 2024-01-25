@@ -92,6 +92,7 @@ public class Histogram implements Cloneable, CalculateStatistic {
      * sum of counts of all baskets.
      */
     @JsonProperty("totalCount")
+    @Getter
     private long totalCount;
 
     @JsonProperty("nullCount")
@@ -128,6 +129,9 @@ public class Histogram implements Cloneable, CalculateStatistic {
     }
 
     public void init(int buckets) {
+        if (this.max == null || this.min == null) {
+            return;
+        }
         // calculate # of buckets
         if (this.max - this.min + 1 < buckets) {
             this.buckets = new long[(int) (this.max - this.min + 1)];
@@ -187,6 +191,9 @@ public class Histogram implements Cloneable, CalculateStatistic {
     }
 
     private void addLongValue(Long val) {
+        if (min == null || max == null) {
+            return;
+        }
         if (val < min || val > max) {
             return;
         }
@@ -226,6 +233,9 @@ public class Histogram implements Cloneable, CalculateStatistic {
 
     public Histogram copy() {
         Histogram histogram = new Histogram(schemaName, tableName, columnName, dingoType, index);
+        if (max == null || min == null || buckets == null) {
+            return histogram;
+        }
         histogram.setRegionMin(min);
         histogram.setRegionMax(max);
         histogram.init(buckets.length);

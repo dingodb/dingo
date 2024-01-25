@@ -16,27 +16,26 @@
 
 package io.dingodb.calcite.stats;
 
+import lombok.Getter;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class TableStats {
     private String schemaName;
     private String tableName;
+
+    @Getter
+    private long rowCount;
+
+    @Getter
     private final List<CountMinSketch> countMinSketchList;
+
+    @Getter
     private final List<Histogram> histogramList;
+
+    @Getter
     private final List<StatsNormal> statsNormalList;
-
-    public List<CountMinSketch> getCountMinSketchList() {
-        return countMinSketchList;
-    }
-
-    public List<Histogram> getHistogramList() {
-        return histogramList;
-    }
-
-    public List<StatsNormal> getStatsNormalList() {
-        return statsNormalList;
-    }
 
     public TableStats(
                       List<CountMinSketch> countMinSketchList,
@@ -122,5 +121,21 @@ public class TableStats {
 
     public String getIdentifier() {
         return schemaName.toUpperCase() + "." + tableName.toUpperCase();
+    }
+
+    public void initRowCount() {
+        if (statsNormalList != null && statsNormalList.size() > 0 && statsNormalList.get(0) != null) {
+            rowCount = statsNormalList.get(0).getTotalCount();
+        }
+        if (rowCount == 0) {
+            if (histogramList != null && histogramList.size() > 0 && histogramList.get(0) != null) {
+                rowCount = histogramList.get(0).getTotalCount();
+            }
+        }
+        if (rowCount == 0) {
+            if (countMinSketchList != null && countMinSketchList.size() > 0 && countMinSketchList.get(0) != null) {
+                rowCount = countMinSketchList.get(0).getTotalCount();
+            }
+        }
     }
 }

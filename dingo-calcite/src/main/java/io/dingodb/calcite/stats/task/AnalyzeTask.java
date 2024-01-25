@@ -53,6 +53,8 @@ import io.dingodb.exec.table.PartInKvStore;
 import io.dingodb.exec.utils.SchemaWrapperUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.store.api.StoreInstance;
+import io.dingodb.tso.TsoService;
 import lombok.Builder;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -88,17 +90,15 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
     private long samples;
     private float sampleRate;
 
-    private Long totalCount;
+    @Builder.Default
+    private long timeout = 50000;
 
 
     @Override
     public void run() {
+        long rowCount = 0;
         String failReason = "";
         try {
-            // if total count is 0 then stop program
-            if (totalCount == 0) {
-                return;
-            }
             // get table info
             MetaService metaService = MetaService.root();
             metaService = metaService.getSubMetaService(schemaName);
@@ -144,22 +144,24 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                 return;
             }
             TableStats.mergeStats(statsList);
+            TableStats tableStats = statsList.get(0);
 
             // save stats to store
-            addHistogram(statsList.get(0).getHistogramList());
-            addCountMinSketch(statsList.get(0).getCountMinSketchList());
-            addStatsNormal(statsList.get(0).getStatsNormalList());
+            addHistogram(tableStats.getHistogramList());
+            addCountMinSketch(tableStats.getCountMinSketchList());
+            addStatsNormal(tableStats.getStatsNormalList());
             // update analyze job status
-            cache(statsList.get(0));
+            cache(tableStats);
+            rowCount = tableStats.getRowCount();
             log.info("stats collect done");
         } catch (Exception e) {
             failReason = e.getMessage();
             log.error(e.getMessage(), e);
         }
-        endAnalyzeTask(failReason);
+        endAnalyzeTask(failReason, rowCount);
     }
 
-    private static List<CompletableFuture<TableStats>> getCompletableFutures(
+    private List<CompletableFuture<TableStats>> getCompletableFutures(
         Table td,
         CommonId tableId,
         List<RangeDistribution> rangeDistributions,
@@ -167,10 +169,10 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
         List<StatsNormal> statsNormals,
         List<Histogram> columnHistograms
     ) {
-
+        long scanTs = TsoService.getDefault().tso();
         List<CompletableFuture<TableStats>> futureList = rangeDistributions.stream().map(_i -> {
             Callable<TableStats> collectStatsTask = new CollectStatsTask(
-                _i, tableId, td, columnHistograms, cmSketchList, statsNormals
+                _i, tableId, td, columnHistograms, cmSketchList, statsNormals, scanTs, timeout
             );
             return Executors.submit("collect-task", collectStatsTask);
         }).collect(Collectors.toList());
@@ -215,14 +217,13 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                 allowStats = true;
                 cmSketchCdList.add(new CountMinSketch(schemaName, tableName, columnDefinition.getName(),
                     index.get() - 1,
-                    cmSketchWidth, cmSketchHeight, totalCount));
+                    cmSketchWidth, cmSketchHeight));
             }
             if (!allowStats) {
                 return;
             }
             statsNormals.add(new StatsNormal(
                 columnDefinition.getName(),
-                totalCount,
                 columnDefinition.getType()));
         });
     }
@@ -256,6 +257,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
     }
 
     private static void cache(TableStats tableStats) {
+        tableStats.initRowCount();
         StatsCache.statsMap.put(tableStats.getIdentifier(), tableStats);
     }
 
@@ -264,7 +266,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                                 CommonId tableId,
                                 Table td) {
         if (histogramList.size() > 0) {
-            List<Iterator<Object[]>> iteratorList = rangeDistributions.stream().map(rangeDistribution -> {
+            List<Iterator<Object[]>> iteratorList = rangeDistributions.stream().map(region -> {
                 TupleMapping outputKeyMapping = TupleMapping.of(
                     IntStream.range(0, 0).boxed().collect(Collectors.toList())
                 );
@@ -295,10 +297,12 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                     outputSchema, outputKeyMapping, tableId.seq
                 ));
                 Coprocessor coprocessor = builder.build();
-                Part part = new PartInKvStore(Services.KV_STORE.getInstance(tableId, rangeDistribution.getId()),
+
+                StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, region.getId());
+                Part part = new PartInKvStore(kvStore,
                     CodecService.getDefault().createKeyValueCodec(tableId, outputSchema, outputKeyMapping));
-                return part.scan(rangeDistribution.getStartKey(), rangeDistribution.getEndKey(),
-                    rangeDistribution.isWithStart(), true, coprocessor);
+                return part.scan(region.getStartKey(), region.getEndKey(),
+                    region.isWithStart(), true, coprocessor);
             }).collect(Collectors.toList());
             for (Iterator<Object[]> iterator : iteratorList) {
                 if (iterator.hasNext()) {
@@ -316,7 +320,13 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
     private void startAnalyzeTask(CommonId tableId) {
         Object[] values = get(analyzeTaskStore, analyzeTaskCodec, getAnalyzeTaskKeys(schemaName, tableName));
         if (values == null) {
-            Long commitCount = MetaService.root().getTableCommitCount().getOrDefault(tableId, 0L);
+            Long commitCount = 0L;
+            try {
+                commitCount = MetaService.root().getTableCommitCount().getOrDefault(tableId, 0L);
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
+            long totalCount = 0;
             if (commitCount > totalCount) {
                 commitCount = totalCount;
             }
@@ -327,10 +337,14 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
         values[4] = current;
         values[6] = StatsTaskState.RUNNING.getState();
         values[10] = current;
-        upsert(analyzeTaskStore, analyzeTaskCodec, Collections.singletonList(values));
+        try {
+            upsert(analyzeTaskStore, analyzeTaskCodec, Collections.singletonList(values));
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
     }
 
-    private void endAnalyzeTask(String failReason) {
+    private void endAnalyzeTask(String failReason, long rowCount) {
         Object[] values = get(analyzeTaskStore, analyzeTaskCodec, getAnalyzeTaskKeys(schemaName, tableName));
         if (values == null) {
             log.error("analyze task is null");
@@ -345,6 +359,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
         }
         values[5] = current;
         values[10] = current;
+        values[3] = rowCount;
         upsert(analyzeTaskStore, analyzeTaskCodec, Collections.singletonList(values));
     }
 

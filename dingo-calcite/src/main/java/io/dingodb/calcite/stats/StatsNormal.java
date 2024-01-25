@@ -42,7 +42,7 @@ public class StatsNormal implements Cloneable {
     private Long ndv;
     private Long numNull = 0L;
 
-    private Long totalCount;
+    private Long totalCount = 0L;
 
     private DingoType type;
     private long totalColSize = 0L;
@@ -52,17 +52,11 @@ public class StatsNormal implements Cloneable {
     HLL hll = null;
 
     public StatsNormal(String columnName,
-                       long totalRowCount,
                        DingoType dingoType) {
         this.columnName = columnName;
-        this.totalCount = totalRowCount;
         this.type = dingoType;
-        if (totalRowCount < 100000) {
-            hashSet = new HashSet();
-        } else {
-            hash = Hashing.murmur3_128(12345678);
-            hll = new HLL(13, 5);
-        }
+        hash = Hashing.murmur3_128(12345678);
+        hll = new HLL(13, 5);
     }
 
     public StatsNormal(String columnName, Long ndv, Long numNull, long avgColSize, long totalCount) {
@@ -125,6 +119,7 @@ public class StatsNormal implements Cloneable {
     }
 
     public void addVal(Object val) {
+        totalCount ++;
         if (val == null) {
             numNull ++;
             return;
@@ -188,7 +183,7 @@ public class StatsNormal implements Cloneable {
     }
 
     public StatsNormal copy() {
-        return new StatsNormal(columnName, totalCount, type);
+        return new StatsNormal(columnName, type);
     }
 
     public String getColumnName() {

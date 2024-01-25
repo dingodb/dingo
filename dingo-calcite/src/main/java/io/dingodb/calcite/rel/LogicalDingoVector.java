@@ -20,7 +20,12 @@ import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.utils.RelDataTypeUtils;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.TupleType;
+import io.dingodb.common.type.scalar.FloatType;
+import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,6 +34,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableFunctionScan;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelColumnMapping;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -70,6 +76,9 @@ public class LogicalDingoVector extends TableFunctionScan {
     @Setter
     protected boolean forDml;
 
+    @Getter
+    public List<RelHint> hints;
+
     public LogicalDingoVector(RelOptCluster cluster,
                                  RelTraitSet traitSet,
                                  RexCall call,
@@ -78,7 +87,9 @@ public class LogicalDingoVector extends TableFunctionScan {
                                  @NonNull CommonId indexTableId,
                                  @NonNull Table indexTable,
                                  TupleMapping selection,
-                                 RexNode filter) {
+                                 RexNode filter,
+                                 List<RelHint> hints
+                              ) {
         super(cluster, traitSet, Collections.emptyList(), call, null, call.type, null);
         this.call = call;
         this.table = table;
@@ -88,6 +99,7 @@ public class LogicalDingoVector extends TableFunctionScan {
         this.filter = filter;
         this.rowType = null;
         this.realSelection = selection;
+        this.hints = hints;
         DingoTable dingoTable = table.unwrap(DingoTable.class);
         if (selection != null) {
             if (forDml) {
@@ -139,7 +151,7 @@ public class LogicalDingoVector extends TableFunctionScan {
         return new LogicalDingoVector(
             getCluster(),
             traitSet,
-            call, table, operands, indexTableId, indexTable, selection, filter);
+            call, table, operands, indexTableId, indexTable, selection, filter, hints);
     }
 
     @Override
@@ -172,4 +184,21 @@ public class LogicalDingoVector extends TableFunctionScan {
             getCluster().getTypeFactory().createSqlType(SqlTypeName.get("FLOAT"))));
         return builder.build();
     }
+
+    public TupleType tupleType() {
+        DingoTable dingoTable = table.unwrap(DingoTable.class);
+        assert dingoTable != null;
+        ArrayList<Column> cols = new ArrayList<>(dingoTable.getTable().columns.size() + 1);
+        cols.addAll(dingoTable.getTable().columns);
+        cols.add(Column
+            .builder()
+            .name(indexTable.getName().concat("$distance"))
+            .sqlTypeName("FLOAT")
+            .type(new FloatType(false))
+            .precision(-1)
+            .scale(-2147483648)
+            .build());
+        return DingoTypeFactory.tuple(cols.stream().map(Column::getType).toArray(DingoType[]::new));
+    }
+
 }

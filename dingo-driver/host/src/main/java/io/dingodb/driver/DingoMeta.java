@@ -852,9 +852,11 @@ public class DingoMeta extends MetaImpl {
                 } else if (connProps.getTransactionIsolation() == 8) {
                     txIsolation = "SERIALIZABLE";
                 }
-                String serverTxIsolation = connection.getClientInfo("transaction_isolation");
-                if (serverTxIsolation != null && !serverTxIsolation.equalsIgnoreCase(txIsolation)) {
-                    connection.setClientInfo("transaction_isolation", txIsolation);
+                if (txIsolation != null) {
+                    String serverTxIsolation = connection.getClientInfo("transaction_isolation");
+                    if (serverTxIsolation != null && !serverTxIsolation.equalsIgnoreCase(txIsolation)) {
+                        connection.setClientInfo("transaction_isolation", txIsolation);
+                    }
                 }
             }
             if (connProps.getSchema() != null) {
