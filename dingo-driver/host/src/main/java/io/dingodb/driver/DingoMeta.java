@@ -402,7 +402,14 @@ public class DingoMeta extends MetaImpl {
                         transaction.getType(),
                         true
                     );
-                    statement.setTxnId(jobManager, transaction.getTxnId());
+                    if (transaction.getType() == TransactionType.PESSIMISTIC) {
+                        jobManager.removeJob(statement.getJobId(jobManager));
+                        DingoConnection dingoConnection = (DingoConnection) connection;
+                        DingoDriverParser parser = new DingoDriverParser(dingoConnection);
+                        sh.signature = parser.parseQuery(jobManager, sh.toString(), statement.getSql());
+                    } else {
+                        statement.setTxnId(jobManager, transaction.getTxnId());
+                    }
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }

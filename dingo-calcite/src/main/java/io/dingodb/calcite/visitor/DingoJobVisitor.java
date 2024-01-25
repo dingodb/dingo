@@ -171,9 +171,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
         return DingoGetByIndexVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
+
     @Override
     public Collection<Vertex> visit(@NonNull DingoGetByKeys rel) {
-        return DingoGetByKeysFun.visit(job, idGenerator, currentLocation, this, rel);
+        return DingoGetByKeysFun.visit(job, idGenerator, currentLocation, this, transaction, rel);
     }
 
     @Override

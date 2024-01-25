@@ -96,7 +96,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         byte[] next = new byte[key.length];
         int n = key.length;
         while (--n > 0) {
-            if (next[n] != (byte) 0xFF) {
+            if (key[n] != (byte) 0xFF) {
                 next[n] = (byte) (key[n] + 1);
                 break;
             }

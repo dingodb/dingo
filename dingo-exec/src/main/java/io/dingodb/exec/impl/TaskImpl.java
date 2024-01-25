@@ -31,8 +31,8 @@ import io.dingodb.exec.OperatorFactory;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Status;
 import io.dingodb.exec.base.Task;
-import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.TaskStatus;
 import io.dingodb.exec.operator.SourceOperator;
@@ -41,7 +41,6 @@ import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
-import io.protostuff.Tag;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -59,7 +58,8 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.ROOT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SOURCE;
 
 @Slf4j
-@JsonPropertyOrder({"txnType", "isolationLevel", "txnId" , "jobId", "location", "operators", "runList", "parasType"})
+@JsonPropertyOrder({"txnType", "isolationLevel", "txnId" , "jobId",
+    "location", "operators", "runList", "parasType", "bachTask"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public final class TaskImpl implements Task {
     @JsonProperty("id")
@@ -100,6 +100,8 @@ public final class TaskImpl implements Task {
     @JsonProperty("isolationLevel")
     @Getter
     private final IsolationLevel isolationLevel;
+    @JsonProperty("bachTask")
+    private boolean bachTask;
     private CommonId rootOperatorId = null;
 
     private transient AtomicInteger status = new AtomicInteger(Status.BORN);
@@ -208,7 +210,9 @@ public final class TaskImpl implements Task {
         }
         activeThreads = new CountDownLatch(runList.size());
         setParas(paras);
-        setStartTs(txnId.seq);
+        if (bachTask) {
+            setStartTs(txnId.seq);
+        }
         for (CommonId operatorId : runList) {
             Vertex vertex = vertexes.get(operatorId);
             Operator operator = OperatorFactory.getInstance(vertex.getOp());
@@ -258,6 +262,11 @@ public final class TaskImpl implements Task {
     @Override
     public boolean cancel() {
         return status.compareAndSet(Status.RUNNING, Status.STOPPED);
+    }
+
+    @Override
+    public void setBathTask(boolean bathTask) {
+        this.bachTask = bathTask;
     }
 
     @Override

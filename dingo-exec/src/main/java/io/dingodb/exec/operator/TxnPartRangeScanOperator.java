@@ -32,14 +32,17 @@ import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
+@Slf4j
 public class TxnPartRangeScanOperator extends FilterProjectOperator {
     public static final TxnPartRangeScanOperator INSTANCE = new TxnPartRangeScanOperator();
 

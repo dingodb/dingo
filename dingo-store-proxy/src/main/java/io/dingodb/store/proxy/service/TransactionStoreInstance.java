@@ -284,8 +284,8 @@ public class TransactionStoreInstance {
         return new ScanIterator(ts, range, timeOut);
     }
 
-    List<io.dingodb.common.store.KeyValue> txnGet(long startTs, List<byte[]> keys, long timeOut) {
-        keys.forEach(this::setId);
+   public List<io.dingodb.common.store.KeyValue> txnGet(long startTs, List<byte[]> keys, long timeOut) {
+        keys.stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
         int n = 1 ;
         long start = System.currentTimeMillis();
         List<Long> resolvedLocks = new ArrayList<>();
