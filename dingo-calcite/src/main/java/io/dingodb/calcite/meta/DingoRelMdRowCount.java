@@ -16,6 +16,8 @@
 
 package io.dingodb.calcite.meta;
 
+import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.stats.StatsCache;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.metadata.BuiltInMetadata;
 import org.apache.calcite.rel.metadata.MetadataDef;
@@ -47,5 +49,9 @@ public class DingoRelMdRowCount implements MetadataHandler<BuiltInMetadata.RowCo
     @SuppressWarnings({"unused", "MethodMayBeStatic"})
     public Double getRowCount(@NonNull SingleRel rel, @NonNull RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
+    }
+
+    public Double getRowCount(@NonNull LogicalDingoTableScan rel, RelMetadataQuery mq) {
+        return StatsCache.getTableRowCount(rel);
     }
 }

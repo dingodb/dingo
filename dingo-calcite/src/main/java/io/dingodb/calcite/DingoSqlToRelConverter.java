@@ -17,7 +17,6 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.rel.DingoFunctionScan;
-import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.rel.LogicalDingoVector;
 import io.dingodb.calcite.traits.DingoConvention;
 import org.apache.calcite.plan.RelOptCluster;
@@ -134,7 +133,8 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
                 namespace.getIndex().getTableId(),
                 namespace.getIndex(),
                 null,
-                null
+                null,
+                new ArrayList<>()
             );
         }
 

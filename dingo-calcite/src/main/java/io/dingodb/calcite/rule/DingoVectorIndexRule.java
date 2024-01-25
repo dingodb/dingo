@@ -18,7 +18,6 @@ package io.dingodb.calcite.rule;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoTable;
-import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
@@ -73,16 +72,18 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
 
     @Override
     public void onMatch(RelOptRuleCall call) {
-        DingoFilter filter = call.rel(0);
-        DingoVector vector = call.rel(1);
-        if (filter.getHints().size() == 0) {
+        DingoVector vector = call.rel(0);
+        if (vector.getHints() == null) {
+            return;
+        }
+        if (vector.getHints().size() == 0) {
             return;
         } else {
-            if (!"vector_pre".equalsIgnoreCase(filter.getHints().get(0).hintName)) {
+            if (!"vector_pre".equalsIgnoreCase(vector.getHints().get(0).hintName)) {
                 return;
             }
         }
-        RelNode relNode = getDingoGetVectorByDistance(filter.getCondition(), vector);
+        RelNode relNode = getDingoGetVectorByDistance(vector.getFilter(), vector);
         // pre filter
         call.transformTo(relNode);
     }
@@ -91,6 +92,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         DingoTable dingoTable = vector.getTable().unwrap(DingoTable.class);
         assert dingoTable != null;
         TupleMapping selection = getDefaultSelection(dingoTable);
+
         if (condition != null) {
             dispatchDistanceCondition(condition, selection, dingoTable);
         }
@@ -147,7 +149,9 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
             vector.getOperands(),
             vectorIdPair.getKey(),
             vectorIdPair.getValue(),
-            vector.getIndexTableId()
+            vector.getIndexTableId(),
+            vector.getSelection(),
+            vector.getIndexTable()
             );
     }
 
@@ -251,7 +255,9 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
             vector.getOperands(),
             vectorIdPair.getKey(),
             vectorIdPair.getValue(),
-            vector.getIndexTableId()
+            vector.getIndexTableId(),
+            vector.getSelection(),
+            vector.getIndexTable()
         );
         RelTraitSet traits = vector.getCluster().traitSet()
             .replace(DingoConvention.INSTANCE)
@@ -265,9 +271,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         Config DEFAULT = ImmutableDingoVectorIndexRule.Config.builder()
             .description("DingoVectorIndexRule")
             .operandSupplier(b0 ->
-                b0.operand(DingoFilter.class).oneInput(b1 ->
-                    b1.operand(DingoVector.class).noInputs()
-                )
+                b0.operand(DingoVector.class).predicate(rel -> rel.getFilter() != null).noInputs()
             )
             .build();
 

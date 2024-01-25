@@ -20,6 +20,8 @@ import io.dingodb.driver.type.converter.TypedValueConverter;
 import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.avatica.AvaticaPreparedStatement;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.proto.Common;
@@ -34,6 +36,12 @@ import java.util.Iterator;
 import java.util.List;
 
 public class DingoPreparedStatement extends AvaticaPreparedStatement {
+
+    // for mysql protocol prepare multi addBatch
+    @Getter
+    @Setter
+    private Integer[] types;
+
     protected DingoPreparedStatement(
         DingoConnection connection,
         Meta.StatementHandle handle,
@@ -106,6 +114,12 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
         DingoStatementUtils.removeJobInSignature(jobManager, signature);
     }
 
+    /**
+     * long bytes need append to slots on prepare statement
+     * @param parameterIndex the first parameter is 1, the second is 2, ...
+     * @param x the parameter value
+     * @throws SQLException e
+     */
     @Override
     public void setBytes(int parameterIndex, byte[] x) throws SQLException {
         if (slots.length >= parameterIndex) {
@@ -123,6 +137,16 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
             }
         } else {
             super.setBytes(parameterIndex, x);
+        }
+    }
+
+    /**
+     * prepare statement add batch : first with type to cache,secondly without type;
+     * @param types data schema
+     */
+    public void setBoundTypes(Integer[] types) {
+        if (this.types == null && types != null) {
+            this.types = types;
         }
     }
 }

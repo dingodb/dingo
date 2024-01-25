@@ -80,8 +80,6 @@ public class DingoVectorProjectRule extends RelRule<DingoVectorProjectRule.Confi
         // Order naturally to help decoding in push down.
         selectedColumns.sort(Comparator.naturalOrder());
         Mapping mapping = Mappings.target(selectedColumns, vector.getRowType().getFieldCount());
-        // Push selection down over filter.
-        RexNode newFilter = (filter != null) ? RexUtil.apply(mapping, filter) : null;
 
         LogicalDingoVector newVector = new LogicalDingoVector(
             vector.getCluster(),
@@ -92,7 +90,8 @@ public class DingoVectorProjectRule extends RelRule<DingoVectorProjectRule.Confi
             vector.getIndexTableId(),
             vector.getIndexTable(),
             TupleMapping.of(selectedColumns),
-            newFilter
+            filter,
+            vector.hints
         );
         final List<RexNode> newProjectRexNodes = RexUtil.apply(mapping, project.getProjects());
         if (RexUtil.isIdentity(newProjectRexNodes, newVector.getSelectedType())) {
@@ -132,7 +131,7 @@ public class DingoVectorProjectRule extends RelRule<DingoVectorProjectRule.Confi
                             }
                             DingoTable dingoTable = rel.getTable().unwrap(DingoTable.class);
                             assert dingoTable != null;
-                            return rel.getRealSelection().size() == dingoTable.getTable().getColumns().size();
+                            return rel.getRealSelection().size() == dingoTable.getTable().getColumns().size() + 1;
                         } )
                         .noInputs()
                 )

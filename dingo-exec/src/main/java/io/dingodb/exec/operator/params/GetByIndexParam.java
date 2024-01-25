@@ -89,7 +89,7 @@ public class GetByIndexParam extends FilterProjectSourceParam {
     public void init(Vertex vertex) {
         super.init(vertex);
         part = new PartInKvStore(
-            StoreService.getDefault().getInstance(indexTableId, partId, index.getTableId()),
+            StoreService.getDefault().getInstance(indexTableId, partId),
             codec
         );
         lookupCodec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());

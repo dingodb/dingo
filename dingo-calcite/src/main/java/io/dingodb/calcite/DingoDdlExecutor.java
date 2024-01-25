@@ -593,10 +593,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         try {
             future.get(ttl, TimeUnit.SECONDS);
             schema.dropTable(tableName);
-            env.getTableIdMap().computeIfPresent(schema.id(), (k, v) -> {
-                v.remove(tableName);
-                return v;
-            });
             userService.dropTablePrivilege(schema.name(), tableName);
         } catch (TimeoutException e) {
             future.cancel(true);

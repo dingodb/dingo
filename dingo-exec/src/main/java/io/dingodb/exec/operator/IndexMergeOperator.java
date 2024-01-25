@@ -35,6 +35,7 @@ public class IndexMergeOperator extends SoleOutOperator {
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         IndexMergeParam params = vertex.getParam();
+        params.setContext(context);
         Object[] keyTuple = params.getKeyMapping().revMap(tuple);
         params.getHashMap().put(new TupleKey(keyTuple), params.getSelection().revMap(tuple));
         return true;

@@ -19,6 +19,7 @@ package org.apache.calcite.sql.validate;
 import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
+import io.dingodb.common.type.scalar.FloatType;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
@@ -84,6 +85,7 @@ public class TableFunctionNamespace extends AbstractNamespace {
             .builder()
             .name(index.getName().concat("$distance"))
             .sqlTypeName("FLOAT")
+            .type(new FloatType(false))
             .precision(-1)
             .scale(-2147483648)
             .build()

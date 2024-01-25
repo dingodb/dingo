@@ -65,7 +65,7 @@ public final class GetByIndexOperator extends FilterProjectSourceOperator {
         return objectList.iterator();
     }
 
-    private List<Iterator<Object[]>> scan(GetByIndexParam param) {
+    private static List<Iterator<Object[]>> scan(GetByIndexParam param) {
         List<Iterator<Object[]>> iteratorList = new ArrayList<>();
         for (Object[] tuple : param.getIndexValues()) {
             byte[] keys = param.getCodec().encodeKeyPrefix(tuple, calculatePrefixCount(tuple));
@@ -74,7 +74,7 @@ public final class GetByIndexOperator extends FilterProjectSourceOperator {
         return iteratorList;
     }
 
-    private Object[] lookUp(Object[] tuples, GetByIndexParam param) {
+    private static Object[] lookUp(Object[] tuples, GetByIndexParam param) {
         TupleMapping indices = param.getKeyMapping();
         Table tableDefinition = param.getTable();
         Object[] keyTuples = new Object[tableDefinition.getColumns().size()];
@@ -90,7 +90,7 @@ public final class GetByIndexOperator extends FilterProjectSourceOperator {
         return param.getLookupCodec().decode(storeInstance.get(keys));
     }
 
-    private Object[] transformTuple(Object[] tuple, GetByIndexParam param) {
+    private static Object[] transformTuple(Object[] tuple, GetByIndexParam param) {
         TupleMapping selection = param.getSelection();
         Table index = param.getIndex();
         Table table = param.getTable();

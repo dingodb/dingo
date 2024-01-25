@@ -45,7 +45,8 @@ public class DingoVectorFilterRule extends RelRule<DingoVectorFilterRule.Config>
                 vector.getIndexTableId(),
                 vector.getIndexTable(),
                 vector.getSelection(),
-                filter.getCondition()
+                filter.getCondition(),
+                filter.getHints()
             )
         );
     }

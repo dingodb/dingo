@@ -22,6 +22,8 @@ import io.dingodb.calcite.stats.task.AnalyzeTask;
 import io.dingodb.meta.MetaService;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 
 @Slf4j
@@ -38,13 +40,11 @@ public class AnalyzeTableOperation extends StatsOperator implements DdlOperation
     private long samples;
     private float sampleRate;
 
-    private Long totalCount;
+    private long timeout;
 
-    public AnalyzeTableOperation(SqlAnalyze sqlAnalyze) {
+    public AnalyzeTableOperation(SqlAnalyze sqlAnalyze, Connection connection) {
         this.schemaName = sqlAnalyze.getSchemaName();
         this.tableName = sqlAnalyze.getTableName();
-        MetaService metaService = MetaService.root().getSubMetaService(schemaName);
-        this.totalCount = metaService.getTableStatistic(tableName).getRowCount().longValue();
         this.columnList = sqlAnalyze.getColumns();
         this.cmSketchHeight = sqlAnalyze.getCmSketchHeight();
         this.cmSketchWidth = sqlAnalyze.getCmSketchWidth();
@@ -58,6 +58,11 @@ public class AnalyzeTableOperation extends StatsOperator implements DdlOperation
         }
         this.samples = sqlAnalyze.getSamples();
         this.sampleRate = sqlAnalyze.getSampleRate();
+        try {
+            this.timeout = Long.parseLong(connection.getClientInfo("statement_timeout"));
+        } catch (SQLException e) {
+            this.timeout = 50000;
+        }
     }
 
     @Override
@@ -71,7 +76,7 @@ public class AnalyzeTableOperation extends StatsOperator implements DdlOperation
             .cmSketchWidth(cmSketchWidth)
             .bucketCount(bucketCount)
             .sampleRate(sampleRate)
-            .totalCount(totalCount)
+            .timeout(timeout)
             .build();
         analyzeTask.run();
     }

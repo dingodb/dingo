@@ -20,14 +20,18 @@ import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.utils.RelDataTypeUtils;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.TupleType;
+import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelWriter;
-import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
@@ -48,9 +52,10 @@ public class DingoVector extends LogicalDingoVector implements DingoRel {
         @NonNull CommonId indexTableId,
         @NonNull Table indexTable,
         TupleMapping selection,
-        RexNode filter
+        RexNode filter,
+        List<RelHint> hints
     ) {
-        super(cluster, traitSet, call, table, operands, indexTableId, indexTable, selection, filter);
+        super(cluster, traitSet, call, table, operands, indexTableId, indexTable, selection, filter, hints);
     }
 
     @Override
@@ -81,4 +86,5 @@ public class DingoVector extends LogicalDingoVector implements DingoRel {
             selection
         );
     }
+
 }

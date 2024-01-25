@@ -81,7 +81,7 @@ public class TestSelectivity {
 
     @Test
     public void testCmSketch() {
-        CountMinSketch countMinSketch = new CountMinSketch("dingo", "demo", "id", 0, 3, 5, 1000000);
+        CountMinSketch countMinSketch = new CountMinSketch("dingo", "demo", "id", 0, 3, 5);
         String val = "zhangsan";
         String[] sample = new String[]{"zhangsan", "lisi", "wangwu", "zhaoliu", "laob"};
         String str;

@@ -189,9 +189,9 @@ public final class DingoRules {
         JOIN_SUB_QUERY_TO_CORRELATE,
         EXPORT_DATA_RULE,
         WITHOUT_PRI_DELETE_RULE,
-        WITHOUT_PRI_UPDATE_RULE
-        //DINGO_VECTOR_PROJECT_RULE,
-        //DINGO_VECTOR_FILTER_RULE
+        WITHOUT_PRI_UPDATE_RULE,
+        DINGO_VECTOR_PROJECT_RULE,
+        DINGO_VECTOR_FILTER_RULE
     );
 
     private DingoRules() {

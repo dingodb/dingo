@@ -26,6 +26,7 @@ import lombok.Setter;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class ExecuteStatementPacket extends MysqlPacket {
 
@@ -41,10 +42,13 @@ public class ExecuteStatementPacket extends MysqlPacket {
     public String nullBitMap;
     public byte newParamBoundFlag;
 
+    public Integer[] types;
+
     public Map<Integer, TypeValue> paramValMap = new LinkedHashMap<>();
 
-    public ExecuteStatementPacket(int paramCount) {
+    public ExecuteStatementPacket(int paramCount, Integer[] types) {
         this.paramCount = paramCount;
+        this.types = types;
     }
 
     @Override
@@ -77,16 +81,24 @@ public class ExecuteStatementPacket extends MysqlPacket {
         }
 
         newParamBoundFlag = message.read();
-        Integer[] types = new Integer[paramCount];
-        for (int i = 0; i < paramCount; i ++) {
-            types[i] = message.read() & 0xff;
-            // unsigned
-            message.read();
+        Integer[] types = null;
+        if (newParamBoundFlag == 0x01) {
+            types = new Integer[paramCount];
+            for (int i = 0; i < paramCount; i ++) {
+                types[i] = message.read() & 0xff;
+                // unsigned
+                message.read();
+            }
+            this.types = types;
+        } else if (this.types != null) {
+            types = this.types;
         }
+
         int bitmapLength = nullBitMap.length();
         int length;
         boolean isBlob;
-        for (int i = 1; i <= types.length; i ++) {
+        int typeSize = Objects.requireNonNull(types).length;
+        for (int i = 1; i <= typeSize; i ++) {
             int type = types[i - 1];
             isBlob = false;
             switch (type) {
@@ -148,7 +160,7 @@ public class ExecuteStatementPacket extends MysqlPacket {
 
     @Getter
     @Setter
-    public class TypeValue {
+    public static class TypeValue {
         int type;
         byte[] value;
 

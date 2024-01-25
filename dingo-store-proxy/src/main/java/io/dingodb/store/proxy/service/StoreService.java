@@ -73,6 +73,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -237,7 +238,11 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             this.regionId = regionId;
             this.partitionId = new CommonId(CommonId.CommonType.PARTITION, tableId.seq, regionId.domain);
             this.table = metaService.getTable(tableId);
-            this.tableMap = table.getIndexes().stream().collect(Collectors.toMap(Table::getTableId, identity()));
+            if (table.getIndexes() != null) {
+                this.tableMap = table.getIndexes().stream().collect(Collectors.toMap(Table::getTableId, identity()));
+            } else {
+                this.tableMap = new HashMap<>();
+            }
             this.tableCodec = (KeyValueCodec) CodecService.getDefault().createKeyValueCodec(
                 table.tupleType(), table.keyMapping()
             );

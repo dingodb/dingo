@@ -43,7 +43,6 @@ public class AnalyzeScanTask extends StatsOperator implements Runnable {
             AnalyzeTask analyzeTask = AnalyzeTask.builder()
                 .schemaName((String) v[0])
                 .tableName((String) v[1])
-                .totalCount((Long) v[3])
                 .build();
             if (log.isDebugEnabled()) {
                 log.debug("analyze table task add task queue, detail:" + analyzeTask.toString());

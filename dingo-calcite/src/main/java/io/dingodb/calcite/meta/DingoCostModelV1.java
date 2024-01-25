@@ -37,7 +37,6 @@ import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -78,8 +77,8 @@ public class DingoCostModelV1 extends DingoCostModel {
         // table_scan_cost = cardinality * log2(row_size) * scanFactor
 
         double rowSize = getScanAvgRowSize(dingoGetByIndex);
-        dingoGetByIndex.getTable().unwrap(DingoTable.class);
         DingoTable dingoTable = dingoGetByIndex.getTable().unwrap(DingoTable.class);
+        assert dingoTable != null;
         String schemaName = dingoTable.getNames().get(1);
 
         CommonId commonId = dingoGetByIndex.getIndexSetMap().keySet().stream().findFirst().get();
@@ -137,6 +136,9 @@ public class DingoCostModelV1 extends DingoCostModel {
 
     private RelOptCost getLogicDingoTableScan(LogicalDingoTableScan dingoTableScan, RelMetadataQuery mq) {
         double rowCount = dingoTableScan.getTable().getRowCount();
+        if (rowCount == 0) {
+            rowCount = StatsCache.getTableRowCount(dingoTableScan);
+        }
 
         if (dingoTableScan.getGroupSet() != null) {
             if (dingoTableScan.getGroupSet().cardinality() == 0) {
@@ -154,6 +156,7 @@ public class DingoCostModelV1 extends DingoCostModel {
 
     private double getScanAvgRowSize(LogicalDingoTableScan tableScan) {
         DingoTable dingoTable = tableScan.getTable().unwrap(DingoTable.class);
+        assert dingoTable != null;
         String schemaName = dingoTable.getNames().get(1);
         List<Column> selectionCdList = getSelectionCdList(tableScan, dingoTable);
         return getAvgRowSize(selectionCdList, dingoTable.getTable(), schemaName);

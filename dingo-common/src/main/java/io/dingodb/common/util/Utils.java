@@ -231,5 +231,17 @@ public final class Utils {
         return builder.toString();
     }
 
+    public static boolean isNeedLookUp(TupleMapping selection, TupleMapping keyMapping) {
+        if (selection == null) {
+            return true;
+        }
+        for (int index : selection.getMappings()) {
+            if (!keyMapping.contains(index)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static final int INTEGER_LEN_IN_BYTES = 4;
 }

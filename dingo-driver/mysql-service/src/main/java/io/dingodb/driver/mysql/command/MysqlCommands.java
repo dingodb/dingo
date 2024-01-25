@@ -297,7 +297,8 @@ public class MysqlCommands {
                             break;
                         case MysqlType.FIELD_TYPE_DECIMAL:
                         case MysqlType.FIELD_TYPE_NEWDECIMAL:
-                            BigDecimal bigDecimal = new BigDecimal(new String(v.getValue()));
+                            String strVal = new String(v.getValue());
+                            BigDecimal bigDecimal = new BigDecimal(strVal);
                             preparedStatement.setBigDecimal(k, bigDecimal);
                             break;
                         default:
@@ -334,6 +335,7 @@ public class MysqlCommands {
         } catch (SQLException e) {
             MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
         } catch (Exception e) {
+            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_UNKNOWN_ERROR, "");
             log.error(e.getMessage(), e);
         }
     }

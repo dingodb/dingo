@@ -40,7 +40,7 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
 
     @Getter
     @Setter
-    private long totalCount;
+    private long totalCount = 0;
     @Getter
     @Setter
     private long nullCount;
@@ -49,8 +49,6 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
     @Setter
     private int index;
 
-    private static final float DEFAULT_DELTA = 0.01f;
-    private static final float DEFAULT_EPSILON = 0.01f;
     private final int width;
     private final int depth;
     private final int[][] multiset;
@@ -60,21 +58,13 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
                           String columnName,
                           int index,
                           int width,
-                          int depth,
-                          long totalCount) {
+                          int depth) {
         this.schemaName = schemaName;
         this.tableName = tableName;
         this.columnName = columnName;
-        this.totalCount = totalCount;
         this.width = width;
         this.depth = depth;
         this.index = index;
-        this.multiset = new int[depth][width];
-    }
-
-    public CountMinSketch(float delta, float epsilon) {
-        this.width = (int) Math.ceil(Math.exp(1.0) / epsilon);
-        this.depth = (int) Math.ceil(Math.log(1.0 / delta));
         this.multiset = new int[depth][width];
     }
 
@@ -116,6 +106,7 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
     }
 
     public void setString(String val) {
+        totalCount ++;
         if (val == null) {
             nullCount ++;
             return;
@@ -124,10 +115,12 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
     }
 
     public void setByte(byte val) {
+        totalCount ++;
         set(new byte[]{val});
     }
 
     public void setInt(Integer val) {
+        totalCount ++;
         if (val == null) {
             nullCount++;
             return;
@@ -137,6 +130,7 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
 
 
     public void setLong(Long val) {
+        totalCount ++;
         if (val == null) {
             nullCount++;
             return;
@@ -145,6 +139,7 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
     }
 
     public void setFloat(Float val) {
+        totalCount ++;
         if (val == null) {
             nullCount++;
             return;
@@ -153,6 +148,7 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
     }
 
     public void setDouble(Double val) {
+        totalCount ++;
         if (val == null) {
             nullCount++;
             return;
@@ -299,6 +295,6 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
     }
 
     public CountMinSketch copy() {
-        return new CountMinSketch(schemaName, tableName, columnName, index, width, depth, totalCount);
+        return new CountMinSketch(schemaName, tableName, columnName, index, width, depth);
     }
 }
