@@ -35,10 +35,15 @@ import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.EmptySourceParam;
 import io.dingodb.exec.operator.params.GetByKeysParam;
+import io.dingodb.exec.operator.params.TxnGetByKeysParam;
+import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.exec.operator.params.GetDistributionParam;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
+import io.dingodb.tso.TsoService;
+import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.LinkedList;
@@ -48,6 +53,7 @@ import java.util.NavigableMap;
 import static io.dingodb.exec.utils.OperatorCodeUtils.EMPTY_SOURCE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_KEYS;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_DISTRIBUTION;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_GET_BY_KEYS;
 
 public final class DingoGetByKeysFun {
     private DingoGetByKeysFun() {
@@ -55,7 +61,8 @@ public final class DingoGetByKeysFun {
 
     @NonNull
     public static List<Vertex> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, @NonNull DingoGetByKeys rel
+        Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor,
+        ITransaction transaction, @NonNull DingoGetByKeys rel
     ) {
         final TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
@@ -83,12 +90,36 @@ public final class DingoGetByKeysFun {
         Task task = job.getOrCreate(currentLocation, idGenerator);
         distributionVertex.setId(idGenerator.getOperatorId(task.getId()));
         task.putVertex(distributionVertex);
+        Vertex getVertex;
+        long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
+        // Use current read
+        if (transaction != null && transaction.isPessimistic()
+            && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.ReadCommitted
+            && (visitor.getKind() == SqlKind.INSERT || visitor.getKind() == SqlKind.DELETE
+            || visitor.getKind() == SqlKind.UPDATE)) {
+            scanTs = TsoService.getDefault().tso();
+        }
+        if (transaction != null) {
+            TxnGetByKeysParam param = new TxnGetByKeysParam(
+                tableInfo.getId(),
+                td.tupleType(),
+                td.keyMapping(),
+                SqlExprUtils.toSqlExpr(rel.getFilter()),
+                rel.getSelection(),
+                td,
+                scanTs,
+                transaction.getIsolationLevel(),
+                transaction.getLockTimeOut()
+            );
+            getVertex = new Vertex(TXN_GET_BY_KEYS, param);
+        } else {
+            GetByKeysParam param = new GetByKeysParam(tableInfo.getId(), td.tupleType(),
+                td.keyMapping(), SqlExprUtils.toSqlExpr(rel.getFilter()), rel.getSelection(), td
+            );
+            getVertex = new Vertex(GET_BY_KEYS, param);
+        }
 
-        GetByKeysParam param = new GetByKeysParam(tableInfo.getId(), td.tupleType(),
-            td.keyMapping(), SqlExprUtils.toSqlExpr(rel.getFilter()), rel.getSelection(), td
-        );
         task = job.getOrCreate(currentLocation, idGenerator);
-        Vertex getVertex = new Vertex(GET_BY_KEYS, param);
         OutputHint hint = new OutputHint();
         getVertex.setHint(hint);
         getVertex.setId(idGenerator.getOperatorId(task.getId()));

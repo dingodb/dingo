@@ -22,6 +22,7 @@ import io.dingodb.common.util.RangeUtils;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.DistributionSourceParam;
 import io.dingodb.partition.PartitionService;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 
+@Slf4j
 public class CalcDistributionOperator extends IteratorSourceOperator {
     public static final CalcDistributionOperator INSTANCE = new CalcDistributionOperator();
 

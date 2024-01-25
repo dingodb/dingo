@@ -59,6 +59,7 @@ import io.dingodb.exec.operator.ScanWithPipeOpOperator;
 import io.dingodb.exec.operator.SendOperator;
 import io.dingodb.exec.operator.SortOperator;
 import io.dingodb.exec.operator.SumUpOperator;
+import io.dingodb.exec.operator.TxnGetByKeysOperator;
 import io.dingodb.exec.operator.TxnLikeScanOperator;
 import io.dingodb.exec.operator.TxnPartDeleteOperator;
 import io.dingodb.exec.operator.TxnPartInsertOperator;
@@ -125,6 +126,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.SEND;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SORT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SUM_UP;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_CLEAN_CACHE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_GET_BY_KEYS;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_LIKE_SCAN;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_INSERT;
@@ -196,6 +198,7 @@ public final class OperatorFactory {
         OPERATORS.put(GET_DISTRIBUTION, GetDistributionOperator.INSTANCE);
         OPERATORS.put(TXN_CLEAN_CACHE, CleanCacheOperator.INSTANCE);
         OPERATORS.put(COPY, CopyOperator.INSTANCE);
+        OPERATORS.put(TXN_GET_BY_KEYS, TxnGetByKeysOperator.INSTANCE);
     }
 
     private OperatorFactory() {

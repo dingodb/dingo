@@ -87,4 +87,5 @@ public interface Task {
     }
     void setTxnId(CommonId txnId);
 
+    void setBathTask(boolean bathTask);
 }

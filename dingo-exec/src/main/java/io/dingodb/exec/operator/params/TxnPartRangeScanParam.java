@@ -142,6 +142,6 @@ public class TxnPartRangeScanParam extends FilterProjectParam {
 
     @Override
     public void setStartTs(long startTs) {
-       this.scanTs = startTs;
+        this.scanTs = startTs;
     }
 }

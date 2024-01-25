@@ -122,5 +122,6 @@ public final class JobImpl implements Job {
         long jobSeqId = TsoService.getDefault().tso();
         this.jobId = new CommonId(CommonId.CommonType.JOB, txnId.seq, jobSeqId);
         getTasks().values().forEach( v -> v.setTxnId(txnId));
+        getTasks().values().forEach( v -> v.setBathTask(true));
     }
 }
