@@ -81,7 +81,7 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     @SneakyThrows
     public List<KeyValue> get(List<byte[]> keys) {
         List<byte[]> values = StoreService.db.multiGetAsList(keys);
-        return IntStream.of(0, keys.size() - 1)
+        return IntStream.range(0, keys.size())
             .mapToObj(i -> new KeyValue(keys.get(i), values.get(i)))
             .filter(kv -> kv.getValue() != null)
             .collect(Collectors.toList());

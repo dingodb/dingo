@@ -109,6 +109,15 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
         throw ExceptionUtils.wrongSignatureType(this, signature);
     }
 
+    public Job getJob(@NonNull JobManager jobManager) {
+        Meta.Signature signature = getSignature();
+        if (signature instanceof DingoSignature) {
+            CommonId jobId = ((DingoSignature) signature).getJobId();
+            Job job = jobManager.getJob(jobId);
+            return job;
+        }
+        return null;
+    }
     public void setTxnId(@NonNull JobManager jobManager, @NonNull CommonId txnId) {
         Meta.Signature signature = getSignature();
         if (signature instanceof DingoSignature) {

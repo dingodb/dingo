@@ -30,6 +30,7 @@ import io.dingodb.exec.transaction.params.PessimisticRollBackScanParam;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
 import io.dingodb.exec.transaction.visitor.data.PessimisticRollBackScanLeaf;
 import io.dingodb.net.Channel;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -53,14 +54,24 @@ public class DingoPessimisticRollBackScanVisitFun {
                 transaction.getForUpdateTs()
             );
             Vertex vertex = new Vertex(SCAN_CACHE, param);
-            Task task = job.getOrCreate(remoteLocation, idGenerator);
+            Task task = job.getOrCreate(
+                remoteLocation,
+                idGenerator,
+                transaction.getType(),
+                IsolationLevel.of(transaction.getIsolationLevel())
+            );
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);
             outputs.add(vertex);
         }
         PessimisticRollBackScanParam param = new PessimisticRollBackScanParam(dingoType, transaction.getForUpdateTs());
         Vertex vertex = new Vertex(SCAN_CACHE, param);
-        Task task = job.getOrCreate(currentLocation, idGenerator);
+        Task task = job.getOrCreate(
+            currentLocation,
+            idGenerator,
+            transaction.getType(),
+            IsolationLevel.of(transaction.getIsolationLevel())
+        );
         vertex.setId(idGenerator.getOperatorId(task.getId()));
         task.putVertex(vertex);
         outputs.add(vertex);

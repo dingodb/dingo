@@ -53,7 +53,7 @@ public interface Job {
     }
 
     default Task getOrCreate(Location location, IdGenerator idGenerator) {
-        return getOrCreate(location, idGenerator, TransactionType.OPTIMISTIC, IsolationLevel.SnapshotIsolation);
+        return getOrCreate(location, idGenerator, TransactionType.NONE, IsolationLevel.SnapshotIsolation);
     }
 
     default Task getOrCreate(Location location, IdGenerator idGenerator, TransactionType transactionType, IsolationLevel isolationLevel) {

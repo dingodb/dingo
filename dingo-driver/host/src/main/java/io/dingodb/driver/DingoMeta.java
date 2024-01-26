@@ -28,7 +28,9 @@ import io.dingodb.common.table.IndexScan;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.driver.type.converter.AvaticaResultSetConverter;
+import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
+import io.dingodb.exec.base.Task;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.meta.entity.Column;
@@ -61,6 +63,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -364,6 +368,25 @@ public class DingoMeta extends MetaImpl {
         final List<Long> updateCounts = new ArrayList<>();
         ITransaction transaction = ((DingoConnection) connection).getTransaction();
         DingoPreparedStatement statement = (DingoPreparedStatement) ((DingoConnection) connection).getStatement(sh);
+        if (transaction == null) {
+            Job job = statement.getJob(jobManager);
+            if (job != null) {
+                Task task = job.getTasks().entrySet().stream().findFirst().get().getValue();
+                if (task.getTransactionType() == TransactionType.OPTIMISTIC
+                    || task.getTransactionType() == TransactionType.NONE) {
+                    transaction = ((DingoConnection) connection).createTransaction(
+                        task.getTransactionType(),
+                        true
+                    );
+                    statement.setTxnId(jobManager, transaction.getTxnId());
+                } else {
+                    jobManager.removeJob(statement.getJobId(jobManager));
+                    DingoConnection dingoConnection = (DingoConnection) connection;
+                    DingoDriverParser parser = new DingoDriverParser(dingoConnection);
+                    sh.signature = parser.parseQuery(jobManager, sh.toString(), statement.getSql());
+                }
+            }
+        }
         try {
             for (List<TypedValue> parameterValue : parameterValues) {
                 ExecuteResult executeResult = execute(sh, parameterValue, -1);
@@ -398,18 +421,6 @@ public class DingoMeta extends MetaImpl {
             if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
                 try {
                     connection.commit();
-                    transaction = ((DingoConnection) connection).createTransaction(
-                        transaction.getType(),
-                        true
-                    );
-                    if (transaction.getType() == TransactionType.PESSIMISTIC) {
-                        jobManager.removeJob(statement.getJobId(jobManager));
-                        DingoConnection dingoConnection = (DingoConnection) connection;
-                        DingoDriverParser parser = new DingoDriverParser(dingoConnection);
-                        sh.signature = parser.parseQuery(jobManager, sh.toString(), statement.getSql());
-                    } else {
-                        statement.setTxnId(jobManager, transaction.getTxnId());
-                    }
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
