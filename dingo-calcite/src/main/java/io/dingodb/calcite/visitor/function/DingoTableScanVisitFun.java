@@ -149,7 +149,6 @@ public final class DingoTableScanVisitFun {
                 );
                 scanVertex = new Vertex(PART_RANGE_SCAN, param);
             }
-            task = job.getOrCreate(currentLocation, idGenerator);
             scanVertex.setHint(new OutputHint());
             scanVertex.setId(idGenerator.getOperatorId(task.getId()));
             Edge edge = new Edge(calcVertex, scanVertex);

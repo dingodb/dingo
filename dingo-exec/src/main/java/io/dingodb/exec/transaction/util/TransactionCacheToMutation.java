@@ -45,6 +45,9 @@ public class TransactionCacheToMutation {
         VectorWithId vectorWithId = null;
         if (tableId.type == CommonId.CommonType.INDEX) {
             IndexTable index = TransactionUtil.getIndexDefinitions(tableId);
+            if (!index.indexType.isVector) {
+                return new Mutation(Op.forNumber(op), key, value, forUpdateTs, null);
+            }
             KeyValueCodec keyValueCodec = CodecService.getDefault().createKeyValueCodec(
                 index.tableId, index.tupleType(), index.keyMapping()
             );

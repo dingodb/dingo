@@ -51,7 +51,7 @@ public abstract class ScanWithRelOpOperator extends SoleOutOperator {
         StoreInstance storeInstance = Services.KV_STORE.getInstance(param.getTableId(), rd.getId());
         return Iterators.transform(
             storeInstance.scan(
-                vertex.getStartTs(),
+                vertex.getTask().getJobId().seq,
                 new StoreInstance.Range(startKey, endKey, includeStart, includeEnd),
                 param.getCoprocessor()
             ),

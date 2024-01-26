@@ -51,11 +51,11 @@ public final class PartRangeScanOperator extends FilterProjectOperator {
         StoreInstance storeInstance = Services.KV_STORE.getInstance(param.getTableId(), distribution.getId());
         if (coprocessor == null) {
             iterator = Iterators.transform(
-                storeInstance.scan(new StoreInstance.Range(startKey, endKey, includeStart, includeEnd)),
+                storeInstance.scan(vertex.getTask().getJobId().seq, new StoreInstance.Range(startKey, endKey, includeStart, includeEnd)),
                 wrap(param.getCodec()::decode)::apply);
         } else {
             iterator = Iterators.transform(
-                storeInstance.scan(new StoreInstance.Range(startKey, endKey, includeStart, includeEnd), coprocessor),
+                storeInstance.scan(vertex.getTask().getJobId().seq, new StoreInstance.Range(startKey, endKey, includeStart, includeEnd), coprocessor),
                 wrap(param.getCodec()::decode)::apply);
         }
         return iterator;

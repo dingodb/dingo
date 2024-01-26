@@ -29,7 +29,7 @@ import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
 @Getter
-@JsonTypeName("get")
+@JsonTypeName("txnGet")
 @JsonPropertyOrder({"scanTs", "isolationLevel", "timeOut", "table", "part", "schema", "keyMapping", "keys", "filter", "selection"})
 public class TxnGetByKeysParam extends FilterProjectParam {
 
