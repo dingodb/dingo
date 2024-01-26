@@ -86,6 +86,8 @@ public final class OperatorCodeUtils {
     public static final CommonId SCAN_WITH_PIPE_OP = new CommonId(CommonId.CommonType.OP, OP, 63);
     public static final CommonId SCAN_WITH_CACHE_OP = new CommonId(CommonId.CommonType.OP, OP, 64);
     public static final CommonId TXN_GET_BY_KEYS = new CommonId(CommonId.CommonType.OP, OP, 65);
+    public static final CommonId TXN_PART_VECTOR = new CommonId(CommonId.CommonType.OP, SOURCE, 65);
+
     // sink
     public static final CommonId ROOT = new CommonId(CommonId.CommonType.OP, SINK, 80);
     public static final CommonId SEND = new CommonId(CommonId.CommonType.OP, SINK, 81);

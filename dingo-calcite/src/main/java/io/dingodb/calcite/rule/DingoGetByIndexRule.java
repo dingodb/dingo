@@ -165,9 +165,9 @@ public class DingoGetByIndexRule extends ConverterRule {
             );
         }
         //The update index column will not use indexes for now, and will be changed in the next version
-        if (scan.isForDml()) {
-            return null;
-        }
+        //if (scan.isForDml()) {
+        //    return null;
+        //}
 
         // get all index definition
         // find match first index to use; todo replace

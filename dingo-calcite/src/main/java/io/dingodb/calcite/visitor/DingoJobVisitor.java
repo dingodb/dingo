@@ -220,7 +220,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
 
     @Override
     public Collection<Vertex> visit(@NonNull DingoVector rel) {
-        return DingoVectorVisitFun.visit(job, idGenerator, currentLocation, this, rel);
+        return DingoVectorVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel);
     }
 
 

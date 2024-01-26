@@ -45,7 +45,7 @@ public final class PartVectorOperator extends FilterProjectSourceOperator {
     @Override
     protected @NonNull Iterator<Object[]> createSourceIterator(Vertex vertex) {
         PartVectorParam param = vertex.getParam();
-        StoreInstance instance = StoreService.getDefault().getInstance(param.getTableId(), param.getIndexRegionId());
+        StoreInstance instance = StoreService.getDefault().getInstance(param.getTableId(), param.getPartId());
         List<Object[]> results = new ArrayList<>();
 
         // Get all table data response

@@ -160,11 +160,11 @@ public interface StoreInstance {
     default List<VectorSearchResponse> vectorSearch(
         CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap
     ) {
-        return vectorSearch(System.identityHashCode(floatArray), indexId, floatArray, topN, parameterMap);
+        return vectorSearch(System.identityHashCode(floatArray), indexId, floatArray, topN, parameterMap, null);
     }
 
     default List<VectorSearchResponse> vectorSearch(
-        long requestTs, CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap
+        long requestTs, CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap, CoprocessorV2 coprocessorV2
     ) {
         throw new UnsupportedOperationException();
     }

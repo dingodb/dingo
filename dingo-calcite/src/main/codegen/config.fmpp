@@ -244,6 +244,7 @@ data: {
         "SqlUnLock"
         "SqlKill"
         "SqlLoadData"
+        "SqlCall"
     ]
 
     sqlTypeNameMethods: [
@@ -272,6 +273,7 @@ data: {
       "SqlType.ftl"
       "Kill.ftl"
       "LoadData.ftl"
+      "Call.ftl"
     ]
 
     includePosixOperators: false

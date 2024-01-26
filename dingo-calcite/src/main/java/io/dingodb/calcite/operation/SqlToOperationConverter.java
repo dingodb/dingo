@@ -19,6 +19,7 @@ package io.dingodb.calcite.operation;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
 import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
+import io.dingodb.calcite.grammar.ddl.SqlCall;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.grammar.ddl.SqlKillConnection;
 import io.dingodb.calcite.grammar.ddl.SqlKillQuery;
@@ -206,6 +207,17 @@ public final class SqlToOperationConverter {
             return Optional.of(new ShowCharsetOperation(sqlShowCharset.sqlLikePattern));
         } else if (sqlNode instanceof SqlShowLocks) {
             return Optional.of(new ShowLocksOperation());
+        } else if (sqlNode instanceof SqlCall) {
+            SqlCall sqlCall = (SqlCall) sqlNode;
+            if (sqlCall.getCall().names.size() == 2) {
+                String operation = sqlCall.getCall().names.get(1);
+                if (operation.equalsIgnoreCase("getClientInfo")) {
+                    return Optional.of(new SqlCallGetClientInfoOperation(connection, sqlCall));
+                } else if (operation.equalsIgnoreCase("setClientInfo")) {
+                    return Optional.of(new SqlCallClientInfoOperation(connection, (SqlCall) sqlNode));
+                }
+            }
+            return Optional.empty();
         } else if (sqlNode instanceof SqlLoadData) {
             SqlLoadData sqlLoadData = (SqlLoadData) sqlNode;
             if (StringUtils.isBlank(sqlLoadData.getSchemaName())) {

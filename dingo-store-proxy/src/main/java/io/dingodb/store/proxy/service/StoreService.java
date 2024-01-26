@@ -47,6 +47,8 @@ import io.dingodb.sdk.service.entity.common.Location;
 import io.dingodb.sdk.service.entity.common.RangeWithOptions;
 import io.dingodb.sdk.service.entity.common.ValueType;
 import io.dingodb.sdk.service.entity.common.Vector;
+import io.dingodb.sdk.service.entity.common.VectorFilter;
+import io.dingodb.sdk.service.entity.common.VectorFilterType;
 import io.dingodb.sdk.service.entity.common.VectorSearchParameter;
 import io.dingodb.sdk.service.entity.common.VectorSearchParameter.SearchNest;
 import io.dingodb.sdk.service.entity.common.VectorTableData;
@@ -565,7 +567,12 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
         @Override
         public List<VectorSearchResponse> vectorSearch(
-            long requestTs, CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap
+            long requestTs,
+            CommonId indexId,
+            Float[] floatArray,
+            int topN,
+            Map<String, Object> parameterMap,
+            CoprocessorV2 coprocessor
         ) {
 
             List<VectorWithId> vectors = new ArrayList<>();
@@ -585,6 +592,11 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 .topN(topN)
                 .search(search)
                 .build();
+            if (coprocessor != null) {
+                parameter.setVectorCoprocessor(MAPPER.coprocessorTo(coprocessor));
+                parameter.setVectorFilter(VectorFilter.TABLE_FILTER);
+                parameter.setVectorFilterType(VectorFilterType.QUERY_PRE);
+            }
             List<VectorWithDistanceResult> results = indexService(indexId, regionId).vectorSearch(
                 requestTs,
                 VectorSearchRequest.builder()

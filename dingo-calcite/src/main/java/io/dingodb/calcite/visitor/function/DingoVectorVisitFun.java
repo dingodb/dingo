@@ -21,6 +21,7 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
+import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
@@ -36,13 +37,19 @@ import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.fun.vector.VectorImageFun;
 import io.dingodb.exec.fun.vector.VectorTextFun;
 import io.dingodb.exec.operator.params.PartVectorParam;
+import io.dingodb.exec.operator.params.TxnPartVectorParam;
 import io.dingodb.exec.restful.VectorExtract;
+import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.expr.rel.RelOp;
+import io.dingodb.expr.rel.op.RelOpBuilder;
+import io.dingodb.expr.runtime.expr.Expr;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
+import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
@@ -51,6 +58,7 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNumericLiteral;
@@ -70,6 +78,7 @@ import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.Utils.isNeedLookUp;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_VECTOR;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_VECTOR;
 
 @Slf4j
 public final class DingoVectorVisitFun {
@@ -78,7 +87,8 @@ public final class DingoVectorVisitFun {
     }
 
     public static Collection<Vertex> visit(
-        Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor, DingoVector rel
+        Job job, IdGenerator idGenerator, Location currentLocation,
+        ITransaction transaction, DingoJobVisitor visitor, DingoVector rel
     ) {
         DingoRelOptTable relTable = rel.getTable();
         DingoTable dingoTable = relTable.unwrap(DingoTable.class);
@@ -138,6 +148,14 @@ public final class DingoVectorVisitFun {
         if (rexFilter != null) {
             filter = SqlExprUtils.toSqlExpr(rexFilter);
         }
+        long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
+        // Use current read
+        if (transaction != null && transaction.isPessimistic()
+            && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.ReadCommitted
+            && (visitor.getKind() == SqlKind.INSERT || visitor.getKind() == SqlKind.DELETE
+            || visitor.getKind() == SqlKind.UPDATE)) {
+            scanTs = TsoService.getDefault().tso();
+        }
         //todo replace end
 
         // Get query additional parameters
@@ -145,23 +163,48 @@ public final class DingoVectorVisitFun {
 
         // Create tasks based on partitions
         for (RangeDistribution rangeDistribution : indexRanges.values()) {
-            PartVectorParam param = new PartVectorParam(
-                tableId,
-                rangeDistribution.id(),
-                rel.tupleType(),
-                td.keyMapping(),
-                Optional.mapOrNull(filter, SqlExpr::copy),
-                rel.getSelection(),
-                td,
-                ranges,
-                rel.getIndexTableId(),
-                rangeDistribution.id(),
-                floatArray,
-                topN,
-                parameterMap
-            );
+            Vertex vertex;
+            if (transaction == null) {
+                PartVectorParam param = new PartVectorParam(
+                    tableId,
+                    rangeDistribution.id(),
+                    rel.tupleType(),
+                    td.keyMapping(),
+                    Optional.mapOrNull(filter, SqlExpr::copy),
+                    rel.getSelection(),
+                    td,
+                    ranges,
+                    rel.getIndexTableId(),
+                    floatArray,
+                    topN,
+                    parameterMap
+                );
+                vertex = new Vertex(PART_VECTOR, param);
+            } else {
+                Expr expr = RexConverter.convert(rel.getFilter());
+                RelOp relOp = RelOpBuilder.builder()
+                    .filter(expr)
+                    .build();
+                TxnPartVectorParam param = new TxnPartVectorParam(
+                    rangeDistribution.id(),
+                    Optional.mapOrNull(filter, SqlExpr::copy),
+                    selection,
+                    td,
+                    ranges,
+                    floatArray,
+                    topN,
+                    parameterMap,
+                    indexTable,
+                    relOp,
+                    pushDown,
+                    isLookUp,
+                    scanTs,
+                    transaction.getIsolationLevel(),
+                    transaction.getLockTimeOut()
+                );
+                vertex = new Vertex(TXN_PART_VECTOR, param);
+            }
             Task task = job.getOrCreate(currentLocation, idGenerator);
-            Vertex vertex = new Vertex(PART_VECTOR, param);
             OutputHint hint = new OutputHint();
             hint.setPartId(rangeDistribution.id());
             vertex.setHint(hint);
@@ -270,6 +313,9 @@ public final class DingoVectorVisitFun {
     }
 
     private static boolean pushDown(RexNode filter, Table table, IndexTable indexTable) {
+        if (filter == null) {
+            return false;
+        }
         List<Integer> inputRefList = new ArrayList<>();
         RexVisitorImpl<Void> visitor = new RexVisitorImpl<Void>(true) {
             @Override
