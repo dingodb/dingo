@@ -24,6 +24,7 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.common.utils.Optional;
+import io.dingodb.sdk.service.IndexService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.StoreService;
 import io.dingodb.sdk.service.entity.common.KeyValue;
@@ -39,6 +40,7 @@ import io.dingodb.sdk.service.entity.store.TxnCommitResponse;
 import io.dingodb.sdk.service.entity.store.TxnHeartBeatRequest;
 import io.dingodb.sdk.service.entity.store.TxnPessimisticLockResponse;
 import io.dingodb.sdk.service.entity.store.TxnPessimisticRollbackResponse;
+import io.dingodb.sdk.service.entity.store.TxnPrewriteRequest;
 import io.dingodb.sdk.service.entity.store.TxnPrewriteResponse;
 import io.dingodb.sdk.service.entity.store.TxnResolveLockResponse;
 import io.dingodb.sdk.service.entity.store.TxnResultInfo;
@@ -82,11 +84,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class TransactionStoreInstance {
 
     private final StoreService storeService;
+    private final IndexService indexService;
     private final CommonId partitionId;
 
-    public TransactionStoreInstance(StoreService storeService, CommonId partitionId) {
+    public TransactionStoreInstance(StoreService storeService, IndexService indexService, CommonId partitionId) {
         this.storeService = storeService;
         this.partitionId = partitionId;
+        this.indexService = indexService;
     }
 
     private byte[] setId(byte[] key) {
@@ -94,21 +98,29 @@ public class TransactionStoreInstance {
     }
 
     public void heartbeat(TxnPreWrite txnPreWrite) {
-        storeService.txnHeartBeat(TxnHeartBeatRequest.builder()
+        TxnHeartBeatRequest request = TxnHeartBeatRequest.builder()
             .primaryLock(txnPreWrite.getPrimaryLock())
             .startTs(txnPreWrite.getStartTs())
             .adviseLockTtl(TsoService.INSTANCE.timestamp() + SECONDS.toMillis(5))
-            .build()
-        );
+            .build();
+        if (indexService != null) {
+            indexService.txnHeartBeat(request);
+        } else {
+            storeService.txnHeartBeat(request);
+        }
     }
 
     public void heartbeat(TxnPessimisticLock txnPessimisticLock) {
-        storeService.txnHeartBeat(TxnHeartBeatRequest.builder()
+        TxnHeartBeatRequest request = TxnHeartBeatRequest.builder()
             .primaryLock(txnPessimisticLock.getPrimaryLock())
             .startTs(txnPessimisticLock.getStartTs())
             .adviseLockTtl(TsoService.INSTANCE.timestamp() + SECONDS.toMillis(5))
-            .build()
-        );
+            .build();
+        if (indexService != null) {
+            indexService.txnHeartBeat(request);
+        } else {
+            storeService.txnHeartBeat(request);
+        }
     }
 
     public boolean txnPreWrite(TxnPreWrite txnPreWrite, long timeOut) {
@@ -118,7 +130,13 @@ public class TransactionStoreInstance {
         IsolationLevel isolationLevel = txnPreWrite.getIsolationLevel();
         List<Long> resolvedLocks = new ArrayList<>();
         while (true) {
-            TxnPrewriteResponse response = storeService.txnPrewrite(MAPPER.preWriteTo(txnPreWrite));
+            TxnPrewriteRequest request = MAPPER.preWriteTo(txnPreWrite);
+            TxnPrewriteResponse response;
+            if (request.getMutations().get(0).getVector() == null) {
+                response = storeService.txnPrewrite(request);
+            } else {
+                response = indexService.txnPrewrite(request);
+            }
             if (response.getKeysAlreadyExist() != null && response.getKeysAlreadyExist().size() > 0) {
                 getJoinedPrimaryKey(txnPreWrite, response.getKeysAlreadyExist());
             }
@@ -208,7 +226,12 @@ public class TransactionStoreInstance {
 
     public boolean txnCommit(TxnCommit txnCommit) {
         txnCommit.getKeys().stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
-        TxnCommitResponse response = storeService.txnCommit(MAPPER.commitTo(txnCommit));
+        TxnCommitResponse response;
+        if (indexService != null) {
+            response = indexService.txnCommit(MAPPER.commitTo(txnCommit));
+        } else {
+            response = storeService.txnCommit(MAPPER.commitTo(txnCommit));
+        }
         if (response.getTxnResult() != null && response.getTxnResult().getCommitTsExpired() != null) {
             throw new CommitTsExpiredException(response.getTxnResult().getCommitTsExpired().toString());
         }

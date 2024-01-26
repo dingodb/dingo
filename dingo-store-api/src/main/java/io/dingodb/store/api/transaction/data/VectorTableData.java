@@ -30,6 +30,6 @@ import lombok.ToString;
 @EqualsAndHashCode
 @ToString
 public class VectorTableData {
-    private byte[] key;
-    private byte[] value;
+    private byte[] tableKey;
+    private byte[] tableValue;
 }
