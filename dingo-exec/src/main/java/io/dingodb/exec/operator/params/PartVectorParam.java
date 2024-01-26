@@ -43,7 +43,6 @@ public class PartVectorParam extends FilterProjectSourceParam {
     private final Table table;
     private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     private final CommonId indexId;
-    private final CommonId indexRegionId;
     private final Float[] floatArray;
     private final int topN;
     private final Map<String, Object> parameterMap;
@@ -58,7 +57,6 @@ public class PartVectorParam extends FilterProjectSourceParam {
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
         CommonId indexId,
-        CommonId indexRegionId,
         Float[] floatArray,
         int topN,
         Map<String, Object> parameterMap
@@ -68,7 +66,6 @@ public class PartVectorParam extends FilterProjectSourceParam {
         this.table = table;
         this.distributions = distributions;
         this.indexId = indexId;
-        this.indexRegionId = indexRegionId;
         this.floatArray = floatArray;
         this.topN = topN;
         this.parameterMap = parameterMap;

@@ -19,6 +19,7 @@ package io.dingodb.calcite;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
 import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
+import io.dingodb.calcite.grammar.ddl.SqlCall;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.grammar.ddl.SqlKillConnection;
 import io.dingodb.calcite.grammar.ddl.SqlKillQuery;
@@ -339,6 +340,7 @@ public class DingoParser {
             || sqlNode instanceof SqlKillQuery
             || sqlNode instanceof SqlKillConnection
             || sqlNode instanceof SqlLoadData
+            || sqlNode instanceof SqlCall
         ) {
             return true;
         }

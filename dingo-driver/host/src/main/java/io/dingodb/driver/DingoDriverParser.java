@@ -27,6 +27,7 @@ import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.QueryOperation;
 import io.dingodb.calcite.rel.AutoIncrementShuttle;
 import io.dingodb.calcite.rel.DingoValues;
+import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
@@ -48,11 +49,13 @@ import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.SqlType;
+import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -430,7 +433,48 @@ public final class DingoDriverParser extends DingoParser {
             RelOptTable table = input.getTable();
             tables.add(table);
         }
+        RelOptTable vectorTable = findVectorFunction(relNode);
+        if (vectorTable != null) {
+            tables.add(vectorTable);
+        }
         return tables;
+    }
+
+    private static RelOptTable findVectorFunction(RelNode relNode) {
+        RelShuttleImpl relShuttle = new RelShuttleImpl() {
+            @Override
+            public RelNode visit(RelNode other) {
+                if (other instanceof DingoVector) {
+                    return other;
+                }
+                if (other.getInputs().size() > 0) {
+                    return visitChildren(other);
+                } else {
+                    return null;
+                }
+            }
+
+            protected RelNode visitChildren(RelNode rel) {
+                for (Ord<RelNode> input : Ord.zip(rel.getInputs())) {
+                    rel = visitChild(input.e);
+                }
+                return rel;
+            }
+
+            private RelNode visitChild(RelNode child) {
+                RelNode child2 = child.accept(this);
+                if (child2 instanceof DingoVector) {
+                    return child2;
+                }
+                return null;
+            }
+        };
+        RelNode relNode1 = relNode.accept(relShuttle);
+        if (relNode1 instanceof DingoVector) {
+            DingoVector vector = (DingoVector) relNode1;
+            return vector.getTable();
+        }
+        return null;
     }
 
     private boolean checkEngine(RelNode relNode, SqlNode sqlNode, Set<RelOptTable> tables, boolean isAutoCommit, ITransaction transaction) {

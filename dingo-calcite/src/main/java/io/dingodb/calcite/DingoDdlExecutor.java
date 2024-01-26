@@ -711,7 +711,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         log.info("DDL execute: {}", sqlDropUser);
         UserDefinition userDefinition = UserDefinition.builder().user(sqlDropUser.name)
             .host(getRealAddress(sqlDropUser.host)).build();
-        if (!userService.existsUser(userDefinition)) {
+        if (!userService.existsUser(userDefinition) && !sqlDropUser.ifExists) {
             throw DINGO_RESOURCE.dropUserFailed(sqlDropUser.name, sqlDropUser.host).ex();
         }
         userService.dropUser(userDefinition);

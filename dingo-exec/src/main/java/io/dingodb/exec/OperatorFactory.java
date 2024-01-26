@@ -66,6 +66,7 @@ import io.dingodb.exec.operator.TxnPartInsertOperator;
 import io.dingodb.exec.operator.TxnPartRangeDeleteOperator;
 import io.dingodb.exec.operator.TxnPartRangeScanOperator;
 import io.dingodb.exec.operator.TxnPartUpdateOperator;
+import io.dingodb.exec.operator.TxnPartVectorOperator;
 import io.dingodb.exec.operator.ValuesOperator;
 import io.dingodb.exec.operator.VectorPartitionOperator;
 import io.dingodb.exec.operator.VectorPointDistanceOperator;
@@ -133,6 +134,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_RANGE_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_RANGE_SCAN;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_UPDATE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_VECTOR;
 import static io.dingodb.exec.utils.OperatorCodeUtils.VALUES;
 import static io.dingodb.exec.utils.OperatorCodeUtils.VECTOR_PARTITION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.VECTOR_POINT_DISTANCE;
@@ -199,6 +201,7 @@ public final class OperatorFactory {
         OPERATORS.put(TXN_CLEAN_CACHE, CleanCacheOperator.INSTANCE);
         OPERATORS.put(COPY, CopyOperator.INSTANCE);
         OPERATORS.put(TXN_GET_BY_KEYS, TxnGetByKeysOperator.INSTANCE);
+        OPERATORS.put(TXN_PART_VECTOR, TxnPartVectorOperator.INSTANCE);
     }
 
     private OperatorFactory() {
