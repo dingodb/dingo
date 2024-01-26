@@ -41,6 +41,7 @@ import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
 import io.dingodb.sdk.common.serial.schema.DingoSchema;
 import io.dingodb.sdk.common.serial.schema.LongSchema;
 import io.dingodb.sdk.service.ChannelProvider;
+import io.dingodb.sdk.service.IndexService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.entity.common.Location;
 import io.dingodb.sdk.service.entity.common.RangeWithOptions;
@@ -231,6 +232,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         @Delegate
         private final TransactionStoreInstance transactionStoreInstance;
         private final io.dingodb.sdk.service.StoreService storeService;
+        private IndexService indexService;
 
         public StoreInstance(CommonId tableId, CommonId regionId) {
             this.storeTableId = MAPPER.idTo(tableId);
@@ -248,7 +250,10 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 table.tupleType(), table.keyMapping()
             );
             this.storeService = storeService(tableId, regionId);
-            this.transactionStoreInstance = new TransactionStoreInstance(storeService, partitionId);
+            if (tableId.type == CommonId.CommonType.INDEX) {
+                indexService = indexService(tableId, regionId);
+            }
+            this.transactionStoreInstance = new TransactionStoreInstance(storeService, indexService, partitionId);
         }
 
         public StoreInstance(CommonId tableId, CommonId regionId, CommonId indexId) {
@@ -265,7 +270,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 table.tupleType(), table.keyMapping()
             );
             this.storeService = storeService(tableId, regionId);
-            this.transactionStoreInstance = new TransactionStoreInstance(storeService, partitionId);
+            this.transactionStoreInstance = new TransactionStoreInstance(storeService, indexService, partitionId);
         }
 
         @Override

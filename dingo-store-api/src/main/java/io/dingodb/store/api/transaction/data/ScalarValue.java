@@ -37,13 +37,25 @@ public class ScalarValue {
     private List<ScalarField> fields;
 
     public enum ScalarFieldType {
-        NONE,
-        BOOL,
-        INTEGER,
-        LONG,
-        FLOAT,
-        DOUBLE,
-        STRING,
-        BYTES
+        NONE(0),
+        BOOL(1),
+        INTEGER(4),
+        LONG(5),
+        FLOAT(6),
+        DOUBLE(7),
+        STRING(8),
+        BYTES(9);
+
+        private final int code;
+
+        ScalarFieldType(int code) {
+            this.code = code;
+        }
+
+        public int getCode() {
+            return code;
+        }
+
+
     }
 }

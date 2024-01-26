@@ -68,6 +68,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
                 .map(Column::getName)
                 .collect(Collectors.toList()));
+            tableId = context.getIndexId();
             Object[] finalTuple = tuple;
             tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
             schema = indexTable.tupleType();

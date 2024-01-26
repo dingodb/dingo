@@ -32,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -42,55 +43,33 @@ public class TransactionCacheToMutation {
                                            byte[] value, long forUpdateTs,
                                            CommonId tableId, CommonId partId) {
         VectorWithId vectorWithId = null;
-        switch (op) {
-            case 1:
-                vectorWithId = getVectorWithId(key, value, tableId);
-                return new Mutation(Op.PUT, key, value, forUpdateTs, vectorWithId);
-            case 2:
-                vectorWithId = getVectorWithId(key, value, tableId);
-                return new Mutation(Op.DELETE, key, value, forUpdateTs, vectorWithId);
-            case 3:
-                vectorWithId = getVectorWithId(key, value, tableId);
-                return new Mutation(Op.PUTIFABSENT, key, value, forUpdateTs, vectorWithId);
-            case 5:
-                vectorWithId = getVectorWithId(key, value, tableId);
-                return new Mutation(Op.LOCK, key, value, forUpdateTs, vectorWithId);
-            default:
-                log.warn("Op:{},key:{},value:{}", op, key, value);
-                return new Mutation(Op.NONE, key, value, forUpdateTs, null);
-        }
-    }
-
-    private static VectorWithId getVectorWithId(@NonNull byte[] key, byte[] value, CommonId tableId) {
-        if (tableId.type.code == 3) {
-            List<IndexTable> indexes = TransactionUtil.getIndexDefinitions(tableId);
-            for (Table index : indexes) {
-                CommonId commonId = index.getTableId();
-                KeyValueCodec keyValueCodec = CodecService.getDefault().createKeyValueCodec(
-                    index.tableId, index.tupleType(), index.keyMapping()
-                );
-                Object[] record = keyValueCodec.decode(new KeyValue(key, value));
-                Column column = index.getColumns().get(0);
-                List<String> colNames = index.getColumns().stream().map(Column::getName).collect(Collectors.toList());
-                long longId = Long.parseLong(String.valueOf(record[colNames.indexOf(column.getName())]));
-                Column column1 = index.getColumns().get(1);
-                Vector vector;
-                if (column1.getElementTypeName().equalsIgnoreCase("FLOAT")) {
-                    List<Float> values = (List<Float>) record[colNames.indexOf(column1.getName())];
-                    vector = Vector.builder().floatValues(values).valueType(Vector.ValueType.FLOAT).build();
-                } else {
-                    List<byte[]> values = (List<byte[]>) record[colNames.indexOf(column1.getName())];
-                    vector = Vector.builder().binaryValues(values).valueType(Vector.ValueType.UINT8).build();
-                }
-                VectorTableData vectorTableData = new VectorTableData(key, value);
-                return VectorWithId.builder()
-                    .id(longId)
-                    .vector(vector)
-                    .tableData(vectorTableData)
-                    .build();
+        if (tableId.type == CommonId.CommonType.INDEX) {
+            IndexTable index = TransactionUtil.getIndexDefinitions(tableId);
+            KeyValueCodec keyValueCodec = CodecService.getDefault().createKeyValueCodec(
+                index.tableId, index.tupleType(), index.keyMapping()
+            );
+            Object[] record = keyValueCodec.decode(new KeyValue(key, value));
+            Column column = index.getColumns().get(0);
+            List<String> colNames = index.getColumns().stream().map(Column::getName).collect(Collectors.toList());
+            long longId = Long.parseLong(String.valueOf(record[colNames.indexOf(column.getName())]));
+            Column column1 = index.getColumns().get(1);
+            Vector vector;
+            if (column1.getElementTypeName().equalsIgnoreCase("FLOAT")) {
+                List<Float> values = (List<Float>) record[colNames.indexOf(column1.getName())];
+                vector = Vector.builder().dimension(values.size()).floatValues(values).valueType(Vector.ValueType.FLOAT).build();
+            } else {
+                List<byte[]> values = (List<byte[]>) record[colNames.indexOf(column1.getName())];
+                vector = Vector.builder().dimension(values.size()).binaryValues(values).valueType(Vector.ValueType.UINT8).build();
             }
+            VectorTableData vectorTableData = new VectorTableData(key, value);
+            vectorWithId = VectorWithId.builder()
+                .id(longId)
+                .vector(vector)
+                .tableData(vectorTableData)
+                .build();
+            key = Arrays.copyOf(key, key.length -4);
         }
-        return null;
+        return new Mutation(Op.forNumber(op), key, value, forUpdateTs, vectorWithId);
     }
 
     public static Mutation cacheToPessimisticLockMutation(@NonNull byte[] key, byte[] value, long forUpdateTs) {

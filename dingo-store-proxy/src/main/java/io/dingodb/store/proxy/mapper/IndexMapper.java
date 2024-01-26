@@ -22,8 +22,11 @@ import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.sdk.service.entity.common.IndexParameter;
 import io.dingodb.sdk.service.entity.common.IndexType;
 import io.dingodb.sdk.service.entity.common.MetricType;
+import io.dingodb.sdk.service.entity.common.ScalarField;
+import io.dingodb.sdk.service.entity.common.ScalarFieldType;
 import io.dingodb.sdk.service.entity.common.ScalarIndexParameter;
 import io.dingodb.sdk.service.entity.common.ScalarIndexType;
+import io.dingodb.sdk.service.entity.common.ScalarValue;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexParameterNest.DiskannParameter;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexParameterNest.FlatParameter;
@@ -35,6 +38,7 @@ import io.dingodb.sdk.service.entity.meta.TableDefinition;
 
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import static io.dingodb.store.proxy.mapper.Mapper.JSON;
 
@@ -188,6 +192,60 @@ public interface IndexMapper {
                     .vectorIndexParameter(vectorIndexParameter)
                     .build()
             );
+        }
+    }
+
+    default ScalarValue scalarValueTo(io.dingodb.store.api.transaction.data.ScalarValue scalarValue) {
+        return ScalarValue.builder()
+            .fieldType(fieldTypeTo(scalarValue.getFieldType()))
+            .fields(scalarValue.getFields().stream().map(f -> scalarFieldTo(f, scalarValue.getFieldType())).collect(Collectors.toList()))
+            .build();
+    }
+
+    default ScalarField scalarFieldTo(
+        io.dingodb.store.api.transaction.data.ScalarField field,
+        io.dingodb.store.api.transaction.data.ScalarValue.ScalarFieldType type
+    ) {
+        switch (type) {
+            case BOOL:
+                return ScalarField.builder().data(ScalarField.DataNest.BoolData.of((Boolean) field.getData())).build();
+            case INTEGER:
+                return ScalarField.builder().data(ScalarField.DataNest.IntData.of((Integer) field.getData())).build();
+            case LONG:
+                return ScalarField.builder().data(ScalarField.DataNest.LongData.of((Long) field.getData())).build();
+            case FLOAT:
+                return ScalarField.builder().data(ScalarField.DataNest.FloatData.of((Float) field.getData())).build();
+            case DOUBLE:
+                return ScalarField.builder().data(ScalarField.DataNest.DoubleData.of((Double) field.getData())).build();
+            case STRING:
+                return ScalarField.builder().data(ScalarField.DataNest.StringData.of((String) field.getData())).build();
+            case BYTES:
+                return ScalarField.builder().data(ScalarField.DataNest.BytesData.of((byte[]) field.getData())).build();
+            default:
+                throw new IllegalStateException("Unexpected value: " + type);
+        }
+    }
+
+    default ScalarFieldType fieldTypeTo(io.dingodb.store.api.transaction.data.ScalarValue.ScalarFieldType fieldType) {
+        switch (fieldType) {
+            case NONE:
+                return ScalarFieldType.NONE;
+            case BOOL:
+                return ScalarFieldType.BOOL;
+            case INTEGER:
+                return ScalarFieldType.INT32;
+            case LONG:
+                return ScalarFieldType.INT64;
+            case FLOAT:
+                return ScalarFieldType.FLOAT32;
+            case DOUBLE:
+                return ScalarFieldType.DOUBLE;
+            case STRING:
+                return ScalarFieldType.STRING;
+            case BYTES:
+                return ScalarFieldType.BYTES;
+            default:
+                return ScalarFieldType.UNRECOGNIZED;
         }
     }
 

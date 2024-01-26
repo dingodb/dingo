@@ -110,9 +110,9 @@ public class TransactionUtil {
         return partMap;
     }
 
-    public static List<IndexTable> getIndexDefinitions(CommonId tableId) {
+    public static IndexTable getIndexDefinitions(CommonId tableId) {
         MetaService root = MetaService.root();
-        return root.getTable(tableId).getIndexes();
+        return (IndexTable) root.getTable(tableId);
     }
     public static List<byte[]> mutationToKey(List<Mutation> mutations) {
         List<byte[]> keys = new ArrayList<>(mutations.size());

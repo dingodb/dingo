@@ -27,4 +27,16 @@ public enum Op {
     public int getCode() {
         return code;
     }
+
+    public static Op forNumber(int code) {
+        switch (code) {
+            case 0: return NONE;
+            case 1: return PUT;
+            case 2: return DELETE;
+            case 3: return PUTIFABSENT;
+            case 4: return ROLLBACK;
+            case 5: return LOCK;
+            default: return null;
+        }
+    }
 }

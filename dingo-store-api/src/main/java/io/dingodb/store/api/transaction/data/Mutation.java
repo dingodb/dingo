@@ -34,5 +34,5 @@ public class Mutation {
     private byte[] key;
     private byte[] value;
     private long forUpdateTs;
-    private VectorWithId vectorWithId;
+    private VectorWithId vector;
 }
