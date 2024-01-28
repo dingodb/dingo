@@ -177,11 +177,15 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public synchronized void createSubMetaService(String name) {
+        if (!MetaServiceApiImpl.INSTANCE.isReady()) {
+            throw new RuntimeException("Offline, please wait and retry.");
+        }
         if (id != ROOT_SCHEMA_ID) {
             throw new UnsupportedOperationException();
         }
         name = cleanSchemaName(name);
         api.createSchema(tso(), name, CreateSchemaRequest.builder().parentSchemaId(id).schemaName(name).build());
+        cache.invalidMetaServices();
     }
 
     @Override
@@ -203,6 +207,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public boolean dropSubMetaService(String name) {
+        if (!MetaServiceApiImpl.INSTANCE.isReady()) {
+            throw new RuntimeException("Offline, please wait and retry.");
+        }
         if (id != ROOT_SCHEMA_ID) {
             throw new UnsupportedOperationException();
         }
@@ -211,6 +218,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             return false;
         }
         api.dropSchema(tso(), name, DropSchemaRequest.builder().schemaId(getSubMetaService(name).id).build());
+        cache.invalidMetaServices();
         return true;
     }
 
@@ -218,6 +226,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
     public void createTables(
         @NonNull TableDefinition tableDefinition, @NonNull List<TableDefinition> indexTableDefinitions
     ) {
+        if (!MetaServiceApiImpl.INSTANCE.isReady()) {
+            throw new RuntimeException("Offline, please wait and retry.");
+        }
         String tableName = cleanTableName(tableDefinition.getName());
         indexTableDefinitions.forEach($ -> cleanTableName($.getName()));
         // Generate new table ids.
@@ -248,10 +259,14 @@ public class MetaService implements io.dingodb.meta.MetaService {
         api.createTables(
             tso(), name, tableName, CreateTablesRequest.builder().schemaId(id).tableDefinitionWithIds(tables).build()
         );
+        cache.invalidSchema(name);
     }
 
     @Override
     public boolean truncateTable(@NonNull String tableName) {
+        if (!MetaServiceApiImpl.INSTANCE.isReady()) {
+            throw new RuntimeException("Offline, please wait and retry.");
+        }
         // Get old table and indexes
         TableDefinitionWithId table = service.getTableByName(
             tso(), GetTableByNameRequest.builder().schemaId(id).tableName(tableName).build()
@@ -297,6 +312,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         tables.addAll(indexes);
         api.dropTables(tso(), name, tableName, DropTablesRequest.builder().tableIds(oldIds).build());
         cache.invalidTable(name, tableName);
+        cache.invalidSchema(name);
         service.createTables(
             tso(),
             CreateTablesRequest.builder().schemaId(id).tableDefinitionWithIds(tables).build()
@@ -317,6 +333,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public boolean dropTable(@NonNull String tableName) {
+        if (!MetaServiceApiImpl.INSTANCE.isReady()) {
+            throw new RuntimeException("Offline, please wait and retry.");
+        }
         Table table = cache.getTable(name, tableName);
         if (table == null) {
             return false;
@@ -326,13 +345,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
             Stream.of(table.getTableId()), indexIds.stream()).collect(Collectors.toList()
         );
         api.dropTables(tso(), name, tableName, DropTablesRequest.builder().tableIds(MAPPER.idTo(tableIds)).build());
-        return true;
-    }
-
-    private boolean dropTables(@NonNull Collection<CommonId> tableIds) {
-        service.dropTables(tso(), DropTablesRequest.builder()
-            .tableIds(MAPPER.idTo(tableIds)).build()
-        );
+        cache.invalidTable(name, tableName);
+        cache.invalidSchema(name);
         return true;
     }
 

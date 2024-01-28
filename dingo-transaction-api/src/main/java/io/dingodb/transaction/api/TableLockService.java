@@ -16,6 +16,11 @@
 
 package io.dingodb.transaction.api;
 
+import io.dingodb.common.CommonId;
+import io.dingodb.common.annotation.ApiDeclaration;
+
+import java.util.List;
+
 public interface TableLockService {
 
     static TableLockService getDefault() {
@@ -23,4 +28,13 @@ public interface TableLockService {
     }
 
     void lock(TableLock lock);
+
+    @ApiDeclaration
+    List<TableLock> allTableLocks();
+
+    @ApiDeclaration
+    List<TableLock> getTableLocks();
+
+    @ApiDeclaration
+    TableLock getTableLock(CommonId tableId);
 }

@@ -92,10 +92,15 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         return new KeyValueIterator(StoreService.db.newIterator(), range);
     }
 
+    @Override
+    public Iterator<KeyValue> scan(long requestTs, Range range) {
+        return new KeyValueIterator(StoreService.db.newIterator(), range);
+    }
+
     private byte[] nextKey(byte[] key) {
         byte[] next = new byte[key.length];
         int n = key.length;
-        while (--n > 0) {
+        while (--n >= 0) {
             if (key[n] != (byte) 0xFF) {
                 next[n] = (byte) (key[n] + 1);
                 break;

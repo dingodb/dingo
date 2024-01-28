@@ -19,6 +19,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.transaction.api.LockType;
+import io.dingodb.transaction.api.TableLock;
 import io.dingodb.transaction.api.TableLockServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 
@@ -60,6 +61,21 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
     private final Map<CommonId, TableLocks> tableLocks = new HashMap<>();
     private final LinkedRunner runner = new LinkedRunner("lock");
     private final HashSet<io.dingodb.transaction.api.TableLock> waitLocks = new HashSet<>();
+
+    @Override
+    public List<TableLock> allTableLocks() {
+        return null;
+    }
+
+    @Override
+    public List<TableLock> getTableLocks() {
+        return null;
+    }
+
+    @Override
+    public TableLock getTableLock(CommonId tableId) {
+        return null;
+    }
 
     public void lock(io.dingodb.transaction.api.TableLock lock) {
         runner.forceFollow(() -> {

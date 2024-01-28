@@ -26,4 +26,6 @@ public interface TsoService {
 
     long timestamp();
 
+    long timestamp(long tso);
+
 }

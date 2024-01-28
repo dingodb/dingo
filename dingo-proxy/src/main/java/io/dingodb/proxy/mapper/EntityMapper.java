@@ -16,11 +16,21 @@
 
 package io.dingodb.proxy.mapper;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.protobuf.ByteString;
 import io.dingodb.client.common.VectorDistanceArray;
 import io.dingodb.client.common.VectorSearch;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.util.Optional;
+import io.dingodb.expr.coding.CodingFlag;
+import io.dingodb.expr.coding.RelOpCoder;
+import io.dingodb.expr.rel.RelConfig;
+import io.dingodb.expr.rel.RelOp;
+import io.dingodb.expr.rel.TupleCompileContextImpl;
+import io.dingodb.expr.rel.op.RelOpBuilder;
+import io.dingodb.expr.runtime.type.TupleType;
+import io.dingodb.expr.runtime.type.Type;
+import io.dingodb.expr.runtime.type.Types;
 import io.dingodb.proxy.common.ProxyCommon;
 import io.dingodb.proxy.common.ProxyCommon.CreateBruteForceParam;
 import io.dingodb.proxy.common.ProxyCommon.CreateDiskAnnParam;
@@ -28,6 +38,8 @@ import io.dingodb.proxy.common.ProxyCommon.CreateFlatParam;
 import io.dingodb.proxy.common.ProxyCommon.CreateHnswParam;
 import io.dingodb.proxy.common.ProxyCommon.CreateIvfFlatParam;
 import io.dingodb.proxy.common.ProxyCommon.CreateIvfPqParam;
+import io.dingodb.proxy.config.JacksonConfig;
+import io.dingodb.proxy.expr.langchain.Expr;
 import io.dingodb.proxy.model.dto.VectorWithId;
 import io.dingodb.sdk.common.index.IndexMetrics;
 import io.dingodb.sdk.common.partition.PartitionDetailDefinition;
@@ -41,7 +53,10 @@ import io.dingodb.sdk.common.vector.SearchHnswParam;
 import io.dingodb.sdk.common.vector.SearchIvfFlatParam;
 import io.dingodb.sdk.common.vector.SearchIvfPqParam;
 import io.dingodb.sdk.common.vector.Vector;
+import io.dingodb.sdk.service.entity.common.CoprocessorV2;
 import io.dingodb.sdk.service.entity.common.ScalarValue;
+import io.dingodb.sdk.service.entity.common.Schema;
+import io.dingodb.sdk.service.entity.common.SchemaWrapper;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexParameterNest.BruteforceParameter;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexParameterNest.DiskannParameter;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexParameterNest.FlatParameter;
@@ -62,7 +77,9 @@ import org.mapstruct.Mappings;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -109,6 +126,36 @@ public interface EntityMapper {
 
     VectorSearch mapping(io.dingodb.proxy.model.dto.VectorSearch search);
 
+    default CoprocessorV2 mapping(String langchainExpr) throws JsonProcessingException {
+        if (langchainExpr == null || langchainExpr.isEmpty()) {
+            return null;
+        }
+        return mapping(JacksonConfig.jsonMapper.readValue(langchainExpr, Expr.class));
+    }
+
+    default CoprocessorV2 mapping(Expr expr) {
+        if (expr == null) {
+            return null;
+        }
+        List<String> attrNames = new ArrayList<>();
+        List<Schema> attrSchemas = new ArrayList<>();
+        List<Type> attrTypes = new ArrayList<>();
+        io.dingodb.expr.runtime.expr.Expr dingoExpr = expr.toDingoExpr(attrNames, attrSchemas, attrTypes);
+        RelOp relOp = RelOpBuilder.builder().filter(dingoExpr).build();
+        TupleType tupleType = Types.tuple(attrTypes.toArray(new Type[0]));
+        relOp.compile(new TupleCompileContextImpl(tupleType), RelConfig.DEFAULT);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        if (RelOpCoder.INSTANCE.visit(relOp, outputStream) != CodingFlag.OK) {
+            throw new RuntimeException("Expr coder visit error, expr: " + expr + ", after compile " + dingoExpr);
+        }
+        return CoprocessorV2.builder()
+            .originalSchema(SchemaWrapper.builder().schema(attrSchemas).build())
+            .selectionColumns(attrSchemas.stream().map(Schema::getIndex).collect(Collectors.toList()))
+            .relExpr(outputStream.toByteArray())
+            .build();
+    }
+
+    @Mapping(source = "langchainExpr", target = "vectorCoprocessor")
     VectorSearchParameter mapping(io.dingodb.proxy.model.dto.VectorSearchParameter parameter);
 
     default VectorSearchParameter.SearchNest mapping(Search search) {
@@ -193,7 +240,14 @@ public interface EntityMapper {
 
     Hnsw mapping(ProxyCommon.SearchHNSWParam param);
 
-    @Mapping(source = "parameter", target = "search")
+//    default CoprocessorV2 mapping(String expr) {
+//
+//    }
+
+    @Mappings({
+        @Mapping(source = "parameter", target = "search"),
+        @Mapping(source = "langchainExpr", target = "vectorCoprocessor")
+    })
     VectorSearchParameter mapping(ProxyCommon.VectorSearchParameter parameter);
 
     default VectorSearchParameter.SearchNest mappingSearchNest(ProxyCommon.VectorSearchParameter parameter) {

@@ -20,7 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.sdk.service.LockService;
+import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.store.proxy.meta.MetaServiceApiImpl;
 import io.dingodb.transaction.api.LockType;
 import io.dingodb.transaction.api.TableLock;
@@ -58,7 +58,6 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
     }
 
     public static final TableLockService INSTANCE = new TableLockService();
-    private LockService.Lock lock;
 
     private class TableLocks {
         final List<io.dingodb.transaction.api.TableLock> locked = new LinkedList<>();
@@ -66,26 +65,40 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
         final LinkedRunner runner = new LinkedRunner("lock");
     }
 
-    private final Map<CommonId, TableLocks> tableLocks = new HashMap<>();
+    private final Map<CommonId, TableLocks> locks = new HashMap<>();
     private final LinkedRunner runner = new LinkedRunner("lock");
     private final HashSet<io.dingodb.transaction.api.TableLock> waitLocks = new HashSet<>();
 
-    private final Map<CommonId, TableLock> tableOrRangeTables = new ConcurrentHashMap<>();
+    private final Map<CommonId, TableLock> tableLocks = new ConcurrentHashMap<>();
 
     private TableLockService() {
+        ApiRegistry.getDefault().register(io.dingodb.transaction.api.TableLockService.class, this);
     }
 
-    public TableLock getTableOrRangeLock(CommonId tableId) {
-        return tableOrRangeTables.get(tableId);
+    @Override
+    public TableLock getTableLock(CommonId tableId) {
+        return tableLocks.get(tableId);
     }
 
-    public List<TableLock> getTableOrRangeLocks() {
-        return new ArrayList<>(tableOrRangeTables.values());
+    @Override
+    public List<TableLock> getTableLocks() {
+        return new ArrayList<>(tableLocks.values());
+    }
+
+    @Override
+    public List<TableLock> allTableLocks() {
+        return locks.values().stream()
+            .flatMap($ -> Stream.concat($.locked.stream(), $.lockQueue.stream()))
+            .collect(Collectors.toList());
     }
 
     public void lock(TableLock lock) {
+        doLock(lock);
+    }
+
+    public void doLock(TableLock lock) {
         runner.forceFollow(() -> {
-            TableLocks tableLocks = this.tableLocks.computeIfAbsent(lock.tableId, k -> new TableLocks());
+            TableLocks tableLocks = this.locks.computeIfAbsent(lock.tableId, k -> new TableLocks());
             tableLocks.runner.forceFollow(() -> {
                 tableLocks.lockQueue.add(lock);
                 waitLocks.add(lock);
@@ -96,8 +109,8 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
 
     public void unlock(io.dingodb.transaction.api.TableLock lock) {
         runner.forceFollow(() -> {
-            tableLocks.get(lock.getTableId()).runner.forceFollow(() -> {
-                tableLocks.get(lock.tableId).locked.remove(lock);
+            locks.get(lock.getTableId()).runner.forceFollow(() -> {
+                locks.get(lock.tableId).locked.remove(lock);
                 if (log.isDebugEnabled()) {
                     log.debug("Unlocked: {}", lock);
                 }
@@ -106,13 +119,13 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
     }
 
     private void lock(CommonId tableId) {
-        TableLocks tableLocks = this.tableLocks.get(tableId);
+        TableLocks tableLocks = this.locks.get(tableId);
         io.dingodb.transaction.api.TableLock lock = tableLocks.lockQueue.first();
         if (lock == null) {
             log.error("Poll {} first wait lock null.", tableId);
             return;
         }
-        List<io.dingodb.transaction.api.TableLock> locks = this.tableLocks.get(lock.tableId).locked;
+        List<io.dingodb.transaction.api.TableLock> locks = this.locks.get(lock.tableId).locked;
         CompletableFuture<Boolean> future = lock.lockFuture;
         boolean locked = locks.isEmpty();
         if (!locked) {
@@ -142,8 +155,8 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
         }
         if (locked) {
             if (lock.type == TABLE || lock.type == RANGE) {
-                tableOrRangeTables.put(tableId, lock);
-                lock.unlockFuture.whenCompleteAsync((v, r) -> tableOrRangeTables.remove(tableId));
+                this.tableLocks.put(tableId, lock);
+                lock.unlockFuture.whenCompleteAsync((v, r) -> this.tableLocks.remove(tableId));
                 try {
                     MetaServiceApiImpl.INSTANCE.lockTable(lock.lockTs, lock);
                 } catch (Exception e) {

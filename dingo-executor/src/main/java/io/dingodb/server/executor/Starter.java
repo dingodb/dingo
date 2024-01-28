@@ -18,6 +18,7 @@ package io.dingodb.server.executor;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import io.dingodb.calcite.operation.ShowLocksOperation;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
@@ -28,6 +29,7 @@ import io.dingodb.exec.Services;
 import io.dingodb.net.MysqlNetService;
 import io.dingodb.net.MysqlNetServiceProvider;
 import io.dingodb.net.NetService;
+import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.scheduler.SchedulerService;
 import io.dingodb.server.executor.service.ClusterService;
 import io.dingodb.store.proxy.service.AutoIncrementService;
@@ -60,7 +62,7 @@ public class Starter {
             return;
         }
         DingoConfiguration.parse(config);
-        DingoConfiguration.instance().setServerId(new CommonId(EXECUTOR, 0, TsoService.getDefault().tso()));
+        DingoConfiguration.instance().setServerId(new CommonId(EXECUTOR, 1, TsoService.getDefault().tso()));
         Configuration.instance();
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         env.setRole(DingoRole.EXECUTOR);
@@ -83,6 +85,10 @@ public class Starter {
 
         SchedulerService schedulerService = SchedulerService.getDefault();
         schedulerService.init();
+
+        // TODO Use job/task implement api.
+        ApiRegistry.getDefault().register(ShowLocksOperation.Api.class, new ShowLocksOperation.Api() { });
+
     }
 
 }

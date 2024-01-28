@@ -44,7 +44,7 @@ SqlShow SqlShow(): {
     |
     show = SqlShowLocks(s)
     |
-    show = SqlShowEngines(s) 
+    show = SqlShowEngines(s)
     |
     show = SqlShowCollation(s)
     |
@@ -178,10 +178,14 @@ SqlShow SqlShowGlobalVariables(Span s): {
 
 SqlShow SqlShowLocks(Span s): {
   SqlNode condition = null;
+  SqlIdentifier id = null;
+  SqlKind kind = null;
+  Object operand = null;
 }{
   <LOCKS>
-  [ condition = Where() ]
-  {return new SqlShowLocks(s.end(this), condition); }
+// todo support more filter
+  [ <WHERE> id = SimpleIdentifier() kind = comp() operand = anything() ]
+  {return new SqlShowLocks(s.end(this), id, kind, operand); }
 }
 
 SqlShow SqlShowEngines(Span s): {

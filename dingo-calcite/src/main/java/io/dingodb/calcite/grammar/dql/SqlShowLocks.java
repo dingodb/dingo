@@ -16,8 +16,8 @@
 
 package io.dingodb.calcite.grammar.dql;
 
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
@@ -25,27 +25,30 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 
 public class SqlShowLocks extends SqlShow {
 
-    public SqlNode condition;
+    public final SqlIdentifier filterIdentifier;
+    public final SqlKind filterKind;
+    public final Object filterOperand;
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("SHOW LOCKS", SqlKind.SELECT);
 
-    /**
-     * Creates a SqlDdl.
-     *
-     * @param pos      pos
-     */
-    public SqlShowLocks(SqlParserPos pos, SqlNode condition) {
+    public SqlShowLocks(
+        SqlParserPos pos, SqlIdentifier filterIdentifier, SqlKind filterKind, Object filterOperand
+    ) {
         super(OPERATOR, pos);
-        this.condition = condition;
+        this.filterIdentifier = filterIdentifier;
+        this.filterKind = filterKind;
+        this.filterOperand = filterOperand;
     }
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword("SHOW LOCKS");
-        if (condition != null) {
+        if (filterOperand != null) {
             writer.keyword("WHERE");
-            writer.keyword(condition.toString());
+            writer.keyword(filterIdentifier.toString());
+            writer.keyword(filterKind.toString());
+            writer.keyword(filterOperand.toString());
         }
     }
 }

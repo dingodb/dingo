@@ -67,6 +67,7 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
             .keyring(Configuration.keyring())
             .build())
         .resourceTag(Configuration.resourceTag())
+        .id(DingoConfiguration.serverId().toString())
         .build();
     public static final ExecutorHeartbeatRequest executorHeartbeatRequest = ExecutorHeartbeatRequest.builder()
         .selfExecutormapEpoch(0)
