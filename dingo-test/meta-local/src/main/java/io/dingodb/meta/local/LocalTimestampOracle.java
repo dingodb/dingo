@@ -69,4 +69,9 @@ public class LocalTimestampOracle implements ITimestampOracle, io.dingodb.tso.Ts
     public long timestamp() {
         return System.currentTimeMillis();
     }
+
+    @Override
+    public long timestamp(long tso) {
+        return tso >> BITS_LOGICAL_TIME;
+    }
 }

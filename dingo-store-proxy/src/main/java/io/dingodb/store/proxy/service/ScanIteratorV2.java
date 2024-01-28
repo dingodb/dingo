@@ -49,6 +49,7 @@ public class ScanIteratorV2 implements Iterator<KeyValue>, AutoCloseable {
     private final CommonId regionId;
     private final ChannelProvider channelProvider;
     private StoreService storeService;
+    private final long requestTs;
     private final long scanId;
     private final CoprocessorV2 coprocessor;
     private final RangeWithOptions range;
@@ -70,6 +71,7 @@ public class ScanIteratorV2 implements Iterator<KeyValue>, AutoCloseable {
         this.range = range;
         this.retryTimes = retryTimes;
         this.coprocessor = coprocessor;
+        this.requestTs = requestTs;
         this.scanId = scanBegin(requestTs, channelProvider);
         this.channelProvider = channelProvider;
         this.hasMore = true;
@@ -82,14 +84,15 @@ public class ScanIteratorV2 implements Iterator<KeyValue>, AutoCloseable {
         while (retry-- > 0) {
             Channel channel = channelProvider.channel();
             try {
+                long scanId = TsoService.INSTANCE.tso();
                 KvScanBeginRequestV2 request = KvScanBeginRequestV2.builder()
-                    .scanId(requestTs)
+                    .scanId(scanId)
                     .coprocessor(coprocessor)
                     .range(range)
                     .build();
                 channelProvider.before(request);
                 if (log.isDebugEnabled()) {
-                    log.debug("Emit ScanBeginV2: scanId = {}", requestTs);
+                    log.debug("Emit ScanBeginV2: scanId = {}, request ts = {}", scanId, requestTs);
                 }
                 KvScanBeginResponseV2 res = RpcCaller.call(
                     StoreServiceDescriptors.kvScanBeginV2,
@@ -102,7 +105,7 @@ public class ScanIteratorV2 implements Iterator<KeyValue>, AutoCloseable {
                 channelProvider.after(res);
                 if (res != null && (res.getError() == null || res.getError().getErrcode() == OK)) {
                     this.storeService = createStoreService(channel);
-                    return requestTs;
+                    return scanId;
                 }
             } catch (Exception ignored) {
             }
@@ -133,7 +136,7 @@ public class ScanIteratorV2 implements Iterator<KeyValue>, AutoCloseable {
             .maxFetchCnt(1000)
             .build();
         channelProvider.before(request);
-        KvScanContinueResponseV2 res = storeService.kvScanContinueV2(request);
+        KvScanContinueResponseV2 res = storeService.kvScanContinueV2(requestTs, request);
         channelProvider.after(res);
         delegateIterator = Optional.mapOrGet(res.getKvs(), List::iterator, Collections::emptyIterator);
         if (!res.isHasMore()) {
@@ -146,7 +149,7 @@ public class ScanIteratorV2 implements Iterator<KeyValue>, AutoCloseable {
         if (log.isDebugEnabled()) {
             log.debug("Emit ScanReleaseV2: scanId = {}", scanId);
         }
-        storeService.kvScanReleaseV2(KvScanReleaseRequestV2.builder().scanId(scanId).build());
+        storeService.kvScanReleaseV2(requestTs, KvScanReleaseRequestV2.builder().scanId(scanId).build());
     }
 
     @Override

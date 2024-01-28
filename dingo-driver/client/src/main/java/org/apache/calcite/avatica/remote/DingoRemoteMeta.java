@@ -16,8 +16,10 @@
 
 package org.apache.calcite.avatica.remote;
 
+import io.dingodb.common.util.Utils;
 import io.dingodb.driver.DingoServiceImpl;
 import io.dingodb.driver.api.MetaApi;
+import lombok.SneakyThrows;
 import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.ConnectionPropertiesImpl;
 
@@ -30,8 +32,13 @@ public class DingoRemoteMeta extends RemoteMeta {
     }
 
     @Override
+    @SneakyThrows
     public StatementHandle prepare(ConnectionHandle ch, String sql, long maxRowCount) {
-        return StatementHandle.fromProto(metaApi.prepare(ch, sql, maxRowCount));
+        try {
+            return StatementHandle.fromProto(metaApi.prepare(ch, sql, maxRowCount));
+        } catch (Exception e) {
+            throw Utils.extractThrowable(e);
+        }
     }
 
     @Override

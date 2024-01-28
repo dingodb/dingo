@@ -94,4 +94,9 @@ public class TsoService implements io.dingodb.tso.TsoService {
         ).getStartTimestamp();
         return startTimestamp.getPhysical();
     }
+
+    @Override
+    public long timestamp(long tso) {
+        return tso >> PHYSICAL_SHIFT;
+    }
 }

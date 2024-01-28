@@ -206,7 +206,7 @@ public final class SqlToOperationConverter {
             SqlShowCharset sqlShowCharset = (SqlShowCharset) sqlNode;
             return Optional.of(new ShowCharsetOperation(sqlShowCharset.sqlLikePattern));
         } else if (sqlNode instanceof SqlShowLocks) {
-            return Optional.of(new ShowLocksOperation());
+            return Optional.of(new ShowLocksOperation(((SqlShowLocks) sqlNode).filterIdentifier, ((SqlShowLocks) sqlNode).filterKind, ((SqlShowLocks) sqlNode).filterOperand));
         } else if (sqlNode instanceof SqlCall) {
             SqlCall sqlCall = (SqlCall) sqlNode;
             if (sqlCall.getCall().names.size() == 2) {

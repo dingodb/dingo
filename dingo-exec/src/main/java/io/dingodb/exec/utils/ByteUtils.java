@@ -44,6 +44,10 @@ public final class ByteUtils {
         }
         return result;
     }
+
+    /**
+     * CommonType | txn | table | part | mutation op | key | value.
+     */
     public static Object[] decode(KeyValue keyValue) {
         byte[] bytes = keyValue.getKey();
         Object[] result = new Object[7];

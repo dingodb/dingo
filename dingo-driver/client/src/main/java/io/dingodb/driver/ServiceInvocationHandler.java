@@ -18,6 +18,7 @@ package io.dingodb.driver;
 
 import io.dingodb.common.Location;
 import io.dingodb.common.exception.DingoSqlException;
+import io.dingodb.common.util.Utils;
 import io.dingodb.driver.api.DriverProxyApi;
 import io.dingodb.net.NetService;
 import io.dingodb.net.NetServiceProvider;
@@ -54,42 +55,30 @@ public class ServiceInvocationHandler implements Service, InvocationHandler {
     public Object invoke(Object proxy, @NonNull Method method, Object[] args) throws Throwable {
         try {
             return method.invoke(this, args);
-        } catch (InvocationTargetException myException) {
-            Throwable proxyApiException = myException.getTargetException();
-            if (proxyApiException instanceof UndeclaredThrowableException) {
-                Throwable throwable = ((UndeclaredThrowableException) proxyApiException).getUndeclaredThrowable();
-                if (throwable instanceof ExecutionException) {
-                    Throwable cause = throwable.getCause();
-                    if (cause instanceof InvocationTargetException) {
-                        // Here we got the exception thrown in remote server.
-                        Throwable target = ((InvocationTargetException) cause).getTargetException();
-                        // Convert to client exception.
-                        if (target instanceof DingoSqlException) {
-                            DingoSqlException dse = (DingoSqlException) target;
-                            throw new AvaticaClientRuntimeException(
-                                dse.getMessage(),
-                                dse.getSqlCode(),
-                                dse.getSqlState(),
-                                AvaticaSeverity.ERROR,
-                                Collections.emptyList(),
-                                null
-                            );
-                        }
-                        throw target;
-                    }
-                } else if (throwable instanceof ConnectException) {
-                    throw new AvaticaClientRuntimeException(
-                        throwable.getMessage(),
-                        1152,
-                        "08S01",
-                        AvaticaSeverity.ERROR,
-                        Collections.emptyList(),
-                        null
-                    );
-                }
-                throw throwable;
+        } catch (Exception e) {
+            Throwable error = Utils.extractThrowable(e);
+            if (error instanceof DingoSqlException) {
+                DingoSqlException dse = (DingoSqlException) error;
+                throw new AvaticaClientRuntimeException(
+                    dse.getMessage(),
+                    dse.getSqlCode(),
+                    dse.getSqlState(),
+                    AvaticaSeverity.ERROR,
+                    Collections.emptyList(),
+                    null
+                );
             }
-            throw proxyApiException;
+            if (error instanceof ConnectException) {
+                throw new AvaticaClientRuntimeException(
+                    error.getMessage(),
+                    1152,
+                    "08S01",
+                    AvaticaSeverity.ERROR,
+                    Collections.emptyList(),
+                    null
+                );
+            }
+            throw error;
         }
     }
 }

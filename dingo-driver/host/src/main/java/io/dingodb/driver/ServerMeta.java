@@ -22,6 +22,7 @@ import io.dingodb.common.config.SecurityConfiguration;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.verify.auth.IdentityAuthService;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.ConnectionPropertiesImpl;
@@ -441,19 +442,16 @@ public class ServerMeta implements Meta {
     }
 
     @Override
+    @SneakyThrows
     public StatementHandle prepare(@NonNull ConnectionHandle ch, String sql, long maxRowCount) {
         if (log.isDebugEnabled()) {
             log.debug("connection handle = {}, sql = {}, maxRowCount = {}.", ch, sql, maxRowCount);
         }
         DingoConnection connection = connectionMap.get(ch.id);
-        try {
-            DingoPreparedStatement prepareStatement = (DingoPreparedStatement) connection.prepareStatement(sql);
-            StatementHandle handle = prepareStatement.handle;
-            prepareStatement.setSignature(handle.signature);
-            return new StatementHandle(ch.id, handle.id, handle.signature);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        DingoPreparedStatement prepareStatement = (DingoPreparedStatement) connection.prepareStatement(sql);
+        StatementHandle handle = prepareStatement.handle;
+        prepareStatement.setSignature(handle.signature);
+        return new StatementHandle(ch.id, handle.id, handle.signature);
     }
 
     @Deprecated

@@ -16,6 +16,7 @@
 
 package io.dingodb.proxy.model.dto;
 
+import io.dingodb.proxy.expr.langchain.Expr;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

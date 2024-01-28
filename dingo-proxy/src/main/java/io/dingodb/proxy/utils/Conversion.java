@@ -26,7 +26,6 @@ import io.dingodb.proxy.bean.ClientBean;
 import io.dingodb.proxy.common.ProxyCommon;
 import io.dingodb.proxy.mapper.EntityMapper;
 import io.dingodb.proxy.meta.ProxyMeta;
-import io.dingodb.sdk.common.partition.Partition;
 import io.dingodb.sdk.common.vector.Vector;
 import io.dingodb.sdk.service.entity.common.IndexParameter;
 import io.dingodb.sdk.service.entity.common.IndexType;
@@ -46,7 +45,6 @@ import io.dingodb.sdk.service.entity.common.VectorIndexType;
 import io.dingodb.sdk.service.entity.common.VectorScalardata;
 import io.dingodb.sdk.service.entity.common.VectorWithId;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -258,15 +256,15 @@ public class Conversion {
             case INT32:
                 return ScalarField.builder().data(IntData.of(field.getIntData())).build();
             case INT64:
-                return ScalarField.builder().data(LongData.of(field.getIntData())).build();
+                return ScalarField.builder().data(LongData.of(field.getLongData())).build();
             case FLOAT32:
                 return ScalarField.builder().data(FloatData.of(field.getFloatData())).build();
             case DOUBLE:
                 return ScalarField.builder().data(DoubleData.of(field.getDoubleData())).build();
             case STRING:
                 return ScalarField.builder().data(StringData.of(field.getStringData())).build();
-            case BYTES:
-                return ScalarField.builder().data(BytesData.of(field.getBytesData().toByteArray())).build();
+//            case BYTES:
+//                return ScalarField.builder().data(BytesData.of(field.getBytesData().toByteArray())).build();
             default:
                 throw new IllegalStateException("Unexpected value: " + type);
         }
@@ -330,8 +328,8 @@ public class Conversion {
     public static ProxyCommon.ScalarField mapping(ScalarField field, ScalarFieldType type) {
         switch (type) {
             case BOOL:
-                ProxyCommon.ScalarField build = ProxyCommon.ScalarField.newBuilder().setBoolData(((BoolData) field.getData()).isValue()).build();
-                return build;
+                return ProxyCommon.ScalarField.newBuilder()
+                    .setBoolData(((BoolData) field.getData()).isValue()).build();
             case INT8:
             case INT16:
             case INT32:

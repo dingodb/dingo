@@ -219,7 +219,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             if (oldKey[oldKey.length - 2] == Op.PUTIFABSENT.getCode()
                 || oldKey[oldKey.length - 2] == Op.PUT.getCode()) {
                 throw new DuplicateEntryException("Duplicate entry " +
-                    TransactionUtil.duplicateEntryKey(txnId, key) + "for key 'PRIMARY'");
+                    TransactionUtil.duplicateEntryKey(CommonId.decode(tableIdByte), key) + " for key 'PRIMARY'");
             } else {
                 // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
                 byte[] extraKey = ByteUtils.encode(

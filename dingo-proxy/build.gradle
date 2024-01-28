@@ -45,6 +45,7 @@ dependencies {
 
     implementation group: 'io.dingodb.expr', name: 'dingo-expr-parser', version: 'dingo-expr'.v()
     implementation group: 'io.dingodb.expr', name: 'dingo-expr-rel', version: 'dingo-expr'.v()
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-coding', version: 'dingo-expr'.v()
 
     implementation project(":dingo-net-api")
     implementation project(":dingo-net-netty")

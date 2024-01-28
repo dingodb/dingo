@@ -36,7 +36,6 @@ import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
-import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
 import io.dingodb.sdk.common.serial.schema.DingoSchema;
 import io.dingodb.sdk.common.serial.schema.LongSchema;
@@ -72,7 +71,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -129,24 +127,14 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             try {
                 return method.invoke(storeInstance, args);
-            } catch (DingoClientException.InvalidRouteTableException e) {
+            } catch (Exception e) {
                 io.dingodb.store.proxy.meta.MetaService.ROOT.cache.invalidDistribution(
                     storeInstance.tableId
                 );
                 io.dingodb.store.proxy.meta.MetaService.ROOT.cache.invalidDistribution(
                     storeInstance.table.tableId
                 );
-                throw e;
-            } catch (InvocationTargetException e) {
-                if (e.getTargetException() instanceof DingoClientException.InvalidRouteTableException) {
-                    io.dingodb.store.proxy.meta.MetaService.ROOT.cache.invalidDistribution(
-                        storeInstance.tableId
-                    );
-                    io.dingodb.store.proxy.meta.MetaService.ROOT.cache.invalidDistribution(
-                        storeInstance.table.tableId
-                    );
-                }
-                throw e.getTargetException();
+                return method.invoke(storeInstance, args);
             }
         }
     }

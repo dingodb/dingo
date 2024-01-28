@@ -16,7 +16,7 @@
 
 package io.dingodb.proxy.model.dto;
 
-import io.dingodb.client.common.VectorCoprocessor;
+import io.dingodb.proxy.expr.langchain.Expr;
 import io.dingodb.sdk.common.vector.Search;
 import io.dingodb.sdk.service.entity.common.CoprocessorV2;
 import io.dingodb.sdk.service.entity.common.VectorFilter;
@@ -48,4 +48,6 @@ public class VectorSearchParameter {
     private List<Long> vectorIds;
 
     private boolean useBruteForce;
+
+    private Expr langchainExpr;
 }

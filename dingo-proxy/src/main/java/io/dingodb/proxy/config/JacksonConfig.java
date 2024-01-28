@@ -18,10 +18,13 @@ package io.dingodb.proxy.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import io.dingodb.expr.runtime.op.OpType;
+import io.dingodb.expr.runtime.type.Type;
+import io.dingodb.proxy.handler.ExprOpDeserializer;
+import io.dingodb.proxy.handler.ExprTypeDeserializer;
 import io.dingodb.proxy.handler.ScalarValueDeserializer;
 import io.dingodb.proxy.handler.StringDataSerializer;
 import io.dingodb.proxy.handler.VectorIndexParameterDeserializer;
-import io.dingodb.sdk.service.entity.common.ScalarField;
 import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.StringData;
 import io.dingodb.sdk.service.entity.common.ScalarValue;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter;
@@ -29,13 +32,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import javax.annotation.PostConstruct;
-
 @Configuration
 public class JacksonConfig {
 
+    public static ObjectMapper jsonMapper;
+
     @Bean
     public VectorIndexParameterDeserializer addVectorIndexParameterDeserializer(@Autowired ObjectMapper mapper) {
+        jsonMapper = mapper;
         SimpleModule simpleModule = new SimpleModule();
         VectorIndexParameterDeserializer vectorIndexParameterDeserializer = new VectorIndexParameterDeserializer();
         simpleModule.addDeserializer(VectorIndexParameter.class, vectorIndexParameterDeserializer);
@@ -45,6 +49,7 @@ public class JacksonConfig {
 
     @Bean
     public ScalarValueDeserializer addScalarValueDeserializer(@Autowired ObjectMapper mapper) {
+        jsonMapper = mapper;
         SimpleModule simpleModule = new SimpleModule();
         ScalarValueDeserializer deserializer = new ScalarValueDeserializer();
         simpleModule.addDeserializer(ScalarValue.class, deserializer);
@@ -55,10 +60,29 @@ public class JacksonConfig {
 
     @Bean
     public StringDataSerializer addStringDataSerializer(@Autowired ObjectMapper mapper) {
+        jsonMapper = mapper;
         SimpleModule simpleModule = new SimpleModule();
         StringDataSerializer serializer = new StringDataSerializer();
         simpleModule.addSerializer(StringData.class, serializer);
         mapper.registerModule(simpleModule);
         return serializer;
+    }
+
+    @Bean
+    public ExprOpDeserializer addExprOpDeserializer(@Autowired ObjectMapper mapper) {
+        SimpleModule simpleModule = new SimpleModule();
+        ExprOpDeserializer deserializer = new ExprOpDeserializer();
+        simpleModule.addDeserializer(OpType.class, deserializer);
+        mapper.registerModule(simpleModule);
+        return deserializer;
+    }
+
+    @Bean
+    public ExprTypeDeserializer addExprTypeDeserializer(@Autowired ObjectMapper mapper) {
+        SimpleModule simpleModule = new SimpleModule();
+        ExprTypeDeserializer deserializer = new ExprTypeDeserializer();
+        simpleModule.addDeserializer(Type.class, deserializer);
+        mapper.registerModule(simpleModule);
+        return deserializer;
     }
 }
