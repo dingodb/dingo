@@ -63,8 +63,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -369,27 +367,11 @@ public class DingoMeta extends MetaImpl {
         ITransaction transaction = ((DingoConnection) connection).getTransaction();
         DingoPreparedStatement statement = (DingoPreparedStatement) ((DingoConnection) connection).getStatement(sh);
         if (transaction == null) {
-            Job job = statement.getJob(jobManager);
-            if (job != null) {
-                Task task = job.getTasks().entrySet().stream().findFirst().get().getValue();
-                if (task.getTransactionType() == TransactionType.OPTIMISTIC
-                    || task.getTransactionType() == TransactionType.NONE) {
-                    transaction = ((DingoConnection) connection).createTransaction(
-                        task.getTransactionType(),
-                        true
-                    );
-                    statement.setTxnId(jobManager, transaction.getTxnId());
-                } else {
-                    jobManager.removeJob(statement.getJobId(jobManager));
-                    DingoConnection dingoConnection = (DingoConnection) connection;
-                    DingoDriverParser parser = new DingoDriverParser(dingoConnection);
-                    sh.signature = parser.parseQuery(jobManager, sh.toString(), statement.getSql());
-                }
-            }
+            transaction = prepareJobAndTxn(sh, statement);
         }
         try {
             for (List<TypedValue> parameterValue : parameterValues) {
-                ExecuteResult executeResult = execute(sh, parameterValue, -1);
+                ExecuteResult executeResult = execBach(sh, parameterValue, -1);
                 final long updateCount =
                     executeResult.resultSets.size() == 1
                         ? executeResult.resultSets.get(0).updateCount
@@ -477,6 +459,8 @@ public class DingoMeta extends MetaImpl {
             }
             boolean done = fetchMaxRowCount == 0 || !iterator.hasNext();
             if (transaction != null) {
+                log.info("{} sql:{} , txnAutoCommit:{}, txnType:{} ", transaction.getTxnId(),
+                    signature.sql, transaction.isAutoCommit(), transaction.getType());
                 transaction.addSql(signature.sql);
                 if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
                     connection.commit();
@@ -505,6 +489,97 @@ public class DingoMeta extends MetaImpl {
 
     @Override
     public ExecuteResult execute(
+        @NonNull StatementHandle sh,
+        List<TypedValue> parameterValues,
+        int maxRowsInFirstFrame
+    ) throws NoSuchStatementException {
+        DingoPreparedStatement statement = (DingoPreparedStatement) ((DingoConnection) connection).getStatement(sh);
+        // In a non-batch prepared statement call, the parameter values are already set, but we set here to make this
+        // function reusable for batch call.
+        statement.setParameterValues(parameterValues);
+        ITransaction transaction = ((DingoConnection) connection).getTransaction();
+        if (transaction == null) {
+            transaction = prepareJobAndTxn(sh, statement);
+        }
+        try {
+            if (statement.getStatementType().canUpdate()) {
+                final Iterator<Object[]> iterator = createIterator(statement);
+                MetaResultSet metaResultSet = MetaResultSet.count(
+                    sh.connectionId,
+                    sh.id,
+                    ((Number) iterator.next()[0]).longValue()
+                );
+                if (transaction != null) {
+                    transaction.addSql(statement.getSql());
+                    if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
+                        try {
+                            connection.commit();
+                        } catch (SQLException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+                return new ExecuteResult(ImmutableList.of(metaResultSet));
+            }
+            MetaResultSet metaResultSet;
+            final Frame frame = new Frame(0, false, Collections.emptyList());
+            metaResultSet = MetaResultSet.create(sh.connectionId, sh.id, false, sh.signature, frame);
+            if (transaction != null) {
+                transaction.addSql(statement.getSql());
+                if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
+                    try {
+                        connection.commit();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+            return new ExecuteResult(ImmutableList.of(metaResultSet));
+        } catch (Throwable throwable) {
+            log.error("run job exception:{}", throwable, throwable);
+            if (transaction != null && transaction.isPessimistic()
+                && transaction.getPrimaryKeyLock() != null
+                && statement.isDml()) {
+                // rollback pessimistic lock
+                transaction.rollBackPessimisticLock(jobManager);
+            }
+            if (transaction != null) {
+                transaction.addSql(statement.getSql());
+                if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
+                    try {
+                        cleanTransaction();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+            throw ExceptionUtils.toRuntime(throwable);
+        }
+    }
+
+    private ITransaction prepareJobAndTxn(@NonNull StatementHandle sh, DingoPreparedStatement statement) {
+        ITransaction transaction = null;
+        Job job = statement.getJob(jobManager);
+        if (job != null) {
+            Task task = job.getTasks().entrySet().stream().findFirst().get().getValue();
+            if (task.getTransactionType() == TransactionType.OPTIMISTIC
+                || task.getTransactionType() == TransactionType.NONE) {
+                transaction = ((DingoConnection) connection).createTransaction(
+                    task.getTransactionType(),
+                    true
+                );
+                statement.setTxnId(jobManager, transaction.getTxnId());
+            } else {
+                jobManager.removeJob(statement.getJobId(jobManager));
+                DingoConnection dingoConnection = (DingoConnection) connection;
+                DingoDriverParser parser = new DingoDriverParser(dingoConnection);
+                sh.signature = parser.parseQuery(jobManager, sh.toString(), statement.getSql());
+            }
+        }
+        return transaction;
+    }
+
+    public ExecuteResult execBach(
         @NonNull StatementHandle sh,
         List<TypedValue> parameterValues,
         int maxRowsInFirstFrame

@@ -136,11 +136,12 @@ public abstract class BaseTransaction implements ITransaction {
             future.cancel(true);
         }
         finishedFuture.complete(null);
+        log.info("{} cleanUp finishedFuture the current {} end", txnId, transactionOf());
         if (getType() == TransactionType.NONE) {
             return;
         }
         if (getSqlList().size() == 0 || !cache.checkCleanContinue()) {
-            log.warn("{} The current {} has no data to cleanUp",txnId, transactionOf());
+            log.warn("{} The current {} has no data to cleanUp", txnId, transactionOf());
             return;
         }
         Location currentLocation = MetaService.root().currentLocation();
@@ -218,6 +219,7 @@ public abstract class BaseTransaction implements ITransaction {
         // begin
         // nothing
         // commit
+        log.info("{} {} Start commit", txnId, transactionOf());
         if (status != TransactionStatus.START) {
             throw new RuntimeException(txnId + ":" + transactionOf() + " unavailable status is " + status);
         }
