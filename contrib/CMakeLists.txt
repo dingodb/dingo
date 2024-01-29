@@ -5,6 +5,7 @@ project(TANTIVY_SEARCH_CONTRIB)
 add_subdirectory(boost-cmake)
 add_subdirectory(google_test)
 add_subdirectory(benchmark)
+add_subdirectory(corrosion-rs-cmake)
 
 # gather third-party include directories
 set(CONTRIB_INCLUDE_DIRS 

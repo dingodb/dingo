@@ -16,9 +16,9 @@ namespace Utils {
 
     std::string getCurrentDateTime() {
         auto now = std::chrono::system_clock::now(); // get current time.
-        auto now_c = std::chrono::system_clock::to_time_t(now); // convert to `time_t`
+        auto now_converted = std::chrono::system_clock::to_time_t(now); // convert to `time_t`
         std::ostringstream oss;
-        oss << std::put_time(std::localtime(&now_c), "%Y-%m-%d %H:%M:%S");
+        oss << std::put_time(std::localtime(&now_converted), "%Y-%m-%d %H:%M:%S");
         return oss.str();
     }
 
@@ -74,15 +74,12 @@ namespace Utils {
     void initialize_easy_logger(el::Level log_level) {
         el::Configurations defaultConf;
         defaultConf.setToDefault();
-        // formatter
-        defaultConf.set(log_level, el::ConfigurationType::Format, "%datetime %level %msg");
-        // write to file
-        defaultConf.set(log_level, el::ConfigurationType::ToFile, "true");
-        // std out
-        defaultConf.set(log_level, el::ConfigurationType::ToStandardOutput, "true");
-        // apply config to logger
-        el::Loggers::reconfigureLogger("default", defaultConf);
-
-        LOG(INFO) << "initialize easylogger finished.";
+        defaultConf.set(log_level, el::ConfigurationType::Enabled, "true");
+        // TODO: need diable debug, trace manually.
+        defaultConf.set(log_level, el::ConfigurationType::Format, "%datetime %level %msg"); // formatter
+        defaultConf.set(log_level, el::ConfigurationType::ToFile, "true"); // write to file
+        defaultConf.set(log_level, el::ConfigurationType::ToStandardOutput, "true"); // std out
+        el::Loggers::reconfigureLogger("default", defaultConf); // apply config to logger
+        LOG(INFO) << "Easylogger has been initialized.";
     }
 } // namespace Utils

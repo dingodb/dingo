@@ -73,7 +73,8 @@
         "variant": "cpp",
         "complex": "cpp",
         "csignal": "cpp",
-        "bitset": "cpp"
+        "bitset": "cpp",
+        "*.ipp": "cpp"
     },
     "rust-analyzer.linkedProjects": [
         "./Cargo.toml"

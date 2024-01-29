@@ -84,11 +84,9 @@ fn run_benchmark(
         < Duration::from_secs(duration_seconds as u64)
     {
         for term in terms.iter() {
-            // 限制 pool 队列等待的最大长度
             while pool.queued_count() >= pool_max_active_count {
                 thread::sleep(Duration::from_millis(1000));
             }
-            // 超过限制时间, 停止执行
             if Instant::now().duration_since(benchmark_start_time)
                 > Duration::from_secs(duration_seconds as u64)
             {
@@ -144,7 +142,7 @@ fn load_terms_from_json<P: AsRef<Path>>(path: P) -> Vec<String> {
     let reader = BufReader::new(file);
     let json: Value = serde_json::from_reader(reader).expect("Unable to parse JSON");
 
-    // 假设 JSON 结构是 {"terms": ["term1", "term2", ...]}
+    // assume that: JSON struct {"terms": ["term1", "term2", ...]}
     json["terms"]
         .as_array()
         .expect("Expected an array")
@@ -218,7 +216,7 @@ fn main() {
                 .long("index-path")
                 .value_name("INDEX_PATH")
                 .help("Set index path")
-                .default_value("/home/mochix/tantivy_search_memory/index_path"),
+                .default_value("index_files_path"),
         )
         .arg(
             Arg::with_name("query-term-path")
@@ -227,7 +225,7 @@ fn main() {
                 .value_name("QUERY_TERM_PATH")
                 .help("Set query term path")
                 .default_value(
-                    "/home/mochix/workspace_github/tantivy-search/examples/query_terms.json",
+                    "query_terms.json",
                 ),
         )
         .arg(
@@ -236,8 +234,7 @@ fn main() {
                 .long("dataset-path")
                 .value_name("DATASET_PATH")
                 .help("Set dataset path")
-                .default_value(
-                    "/home/mochix/workspace_github/tantivy-search/examples/wiki_560w.json",
+                .default_value("wiki_560w.json",
                 ),
         )
         .arg(
@@ -334,13 +331,13 @@ fn main() {
         }
     });
 
-    // 索引数据集
+    // build index
     if !skip_build_index {
         println!("Starting index docs from dataset: {:?}", dataset_path);
         total_rows = index_docs_from_json(dataset_path, index_path_cxx);
         println!("{:?} docs has been indexed.", total_rows);
     }
-    // 初始化相关数据
+    // initialize related data
     let terms = load_terms_from_json(query_term_path);
     let row_id_range = generate_array(8192, 0, total_rows);
     let pool = ThreadPool::new(pool_size);
@@ -357,7 +354,7 @@ fn main() {
 
         let _ = tantivy_load_index(index_path_cxx);
 
-        // 运行基准测试
+        // run benchmark
         println!("[{}] Trying benchmark", i);
         if !skip_benchmark {
             run_benchmark(
@@ -379,7 +376,7 @@ fn main() {
         }
         println!("[{}] Waiting queue-[{}] done.", i, pool.queued_count());
         let _ = tantivy_reader_free(index_path_cxx);
-        // Arc 引用计数 = 1, 自动释放 IndexR
+        // Arc count = 1, auto free IndexR
     }
 
     is_finished.store(true, Ordering::SeqCst);

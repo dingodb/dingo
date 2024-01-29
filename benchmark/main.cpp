@@ -1,4 +1,5 @@
-#include "simple_query_benchmark.h"
+#include <SkipIndexBenchmark.h>
+#include <Bm25SearchBenchmark.h>
 #include <benchmark/benchmark.h>
 using namespace std;
 namespace  bpo = boost::program_options;
@@ -7,11 +8,15 @@ namespace  bpo = boost::program_options;
 int main(int argc, char** argv) {
     string index_path;
     string query_term_path;
+    string docs_path;
+    bool skip_build_index;
 
     bpo::options_description desc("Benchmark Options");
     desc.add_options()
-    ("index-path,ip", bpo::value<std::string>(&index_path)->default_value("/home/mochix/tantivy_search_memory/index_path"), "tantivy index files path")
-    ("query-term-path,qtp", bpo::value<std::string>(&query_term_path)->default_value("/home/mochix/workspace_github/tantivy-search/examples/query_terms.json"), "query terms file path")
+    ("index-path,ip", bpo::value<std::string>(&index_path)->default_value("/tmp/tantivy_search/benchmark/index_path"), "tantivy index files directory")
+    ("query-term-path,qtp", bpo::value<std::string>(&query_term_path)->default_value("query_terms.json"), "query terms json file path")
+    ("docs-path,dp", bpo::value<std::string>(&docs_path)->default_value("wiki_560w.json"), "docs json file path")
+    ("skip-build-index,sbi", bpo::value<bool>(&skip_build_index)->default_value(false), "if need skip build index")
     ("help", "this is help message");
 
    try {
@@ -21,22 +26,35 @@ int main(int argc, char** argv) {
         if(vm.count("help")) {
             return 0;
         }
+
+
+        char arg0_default[] = "benchmark";
+        char* args_default = arg0_default;
+        if (!argv) {
+        argc = 1;
+        argv = &args_default;
+        }
+
+        // Prepare for benchmark.
+        if (!skip_build_index){
+            std::cout << "Building index for WikiSkipIndexSearchBenchmark" << endl;
+            index_docs_from_json(docs_path, index_path);
+            std::cout << "Build finished." << endl;
+        }
+        WikiDatasetLoader::getInstance().loadQueryTerms(query_term_path);
+        WikiDatasetLoader::getInstance().setIndexDirectory(index_path);
+
+
+
+        // Run all benchmark
+        int benchmark_argc = 1;
+        char* benchmark_argv[] = { argv[0] };
+        ::benchmark::Initialize(&benchmark_argc, benchmark_argv);
+        if (::benchmark::ReportUnrecognizedArguments(benchmark_argc, benchmark_argv)) return 1;
+        ::benchmark::RunSpecifiedBenchmarks();
+        ::benchmark::Shutdown();
+        return 0;
     } catch (const bpo::error &e) {
         return 1;
     }
-
-    char arg0_default[] = "benchmark";
-    char* args_default = arg0_default;
-    if (!argv) {
-      argc = 1;
-      argv = &args_default;
-    }
-
-    // SearchBenchmark::query_term_path = "/home/mochix/workspace_github/tantivy-search/examples/query_terms.json";
-
-    ::benchmark::Initialize(&argc, argv);
-    if (::benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
-    ::benchmark::RunSpecifiedBenchmarks();
-    ::benchmark::Shutdown();
-    return 0;
 }

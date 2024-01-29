@@ -20,3 +20,6 @@
 [submodule "contrib/cang-jie"]
 	path = contrib/cang-jie
 	url = git@git.moqi.ai:rust/cang-jie.git
+[submodule "contrib/corrosion-rs"]
+	path = contrib/corrosion-rs
+	url = https://github.com/corrosion-rs/corrosion.git

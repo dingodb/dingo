@@ -59,11 +59,11 @@ fn load_terms_from_json<P: AsRef<Path>>(path: P) -> Vec<String> {
 }
 
 fn main() {
-    let each_loop_terms_size = 1000; // 每个 loop 搜索的 term 数量
-    let free_seconds: u64 = 120; // 释放资源前的等待时间
-    let query_terms_path = "/home/mochix/tantivy_search_memory/query_terms.json";
-    let index_path = "/home/mochix/tantivy_search_memory/loop_search/index_path";
-    let dataset_path = "/home/mochix/tantivy_search_memory/wiki_560w.json";
+    let each_loop_terms_size = 1000; // each loop search counts.
+    let free_seconds: u64 = 120; // waiting before free resource
+    let query_terms_path = "query_terms.json";
+    let index_path = "index_files_path";
+    let dataset_path = "wiki_560w.json";
     let skip_index_build = true;
     let loop_size = 100;
 

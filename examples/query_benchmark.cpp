@@ -115,19 +115,19 @@ double calculate_ms_average() {
 
 
 // benchmark
-void run_benchmark(size_t idx,                              // iter id
-                   const std::vector<std::string>& terms,   // query terms
-                   size_t each_benchmark_duration,          // benchmark time should smaller than each_benchmark_duration
-                   ThreadPool& pool,                        // thread pool
-                   std::string& index_path,                 // index reader
-                   std::atomic<int>& query_count,           // how many terms have been queried
-                   const std::vector<size_t>& row_id_range, // row_id_range for queried
-                   size_t row_id_step,                      // row_id_step is similar wih granule range 8192
-                   std::atomic<size_t> &finished_tasks,     // how many tasks have been finished
+void run_benchmark(size_t idx,                               // iter id
+                   const std::vector<std::string>& terms,    // query terms
+                   size_t each_benchmark_duration,           // benchmark time should smaller than each_benchmark_duration
+                   ThreadPool& pool,                         // thread pool
+                   std::string& index_path,                  // index reader
+                   std::atomic<int>& query_count,            // how many terms have been queried
+                   const std::vector<size_t>& row_id_range,  // row_id_range for queried
+                   size_t row_id_step,                       // row_id_step is similar wih granule range 8192
+                   std::atomic<size_t> &finished_tasks,      // how many tasks have been finished
                    std::atomic<size_t> &enqueue_tasks_count, // record enqueue task size.
                    std::size_t max_pending_tasks,            // `bench_task` max count in queue
                    bool use_bm25_search,                     // test `bm25_search`, rather than `skip-index`
-                   bool use_topk_delete,                   // whether use random delete when test `bm25_search`. 
+                   bool use_topk_delete,                     // whether use random delete when test `bm25_search`. 
                    bool verify_delete_correct,               // when use topk_delete, verify it's results.
                    std::size_t bm25_search_topk,             // bm25_search topk
                    bool only_random_delete)                  // only use random k delete
@@ -243,9 +243,9 @@ int main(int argc, char* argv[])
     ("skip-benchmark,sb", bpo::value<bool>(&skip_benchmark)->default_value(false), "skip benchmark")
     ("each-free-wait,efw", bpo::value<int>(&each_free_wait)->default_value(120), "set free index reader duration")
     ("iter-times,it", bpo::value<std::size_t>(&iter_times)->default_value(30), "iter times")
-    ("index-path,ip", bpo::value<std::string>(&index_path)->default_value("/home/mochix/tantivy_search_memory/index_path"), "tantivy index files path")
-    ("query-term-path,qtp", bpo::value<std::string>(&query_term_path)->default_value("/home/mochix/workspace_github/tantivy-search/examples/query_terms.json"), "query terms file path")
-    ("dataset-path,dp", bpo::value<std::string>(&dataset_path)->default_value("/home/mochix/workspace_github/tantivy-search/examples/wiki_560w.json"), "dataset file path")
+    ("index-path,ip", bpo::value<std::string>(&index_path)->default_value("index_files_path"), "tantivy index files path")
+    ("query-term-path,qtp", bpo::value<std::string>(&query_term_path)->default_value("query_terms.json"), "query terms file path")
+    ("dataset-path,dp", bpo::value<std::string>(&dataset_path)->default_value("wiki_560w.json"), "dataset file path")
     ("max-pending-tasks,mpt", bpo::value<std::size_t>(&max_pending_tasks)->default_value(1000), "max pending tasks")
     ("use-bm25-search,ubs", bpo::value<bool>(&use_bm25_search)->default_value(false), "test bm25 search, not skip-index")
     ("use-topk-delete,utd", bpo::value<bool>(&use_topk_delete)->default_value(false), "use topk delete")
@@ -283,7 +283,7 @@ int main(int argc, char* argv[])
 
     size_t total_rows = 5600000;
     size_t row_id_step = 8192;
-    tantivy_logger_initialize("./log", "info", false, tantivy_easylogging_callback, true, false);
+    tantivy_logger_initialize("./log", "info", true, tantivy_easylogging_callback, true, false);
 
     ThreadPool pool(pool_size);
     std::atomic<int> query_count(0);

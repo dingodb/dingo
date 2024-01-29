@@ -360,7 +360,7 @@ mod tests {
         env_logger::Builder::from_env(Env::default().default_filter_or("trace")).init();
 
         // init tokenizer
-        let (tokenizer_type, tokenizer) = get_custom_tokenizer("chinese").unwrap();
+        let (tokenizer_type, tokenizer) = get_custom_tokenizer("chinese(default, search)").unwrap();
         // get searcher
         let (schema, searcher) = test_get_custom_tokenizer_helper(tokenizer_type.name(), tokenizer);
 
@@ -392,6 +392,15 @@ mod tests {
             .search(&raw_text_query, &Count)
             .expect("failed to execute text search with raw");
         println!("raw_text_count: {}", raw_text_count);
+
+        let query_parser = QueryParser::for_index(&searcher.index(), vec![text_field]);
+        let multi_chinese_words = query_parser
+            .parse_query("差旅 OR (日常 AND 生活)")
+            .expect("failed to parse text query with raw");
+        let multi_chinese_words_count = searcher
+            .search(&multi_chinese_words, &Count)
+            .expect("failed to execute text search with chinese words");
+        println!("multi_chinese_words_count: {}", multi_chinese_words_count);
         // assert_eq!(raw_text_count, 0);
     }
 
@@ -429,6 +438,9 @@ mod tests {
             r"我姓石，无论何时与你相识我都值".to_string(),
             r"心往神驰执笔在意写神池".to_string(),
             r"你今天下午吃饭了吗？晚上很值得吃一顿！".to_string(),
+            r"这是你的差旅账单".to_string(),
+            r"这是你的日常账单".to_string(),
+            r"这是你的生活账单".to_string(),
         ];
         for i in 0..str_vec.len() {
             let mut temp = Document::default();

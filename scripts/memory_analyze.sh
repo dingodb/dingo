@@ -28,10 +28,10 @@ convert_to_kb() {
 }
 
 while true; do
-    # 使用 top 命令获取特定进程的信息
-    # -b: 批处理模式，适用于脚本
-    # -n 1: 只获取一次更新
-    # -p $PID: 只监控特定的进程
+    # get thread memory by `top` command
+    # -b: batch mode
+    # -n 1: get once update
+    # -p $PID: only watch specific thread
     PROCESS_INFO=$(top -b -n 1 -p $PID | grep $PID)
 
     if [ -z "$PROCESS_INFO" ]; then
