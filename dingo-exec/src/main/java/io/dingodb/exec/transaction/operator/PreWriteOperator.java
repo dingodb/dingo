@@ -101,7 +101,7 @@ public final class PreWriteOperator extends TransactionOperator {
                 param.setPartId(null);
             }
         } else {
-            boolean result = txnPreWrite(param, txnId, tableId, partId);
+            boolean result = txnPreWrite(param, txnId, param.getTableId(), partId);
             if (!result) {
                 throw new RuntimeException(txnId + " " + partId + ",txnPreWrite false,PrimaryKey:" + param.getPrimaryKey().toString());
             }

@@ -16,8 +16,15 @@
 
 package io.dingodb.exec.transaction.operator;
 
+import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.TupleType;
+import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
@@ -27,6 +34,7 @@ import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.transaction.params.RollBackParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Op;
@@ -56,6 +64,18 @@ public class RollBackOperator extends TransactionOperator {
         int op = (byte) tuple[4];
         byte[] key = (byte[]) tuple[5];
         long forUpdateTs = 0;
+        if (tableId.type == CommonId.CommonType.INDEX) {
+            IndexTable indexTable = TransactionUtil.getIndexDefinitions(tableId);
+            if (indexTable.indexType.isVector) {
+                KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
+                Object[] decodeKey = codec.decodeKeyPrefix(key);
+                TupleMapping mapping = TupleMapping.of(new int[]{0});
+                DingoType dingoType = new LongType(false);
+                TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
+                KeyValueCodec vectorCodec = CodecService.getDefault().createKeyValueCodec(tupleType, mapping);
+                key = vectorCodec.encodeKeyPrefix(new Object[]{decodeKey[0]}, 1);
+            }
+        }
         if (param.getTransactionType() == TransactionType.PESSIMISTIC) {
             StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
             byte[] txnIdByte = txnId.encode();
@@ -104,7 +124,7 @@ public class RollBackOperator extends TransactionOperator {
             boolean result = txnRollBack(
                 param,
                 txnId,
-                tableId,
+                param.getTableId(),
                 partId,
                 param.getTransactionType() == TransactionType.PESSIMISTIC
             );
