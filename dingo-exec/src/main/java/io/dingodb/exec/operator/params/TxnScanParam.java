@@ -16,33 +16,50 @@
 
 package io.dingodb.exec.operator.params;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.exec.dag.Vertex;
+import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-@JsonTypeName("scan0")
+@Getter
+@JsonTypeName("txnScan0")
 @JsonPropertyOrder({
     "tableId",
     "schema",
     "keyMapping",
+    "scanTs",
+    "isolationLevel",
+    "timeOut",
 })
-public class ScanWithNoOpParam extends ScanWithOpParam {
-    public ScanWithNoOpParam(
+public final class TxnScanParam extends ScanParam {
+    @JsonProperty("isolationLevel")
+    private final int isolationLevel;
+    @JsonProperty("timeOut")
+    private final long timeOut;
+    @JsonProperty("scanTs")
+    private long scanTs;
+
+    public TxnScanParam(
         CommonId tableId,
         @NonNull DingoType schema,
-        TupleMapping keyMapping
+        TupleMapping keyMapping,
+        long scanTs,
+        int isolationLevel,
+        long timeOut
     ) {
         super(tableId, schema, keyMapping);
+        this.scanTs = scanTs;
+        this.isolationLevel = isolationLevel;
+        this.timeOut = timeOut;
     }
 
     @Override
-    public void init(Vertex vertex) {
-        super.init(vertex);
-        codec = CodecService.getDefault().createKeyValueCodec(schema, keyMapping);
+    public void setStartTs(long startTs) {
+        super.setStartTs(startTs);
+        this.scanTs = startTs;
     }
 }

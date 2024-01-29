@@ -18,14 +18,15 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.expr.RelOpUtils;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.RelOpParam;
+import io.dingodb.exec.utils.RelOpUtils;
 import io.dingodb.expr.rel.CacheOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-public final class CacheOpOperator extends RelOpOperator {
+public final class CacheOpOperator extends SoleOutOperator {
     public static final CacheOpOperator INSTANCE = new CacheOpOperator();
 
     private CacheOpOperator() {
@@ -41,7 +42,7 @@ public final class CacheOpOperator extends RelOpOperator {
     }
 
     @Override
-    protected boolean doPush(Context context, @NonNull Vertex vertex, Object[] tuple) {
+    public boolean push(Context context, @Nullable Object[] tuple, @NonNull Vertex vertex) {
         CacheOp relOp = (CacheOp) ((RelOpParam) vertex.getParam()).getRelOp();
         relOp.put(tuple);
         return true;

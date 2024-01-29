@@ -18,19 +18,23 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.operator.params.ScanWithRelOpParam;
+import io.dingodb.exec.utils.RelOpUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 @Slf4j
-@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public abstract class RelOpOperator extends SoleOutOperator {
-    protected abstract boolean doPush(Context context, @NonNull Vertex vertex, Object[] tuple);
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+public final class TxnScanWithPipeOpOperator extends TxnScanWithRelOpOperatorBase {
+    public static TxnScanWithPipeOpOperator INSTANCE = new TxnScanWithPipeOpOperator();
 
     @Override
-    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        return doPush(context, vertex, tuple);
+    protected @NonNull Scanner getScanner(@NonNull Context context, @NonNull Vertex vertex) {
+        if (((ScanWithRelOpParam) vertex.getParam()).getCoprocessor() != null) {
+            return RelOpUtils::doScan;
+        }
+        return RelOpUtils::doScanWithPipeOp;
     }
 }

@@ -16,36 +16,25 @@
 
 package io.dingodb.exec.operator;
 
-import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.expr.RelOpUtils;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.ScanWithRelOpParam;
-import io.dingodb.expr.rel.PipeOp;
+import io.dingodb.exec.utils.RelOpUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.Iterator;
-
 @Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class ScanWithPipeOpOperator extends ScanWithRelOpOperator {
+public final class ScanWithPipeOpOperator extends ScanWithRelOpOperatorBase {
     public static ScanWithPipeOpOperator INSTANCE = new ScanWithPipeOpOperator();
 
     @Override
-    protected long doPush(Context context, @NonNull Vertex vertex, @NonNull Iterator<Object[]> sourceIterator) {
-        PipeOp relOp = (PipeOp) ((ScanWithRelOpParam) vertex.getParam()).getRelOp();
-        Edge edge = vertex.getSoleEdge();
-        long count = 0;
-        while (sourceIterator.hasNext()) {
-            Object[] tuple = sourceIterator.next();
-            ++count;
-            if (!RelOpUtils.processWithPipeOp(relOp, tuple, edge, context)) {
-                break;
-            }
+    protected @NonNull Scanner getScanner(@NonNull Context context, @NonNull Vertex vertex) {
+        if (((ScanWithRelOpParam) vertex.getParam()).getCoprocessor() != null) {
+            return RelOpUtils::doScan;
         }
-        return count;
+        return RelOpUtils::doScanWithPipeOp;
     }
 }

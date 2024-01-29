@@ -237,6 +237,13 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
+    default Iterator<KeyValue> txnScan(long startTs, Range range, long timeOut, CoprocessorV2 coprocessor) {
+        if (coprocessor == null) {
+            return txnScan(startTs, range, timeOut);
+        }
+        throw new UnsupportedOperationException();
+    }
+
     default KeyValue txnGet(long startTs, byte[] key, long timeOut) {
         return txnGet(startTs, Collections.singletonList(key), timeOut).get(0);
     }

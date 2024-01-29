@@ -34,8 +34,10 @@ import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.params.DistributionSourceParam;
-import io.dingodb.exec.operator.params.ScanWithNoOpParam;
+import io.dingodb.exec.operator.params.ScanParam;
 import io.dingodb.exec.operator.params.ScanWithRelOpParam;
+import io.dingodb.exec.operator.params.TxnScanParam;
+import io.dingodb.exec.operator.params.TxnScanWithRelOpParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.expr.rel.CacheOp;
 import io.dingodb.expr.rel.PipeOp;
@@ -57,6 +59,9 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SCAN_WITH_CACHE_OP;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SCAN_WITH_NO_OP;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SCAN_WITH_PIPE_OP;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_SCAN_WITH_CACHE_OP;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_SCAN_WITH_NO_OP;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_SCAN_WITH_PIPE_OP;
 
 @Slf4j
 public final class DingoScanWithRelOpVisitFun {
@@ -103,62 +108,74 @@ public final class DingoScanWithRelOpVisitFun {
             || visitor.getKind() == SqlKind.UPDATE)) {
             scanTs = TsoService.getDefault().tso();
         }
-        // TODO
+        Vertex vertex;
         for (int i = 0; i <= Optional.mapOrGet(td.getPartitions(), List::size, () -> 0); i++) {
-            Vertex scanVertex;
-//            if (transaction != null) {
-//                task = job.getOrCreate(
-//                    currentLocation,
-//                    idGenerator,
-//                    transaction.getType(),
-//                    IsolationLevel.of(transaction.getIsolationLevel())
-//                );
-//                TxnPartRangeScanParam param = new TxnPartRangeScanParam(
-//                    tableInfo.getId(),
-//                    td.tupleType(),
-//                    td.keyMapping(),
-//                    Optional.mapOrNull(filter, SqlExpr::copy),
-//                    rel.getSelection(),
-//                    rel.getGroupSet() == null ? null
-//                        : AggFactory.getAggKeys(rel.getGroupSet()),
-//                    rel.getAggCalls() == null ? null : AggFactory.getAggList(
-//                        rel.getAggCalls(), DefinitionMapper.mapToDingoType(rel.getSelectedType())),
-//                    DefinitionMapper.mapToDingoType(rel.getNormalRowType()),
-//                    scanTs,
-//                    transaction.getIsolationLevel(),
-//                    transaction.getLockTimeOut(),
-//                    false
-//                );
-//                scanVertex = new Vertex(TXN_PART_RANGE_SCAN, param);
-//            } else {
-            task = job.getOrCreate(currentLocation, idGenerator);
-            RelOp relOp = rel.getRelOp();
-            Vertex vertex;
-            if (relOp == null) {
-                ScanWithNoOpParam param = new ScanWithNoOpParam(
-                    tableInfo.getId(),
-                    td.tupleType(),
-                    td.keyMapping()
+            if (transaction != null) {
+                task = job.getOrCreate(
+                    currentLocation,
+                    idGenerator,
+                    transaction.getType(),
+                    IsolationLevel.of(transaction.getIsolationLevel())
                 );
-                vertex = new Vertex(SCAN_WITH_NO_OP, param);
-            } else {
-                ScanWithRelOpParam param = new ScanWithRelOpParam(
-                    tableInfo.getId(),
-                    td.tupleType(),
-                    td.keyMapping(),
-                    relOp,
-                    DefinitionMapper.mapToDingoType(rel.getRowType()),
-                    rel.isPushDown()
-                );
-                if (relOp instanceof PipeOp) {
-                    vertex = new Vertex(SCAN_WITH_PIPE_OP, param);
-                } else if (relOp instanceof CacheOp) {
-                    vertex = new Vertex(SCAN_WITH_CACHE_OP, param);
+                RelOp relOp = rel.getRelOp();
+                if (relOp == null) {
+                    TxnScanParam param = new TxnScanParam(
+                        tableInfo.getId(),
+                        td.tupleType(),
+                        td.keyMapping(),
+                        scanTs,
+                        transaction.getIsolationLevel(),
+                        transaction.getLockTimeOut()
+                    );
+                    vertex = new Vertex(TXN_SCAN_WITH_NO_OP, param);
                 } else {
-                    throw new NeverRunHere();
+                    TxnScanWithRelOpParam param = new TxnScanWithRelOpParam(
+                        tableInfo.getId(),
+                        td.tupleType(),
+                        td.keyMapping(),
+                        scanTs,
+                        transaction.getIsolationLevel(),
+                        transaction.getLockTimeOut(),
+                        relOp,
+                        DefinitionMapper.mapToDingoType(rel.getRowType()),
+                        rel.isPushDown()
+                    );
+                    if (relOp instanceof PipeOp) {
+                        vertex = new Vertex(TXN_SCAN_WITH_PIPE_OP, param);
+                    } else if (relOp instanceof CacheOp) {
+                        vertex = new Vertex(TXN_SCAN_WITH_CACHE_OP, param);
+                    } else {
+                        throw new NeverRunHere();
+                    }
+                }
+            } else {
+                task = job.getOrCreate(currentLocation, idGenerator);
+                RelOp relOp = rel.getRelOp();
+                if (relOp == null) {
+                    ScanParam param = new ScanParam(
+                        tableInfo.getId(),
+                        td.tupleType(),
+                        td.keyMapping()
+                    );
+                    vertex = new Vertex(SCAN_WITH_NO_OP, param);
+                } else {
+                    ScanWithRelOpParam param = new ScanWithRelOpParam(
+                        tableInfo.getId(),
+                        td.tupleType(),
+                        td.keyMapping(),
+                        relOp,
+                        DefinitionMapper.mapToDingoType(rel.getRowType()),
+                        rel.isPushDown()
+                    );
+                    if (relOp instanceof PipeOp) {
+                        vertex = new Vertex(SCAN_WITH_PIPE_OP, param);
+                    } else if (relOp instanceof CacheOp) {
+                        vertex = new Vertex(SCAN_WITH_CACHE_OP, param);
+                    } else {
+                        throw new NeverRunHere();
+                    }
                 }
             }
-//            }
             vertex.setHint(new OutputHint());
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             Edge edge = new Edge(calcVertex, vertex);

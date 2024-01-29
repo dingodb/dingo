@@ -27,9 +27,8 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 @Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class ScanWithCacheOpOperator extends ScanWithRelOpOperatorBase {
-    public static ScanWithCacheOpOperator INSTANCE = new ScanWithCacheOpOperator();
-
+public final class TxnScanWithCacheOpOperator extends TxnScanWithRelOpOperatorBase {
+    public static TxnScanWithCacheOpOperator INSTANCE = new TxnScanWithCacheOpOperator();
 
     @Override
     protected @NonNull Scanner getScanner(@NonNull Context context, @NonNull Vertex vertex) {

@@ -17,8 +17,11 @@
 package io.dingodb.exec.operator.params;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
@@ -26,7 +29,13 @@ import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-public abstract class ScanWithOpParam extends AbstractParams {
+@JsonTypeName("scan0")
+@JsonPropertyOrder({
+    "tableId",
+    "schema",
+    "keyMapping",
+})
+public class ScanParam extends AbstractParams {
     @Getter
     @JsonProperty("table")
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
@@ -39,10 +48,7 @@ public abstract class ScanWithOpParam extends AbstractParams {
     @JsonProperty("keyMapping")
     protected final TupleMapping keyMapping;
 
-    @Getter
-    protected KeyValueCodec codec;
-
-    public ScanWithOpParam(
+    public ScanParam(
         CommonId tableId,
         @NonNull DingoType schema,
         TupleMapping keyMapping
@@ -51,5 +57,9 @@ public abstract class ScanWithOpParam extends AbstractParams {
         this.tableId = tableId;
         this.schema = schema;
         this.keyMapping = keyMapping;
+    }
+
+    public KeyValueCodec getCodec() {
+        return CodecService.getDefault().createKeyValueCodec(schema, keyMapping);
     }
 }

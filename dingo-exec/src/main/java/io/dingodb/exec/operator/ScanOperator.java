@@ -20,15 +20,14 @@ import com.google.common.collect.Iterators;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.operator.data.Context;
-import io.dingodb.exec.operator.params.ScanWithNoOpParam;
+import io.dingodb.exec.operator.params.ScanParam;
+import io.dingodb.exec.utils.RelOpUtils;
 import io.dingodb.store.api.StoreInstance;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Iterator;
 
@@ -36,14 +35,12 @@ import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 @Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class ScanWithNoOpOperator extends SoleOutOperator {
-    public static ScanWithNoOpOperator INSTANCE = new ScanWithNoOpOperator();
+public final class ScanOperator extends ScanOperatorBase {
+    public static ScanOperator INSTANCE = new ScanOperator();
 
-    private static @NonNull Iterator<Object[]> createIterator(
-        @NonNull Context context,
-        @NonNull Vertex vertex
-    ) {
-        ScanWithNoOpParam param = vertex.getParam();
+    @Override
+    protected @NonNull Iterator<Object[]> createIterator(@NonNull Context context, @NonNull Vertex vertex) {
+        ScanParam param = vertex.getParam();
         RangeDistribution rd = context.getDistribution();
         byte[] startKey = rd.getStartKey();
         byte[] endKey = rd.getEndKey();
@@ -56,31 +53,8 @@ public final class ScanWithNoOpOperator extends SoleOutOperator {
         );
     }
 
-    private static long doPush(Context context, @NonNull Vertex vertex, @NonNull Iterator<Object[]> sourceIterator) {
-        long count = 0;
-        while (sourceIterator.hasNext()) {
-            Object[] tuple = sourceIterator.next();
-            ++count;
-            if (!vertex.getSoleEdge().transformToNext(context, tuple)) {
-                break;
-            }
-        }
-        return count;
-    }
-
     @Override
-    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        long startTime = System.currentTimeMillis();
-        Iterator<Object[]> iterator = createIterator(context, vertex);
-        long count = doPush(context, vertex, iterator);
-        if (log.isDebugEnabled()) {
-            log.debug("count: {}, cost: {}ms.", count, System.currentTimeMillis() - startTime);
-        }
-        return false;
-    }
-
-    @Override
-    public void fin(int pin, @Nullable Fin fin, @NonNull Vertex vertex) {
-        vertex.getSoleEdge().fin(fin);
+    protected @NonNull Scanner getScanner(@NonNull Context context, @NonNull Vertex vertex) {
+        return RelOpUtils::doScan;
     }
 }
