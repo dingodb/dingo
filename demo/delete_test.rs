@@ -35,7 +35,7 @@ fn get_doc_with_given_term(
     }
 }
 
-// &Box 会产生二级指针解引用
+// &Box generates a second-level pointer dereference
 fn print_search_results(searcher: &Searcher, text_field: &Field, query: &Box<dyn Query>) {
     // ffrs for row_id.
     let fast_field_readers: Vec<Column<u64>> = searcher

@@ -49,7 +49,7 @@ fn load_terms_from_json<P: AsRef<Path>>(path: P) -> Vec<String> {
     let reader = BufReader::new(file);
     let json: Value = serde_json::from_reader(reader).expect("Unable to parse JSON");
 
-    // 假设 JSON 结构是 {"terms": ["term1", "term2", ...]}
+    // assume that: JSON struct {"terms": ["term1", "term2", ...]}
     json["terms"]
         .as_array()
         .expect("Expected an array")
@@ -67,7 +67,7 @@ fn main() {
     let skip_index_build = true;
     let loop_size = 100;
 
-    // 索引数据集
+    // build index
     if !skip_index_build {
         println!("Starting index docs from dataset: {:?}", dataset_path);
         index_docs_from_json(dataset_path, index_path);

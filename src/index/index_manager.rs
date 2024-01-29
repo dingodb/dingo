@@ -131,8 +131,7 @@ pub fn tantivy_create_index_with_tokenizer(
         return Err(error_info);
     }
 
-    // Create the writer with a specified buffer size (e.g., 1 GB).
-    // TODO: 共享线程池
+    // Create the writer with a specified buffer size (e.g., 64 MB).
     let writer = match index.writer_with_num_threads(2, 1024 * 1024 * 64) {
         // 1 GB
         Ok(w) => w,
