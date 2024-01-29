@@ -25,6 +25,7 @@ import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.transaction.params.CommitParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
@@ -32,6 +33,7 @@ import io.dingodb.store.api.transaction.exception.ReginSplitException;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -53,6 +55,12 @@ public class CommitOperator extends TransactionOperator {
         byte[] key = (byte[]) tuple[5];
         if (ByteArrayUtils.compare(key, param.getPrimaryKey(), 9) == 0) {
             return true;
+        }
+        if (tableId.type == CommonId.CommonType.INDEX) {
+            IndexTable indexTable = TransactionUtil.getIndexDefinitions(tableId);
+            if (indexTable.indexType.isVector) {
+                key = Arrays.copyOf(key, key.length -4);
+            }
         }
         CommonId partId = param.getPartId();
         if (partId == null) {
