@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.expr;
+package io.dingodb.exec.utils;
 
 import io.dingodb.exec.dag.Edge;
+import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.operator.params.ScanWithRelOpParam;
 import io.dingodb.expr.rel.CacheOp;
 import io.dingodb.expr.rel.PipeOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
+
+import java.util.Iterator;
 
 public final class RelOpUtils {
     private RelOpUtils() {
@@ -43,6 +47,57 @@ public final class RelOpUtils {
             });
         } catch (BreakException ignored) {
         }
+    }
+
+    public static long doScan(
+        Context context,
+        @NonNull Vertex vertex,
+        @NonNull Iterator<Object[]> iterator
+    ) {
+        long count = 0;
+        while (iterator.hasNext()) {
+            Object[] tuple = iterator.next();
+            ++count;
+            if (!vertex.getSoleEdge().transformToNext(context, tuple)) {
+                break;
+            }
+        }
+        return count;
+    }
+
+    public static long doScanWithPipeOp(
+        Context context,
+        @NonNull Vertex vertex,
+        @NonNull Iterator<Object[]> sourceIterator
+    ) {
+        PipeOp relOp = (PipeOp) ((ScanWithRelOpParam) vertex.getParam()).getRelOp();
+        Edge edge = vertex.getSoleEdge();
+        long count = 0;
+        while (sourceIterator.hasNext()) {
+            Object[] tuple = sourceIterator.next();
+            ++count;
+            if (!processWithPipeOp(relOp, tuple, edge, context)) {
+                break;
+            }
+        }
+        return count;
+    }
+
+    public static long doScanWithCacheOp(
+        Context ignoredContext,
+        @NonNull Vertex vertex,
+        @NonNull Iterator<Object[]> sourceIterator
+    ) {
+        CacheOp relOp = (CacheOp) ((ScanWithRelOpParam) vertex.getParam()).getRelOp();
+        long count = 0;
+        while (sourceIterator.hasNext()) {
+            Object[] tuple = sourceIterator.next();
+            ++count;
+            relOp.put(tuple);
+        }
+        forwardCacheOpResults(relOp, vertex.getSoleEdge());
+        relOp.clear();
+        return count;
     }
 
     private static class BreakException extends RuntimeException {

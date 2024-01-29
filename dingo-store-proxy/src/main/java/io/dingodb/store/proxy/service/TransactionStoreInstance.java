@@ -19,6 +19,7 @@ package io.dingodb.store.proxy.service;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.MetaService;
@@ -125,7 +126,7 @@ public class TransactionStoreInstance {
 
     public boolean txnPreWrite(TxnPreWrite txnPreWrite, long timeOut) {
         txnPreWrite.getMutations().stream().peek($ -> $.setKey(setId($.getKey()))).forEach($ -> $.getKey()[0] = 't');
-        int n = 1 ;
+        int n = 1;
         long start = System.currentTimeMillis();
         IsolationLevel isolationLevel = txnPreWrite.getIsolationLevel();
         List<Long> resolvedLocks = new ArrayList<>();
@@ -145,7 +146,7 @@ public class TransactionStoreInstance {
             }
             long elapsed = System.currentTimeMillis() - start;
             if (elapsed > timeOut) {
-                throw new RuntimeException("startTs:"+ txnPreWrite.getStartTs() +" resolve lock timeout");
+                throw new RuntimeException("startTs:" + txnPreWrite.getStartTs() + " resolve lock timeout");
             }
             ResolveLockStatus resolveLockStatus = writeResolveConflict(
                 response.getTxnResult(),
@@ -248,7 +249,7 @@ public class TransactionStoreInstance {
     public boolean txnPessimisticLock(TxnPessimisticLock txnPessimisticLock, long timeOut) {
         txnPessimisticLock.getMutations().stream().peek($ -> $.setKey(setId($.getKey()))).forEach($ -> $.getKey()[0] = 't');
         IsolationLevel isolationLevel = txnPessimisticLock.getIsolationLevel();
-        int n = 1 ;
+        int n = 1;
         long start = System.currentTimeMillis();
         List<Long> resolvedLocks = new ArrayList<>();
         while (true) {
@@ -302,14 +303,23 @@ public class TransactionStoreInstance {
     }
 
     public Iterator<io.dingodb.common.store.KeyValue> txnScan(long ts, StoreInstance.Range range, long timeOut) {
-        setId(range.start);
-        setId(range.end);
-        return new ScanIterator(ts, range, timeOut);
+        return txnScan(ts, range, timeOut, null);
     }
 
-   public List<io.dingodb.common.store.KeyValue> txnGet(long startTs, List<byte[]> keys, long timeOut) {
+    public Iterator<io.dingodb.common.store.KeyValue> txnScan(
+        long ts,
+        StoreInstance.Range range,
+        long timeOut,
+        CoprocessorV2 coprocessor
+    ) {
+        setId(range.start);
+        setId(range.end);
+        return new ScanIterator(ts, range, timeOut, coprocessor);
+    }
+
+    public List<io.dingodb.common.store.KeyValue> txnGet(long startTs, List<byte[]> keys, long timeOut) {
         keys.stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
-        int n = 1 ;
+        int n = 1;
         long start = System.currentTimeMillis();
         List<Long> resolvedLocks = new ArrayList<>();
         while (true) {
@@ -321,7 +331,7 @@ public class TransactionStoreInstance {
             }
             long elapsed = System.currentTimeMillis() - start;
             if (elapsed > timeOut) {
-                throw new RuntimeException("startTs:"+ start +" resolve lock timeout");
+                throw new RuntimeException("startTs:" + start + " resolve lock timeout");
             }
             ResolveLockStatus resolveLockStatus = readResolveConflict(
                 singletonList(response.getTxnResult()),
@@ -363,7 +373,7 @@ public class TransactionStoreInstance {
     }
 
     private ResolveLockStatus writeResolveConflict(List<TxnResultInfo> txnResult, int isolationLevel,
-                                              long startTs, List<Long> resolvedLocks, String funName) {
+                                                   long startTs, List<Long> resolvedLocks, String funName) {
         ResolveLockStatus resolveLockStatus = ResolveLockStatus.NONE;
         for (TxnResultInfo txnResultInfo : txnResult) {
             log.info("{} txnResultInfo : {}", funName, txnResultInfo);
@@ -417,8 +427,8 @@ public class TransactionStoreInstance {
                     Action action = statusResponse.getAction();
                     if (lockInfo.getLockType() == Op.Lock && lockInfo.getForUpdateTs() != 0) {
                         if (action == Action.LockNotExistRollback
-                        || action == Action.TTLExpirePessimisticRollback
-                        || action == Action.TTLExpireRollback) {
+                            || action == Action.TTLExpirePessimisticRollback
+                            || action == Action.TTLExpireRollback) {
                             TxnPessimisticRollBack pessimisticRollBack = TxnPessimisticRollBack.builder().
                                 isolationLevel(IsolationLevel.of(isolationLevel))
                                 .startTs(lockInfo.getLockTs())
@@ -453,7 +463,7 @@ public class TransactionStoreInstance {
     }
 
     private ResolveLockStatus readResolveConflict(List<TxnResultInfo> txnResult, int isolationLevel,
-                                              long startTs, List<Long> resolvedLocks, String funName) {
+                                                  long startTs, List<Long> resolvedLocks, String funName) {
         ResolveLockStatus resolveLockStatus = ResolveLockStatus.NONE;
         for (TxnResultInfo txnResultInfo : txnResult) {
             log.info("{} txnResultInfo : {}", funName, txnResultInfo);
@@ -556,6 +566,7 @@ public class TransactionStoreInstance {
         private final long startTs;
         private final StoreInstance.Range range;
         private final long timeOut;
+        private final io.dingodb.sdk.service.entity.common.CoprocessorV2 coprocessor;
 
         private boolean withStart;
         private boolean hasMore = true;
@@ -563,11 +574,22 @@ public class TransactionStoreInstance {
         private Iterator<KeyValue> keyValues;
 
         public ScanIterator(long startTs, StoreInstance.Range range, long timeOut) {
+            this(startTs, range, timeOut, null);
+        }
+
+        public ScanIterator(long startTs, StoreInstance.Range range, long timeOut, CoprocessorV2 coprocessor) {
             this.startTs = startTs;
             this.range = range;
             this.current = range;
             this.withStart = range.withStart;
             this.timeOut = timeOut;
+            this.coprocessor = MAPPER.coprocessorTo(coprocessor);
+            Optional.ofNullable(this.coprocessor)
+                .map(io.dingodb.sdk.service.entity.common.CoprocessorV2::getOriginalSchema)
+                .ifPresent($ -> $.setCommonId(partitionId.seq));
+            Optional.ofNullable(this.coprocessor)
+                .map(io.dingodb.sdk.service.entity.common.CoprocessorV2::getResultSchema)
+                .ifPresent($ -> $.setCommonId(partitionId.seq));
             fetch();
         }
 
@@ -575,18 +597,19 @@ public class TransactionStoreInstance {
             if (!hasMore) {
                 return;
             }
-            int n = 1 ;
+            int n = 1;
             long start = System.currentTimeMillis();
             List<Long> resolvedLocks = new ArrayList<>();
             while (true) {
                 TxnScanRequest txnScanRequest = MAPPER.scanTo(startTs, IsolationLevel.SnapshotIsolation, current);
                 txnScanRequest.setLimit(1024);
                 txnScanRequest.setResolveLocks(resolvedLocks);
-                TxnScanResponse txnScanResponse = storeService.txnScan(txnScanRequest);
+                txnScanRequest.setCoprocessor(coprocessor);
+                TxnScanResponse txnScanResponse = storeService.txnScan(TsoService.INSTANCE.tso(), txnScanRequest);
                 if (txnScanResponse.getTxnResult() != null) {
                     long elapsed = System.currentTimeMillis() - start;
                     if (elapsed > timeOut) {
-                        throw new RuntimeException("startTs:"+ txnScanRequest.getStartTs() +" resolve lock timeout");
+                        throw new RuntimeException("startTs:" + txnScanRequest.getStartTs() + " resolve lock timeout");
                     }
                     ResolveLockStatus resolveLockStatus = readResolveConflict(
                         singletonList(txnScanResponse.getTxnResult()),
