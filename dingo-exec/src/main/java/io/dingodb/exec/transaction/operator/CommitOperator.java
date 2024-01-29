@@ -16,7 +16,14 @@
 
 package io.dingodb.exec.transaction.operator;
 
+import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.TupleType;
+import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
@@ -33,7 +40,6 @@ import io.dingodb.store.api.transaction.exception.ReginSplitException;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -59,7 +65,13 @@ public class CommitOperator extends TransactionOperator {
         if (tableId.type == CommonId.CommonType.INDEX) {
             IndexTable indexTable = TransactionUtil.getIndexDefinitions(tableId);
             if (indexTable.indexType.isVector) {
-                key = Arrays.copyOf(key, key.length -4);
+                KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
+                Object[] decodeKey = codec.decodeKeyPrefix(key);
+                TupleMapping mapping = TupleMapping.of(new int[]{0});
+                DingoType dingoType = new LongType(false);
+                TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
+                KeyValueCodec vectorCodec = CodecService.getDefault().createKeyValueCodec(tupleType, mapping);
+                key = vectorCodec.encodeKeyPrefix(new Object[]{decodeKey[0]}, 1);
             }
         }
         CommonId partId = param.getPartId();
@@ -79,7 +91,7 @@ public class CommitOperator extends TransactionOperator {
                 param.setPartId(null);
             }
         } else {
-            boolean result = txnCommit(param, txnId, tableId, partId);
+            boolean result = txnCommit(param, txnId, param.getTableId(), partId);
             if (!result) {
                 throw new RuntimeException(txnId + " " + partId + ",txnCommit false,PrimaryKey:" + param.getPrimaryKey().toString());
             }

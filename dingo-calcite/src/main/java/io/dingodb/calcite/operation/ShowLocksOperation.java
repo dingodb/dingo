@@ -46,7 +46,6 @@ import static io.dingodb.common.CommonId.CommonType.TRANSACTION;
 import static io.dingodb.common.CommonId.CommonType.TXN_CACHE_BLOCK_LOCK;
 import static io.dingodb.common.CommonId.CommonType.TXN_CACHE_LOCK;
 import static io.dingodb.exec.Services.LOCAL_STORE;
-import static io.dingodb.transaction.api.LockType.ROW;
 import static io.dingodb.transaction.api.LockType.TABLE;
 
 public class ShowLocksOperation implements QueryOperation {
@@ -63,6 +62,7 @@ public class ShowLocksOperation implements QueryOperation {
             return locks;
         }
 
+        @ApiDeclaration
         default List<TableLock> tableLocks() {
             return TableLockService.getDefault().allTableLocks();
         }
@@ -191,6 +191,7 @@ public class ShowLocksOperation implements QueryOperation {
     private static void addTableLocks(long tso, List<String[]> locks) {
         List<TableLock> tableLocks = TableLockService.getDefault().allTableLocks();
         List<Location> locations = ClusterService.getDefault().getComputingLocations();
+        locations.remove(DingoConfiguration.location());
         tableLocks.addAll(locations.stream()
             .map($ -> ApiRegistry.getDefault().proxy(Api.class, $))
             .flatMap($ -> $.tableLocks().stream())

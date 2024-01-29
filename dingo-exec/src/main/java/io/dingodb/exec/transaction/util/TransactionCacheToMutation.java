@@ -20,9 +20,13 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.TupleType;
+import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
-import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.Mutation;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.Vector;
@@ -38,6 +42,15 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class TransactionCacheToMutation {
+
+    public static final KeyValueCodec CODEC;
+
+    static {
+        TupleMapping mapping = TupleMapping.of(new int[]{0});
+        DingoType dingoType = new LongType(false);
+        TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
+        CODEC = CodecService.getDefault().createKeyValueCodec(tupleType, mapping);
+    }
 
     public static Mutation cacheToMutation(@Nullable int op, @NonNull byte[] key,
                                            byte[] value, long forUpdateTs,
@@ -70,7 +83,7 @@ public class TransactionCacheToMutation {
                 .vector(vector)
                 .tableData(vectorTableData)
                 .build();
-            key = Arrays.copyOf(key, key.length -4);
+            key = CODEC.encodeKeyPrefix(new Object[]{longId}, 1);
         }
         return new Mutation(Op.forNumber(op), key, value, forUpdateTs, vectorWithId);
     }

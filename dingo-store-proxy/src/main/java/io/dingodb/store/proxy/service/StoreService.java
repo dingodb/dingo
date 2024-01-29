@@ -28,6 +28,7 @@ import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Utils;
 import io.dingodb.common.vector.VectorSearchResponse;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
@@ -134,7 +135,11 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 io.dingodb.store.proxy.meta.MetaService.ROOT.cache.invalidDistribution(
                     storeInstance.table.tableId
                 );
-                return method.invoke(storeInstance, args);
+                try {
+                    return method.invoke(storeInstance, args);
+                } catch (Exception exception) {
+                    throw Utils.extractThrowable(exception);
+                }
             }
         }
     }
@@ -240,7 +245,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 table.tupleType(), table.keyMapping()
             );
             this.storeService = storeService(tableId, regionId);
-            if (tableId.type == CommonId.CommonType.INDEX) {
+            if (tableId.type == CommonId.CommonType.INDEX && ((IndexTable) table).indexType.isVector) {
                 indexService = indexService(tableId, regionId);
             }
             this.transactionStoreInstance = new TransactionStoreInstance(storeService, indexService, partitionId);
