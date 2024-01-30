@@ -29,6 +29,7 @@ import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
+import io.dingodb.common.vector.TxnVectorSearchResponse;
 import io.dingodb.common.vector.VectorSearchResponse;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
@@ -570,6 +571,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
             List<VectorWithId> vectors = new ArrayList<>();
             IndexTable indexTable = tableMap.get(indexId);
+            boolean isTxn = indexTable.getEngine().contains("TXN");
 
             Vector vector = Vector.builder()
                 .dimension(Integer.parseInt(indexTable.getProperties().getProperty("dimension")))
@@ -609,7 +611,15 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     continue;
                 }
                 for (VectorWithDistance vectorWithDistance : withDistance) {
-                    VectorSearchResponse response = new VectorSearchResponse();
+                    VectorSearchResponse response;
+                    if (isTxn) {
+                        TxnVectorSearchResponse txnResponse = new TxnVectorSearchResponse();
+                        txnResponse.setTableKey(vectorWithDistance.getVectorWithId().getTableData().getTableKey());
+                        txnResponse.setTableVal(vectorWithDistance.getVectorWithId().getTableData().getTableValue());
+                        response = txnResponse;
+                    } else {
+                        response = new VectorSearchResponse();
+                    }
                     response.setKey(vectorWithDistance.getVectorWithId().getTableData().getTableKey());
                     response.setDistance(vectorWithDistance.getDistance());
                     response.setVectorId(vectorWithDistance.getVectorWithId().getId());

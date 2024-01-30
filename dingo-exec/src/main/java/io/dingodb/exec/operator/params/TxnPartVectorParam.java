@@ -24,6 +24,7 @@ import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.dag.Vertex;
@@ -37,6 +38,7 @@ import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.runtime.type.TupleType;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.serial.schema.DingoSchema;
 import lombok.Getter;
 
 import java.io.ByteArrayOutputStream;
@@ -62,6 +64,8 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
 
     private final RelOp relOp;
 
+    private final TupleMapping resultSelection;
+
     @JsonProperty("pushDown")
     private final boolean pushDown;
 
@@ -73,11 +77,13 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
     private final long timeOut;
     private CoprocessorV2 coprocessor = null;
     private final boolean isLookUp;
+    private final DingoType tableDataSchema;
 
     public TxnPartVectorParam(
         CommonId partId,
         SqlExpr filter,
         TupleMapping selection,
+        DingoType schema,
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
         Float[] floatArray,
@@ -89,9 +95,10 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
         boolean isLookUp,
         long scanTs,
         int isolationLevel,
-        long timeOut
+        long timeOut,
+        TupleMapping resultSelection
     ) {
-        super(table.tableId, partId, table.tupleType(), filter, selection, table.keyMapping());
+        super(table.tableId, partId, schema, filter, selection, table.keyMapping());
         this.table = table;
         this.distributions = distributions;
         this.indexId = indexTable.tableId;
@@ -105,6 +112,8 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
         this.timeOut = timeOut;
         this.isLookUp = isLookUp;
         this.relOp = relOp;
+        this.resultSelection = resultSelection;
+        this.tableDataSchema = indexTable.tupleType();
     }
 
     @Override
@@ -114,15 +123,16 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
             CoprocessorV2.CoprocessorV2Builder builder = CoprocessorV2.builder();
             if (selection != null) {
                 builder.selection(selection.stream().boxed().collect(Collectors.toList()));
-                //selection = null;
+                this.selection = resultSelection;
             }
             relOp.compile(new DingoCompileContext(
-                (TupleType) schema.getType(),
+                (TupleType) tableDataSchema.getType(),
                 (TupleType) vertex.getParasType().getType()
             ), new DingoRelConfig());
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             if (RelOpCoder.INSTANCE.visit(relOp, os) == CodingFlag.OK) {
                 builder.relExpr(os.toByteArray());
+                filter = null;
             }
 //            if (filter != null) {
 //                byte[] code = filter.getCoding(filterInputSchema, vertex.getParasType());

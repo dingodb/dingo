@@ -17,7 +17,10 @@
 package io.dingodb.web.service;
 
 import io.dingodb.common.Common;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.index.Index;
 import io.dingodb.sdk.common.DingoCommonId;
 import io.dingodb.sdk.common.Location;
@@ -62,7 +65,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -172,10 +174,16 @@ public class MonitorServerService {
         RangeDistribution[] rangeDistributions = metaServiceClient
             .getRangeDistribution(table).values().toArray(new RangeDistribution[0]);
         DingoKeyValueCodec codec = DingoKeyValueCodec.of(0, tableDefinition);
+        DingoType dingoType = DingoTypeFactory.tuple(
+            tableDefinition.getColumns().stream().map(col -> DingoTypeFactory.INSTANCE.scalar(
+                col.getType(),
+                col.isNullable()
+            )).toArray(DingoType[]::new)
+        );
         List<Region> regionList = new ArrayList<>();
-        for (int i = 0; i < rangeDistributions.length; i ++) {
+        for (int i = 0; i < rangeDistributions.length; i++) {
             if (rangeDistributions[i].getId().parentId() == partId) {
-                transformRegion(tableDefinition, isOriginalKey, codec, rangeDistributions, regionList, i);
+                transformRegion(tableDefinition, isOriginalKey, codec, rangeDistributions, regionList, i, dingoType);
             }
         }
         return regionList;
@@ -198,6 +206,12 @@ public class MonitorServerService {
                     = metaServiceClient.getIndexRangeDistribution(e.getKey()).values()
                     .toArray(new RangeDistribution[0]);
                 DingoKeyValueCodec codec = DingoKeyValueCodec.of(0, e.getValue());
+                DingoType dingoType = DingoTypeFactory.tuple(
+                    e.getValue().getColumns().stream().map(col -> DingoTypeFactory.INSTANCE.scalar(
+                        col.getType(),
+                        col.isNullable()
+                    )).toArray(DingoType[]::new)
+                );
                 List<Region> tmpRegionList = new ArrayList<>();
                 for (int i = 0; i < rangeDistributions.length; i++) {
                     if (rangeDistributions[i].getId().parentId() == partId) {
@@ -207,7 +221,8 @@ public class MonitorServerService {
                             codec,
                             rangeDistributions,
                             tmpRegionList,
-                            i);
+                            i,
+                            dingoType);
                     }
                 }
                 return tmpRegionList;
@@ -221,12 +236,18 @@ public class MonitorServerService {
         TableDefinition tableDefinition = (TableDefinition) metaServiceClient.getTableDefinition(table);
         String funcName = tableDefinition.getPartition().getFuncName();
         boolean isOriginalKey = funcName.equalsIgnoreCase("HASH");
+        DingoType dingoType = DingoTypeFactory.tuple(
+            tableDefinition.getColumns().stream().map(col -> DingoTypeFactory.INSTANCE.scalar(
+                col.getType(),
+                col.isNullable()
+            )).toArray(DingoType[]::new)
+        );
         RangeDistribution[] rangeDistributions = metaServiceClient
             .getRangeDistribution(table).values().toArray(new RangeDistribution[0]);
         DingoKeyValueCodec codec = DingoKeyValueCodec.of(0, tableDefinition);
         List<Region> regionList = new ArrayList<>();
-        for (int i = 0; i < rangeDistributions.length; i ++) {
-            transformRegion(tableDefinition, isOriginalKey, codec, rangeDistributions, regionList, i);
+        for (int i = 0; i < rangeDistributions.length; i++) {
+            transformRegion(tableDefinition, isOriginalKey, codec, rangeDistributions, regionList, i, dingoType);
         }
         return regionList;
     }
@@ -280,9 +301,15 @@ public class MonitorServerService {
                 DingoKeyValueCodec codec = DingoKeyValueCodec.of(
                     0, e.getValue()
                 );
-                for (int i = 0; i < rangeDistributions.length; i ++) {
+                DingoType dingoType = DingoTypeFactory.tuple(
+                    e.getValue().getColumns().stream().map(col -> DingoTypeFactory.INSTANCE.scalar(
+                        col.getType(),
+                        col.isNullable()
+                    )).toArray(DingoType[]::new)
+                );
+                for (int i = 0; i < rangeDistributions.length; i++) {
                     transformRegion((TableDefinition) e.getValue(),
-                        isOriginalKey, codec, rangeDistributions, regionDtoList, i);
+                        isOriginalKey, codec, rangeDistributions, regionDtoList, i, dingoType);
                 }
                 return regionDtoList;
             }).findFirst();
@@ -308,7 +335,7 @@ public class MonitorServerService {
         // get info: cpu, mem, disk, regions count, leader regions count
         TimeZone timeZone = TimeZone.getTimeZone("GMT+8");
         Calendar calendar = Calendar.getInstance(timeZone);
-        long currentTimeSeconds =  calendar.getTimeInMillis() / 1000;
+        long currentTimeSeconds = calendar.getTimeInMillis() / 1000;
         promMetricService.loadMetric(currentTimeSeconds, true);
         Map<String, ResourceInfo> nodeExporterMap = new HashMap<>();
         List<SchemaInfo> schemaList = rootMetaServiceClient
@@ -353,7 +380,7 @@ public class MonitorServerService {
                     exceedAlarm,
                     processInfo,
                     resourceInfo
-                    );
+                );
             })
             .collect(Collectors.toList());
         AtomicInteger executorIndex = new AtomicInteger(0);
@@ -372,7 +399,7 @@ public class MonitorServerService {
                     host,
                     exceedAlarm,
                     resource
-                    );
+                );
             })
             .collect(Collectors.toList());
         return new ClusterInfo(coorInfoList, executorInfoList, storeInfoList, indexInfoList);
@@ -459,7 +486,7 @@ public class MonitorServerService {
 
         String partType = tableDef.getPartition().getFuncName();
         List<Partition> partitions = new ArrayList<>();
-        for (int i = 0; i < partCount; i ++) {
+        for (int i = 0; i < partCount; i++) {
             String partName = partIdList.get(i).toString();
             List<String> keyNameList = tableDef.getKeyColumns().stream()
                 .map(io.dingodb.sdk.common.table.Column::getName)
@@ -472,10 +499,12 @@ public class MonitorServerService {
     }
 
     private void transformRegion(TableDefinition tableDefinition,
-                                        boolean isOriginalKey,
-                                        DingoKeyValueCodec codec,
-                                        RangeDistribution[] rangeDistributions,
-                                        List<Region> regionDtoList, int index) {
+                                 boolean isOriginalKey,
+                                 DingoKeyValueCodec codec,
+                                 RangeDistribution[] rangeDistributions,
+                                 List<Region> regionDtoList,
+                                 int index,
+                                 DingoType dingoType) {
         RangeDistribution rangeDistribution = rangeDistributions[index];
         Object[] start;
         Object[] end;
@@ -490,9 +519,11 @@ public class MonitorServerService {
         } else {
             end = null;
         }
+        start = (Object[]) dingoType.convertFrom(start, DingoConverter.INSTANCE);
+        end = (Object[]) dingoType.convertFrom(end, DingoConverter.INSTANCE);
         String startKey = buildKeyStr(TupleMapping.of(tableDefinition.getKeyColumnIndices()), start);
         String endKey = buildKeyStr(TupleMapping.of(tableDefinition.getKeyColumnIndices()), end);
-        String range = String.format("[ %s, %s ]", startKey, endKey);
+        String range = String.format("[ %s, %s )", startKey, endKey);
         rangeDistribution.getVoters().remove(rangeDistribution.getLeader());
         regionDtoList.add(new Region(
             rangeDistribution.getId().entityId(),
@@ -573,7 +604,7 @@ public class MonitorServerService {
         String instance = serverLocation.getHost() + ":" + nodeExportPort;
         TimeZone timeZone = TimeZone.getTimeZone("GMT+8");
         Calendar calendar = Calendar.getInstance(timeZone);
-        long currentTimeSeconds =  calendar.getTimeInMillis() / 1000;
+        long currentTimeSeconds = calendar.getTimeInMillis() / 1000;
         promMetricService.loadMetric(currentTimeSeconds, false);
         ResourceInfo resourceInfo = promMetricService.getResource(instance, currentTimeSeconds);
         ProcessInfo processInfo = promMetricService.getProcessMetric(serverLocation.toString());

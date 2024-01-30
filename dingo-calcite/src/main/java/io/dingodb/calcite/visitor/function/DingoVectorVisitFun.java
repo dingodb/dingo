@@ -25,6 +25,8 @@ import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
@@ -119,14 +121,19 @@ public final class DingoVectorVisitFun {
         IndexTable indexTable = (IndexTable) rel.getIndexTable();
         boolean pushDown = pushDown(rel.getFilter(), dingoTable.getTable(), indexTable);
         RexNode rexFilter = rel.getFilter();
-        TupleMapping selection = rel.getSelection();
+        TupleMapping resultSelection = rel.getSelection();
 
         List<Column> columnNames = indexTable.getColumns();
         List<Integer> indexOriSelectionList = columnNames
             .stream().map(dingoTable.getTable().columns::indexOf)
             .collect(Collectors.toList());
-        boolean isLookUp = isNeedLookUp(selection, TupleMapping.of(indexOriSelectionList));
+        boolean isLookUp = isNeedLookUp(
+            resultSelection,
+            TupleMapping.of(indexOriSelectionList),
+            dingoTable.getTable().columns.size()
+        );
         boolean isTxn = dingoTable.getTable().getEngine().contains("TXN");
+        TupleMapping pushDownSelection;
         if (pushDown && isTxn) {
             List<Integer> indexList = indexTable
                 .getColumns()
@@ -134,7 +141,7 @@ public final class DingoVectorVisitFun {
                 .filter(col -> col.getState() == 1)
                 .map(col -> indexTable.getColumns().indexOf(col))
                 .collect(Collectors.toList());
-            selection = TupleMapping.of(indexList);
+            pushDownSelection = TupleMapping.of(indexList);
 
             Mapping mapping = Mappings.target(indexOriSelectionList, dingoTable.getTable().getColumns().size());
             rexFilter = RexUtil.apply(mapping, rexFilter);
@@ -143,6 +150,7 @@ public final class DingoVectorVisitFun {
             List<Integer> selectedColumns = realSelection.stream().boxed().collect(Collectors.toList());
             Mapping mapping = Mappings.target(selectedColumns, dingoTable.getTable().getColumns().size() + 1);
             rexFilter = (rexFilter != null) ? RexUtil.apply(mapping, rexFilter) : null;
+            pushDownSelection = resultSelection;
         }
         SqlExpr filter = null;
         if (rexFilter != null) {
@@ -181,14 +189,18 @@ public final class DingoVectorVisitFun {
                 );
                 vertex = new Vertex(PART_VECTOR, param);
             } else {
-                Expr expr = RexConverter.convert(rel.getFilter());
-                RelOp relOp = RelOpBuilder.builder()
-                    .filter(expr)
-                    .build();
+                RelOp relOp = null;
+                if (rexFilter != null) {
+                    Expr expr = RexConverter.convert(rexFilter);
+                    relOp = RelOpBuilder.builder()
+                        .filter(expr)
+                        .build();
+                }
                 TxnPartVectorParam param = new TxnPartVectorParam(
                     rangeDistribution.id(),
                     Optional.mapOrNull(filter, SqlExpr::copy),
-                    selection,
+                    pushDownSelection,
+                    rel.tupleType(),
                     td,
                     ranges,
                     floatArray,
@@ -200,7 +212,8 @@ public final class DingoVectorVisitFun {
                     isLookUp,
                     scanTs,
                     transaction.getIsolationLevel(),
-                    transaction.getLockTimeOut()
+                    transaction.getLockTimeOut(),
+                    resultSelection
                 );
                 vertex = new Vertex(TXN_PART_VECTOR, param);
             }
@@ -329,10 +342,15 @@ public final class DingoVectorVisitFun {
         filter.accept(visitor);
         List<Column> selectionName = inputRefList.stream()
             .map(i -> table.getColumns().get(i))
+            .filter(col -> !col.isPrimary())
             .collect(Collectors.toList());
 
+        // vector index only with field can push down
+        List<Column> filterIndexCols = indexTable.getColumns().stream()
+            .filter(col -> !col.isPrimary() && !(col.getType() instanceof ListType))
+            .collect(Collectors.toList());
         java.util.Optional<Column> optional = selectionName.stream()
-            .filter(column -> !indexTable.getColumns().contains(column))
+            .filter(column -> !filterIndexCols.contains(column))
             .findFirst();
         return !optional.isPresent();
     }

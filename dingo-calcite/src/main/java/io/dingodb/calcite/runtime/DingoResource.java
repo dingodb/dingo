@@ -85,7 +85,7 @@ public interface DingoResource {
     @BaseMessage("Error 1051(42S02): Unknown table ''{0}''")
     ExInst<DingoSqlException> unknownTable(String a0);
 
-    @BaseMessage("Error 1231(42000): Variable ''{0}'' can't be set to the value")
+    @BaseMessage("Error 1231(42000): Variable ''{0}'' can not be set to the value ''{1}''")
     ExInst<DingoSqlException> invalidVariableArg(String a0, String a1);
 
     @BaseMessage("Illegal column name definition")

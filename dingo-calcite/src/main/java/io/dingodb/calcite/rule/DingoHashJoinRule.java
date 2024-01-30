@@ -25,8 +25,16 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.logical.LogicalJoin;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+
+import java.util.List;
+import java.util.Optional;
 
 public class DingoHashJoinRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
@@ -49,7 +57,27 @@ public class DingoHashJoinRule extends ConverterRule {
      */
     public static boolean match(@NonNull LogicalJoin rel) {
         JoinInfo joinInfo = rel.analyzeCondition();
-        return joinInfo.isEqui();
+        boolean res = false;
+        // select * from a left join b on a.id=b.id and a.no>6
+        // nonEquiConditions contain a.no > 6
+        if (!joinInfo.nonEquiConditions.isEmpty()) {
+            res = nonEqui(joinInfo.nonEquiConditions);
+        }
+        return joinInfo.isEqui() || res;
+    }
+
+    public static boolean nonEqui(List<RexNode> nonEquiList) {
+        for (RexNode condition : nonEquiList) {
+            if (condition instanceof RexCall) {
+                RexCall rexCall = (RexCall) condition;
+                Optional<RexNode> optional
+                    = rexCall.getOperands().stream().filter(rexNode -> rexNode instanceof RexLiteral).findFirst();
+                if (rexCall.getOperands().size() == 2 && optional.isPresent()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override

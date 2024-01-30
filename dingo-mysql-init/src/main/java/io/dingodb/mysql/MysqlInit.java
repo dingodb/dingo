@@ -76,7 +76,7 @@ public final class MysqlInit {
     private static final String DYNAMIC = "Dynamic";
     private static final String FIXED = "Fixed";
     // engine
-    private static final String END_ROCKSDB = Common.Engine.ENG_ROCKSDB.name();
+    private static final String LSM = Common.Engine.LSM.name();
 
     private MysqlInit() {
     }
@@ -90,24 +90,24 @@ public final class MysqlInit {
         String coordinatorSvr = args[0];
         initMetaStore(coordinatorSvr);
         System.out.println("init meta store success");
-        createAndInitTable(MYSQL, USER, BASE_TABLE, END_ROCKSDB, DYNAMIC);
-        initTableByTemplate(MYSQL, DB, BASE_TABLE, END_ROCKSDB, FIXED);
-        initTableByTemplate(MYSQL, TABLES_PRIV, BASE_TABLE, END_ROCKSDB, FIXED);
-        initTableByTemplate(INFORMATION_SCHEMA, GLOBAL_VARIABLES, SYSTEM_VIEW, END_ROCKSDB, FIXED);
+        createAndInitTable(MYSQL, USER, BASE_TABLE, LSM, DYNAMIC);
+        initTableByTemplate(MYSQL, DB, BASE_TABLE, LSM, FIXED);
+        initTableByTemplate(MYSQL, TABLES_PRIV, BASE_TABLE, LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, GLOBAL_VARIABLES, SYSTEM_VIEW, LSM, FIXED);
         initGlobalVariables(coordinatorSvr);
-        initTableByTemplate(INFORMATION_SCHEMA, "COLUMNS", SYSTEM_VIEW, END_ROCKSDB, DYNAMIC);
-        initTableByTemplate(INFORMATION_SCHEMA, "PARTITIONS", SYSTEM_VIEW, END_ROCKSDB, DYNAMIC);
-        initTableByTemplate(INFORMATION_SCHEMA, "EVENTS", SYSTEM_VIEW, END_ROCKSDB, DYNAMIC);
-        initTableByTemplate(INFORMATION_SCHEMA, "TRIGGERS", SYSTEM_VIEW, END_ROCKSDB, DYNAMIC);
-        initTableByTemplate(INFORMATION_SCHEMA, "STATISTICS", SYSTEM_VIEW, END_ROCKSDB, FIXED);
-        initTableByTemplate(INFORMATION_SCHEMA, "ROUTINES", SYSTEM_VIEW, END_ROCKSDB, DYNAMIC);
-        initTableByTemplate(INFORMATION_SCHEMA, "KEY_COLUMN_USAGE", SYSTEM_VIEW, END_ROCKSDB, FIXED);
-        initTableByTemplate(INFORMATION_SCHEMA, "SCHEMATA", SYSTEM_VIEW, END_ROCKSDB, FIXED);
-        initTableByTemplate(INFORMATION_SCHEMA, "TABLES", SYSTEM_VIEW, END_ROCKSDB, FIXED);
-        initTableByTemplate(MYSQL, "ANALYZE_TASK", BASE_TABLE, END_ROCKSDB, DYNAMIC);
-        initTableByTemplate(MYSQL, "CM_SKETCH", BASE_TABLE, END_ROCKSDB, DYNAMIC);
-        initTableByTemplate(MYSQL, "TABLE_STATS", BASE_TABLE, END_ROCKSDB, DYNAMIC);
-        initTableByTemplate(MYSQL, "TABLE_BUCKETS", BASE_TABLE, END_ROCKSDB, DYNAMIC);
+        initTableByTemplate(INFORMATION_SCHEMA, "COLUMNS", SYSTEM_VIEW, LSM, DYNAMIC);
+        initTableByTemplate(INFORMATION_SCHEMA, "PARTITIONS", SYSTEM_VIEW, LSM, DYNAMIC);
+        initTableByTemplate(INFORMATION_SCHEMA, "EVENTS", SYSTEM_VIEW, LSM, DYNAMIC);
+        initTableByTemplate(INFORMATION_SCHEMA, "TRIGGERS", SYSTEM_VIEW, LSM, DYNAMIC);
+        initTableByTemplate(INFORMATION_SCHEMA, "STATISTICS", SYSTEM_VIEW, LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "ROUTINES", SYSTEM_VIEW, LSM, DYNAMIC);
+        initTableByTemplate(INFORMATION_SCHEMA, "KEY_COLUMN_USAGE", SYSTEM_VIEW, LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "SCHEMATA", SYSTEM_VIEW, LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "TABLES", SYSTEM_VIEW, LSM, FIXED);
+        initTableByTemplate(MYSQL, "ANALYZE_TASK", BASE_TABLE, LSM, DYNAMIC);
+        initTableByTemplate(MYSQL, "CM_SKETCH", BASE_TABLE, LSM, DYNAMIC);
+        initTableByTemplate(MYSQL, "TABLE_STATS", BASE_TABLE, LSM, DYNAMIC);
+        initTableByTemplate(MYSQL, "TABLE_BUCKETS", BASE_TABLE, LSM, DYNAMIC);
         int code = check();
         close();
         System.out.println("code:" + code);
@@ -303,6 +303,7 @@ public final class MysqlInit {
             .collate("utf8_bin")
             .tableType(tableType)
             .rowFormat(rowFormat)
+            .replica(1)
             .build();
     }
 
