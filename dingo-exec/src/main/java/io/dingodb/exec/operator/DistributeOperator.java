@@ -16,6 +16,8 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.partition.RangeDistribution;
@@ -26,6 +28,7 @@ import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.DistributionParam;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
@@ -34,7 +37,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.NavigableMap;
+import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
@@ -56,14 +61,18 @@ public class DistributeOperator extends SoleOutOperator {
                 }
                 IndexTable indexTable = param.getIndexTable();
                 Context.ContextBuilder builder = Context.builder();
+                KeyValueCodec codec = param.getCodec();
+                PartitionService ps = PartitionService.getService(
+                    Optional.ofNullable(param.getTable().getPartitionStrategy())
+                        .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
                 if (param.getTableId().type.code == CommonId.CommonType.INDEX.code
                     && indexTable != null) {
                     builder.indexId(param.getTableId());
+                    ps = PartitionService.getService(
+                        Optional.ofNullable(indexTable.getPartitionStrategy())
+                            .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
                 }
-                CommonId partId = PartitionService.getService(
-                        Optional.ofNullable(param.getTable().getPartitionStrategy())
-                            .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-                    .calcPartId(tuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
+                CommonId partId = ps.calcPartId(tuple, wrap(codec::encodeKey), param.getDistributions());
                 RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
 
                 return vertex.getSoleEdge().transformToNext(builder.distribution(distribution).build(), tuple);

@@ -17,6 +17,8 @@
 package io.dingodb.meta.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.dingodb.common.CommonId;
+import io.dingodb.common.type.TupleMapping;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -30,4 +32,6 @@ public class IndexTable extends Table {
     public final IndexType indexType;
     @JsonProperty
     public final boolean unique;
+    public final CommonId primaryId;
+    public final TupleMapping mapping;
 }

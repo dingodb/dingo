@@ -25,8 +25,10 @@ import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.Mutation;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.Vector;
@@ -36,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -64,7 +66,20 @@ public class TransactionCacheToMutation {
             KeyValueCodec keyValueCodec = CodecService.getDefault().createKeyValueCodec(
                 index.tableId, index.tupleType(), index.keyMapping()
             );
+            Table table = MetaService.root().getTable(index.primaryId);
             Object[] record = keyValueCodec.decode(new KeyValue(key, value));
+            List<Object> keys = new ArrayList<>();
+            List<Integer> mappings = new ArrayList<>();
+            for (int i = 0; i < table.keyMapping().getMappings().length; i++) {
+                int mapping = index.getMapping().reverse(table.columns.size()).getMappings()[table.keyMapping().get(i)];
+                mappings.add(mapping);
+                keys.add(record[mapping]);
+            }
+            TupleMapping tupleMapping = TupleMapping.of(mappings);
+            key = CodecService.getDefault()
+                .createKeyValueCodec(table.tupleType().select(tupleMapping), table.keyMapping())
+                .encodeKey(keys.toArray());
+
             Column column = index.getColumns().get(0);
             List<String> colNames = index.getColumns().stream().map(Column::getName).collect(Collectors.toList());
             long longId = Long.parseLong(String.valueOf(record[colNames.indexOf(column.getName())]));

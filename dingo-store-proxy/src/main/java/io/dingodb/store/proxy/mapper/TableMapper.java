@@ -174,15 +174,18 @@ public interface TableMapper {
         KeyValueCodec codec = CodecService.INSTANCE
             .createKeyValueCodec(columnDefinitionFrom(tableWithId.getTableDefinition().getColumns()));
         builder.partitions(partitionFrom(tableWithId.getTableDefinition().getTablePartition().getPartitions(), codec));
-        builder.indexes(indexes.stream().map($ -> indexTableFrom($, Collections.emptyList())).collect(Collectors.toList()));
         builder.tableId(MAPPER.idFrom(tableWithId.getTableId()));
+        builder.indexes(indexes.stream().map($ -> indexTableFrom(builder, $, Collections.emptyList()))
+            .collect(Collectors.toList()));
         return builder.build();
     }
 
     default IndexTable indexTableFrom(
+        Table.TableBuilder tableBuilder,
         io.dingodb.sdk.service.entity.meta.TableDefinitionWithId tableWithId,
         List<io.dingodb.sdk.service.entity.meta.TableDefinitionWithId> indexes
     ) {
+        Table table = tableBuilder.build();
         IndexTable.IndexTableBuilder builder = IndexTable.builder();
         io.dingodb.sdk.service.entity.meta.TableDefinition definition = tableWithId.getTableDefinition();
         tableFrom(definition, builder);
@@ -192,6 +195,12 @@ public interface TableMapper {
             .createKeyValueCodec(columnDefinitionFrom(definition.getColumns()));
         builder.partitions(partitionFrom(definition.getTablePartition().getPartitions(), codec));
         builder.tableId(MAPPER.idFrom(tableWithId.getTableId()));
+        builder.primaryId(table.tableId);
+        List<String> names = definition.getColumns().stream()
+            .map(io.dingodb.sdk.service.entity.meta.ColumnDefinition::getName)
+            .collect(Collectors.toList());
+        List<Integer> columnIndices = table.getColumnIndices(names);
+        builder.mapping(TupleMapping.of(columnIndices));
         MAPPER.setIndex(builder, definition.getIndexParameter());
         return builder.build();
     }
