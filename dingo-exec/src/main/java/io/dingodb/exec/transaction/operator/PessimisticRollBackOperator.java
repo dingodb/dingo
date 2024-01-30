@@ -111,7 +111,7 @@ public class PessimisticRollBackOperator extends TransactionOperator {
                 param.setPartId(null);
             }
         } else {
-            boolean result = txnPessimisticRollBack(param, txnId, tableId, partId);
+            boolean result = txnPessimisticRollBack(param, txnId, param.getTableId(), partId);
             if (!result) {
                 throw new RuntimeException(txnId + " " + partId + ",txnPessimisticRollBack false");
             }
