@@ -62,12 +62,14 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
             List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
                 .map(Column::getName)
                 .collect(Collectors.toList()));
+            tableId = context.getIndexId();
             Object[] finalTuple = tuple;
             tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
             store = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
             codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
         }
-        byte[] keys = wrap(codec::encodeKey).apply(tuple);
+        KeyValue kv = wrap(codec::encode).apply(tuple);
+        byte[] keys = kv.getKey();
         CodecService.getDefault().setId(keys, partId.domain);
         byte[] primaryLockKey = param.getPrimaryLockKey();
         byte[] txnIdBytes = vertex.getTask().getTxnId().encode();
@@ -138,7 +140,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                             partIdBytes),
                         null);
                     // write data
-                    KeyValue dataKeyValue = new KeyValue(dataKey, null);
+                    KeyValue dataKeyValue = new KeyValue(dataKey, kv.getValue());
                     if (store.put(lockKeyValue)
                         && store.put(extraKeyValue)
                         && store.put(dataKeyValue)
@@ -194,7 +196,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                 tableIdBytes,
                 partIdBytes
             );
-            KeyValue keyValue = new KeyValue(resultKeys, null);
+            KeyValue keyValue = new KeyValue(resultKeys, kv.getValue());
             byte[] insertKey = Arrays.copyOf(keyValue.getKey(), keyValue.getKey().length);
             insertKey[insertKey.length - 2] = (byte) Op.PUT.getCode();
             store.deletePrefix(insertKey);
