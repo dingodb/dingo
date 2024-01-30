@@ -542,6 +542,11 @@ public class TransactionStoreInstance {
                         resolveLockStatus = ResolveLockStatus.PESSIMISTIC_ROLLBACK;
                         continue;
                     }
+                    if (lockInfo.getMinCommitTs() >= startTs) {
+                        resolvedLocks.add(lockInfo.getLockTs());
+                        resolveLockStatus = ResolveLockStatus.MIN_COMMIT_TS_PUSHED;
+                        continue;
+                    }
                     // 1、PrimaryMismatch  or  TxnNotFound
                     if (resultInfo.getPrimaryMismatch() != null) {
                         throw new PrimaryMismatchException(resultInfo.getPrimaryMismatch().toString());
