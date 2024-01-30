@@ -231,12 +231,12 @@ public final class Utils {
         return builder.toString();
     }
 
-    public static boolean isNeedLookUp(TupleMapping selection, TupleMapping keyMapping) {
+    public static boolean isNeedLookUp(TupleMapping selection, TupleMapping keyMapping, int totalCols) {
         if (selection == null) {
             return true;
         }
         for (int index : selection.getMappings()) {
-            if (!keyMapping.contains(index)) {
+            if (!keyMapping.contains(index) && index < totalCols) {
                 return true;
             }
         }

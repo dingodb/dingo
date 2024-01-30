@@ -39,6 +39,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import static io.dingodb.exec.operator.TxnGetByKeysOperator.getLocalStore;
+
 public class TxnPartVectorOperator extends FilterProjectSourceOperator {
 
     public static final TxnPartVectorOperator INSTANCE = new TxnPartVectorOperator();
@@ -65,6 +67,21 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                         Optional.ofNullable(param.getTable().getPartitionStrategy())
                             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
                     .calcPartId(response.getKey(), param.getDistributions());
+                byte[] tmp = response.getKey();
+                CodecService.getDefault().setId(tmp, param.getPartId().domain);
+                CommonId txnId = vertex.getTask().getTxnId();
+                Iterator<Object[]> local = getLocalStore(
+                    regionId,
+                    param.getCodec(),
+                    tmp,
+                    param.getTableId(),
+                    txnId,
+                    param.getPartId().encode()
+                    );
+                if (local != null) {
+                    return local;
+                }
+
                 StoreInstance storeInstance = StoreService.getDefault().getInstance(param.getTableId(), regionId);
                 KeyValue keyValue = storeInstance.txnGet(param.getScanTs(), response.getKey(), param.getTimeOut());
                 Object[] decode = param.getCodec().decode(keyValue);
@@ -78,17 +95,26 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                 TxnVectorSearchResponse txnResponse = (TxnVectorSearchResponse) response;
                 KeyValue tableData = new KeyValue(txnResponse.getTableKey(), txnResponse.getTableVal());
                 Object[] tuples = tableCodec.decode(tableData);
-                results.add(vecSelection.revMap(tuples));
+                Object[] priTuples = new Object[param.getTable().columns.size() + 1];
+                TupleMapping resultSec = param.getResultSelection();
+                for (int i = 0; i < resultSec.size(); i ++) {
+                    priTuples[resultSec.get(i)] = tuples[vecSelection.get(i)];
+                }
+                priTuples[priTuples.length - 1] = response.getDistance();
+                results.add(priTuples);
             }
         }
         return results.iterator();
     }
 
     private static TupleMapping mapping2VecSelection(TxnPartVectorParam param) {
-        TupleMapping selection = param.getSelection();
+        TupleMapping selection = param.getResultSelection();
 
         int[] txnVecSelection = new int[selection.size()];
         for (int i = 0; i < selection.size(); i ++) {
+            if (selection.get(i) == param.getTable().columns.size()) {
+                continue;
+            }
             String name = param.getTable().getColumns().get(selection.get(i)).getName();
             java.util.Optional<Column> result = param.getIndexTable().getColumns()
                 .stream()

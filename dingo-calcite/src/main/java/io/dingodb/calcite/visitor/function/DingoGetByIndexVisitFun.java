@@ -107,7 +107,7 @@ public final class DingoGetByIndexVisitFun {
             );
 
             if (!needLookup) {
-                needLookup = isNeedLookUp(rel.getSelection(), tupleMapping);
+                needLookup = isNeedLookUp(rel.getSelection(), tupleMapping, td.columns.size());
             }
             for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
                 GetByIndexParam param = new GetByIndexParam(
