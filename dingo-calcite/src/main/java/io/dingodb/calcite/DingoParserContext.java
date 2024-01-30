@@ -176,8 +176,7 @@ public final class DingoParserContext implements Context {
                     caseInsensitiveIterator.remove();
                 }
             }
-        } catch (Exception e1) {
-            log.error(e1.getMessage(), e1);
+        } catch (Exception ignored) {
         }
     }
 

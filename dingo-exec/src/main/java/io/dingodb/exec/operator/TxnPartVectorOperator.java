@@ -20,6 +20,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.vector.TxnVectorSearchResponse;
@@ -38,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static io.dingodb.exec.operator.TxnGetByKeysOperator.getLocalStore;
 
@@ -63,17 +65,29 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
         List<Object[]> results = new ArrayList<>();
         if (param.isLookUp()) {
             for (VectorSearchResponse response : searchResponseList) {
+                TxnVectorSearchResponse txnResponse = (TxnVectorSearchResponse) response;
+                KeyValue tableData = new KeyValue(txnResponse.getTableKey(), txnResponse.getTableVal());
+                Object[] tuples = tableCodec.decode(tableData);
+                Object[] priTuples = new Object[param.getTable().columns.size() + 1];
+                Integer[] selection = param.getIndexTable().getColumns().stream()
+                    .map(col -> param.getTable().getColumns().indexOf(col))
+                    .toArray(Integer[]::new);
+                for (int i = 0; i < selection.length; i ++) {
+                    priTuples[selection[i]] = tuples[i];
+                }
+                byte[] tmp = param.getCodec().encodeKey(priTuples);
+
+                byte[] tmp1 = tmp;
                 CommonId regionId = PartitionService.getService(
                         Optional.ofNullable(param.getTable().getPartitionStrategy())
                             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-                    .calcPartId(response.getKey(), param.getDistributions());
-                byte[] tmp = response.getKey();
-                CodecService.getDefault().setId(tmp, param.getPartId().domain);
+                    .calcPartId(tmp, param.getDistributions());
+                CodecService.getDefault().setId(tmp1, param.getPartId().domain);
                 CommonId txnId = vertex.getTask().getTxnId();
                 Iterator<Object[]> local = getLocalStore(
                     regionId,
                     param.getCodec(),
-                    tmp,
+                    tmp1,
                     param.getTableId(),
                     txnId,
                     param.getPartId().encode()
@@ -83,11 +97,10 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                 }
 
                 StoreInstance storeInstance = StoreService.getDefault().getInstance(param.getTableId(), regionId);
-                KeyValue keyValue = storeInstance.txnGet(param.getScanTs(), response.getKey(), param.getTimeOut());
+                KeyValue keyValue = storeInstance.txnGet(param.getScanTs(), tmp, param.getTimeOut());
                 Object[] decode = param.getCodec().decode(keyValue);
-                Object[] result = Arrays.copyOf(decode, decode.length + 1);
-                result[decode.length] = response.getDistance();
-                results.add(result);
+                decode[decode.length - 1] = response.getDistance();
+                results.add(decode);
             }
         } else {
             TupleMapping vecSelection = mapping2VecSelection(param);

@@ -24,9 +24,18 @@ import lombok.ToString;
 @Getter
 @ToString
 @NoArgsConstructor
-@AllArgsConstructor
 public class Column {
     private String name;
     private String type;
     private boolean isPrimary;
+
+    public Column(String name, String type, boolean isPrimary) {
+        if (isPrimary) {
+            this.name = name + "(primary)";
+        } else {
+            this.name = name;
+        }
+        this.type = type;
+        this.isPrimary = isPrimary;
+    }
 }
