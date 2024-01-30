@@ -852,12 +852,13 @@ bool tantivy_search_in_rowid_range(::std::string const &index_path, ::std::strin
 // - A group of RowIdWithScore Objects.
 ::rust::Vec<::RowIdWithScore> tantivy_bm25_search(::std::string const &index_path, ::std::string const &query, ::std::uint32_t top_k, bool need_text);
 
-// Execute search with like pattern.
+// Execute search with like pattern or not.
 //
 // Arguments:
 // - `index_path`: The directory path for building the index.
 // - `query`: Query should be like pattern.
+// - `use_regex`: For like pattern, use_regex should be true.
 //
 // Returns:
 // - row_ids u8 bitmap.
-::rust::Vec<::std::uint8_t> tantivy_search_with_like(::std::string const &index_path, ::std::string const &query);
+::rust::Vec<::std::uint8_t> tantivy_search_bitmap_results(::std::string const &index_path, ::std::string const &query, bool use_regex);

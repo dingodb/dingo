@@ -182,17 +182,19 @@ pub mod ffi {
             need_text: bool,
         ) -> Result<Vec<RowIdWithScore>>;
 
-        /// Execute search with like pattern.
+        /// Execute search with like pattern or not.
         ///
         /// Arguments:
         /// - `index_path`: The directory path for building the index.
         /// - `query`: Query should be like pattern.
+        /// - `use_regex`: For like pattern, use_regex should be true.
         ///
         /// Returns:
         /// - row_ids u8 bitmap.
-        pub fn tantivy_search_with_like(
+        pub fn tantivy_search_bitmap_results(
             index_path: &CxxString,
-            query: &CxxString
+            query: &CxxString,
+            use_regex: bool
         ) -> Result<Vec<u8>>;
 
     }
