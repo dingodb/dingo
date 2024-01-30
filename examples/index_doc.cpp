@@ -132,6 +132,15 @@ void test_bm25_search()
              << ", doc_id: " << result[i].doc_id 
              << ", doc: " << std::string(result[i].doc) << endl;
     }
+
+    cout<<"========== execute search_with_like =========="<<endl;
+    rust::cxxbridge1::Vec<::std::uint8_t> result2 = tantivy_search_with_like(index_path, "%chart%");
+    for (size_t i = 0; i < result2.size(); i++)
+    {
+        cout << static_cast<int>(result2[i]) << " ";
+        if (i==result2.size()-1)
+            cout << endl;        
+    }
 }
 
 void test_tokenizer_create()

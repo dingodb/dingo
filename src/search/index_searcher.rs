@@ -16,6 +16,8 @@ use tantivy::query::QueryParser;
 use super::index_r::*;
 use super::top_dos_with_bitmap_collector::TopDocsWithFilter;
 use super::utils::perform_search;
+use super::utils::perform_search_with_range;
+use super::utils::row_ids_to_u8_bitmap;
 use super::utils::u8_bitmap_to_row_ids;
 use crate::common::index_utils::*;
 
@@ -191,7 +193,7 @@ pub fn tantivy_reader_free(index_path: &CxxString) -> Result<bool, String> {
 /// - `query`: Query string.
 /// - `lrange`: The left (inclusive) boundary of the row ID range.
 /// - `rrange`: The right (inclusive) boundary of the row ID range.
-/// - `use_regrex`: Whether use regex searcher.
+/// - `use_regex`: Whether use regex searcher.
 ///
 /// Returns:
 /// - A bool value represent whether granule hitted.
@@ -232,7 +234,7 @@ pub fn tantivy_search_in_rowid_range(
         }
     };
 
-    match perform_search(&index_r, &query_str, lrange, rrange, use_regex) {
+    match perform_search_with_range(&index_r, &query_str, lrange, rrange, use_regex) {
         Ok(row_id_range) => Ok(!row_id_range.is_empty()),
         Err(e) => {
             let error_info = format!("Error in search: {}", e);
@@ -249,7 +251,7 @@ pub fn tantivy_search_in_rowid_range(
 /// - `query`: Query string.
 /// - `lrange`: The left (inclusive) boundary of the row ID range.
 /// - `rrange`: The right (inclusive) boundary of the row ID range.
-/// - `use_regrex`: Whether use regex searcher.
+/// - `use_regex`: Whether use regex searcher.
 ///
 /// Returns:
 /// - The count of occurrences of the query string within the row ID range.
@@ -290,7 +292,7 @@ pub fn tantivy_count_in_rowid_range(
         }
     };
 
-    match perform_search(&index_r, &query_str, lrange, rrange, use_regex) {
+    match perform_search_with_range(&index_r, &query_str, lrange, rrange, use_regex) {
         Ok(row_id_range) => Ok(row_id_range.len() as u64),
         Err(e) => {
             let error_info = format!("Error in search: {}", e);
@@ -426,4 +428,62 @@ pub fn tantivy_bm25_search(
     let cxx_vector: UniquePtr<CxxVector<u8>> = CxxVector::new();
     let cxx_vector: &CxxVector<u8> = cxx_vector.as_ref().unwrap();
     tantivy_bm25_search_with_filter(index_path, query, cxx_vector, top_k, need_text)
+}
+
+
+/// Execute search with like pattern.
+///
+/// Arguments:
+/// - `index_path`: The directory path for building the index.
+/// - `query`: Query should be like pattern.
+///
+/// Returns:
+/// - row_ids u8 bitmap.
+pub fn tantivy_search_with_like(
+    index_path: &CxxString,
+    query: &CxxString
+) -> Result<Vec<u8>, String> {
+    // Parse parameter.
+    let index_path_str = match index_path.to_str() {
+        Ok(content) => content.to_string(),
+        Err(e) => {
+            return Err(format!(
+                "Can't parse parameter index_path: {}, exception: {}",
+                index_path,
+                e.to_string()
+            ));
+        }
+    };
+    let query_str = match query.to_str() {
+        Ok(content) => content.to_string(),
+        Err(e) => {
+            return Err(format!(
+                "Can't parse parameter index_path: {}, exception: {}",
+                query,
+                e.to_string()
+            ));
+        }
+    };
+    // get index reader from CACHE
+    let index_r = match get_index_r(index_path_str.clone()) {
+        Ok(content) => content,
+        Err(e) => {
+            ERROR!("{}", e);
+            return Err(e);
+        }
+    };
+
+    let row_ids_bitmap = match perform_search(&index_r, &query_str, true) {
+        Ok(content) => content,
+        Err(e) => {
+            let error_info = format!("Error in perform_search: {}", e);
+            ERROR!("{}", error_info);
+            return Err(error_info);
+        }
+    };
+    let row_ids_number: Vec<u32> = row_ids_bitmap.iter().collect();
+    println!("row_ids_number: {:?}", row_ids_number);
+    let u8_bitmap: Vec<u8> = row_ids_to_u8_bitmap(&row_ids_number);
+    println!("u8_bitmap: {:?}", u8_bitmap);
+    Ok(u8_bitmap)
 }

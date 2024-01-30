@@ -115,7 +115,7 @@ pub mod ffi {
         /// - `query`: Query string.
         /// - `lrange`: The left (inclusive) boundary of the row ID range.
         /// - `rrange`: The right (inclusive) boundary of the row ID range.
-        /// - `use_regrex`: Whether use regex searcher.
+        /// - `use_regex`: Whether use regex searcher.
         ///
         /// Returns:
         /// - A bool value represent whether granule hitted.
@@ -134,7 +134,7 @@ pub mod ffi {
         /// - `query`: Query string.
         /// - `lrange`: The left (inclusive) boundary of the row ID range.
         /// - `rrange`: The right (inclusive) boundary of the row ID range.
-        /// - `use_regrex`: Whether use regex searcher.
+        /// - `use_regex`: Whether use regex searcher.
         ///
         /// Returns:
         /// - The count of occurrences of the query string within the row ID range.
@@ -181,6 +181,19 @@ pub mod ffi {
             top_k: u32,
             need_text: bool,
         ) -> Result<Vec<RowIdWithScore>>;
+
+        /// Execute search with like pattern.
+        ///
+        /// Arguments:
+        /// - `index_path`: The directory path for building the index.
+        /// - `query`: Query should be like pattern.
+        ///
+        /// Returns:
+        /// - row_ids u8 bitmap.
+        pub fn tantivy_search_with_like(
+            index_path: &CxxString,
+            query: &CxxString
+        ) -> Result<Vec<u8>>;
 
     }
 }

@@ -59,8 +59,8 @@ name = "loop_search"
 path = "demo/loop_search.rs"
 
 [[bin]]
-name = "regrex_search"
-path = "demo/regrex_search.rs"
+name = "regex_search"
+path = "demo/regex_search.rs"
 
 [[bin]]
 name = "natural_language"

@@ -10,7 +10,7 @@ use crate::ERROR;
 use super::index_r::*;
 use super::row_id_bitmap_collector::RowIdRoaringCollector;
 
-fn compute_bitmap(index_r: &IndexR, query_str: &str, use_regrex: bool) -> Arc<RoaringBitmap> {
+fn compute_bitmap(index_r: &IndexR, query_str: &str, use_regex: bool) -> Arc<RoaringBitmap> {
     let schema = index_r.reader.searcher().index().schema();
     let text = match schema.get_field("text") {
         Ok(str) => str,
@@ -23,12 +23,12 @@ fn compute_bitmap(index_r: &IndexR, query_str: &str, use_regrex: bool) -> Arc<Ro
     let searcher = index_r.reader.searcher();
     let row_id_collector = RowIdRoaringCollector::with_field("row_id".to_string());
 
-    if use_regrex {
+    if use_regex {
         let regex_query = match RegexQuery::from_pattern(&like_to_regex(query_str), text) {
             Ok(parsed_query) => parsed_query,
             Err(e) => {
                 ERROR!(
-                    "Can't parse regrex query: {}, {}",
+                    "Can't parse regex query: {}, {}",
                     like_to_regex(query_str),
                     e
                 );
@@ -68,8 +68,12 @@ fn intersect_and_return(
     lrange: u64,
     rrange: u64,
 ) -> Result<Arc<RoaringBitmap>, String> {
+    let lrange_u32: u32 = lrange.try_into().map_err(|_| "lrange value is too large and causes u32 overflow")?;
+    let rrange_u32: u32 = rrange.try_into().map_err(|_| "rrange value is too large and causes u32 overflow")?;
+    let rrange_plus_one_u32 = rrange_u32.checked_add(1).ok_or("rrange + 1 causes u32 overflow")?;
+
     let mut row_id_range = RoaringBitmap::new();
-    row_id_range.insert_range(lrange as u32..(rrange + 1) as u32);
+    row_id_range.insert_range(lrange_u32..rrange_plus_one_u32);
     row_id_range &= Arc::as_ref(&row_id_roaring_bitmap);
     Ok(Arc::new(row_id_range))
 }
@@ -81,36 +85,50 @@ fn intersect_and_return(
 /// - `query_str`: query string.
 /// - `lrange`: The lower bound of the row ID range.
 /// - `rrange`: The upper bound of the row ID range.
-/// - `use_regrex`: Whether to use regex search.
+/// - `use_regex`: Whether to use regex search.
 ///
 /// Returns:
 /// - `Result<RoaringBitmap, String>`: A `RoaringBitmap` containing the search results,
 ///   or an error if the search fails.
-pub fn perform_search(
+pub fn perform_search_with_range(
     index_r: &IndexR,
     query_str: &str,
     lrange: u64,
     rrange: u64,
-    use_regrex: bool,
+    use_regex: bool,
+) -> Result<Arc<RoaringBitmap>, String> {
+    let row_ids = match perform_search(index_r, query_str, use_regex){
+        Ok(content) => content,
+        Err(e)=>{
+            let error_info = format!("Error in perform_search: {}", e);
+            ERROR!("{}", error_info);
+            return Err(error_info);
+        }
+    };
+    intersect_and_return(row_ids, lrange, rrange)
+}
+
+pub fn perform_search(
+    index_r: &IndexR,
+    query_str: &str,
+    use_regex: bool,
 ) -> Result<Arc<RoaringBitmap>, String> {
     #[cfg(feature = "use-flurry-cache")]
     {
         // Resolve cache or compute the roaring bitmap for the given query.
-        let row_id_roaring_bitmap = CACHE_FOR_SKIP_INDEX.resolve(
+        Ok(CACHE_FOR_SKIP_INDEX.resolve(
             (
                 index_r.reader_address(),
                 query_str.to_string(),
                 index_r.path.to_string(),
-                use_regrex,
+                use_regex,
             ),
-            || compute_bitmap(index_r, query_str, use_regrex),
-        );
-        intersect_and_return(row_id_roaring_bitmap, lrange, rrange)
+            || compute_bitmap(index_r, query_str, use_regex),
+        ))
     }
     #[cfg(not(feature = "use-flurry-cache"))]
     {
-        let row_id_roaring_bitmap = compute_bitmap(index_r, query_str, use_regrex);
-        intersect_and_return(row_id_roaring_bitmap, lrange, rrange)
+        Ok(compute_bitmap(index_r, query_str, use_regex))
     }
 }
 
@@ -170,6 +188,25 @@ pub fn u8_bitmap_to_row_ids(bitmap: &[u8]) -> Vec<u32> {
     }
     row_ids
 }
+
+pub fn row_ids_to_u8_bitmap(row_ids: &[u32]) -> Vec<u8> {
+    // O(n) try get max row_id, we use it to caculate bitmap(u8 vec) size
+    let max_row_id = match row_ids.iter().max() {
+        Some(&max) => max,
+        None => return Vec::new(),
+    };
+    let u8_bitmap_size = (max_row_id as usize / 8) + 1;
+    let mut bitmap = vec![0u8; u8_bitmap_size];
+
+    for &row_id in row_ids {
+        let byte_index = (row_id / 8) as usize;
+        let bit_index = row_id % 8;
+        bitmap[byte_index] |= 1 << bit_index;
+    }
+
+    bitmap
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -255,5 +292,53 @@ mod tests {
 
         let bitmap_h: Vec<u8> = vec![0, 32];
         assert_eq!(u8_bitmap_to_row_ids(&bitmap_h), [13]);
+    }
+
+    #[test]
+    fn test_row_ids_to_u8_bitmap() {
+        // empty bitmap
+        let bitmap_empty: Vec<u8> = Vec::new();
+        let row_ids_empty: Vec<u32> = Vec::new();
+        assert_eq!(row_ids_to_u8_bitmap(&row_ids_empty), bitmap_empty);
+
+        // row ids with many zero
+        let mut row_ids_a: Vec<u32> = vec![0, 0, 0, 0, 0];
+        row_ids_a.extend(vec![0; 1000]);
+        assert_eq!(row_ids_to_u8_bitmap(&row_ids_a), [1]);
+
+        // rowids can convert to full bitmap
+        let row_ids_b: Vec<u32> = vec![0, 1, 2, 3, 4, 5, 6, 7];
+        assert_eq!(row_ids_to_u8_bitmap(&row_ids_b), [255]);
+
+        let row_ids_c: Vec<u32> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+        assert_eq!(
+            row_ids_to_u8_bitmap(&row_ids_c),
+            [255, 255]
+        );
+
+        // 00001100, 00010000
+        let row_ids_d: Vec<u32> = vec![2, 3, 12];
+        assert_eq!(row_ids_to_u8_bitmap(&row_ids_d), [12, 16]);
+
+        // 00000001, 00000000, 00000010, 00000100
+        let row_ids_e: Vec<u32> = vec![0, 17, 26];
+        assert_eq!(row_ids_to_u8_bitmap(&row_ids_e), [1, 0, 2, 4]);
+
+        // 00100010, 01000001, 10000000
+        let row_ids_f: Vec<u32> = vec![1, 5, 8, 14, 23];
+        assert_eq!(row_ids_to_u8_bitmap(&row_ids_f), [34, 65, 128]);
+
+        // 8 rowids.
+        let row_ids_g: Vec<u32> = vec![0, 9, 18, 27, 36, 45, 54, 63];
+        assert_eq!(
+            row_ids_to_u8_bitmap(&row_ids_g),
+            [
+                0b00000001, 0b00000010, 0b00000100, 0b00001000, 
+                0b00010000, 0b00100000, 0b01000000, 0b10000000,
+            ]
+        );
+
+        let row_ids_h: Vec<u32> = vec![13];
+        assert_eq!(row_ids_to_u8_bitmap(&row_ids_h), [0, 32]);
     }
 }
