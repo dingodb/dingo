@@ -59,7 +59,7 @@ public class CommitOperator extends TransactionOperator {
         CommonId newPartId = (CommonId) tuple[3];
         int op = (byte) tuple[4];
         byte[] key = (byte[]) tuple[5];
-        if (ByteArrayUtils.compare(key, param.getPrimaryKey(), 9) == 0) {
+        if (ByteArrayUtils.compare(key, param.getPrimaryKey(), 1) == 0) {
             return true;
         }
         if (tableId.type == CommonId.CommonType.INDEX) {

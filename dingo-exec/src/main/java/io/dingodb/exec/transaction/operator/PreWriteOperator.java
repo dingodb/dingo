@@ -60,7 +60,7 @@ public final class PreWriteOperator extends TransactionOperator {
         byte[] key = (byte[]) tuple[5];
         byte[] value = (byte[]) tuple[6];
         // first key is primary key
-        if (ByteArrayUtils.compare(key, param.getPrimaryKey(), 9) == 0) {
+        if (ByteArrayUtils.compare(key, param.getPrimaryKey(), 1) == 0) {
             return true;
         }
         StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
