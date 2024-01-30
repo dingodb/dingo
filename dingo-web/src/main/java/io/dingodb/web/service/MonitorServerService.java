@@ -353,12 +353,12 @@ public class MonitorServerService {
         // collect store metric
         List<StoreInfo> indexInfoList = storeList
             .stream()
-            .filter(store -> store.storeType() == 1)
+            .filter(store -> store.storeType() == 1 && store.storeState() != 2)
             .map(index -> getStoreInfo(currentTimeSeconds, nodeExporterMap, index))
             .collect(Collectors.toList());
         List<StoreInfo> storeInfoList = storeList
             .stream()
-            .filter(store -> store.storeType() == 0)
+            .filter(store -> store.storeType() == 0 && store.storeState() != 2)
             .map(store -> getStoreInfo(currentTimeSeconds, nodeExporterMap, store))
             .collect(Collectors.toList());
 
@@ -431,10 +431,10 @@ public class MonitorServerService {
     }
 
     private boolean exceedAlarm(ResourceInfo resourceInfo) {
-        if (resourceInfo.getCpuUsage() > cpuAlarmThreshold) {
+        if (resourceInfo.getCpuUsage() * 100 > cpuAlarmThreshold) {
             return true;
         }
-        if (resourceInfo.getMemUsage() > memAlarmThreshold) {
+        if (resourceInfo.getMemUsage() * 100 > memAlarmThreshold) {
             return true;
         }
         for (DiskUsageInfo diskUsageInfo : resourceInfo.getDiskUsage()) {
