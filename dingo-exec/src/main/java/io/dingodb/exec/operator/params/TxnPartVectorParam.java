@@ -70,7 +70,7 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
     private final boolean pushDown;
 
     @JsonProperty("scanTs")
-    private final long scanTs;
+    private long scanTs;
     @JsonProperty("isolationLevel")
     private final int isolationLevel;
     @JsonProperty("timeOut")
@@ -148,4 +148,8 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
         codec = CodecService.getDefault().createKeyValueCodec(schema, keyMapping);
     }
 
+    @Override
+    public void setStartTs(long startTs) {
+        this.scanTs = startTs;
+    }
 }

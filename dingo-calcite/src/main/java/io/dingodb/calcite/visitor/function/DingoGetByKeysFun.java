@@ -94,9 +94,14 @@ public final class DingoGetByKeysFun {
         long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
         // Use current read
         if (transaction != null && transaction.isPessimistic()
-            && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.ReadCommitted
+            && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.SnapshotIsolation
             && (visitor.getKind() == SqlKind.INSERT || visitor.getKind() == SqlKind.DELETE
-            || visitor.getKind() == SqlKind.UPDATE)) {
+            || visitor.getKind() == SqlKind.UPDATE) ) {
+            scanTs = TsoService.getDefault().tso();
+        }
+        if (transaction != null && transaction.isPessimistic()
+            && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.ReadCommitted
+            && visitor.getKind() == SqlKind.SELECT) {
             scanTs = TsoService.getDefault().tso();
         }
         if (transaction != null) {
