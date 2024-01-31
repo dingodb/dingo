@@ -63,7 +63,6 @@ public class StepDeserializer extends StdDeserializer<Step> {
         @NonNull JsonParser parser,
         @NonNull ObjectNode objectNode
     ) throws JsonProcessingException {
-        SqlChecker checker = null;
         if (objectNode.has("dump") && objectNode.get("dump").asBoolean()) {
             return new SqlResultDumper();
         }

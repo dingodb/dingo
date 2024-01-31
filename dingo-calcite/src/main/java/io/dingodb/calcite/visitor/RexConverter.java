@@ -35,11 +35,19 @@ import io.dingodb.expr.runtime.op.time.TimeFormat2FunFactory;
 import io.dingodb.expr.runtime.op.time.TimestampFormat2FunFactory;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexDynamicParam;
+import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexVisitorImpl;
+import org.apache.calcite.rex.RexOver;
+import org.apache.calcite.rex.RexPatternFieldRef;
+import org.apache.calcite.rex.RexRangeRef;
+import org.apache.calcite.rex.RexSubQuery;
+import org.apache.calcite.rex.RexTableInputRef;
+import org.apache.calcite.rex.RexVisitor;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.fun.SqlTrimFunction;
@@ -47,23 +55,27 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-public final class RexConverter extends RexVisitorImpl<Expr> {
+public final class RexConverter implements RexVisitor<@NonNull Expr> {
     private static final RexConverter INSTANCE = new RexConverter();
 
     private final DingoFunFactory funFactory;
 
     private RexConverter() {
-        super(true);
         funFactory = DingoFunFactory.getInstance();
     }
 
-    public static Expr convert(@NonNull RexNode rexNode) {
+    public static @NonNull Expr convert(@NonNull RexNode rexNode) {
         return rexNode.accept(INSTANCE);
     }
 
     @Override
     public @NonNull Expr visitInputRef(@NonNull RexInputRef inputRef) {
         return Exprs.op(Exprs.INDEX, Exprs.var(SqlExprCompileContext.TUPLE_VAR_NAME), Exprs.val(inputRef.getIndex()));
+    }
+
+    @Override
+    public @NonNull Expr visitLocalRef(@NonNull RexLocalRef localRef) {
+        throw new UnsupportedRexNode(localRef);
     }
 
     @Override
@@ -322,12 +334,47 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
             default:
                 break;
         }
-        throw new UnsupportedOperationException("Unsupported operation: \"" + call + "\".");
+        throw new UnsupportedRexNode(call);
+    }
+
+    @Override
+    public @NonNull Expr visitOver(RexOver over) {
+        throw new UnsupportedRexNode(over);
+    }
+
+    @Override
+    public @NonNull Expr visitCorrelVariable(RexCorrelVariable correlVariable) {
+        throw new UnsupportedRexNode(correlVariable);
     }
 
     @Override
     public @NonNull Expr visitDynamicParam(@NonNull RexDynamicParam dynamicParam) {
         return Exprs.op(Exprs.INDEX, Exprs.var(SqlExprCompileContext.SQL_DYNAMIC_VAR_NAME), dynamicParam.getIndex());
+    }
+
+    @Override
+    public @NonNull Expr visitRangeRef(RexRangeRef rangeRef) {
+        throw new UnsupportedRexNode(rangeRef);
+    }
+
+    @Override
+    public @NonNull Expr visitFieldAccess(RexFieldAccess fieldAccess) {
+        throw new UnsupportedRexNode(fieldAccess);
+    }
+
+    @Override
+    public @NonNull Expr visitSubQuery(RexSubQuery subQuery) {
+        throw new UnsupportedRexNode(subQuery);
+    }
+
+    @Override
+    public @NonNull Expr visitTableInputRef(RexTableInputRef fieldRef) {
+        throw new UnsupportedRexNode(fieldRef);
+    }
+
+    @Override
+    public @NonNull Expr visitPatternFieldRef(RexPatternFieldRef fieldRef) {
+        throw new UnsupportedRexNode(fieldRef);
     }
 
     private @Nullable OpExpr getFunFromFactory(@NonNull RexCall call) {
@@ -406,5 +453,13 @@ public final class RexConverter extends RexVisitorImpl<Expr> {
         return call.getOperands().stream()
             .map(o -> o.accept(this))
             .toArray(Expr[]::new);
+    }
+
+    public static class UnsupportedRexNode extends UnsupportedOperationException {
+        private static final long serialVersionUID = 4743457403279368767L;
+
+        public UnsupportedRexNode(@NonNull RexNode rexNode) {
+            super("RexNode \"" + rexNode + "\" is not supported.");
+        }
     }
 }

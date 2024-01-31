@@ -57,7 +57,7 @@ public class LogicalRelOpFromFilterRule extends ConverterRule implements Substit
                 filter.getRowType(),
                 relOp
             );
-        } catch (UnsupportedOperationException e) {
+        } catch (RexConverter.UnsupportedRexNode e) {
             return null;
         }
     }
