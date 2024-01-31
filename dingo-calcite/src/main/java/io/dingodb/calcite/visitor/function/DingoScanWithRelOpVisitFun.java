@@ -94,7 +94,17 @@ public final class DingoScanWithRelOpVisitFun {
             false
         );
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
-        Task task = job.getOrCreate(currentLocation, idGenerator);
+        Task task;
+        if (transaction != null) {
+            task = job.getOrCreate(
+                currentLocation,
+                idGenerator,
+                transaction.getType(),
+                IsolationLevel.of(transaction.getIsolationLevel())
+            );
+        } else {
+            task = job.getOrCreate(currentLocation, idGenerator);
+        }
         calcVertex.setId(idGenerator.getOperatorId(task.getId()));
         task.putVertex(calcVertex);
 

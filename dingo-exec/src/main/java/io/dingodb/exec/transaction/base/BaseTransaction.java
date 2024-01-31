@@ -35,7 +35,7 @@ import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
-import io.dingodb.store.api.transaction.exception.ReginSplitException;
+import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -51,7 +51,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -197,7 +196,7 @@ public abstract class BaseTransaction implements ITransaction {
             try {
                 StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
                 return store.txnCommit(commitRequest);
-            } catch (ReginSplitException e) {
+            } catch (RegionSplitException e) {
                 log.error(e.getMessage(), e);
                 // 2、regin split
                 CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, primaryKey);

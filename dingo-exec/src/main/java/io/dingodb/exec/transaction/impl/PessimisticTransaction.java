@@ -18,7 +18,6 @@ package io.dingodb.exec.transaction.impl;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.JobManager;
@@ -37,7 +36,7 @@ import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.prewrite.ForUpdateTsCheck;
 import io.dingodb.store.api.transaction.data.prewrite.PessimisticCheck;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
-import io.dingodb.store.api.transaction.exception.ReginSplitException;
+import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -197,7 +196,7 @@ public class PessimisticTransaction extends BaseTransaction {
                 throw new RuntimeException(txnId + " " + cacheToObject.getPartId()
                     + ",preWritePrimaryKey false,PrimaryKey:" + primaryKey.toString());
             }
-        } catch (ReginSplitException e) {
+        } catch (RegionSplitException e) {
             log.error(e.getMessage(), e);
             CommonId regionId = TransactionUtil.singleKeySplitRegionId(
                 cacheToObject.getTableId(),

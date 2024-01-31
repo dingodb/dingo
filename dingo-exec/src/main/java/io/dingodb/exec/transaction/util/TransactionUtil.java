@@ -23,7 +23,6 @@ import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
-import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.impl.TransactionManager;
@@ -41,7 +40,7 @@ import io.dingodb.store.api.transaction.data.prewrite.LockExtraData;
 import io.dingodb.store.api.transaction.data.prewrite.LockExtraDataList;
 import io.dingodb.store.api.transaction.data.prewrite.PessimisticCheck;
 import io.dingodb.store.api.transaction.data.rollback.TxnPessimisticRollBack;
-import io.dingodb.store.api.transaction.exception.ReginSplitException;
+import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -202,7 +201,7 @@ public class TransactionUtil {
                 throw new RuntimeException(txnId + " " + partId + ",txnPessimisticLock false, txnPessimisticLock: "
                     + txnPessimisticLock.toString());
             }
-        } catch (ReginSplitException e) {
+        } catch (RegionSplitException e) {
             log.error(e.getMessage(), e);
             CommonId regionId = singleKeySplitRegionId(tableId, txnId, key);
             StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
@@ -228,7 +227,7 @@ public class TransactionUtil {
         try {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
             return store.txnPessimisticLockRollback(pessimisticRollBack);
-        } catch (RuntimeException e) {
+        } catch (RegionSplitException e) {
             log.error(e.getMessage(), e);
             // 2、regin split
             CommonId regionId = TransactionUtil.singleKeySplitRegionId(tableId, txnId, primaryKey);

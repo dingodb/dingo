@@ -19,8 +19,8 @@ package io.dingodb.store.api.transaction.exception;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
-public class ReginSplitException extends RuntimeException {
-    public ReginSplitException(String message) {
+public class RegionSplitException extends RuntimeException {
+    public RegionSplitException(String message) {
         super(message);
     }
 }

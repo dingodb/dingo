@@ -253,7 +253,12 @@ public class TransactionStoreInstance {
         long start = System.currentTimeMillis();
         List<Long> resolvedLocks = new ArrayList<>();
         while (true) {
-            TxnPessimisticLockResponse response = storeService.txnPessimisticLock(MAPPER.pessimisticLockTo(txnPessimisticLock));
+            TxnPessimisticLockResponse response;
+            if (indexService != null) {
+                response = indexService.txnPessimisticLock(MAPPER.pessimisticLockTo(txnPessimisticLock));
+            } else {
+                response = storeService.txnPessimisticLock(MAPPER.pessimisticLockTo(txnPessimisticLock));
+            }
             if (response.getTxnResult() == null || response.getTxnResult().isEmpty()) {
                 return true;
             }
@@ -288,7 +293,12 @@ public class TransactionStoreInstance {
 
     public boolean txnPessimisticLockRollback(TxnPessimisticRollBack txnPessimisticRollBack) {
         txnPessimisticRollBack.getKeys().stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
-        TxnPessimisticRollbackResponse response = storeService.txnPessimisticRollback(MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
+        TxnPessimisticRollbackResponse response;
+        if (indexService != null) {
+            response = indexService.txnPessimisticRollback(MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
+        } else {
+            response = storeService.txnPessimisticRollback(MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
+        }
         List<Long> resolvedLocks = new ArrayList<>();
         if (response.getTxnResult() != null && response.getTxnResult().size() > 0) {
 //            writeResolveConflict(
@@ -325,7 +335,12 @@ public class TransactionStoreInstance {
         while (true) {
             TxnBatchGetRequest txnBatchGetRequest = MAPPER.batchGetTo(startTs, IsolationLevel.SnapshotIsolation, keys);
             txnBatchGetRequest.setResolveLocks(resolvedLocks);
-            TxnBatchGetResponse response = storeService.txnBatchGet(txnBatchGetRequest);
+            TxnBatchGetResponse response;
+            if (indexService != null) {
+                response = indexService.txnBatchGet(txnBatchGetRequest);
+            } else {
+                response = storeService.txnBatchGet(txnBatchGetRequest);
+            }
             if (response.getTxnResult() == null) {
                 return response.getKvs().stream().map(MAPPER::kvFrom).collect(Collectors.toList());
             }
@@ -358,7 +373,12 @@ public class TransactionStoreInstance {
 
     public boolean txnBatchRollback(TxnBatchRollBack txnBatchRollBack) {
         txnBatchRollBack.getKeys().stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
-        TxnBatchRollbackResponse response = storeService.txnBatchRollback(MAPPER.rollbackTo(txnBatchRollBack));
+        TxnBatchRollbackResponse response;
+        if (indexService != null) {
+            response = indexService.txnBatchRollback(MAPPER.rollbackTo(txnBatchRollBack));
+        } else {
+            response = storeService.txnBatchRollback(MAPPER.rollbackTo(txnBatchRollBack));
+        }
         return response.getTxnResult() == null;
     }
 
@@ -369,6 +389,9 @@ public class TransactionStoreInstance {
     }
 
     public TxnResolveLockResponse txnResolveLock(TxnResolveLock txnResolveLock) {
+        if (indexService != null) {
+            return indexService.txnResolveLock(MAPPER.resolveTxnTo(txnResolveLock));
+        }
         return storeService.txnResolveLock(MAPPER.resolveTxnTo(txnResolveLock));
     }
 
@@ -610,7 +633,12 @@ public class TransactionStoreInstance {
                 txnScanRequest.setLimit(1024);
                 txnScanRequest.setResolveLocks(resolvedLocks);
                 txnScanRequest.setCoprocessor(coprocessor);
-                TxnScanResponse txnScanResponse = storeService.txnScan(TsoService.INSTANCE.tso(), txnScanRequest);
+                TxnScanResponse txnScanResponse;
+                if (indexService != null) {
+                    txnScanResponse = indexService.txnScan(TsoService.INSTANCE.tso(), txnScanRequest);
+                } else {
+                    txnScanResponse = storeService.txnScan(TsoService.INSTANCE.tso(), txnScanRequest);
+                }
                 if (txnScanResponse.getTxnResult() != null) {
                     long elapsed = System.currentTimeMillis() - start;
                     if (elapsed > timeOut) {

@@ -121,9 +121,11 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
         if (transaction != null && transaction.isPessimistic()) {
             transaction.setJob(job);
         }
-        if (log.isDebugEnabled()) {
+
+        // todo
+//        if (log.isDebugEnabled()) {
             log.info("job = {}", job);
-        }
+//        }
     }
 
     @Override

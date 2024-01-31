@@ -33,7 +33,7 @@ import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
-import io.dingodb.store.api.transaction.exception.ReginSplitException;
+import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -102,7 +102,7 @@ public class PessimisticLockDeleteOperator extends PartModifyOperator {
         try {
             store = Services.KV_STORE.getInstance(tableId, partId);
             future = store.txnPessimisticLockPrimaryKey(txnPessimisticLock, param.getLockTimeOut());
-        } catch (ReginSplitException e) {
+        } catch (RegionSplitException e) {
             log.error(e.getMessage(), e);
             CommonId regionId = TransactionUtil.singleKeySplitRegionId(tableId, txnId, primaryKey);
             store = Services.KV_STORE.getInstance(tableId, regionId);

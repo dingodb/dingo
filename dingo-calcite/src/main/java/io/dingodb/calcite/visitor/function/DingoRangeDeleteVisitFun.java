@@ -67,7 +67,17 @@ public final class DingoRangeDeleteVisitFun {
             td, ranges, rel.getStartKey(), rel.getEndKey(), rel.isIncludeStart(), rel.isIncludeEnd(),
             null, false, rel.isNotBetween());
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
-        Task task = job.getOrCreate(currentLocation, idGenerator);
+        Task task;
+        if (transaction != null) {
+            task = job.getOrCreate(
+                currentLocation,
+                idGenerator,
+                transaction.getType(),
+                IsolationLevel.of(transaction.getIsolationLevel())
+            );
+        } else {
+            task = job.getOrCreate(currentLocation, idGenerator);
+        }
         calcVertex.setId(idGenerator.getOperatorId(task.getId()));
         task.putVertex(calcVertex);
 

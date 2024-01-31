@@ -36,7 +36,7 @@ import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
-import io.dingodb.store.api.transaction.exception.ReginSplitException;
+import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -114,7 +114,7 @@ public class CommitOperator extends TransactionOperator {
         try {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
             return store.txnCommit(commitRequest);
-        } catch (ReginSplitException e) {
+        } catch (RegionSplitException e) {
             log.error(e.getMessage(), e);
             // 2、regin split
             Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(tableId, txnId, param.getKeys());

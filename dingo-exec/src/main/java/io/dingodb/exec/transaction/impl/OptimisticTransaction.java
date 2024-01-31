@@ -32,7 +32,7 @@ import io.dingodb.store.api.StoreInstance;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
-import io.dingodb.store.api.transaction.exception.ReginSplitException;
+import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -133,7 +133,7 @@ public class OptimisticTransaction extends BaseTransaction {
         try {
             StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
             future = store.txnPreWritePrimaryKey(txnPreWrite, getLockTimeOut());
-        } catch (ReginSplitException e) {
+        } catch (RegionSplitException e) {
             log.error(e.getMessage(), e);
             CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, cacheToObject.getMutation().getKey());
             StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
