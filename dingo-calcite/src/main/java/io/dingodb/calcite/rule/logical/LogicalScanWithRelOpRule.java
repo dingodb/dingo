@@ -53,6 +53,9 @@ public class LogicalScanWithRelOpRule extends ConverterRule implements Substitut
         if (DingoTableScanRule.metaSchemaList.contains(fullNameList.get(1))) {
             return null;
         }
+        if (scan.getSelection().size() < scan.getRowType().getFieldCount()) {
+            return null;
+        }
         return new LogicalScanWithRelOp(
             scan.getCluster(),
             scan.getTraitSet(),

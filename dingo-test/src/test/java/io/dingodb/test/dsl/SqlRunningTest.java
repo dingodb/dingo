@@ -28,7 +28,17 @@ import java.util.stream.Stream;
 
 public class SqlRunningTest extends SqlTestRunner {
     @TestFactory
-    public Stream<DynamicTest> testCases() {
+    public Stream<DynamicTest> testJoin3Tables() {
+        return getTests(SqlTestCaseYamlBuilder.of("cases/join_3_tables.yml"));
+    }
+
+    @TestFactory
+    public Stream<DynamicTest> testQuery() {
+        return getTests(SqlTestCaseYamlBuilder.of("cases/query.yml"));
+    }
+
+    @TestFactory
+    public Stream<DynamicTest> testSubQuery() {
         return getTests(SqlTestCaseYamlBuilder.of("cases/sub_query.yml"));
     }
 
@@ -105,11 +115,6 @@ public class SqlRunningTest extends SqlTestRunner {
     @TestFactory
     public Stream<DynamicTest> testJoin3() {
         return getTests(SqlTestCaseYamlBuilder.of("join_i4k_vs_vs0_ts0_vs_i40__i4k_vs_i4/join_cases.yml"));
-    }
-
-    @TestFactory
-    public Stream<DynamicTest> testJoin4() {
-        return getTests(SqlTestCaseYamlBuilder.of("join_vsk_vs0_i40_vs0_2__vsk_vs0_2__vsk_2_i40/join_cases.yml"));
     }
 
     @TestFactory

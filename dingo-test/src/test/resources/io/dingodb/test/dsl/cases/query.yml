@@ -1,0 +1,15 @@
+---
+tables:
+  table0:
+    create: { file: vs_2.create.sql }
+    init: { file: vs_2.data.sql, count: 1 }
+cases:
+  - name: 'no primary key'
+    use:
+      table: table0
+    steps:
+      - sql: 'select * from {table}'
+        result:
+          - 'username, role'
+          - 'STRING, STRING'
+          - 'nacos, ROLE_ADMIN'

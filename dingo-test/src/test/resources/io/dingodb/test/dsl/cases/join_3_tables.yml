@@ -1,0 +1,30 @@
+tables:
+  students:
+    create: { file: vsk_vs0_i40_vs0_2.create.sql }
+    init: { file: vsk_vs0_i40_vs0_2.data.sql, count: 8 }
+  courses:
+    create: { file: vsk_vs0_2.create.sql }
+    init: { file: vsk_vs0_2.data.sql, count: 3 }
+  scores:
+    create: { file: vsk_2_i40.create.sql }
+    init: { file: vsk_2_i40.data.sql, count: 11 }
+  classes:
+    create: { file: vsk_vs0.create.sql }
+    init: { file: vsk_vs0.data.sql }
+cases:
+  - name: Join 3 tables with sub queries
+    use:
+      table0: students
+      table1: courses
+      table2: scores
+    steps:
+      - file: join_3_tables.sql
+        result: join_3_tables.csv
+  - name: Join 3 tables
+    use:
+      table0: students
+      table1: classes
+      table2: scores
+    steps:
+      - file: join_3_tables_1.sql
+        result: join_3_tables_1.csv
