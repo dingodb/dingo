@@ -68,9 +68,13 @@ public final class RexConverter implements RexVisitor<@NonNull Expr> {
         return rexNode.accept(INSTANCE);
     }
 
+    public static @NonNull Expr var(int index) {
+        return Exprs.op(Exprs.INDEX, Exprs.var(SqlExprCompileContext.TUPLE_VAR_NAME), Exprs.val(index));
+    }
+
     @Override
     public @NonNull Expr visitInputRef(@NonNull RexInputRef inputRef) {
-        return Exprs.op(Exprs.INDEX, Exprs.var(SqlExprCompileContext.TUPLE_VAR_NAME), Exprs.val(inputRef.getIndex()));
+        return var(inputRef.getIndex());
     }
 
     @Override

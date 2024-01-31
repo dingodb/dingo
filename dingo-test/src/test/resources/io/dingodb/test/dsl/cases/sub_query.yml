@@ -7,12 +7,27 @@ tables:
     create: { file: i4k_vs0_i40.create.sql }
     init: { file: i4k_vs0_i40.data.sql, count: 6 }
 cases:
-  - name: 'Sub Query: query table 1 filter by not in table 2'
+  - name: 'query table 1 filter by not in table 2'
     use:
       table0: table0
       table1: table1
     steps:
       - sql: 'select id, boyName, userCp from {table1} where id not in (select boyfriend_id from {table0})'
-        csv:
+        result:
+          - 'ID, BOYNAME, USERCP'
+          - 'INT, STRING, INT'
           - '5, Zhang Fei, 1000'
           - '6, Panda, 400'
+  - name: 'query table 1 filter by in table 2'
+    use:
+      table0: table0
+      table1: table1
+    steps:
+      - sql: 'select id, boyName, userCp from {table1} where id in (select boyfriend_id from {table0})'
+        result:
+          - 'ID, BOYNAME, USERCP'
+          - 'INT, STRING, INT'
+          - '1, Zhang Wuji, 100'
+          - '2, Han Han, 800'
+          - '3, Xiao Ming, 50'
+          - '4, DuanYU, 300'

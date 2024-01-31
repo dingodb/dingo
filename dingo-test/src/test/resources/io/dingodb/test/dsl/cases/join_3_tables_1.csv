@@ -1,0 +1,13 @@
+sno, sname, sage, ssex, class_no, class_no, score
+STRING, STRING, INT, STRING, STRING, STRING, INT
+1001, Li Bai, 15, Male, 901, 901, 60
+1001, Li Bai, 15, Male, 901, 901, 60
+1001, Li Bai, 15, Male, 901, 901, 80
+1002, Du Fu, 15, Male, 902, 902, 95
+1002, Du Fu, 15, Male, 902, 902, 75
+1002, Du Fu, 15, Male, 902, 902, 100
+1003, Bai Juyi, 13, Female, 902, 902, 59
+1003, Bai Juyi, 13, Female, 902, 902, 78
+1003, Bai Juyi, 13, Female, 902, 902, 91
+1004, Tian E, 18, Female, 903, 903, 88
+1004, Tian E, 18, Female, 903, 903, 50

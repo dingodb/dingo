@@ -33,6 +33,7 @@ public abstract class FilterProjectParam extends AbstractParams {
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     protected final CommonId tableId;
+    @JsonProperty("schema")
     protected final DingoType schema;
     @JsonProperty("filter")
     protected SqlExpr filter;
