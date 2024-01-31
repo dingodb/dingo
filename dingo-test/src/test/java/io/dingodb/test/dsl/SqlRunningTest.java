@@ -28,6 +28,11 @@ import java.util.stream.Stream;
 
 public class SqlRunningTest extends SqlTestRunner {
     @TestFactory
+    public Stream<DynamicTest> testCases() {
+        return getTests(SqlTestCaseYamlBuilder.of("cases/sub_query.yml"));
+    }
+
+    @TestFactory
     public Stream<DynamicTest> testBasicDml() {
         return getTests(new BasicDmlCases());
     }
