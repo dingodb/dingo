@@ -18,31 +18,12 @@ package io.dingodb.exec.transaction.impl;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.exec.Services;
-import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
-import io.dingodb.exec.exception.TaskFinException;
-import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.transaction.base.BaseTransaction;
 import io.dingodb.exec.transaction.base.CacheToObject;
-import io.dingodb.exec.transaction.base.TransactionConfig;
-import io.dingodb.exec.transaction.base.TransactionStatus;
 import io.dingodb.exec.transaction.base.TransactionType;
-import io.dingodb.exec.transaction.util.TransactionUtil;
-import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
-import io.dingodb.net.Channel;
-import io.dingodb.store.api.StoreInstance;
-import io.dingodb.store.api.transaction.data.IsolationLevel;
-import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
-import io.dingodb.store.api.transaction.exception.ReginSplitException;
-import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.Future;
 
 @Slf4j

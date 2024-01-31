@@ -265,13 +265,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         indexTableDefinition.setPartDefinition(indexDeclaration.getPartDefinition());
         indexTableDefinition.setReplica(indexDeclaration.getReplica());
         indexTableDefinition.setProperties(properties);
-        String engine;
-        if (StringUtils.isNotBlank(indexDeclaration.getEngine())) {
-            engine = indexDeclaration.getEngine();
-        } else {
-            engine = tableDefinition.getEngine();
-        }
-        indexTableDefinition.setEngine(engine);
+        indexTableDefinition.setEngine(indexDeclaration.getEngine());
 
         validatePartitionBy(
             indexTableDefinition.getKeyColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList()),

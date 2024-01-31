@@ -21,7 +21,6 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.CacheToObject;
-import io.dingodb.exec.transaction.base.TransactionConfig;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.params.CommitParam;
@@ -36,7 +35,7 @@ import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
-import io.dingodb.store.api.transaction.exception.ReginSplitException;
+import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -141,7 +140,7 @@ public class TxnImportDataOperation {
         try {
             StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
             this.future = store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
-        } catch (ReginSplitException e) {
+        } catch (RegionSplitException e) {
             log.error(e.getMessage(), e);
             CommonId regionId = TransactionUtil.singleKeySplitRegionId(
                 cacheToObject.getTableId(),
@@ -176,7 +175,7 @@ public class TxnImportDataOperation {
         try {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
             return store.txnPreWrite(txnPreWrite, param.getTimeOut());
-        } catch (ReginSplitException e) {
+        } catch (RegionSplitException e) {
             log.error(e.getMessage(), e);
             // 2、regin split
             Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(tableId, txnId,
@@ -325,7 +324,7 @@ public class TxnImportDataOperation {
         try {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
             return store.txnCommit(commitRequest);
-        } catch (ReginSplitException e) {
+        } catch (RegionSplitException e) {
             log.error(e.getMessage(), e);
             // 2、regin split
             Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(

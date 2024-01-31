@@ -91,7 +91,17 @@ public final class DingoTableScanVisitFun {
             td, ranges, startKey, endKey, withStart, withEnd, filter,
             Optional.mapOrGet(rel.getFilter(), __ -> __.getKind() == SqlKind.NOT, () -> false), false);
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
-        Task task = job.getOrCreate(currentLocation, idGenerator);
+        Task task;
+        if (transaction != null) {
+            task = job.getOrCreate(
+                currentLocation,
+                idGenerator,
+                transaction.getType(),
+                IsolationLevel.of(transaction.getIsolationLevel())
+            );
+        } else {
+            task = job.getOrCreate(currentLocation, idGenerator);
+        }
         calcVertex.setId(idGenerator.getOperatorId(task.getId()));
         task.putVertex(calcVertex);
 

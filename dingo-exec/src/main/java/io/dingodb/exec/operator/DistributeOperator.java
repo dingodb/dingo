@@ -16,7 +16,6 @@
 
 package io.dingodb.exec.operator;
 
-import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
@@ -28,18 +27,15 @@ import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.DistributionParam;
 import io.dingodb.meta.MetaService;
-import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
-import io.dingodb.store.api.transaction.exception.ReginSplitException;
+import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.NavigableMap;
-import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
@@ -76,7 +72,7 @@ public class DistributeOperator extends SoleOutOperator {
                 RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
 
                 return vertex.getSoleEdge().transformToNext(builder.distribution(distribution).build(), tuple);
-            } catch (ReginSplitException e) {
+            } catch (RegionSplitException e) {
                 log.error(e.getMessage());
                 NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions =
                     MetaService.root().getRangeDistribution(param.getTableId());
