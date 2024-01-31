@@ -68,17 +68,13 @@ public class TransactionCacheToMutation {
             );
             Table table = MetaService.root().getTable(index.primaryId);
             Object[] record = keyValueCodec.decode(new KeyValue(key, value));
-            List<Object> keys = new ArrayList<>();
-            List<Integer> mappings = new ArrayList<>();
-            for (int i = 0; i < table.keyMapping().getMappings().length; i++) {
-                int mapping = index.getMapping().reverse(table.columns.size()).getMappings()[table.keyMapping().get(i)];
-                mappings.add(mapping);
-                keys.add(record[mapping]);
+            Object[] tableRecord = new Object[table.columns.size()];
+            for (int i = 0; i < record.length; i++) {
+                tableRecord[index.getMapping().get(i)] = record[i];
             }
-            TupleMapping tupleMapping = TupleMapping.of(mappings);
             key = CodecService.getDefault()
-                .createKeyValueCodec(table.tupleType().select(tupleMapping), table.keyMapping())
-                .encodeKey(keys.toArray());
+                .createKeyValueCodec(table.tupleType(), table.keyMapping())
+                .encodeKey(tableRecord);
 
             Column column = index.getColumns().get(0);
             List<String> colNames = index.getColumns().stream().map(Column::getName).collect(Collectors.toList());
