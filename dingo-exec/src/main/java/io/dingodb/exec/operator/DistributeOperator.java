@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
@@ -57,18 +58,26 @@ public class DistributeOperator extends SoleOutOperator {
                 }
                 IndexTable indexTable = param.getIndexTable();
                 Context.ContextBuilder builder = Context.builder();
-                KeyValueCodec codec = param.getCodec();
                 PartitionService ps = PartitionService.getService(
                     Optional.ofNullable(param.getTable().getPartitionStrategy())
                         .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+                CommonId partId;
                 if (param.getTableId().type.code == CommonId.CommonType.INDEX.code
                     && indexTable != null) {
                     builder.indexId(param.getTableId());
                     ps = PartitionService.getService(
                         Optional.ofNullable(indexTable.getPartitionStrategy())
                             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+                    Object[] indexTuple = new Object[indexTable.columns.size()];
+                    for (int i = 0; i < indexTable.getMapping().size(); i++) {
+                        indexTuple[i] = tuple[indexTable.getMapping().get(i)];
+                    }
+                    KeyValueCodec indexCodec = CodecService.getDefault()
+                        .createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
+                    partId = ps.calcPartId(indexTuple, wrap(indexCodec::encodeKey), param.getDistributions());
+                } else {
+                    partId = ps.calcPartId(tuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
                 }
-                CommonId partId = ps.calcPartId(tuple, wrap(codec::encodeKey), param.getDistributions());
                 RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
 
                 return vertex.getSoleEdge().transformToNext(builder.distribution(distribution).build(), tuple);
