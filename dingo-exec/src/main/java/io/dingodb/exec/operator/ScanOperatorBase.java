@@ -42,6 +42,7 @@ public abstract class ScanOperatorBase extends SoleOutOperator {
         if (log.isDebugEnabled()) {
             log.debug("count: {}, cost: {}ms.", count, System.currentTimeMillis() - startTime);
         }
+        // Scan operator is not source operator, so may be push multiple times.
         return false;
     }
 

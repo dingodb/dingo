@@ -115,7 +115,7 @@ public final class DingoScanWithRelOpVisitFun {
         if (transaction != null && transaction.isPessimistic()
             && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.SnapshotIsolation
             && (visitor.getKind() == SqlKind.INSERT || visitor.getKind() == SqlKind.DELETE
-            || visitor.getKind() == SqlKind.UPDATE) ) {
+            || visitor.getKind() == SqlKind.UPDATE)) {
             scanTs = TsoService.getDefault().tso();
         }
         if (transaction != null && transaction.isPessimistic()
@@ -124,7 +124,11 @@ public final class DingoScanWithRelOpVisitFun {
             scanTs = TsoService.getDefault().tso();
         }
         Vertex vertex;
-        for (int i = 0; i <= Optional.mapOrGet(td.getPartitions(), List::size, () -> 0); i++) {
+        int partitionNums = td.getPartitions().size();
+        if (partitionNums == 0) {
+            partitionNums = 1;
+        }
+        for (int i = 0; i < partitionNums; i++) {
             if (transaction != null) {
                 task = job.getOrCreate(
                     currentLocation,

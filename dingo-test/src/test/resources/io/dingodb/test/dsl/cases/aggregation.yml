@@ -1,0 +1,57 @@
+---
+tables:
+  table0:
+    create: { file: i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0.create.sql }
+    init: { file: i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0_more.data.sql, count: 31 }
+  table1:
+    create: { file: i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0.create.sql }
+    init: { file: i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0.data.sql, count: 21 }
+cases:
+  - name: 'min'
+    use:
+      table: table0
+    steps:
+      - sql: 'select
+          min(name) mnna,
+          min(age) mnag,
+          min(gmt) mngt,
+          min(price) mnpr,
+          min(amount) mnam,
+          min(birthday) mnbi,
+          min(create_time) mnct,
+          min(update_time) mnut
+        from {table}'
+        result:
+          - 'mnna, mnag, mngt, mnpr, mnam, mnbi, mnct, mnut'
+          - 'STRING, INT, LONG, FLOAT, DOUBLE, STRING, STRING, TIMESTAMP'
+          - ', -25, -238948525329, -5436.764, 0.0, 1949-01-01, 00:00:00, 1952-12-31 12:12:12'
+  - name: 'max with filter'
+    use:
+      table: table0
+    steps:
+      - sql: 'select
+          max(name) mxna,
+          max(age) mxag,
+          max(gmt) mxgt,
+          max(price) mxpr,
+          max(amount) mxam,
+          max(birthday) mxbi,
+          max(create_time) mxct,
+          max(update_time) mxut
+        from {table} where id > 10'
+        result:
+          - 'mxna, mxag, mxgt, mxpr, mxam, mxbi, mxct, mxut'
+          - 'STRING, INT, LONG, FLOAT, DOUBLE, STRING, STRING, TIMESTAMP'
+          - 'zhngsna, 181, 702498643279, 2000.0, 2345.0, 2023-02-05, 22:10:10, 2024-05-04 12:00:00'
+  - name: 'avg with filter'
+    only: true
+    use:
+      table: table1
+    steps:
+      - sql: 'select avg(age) aa, sum(amount) sa, min(birthday) mb from {table} where id between 10 and 20'
+        result:
+          - 'aa, sa, mb'
+          - 'INT, DOUBLE, STRING'
+          - '83, 5816.605655600001, 1949-10-01'
+
+

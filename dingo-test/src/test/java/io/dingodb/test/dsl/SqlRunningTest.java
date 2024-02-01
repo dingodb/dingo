@@ -28,6 +28,11 @@ import java.util.stream.Stream;
 
 public class SqlRunningTest extends SqlTestRunner {
     @TestFactory
+    public Stream<DynamicTest> testAggregation() {
+        return getTests(SqlTestCaseYamlBuilder.of("cases/aggregation.yml"));
+    }
+
+    @TestFactory
     public Stream<DynamicTest> testJoin3Tables() {
         return getTests(SqlTestCaseYamlBuilder.of("cases/join_3_tables.yml"));
     }
