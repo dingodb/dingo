@@ -51,7 +51,6 @@ public class TestGetByKeys {
     public static void setupAll() {
         MockMetaServiceProvider.init();
         Properties properties = new Properties();
-        properties.put("usingRelOp", "true");
         context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties);
     }
 

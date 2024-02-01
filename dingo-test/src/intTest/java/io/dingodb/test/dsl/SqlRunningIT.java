@@ -35,7 +35,7 @@ public class SqlRunningIT extends SqlTestRunner {
         properties.load(SqlRunningIT.class.getResourceAsStream("/intTest.properties"));
         String url = properties.getProperty("url");
         return DriverManager.getConnection(
-            DingoDriverClient.CONNECT_STRING_PREFIX + "url=" + url + "?usingRelOp=true",
+            DingoDriverClient.CONNECT_STRING_PREFIX + "url=" + url,
             properties
         );
     }

@@ -89,7 +89,7 @@ public final class DingoParserContext implements Context {
         timeZone = (timeZoneId != null ? TimeZone.getTimeZone(timeZoneId) : TimeZone.getDefault());
 
         String usingRelOpStr = options != null ? options.getProperty("usingRelOp") : null;
-        usingRelOp = Boolean.parseBoolean(usingRelOpStr);
+        usingRelOp = (usingRelOpStr == null || Boolean.parseBoolean(usingRelOpStr));
 
         String pushDownStr = (options != null ? options.getProperty("pushDown") : null);
         pushDown = (pushDownStr == null || Boolean.parseBoolean(pushDownStr));
