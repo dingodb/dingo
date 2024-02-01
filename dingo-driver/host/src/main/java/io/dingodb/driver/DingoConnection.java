@@ -219,10 +219,10 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             getMeta().cleanTransaction();
         }
         if (!autoCommit) {
-            createTransaction(TransactionType.OPTIMISTIC, false);
+            createTransaction("pessimistic".equalsIgnoreCase(getClientInfo("txn_mode")) ?
+                TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC, false);
             this.autoCommit = false;
         }
-
     }
 
     @Override
