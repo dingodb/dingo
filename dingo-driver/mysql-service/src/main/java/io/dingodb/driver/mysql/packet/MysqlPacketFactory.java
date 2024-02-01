@@ -137,7 +137,7 @@ public class MysqlPacketFactory {
     }
 
     /**
-     * get column flags
+     * get column flags.
      * @param columnFlags original column flgs
      * @param columnTypeName name
      * @param isPrimary Dingo was not used, but MySQL was used
@@ -160,6 +160,8 @@ public class MysqlPacketFactory {
             case "ARRAY":
             case "MULTISET":
                 columnFlags |= ColumnStatus.COLUMN_SET;
+                break;
+            default:
                 break;
         }
         if (isPrimary) {

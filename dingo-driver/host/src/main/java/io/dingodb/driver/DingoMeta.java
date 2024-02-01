@@ -23,6 +23,8 @@ import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
+import io.dingodb.common.CommonId;
+import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.table.IndexScan;
 import io.dingodb.common.type.DingoType;
@@ -453,6 +455,17 @@ public class DingoMeta extends MetaImpl {
                     transaction.addSql(signature.sql);
                     if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
                         cleanTransaction();
+                    }
+                }
+                if (e instanceof DingoSqlException) {
+                    if (((DingoSqlException) e).getSqlCode() == 3024
+                        & ((DingoSqlException) e).getSqlState().equals("HY000")) {
+                        if (statement instanceof DingoPreparedStatement) {
+                            CommonId jobId = ((DingoPreparedStatement) statement).getJobId(jobManager);
+                            jobManager.removeJob(jobId);
+                        } else if (statement instanceof DingoStatement) {
+                            ((DingoStatement) statement).removeJob(jobManager);
+                        }
                     }
                 }
                 throw ExceptionUtils.toRuntime(e);

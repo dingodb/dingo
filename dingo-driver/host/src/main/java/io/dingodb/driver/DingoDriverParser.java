@@ -329,7 +329,13 @@ public final class DingoDriverParser extends DingoParser {
             jobSeqId = transaction.getForUpdateTs();
         }
         lockTables(tables, startTs, jobSeqId, transaction.getFinishedFuture());
-        Job job = jobManager.createJob(startTs, jobSeqId, txn_Id, DefinitionMapper.mapToDingoType(parasType));
+        String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
+        maxExecutionTimeStr = maxExecutionTimeStr == null ? "0" : maxExecutionTimeStr;
+        long maxTimeOut = Long.parseLong(maxExecutionTimeStr);
+        Job job = jobManager.createJob(
+            startTs, jobSeqId, txn_Id, DefinitionMapper.mapToDingoType(parasType), maxTimeOut,
+            statementType == Meta.StatementType.SELECT
+        );
         DingoJobVisitor.renderJob(
             job,
             relNode,

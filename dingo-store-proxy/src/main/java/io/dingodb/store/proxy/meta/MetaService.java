@@ -49,6 +49,7 @@ import io.dingodb.sdk.service.entity.meta.DropTablesRequest;
 import io.dingodb.sdk.service.entity.meta.EntityType;
 import io.dingodb.sdk.service.entity.meta.GenerateTableIdsRequest;
 import io.dingodb.sdk.service.entity.meta.GetSchemasRequest;
+import io.dingodb.sdk.service.entity.meta.GetSchemasResponse;
 import io.dingodb.sdk.service.entity.meta.GetTableByNameRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableMetricsRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableMetricsResponse;
@@ -75,6 +76,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -382,8 +384,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .map(Region::getId)
             .map($ -> coordinatorService.queryRegion(tso, QueryRegionRequest.builder().regionId($).build()).getRegion())
             .collect(Collectors.toList());
-        List<Long> tableIds = service.getSchemas(tso, GetSchemasRequest.builder().build()).getSchemas().stream()
+        GetSchemasResponse getSchemasResponse
+            = service.getSchemas(tso, GetSchemasRequest.builder().schemaId(io.dingodb.store.proxy.meta.MetaService.ROOT.id).build());
+        List<Long> tableIds = getSchemasResponse
+            .getSchemas().stream()
             .map(Schema::getTableIds)
+            .filter(Objects::nonNull)
             .flatMap(Collection::stream)
             .map(DingoCommonId::getEntityId)
             .collect(Collectors.toList());

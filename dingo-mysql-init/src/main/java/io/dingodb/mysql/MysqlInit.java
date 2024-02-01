@@ -303,7 +303,6 @@ public final class MysqlInit {
             .collate("utf8_bin")
             .tableType(tableType)
             .rowFormat(rowFormat)
-            .replica(1)
             .build();
     }
 

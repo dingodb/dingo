@@ -35,10 +35,10 @@ import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.EmptySourceParam;
 import io.dingodb.exec.operator.params.GetByKeysParam;
+import io.dingodb.exec.operator.params.GetDistributionParam;
 import io.dingodb.exec.operator.params.TxnGetByKeysParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.meta.entity.Table;
-import io.dingodb.exec.operator.params.GetDistributionParam;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
@@ -85,7 +85,8 @@ public final class DingoGetByKeysFun {
             outputs.add(vertex);
             return outputs;
         }
-        GetDistributionParam distributionParam = new GetDistributionParam(keyTuples, td.keyMapping(), td, distributions);
+        GetDistributionParam distributionParam
+            = new GetDistributionParam(keyTuples, td.keyMapping(), td, distributions);
         Vertex distributionVertex = new Vertex(GET_DISTRIBUTION, distributionParam);
         Task task;
         if (transaction != null) {

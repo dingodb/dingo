@@ -46,7 +46,7 @@ public class SqlCosineSimilarityOperator extends SqlBinaryOperator {
             FLOAT,
             DingoInferTypes.FLOAT,
             family(SqlTypeFamily.ARRAY, SqlTypeFamily.ARRAY)
-            );
+        );
     }
 
     @Override

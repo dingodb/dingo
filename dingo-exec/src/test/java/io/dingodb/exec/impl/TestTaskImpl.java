@@ -46,7 +46,7 @@ public class TestTaskImpl {
     @Test
     public void testValues() {
         Task task = new TaskImpl(CommonId.EMPTY_TASK, CommonId.EMPTY_JOB, CommonId.EMPTY_TRANSACTION, Mockito.mock(Location.class), null,
-            TransactionType.OPTIMISTIC, IsolationLevel.SnapshotIsolation);
+            TransactionType.OPTIMISTIC, IsolationLevel.SnapshotIsolation, 0, null);
         ValuesParam param = new ValuesParam(
             ImmutableList.of(
                 new Object[]{1, "Alice", 1.0},
@@ -79,7 +79,7 @@ public class TestTaskImpl {
     public void testParas() {
         DingoType parasType = DingoTypeFactory.INSTANCE.tuple("INT", "STRING");
         Task task = new TaskImpl(CommonId.EMPTY_TASK, CommonId.EMPTY_JOB, CommonId.EMPTY_TRANSACTION, Mockito.mock(Location.class), parasType,
-            TransactionType.OPTIMISTIC, IsolationLevel.SnapshotIsolation);
+            TransactionType.OPTIMISTIC, IsolationLevel.SnapshotIsolation, 0, null);
         ValuesParam valuesParam = new ValuesParam(
             ImmutableList.of(new Object[]{0}),
             DingoTypeFactory.INSTANCE.tuple("INT")
