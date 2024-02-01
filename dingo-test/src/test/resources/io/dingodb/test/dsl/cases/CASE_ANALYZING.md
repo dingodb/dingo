@@ -1,5 +1,7 @@
 # Case Analyzing
 
+## Join 3 tables
+
 ### Prepare tables
 
 ```sql
@@ -72,7 +74,7 @@ insert into classes values
 ('906','class1-6');
 ```
 
-## Join 3 tables with sub query
+### Join 3 tables with sub query
 
 ```sql
 select a.sno, a.sname, a.cname from (
@@ -83,7 +85,7 @@ left join (
 ) b on a.sno = b.sno and a.cno = b.cno where b.cno is null;
 ```
 
-## Join 3 tables
+### Join 3 tables
 
 ```sql
 select student.*, classes.class_no, score.score from student

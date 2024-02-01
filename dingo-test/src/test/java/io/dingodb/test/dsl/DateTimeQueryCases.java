@@ -58,8 +58,8 @@ public class DateTimeQueryCases extends SqlTestCaseJavaBuilder {
 
         table(
             "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0",
-            file("i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0/create.sql")
-        ).init(file("i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0/data.sql"), 21);
+            file("cases/i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0.create.sql")
+        ).init(file("cases/i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0.data.sql"), 21);
 
         table("i4k_vs0_i40_f80_vs0_tm0", file("i4k_vs0_i40_f80_vs0_tm0/create.sql"))
             .init(file("i4k_vs0_i40_f80_vs0_tm0/data.sql"), 1);

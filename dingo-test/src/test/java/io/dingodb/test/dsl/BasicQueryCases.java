@@ -49,13 +49,13 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
 
         table(
             "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0",
-            file("i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0/create.sql")
-        ).init(file("i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0/data.sql"), 21);
+            file("cases/i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0.create.sql")
+        ).init(file("cases/i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0.data.sql"), 21);
 
         table(
             "i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0",
-            file("i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0/create.sql")
-        ).init(file("i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0/data.sql"), 10);
+            file("cases/i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0.create.sql")
+        ).init(file("cases/i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0.data.sql"), 10);
 
         test("Select all")
             .use("table", "i4k_vs_f80")
@@ -214,14 +214,14 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .use("table", "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0")
             .step(
                 "select amount from {table} where amount>50",
-                csv(file("i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0/select_by_amount.csv"))
+                csv(file("cases/i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0_select_by_amount.csv"))
             );
 
         test("Select filtered by abs(DOUBLE column)")
             .use("table", "i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0")
             .step(
                 "select amount from {table} where abs(amount)>50",
-                csv(file("i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0/select_by_amount.csv"))
+                csv(file("cases/i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0_select_by_amount.csv"))
             );
 
         test("Select filtered by `or` of primary key")

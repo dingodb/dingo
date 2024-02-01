@@ -41,7 +41,7 @@ public final class StressDmlCases extends SqlTestCaseJavaBuilder {
 
         table(
             "i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0",
-            file("i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0/create_with_partition.sql")
+            file("cases/i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0_partions.create.sql")
         );
 
         test("Insert")
