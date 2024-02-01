@@ -90,7 +90,7 @@ public final class MessageProcess {
                 if (schema != null) {
                     connection.getContext().setUsedSchema(schema);
                     OKPacket okPacket = MysqlPacketFactory.getInstance().getOkPacket(0, packetId,
-                       ServerStatus.SERVER_SESSION_STATE_CHANGED, null);
+                        ServerStatus.SERVER_SESSION_STATE_CHANGED, null);
                     MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
                 } else {
                     MysqlResponseHandler.responseError(packetId, mysqlConnection.channel,

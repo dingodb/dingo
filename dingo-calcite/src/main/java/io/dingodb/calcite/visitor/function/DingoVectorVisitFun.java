@@ -25,7 +25,6 @@ import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
@@ -71,11 +70,14 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.Utils.isNeedLookUp;
@@ -113,37 +115,48 @@ public final class DingoVectorVisitFun {
 
         List<Vertex> outputs = new ArrayList<>();
 
-        // Get all index table distributions
-        NavigableMap<ComparableByteArray, RangeDistribution> indexRanges =
-            metaService.getRangeDistribution(rel.getIndexTableId());
-
-        //todo replace start
         IndexTable indexTable = (IndexTable) rel.getIndexTable();
         boolean pushDown = pushDown(rel.getFilter(), dingoTable.getTable(), indexTable);
         RexNode rexFilter = rel.getFilter();
         TupleMapping resultSelection = rel.getSelection();
 
         List<Column> columnNames = indexTable.getColumns();
-        List<Integer> indexOriSelectionList = columnNames
-            .stream().map(dingoTable.getTable().columns::indexOf)
+        List<Integer> priKeySecList = dingoTable.getTable()
+            .columns.stream()
+            .filter(Column::isPrimary)
+            .map(dingoTable.getTable().columns::indexOf)
             .collect(Collectors.toList());
+        int priKeyCount = priKeySecList.size();
+        // vector index cols in pri table selection
+        List<Integer> indexLookupSelectionList = columnNames
+            .stream()
+            .filter(col -> !col.isPrimary() && col.getState() == 1)
+            .map(dingoTable.getTable().columns::indexOf)
+            .collect(Collectors.toList());
+        priKeySecList.addAll(indexLookupSelectionList);
         boolean isLookUp = isNeedLookUp(
             resultSelection,
-            TupleMapping.of(indexOriSelectionList),
+            TupleMapping.of(priKeySecList),
             dingoTable.getTable().columns.size()
         );
         boolean isTxn = dingoTable.getTable().getEngine().contains("TXN");
         TupleMapping pushDownSelection;
         if (pushDown && isTxn) {
+            List<Integer> secList = new ArrayList<>();
+            for (int i = 0; i < priKeyCount; i ++) {
+                secList.add(i);
+            }
+            AtomicInteger ix = new AtomicInteger(priKeyCount);
             List<Integer> indexList = indexTable
                 .getColumns()
                 .stream()
-                .filter(col -> col.getState() == 1)
-                .map(col -> indexTable.getColumns().indexOf(col))
+                .filter(col -> col.getState() == 1 && !col.isPrimary())
+                .map(col -> ix.getAndIncrement())
                 .collect(Collectors.toList());
-            pushDownSelection = TupleMapping.of(indexList);
+            secList.addAll(indexList);
+            pushDownSelection = TupleMapping.of(secList);
 
-            Mapping mapping = Mappings.target(indexOriSelectionList, dingoTable.getTable().getColumns().size());
+            Mapping mapping = Mappings.target(priKeySecList, dingoTable.getTable().getColumns().size());
             rexFilter = RexUtil.apply(mapping, rexFilter);
         } else {
             TupleMapping realSelection = rel.getRealSelection();
@@ -169,10 +182,12 @@ public final class DingoVectorVisitFun {
             && visitor.getKind() == SqlKind.SELECT) {
             scanTs = TsoService.getDefault().tso();
         }
-        //todo replace end
 
         // Get query additional parameters
         Map<String, Object> parameterMap = getParameterMap(operandsList);
+        // Get all index table distributions
+        NavigableMap<ComparableByteArray, RangeDistribution> indexRanges =
+            metaService.getRangeDistribution(rel.getIndexTableId());
 
         // Create tasks based on partitions
         for (RangeDistribution rangeDistribution : indexRanges.values()) {

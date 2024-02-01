@@ -64,8 +64,13 @@ public final class JobManagerImpl implements JobManager {
     }
 
     @Override
-    public @NonNull Job createJob(long startTs, long jobSeqId, CommonId txnId, DingoType parasType) {
-        Job job = new JobImpl(idGenerator.getJobId(startTs, jobSeqId), txnId, parasType);
+    public @NonNull Job createJob(long startTs,
+                                  long jobSeqId,
+                                  CommonId txnId,
+                                  DingoType parasType,
+                                  long maxExecutionTime,
+                                  Boolean isSelect) {
+        Job job = new JobImpl(idGenerator.getJobId(startTs, jobSeqId), txnId, parasType, maxExecutionTime, isSelect);
         CommonId jobId = job.getJobId();
         jobMap.put(jobId, job);
         if (log.isDebugEnabled()) {

@@ -18,6 +18,7 @@ package io.dingodb.driver.mysql.netty;
 
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
 import io.dingodb.driver.mysql.MysqlConnection;
+import io.dingodb.net.netty.NettyHandlers;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -76,6 +77,7 @@ public class MysqlNettyServer {
                 ch.pipeline().addLast("idleStateHandler", mysqlIdleStateHandler);
                 ch.pipeline()
                     .addLast("mysqlHandler", new MysqlHandler(mysqlConnection));
+                ch.pipeline().addLast("exception", new NettyHandlers.ExceptionHandler());
             }
         };
     }

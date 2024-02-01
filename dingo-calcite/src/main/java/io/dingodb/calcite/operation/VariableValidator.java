@@ -62,16 +62,19 @@ public final class VariableValidator {
             String on = transformSwitch(value);
             if (on != null) return on;
         } else if (name.equalsIgnoreCase("transaction_isolation")) {
-            if (!TX_ISOLATION.contains(value)) {
+            if (!TX_ISOLATION.contains(value.toLowerCase())) {
                 throw DINGO_RESOURCE.invalidVariableArg(name, value).ex();
             } else {
                 return value.toUpperCase();
             }
         } else if (name.equalsIgnoreCase("txn_mode")) {
-            if (!TX_MODE.contains(value)) {
+            if (!TX_MODE.contains(value.toLowerCase())) {
                 throw DINGO_RESOURCE.invalidVariableArg(name, value).ex();
             }
-        } else if (name.endsWith("timeout") || name.equalsIgnoreCase("txn_retry_cnt")) {
+        } else if (name.endsWith("timeout")
+            || name.equalsIgnoreCase("txn_retry_cnt")
+            || name.equalsIgnoreCase("max_execution_time")
+        ) {
             if (!value.matches("\\d+")) {
                 throw DINGO_RESOURCE.incorrectArgType(name).ex();
             }

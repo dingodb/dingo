@@ -20,7 +20,6 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.vector.TxnVectorSearchResponse;
@@ -36,10 +35,8 @@ import io.dingodb.store.api.StoreService;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static io.dingodb.exec.operator.TxnGetByKeysOperator.getLocalStore;
 
@@ -52,7 +49,7 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
         TxnPartVectorParam param = vertex.getParam();
         KeyValueCodec tableCodec;
         tableCodec = CodecService.getDefault().createKeyValueCodec(
-            param.getIndexTable().tupleType(), param.getIndexTable().keyMapping()
+            param.getTableDataSchema(), param.getTable().keyMapping()
         );
         StoreInstance instance = Services.KV_STORE.getInstance(param.getTableId(), param.getPartId());
         List<VectorSearchResponse> searchResponseList = instance.vectorSearch(
@@ -66,23 +63,14 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
         if (param.isLookUp()) {
             for (VectorSearchResponse response : searchResponseList) {
                 TxnVectorSearchResponse txnResponse = (TxnVectorSearchResponse) response;
-                KeyValue tableData = new KeyValue(txnResponse.getTableKey(), txnResponse.getTableVal());
-                Object[] tuples = tableCodec.decode(tableData);
-                Object[] priTuples = new Object[param.getTable().columns.size() + 1];
-                Integer[] selection = param.getIndexTable().getColumns().stream()
-                    .map(col -> param.getTable().getColumns().indexOf(col))
-                    .toArray(Integer[]::new);
-                for (int i = 0; i < selection.length; i ++) {
-                    priTuples[selection[i]] = tuples[i];
-                }
-                byte[] tmp = param.getCodec().encodeKey(priTuples);
 
-                byte[] tmp1 = tmp;
+                byte[] tmp1 = new byte[txnResponse.getKey().length];
+                System.arraycopy(txnResponse.getKey(), 0, tmp1, 0, txnResponse.getKey().length);
                 CommonId regionId = PartitionService.getService(
                         Optional.ofNullable(param.getTable().getPartitionStrategy())
                             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-                    .calcPartId(tmp, param.getDistributions());
-                CodecService.getDefault().setId(tmp1, param.getPartId().domain);
+                    .calcPartId(txnResponse.getKey(), param.getDistributions());
+                CodecService.getDefault().setId(tmp1, regionId.domain);
                 CommonId txnId = vertex.getTask().getTxnId();
                 Iterator<Object[]> local = getLocalStore(
                     regionId,
@@ -90,15 +78,21 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                     tmp1,
                     param.getTableId(),
                     txnId,
-                    param.getPartId().encode(),
+                    regionId.encode(),
                     vertex.getTask().getTransactionType()
                     );
                 if (local != null) {
-                    return local;
+                    while (local.hasNext()) {
+                        results.add(local.next());
+                    }
+                    continue;
                 }
 
                 StoreInstance storeInstance = StoreService.getDefault().getInstance(param.getTableId(), regionId);
-                KeyValue keyValue = storeInstance.txnGet(param.getScanTs(), tmp, param.getTimeOut());
+                KeyValue keyValue = storeInstance.txnGet(param.getScanTs(), txnResponse.getKey(), param.getTimeOut());
+                if (keyValue == null || keyValue.getValue() == null) {
+                    continue;
+                }
                 Object[] decode = param.getCodec().decode(keyValue);
                 decode[decode.length - 1] = response.getDistance();
                 results.add(decode);

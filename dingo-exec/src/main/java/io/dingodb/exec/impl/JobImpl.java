@@ -33,7 +33,6 @@ import io.dingodb.expr.json.runtime.Parser;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.tso.TsoService;
 import lombok.Getter;
-import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -68,24 +67,45 @@ public final class JobImpl implements Job {
 
     private CommonId rootTaskId = null;
 
+    private final long maxExecutionTime;
+    private Boolean isSelect;
+
     @JsonCreator
     public JobImpl(@JsonProperty("jobId") CommonId jobId, @JsonProperty("jobId") CommonId txnId) {
-        this(jobId, txnId,null);
+        this(jobId, txnId,null, 0, null);
     }
 
-    public JobImpl(@JsonProperty("jobId") CommonId jobId, @JsonProperty("jobId") CommonId txnId, @Nullable DingoType parasType) {
+    public JobImpl(@JsonProperty("jobId") CommonId jobId,
+                   @JsonProperty("jobId") CommonId txnId,
+                   @Nullable DingoType parasType,
+                   @JsonProperty("executeTimeout") long maxExecutionTimeout,
+                   @JsonProperty("isSelect") Boolean isSelect) {
         this.jobId = jobId;
         this.txnId = txnId;
         this.tasks = new HashMap<>();
         this.parasType = parasType;
+        this.maxExecutionTime = maxExecutionTimeout;
+        this.isSelect = isSelect;
     }
 
     @Override
-    public @NonNull Task create(CommonId id, Location location, TransactionType transactionType, IsolationLevel isolationLevel) {
+    public @NonNull Task create(CommonId id,
+                                Location location,
+                                TransactionType transactionType,
+                                IsolationLevel isolationLevel) {
         if (tasks.containsKey(id)) {
             throw new IllegalArgumentException("The task \"" + id + "\" already exists in job \"" + jobId + "\".");
         }
-        Task task = new TaskImpl(id, jobId, txnId, location, parasType, transactionType, isolationLevel);
+        Task task = new TaskImpl(
+            id,
+            jobId,
+            txnId,
+            location,
+            parasType,
+            transactionType,
+            isolationLevel,
+            maxExecutionTime,
+            isSelect);
         tasks.put(id, task);
         return task;
     }

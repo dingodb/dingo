@@ -25,6 +25,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.dag.Vertex;
@@ -36,12 +37,14 @@ import io.dingodb.expr.coding.CodingFlag;
 import io.dingodb.expr.coding.RelOpCoder;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.runtime.type.TupleType;
+import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
-import io.dingodb.serial.schema.DingoSchema;
 import lombok.Getter;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.stream.Collectors;
@@ -78,6 +81,7 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
     private CoprocessorV2 coprocessor = null;
     private final boolean isLookUp;
     private final DingoType tableDataSchema;
+    private List<Column> tableDataColList;
 
     public TxnPartVectorParam(
         CommonId partId,
@@ -113,7 +117,13 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
         this.isLookUp = isLookUp;
         this.relOp = relOp;
         this.resultSelection = resultSelection;
-        this.tableDataSchema = indexTable.tupleType();
+        this.tableDataColList = table.columns.stream().filter(Column::isPrimary).collect(Collectors.toList());
+        tableDataColList.addAll(indexTable.columns.stream()
+            .filter(column -> !column.isPrimary())
+            .collect(Collectors.toList()));
+
+        List<DingoType> priType = tableDataColList.stream().map(Column::getType).collect(Collectors.toList());
+        this.tableDataSchema = DingoTypeFactory.tuple(priType.toArray(new DingoType[]{}));
     }
 
     @Override
@@ -134,15 +144,13 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
                 builder.relExpr(os.toByteArray());
                 filter = null;
             }
-//            if (filter != null) {
-//                byte[] code = filter.getCoding(filterInputSchema, vertex.getParasType());
-//                if (code != null) {
-//                    builder.relExpr(code);
-//                    filter = null;
-//                }
-//            }
             builder.schemaVersion(table.getVersion());
-            builder.originalSchema(SchemaWrapperUtils.buildSchemaWrapper(indexTable.tupleType(), indexTable.keyMapping(), indexTable.getTableId().seq));
+            builder.originalSchema(
+                SchemaWrapperUtils.buildSchemaWrapper(
+                    tableDataSchema, tableDataKeyMapping(), 0
+                )
+            );
+
             coprocessor = builder.build();
         }
         codec = CodecService.getDefault().createKeyValueCodec(schema, keyMapping);
@@ -152,4 +160,19 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
     public void setStartTs(long startTs) {
         this.scanTs = startTs;
     }
+
+    private TupleMapping tableDataKeyMapping() {
+        int[] mappings = new int[tableDataSchema.fieldCount()];
+        int keyCount = 0;
+        int colSize = tableDataSchema.fieldCount();
+        for (int i = 0; i < colSize; i++) {
+            int primaryKeyIndex = tableDataColList.get(i).primaryKeyIndex;
+            if (primaryKeyIndex >= 0) {
+                mappings[primaryKeyIndex] = i;
+                keyCount++;
+            }
+        }
+        return TupleMapping.of(Arrays.copyOf(mappings, keyCount));
+    }
+
 }
