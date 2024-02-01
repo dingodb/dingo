@@ -90,7 +90,8 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                     tmp1,
                     param.getTableId(),
                     txnId,
-                    param.getPartId().encode()
+                    param.getPartId().encode(),
+                    vertex.getTask().getTransactionType()
                     );
                 if (local != null) {
                     return local;

@@ -34,6 +34,7 @@ import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
+@Slf4j
 public class TxnPartDeleteOperator extends PartModifyOperator {
     public final static TxnPartDeleteOperator INSTANCE = new TxnPartDeleteOperator();
 

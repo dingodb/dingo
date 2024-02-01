@@ -18,6 +18,7 @@ package io.dingodb.exec.transaction.impl;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.JobManager;
@@ -151,8 +152,16 @@ public class PessimisticTransaction extends BaseTransaction {
                 throw new RuntimeException(txnId + " PrimaryKey is not existed than two in local store");
             }
             KeyValue value = keyValues.get(0);
-            return new CacheToObject(TransactionCacheToMutation.cacheToMutation(value.getKey()[value.getKey().length - 2], key, value.getValue(),
-                job.getJobId().seq, tableId, newPartId), tableId, newPartId);
+            KeyValue keyValue = cache.get(primaryKeyLock);
+            Long forUpdateTs = PrimitiveCodec.decodeLong(keyValue.getValue());
+            return new CacheToObject(TransactionCacheToMutation.cacheToMutation(
+                value.getKey()[value.getKey().length - 2],
+                key,
+                value.getValue(),
+                forUpdateTs,
+                tableId,
+                newPartId), tableId, newPartId
+            );
         } else {
             throw new RuntimeException(txnId + " PrimaryKey is not existed local store");
         }
