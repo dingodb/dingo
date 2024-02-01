@@ -25,6 +25,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.GetByKeysParam;
 import io.dingodb.exec.operator.params.TxnGetByKeysParam;
+import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
@@ -61,7 +62,8 @@ public final class TxnGetByKeysOperator extends FilterProjectOperator {
             keys,
             tableId,
             txnId,
-            partIdByte);
+            partIdByte,
+            vertex.getTask().getTransactionType());
         if (local != null) return local;
         StoreInstance store;
         store = Services.KV_STORE.getInstance(param.getTableId(), context.getDistribution().getId());
@@ -75,10 +77,11 @@ public final class TxnGetByKeysOperator extends FilterProjectOperator {
 
     @Nullable
     public static Iterator<Object[]> getLocalStore(CommonId partId,
-                                                    KeyValueCodec codec,
-                                                    byte[] keys,
-                                                    CommonId tableId, CommonId txnId,
-                                                    byte[] partIdByte) {
+                                                   KeyValueCodec codec,
+                                                   byte[] keys,
+                                                   CommonId tableId, CommonId txnId,
+                                                   byte[] partIdByte,
+                                                   TransactionType transactionType) {
         byte[] txnIdByte = txnId.encode();
         byte[] tableIdByte = tableId.encode();
         int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
@@ -111,6 +114,17 @@ public final class TxnGetByKeysOperator extends FilterProjectOperator {
                 Object[] result = codec.decode(keyValue);
                 return Collections.singletonList(result).iterator();
             } else {
+                if (transactionType == TransactionType.PESSIMISTIC) {
+                    KeyValue keyValue = store.get(ByteUtils.getKeyByOp(
+                        CommonId.CommonType.TXN_CACHE_LOCK,
+                        Op.LOCK,
+                        dataKey)
+                    );
+                    // first primary key
+                    if (keyValue == null) {
+                        return null;
+                    }
+                }
                 return Collections.emptyIterator();
             }
         }

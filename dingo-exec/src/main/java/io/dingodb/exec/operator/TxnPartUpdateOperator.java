@@ -121,6 +121,9 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 KeyValue oldKeyValue = store.get(lockKey);
                 byte[] primaryLockKeyBytes = (byte[]) ByteUtils.decodePessimisticExtraKey(primaryLockKey)[5];
                 if (!(ByteArrayUtils.compare(keyValueKey, primaryLockKeyBytes, 1) == 0)) {
+                    if (!updated) {
+                        return true;
+                    }
                     // This key appears for the first time in the current transaction
                     if (oldKeyValue == null) {
                         // for check deadLock
@@ -178,7 +181,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     } else {
                         // This key appears repeatedly in the current transaction
                         repeatKey(param, keyValue, txnId, keyValueKey, store, dataKey,
-                            jobIdByte, tableIdBytes, partIdBytes, len, context);
+                            jobIdByte, tableIdBytes, partIdBytes, len, context, updated);
                     }
                 } else {
                     // primary lock not existed ：
@@ -193,7 +196,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     } else {
                         // primary lock existed ：
                         repeatKey(param, keyValue, txnId, primaryLockKeyBytes, store, dataKey,
-                            jobIdByte, tableIdBytes, partIdBytes, len, context);
+                            jobIdByte, tableIdBytes, partIdBytes, len, context, updated);
                     }
                 }
             } else {
@@ -228,13 +231,13 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
 
     private static void repeatKey(TxnPartUpdateParam param, KeyValue keyValue, CommonId txnId, byte[] key,
                                   StoreInstance store, byte[] dataKey, byte[] jobIdByte,
-                                  byte[] tableIdByte, byte[] partIdByte, int len, Context context) {
+                                  byte[] tableIdByte, byte[] partIdByte, int len, Context context, boolean updated) {
         // lock existed ：
         // 1、multi sql
         byte[] deleteKey = Arrays.copyOf(dataKey, dataKey.length);
-        deleteKey[deleteKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
+        deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
         byte[] updateKey = Arrays.copyOf(dataKey, dataKey.length);
-        updateKey[updateKey.length - 2] = (byte) Op.PUT.getCode();
+        updateKey[updateKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
         List<byte[]> bytes = new ArrayList<>(3);
         bytes.add(dataKey);
         bytes.add(deleteKey);
@@ -261,8 +264,10 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             keyValue.setKey(dataKey);
             store.deletePrefix(deleteKey);
             store.deletePrefix(updateKey);
-            if (store.put(extraKeyValue) && store.put(keyValue) && context == null) {
-                param.inc();
+            if (updated) {
+                if (store.put(extraKeyValue) && store.put(keyValue) && context == null) {
+                    param.inc();
+                }
             }
         } else {
             throw new RuntimeException(txnId + " PrimaryKey is not existed local store");

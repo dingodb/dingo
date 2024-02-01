@@ -87,7 +87,17 @@ public final class DingoGetByKeysFun {
         }
         GetDistributionParam distributionParam = new GetDistributionParam(keyTuples, td.keyMapping(), td, distributions);
         Vertex distributionVertex = new Vertex(GET_DISTRIBUTION, distributionParam);
-        Task task = job.getOrCreate(currentLocation, idGenerator);
+        Task task;
+        if (transaction != null) {
+            task = job.getOrCreate(
+                currentLocation,
+                idGenerator,
+                transaction.getType(),
+                IsolationLevel.of(transaction.getIsolationLevel())
+            );
+        } else {
+            task = job.getOrCreate(currentLocation, idGenerator);
+        }
         distributionVertex.setId(idGenerator.getOperatorId(task.getId()));
         task.putVertex(distributionVertex);
         Vertex getVertex;
