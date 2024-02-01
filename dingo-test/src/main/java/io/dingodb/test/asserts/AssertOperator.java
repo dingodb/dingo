@@ -19,15 +19,12 @@ package io.dingodb.test.asserts;
 import io.dingodb.common.CommonId;
 import io.dingodb.exec.OperatorFactory;
 import io.dingodb.exec.base.Operator;
-import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.CalcDistributionOperator;
 import io.dingodb.exec.operator.PartRangeScanOperator;
 import io.dingodb.exec.operator.SoleOutOperator;
-import io.dingodb.exec.operator.SourceOperator;
 import lombok.Getter;
 
-import java.util.List;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;

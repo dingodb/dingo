@@ -39,26 +39,6 @@ public class StepDeserializer extends StdDeserializer<Step> {
         super(Step.class);
     }
 
-    @Override
-    public Step deserialize(
-        @NonNull JsonParser parser,
-        DeserializationContext context
-    ) throws IOException {
-        JsonNode jsonNode = parser.readValueAsTree();
-        if (jsonNode.isTextual()) {
-            return new SqlStringStep(jsonNode.asText());
-        } else if (jsonNode.isObject()) {
-            ObjectNode objectNode = (ObjectNode) jsonNode;
-            SqlChecker checker = getSqlChecker(parser, objectNode);
-            if (objectNode.has("sql")) {
-                return new SqlStringStep(objectNode.get("sql").asText(), checker);
-            } else if (objectNode.has("file")) {
-                return new SqlFileNameStep(objectNode.get("file").asText(), checker);
-            }
-        }
-        return (SqlStep) context.handleUnexpectedToken(_valueClass, parser);
-    }
-
     private static @Nullable SqlChecker getSqlChecker(
         @NonNull JsonParser parser,
         @NonNull ObjectNode objectNode
@@ -89,5 +69,25 @@ public class StepDeserializer extends StdDeserializer<Step> {
             return new SqlUpdateCountChecker(updateCount);
         }
         return null;
+    }
+
+    @Override
+    public Step deserialize(
+        @NonNull JsonParser parser,
+        DeserializationContext context
+    ) throws IOException {
+        JsonNode jsonNode = parser.readValueAsTree();
+        if (jsonNode.isTextual()) {
+            return new SqlStringStep(jsonNode.asText());
+        } else if (jsonNode.isObject()) {
+            ObjectNode objectNode = (ObjectNode) jsonNode;
+            SqlChecker checker = getSqlChecker(parser, objectNode);
+            if (objectNode.has("sql")) {
+                return new SqlStringStep(objectNode.get("sql").asText(), checker);
+            } else if (objectNode.has("file")) {
+                return new SqlFileNameStep(objectNode.get("file").asText(), checker);
+            }
+        }
+        return (SqlStep) context.handleUnexpectedToken(_valueClass, parser);
     }
 }

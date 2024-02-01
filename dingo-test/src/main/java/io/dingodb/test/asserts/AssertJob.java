@@ -16,8 +16,8 @@
 
 package io.dingodb.test.asserts;
 
-import io.dingodb.common.util.Utils;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Task;
 

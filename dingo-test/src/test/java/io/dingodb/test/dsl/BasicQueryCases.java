@@ -824,5 +824,16 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                         new Object[]{3, "l3"}
                     ))
             );
+
+        test("Aggregations")
+            .use("table", "i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0")
+            .step(
+                "select avg(age) aag,avg(gmt) agm,avg(price) apr,round(avg(amount),2) aam from {table}",
+                is(
+                    new String[]{"aag", "agm", "apr", "aam"},
+                    ImmutableList.of(
+                        new Object[]{107, -17057004875L, 9.3410291E8f, 1.305008494926E10}
+                    ))
+            );
     }
 }

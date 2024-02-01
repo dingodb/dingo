@@ -41,7 +41,6 @@ public class TestDingoSqlValidator {
     public void setupAll() {
         MockMetaServiceProvider.init();
         Properties properties = new Properties();
-        properties.put("usingRelOp", "true");
         DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties);
         parser = new DingoParser(context);
     }

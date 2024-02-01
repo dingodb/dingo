@@ -16,8 +16,8 @@
 
 package io.dingodb.test.asserts;
 
-import io.dingodb.common.Location;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.Location;
 import io.dingodb.exec.OperatorFactory;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Task;
