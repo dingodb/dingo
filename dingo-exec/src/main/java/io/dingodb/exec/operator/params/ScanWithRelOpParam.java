@@ -38,6 +38,7 @@ import io.dingodb.expr.rel.json.RelOpDeserializer;
 import io.dingodb.expr.rel.json.RelOpSerializer;
 import io.dingodb.expr.runtime.type.TupleType;
 import lombok.Getter;
+import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayOutputStream;
@@ -67,6 +68,7 @@ public class ScanWithRelOpParam extends ScanParam {
     @Getter
     private final DingoRelConfig config;
     @Getter
+    @Setter
     private CoprocessorV2 coprocessor;
 
     public ScanWithRelOpParam(

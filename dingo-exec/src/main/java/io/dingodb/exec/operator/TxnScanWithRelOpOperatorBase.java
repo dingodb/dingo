@@ -73,6 +73,7 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
                 param.getScanTs(),
                 param.getTimeOut()
             );
+            param.setCoprocessor(null);
             return createMergedIterator(localIterator, storeIterator, param.getCodec());
         }
         CoprocessorV2 coprocessor = param.getCoprocessor();

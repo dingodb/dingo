@@ -35,8 +35,8 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
         table("i4k_vsk_f80", file("i4k_vsk_f80/create.sql"))
             .init(file("i4k_vs_f80/data.sql"), 9);
 
-        table("i4k_vs0_i40_f80", file("i4k_vs0_i40_f80/create.sql"))
-            .init(file("i4k_vs0_i40_f80/data.sql"), 2);
+        table("i4k_vs0_i40_f80", file("cases/i4k_vs0_i40_f80.create.sql"))
+            .init(file("cases/i4k_vs0_i40_f80.data.sql"), 2);
 
         table("i4k_vs_i40_f80_vs0_l0", file("i4k_vs_i40_f80_vs0_l0/create.sql"))
             .init(file("i4k_vs_i40_f80_vs0_l0/data.sql"), 2);
@@ -351,29 +351,6 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 file("i4k_vs_f80/select_case_when_1.sql"),
                 csv(file("i4k_vs_f80/select_case_when_1.csv"))
-            );
-
-        test("Function `pow`")
-            .use("table", "i4k_vs0_i40_f80")
-            .step(
-                " select pow(age, id) pai from {table}",
-                csv(
-                    "pai",
-                    "DECIMAL",
-                    "10",
-                    "625"
-                )
-            );
-
-        test("Operator `mod`")
-            .use("table", "i4k_vs0_i40_f80")
-            .step("select mod(amount, age) from {table}",
-                csv(
-                    "EXPR$0",
-                    "DECIMAL",
-                    "2.58",
-                    "9.11"
-                )
             );
 
         test("Concat null")
