@@ -46,10 +46,12 @@ import io.dingodb.expr.runtime.op.time.TimeFormat1FunFactory;
 import io.dingodb.expr.runtime.op.time.TimestampFormat1FunFactory;
 import io.dingodb.expr.runtime.op.time.UnixTimestamp1FunFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -60,6 +62,7 @@ import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
 import org.apache.calcite.sql.type.SqlTypeFamily;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlNameMatcher;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -108,7 +111,15 @@ public class DingoOperatorTable implements SqlOperatorTable {
         );
         registerFunction(
             PowFunFactory.NAME,
-            DingoReturnTypes.DECIMAL_NULLABLE,
+            (SqlOperatorBinding opBinding) -> {
+                RelDataType type0 = opBinding.getOperandType(0);
+                if (type0.getSqlTypeName().equals(SqlTypeName.FLOAT)
+                    || type0.getSqlTypeName().equals(SqlTypeName.DOUBLE)
+                ) {
+                    return opBinding.getTypeFactory().createSqlType(SqlTypeName.DOUBLE);
+                }
+                return opBinding.getTypeFactory().createSqlType(SqlTypeName.DECIMAL);
+            },
             DingoInferTypes.DOUBLE,
             OperandTypes.NUMERIC_NUMERIC,
             SqlFunctionCategory.STRING

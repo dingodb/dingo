@@ -3,6 +3,9 @@ tables:
   table0:
     create: { file: vs_2.create.sql }
     init: { file: vs_2.data.sql, count: 1 }
+  table1:
+    create: { file: i4k_vs0_i40_f80.create.sql }
+    init: { file: i4k_vs0_i40_f80.data.sql, count: 2 }
 cases:
   - name: 'no primary key'
     use:
@@ -13,3 +16,33 @@ cases:
           - 'username, role'
           - 'STRING, STRING'
           - 'nacos, ROLE_ADMIN'
+  - name: 'function `pow(INT, INT)`'
+    use:
+      table: table1
+    steps:
+      - sql: 'select pow(age, id) pai from {table}'
+        result:
+          - 'pai'
+          - 'DECIMAL'
+          - '10'
+          - '625'
+  - name: 'function `pow(DOUBLE, INT)`'
+    use:
+      table: table1
+    steps:
+      - sql: 'select pow(amount, id) pai from {table}'
+        result:
+          - 'pai'
+          - 'DOUBLE'
+          - '2.58'
+          - '11904.9921'
+  - name: 'function `mod`'
+    use:
+      table: table1
+    steps:
+      - sql: 'select mod(amount, age) from {table}'
+        result:
+          - 'EXPR$0'
+          - 'DECIMAL'
+          - '2.58'
+          - '9.11'
