@@ -22,8 +22,8 @@ import io.dingodb.common.CommonId;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.ChannelProvider;
 import io.dingodb.sdk.service.StoreService;
-import io.dingodb.sdk.service.desc.store.StoreServiceDescriptors;
 import io.dingodb.sdk.service.caller.RpcCaller;
+import io.dingodb.sdk.service.desc.store.StoreServiceDescriptors;
 import io.dingodb.sdk.service.entity.common.KeyValue;
 import io.dingodb.sdk.service.entity.common.RangeWithOptions;
 import io.dingodb.sdk.service.entity.store.Coprocessor;
@@ -42,6 +42,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -142,12 +143,15 @@ public class ScanIterator implements Iterator<KeyValue>, AutoCloseable {
         delegateIterator = Optional.mapOrGet(res.getKvs(), List::iterator, Collections::emptyIterator);
         if (!delegateIterator.hasNext()) {
             release = true;
+            CompletableFuture.runAsync(this::scanRelease);
         }
     }
 
 
     public void scanRelease() {
-        storeService.kvScanRelease(KvScanReleaseRequest.builder().scanId(scanId).build());
+        KvScanReleaseRequest request = KvScanReleaseRequest.builder().scanId(scanId).build();
+        channelProvider.before(request);
+        channelProvider.after(storeService.kvScanRelease(request));
     }
 
     @Override

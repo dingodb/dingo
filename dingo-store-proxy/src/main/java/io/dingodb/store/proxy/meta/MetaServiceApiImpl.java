@@ -159,6 +159,7 @@ public class MetaServiceApiImpl implements MetaServiceApi {
                 needLock = false;
             } else {
                 log.info("Become leader, id {}.", ID);
+                lock.watchDestroy().thenRun(this::retryLock);
             }
         } catch (Exception e) {
             if (leaderChannel != null) {

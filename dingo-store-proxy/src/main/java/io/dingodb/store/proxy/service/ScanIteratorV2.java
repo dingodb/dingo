@@ -30,6 +30,7 @@ import io.dingodb.sdk.service.entity.store.KvScanBeginResponseV2;
 import io.dingodb.sdk.service.entity.store.KvScanContinueRequestV2;
 import io.dingodb.sdk.service.entity.store.KvScanContinueResponseV2;
 import io.dingodb.sdk.service.entity.store.KvScanReleaseRequestV2;
+import io.dingodb.sdk.service.entity.store.KvScanReleaseResponseV2;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import lombok.extern.slf4j.Slf4j;
@@ -149,7 +150,10 @@ public class ScanIteratorV2 implements Iterator<KeyValue>, AutoCloseable {
         if (log.isDebugEnabled()) {
             log.debug("Emit ScanReleaseV2: scanId = {}", scanId);
         }
-        storeService.kvScanReleaseV2(requestTs, KvScanReleaseRequestV2.builder().scanId(scanId).build());
+        KvScanReleaseRequestV2 request = KvScanReleaseRequestV2.builder().scanId(scanId).build();
+        channelProvider.before(request);
+        KvScanReleaseResponseV2 response = storeService.kvScanReleaseV2(requestTs, request);
+        channelProvider.after(response);
     }
 
     @Override
