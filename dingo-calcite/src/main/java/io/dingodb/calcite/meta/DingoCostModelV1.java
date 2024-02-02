@@ -37,6 +37,7 @@ import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -52,7 +53,7 @@ public class DingoCostModelV1 extends DingoCostModel {
     private static final double netFactor = 3.96;
     private static final double requestFactor = 60;
     private static final double cpuFactor = 49.9;
-    private static final double scanConcurrency = 15;
+    public static final double scanConcurrency = 15;
     private static final double lookupConcurrency = 5;
 
     private static final double memFactor = 0.01;
@@ -158,11 +159,13 @@ public class DingoCostModelV1 extends DingoCostModel {
         DingoTable dingoTable = tableScan.getTable().unwrap(DingoTable.class);
         assert dingoTable != null;
         String schemaName = dingoTable.getNames().get(1);
-        List<Column> selectionCdList = getSelectionCdList(tableScan, dingoTable);
-        return getAvgRowSize(selectionCdList, dingoTable.getTable(), schemaName);
+        //List<Column> selectionCdList = getSelectionCdList(tableScan, dingoTable);
+        return getAvgRowSize(
+            dingoTable.getTable().columns, dingoTable.getTable(), schemaName
+        );
     }
 
-    private double getScanCost(double rowCount, double rowSize) {
+    public static double getScanCost(double rowCount, double rowSize) {
         Double cost = rowCount * (Math.log(rowSize) / Math.log(2)) * scanFactor;
         if (cost.isInfinite()) {
             return 0;
@@ -171,7 +174,7 @@ public class DingoCostModelV1 extends DingoCostModel {
         }
     }
 
-    private double getNetCost(double rowCount, double rowSize) {
+    public static double getNetCost(double rowCount, double rowSize) {
         return rowCount * rowSize * netFactor;
     }
 
@@ -188,8 +191,8 @@ public class DingoCostModelV1 extends DingoCostModel {
         return selectionCdList;
     }
 
-    public double getAvgRowSize(List<Column> selectionCds, Table td, String schemaName) {
-        TableStats tableStats = StatsCache.statsMap.get(schemaName + "." + td.getName());
+    public static double getAvgRowSize(List<Column> selectionCds, Table td, String schemaName) {
+        TableStats tableStats = StatsCache.getStatistic(schemaName, td.getName());
         AtomicLong avgRowSize = new AtomicLong();
         if (selectionCds == null) {
             selectionCds = td.getColumns();
@@ -211,7 +214,7 @@ public class DingoCostModelV1 extends DingoCostModel {
         return avgRowSize.get();
     }
 
-    public long getTypeDefaultSize(Column columnDefinition) {
+    public static long getTypeDefaultSize(Column columnDefinition) {
         if (columnDefinition.getType() instanceof IntegerType
             || columnDefinition.getType() instanceof FloatType
             || columnDefinition.getType() instanceof LongType

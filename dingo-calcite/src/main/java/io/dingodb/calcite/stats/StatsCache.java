@@ -18,6 +18,7 @@ package io.dingodb.calcite.stats;
 
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import org.apache.calcite.plan.RelOptTable;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,13 +34,7 @@ public final class StatsCache {
     }
 
     public static double getTableRowCount(LogicalDingoTableScan scan) {
-        DingoTable dingoTable = scan.getTable().unwrap(DingoTable.class);
-        assert dingoTable != null;
-        if (dingoTable.getNames().size() > 2) {
-            return getTableRowCount(dingoTable.getNames().get(1), dingoTable.getNames().get(2));
-        } else {
-            return 100;
-        }
+        return getTableRowCount(scan.getTable());
     }
 
     public static double getTableRowCount(String key) {
@@ -48,5 +43,19 @@ public final class StatsCache {
             return tableStats.getRowCount();
         }
         return 100;
+    }
+
+    public static double getTableRowCount(RelOptTable relOptTable) {
+        DingoTable dingoTable = relOptTable.unwrap(DingoTable.class);
+        assert dingoTable != null;
+        if (dingoTable.getNames().size() > 2) {
+            return getTableRowCount(dingoTable.getNames().get(1), dingoTable.getNames().get(2));
+        } else {
+            return 100;
+        }
+    }
+
+    public static TableStats getStatistic(String schemaName, String tableName) {
+        return statsMap.get(schemaName + "." + tableName);
     }
 }
