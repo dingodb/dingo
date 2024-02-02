@@ -53,8 +53,9 @@ public class DistributeOperator extends SoleOutOperator {
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         while (retry-- > 0) {
             try {
+                Object[] newTuple = tuple;
                 if (tuple.length > param.getTable().columns.size()) {
-                    tuple = Arrays.copyOfRange(tuple, 0, param.getTable().columns.size());
+                    newTuple = Arrays.copyOfRange(tuple, 0, param.getTable().columns.size());
                 }
                 IndexTable indexTable = param.getIndexTable();
                 Context.ContextBuilder builder = Context.builder();
@@ -76,7 +77,7 @@ public class DistributeOperator extends SoleOutOperator {
                         .createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
                     partId = ps.calcPartId(indexTuple, wrap(indexCodec::encodeKey), param.getDistributions());
                 } else {
-                    partId = ps.calcPartId(tuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
+                    partId = ps.calcPartId(newTuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
                 }
                 RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
 

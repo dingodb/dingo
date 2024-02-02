@@ -20,9 +20,7 @@ import io.dingodb.client.common.Key;
 import io.dingodb.client.common.Record;
 import io.dingodb.client.operation.impl.DeleteRangeResult;
 import io.dingodb.client.operation.impl.OpKeyRange;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.entity.Table;
-import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.common.utils.Parameters;
 import lombok.extern.slf4j.Slf4j;
@@ -53,33 +51,6 @@ public class DingoClientV2 {
         this.schema = schema.toUpperCase();
         this.operationService = operationService;
     }
-
-//    public boolean createTable(TableDefinition table) {
-//        return createTable(schema, table);
-//    }
-//
-//    public boolean createTable(String schema, TableDefinition table) {
-//        return operationService.createTable(schema, table.getName(), table);
-//    }
-//
-//    public boolean dropTable(String tableName) {
-//        return dropTable(schema, tableName);
-//    }
-//
-//    public boolean dropTable(String schema, String table) {
-//        return operationService.dropTable(schema, table);
-//    }
-
-//    public TableDefinition getTableDefinition(final String tableName) {
-//        return getTableDefinition(schema, tableName);
-//    }
-//
-//    public TableDefinition getTableDefinition(String schema, String tableName) {
-//        if (tableName == null || tableName.isEmpty()) {
-//            throw new DingoClientException("Invalid table name: " + tableName);
-//        }
-//        return operationService.getTableDefinition(schema, tableName);
-//    }
 
     public Table getTable(String schema, String tableName) {
         return operationService.getTable(schema, schema);

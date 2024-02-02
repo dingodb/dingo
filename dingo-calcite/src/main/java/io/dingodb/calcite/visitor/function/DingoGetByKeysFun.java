@@ -39,8 +39,6 @@ import io.dingodb.exec.operator.params.GetDistributionParam;
 import io.dingodb.exec.operator.params.TxnGetByKeysParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.meta.entity.Table;
-import io.dingodb.partition.DingoPartitionServiceProvider;
-import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.tso.TsoService;
 import org.apache.calcite.sql.SqlKind;
@@ -68,9 +66,6 @@ public final class DingoGetByKeysFun {
         final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
             = tableInfo.getRangeDistributions();
         final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
-        final PartitionService ps = PartitionService.getService(
-            Optional.ofNullable(td.getPartitionStrategy())
-                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         final List<Vertex> outputs = new LinkedList<>();
         List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(rel.getPoints(), td);
         if (keyTuples.isEmpty()) {

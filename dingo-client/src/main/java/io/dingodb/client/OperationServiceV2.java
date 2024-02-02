@@ -30,6 +30,7 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.OutputHint;
@@ -40,6 +41,7 @@ import io.dingodb.exec.impl.IdGeneratorImpl;
 import io.dingodb.exec.impl.JobManagerImpl;
 import io.dingodb.exec.operator.params.CoalesceParam;
 import io.dingodb.exec.operator.params.CompareAndSetParam;
+import io.dingodb.exec.operator.params.CopyParam;
 import io.dingodb.exec.operator.params.DistributionParam;
 import io.dingodb.exec.operator.params.DistributionSourceParam;
 import io.dingodb.exec.operator.params.GetByKeysParam;
@@ -48,14 +50,21 @@ import io.dingodb.exec.operator.params.PartDeleteParam;
 import io.dingodb.exec.operator.params.PartInsertParam;
 import io.dingodb.exec.operator.params.PartRangeDeleteParam;
 import io.dingodb.exec.operator.params.PartRangeScanParam;
-import io.dingodb.exec.operator.params.PartitionParam;
 import io.dingodb.exec.operator.params.RootParam;
 import io.dingodb.exec.operator.params.SumUpParam;
+import io.dingodb.exec.operator.params.TxnGetByKeysParam;
+import io.dingodb.exec.operator.params.TxnPartDeleteParam;
+import io.dingodb.exec.operator.params.TxnPartInsertParam;
 import io.dingodb.exec.operator.params.ValuesParam;
+import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.common.utils.Parameters;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.proxy.service.CodecService;
 import io.dingodb.store.proxy.service.TsoService;
 import lombok.extern.slf4j.Slf4j;
@@ -67,7 +76,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.dingodb.client.utils.OperationUtils.mapKey2;
@@ -76,16 +84,19 @@ import static io.dingodb.common.util.Utils.sole;
 import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COALESCE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COMPARE_AND_SET;
+import static io.dingodb.exec.utils.OperatorCodeUtils.COPY;
 import static io.dingodb.exec.utils.OperatorCodeUtils.DISTRIBUTE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_KEYS;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_DISTRIBUTION;
-import static io.dingodb.exec.utils.OperatorCodeUtils.PARTITION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_RANGE_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_RANGE_SCAN;
 import static io.dingodb.exec.utils.OperatorCodeUtils.ROOT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SUM_UP;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_GET_BY_KEYS;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_DELETE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.VALUES;
 
 @Slf4j
@@ -114,6 +125,17 @@ public class OperationServiceV2 {
 
     private long tso() {
         return TsoService.INSTANCE.tso();
+    }
+
+    private ITransaction getTransaction(Table table) {
+        if (table.engine != null && table.engine.contains("TXN")) {
+            long startTs = TransactionManager.getStartTs();
+            return TransactionManager.createTransaction(
+                TransactionType.OPTIMISTIC,
+                startTs,
+                IsolationLevel.SnapshotIsolation.getCode());
+        }
+        return null;
     }
 
     public DeleteRangeResult rangeDelete(String schema,
@@ -244,7 +266,7 @@ public class OperationServiceV2 {
             Location currentLocation = MetaService.root().currentLocation();
             // values --> partition --> insert --> root
             List<Vertex> valuesOutputs = values(schema, tableName, job, idGenerator, currentLocation, tuples);
-            List<Vertex> partitionOutputs = partition(schema, tableName, job, idGenerator, currentLocation, valuesOutputs);
+            List<Vertex> partitionOutputs = copy(schema, tableName, job, idGenerator, currentLocation, valuesOutputs);
             List<Vertex> insertOutputs = insert(schema, tableName, idGenerator, currentLocation, partitionOutputs);
             List<Vertex> root = root(job, idGenerator, currentLocation, insertOutputs);
             if (root.size() > 0) {
@@ -288,7 +310,7 @@ public class OperationServiceV2 {
             // values --> partition --> compareAndSet --> root
             Location currentLocation = MetaService.root().currentLocation();
             List<Vertex> valuesOutputs = values(schema, tableName, job, idGenerator, currentLocation, newTuples);
-            List<Vertex> partitionOutputs = partition(schema, tableName, job, idGenerator, currentLocation, valuesOutputs);
+            List<Vertex> partitionOutputs = copy(schema, tableName, job, idGenerator, currentLocation, valuesOutputs);
             List<Vertex> compareAndSetOutputs = compareAndSet(schema, tableName, idGenerator, currentLocation, partitionOutputs);
             List<Vertex> root = root(job, idGenerator, currentLocation, compareAndSetOutputs);
             if (root.size() > 0) {
@@ -470,6 +492,7 @@ public class OperationServiceV2 {
         MetaService metaService = getSubMetaService(schema);
         Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         CommonId tableId = td.getTableId();
+        ITransaction transaction = getTransaction(td);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
             metaService.getRangeDistribution(tableId);
         List<Vertex> outputs = new LinkedList<>();
@@ -480,10 +503,23 @@ public class OperationServiceV2 {
         distributionVertex.setId(idGenerator.getOperatorId(task.getId()));
         task.putVertex(distributionVertex);
 
-        GetByKeysParam param = new GetByKeysParam(
-            tableId, td.tupleType(), td.keyMapping(), null, null, td
-        );
-        Vertex vertex = new Vertex(GET_BY_KEYS, param);
+        Vertex vertex;
+        long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
+        if (transaction != null) {
+            vertex = new Vertex(TXN_GET_BY_KEYS,
+                new TxnGetByKeysParam(tableId,
+                    td.tupleType(),
+                    td.keyMapping(),
+                    null,
+                    null,
+                    td,
+                    scanTs,
+                    transaction.getIsolationLevel(),
+                    transaction.getLockTimeOut()));
+        } else {
+            vertex = new Vertex(GET_BY_KEYS,
+                new GetByKeysParam(tableId, td.tupleType(), td.keyMapping(), null, null, td));
+        }
         OutputHint hint = new OutputHint();
         vertex.setHint(hint);
         vertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -495,41 +531,53 @@ public class OperationServiceV2 {
         return outputs;
     }
 
-    private List<Vertex> partition(String schema,
-                                   String tableName,
-                                   Job job,
-                                   IdGenerator idGenerator,
-                                   Location currentLocation,
-                                   List<Vertex> inputs
+    private List<Vertex> copy(String schema,
+                              String tableName,
+                              Job job,
+                              IdGenerator idGenerator,
+                              Location currentLocation,
+                              List<Vertex> inputs
     ) {
         List<Vertex> outpus = new LinkedList<>();
         MetaService metaService = getSubMetaService(schema);
         Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         CommonId tableId = td.getTableId();
+        ITransaction transaction = getTransaction(td);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
             metaService.getRangeDistribution(tableId);
-        Set<Long> parentIds = parts.values().stream().map(d -> d.getId().domain).collect(Collectors.toSet());
         for (Vertex input : inputs) {
             Task task = input.getTask();
-            DistributionParam distributionParam = new DistributionParam(tableId, td, parts);
-            Vertex distributeVertex = new Vertex(DISTRIBUTE, distributionParam);
-            distributeVertex.setId(idGenerator.getOperatorId(task.getId()));
-            Edge inputEdge = new Edge(input, distributeVertex);
+            Vertex copyVertex = new Vertex(COPY, new CopyParam());
+            copyVertex.setId(idGenerator.getOperatorId(task.getId()));
+            Edge inputEdge = new Edge(input, copyVertex);
             input.addEdge(inputEdge);
-            distributeVertex.addIn(inputEdge);
-            task.putVertex(distributeVertex);
+            copyVertex.addIn(inputEdge);
+            task.putVertex(copyVertex);
 
-            PartitionParam partitionParam = new PartitionParam(parentIds, td);
-            Vertex vertex = new Vertex(PARTITION, partitionParam);
-            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            Vertex distributeVertex = new Vertex(DISTRIBUTE, new DistributionParam(tableId, td, parts));
+            distributeVertex.setId(idGenerator.getOperatorId(task.getId()));
+            Edge copyEdge = new Edge(copyVertex, distributeVertex);
+            copyVertex.addEdge(copyEdge);
+            distributeVertex.addIn(copyEdge);
             OutputHint hint = new OutputHint();
             hint.setLocation(currentLocation);
-            vertex.setHint(hint);
-            Edge edge = new Edge(distributeVertex, vertex);
-            vertex.addIn(edge);
-            task.putVertex(vertex);
-            distributeVertex.addEdge(edge);
-            outpus.add(vertex);
+            distributeVertex.setHint(hint);
+            task.putVertex(distributeVertex);
+            outpus.add(distributeVertex);
+
+            if (transaction != null) {
+                for (IndexTable index : td.getIndexes()) {
+                    parts = metaService.getRangeDistribution(index.tableId);
+                    distributeVertex = new Vertex(DISTRIBUTE, new DistributionParam(index.tableId, td, parts, index));
+                    distributeVertex.setId(idGenerator.getOperatorId(task.getId()));
+                    copyEdge = new Edge(copyVertex, distributeVertex);
+                    copyVertex.addEdge(copyEdge);
+                    distributeVertex.addIn(copyEdge);
+                    distributeVertex.setHint(hint);
+                    task.putVertex(distributeVertex);
+                    outpus.add(distributeVertex);
+                }
+            }
         }
         return outpus;
     }
@@ -591,12 +639,31 @@ public class OperationServiceV2 {
         MetaService metaService = getSubMetaService(schema);
         CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
         Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
+        ITransaction transaction = getTransaction(td);
         List<Vertex> outputs = new LinkedList<>();
 
         for (Vertex input : inputs) {
             Task task = input.getTask();
-            PartDeleteParam param = new PartDeleteParam(tableId, td.tupleType(), td.keyMapping(), td);
-            Vertex vertex = new Vertex(PART_DELETE, param);
+            Vertex vertex;
+            if (transaction != null) {
+                boolean pessimistic = transaction.isPessimistic();
+                vertex = new Vertex(TXN_PART_DELETE,
+                    new TxnPartDeleteParam(
+                        tableId,
+                        td.tupleType(),
+                        td.keyMapping(),
+                        pessimistic,
+                        transaction.getIsolationLevel(),
+                        pessimistic ? transaction.getPrimaryKeyLock() : null,
+                        transaction.getStartTs(),
+                        pessimistic ? transaction.getForUpdateTs() : 0L,
+                        transaction.getLockTimeOut(),
+                        td
+                    )
+                );
+            } else {
+                vertex = new Vertex(PART_DELETE, new PartDeleteParam(tableId, td.tupleType(), td.keyMapping(), td));
+            }
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);
             input.setPin(0);
@@ -619,14 +686,31 @@ public class OperationServiceV2 {
     ) {
         MetaService metaService = getSubMetaService(schema);
         CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
-        Table tableDefinition = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
+        Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
+        ITransaction transaction = getTransaction(td);
         List<Vertex> outputs = new LinkedList<>();
 
         for (Vertex input : inputs) {
             Task task = input.getTask();
-            PartInsertParam insertParam = new PartInsertParam(tableId,
-                tableDefinition.tupleType(), tableDefinition.keyMapping(), tableDefinition);
-            Vertex vertex = new Vertex(PART_INSERT, insertParam);
+            Vertex vertex;
+            if (transaction != null) {
+                boolean pessimistic = transaction.isPessimistic();
+                vertex = new Vertex(TXN_PART_INSERT,
+                    new TxnPartInsertParam(
+                        tableId,
+                        td.tupleType(),
+                        td.keyMapping(),
+                        pessimistic,
+                        transaction.getIsolationLevel(),
+                        pessimistic ? transaction.getPrimaryKeyLock() : null,
+                        transaction.getStartTs(),
+                        pessimistic ? transaction.getForUpdateTs() : 0L,
+                        transaction.getLockTimeOut(),
+                        td));
+
+            } else {
+                vertex = new Vertex(PART_INSERT, new PartInsertParam(tableId, td.tupleType(), td.keyMapping(), td));
+            }
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);
             input.setPin(0);
