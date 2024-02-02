@@ -64,14 +64,14 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
     }
 
     private void startScheduler(LockService lockService) {
-        io.dingodb.sdk.service.LockService.Lock lock = lockService.newLock(__ -> {
-            pause();
-            startScheduler(lockService);
-        });
+        io.dingodb.sdk.service.LockService.Lock lock = lockService.newLock();
         CompletableFuture.runAsync(lock::lock).whenComplete((r, e) -> {
             if (e == null) {
                 start();
-                lock.watchDestroy().thenRun(() -> startScheduler(lockService));
+                lock.watchDestroy().thenRun(() -> {
+                    pause();
+                    startScheduler(lockService);
+                });
             } else {
                 startScheduler(lockService);
             }
