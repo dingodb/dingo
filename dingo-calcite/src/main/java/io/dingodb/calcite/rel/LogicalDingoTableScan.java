@@ -19,6 +19,7 @@ package io.dingodb.calcite.rel;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.fun.DingoOperatorTable;
+import io.dingodb.calcite.stats.StatsCache;
 import io.dingodb.calcite.utils.RelDataTypeUtils;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Column;
@@ -172,7 +173,7 @@ public class LogicalDingoTableScan extends TableScan {
             );
             rowCount = RelMdUtil.estimateFilteredRows(fakeInput, filter, mq);
         } else {
-            rowCount = super.estimateRowCount(mq);
+            rowCount = StatsCache.getTableRowCount(this);
         }
         if (groupSet != null) {
             if (groupSet.cardinality() == 0) {
