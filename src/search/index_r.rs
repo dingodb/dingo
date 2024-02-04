@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::logger::ffi_logger::callback_with_thread_info;
-use crate::{commons::LOG_CALLBACK, INFO, WARNING};
+use crate::{commons::LOG_CALLBACK, INFO, WARNING, DEBUG};
 use flurry::HashMap;
 use once_cell::sync::{Lazy, OnceCell};
 use tantivy::{Executor, Index, IndexReader};
@@ -68,7 +68,7 @@ pub fn remove_index_r(key: String) -> Result<(), String> {
         pinned.remove(&trimmed_key);
     } else {
         let error_info: String = format!("IndexR with given key [{}] already removed", trimmed_key);
-        WARNING!("{}", error_info);
+        DEBUG!("{}", error_info);
         return Err(error_info);
     }
     Ok(())

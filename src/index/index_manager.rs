@@ -16,7 +16,7 @@ use crate::search::index_r::*;
 use crate::search::index_searcher::tantivy_reader_free;
 use crate::tokenizer::parse_and_register::get_custom_tokenizer;
 use crate::tokenizer::parse_and_register::register_tokenizer_to_index;
-use crate::{ERROR, INFO, WARNING};
+use crate::{ERROR, INFO, WARNING, DEBUG};
 
 use super::index_w::*;
 use crate::common::index_utils::*;
@@ -425,7 +425,7 @@ pub fn tantivy_writer_free(index_path: &CxxString) -> Result<bool, String> {
     let index_w = match get_index_w(index_path_str.clone()) {
         Ok(content) => content,
         Err(e) => {
-            WARNING!("Index writer already been removed: {}", e);
+            DEBUG!("Index writer already been removed: {}", e);
             return Ok(false);
         }
     };
