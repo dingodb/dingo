@@ -16,7 +16,6 @@
 
 package io.dingodb.test.dsl;
 
-import io.dingodb.driver.client.DingoDriverClient;
 import io.dingodb.test.dsl.builder.SqlTestCaseYamlBuilder;
 import io.dingodb.test.dsl.run.SqlTestRunner;
 import org.junit.jupiter.api.DynamicTest;
@@ -28,16 +27,13 @@ import java.util.Properties;
 import java.util.stream.Stream;
 
 // Before run this, you must set up your cluster.
-public class SqlRunningIT extends SqlTestRunner {
+public class MySqlRunningIT extends SqlTestRunner {
     public Connection getConnection() throws Exception {
-        Class.forName("io.dingodb.driver.client.DingoDriverClient");
+        Class.forName("com.mysql.cj.jdbc.Driver");
         Properties properties = new Properties();
-        properties.load(SqlRunningIT.class.getResourceAsStream("/intTest.properties"));
+        properties.load(MySqlRunningIT.class.getResourceAsStream("/mySqlIntTest.properties"));
         String url = properties.getProperty("url");
-        return DriverManager.getConnection(
-            DingoDriverClient.CONNECT_STRING_PREFIX + "url=" + url,
-            properties
-        );
+        return DriverManager.getConnection(url, properties);
     }
 
     @TestFactory

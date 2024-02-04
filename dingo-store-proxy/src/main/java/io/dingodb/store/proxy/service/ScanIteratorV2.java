@@ -126,9 +126,6 @@ public class ScanIteratorV2 implements Iterator<KeyValue>, AutoCloseable {
     }
 
     public synchronized void scanContinue() {
-        if (delegateIterator.hasNext()) {
-            return;
-        }
         if (log.isDebugEnabled()) {
             log.debug("Emit ScanContinueV2: scanId = {}", scanId);
         }
