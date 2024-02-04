@@ -39,6 +39,7 @@ pub mod ffi {
         fn tantivy_create_index_with_tokenizer(
             index_path: &CxxString,
             tokenizer_with_parameter: &CxxString,
+            doc_store: bool,
         ) -> Result<bool>;
 
         /// Creates an index using the default tokenizer.
@@ -48,7 +49,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A bool value represent operation success.
-        fn tantivy_create_index(index_path: &CxxString) -> Result<bool>;
+        fn tantivy_create_index(index_path: &CxxString, doc_store: bool) -> Result<bool>;
 
         /// Indexes a document.
         ///
@@ -194,41 +195,58 @@ pub mod ffi {
         pub fn tantivy_search_bitmap_results(
             index_path: &CxxString,
             query: &CxxString,
-            use_regex: bool
+            use_regex: bool,
         ) -> Result<Vec<u8>>;
 
     }
 }
 
-pub type LogCallback = extern "C" fn(i32, *const c_char, *const c_char, *const c_char);
+pub type LogCallback = extern "C" fn(i32, *const c_char, *const c_char);
+extern "C" fn empty_log_callback(_level: i32, _msg: *const c_char, _file: *const c_char) {
+    // do nothing
+}
 
+#[no_mangle]
+pub extern "C" fn tantivy_search_log4rs_init(
+    log_directory: *const c_char,
+    log_level: *const c_char,
+    console_dispaly: bool,
+    only_record_tantivy_search: bool,
+) -> bool {
+    tantivy_search_log4rs_with_callback(
+        log_directory,
+        log_level,
+        console_dispaly,
+        only_record_tantivy_search,
+        empty_log_callback,
+    )
+}
 /// Initializes the logger configuration for the tantivy search library.
 ///
 /// Arguments:
 /// - `log_path`: The path where log files are saved. Tantivy-search will generate multiple log files.
 /// - `log_level`: The logging level to use. Supported levels: info, debug, trace, error, warning.
 ///   Note: 'fatal' is treated as 'error'.
-/// - `console_logging`: Enables logging to the console if set to true.
+/// - `console_dispaly`: Enables logging to the console if set to true.
 /// - `callback`: A callback function, typically provided by ClickHouse.
 /// - `enable_callback`: Enables the use of the callback function if set to true.
-/// - `only_tantivy_search`: Only display `tantivy_search` log content.
+/// - `only_tantivy_search`: Only record `target=tantivy_search` log content.
 ///
 /// Returns:
 /// - `true` if the logger is successfully initialized, `false` otherwise.
 #[no_mangle]
-pub extern "C" fn tantivy_logger_initialize(
-    log_path: *const c_char,
+pub extern "C" fn tantivy_search_log4rs_with_callback(
+    log_directory: *const c_char,
     log_level: *const c_char,
-    console_logging: bool,
+    console_dispaly: bool,
+    only_record_tantivy_search: bool,
     callback: LogCallback,
-    enable_callback: bool,
-    only_tantivy_search: bool,
 ) -> bool {
     // Safely convert C strings to Rust String, checking for null pointers.
-    let log_path = match unsafe { CStr::from_ptr(log_path) }.to_str() {
+    let log_directory = match unsafe { CStr::from_ptr(log_directory) }.to_str() {
         Ok(path) => path.to_owned(),
         Err(_) => {
-            ERROR!("Log path (string) can't be null or invalid");
+            ERROR!("Log directory (string) can't be null or invalid");
             return false;
         }
     };
@@ -240,13 +258,12 @@ pub extern "C" fn tantivy_logger_initialize(
         }
     };
 
-    match initialize_tantivy_search_logger(
-        log_path,
+    match initialize_log4rs(
+        log_directory,
         log_level,
-        console_logging,
+        console_dispaly,
+        only_record_tantivy_search,
         callback,
-        enable_callback,
-        only_tantivy_search,
     ) {
         Ok(_) => true,
         Err(e) => {

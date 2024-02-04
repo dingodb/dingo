@@ -6,7 +6,6 @@ use std::hash::{BuildHasher, Hash};
 use crate::commons::*;
 use crate::INFO;
 
-/// TODO This is a temporary solution for the "skip-index" issue,
 /// and this part of the code will need to be removed when rewriting the processor in the future.
 /// A cache structure that stores key-value pairs.
 /// The values are wrapped in `V` for safe cross-thread sharing.
@@ -70,103 +69,134 @@ where
             }
         }
     }
+
+    /// Returns a vec of all keys currently in the hashmap.
+    #[allow(dead_code)]
+    pub fn all_keys(&self) -> Vec<K> {
+        let pinned = self.hash_map.pin();
+        pinned.iter().map(|entry| entry.0.clone()).collect()
+    }
+
+    /// Returns current hashmap size.
+    #[allow(dead_code)]
+    pub fn len(&self) -> usize {
+        let pinned = self.hash_map.pin();
+        return pinned.len();
+    }
+
+    /// Removes a list of keys from the cache.
+    #[allow(dead_code)]
+    pub fn remove_keys(&self, keys: Vec<K>) {
+        let pinned = self.hash_map.pin();
+        for key in keys {
+            let _ = pinned.remove(&key);
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::flurry_cache::FlurryCache;
+    use roaring::RoaringBitmap;
     use std::sync::Arc;
 
-    use once_cell::sync::Lazy;
-    use roaring::RoaringBitmap;
-
-    use crate::flurry_cache::FlurryCache;
-
-    struct CustomStruct {
-        data: String, // 或者是您需要的任何数据类型
+    #[derive(Debug, PartialEq)]
+    struct TestData {
+        value: String,
     }
-    impl CustomStruct {
-        fn new(data: impl Into<String>) -> Self {
-            CustomStruct { data: data.into() }
+    impl TestData {
+        fn new(value: impl Into<String>) -> Self {
+            TestData {
+                value: value.into(),
+            }
         }
     }
 
-    impl Drop for CustomStruct {
+    impl Drop for TestData {
         fn drop(&mut self) {
-            println!("CustomStruct with data `{}` is being dropped!", self.data);
+            println!("Data(value:'{}') is being dropped!", self.value);
         }
     }
-    impl Clone for CustomStruct {
+
+    impl Clone for TestData {
         fn clone(&self) -> Self {
-            CustomStruct::new(self.data.clone())
+            TestData::new(self.value.clone())
         }
     }
 
     #[test]
-    fn it_works() {
-        let test_furry_cache: Lazy<FlurryCache<(usize, String, String), RoaringBitmap>> =
-            Lazy::new(|| FlurryCache::with_capacity(1));
+    fn test_store_roaring_bitmap() {
+        let test_hashmap: FlurryCache<(usize, String, String), RoaringBitmap> =
+            FlurryCache::with_capacity(1);
+        let mut origin_bitmap = RoaringBitmap::new();
+        origin_bitmap.insert_range(2..4);
+        assert_eq!(
+            test_hashmap.resolve((0, "abc".to_string(), "def".to_string()), || origin_bitmap
+                .clone()),
+            origin_bitmap.clone()
+        );
 
-        let _row_id_roaring_bitmap =
-            test_furry_cache.resolve((0, "hello".to_string(), "/var/lib/xxx".to_string()), || {
-                let fake_bitmap = RoaringBitmap::new();
-                return fake_bitmap;
-            });
-
-        for i_ in 1..10000 {
-            let _: RoaringBitmap = test_furry_cache.resolve(
-                (i_, "hello".to_string(), "/var/lib/xxx".to_string()),
-                || RoaringBitmap::new(),
-            );
-            let _: RoaringBitmap = test_furry_cache.resolve(
-                (i_, "hello".to_string(), "/var/lib/xxx".to_string()),
-                || RoaringBitmap::new(),
-            );
+        for _ in 1..10 {
+            let _: RoaringBitmap = test_hashmap
+                .resolve((0, "def".to_string(), "hij".to_string()), || {
+                    RoaringBitmap::new()
+                });
         }
+        assert_eq!(
+            test_hashmap.resolve((0, "abc".to_string(), "def".to_string()), || {
+                RoaringBitmap::new()
+            }),
+            RoaringBitmap::new()
+        );
     }
 
     #[test]
-    fn free_value() {
-        let test_furry_cache: Lazy<FlurryCache<(usize, String, String), CustomStruct>> =
-            Lazy::new(|| FlurryCache::with_capacity(1));
+    fn test_drop_obj() {
+        let test_hashmap: FlurryCache<(usize, String, String), TestData> =
+            FlurryCache::with_capacity(1);
+        let origin_data = TestData::new("");
+        assert_eq!(
+            test_hashmap.resolve((0, "abc".to_string(), "def".to_string()), || origin_data
+                .clone()),
+            origin_data.clone()
+        );
 
-        let _ =
-            test_furry_cache.resolve((0, "hello".to_string(), "/var/lib/xxx".to_string()), || {
-                let fake_data = CustomStruct::new("test");
-                return fake_data;
+        for _ in 1..5 {
+            let _ = test_hashmap.resolve((0, "def".to_string(), "hij".to_string()), || {
+                TestData::new("b")
             });
-
-        for i_ in 1..10000 {
-            let _: CustomStruct = test_furry_cache.resolve(
-                (i_, "hello".to_string(), "/var/lib/xxx".to_string()),
-                || CustomStruct::new("test-2"),
-            );
-            let _: CustomStruct = test_furry_cache.resolve(
-                (i_, "hello".to_string(), "/var/lib/xxx".to_string()),
-                || CustomStruct::new("test-3"),
-            );
         }
+        assert_eq!(
+            test_hashmap.resolve((0, "abc".to_string(), "def".to_string()), || origin_data
+                .clone()),
+            origin_data.clone()
+        );
     }
 
     #[test]
-    fn free_value2() {
-        let test_furry_cache: Lazy<FlurryCache<(usize, String, String), Arc<CustomStruct>>> =
-            Lazy::new(|| FlurryCache::with_capacity(1));
+    fn test_remove_keys() {
+        let test_hashmap: FlurryCache<(usize, String), Arc<TestData>> =
+            FlurryCache::with_capacity(4);
+        let _ = test_hashmap.resolve((0, "000".to_string()), || Arc::new(TestData::new("data-0")));
+        let _ = test_hashmap.resolve((1, "001".to_string()), || Arc::new(TestData::new("data-1")));
+        assert_eq!(test_hashmap.len(), 2);
+        let _ = test_hashmap.resolve((2, "002".to_string()), || Arc::new(TestData::new("data-2")));
+        let _ = test_hashmap.resolve((3, "003".to_string()), || Arc::new(TestData::new("data-3")));
+        assert_eq!(test_hashmap.len(), 4);
+        let _ = test_hashmap.resolve((4, "004".to_string()), || Arc::new(TestData::new("data-4")));
+        let _ = test_hashmap.resolve((5, "005".to_string()), || Arc::new(TestData::new("data-5")));
+        assert_eq!(test_hashmap.len(), 2);
+        let _ = test_hashmap.resolve((6, "000".to_string()), || Arc::new(TestData::new("data-6")));
+        let _ = test_hashmap.resolve((7, "000".to_string()), || Arc::new(TestData::new("data-7")));
+        assert_eq!(test_hashmap.len(), 4);
 
-        let _ =
-            test_furry_cache.resolve((0, "hello".to_string(), "/var/lib/xxx".to_string()), || {
-                let fake_data = CustomStruct::new("test");
-                return Arc::new(fake_data);
-            });
-
-        for i_ in 1..10000 {
-            let _: Arc<CustomStruct> = test_furry_cache.resolve(
-                (i_, "hello".to_string(), "/var/lib/xxx".to_string()),
-                || Arc::new(CustomStruct::new("test-2")),
-            );
-            let _: Arc<CustomStruct> = test_furry_cache.resolve(
-                (i_, "hello".to_string(), "/var/lib/xxx".to_string()),
-                || Arc::new(CustomStruct::new("test-3")),
-            );
-        }
+        let all_keys = test_hashmap.all_keys();
+        let specific_key = "000";
+        let keys_need_remove: Vec<_> = all_keys
+            .into_iter()
+            .filter(|(_, ref element)| element == specific_key)
+            .collect();
+        test_hashmap.remove_keys(keys_need_remove);
+        assert_eq!(test_hashmap.len(), 2);
     }
 }

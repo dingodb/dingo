@@ -73,5 +73,5 @@ target_link_libraries(${rust_lib}-total
 # for end-user to link into project
 add_library(rust::${rust_lib} ALIAS ${rust_lib}-total)
 
-add_subdirectory(examples ${CMAKE_CURRENT_BINARY_DIR}/examples)
 add_subdirectory(benchmark ${CMAKE_CURRENT_BINARY_DIR}/benchmark)
+add_subdirectory(tests ${CMAKE_CURRENT_BINARY_DIR}/tests)

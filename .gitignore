@@ -3,6 +3,6 @@ build
 index_path
 log
 temp
-examples/wiki_560w.json
 *.log
 *jemalloc*
+tests/throughput/*.json

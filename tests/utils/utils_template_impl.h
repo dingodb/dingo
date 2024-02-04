@@ -1,23 +1,11 @@
-#include <iostream>
-#include <vector>
-#include <set>
+// utils_template_impl.h
+#ifndef UTILS_TEMPLATE_IMPL_H
+#define UTILS_TEMPLATE_IMPL_H
+
 #include <random>
-#include <stdexcept>
-#include <algorithm>
-#include <easylogging++.h>
-// utils.h
-#ifndef UTILS_H
-#define UTILS_H
+#include <set>
 
 namespace Utils {
-    extern int log_level;
-
-    extern "C" void tantivy_easylogging_callback(int level, const char* thread_id, const char* thread_name, const char* message);
-
-    std::vector<uint64_t> generate_array(std::size_t step, std::size_t lrange, std::size_t rrange);
-
-    void initialize_easy_logger(el::Level log_level_);
-
     template <typename T>
     size_t intersection_size(const std::vector<T>& v1, const std::vector<T>& v2){
         std::set<T> set1(v1.begin(), v1.end());
@@ -51,6 +39,6 @@ namespace Utils {
         }
         return result;
     }
-} // namespace Utils
+}
 
-#endif // UTILS_H
+#endif

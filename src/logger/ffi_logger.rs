@@ -22,14 +22,14 @@ static LOG4RS_HANDLE: OnceCell<log4rs::Handle> = OnceCell::new();
 
 #[derive(Debug)]
 struct TantivyFilter {
-    only_tantivy_search: bool,
+    only_record_tantivy_search: bool,
 }
 
 impl Filter for TantivyFilter {
     fn filter(&self, record: &log::Record) -> Response {
-        if self.only_tantivy_search && record.target() == "tantivy_search" {
+        if self.only_record_tantivy_search && record.target() == "tantivy_search" {
             Response::Neutral
-        } else if self.only_tantivy_search {
+        } else if self.only_record_tantivy_search {
             Response::Reject
         } else {
             Response::Neutral
@@ -38,17 +38,17 @@ impl Filter for TantivyFilter {
 }
 
 fn build_log_config(
-    log_path: String,
+    log_directory: String,
     log_level: String,
-    console_logging: bool,
-    only_tantivy_search: bool,
+    console_dispaly: bool,
+    only_record_tantivy_search: bool,
 ) -> Result<Config, String> {
-    let log_path_trimmed = log_path.trim_end_matches('/').to_string();
-    // process Log Path
+    /********************     Config for log-file path     ********************/
+    let log_path_trimmed = log_directory.trim_end_matches('/').to_string();
     let log_file_path = format!("{}/tantivy-search.log", log_path_trimmed);
     let log_rolling_pattern = format!("{}/tantivy-search.{{}}.log", log_path_trimmed);
 
-    // process Log LevelFilter
+    /********************     Config for log-level     ********************/
     let log_level = match log_level.to_lowercase().as_str() {
         "trace" | "tracing" | "traces" | "tracings" => LevelFilter::Trace,
         "debug" => LevelFilter::Debug,
@@ -58,89 +58,74 @@ fn build_log_config(
         _ => LevelFilter::Info,
     };
 
-    // support log roller.
+    /********************     Config for log-file rolling     ********************/
+    //TODO: refine this hard code.
     let roller = FixedWindowRoller::builder()
         .build(&log_rolling_pattern, 3)
         .map_err(|e| e.to_string())?;
 
-    // log file trigger size: 20MB
-    let size_trigger = SizeTrigger::new(20 * 1024 * 1024);
+    let size_trigger = SizeTrigger::new(20 * 1024 * 1024); // log file trigger size: 20MB
     let policy = CompoundPolicy::new(Box::new(size_trigger), Box::new(roller));
 
-    // log file config
     let file = RollingFileAppender::builder()
         .encoder(Box::new(PatternEncoder::new("{d} - {l} - {t} - {m}{n}")))
         // .append(true)
         .build(log_file_path, Box::new(policy))
         .map_err(|e| e.to_string())?;
 
-    // log console config
-    let stdout = ConsoleAppender::builder()
-        .encoder(Box::new(PatternEncoder::new("{d} - {l} - {t} - {m}{n}")))
-        .build();
-
     let file_appender = Appender::builder()
-        // log level filter
-        .filter(Box::new(ThresholdFilter::new(log_level)))
-        // tantivy_search target filter
+        .filter(Box::new(ThresholdFilter::new(log_level))) // log level filter
         .filter(Box::new(TantivyFilter {
-            only_tantivy_search,
+            // `target=tantivy_search` filter
+            only_record_tantivy_search,
         }))
         .build("file", Box::new(file));
 
     let mut config_builder = Config::builder().appender(file_appender);
     let mut root_builder = Root::builder().appender("file");
 
-    // enable console logging
-    if console_logging {
+    /********************     Config for log-console dispaly     ********************/
+    let stdout = ConsoleAppender::builder()
+        .encoder(Box::new(PatternEncoder::new("{d} - {l} - {t} - {m}{n}")))
+        .build();
+    // Enable console dispaly
+    if console_dispaly {
         let stdout_appender = Appender::builder()
-            // log level filter
-            .filter(Box::new(ThresholdFilter::new(log_level)))
-            // tantivy_search target filter
+            .filter(Box::new(ThresholdFilter::new(log_level))) // log level filter
             .filter(Box::new(TantivyFilter {
-                only_tantivy_search,
+                // `target=tantivy_search` filter
+                only_record_tantivy_search,
             }))
             .build("stdout", Box::new(stdout));
-        // add console Appender to config_builder
-        config_builder = config_builder.appender(stdout_appender);
-        // add console Appender to root_builder
-        root_builder = root_builder.appender("stdout");
+        config_builder = config_builder.appender(stdout_appender); // add console Appender to config_builder
+        root_builder = root_builder.appender("stdout"); // add console Appender to root_builder
     }
 
-    // construct config
+    /********************     Build log config     ********************/
     let config = config_builder
         .build(root_builder.build(log_level))
         .map_err(|e| e.to_string())?;
 
     crate::INFO!(
-        "build log4rs config: [log_path:{}, log_level:{}, console_logging:{}, only_tantivy_search:{}, log_file_path:{}]",
-        log_path,
+        "build log4rs config: [log_path:{}, log_level:{}, console_dispaly:{}, only_record_tantivy_search:{}, log_file_path:{}]",
+        log_directory,
         log_level,
-        console_logging,
-        only_tantivy_search,
+        console_dispaly,
+        only_record_tantivy_search,
         format!("{}/tantivy-search.log", log_path_trimmed)
     );
     Ok(config)
 }
 
-fn initialize_logger(
-    log_path: String,
-    log_level: String,
-    console_logging: bool,
-    only_tantivy_search: bool,
-) -> Result<(), String> {
-    // construct logger config
-    let config = build_log_config(log_path, log_level, console_logging, only_tantivy_search)
-        .map_err(|e| format!("Failed to build log config: {}", e))?;
-
+fn apply_log_config(config: Config) -> Result<(), String> {
     match LOG4RS_HANDLE.get() {
-        // update logger config during running time
+        // Update logger config during running time
         Some(handle) => {
             crate::INFO!("updating log4rs handle....");
             handle.set_config(config);
             Ok(())
         }
-        // first time init handle
+        // The first time for initializing the handle.
         None => {
             crate::INFO!("initialize log4rs handle....");
             let handle = log4rs::init_config(config)
@@ -153,58 +138,65 @@ fn initialize_logger(
     }
 }
 
-// Initialize callback from caller.
-fn initialize_log_callback(callback: LogCallback) {
+/**
+ * Initializes the tantivy_search log4rs.
+ * log_directory: Directory where logs will be saved.
+ * log_level: Log level.
+ * console_dispaly: Whether to output tantivy-search logs to the console.
+ * only_record_tantivy_search: If set true, log content generated by `tantivy_search` dependency won't be record.
+ * callback: Callback will be called in macors.
+ */
+pub fn initialize_log4rs(
+    log_directory: String,
+    log_level: String,
+    console_dispaly: bool,
+    only_record_tantivy_search: bool,
+    callback: LogCallback,
+) -> Result<(), String> {
+    // Insert callback to OnceCell, it can't be update during lib running time.
     let _ = LOG_CALLBACK.get_or_init(|| callback);
+
+    // Build log config (log level, filter, stdout...)
+    let config: Config = build_log_config(
+        log_directory,
+        log_level,
+        console_dispaly,
+        only_record_tantivy_search,
+    )
+    .map_err(|e| format!("Failed to build log config: {}", e))?;
+
+    // Apply log config to Log4RS
+    apply_log_config(config)
 }
 
-/**
- * Initializes the tantivy_search logger.
- * log_path: Directory where logs will be saved.
- * log_level: Log level (requires a restart of CK to update the log level for tantivy-search).
- * console_logging: Whether to output tantivy-search logs to the console.
- * callback: Log callback function provided by CK to output tantivy-search logs to the CK log system.
- * enable_callback: Whether to enable the callback function.
- * only_tantivy_search: Whether the log file should only retain logs from tantivy_search.
- */
-pub fn initialize_tantivy_search_logger(
-    log_path: String,
-    log_level: String,
-    console_logging: bool,
-    callback: LogCallback,
-    enable_callback: bool,
-    only_tantivy_search: bool,
-) -> Result<(), String> {
-    if enable_callback {
-        initialize_log_callback(callback);
-    }
-    initialize_logger(log_path, log_level, console_logging, only_tantivy_search)
+fn get_thread_id() -> String {
+    let thread_id: String = format!("{:?}", thread::current().id());
+    thread_id
+        .chars()
+        .filter(|c| c.is_digit(10))
+        .collect::<String>()
 }
 
 // This function is used by self LOG macros.
 pub fn callback_with_thread_info(level: i8, message: String, callback: LogCallback) {
-    let c_thread_id = match CString::new(format!("{:?}", thread::current().id())) {
-        Ok(cstr) => cstr,
-        Err(_) => CString::new("unknown_error").expect("Failed to create CString from thread id."),
+    let thread_id: String = get_thread_id();
+    let thread_name: String = thread::current().name().unwrap_or("none").to_string();
+
+    let thread_info: String = if thread_name == "none" {
+        format!("[{}]", thread_id)
+    } else {
+        format!("[{}] {}", thread_id, thread_name)
     };
 
-    let c_thread_name =
-        match CString::new(thread::current().name().unwrap_or("unknown").to_string()) {
-            Ok(cstr) => cstr,
-            Err(_) => {
-                CString::new("unknown_error").expect("Failed to create CString from thread name.")
-            }
-        };
+    let thread_info_c = match CString::new(thread_info) {
+        Ok(cstr) => cstr,
+        Err(_) => CString::new("none").expect("Failed to create CString from thread_info."),
+    };
 
     let c_message = match CString::new(message) {
         Ok(cstr) => cstr,
         Err(_) => CString::new("unknown_error").expect("Failed to create CString from message."),
     };
 
-    callback(
-        level as c_int,
-        c_thread_id.as_ptr(),
-        c_thread_name.as_ptr(),
-        c_message.as_ptr(),
-    );
+    callback(level as c_int, thread_info_c.as_ptr(), c_message.as_ptr());
 }

@@ -36,10 +36,8 @@ regex = "1.10.2"
 rstest = "0.18.2"
 cxx = "1.0.111"
 
-
 [build-dependencies]
 cxx-build = "1.0.111"
-
 
 [features]
 use-flurry-cache = []
@@ -51,25 +49,10 @@ debug = true
 
 
 [[bin]]
-name = "rust_benchmark"
-path = "demo/benchmark.rs"
+name = "delete_term"
+path = "demo/delete_term.rs"
 
 [[bin]]
-name = "loop_search"
-path = "demo/loop_search.rs"
+name = "search_examples"
+path = "demo/search_examples.rs"
 
-[[bin]]
-name = "regex_search"
-path = "demo/regex_search.rs"
-
-[[bin]]
-name = "natural_language"
-path = "demo/natural_language.rs"
-
-[[bin]]
-name = "bm25_search"
-path = "demo/bm25_search.rs"
-
-[[bin]]
-name = "delete_test"
-path = "demo/delete_test.rs"

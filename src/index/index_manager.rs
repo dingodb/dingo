@@ -3,20 +3,20 @@ use std::{path::Path, sync::Arc};
 
 use cxx::CxxString;
 use cxx::{let_cxx_string, CxxVector};
-use tantivy::schema::IndexRecordOption;
 use tantivy::schema::Schema;
 use tantivy::schema::TextFieldIndexing;
 use tantivy::schema::TextOptions;
 use tantivy::schema::FAST;
 use tantivy::schema::INDEXED;
+use tantivy::schema::{IndexRecordOption, STORED};
 
 use crate::commons::LOG_CALLBACK;
 use crate::logger::ffi_logger::callback_with_thread_info;
 use crate::search::index_r::*;
+use crate::search::index_searcher::tantivy_reader_free;
 use crate::tokenizer::parse_and_register::get_custom_tokenizer;
 use crate::tokenizer::parse_and_register::register_tokenizer_to_index;
-use crate::tokenizer::parse_and_register::TokenizerType;
-use crate::{ERROR, INFO};
+use crate::{ERROR, INFO, WARNING};
 
 use super::index_w::*;
 use crate::common::index_utils::*;
@@ -28,12 +28,14 @@ use tantivy::{Document, Index, Term};
 /// Arguments:
 /// - `index_path`: The directory path for building the index.
 /// - `tokenizer_with_parameter`: A str contains tokenizer name and parameters.
+/// - `doc_store`: Whether store origin document.
 ///
 /// Returns:
 /// - A bool value represent operation success.
 pub fn tantivy_create_index_with_tokenizer(
     index_path: &CxxString,
     tokenizer_with_parameter: &CxxString,
+    doc_store: bool,
 ) -> Result<bool, String> {
     // parse parameter
     let index_path_str = match index_path.to_str() {
@@ -57,6 +59,26 @@ pub fn tantivy_create_index_with_tokenizer(
         }
     };
 
+    // Try free index reader before prepare index directory.
+    if let Err(e) = tantivy_reader_free(index_path) {
+        let error_msg = format!(
+            "Can't pre free index reader before prepare index directory, due to: {}",
+            e
+        );
+        ERROR!("{}", error_msg);
+        return Err(error_msg);
+    }
+
+    // Try free index writer before prepare index directory.
+    if let Err(e) = tantivy_writer_free(index_path) {
+        let error_msg = format!(
+            "Can't pre free index reader before prepare index directory, due to: {}",
+            e
+        );
+        ERROR!("{}", error_msg);
+        return Err(error_msg);
+    }
+
     // Prepare the index directory for use.
     let index_files_directory: &Path = Path::new(&index_path_str);
 
@@ -74,31 +96,27 @@ pub fn tantivy_create_index_with_tokenizer(
     {
         Ok((tokenizer_type, text_analyzer)) => (tokenizer_type, text_analyzer),
         Err(e) => {
-            let error_info = format!("Can't initialize tokenizer: {:?}", e);
+            let error_info = format!("Can't initialize tokenizer: {}", e);
             ERROR!("{}", error_info);
             return Err(error_info);
         }
     };
 
     // Initialize TextOptions for indexing documents.
-    let mut text_options = TextOptions::default().set_indexing_options(
+    let text_options = TextOptions::default().set_indexing_options(
         TextFieldIndexing::default()
             .set_tokenizer(tokenizer_type.name())
-            .set_index_option(IndexRecordOption::WithFreqs),
+            .set_index_option(IndexRecordOption::WithFreqsAndPositions),
     );
-    // Ngram tokenizer need positions information.
-    if let TokenizerType::Ngram(_) | TokenizerType::Chinese(_) = tokenizer_type {
-        text_options = TextOptions::default().set_indexing_options(
-            TextFieldIndexing::default()
-                .set_tokenizer(tokenizer_type.name())
-                .set_index_option(IndexRecordOption::WithFreqsAndPositions),
-        );
-    }
 
     // Construct the schema for the index.
     let mut schema_builder = Schema::builder();
     schema_builder.add_u64_field("row_id", FAST | INDEXED);
-    schema_builder.add_text_field("text", text_options);
+    if doc_store {
+        schema_builder.add_text_field("text", text_options | STORED);
+    } else {
+        schema_builder.add_text_field("text", text_options);
+    }
     let schema = schema_builder.build();
 
     INFO!(
@@ -111,7 +129,7 @@ pub fn tantivy_create_index_with_tokenizer(
         Ok(index) => index,
         Err(e) => {
             let error_info = format!(
-                "Failed to create index in directory:{:?}; exception:{}",
+                "Failed to create index in directory:{}; exception:{}",
                 index_path_str,
                 e.to_string()
             );
@@ -123,7 +141,7 @@ pub fn tantivy_create_index_with_tokenizer(
     // Register the tokenizer with the index.
     if let Err(e) = register_tokenizer_to_index(&mut index, tokenizer_type.clone(), text_analyzer) {
         let error_info = format!(
-            "Failed to register tokenizer: {:?}, exception: {}",
+            "Failed to register tokenizer: {}, exception: {}",
             tokenizer_type.name(),
             e
         );
@@ -153,7 +171,7 @@ pub fn tantivy_create_index_with_tokenizer(
     // Save IndexW to cache.
     let indexw = IndexW {
         index,
-        path: index_path_str.clone(),
+        path: index_path_str.trim_end_matches('/').to_string(),
         writer: Mutex::new(Some(writer)),
     };
 
@@ -169,16 +187,17 @@ pub fn tantivy_create_index_with_tokenizer(
 ///
 /// Arguments:
 /// - `index_path`: The directory path for building the index.
+/// - `doc_store`: Whether store origin document.
 ///
 /// Returns:
 /// - A bool value represent operation success.
-pub fn tantivy_create_index(index_path: &CxxString) -> Result<bool, String> {
+pub fn tantivy_create_index(index_path: &CxxString, doc_store: bool) -> Result<bool, String> {
     // use `default` as tokenizer.
     let_cxx_string!(tokenizer_with_parameter = "default");
     // get immutable ref from pin.
-    let tokenizer_with_parameter_ref = tokenizer_with_parameter.as_ref().get_ref();
+    let tokenizer_with_parameter_ref: &CxxString = tokenizer_with_parameter.as_ref().get_ref();
     // Delegate to `tantivy_create_index_with_tokenizer` using the default tokenizer.
-    tantivy_create_index_with_tokenizer(index_path, tokenizer_with_parameter_ref)
+    tantivy_create_index_with_tokenizer(index_path, tokenizer_with_parameter_ref, doc_store)
 }
 
 /// Indexes a document.
@@ -326,21 +345,21 @@ pub fn tantivy_delete_row_ids(
             return Err(error_info);
         }
     }
-    // get index reader from CACHE
-    let index_r = match get_index_r(index_path_str.clone()) {
-        Ok(content) => content,
+    // try reload index reader from CACHE
+    let reload_status = match get_index_r(index_path_str.clone()) {
+        Ok(current_index_reader) => match current_index_reader.reload() {
+            Ok(_) => true,
+            Err(e) => {
+                ERROR!("Can't reload reader after delete operation: {}", e);
+                return Err(e);
+            }
+        },
         Err(e) => {
-            ERROR!("{}", e);
-            return Err(e);
+            WARNING!("{}, skip reload it. ", e);
+            true
         }
     };
-    match index_r.reload() {
-        Ok(_) => Ok(true),
-        Err(e) => {
-            ERROR!("{}", e);
-            return Err(e);
-        }
-    }
+    Ok(reload_status)
 }
 
 /// Commits the changes to the index, writing it to the file system.
@@ -406,8 +425,8 @@ pub fn tantivy_writer_free(index_path: &CxxString) -> Result<bool, String> {
     let index_w = match get_index_w(index_path_str.clone()) {
         Ok(content) => content,
         Err(e) => {
-            ERROR!("{}", e);
-            return Err(e);
+            WARNING!("Index writer already been removed: {}", e);
+            return Ok(false);
         }
     };
     if let Err(e) = index_w.wait_merging_threads() {

@@ -1,8 +1,8 @@
 use std::sync::{Arc, Mutex};
 
-use crate::{commons::LOG_CALLBACK, INFO};
 use crate::logger::ffi_logger::callback_with_thread_info;
 use crate::WARNING;
+use crate::{commons::LOG_CALLBACK, INFO};
 use flurry::HashMap;
 use once_cell::sync::Lazy;
 use tantivy::{Document, Index, IndexWriter, Opstamp, Term};
@@ -103,41 +103,44 @@ static INDEXW_CACHE: Lazy<Arc<HashMap<String, Arc<IndexW>>>> =
 
 pub fn get_index_w(key: String) -> Result<Arc<IndexW>, String> {
     let pinned = INDEXW_CACHE.pin();
-    match pinned.get(&key) {
+    let trimmed_key: String = key.trim_end_matches('/').to_string();
+    match pinned.get(&trimmed_key) {
         Some(result) => Ok(result.clone()),
         None => Err(format!(
             "Index Writer doesn't exist with given key: [{}]",
-            key
+            trimmed_key
         )),
     }
 }
 
 pub fn set_index_w(key: String, value: Arc<IndexW>) -> Result<(), String> {
     let pinned = INDEXW_CACHE.pin();
-    if pinned.contains_key(&key) {
-        pinned.insert(key.clone(), value.clone());
+    let trimmed_key: String = key.trim_end_matches('/').to_string();
+    if pinned.contains_key(&trimmed_key) {
+        pinned.insert(trimmed_key.clone(), value.clone());
         WARNING!(
             "{}",
             format!(
                 "Index writer already exists with given key: [{}], it has been overwritten.",
-                key
+                trimmed_key
             )
         )
     } else {
-        pinned.insert(key, value.clone());
+        pinned.insert(trimmed_key, value.clone());
     }
     Ok(())
 }
 pub fn remove_index_w(key: String) -> Result<(), String> {
     let pinned = INDEXW_CACHE.pin();
-    if pinned.contains_key(&key) {
-        pinned.remove(&key);
+    let trimmed_key: String = key.trim_end_matches('/').to_string();
+    if pinned.contains_key(&trimmed_key) {
+        pinned.remove(&trimmed_key);
     } else {
         WARNING!(
             "{}",
             format!(
                 "IndexW doesn't exist, can't remove it with given key: [{}]",
-                key
+                trimmed_key
             )
         )
     }

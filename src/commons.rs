@@ -17,5 +17,5 @@ pub static CUSTOM_INDEX_SETTING_FILE_NAME: &str = "custom_index_setting.json";
 //******************************** common variables end ***********************************//
 
 // Store callback function from caller.
-pub type LogCallback = extern "C" fn(i32, *const c_char, *const c_char, *const c_char);
+pub type LogCallback = extern "C" fn(i32, *const c_char, *const c_char);
 pub static LOG_CALLBACK: OnceCell<LogCallback> = OnceCell::new();

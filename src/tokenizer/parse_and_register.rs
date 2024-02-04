@@ -80,21 +80,27 @@ pub fn register_tokenizer_to_index(
 pub fn get_custom_tokenizer(
     tokenizer_with_parameter: &str,
 ) -> Result<(TokenizerType, TextAnalyzer), String> {
-    let re = match Regex::new(r"([a-zA-Z_]+)(?:\((.*?)\))?") {
+    let tokenizer_with_parameter_lower: String =
+        tokenizer_with_parameter.to_string().to_lowercase();
+    // let re = match Regex::new(r"([a-zA-Z_]+)(?:\((.*?)\))?") {
+    // let re = match Regex::new(r"([^\s(]+)(?:\((.*?)\))?") {
+    // let re = match Regex::new(r"([^(]+)(?:\((.*?)\))?") {
+    // let re = match Regex::new(r"^([^(]*)(?:\((.*?)\))?") {
+    let re = match Regex::new(r"^([^(]*)(?:\((.*)\))?") {
         Ok(regex) => regex,
         Err(e) => return Err(format!("Regex pattern initialize error: {}", e)),
     };
-    let caps = match re.captures(tokenizer_with_parameter) {
+    let caps = match re.captures(&tokenizer_with_parameter_lower) {
         Some(caps) => caps,
         None => {
             return Err(format!(
                 "Invalid tokenizer format: {}",
-                tokenizer_with_parameter
+                tokenizer_with_parameter_lower
             ))
         }
     };
 
-    let tokenizer_name = caps.get(1).map_or("default", |m| m.as_str());
+    let tokenizer_name: &str = caps.get(1).map_or("default", |m| m.as_str());
     let params: Vec<&str> = caps.get(2).map_or(Vec::new(), |m| {
         m.as_str()
             .split(',')
@@ -102,21 +108,49 @@ pub fn get_custom_tokenizer(
             .collect()
     });
 
-    let tokenizer_name_lowercase = tokenizer_name.to_lowercase();
-
-    match tokenizer_name_lowercase.as_str() {
-        "default" => Ok((
-            TokenizerType::Default("default".to_string()),
-            TextAnalyzer::builder(SimpleTokenizer::default())
-                .filter(RemoveLongFilter::limit(40))
-                .filter(LowerCaser)
-                .build(),
-        )),
-        "raw" => Ok((
-            TokenizerType::Raw("raw".to_string()),
-            TextAnalyzer::builder(RawTokenizer::default()).build(),
-        )),
+    match tokenizer_name {
+        "default" => {
+            // Parameter general check
+            if !params.is_empty() {
+                return Err(format!(
+                    "`default` tokenizer doesn't support any parameter, but given: {:?}.",
+                    params
+                ));
+            }
+            let tokenizer: (TokenizerType, TextAnalyzer) = (
+                TokenizerType::Default("default".to_string()),
+                TextAnalyzer::builder(SimpleTokenizer::default())
+                    .filter(RemoveLongFilter::limit(40))
+                    .filter(LowerCaser)
+                    .build(),
+            );
+            Ok(tokenizer)
+        }
+        "raw" => {
+            // Parameter general check
+            if !params.is_empty() {
+                return Err(format!(
+                    "`raw` tokenizer doesn't support any parameter, but given: {:?}",
+                    params
+                ));
+            }
+            let tokenizer: (TokenizerType, TextAnalyzer) = (
+                TokenizerType::Raw("raw".to_string()),
+                TextAnalyzer::builder(RawTokenizer::default()).build(),
+            );
+            Ok(tokenizer)
+        }
         "simple" => {
+            // Parameter general check
+            if !params.is_empty() && params.len() > 1 {
+                return Err(format!("`simple` tokenizer supports one bool parameter: `use_stop_words`, but given: {:?}", params));
+            }
+            // Check 1st parameter
+            if let Some(&param) = params.get(0) {
+                if param != "true" && param != "false" {
+                    return Err(format!("`simple` tokenizer parameter `use_stop_words` must be 'true' or 'false', but given: {}", param));
+                }
+            }
             let use_stop_words = params.get(0).map_or(false, |&s| s == "true");
 
             let builder = TextAnalyzer::builder(SimpleTokenizer::default())
@@ -135,6 +169,16 @@ pub fn get_custom_tokenizer(
             }
         }
         "en_stem" => {
+            // Parameter general check
+            if !params.is_empty() && params.len() > 1 {
+                return Err(format!("`en_stem` tokenizer supports one bool parameter: `use_stop_words`, but given: {:?}", params));
+            }
+            // Check 1st parameter
+            if let Some(&param) = params.get(0) {
+                if param != "true" && param != "false" {
+                    return Err(format!("`en_stem` tokenizer parameter `use_stop_words` must be 'true' or 'false', but given: {}", param));
+                }
+            }
             let use_stop_words = params.get(0).map_or(false, |&s| s == "true");
 
             let builder = TextAnalyzer::builder(SimpleTokenizer::default())
@@ -157,6 +201,16 @@ pub fn get_custom_tokenizer(
             }
         }
         "whitespace" => {
+            // Parameter general check
+            if !params.is_empty() && params.len() > 1 {
+                return Err(format!("`whitespace` tokenizer supports one bool parameter: `use_stop_words`, but given: {:?}", params));
+            }
+            // Check 1st parameter
+            if let Some(&param) = params.get(0) {
+                if param != "true" && param != "false" {
+                    return Err(format!("`whitespace` tokenizer parameter `use_stop_words` must be 'true' or 'false', but given: {}", param));
+                }
+            }
             let use_stop_words = params.get(0).map_or(false, |&s| s == "true");
 
             let builder = TextAnalyzer::builder(WhitespaceTokenizer::default())
@@ -179,6 +233,41 @@ pub fn get_custom_tokenizer(
         }
         // for ngram, your text options need postions information
         "ngram" => {
+            // Parameter general check
+            if !params.is_empty() && params.len() > 4 {
+                return Err(format!("`ngram` tokenizer supports parameter: [`use_stop_words`, `min_gram`, `max_gram`, `prefix_only`], but given: {:?}", params));
+            }
+            // Check 1st parameter
+            if let Some(&param) = params.get(0) {
+                if param != "true" && param != "false" {
+                    return Err(format!("`ngram` tokenizer parameter `use_stop_words` must be 'true' or 'false', but given: {}", param));
+                }
+            }
+            // Check 2nd parameter
+            if let Some(&param) = params.get(1) {
+                if param.parse::<usize>().is_err() {
+                    return Err(format!(
+                        "`ngram` tokenizer parameter `min_gram` must be an integer, but given: {}",
+                        param
+                    ));
+                }
+            }
+            // Check 3rd parameter
+            if let Some(&param) = params.get(2) {
+                if param.parse::<usize>().is_err() {
+                    return Err(format!(
+                        "`ngram` tokenizer parameter `max_gram` must be an integer, but given: {}",
+                        param
+                    ));
+                }
+            }
+            // Check 4th parameter
+            if let Some(&param) = params.get(3) {
+                if param != "true" && param != "false" {
+                    return Err(format!("`ngram` tokenizer parameter `prefix_only` must be 'true' or 'false', but given: {}", param));
+                }
+            }
+
             let use_stop_words = params.get(0).map_or(false, |&s| s == "true");
             let min_gram = params
                 .get(1)
@@ -189,6 +278,13 @@ pub fn get_custom_tokenizer(
                 .and_then(|&s| usize::from_str(s).ok())
                 .unwrap_or(3);
             let prefix_only = params.get(3).map_or(false, |&s| s == "true");
+
+            if min_gram > max_gram {
+                return Err(format!(
+                    "`ngram` tokenizer parameter `min_gram` ({}) must be less than `max_gram` ({})",
+                    min_gram, max_gram
+                ));
+            }
 
             let builder = TextAnalyzer::builder(
                 NgramTokenizer::new(min_gram, max_gram, prefix_only).unwrap(),
@@ -208,6 +304,28 @@ pub fn get_custom_tokenizer(
             }
         }
         "chinese" => {
+            // Parameter general check
+            if !params.is_empty() && params.len() > 3 {
+                return Err(format!("`chinese` tokenizer supports parameter: [`jieba_mode`, `cangjie_mode`, `cangjie_hmm`], but given: {:?}", params));
+            }
+            // Check 1st parameter
+            if let Some(&param) = params.get(0) {
+                if param != "default" && param != "empty" {
+                    return Err(format!("`chinese` tokenizer parameter `jieba_mode` must be 'default' or 'empty', but given: {}", param));
+                }
+            }
+            // Check 2nd parameter
+            if let Some(&param) = params.get(1) {
+                if param != "all" && param != "unicode" && param != "default" && param != "search" {
+                    return Err(format!("`chinese` tokenizer parameter `cangjie_mode` must be one of [`all`、`unicode`、`default`、`search`], but given: {}", param));
+                }
+            }
+            // Check 3rd parameter
+            if let Some(&param) = params.get(2) {
+                if param != "true" && param != "false" {
+                    return Err(format!("`chinese` tokenizer parameter `jieba_mode` must be 'default' or 'empty', but given: {}", param));
+                }
+            }
             let jieba_mode = params.get(0).map_or(Jieba::empty(), |&s| {
                 if s == "default" {
                     Jieba::default()
@@ -236,7 +354,7 @@ pub fn get_custom_tokenizer(
                 .build(),
             ))
         }
-        _ => Err("Unknown tokenizer type.".to_string()),
+        _ => Err(format!("Unknown tokenizer type: {}.", tokenizer_name)),
     }
 }
 

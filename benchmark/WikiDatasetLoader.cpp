@@ -31,7 +31,7 @@ size_t index_docs_from_json(const std::string &raw_docs_file_path, const std::st
     }
     // load docs
     std::vector<Doc> docs = WikiDatasetLoader::getInstance().loadDocs(raw_docs_file_path);
-    tantivy_create_index(index_files_directory);
+    tantivy_create_index(index_files_directory, false);
 
     // index all docs
     size_t row_id = 0;

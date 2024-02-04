@@ -3,37 +3,14 @@ use std::thread::sleep;
 use std::time::Duration;
 
 use roaring::RoaringBitmap;
-use tantivy::collector::TopDocs;
 use tantivy::fastfield::Column;
-use tantivy::query::{Query, QueryParser, TermQuery};
-use tantivy::schema::{Field, IndexRecordOption, Schema, FAST, INDEXED, STORED, TEXT};
-use tantivy::{DocAddress, Document, Index, IndexReader, Searcher, SegmentReader, Term};
+use tantivy::query::{Query, QueryParser};
+use tantivy::schema::{Field, Schema, FAST, INDEXED, STORED, TEXT};
+use tantivy::{DocAddress, Document, Index, Searcher, SegmentReader, Term};
 use tantivy_search::ffi::RowIdWithScore;
 use tantivy_search::search::top_dos_with_bitmap_collector::TopDocsWithFilter;
 
-#[allow(dead_code)]
-fn get_doc_with_given_term(
-    reader: &IndexReader,
-    given_term: &Term,
-) -> tantivy::Result<Option<Document>> {
-    let searcher = reader.searcher();
 
-    // This is the simplest query you can think of.
-    // It matches all of the documents containing a specific term.
-    //
-    // The second argument is here to tell we don't care about decoding positions,
-    // or term frequencies.
-    let term_query = TermQuery::new(given_term.clone(), IndexRecordOption::Basic);
-    let top_docs = searcher.search(&term_query, &TopDocs::with_limit(1))?;
-
-    if let Some((_score, doc_address)) = top_docs.first() {
-        let doc = searcher.doc(*doc_address)?;
-        Ok(Some(doc))
-    } else {
-        // no doc matching this ID.
-        Ok(None)
-    }
-}
 
 // &Box generates a second-level pointer dereference
 fn print_search_results(searcher: &Searcher, text_field: &Field, query: &Box<dyn Query>) {
@@ -83,13 +60,14 @@ fn print_search_results(searcher: &Searcher, text_field: &Field, query: &Box<dyn
 }
 
 fn main() {
+    let duration = 1;
     let mut schema_builder = Schema::builder();
     let row_id = schema_builder.add_u64_field("row_id", FAST | INDEXED | STORED);
     let title = schema_builder.add_text_field("title", TEXT | STORED);
     let text = schema_builder.add_text_field("text", TEXT | STORED);
     let schema = schema_builder.build();
-    // let index = Index::create_in_ram(schema.clone());
-    let index = Index::create_in_dir("./temp_index", schema.clone()).unwrap();
+    // You can create an index in a specific directory and extend the duration to monitor changes in the index files.
+    let index = Index::create_in_ram(schema.clone());
 
     let mut index_writer = index
         .writer_with_num_threads(2, 1024 * 1024 * 1024)
@@ -130,7 +108,7 @@ fn main() {
 
     println!("=================== before delete row_id 10 ===================");
     print_search_results(&reader.searcher(), &text, &query);
-    sleep(Duration::from_secs(5));
+    sleep(Duration::from_secs(duration));
 
     println!("==================== after delete row_id 10 ===================");
     let term_rowid_10 = Term::from_field_u64(row_id, 10);
@@ -138,7 +116,7 @@ fn main() {
     index_writer.commit().unwrap();
     let _ = reader.reload();
     print_search_results(&reader.searcher(), &text, &query);
-    sleep(Duration::from_secs(5));
+    sleep(Duration::from_secs(duration));
 
     println!("==================== after delete term `also` ===================");
     let term_doc_also = Term::from_field_text(text, "also");
@@ -153,7 +131,7 @@ fn main() {
     index_writer.commit().unwrap();
     let _ = reader.reload();
     print_search_results(&reader.searcher(), &text, &query);
-    sleep(Duration::from_secs(5));
+    sleep(Duration::from_secs(duration));
 
     println!("==================== after delete row_id 12 ===================");
     let term_rowid_12 = Term::from_field_u64(row_id, 12);
@@ -161,7 +139,7 @@ fn main() {
     index_writer.commit().unwrap();
     let _ = reader.reload();
     print_search_results(&reader.searcher(), &text, &query);
-    sleep(Duration::from_secs(5));
+    sleep(Duration::from_secs(duration));
 
     println!("==================== after reinsert ===================");
     for i in 0..str_vec.len() {
@@ -174,5 +152,5 @@ fn main() {
     index_writer.commit().unwrap();
     let _ = reader.reload();
     print_search_results(&reader.searcher(), &text, &query);
-    sleep(Duration::from_secs(5));
+    sleep(Duration::from_secs(duration));
 }

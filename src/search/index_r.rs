@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
-use crate::DEBUG;
-use crate::{commons::LOG_CALLBACK, INFO, WARNING};
 use crate::logger::ffi_logger::callback_with_thread_info;
+use crate::{commons::LOG_CALLBACK, INFO, WARNING};
 use flurry::HashMap;
 use once_cell::sync::{Lazy, OnceCell};
 use tantivy::{Executor, Index, IndexReader};
@@ -34,44 +33,43 @@ static INDEXR_CACHE: Lazy<Arc<HashMap<String, Arc<IndexR>>>> =
 
 pub fn get_index_r(key: String) -> Result<Arc<IndexR>, String> {
     let pinned = INDEXR_CACHE.pin();
-    match pinned.get(&key) {
+    let trimmed_key: String = key.trim_end_matches('/').to_string();
+    match pinned.get(&trimmed_key) {
         Some(result) => Ok(result.clone()),
         None => Err(format!(
             "Index Reader doesn't exist with given key: [{}]",
-            key
+            trimmed_key
         )),
     }
 }
 
 pub fn set_index_r(key: String, value: Arc<IndexR>) -> Result<(), String> {
     let pinned = INDEXR_CACHE.pin();
-    if pinned.contains_key(&key) {
-        pinned.insert(key.clone(), value.clone());
+    let trimmed_key: String = key.trim_end_matches('/').to_string();
+    if pinned.contains_key(&trimmed_key) {
+        pinned.insert(trimmed_key.clone(), value.clone());
         WARNING!(
             "{}",
             format!(
                 "Index reader already exists with given key: [{}], it has been overwritten.",
-                key
+                trimmed_key
             )
         )
     } else {
-        pinned.insert(key, value.clone());
+        pinned.insert(trimmed_key, value.clone());
     }
     Ok(())
 }
 
 pub fn remove_index_r(key: String) -> Result<(), String> {
     let pinned = INDEXR_CACHE.pin();
-    if pinned.contains_key(&key) {
-        pinned.remove(&key);
+    let trimmed_key: String = key.trim_end_matches('/').to_string();
+    if pinned.contains_key(&trimmed_key) {
+        pinned.remove(&trimmed_key);
     } else {
-        DEBUG!(
-            "{}",
-            format!(
-                "IndexR with given key [{}] already removed",
-                key
-            )
-        )
+        let error_info: String = format!("IndexR with given key [{}] already removed", trimmed_key);
+        WARNING!("{}", error_info);
+        return Err(error_info);
     }
     Ok(())
 }

@@ -20,6 +20,7 @@ use super::utils::perform_search_with_range;
 use super::utils::row_ids_to_u8_bitmap;
 use super::utils::u8_bitmap_to_row_ids;
 use crate::common::index_utils::*;
+use crate::commons::CACHE_FOR_SKIP_INDEX;
 
 use tantivy::{Index, ReloadPolicy};
 
@@ -108,7 +109,10 @@ pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
                 index
                     .set_shared_multithread_executor(shared_thread_pool)
                     .map_err(|e| e.to_string())?;
-                INFO!("Using shared multithread with index_path: [{}]", index_path_str.clone());
+                INFO!(
+                    "Using shared multithread with index_path: [{}]",
+                    index_path_str.clone()
+                );
             }
             Err(e) => {
                 WARNING!("Failed to use shared multithread executor, due to: {}", e);
@@ -148,7 +152,7 @@ pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
     let indexr = IndexR {
         index,
         reader,
-        path: index_path_str.clone(),
+        path: index_path_str.trim_end_matches('/').to_string(),
     };
 
     if let Err(e) = set_index_r(index_path_str.clone(), Arc::new(indexr)) {
@@ -179,8 +183,21 @@ pub fn tantivy_reader_free(index_path: &CxxString) -> Result<bool, String> {
         }
     };
 
-    // remove index reader from CACHE
-    remove_index_r(index_path_str)?;
+    // remove index reader from Reader Cache
+    if let Err(_) = remove_index_r(index_path_str.clone()) {
+        return Ok(false);
+    }
+
+    // remove bitmap cache
+    #[cfg(feature = "use-flurry-cache")]
+    {
+        let all_keys = CACHE_FOR_SKIP_INDEX.all_keys();
+        let keys_need_remove: Vec<_> = all_keys
+            .into_iter()
+            .filter(|(_, _, ref element, _)| element == &index_path_str)
+            .collect();
+        CACHE_FOR_SKIP_INDEX.remove_keys(keys_need_remove);
+    }
 
     // success remove.
     Ok(true)
@@ -225,6 +242,9 @@ pub fn tantivy_search_in_rowid_range(
             ));
         }
     };
+    if lrange > rrange {
+        return Err("lrange should smaller than rrange".to_string());
+    }
     // get index reader from CACHE
     let index_r = match get_index_r(index_path_str.clone()) {
         Ok(content) => content,
@@ -388,8 +408,8 @@ pub fn tantivy_bm25_search_with_filter(
     let query_parser = QueryParser::for_index(index_r.reader.searcher().index(), vec![text]);
     let text_query = match query_parser.parse_query(&query_str) {
         Ok(parsed_query) => parsed_query,
-        Err(_) => {
-            let error_info = format!("Can't parse query: {}", query_str);
+        Err(e) => {
+            let error_info = format!("Can't parse query: {}, due to: {}", query_str, e);
             ERROR!("{}", error_info);
             return Err(error_info);
         }
@@ -430,7 +450,6 @@ pub fn tantivy_bm25_search(
     tantivy_bm25_search_with_filter(index_path, query, cxx_vector, top_k, need_text)
 }
 
-
 /// Execute search with like pattern or not.
 ///
 /// Arguments:
@@ -443,7 +462,7 @@ pub fn tantivy_bm25_search(
 pub fn tantivy_search_bitmap_results(
     index_path: &CxxString,
     query: &CxxString,
-    use_regex: bool
+    use_regex: bool,
 ) -> Result<Vec<u8>, String> {
     // Parse parameter.
     let index_path_str = match index_path.to_str() {

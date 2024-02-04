@@ -65,7 +65,7 @@ size_t index_docs_from_json(const std::string &json_file_path, const std::string
     LOG(INFO) << "Cooling 10s, and then create/build index.";
     sleep(10);
 
-    tantivy_create_index(index_path);
+    tantivy_create_index(index_path, false);
 
     // index all docs
     size_t row_id = 0;
@@ -283,7 +283,7 @@ int main(int argc, char* argv[])
 
     size_t total_rows = 5600000;
     size_t row_id_step = 8192;
-    tantivy_logger_initialize("./log", "info", true, tantivy_easylogging_callback, true, false);
+    tantivy_search_log4rs_with_callback("./tantivy_search_log/", "info", false, false, tantivy_easylogging_callback);
 
     ThreadPool pool(pool_size);
     std::atomic<int> query_count(0);

@@ -733,7 +733,7 @@ struct RowIdWithScore final {
 //
 // Returns:
 // - A bool value represent operation success.
-bool tantivy_create_index_with_tokenizer(::std::string const &index_path, ::std::string const &tokenizer_with_parameter);
+bool tantivy_create_index_with_tokenizer(::std::string const &index_path, ::std::string const &tokenizer_with_parameter, bool doc_store);
 
 // Creates an index using the default tokenizer.
 //
@@ -742,7 +742,7 @@ bool tantivy_create_index_with_tokenizer(::std::string const &index_path, ::std:
 //
 // Returns:
 // - A bool value represent operation success.
-bool tantivy_create_index(::std::string const &index_path);
+bool tantivy_create_index(::std::string const &index_path, bool doc_store);
 
 // Indexes a document.
 //
