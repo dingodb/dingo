@@ -16,7 +16,7 @@ use crate::search::index_r::*;
 use crate::search::index_searcher::tantivy_reader_free;
 use crate::tokenizer::parse_and_register::get_custom_tokenizer;
 use crate::tokenizer::parse_and_register::register_tokenizer_to_index;
-use crate::{ERROR, INFO, WARNING, DEBUG};
+use crate::{DEBUG, ERROR, INFO, WARNING};
 
 use super::index_w::*;
 use crate::common::index_utils::*;

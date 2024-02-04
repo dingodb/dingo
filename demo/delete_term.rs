@@ -10,8 +10,6 @@ use tantivy::{DocAddress, Document, Index, Searcher, SegmentReader, Term};
 use tantivy_search::ffi::RowIdWithScore;
 use tantivy_search::search::top_dos_with_bitmap_collector::TopDocsWithFilter;
 
-
-
 // &Box generates a second-level pointer dereference
 fn print_search_results(searcher: &Searcher, text_field: &Field, query: &Box<dyn Query>) {
     // ffrs for row_id.

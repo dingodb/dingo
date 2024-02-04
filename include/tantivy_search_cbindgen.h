@@ -11,7 +11,7 @@ using TantivySearchLogCallback = void(*)(int32_t, const char*, const char*);
 
 extern "C" {
 
-bool tantivy_search_log4rs_init(const char *log_directory,
+bool tantivy_search_log4rs_initialize(const char *log_directory,
                                 const char *log_level,
                                 bool console_dispaly,
                                 bool only_record_tantivy_search);

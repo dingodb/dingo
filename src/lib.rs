@@ -207,15 +207,17 @@ extern "C" fn empty_log_callback(_level: i32, _msg: *const c_char, _file: *const
 }
 
 #[no_mangle]
-pub extern "C" fn tantivy_search_log4rs_init(
+pub extern "C" fn tantivy_search_log4rs_initialize(
     log_directory: *const c_char,
     log_level: *const c_char,
+    log_in_file: bool,
     console_dispaly: bool,
     only_record_tantivy_search: bool,
 ) -> bool {
-    tantivy_search_log4rs_with_callback(
+    tantivy_search_log4rs_with_parameters(
         log_directory,
         log_level,
+        log_in_file,
         console_dispaly,
         only_record_tantivy_search,
         empty_log_callback,
@@ -226,6 +228,7 @@ pub extern "C" fn tantivy_search_log4rs_init(
 /// Arguments:
 /// - `log_path`: The path where log files are saved. Tantivy-search will generate multiple log files.
 /// - `log_level`: The logging level to use. Supported levels: info, debug, trace, error, warning.
+/// - `log_in_file`: Whether record log content in file.
 ///   Note: 'fatal' is treated as 'error'.
 /// - `console_dispaly`: Enables logging to the console if set to true.
 /// - `callback`: A callback function, typically provided by ClickHouse.
@@ -235,9 +238,10 @@ pub extern "C" fn tantivy_search_log4rs_init(
 /// Returns:
 /// - `true` if the logger is successfully initialized, `false` otherwise.
 #[no_mangle]
-pub extern "C" fn tantivy_search_log4rs_with_callback(
+pub extern "C" fn tantivy_search_log4rs_with_parameters(
     log_directory: *const c_char,
     log_level: *const c_char,
+    log_in_file: bool,
     console_dispaly: bool,
     only_record_tantivy_search: bool,
     callback: LogCallback,
@@ -261,6 +265,7 @@ pub extern "C" fn tantivy_search_log4rs_with_callback(
     match initialize_log4rs(
         log_directory,
         log_level,
+        log_in_file,
         console_dispaly,
         only_record_tantivy_search,
         callback,

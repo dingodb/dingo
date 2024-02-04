@@ -16,7 +16,7 @@ protected:
     const string indexDirectory = "./temp";
     const string logPath = "./log";
     void SetUp(){
-        ASSERT_TRUE(tantivy_search_log4rs_init(logPath.c_str(), "trace", false, false));
+        ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "trace", false, false));
     }
     void TearDown(){
         ASSERT_NO_THROW(tantivy_reader_free(indexDirectory));

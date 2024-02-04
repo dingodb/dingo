@@ -40,6 +40,7 @@ impl Filter for TantivyFilter {
 fn build_log_config(
     log_directory: String,
     log_level: String,
+    log_in_file: bool,
     console_dispaly: bool,
     only_record_tantivy_search: bool,
 ) -> Result<Config, String> {
@@ -58,38 +59,41 @@ fn build_log_config(
         _ => LevelFilter::Info,
     };
 
-    /********************     Config for log-file rolling     ********************/
-    //TODO: refine this hard code.
-    let roller = FixedWindowRoller::builder()
-        .build(&log_rolling_pattern, 3)
-        .map_err(|e| e.to_string())?;
-
-    let size_trigger = SizeTrigger::new(20 * 1024 * 1024); // log file trigger size: 20MB
-    let policy = CompoundPolicy::new(Box::new(size_trigger), Box::new(roller));
-
-    let file = RollingFileAppender::builder()
-        .encoder(Box::new(PatternEncoder::new("{d} - {l} - {t} - {m}{n}")))
-        // .append(true)
-        .build(log_file_path, Box::new(policy))
-        .map_err(|e| e.to_string())?;
-
-    let file_appender = Appender::builder()
-        .filter(Box::new(ThresholdFilter::new(log_level))) // log level filter
-        .filter(Box::new(TantivyFilter {
-            // `target=tantivy_search` filter
-            only_record_tantivy_search,
-        }))
-        .build("file", Box::new(file));
-
-    let mut config_builder = Config::builder().appender(file_appender);
+    let mut config_builder = Config::builder();
     let mut root_builder = Root::builder().appender("file");
 
+    /********************     Config for log-file rolling     ********************/
+    // TODO: refine this hard code.
+    if log_in_file {
+        let roller = FixedWindowRoller::builder()
+            .build(&log_rolling_pattern, 3)
+            .map_err(|e| e.to_string())?;
+
+        let size_trigger = SizeTrigger::new(20 * 1024 * 1024); // log file trigger size: 20MB
+        let policy = CompoundPolicy::new(Box::new(size_trigger), Box::new(roller));
+
+        let file = RollingFileAppender::builder()
+            .encoder(Box::new(PatternEncoder::new("{d} - {l} - {t} - {m}{n}")))
+            // .append(true)
+            .build(log_file_path, Box::new(policy))
+            .map_err(|e| e.to_string())?;
+
+        let file_appender = Appender::builder()
+            .filter(Box::new(ThresholdFilter::new(log_level))) // log level filter
+            .filter(Box::new(TantivyFilter {
+                // `target=tantivy_search` filter
+                only_record_tantivy_search,
+            }))
+            .build("file", Box::new(file));
+        config_builder = config_builder.appender(file_appender)
+    }
+
     /********************     Config for log-console dispaly     ********************/
-    let stdout = ConsoleAppender::builder()
-        .encoder(Box::new(PatternEncoder::new("{d} - {l} - {t} - {m}{n}")))
-        .build();
-    // Enable console dispaly
     if console_dispaly {
+        let stdout = ConsoleAppender::builder()
+            .encoder(Box::new(PatternEncoder::new("{d} - {l} - {t} - {m}{n}")))
+            .build();
+
         let stdout_appender = Appender::builder()
             .filter(Box::new(ThresholdFilter::new(log_level))) // log level filter
             .filter(Box::new(TantivyFilter {
@@ -149,6 +153,7 @@ fn apply_log_config(config: Config) -> Result<(), String> {
 pub fn initialize_log4rs(
     log_directory: String,
     log_level: String,
+    log_in_file: bool,
     console_dispaly: bool,
     only_record_tantivy_search: bool,
     callback: LogCallback,
@@ -160,6 +165,7 @@ pub fn initialize_log4rs(
     let config: Config = build_log_config(
         log_directory,
         log_level,
+        log_in_file,
         console_dispaly,
         only_record_tantivy_search,
     )

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::logger::ffi_logger::callback_with_thread_info;
-use crate::{commons::LOG_CALLBACK, INFO, WARNING, DEBUG};
+use crate::{commons::LOG_CALLBACK, DEBUG, INFO, WARNING};
 use flurry::HashMap;
 use once_cell::sync::{Lazy, OnceCell};
 use tantivy::{Executor, Index, IndexReader};
