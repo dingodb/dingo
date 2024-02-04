@@ -120,9 +120,10 @@ pub fn tantivy_create_index_with_tokenizer(
     let schema = schema_builder.build();
 
     INFO!(
-        "create index, index_path:{}, tokenizer:{}",
+        "create index, index_path:{}, tokenizer:{}, doc_store:{}",
         index_path_str,
-        tokenizer_with_parameter_str
+        tokenizer_with_parameter_str,
+        doc_store
     );
     // Create the index in the specified directory.
     let mut index = match Index::create_in_dir(index_files_directory, schema) {
