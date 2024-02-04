@@ -47,15 +47,15 @@ def plot_memory_usage(log_file_paths, titles):
 if __name__ == "__main__":
     # Usage example
     log_files = [
-        '/home/mochix/tantivy_search_memory/cpp_pool1_no_cache/488635_memory.log',
-        '/home/mochix/tantivy_search_memory/rust_pool1_no_cache/489732_memory.log',
-        '/home/mochix/tantivy_search_memory/cpp_pool1_with_cache/491084_memory.log',
-        '/home/mochix/tantivy_search_memory/rust_pool1_with_cache/493543_memory.log',
+        'cpp_pool1_no_cache/488635_memory.log',
+        'rust_pool1_no_cache/489732_memory.log',
+        'cpp_pool1_with_cache/491084_memory.log',
+        'rust_pool1_with_cache/493543_memory.log',
 
-        '/home/mochix/tantivy_search_memory/cpp_pool4_no_cache_iter1/644811_memory.log',
-        '/home/mochix/tantivy_search_memory/rust_pool4_no_cache_iter1/655751_memory.log',
-        '/home/mochix/tantivy_search_memory/cpp_pool4_with_cache_iter1/674402_memory.log',
-        '/home/mochix/tantivy_search_memory/rust_pool4_with_cache_iter1/728967_memory.log',
+        'cpp_pool4_no_cache_iter1/644811_memory.log',
+        'rust_pool4_no_cache_iter1/655751_memory.log',
+        'cpp_pool4_with_cache_iter1/674402_memory.log',
+        'rust_pool4_with_cache_iter1/728967_memory.log',
     ]
 
     titles = [
