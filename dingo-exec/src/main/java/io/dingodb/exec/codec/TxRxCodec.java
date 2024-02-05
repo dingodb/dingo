@@ -17,6 +17,7 @@
 package io.dingodb.exec.codec;
 
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.tuple.TupleId;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
@@ -28,5 +29,7 @@ public interface TxRxCodec {
 
     void encodeFin(OutputStream os, Fin fin) throws IOException;
 
-    List<Object[]> decode(byte[] bytes) throws IOException;
+    void encodeTupleIds(OutputStream os, List<TupleId> tupleIds) throws IOException;
+
+    List<TupleId> decode(byte[] bytes) throws IOException;
 }

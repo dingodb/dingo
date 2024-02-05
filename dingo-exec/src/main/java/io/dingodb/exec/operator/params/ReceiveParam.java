@@ -26,6 +26,7 @@ import io.dingodb.exec.codec.TxRxCodecImpl;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.OperatorProfile;
+import io.dingodb.exec.tuple.TupleId;
 import io.dingodb.exec.utils.QueueUtils;
 import io.dingodb.exec.utils.TagUtils;
 import lombok.Getter;
@@ -54,7 +55,7 @@ public class ReceiveParam extends SourceParam {
 
     private transient String tag;
     private transient TxRxCodec codec;
-    private transient BlockingQueue<Object[]> tupleQueue;
+    private transient BlockingQueue<TupleId> tupleQueue;
     private transient ReceiveEndpoint endpoint;
     @Setter
     private transient Fin finObj = null;
@@ -76,9 +77,9 @@ public class ReceiveParam extends SourceParam {
         tag = TagUtils.tag(vertex.getTask().getJobId(), vertex.getId());
         endpoint = new ReceiveEndpoint(host, port, tag, (byte[] content) -> {
             try {
-                List<Object[]> tuples = codec.decode(content);
-                for (Object[] tuple : tuples) {
-                    if (!endpoint.isStopped() || tuple[0] instanceof Fin) {
+                List<TupleId> tuples = codec.decode(content);
+                for (TupleId tuple : tuples) {
+                    if (!endpoint.isStopped() || tuple.getTuple()[0] instanceof Fin) {
                         QueueUtils.forcePut(tupleQueue, tuple);
                     }
                 }
