@@ -19,6 +19,7 @@ package io.dingodb.calcite.operation;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.grammar.dql.SqlShowCall;
 import io.dingodb.common.mysql.scope.ScopeVariables;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlNode;
 
 import java.sql.Connection;
@@ -28,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class ShowCallsOperation implements QueryOperation {
 
     private final List<SqlShowCall> sqlShowCallList;
@@ -56,18 +58,34 @@ public class ShowCallsOperation implements QueryOperation {
             } else if (call.getCall().getOperator().getName().equals("@@")) {
                 SqlNode sqlNode = call.getCall().getOperandList().get(0);
                 String variableName = sqlNode.toString().replace("'", "").toLowerCase();
-                if (variableName.startsWith("session.")) {
+                String value = null;
+
+                if (variableName.startsWith("global.")) {
+                    variableName = variableName.substring(7);
+                    value = ScopeVariables.globalVariables.getOrDefault(variableName, "").toString();
+                } else if (variableName.startsWith("session.")) {
                     variableName = variableName.substring(8);
                     try {
-                        return connection.getClientInfo(variableName);
+                        value = connection.getClientInfo(variableName);
                     } catch (SQLException e) {
-                        return "";
+                        log.error(e.getMessage(), e);
                     }
-                } else if (variableName.startsWith("global.")) {
-                    variableName = variableName.substring(7);
-                    return ScopeVariables.globalVariables.getOrDefault(variableName, "");
                 } else {
-                    return ScopeVariables.globalVariables.getOrDefault(variableName, "");
+                    try {
+                        value = connection.getClientInfo(variableName);
+                    } catch (SQLException e) {
+                        log.error(e.getMessage(), e);
+                    }
+                }
+                if (value == null) {
+                    value = "";
+                }
+                if (value.equalsIgnoreCase("on")) {
+                    return 1;
+                } else if (value.equalsIgnoreCase("off")) {
+                    return 0;
+                } else {
+                    return value;
                 }
             } else if (call.getCall().getOperator().getName().equalsIgnoreCase("database")) {
                 if (context.getUsedSchema() != null) {

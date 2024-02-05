@@ -76,6 +76,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -526,14 +527,18 @@ public final class DingoDriverParser extends DingoParser {
                 }
                 if (dingoValues.getTuples().size() >= 1 &&
                     dingoValues.getAutoIncrementColIndex() < dingoValues.getTuples().get(0).length) {
-                    Object autoValue = dingoValues.getTuples().get(0)[dingoValues.getAutoIncrementColIndex()];
-                    if (autoValue != null) {
-                        String autoValStr = autoValue.toString();
-                        connection.setClientInfo("last_insert_id", autoValStr);
-                        connection.setClientInfo(jobIdPrefix, autoValStr);
-                        MetaService metaService = MetaService.root();
-                        metaService.updateAutoIncrement(dingoValues.getCommonId(), Long.parseLong(autoValStr));
-                    }
+                    List<Long> autoPriList = dingoValues.getTuples().stream()
+                        .map(tuple -> tuple[dingoValues.getAutoIncrementColIndex()])
+                        .filter(Objects::nonNull)
+                        .map(Object::toString)
+                        .map(Long::parseLong)
+                        .collect(Collectors.toList());
+                    Long maxAutoVal = Collections.max(autoPriList);
+                    String autoValStr = autoPriList.get(0).toString();
+                    connection.setClientInfo("last_insert_id", autoValStr);
+                    connection.setClientInfo(jobIdPrefix, autoValStr);
+                    MetaService metaService = MetaService.root();
+                    metaService.updateAutoIncrement(dingoValues.getCommonId(), maxAutoVal);
                 }
             }
         } catch (Exception e) {
