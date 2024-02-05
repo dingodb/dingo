@@ -17,6 +17,7 @@
 package io.dingodb.cluster;
 
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 
 import java.util.List;
@@ -28,4 +29,8 @@ public interface ClusterService {
     }
 
     List<Location> getComputingLocations();
+
+    CommonId getServerId(Location location);
+
+    Location getLocation(CommonId serverId);
 }

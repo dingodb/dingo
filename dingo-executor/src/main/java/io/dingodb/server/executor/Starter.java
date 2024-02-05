@@ -62,7 +62,11 @@ public class Starter {
             return;
         }
         DingoConfiguration.parse(config);
-        DingoConfiguration.instance().setServerId(new CommonId(EXECUTOR, 1, TsoService.getDefault().tso()));
+        CommonId serverId = ClusterService.DEFAULT_INSTANCE.getServerId(DingoConfiguration.location());
+        if (serverId == null) {
+            serverId = new CommonId(EXECUTOR, 1, TsoService.getDefault().tso());
+        }
+        DingoConfiguration.instance().setServerId(serverId);
         Configuration.instance();
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         env.setRole(DingoRole.EXECUTOR);

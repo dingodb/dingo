@@ -18,6 +18,7 @@ package io.dingodb.test;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.cluster.ClusterService;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 
@@ -33,5 +34,15 @@ public class ClusterTestService implements ClusterService {
             new FakeLocation(1, DingoConfiguration.port()),
             new FakeLocation(2, DingoConfiguration.port())
         );
+    }
+
+    @Override
+    public CommonId getServerId(Location location) {
+        return null;
+    }
+
+    @Override
+    public Location getLocation(CommonId serverId) {
+        return null;
     }
 }

@@ -68,5 +68,4 @@ include 'dingo-web'
 include 'dingo-transaction-api'
 include 'dingo-store-local'
 include 'dingo-tso-api'
-include 'dingo-meta-proxy'
 

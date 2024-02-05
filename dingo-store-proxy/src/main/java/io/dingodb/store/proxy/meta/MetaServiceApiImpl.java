@@ -16,6 +16,7 @@
 
 package io.dingodb.store.proxy.meta;
 
+import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
@@ -40,7 +41,6 @@ import io.dingodb.transaction.api.TableLockService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,8 +49,6 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 
 import static io.dingodb.common.CommonId.CommonType.CLUSTER;
-import static io.dingodb.common.CommonId.CommonType.SCHEMA_NOTIFY;
-import static io.dingodb.common.CommonId.CommonType.TABLE_NOTIFY;
 import static io.dingodb.sdk.service.Services.metaService;
 import static io.dingodb.transaction.api.LockType.RANGE;
 import static io.dingodb.transaction.api.LockType.TABLE;
@@ -60,27 +58,11 @@ public class MetaServiceApiImpl implements MetaServiceApi {
     private static final ApiRegistry apis = ApiRegistry.getDefault();
 
     private static final long participantJoin = 0;
-    private static final long createTableSeq = 0;
-    private static final long dropTableSeq = 1;
-    private static final long createSchemaSeq = 0;
-    private static final long dropSchemaSeq = 1;
 
     private static final CommonId participantJoinCommonId = new CommonId(CLUSTER, 0, participantJoin);
-    private static final CommonId createTableCommonId = new CommonId(TABLE_NOTIFY, 0, createTableSeq);
-    private static final CommonId dropTableCommonId = new CommonId(TABLE_NOTIFY, 0, dropTableSeq);
-    private static final CommonId createSchemaCommonId = new CommonId(SCHEMA_NOTIFY, 0, createSchemaSeq);
-    private static final CommonId dropSchemaCommonId = new CommonId(SCHEMA_NOTIFY, 0, dropSchemaSeq);
 
     private static final Consumer<Message> participantJoinListener = ListenService.getDefault()
         .register(participantJoinCommonId, null);
-    private static final Consumer<Message> createTableListener = ListenService.getDefault()
-        .register(createTableCommonId, null);
-    private static final Consumer<Message> dropTableListener = ListenService.getDefault()
-        .register(dropTableCommonId, null);
-    private static final Consumer<Message> createSchemaListener = ListenService.getDefault()
-        .register(createSchemaCommonId, null);
-    private static final Consumer<Message> dropSchemaListener = ListenService.getDefault()
-        .register(dropSchemaCommonId, null);
 
     private static final CommonId ID = DingoConfiguration.serverId();
 
@@ -155,7 +137,6 @@ public class MetaServiceApiImpl implements MetaServiceApi {
                     throw e;
                 }
                 log.info("Current {}, leader: {}.", ID, leaderId);
-                listen(leaderLocation);
                 needLock = false;
             } else {
                 log.info("Become leader, id {}.", ID);
@@ -187,44 +168,6 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         return isLeader() || leaderId != null;
     }
 
-    private void listen(Location location) {
-        ListenService listenService = ListenService.getDefault();
-        listenService.listen(
-            createTableCommonId,
-            null,
-            location,
-            msg -> MetaService.ROOT.cache.invalidSchema(new String(msg.content()).split("\\.")[0]),
-            () -> log.info("Close listen create table {}", location)
-        );
-        listenService.listen(
-            dropTableCommonId,
-            null,
-            location,
-            msg -> {
-                MetaService.ROOT.cache.invalidTable(new String(msg.content()));
-                MetaService.ROOT.cache.invalidSchema(new String(msg.content()).split("\\.")[0]);
-            },
-            () -> log.info("Close listen drop table {}", location)
-        );
-        listenService.listen(
-            createSchemaCommonId,
-            null,
-            location,
-            msg -> MetaService.ROOT.cache.invalidMetaServices(),
-            () -> log.info("Close listen create schema {}", location)
-        );
-        listenService.listen(
-            dropSchemaCommonId,
-            null,
-            location,
-            msg -> {
-                MetaService.ROOT.cache.invalidMetaServices();
-                MetaService.ROOT.cache.invalidSchema(new String(msg.content()));
-            },
-            () -> log.info("Close listen drop schema {}", location)
-        );
-    }
-
     @Override
     public void connect(Channel channel, CommonId serverId, Location location) {
         if (!isReady()) {
@@ -234,8 +177,7 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         participantLocations.put(serverId, location);
         log.info("Participant {} join.", serverId);
         channel.setCloseListener(ch -> {
-            participantChannels.remove(serverId);
-            participantLocations.remove(serverId);
+            participantChannels.remove(serverId, ch);
             log.info("Participant {} leave.", serverId);
         });
         participantJoinListener.accept(new Message(serverId.encode()));
@@ -243,7 +185,11 @@ public class MetaServiceApiImpl implements MetaServiceApi {
 
     @Override
     public Location getLocation(CommonId serverId) {
-        return participantLocations.get(serverId);
+        Location location = participantLocations.get(serverId);
+        if (location == null) {
+            location = ClusterService.getDefault().getLocation(serverId);
+        }
+        return location;
     }
 
     private MetaServiceApi proxy(Location location) {
@@ -265,7 +211,7 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         }
         for (TableLock tableLock : TableLockService.getDefault().getTableLocks()) {
             try (Channel ch = channel.cloneChannel()) {
-                proxy(ch).lockTable(null, tableLock.lockTs, tableLock);
+                proxy(ch).lockTable(null, tableLock.lockTs, tableLock, getLocation(tableLock.serverId));
             }
         }
     }
@@ -291,14 +237,14 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         } else if (lock.serverId.equals(ID)) {
             try (Channel channel = leaderChannel.cloneChannel()) {
                 MetaServiceApi metaServiceApi = proxy(channel);
-                metaServiceApi.lockTable(null, requestId, lock);
+                metaServiceApi.lockTable(null, requestId, lock, DingoConfiguration.location());
             }
         }
     }
 
     @Override
     @SneakyThrows
-    public void lockTable(Channel ch, long requestId, TableLock lock) {
+    public void lockTable(Channel ch, long requestId, TableLock lock, Location location) {
         if (lock.type != TABLE && lock.type != RANGE) {
             throw new RuntimeException("Supported only table and range.");
         }
@@ -321,13 +267,8 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         Channel lockChannel = participantChannels.get(lock.serverId);
         try {
             if (lockChannel == null) {
-                try (Channel leaderChannel = this.leaderChannel.cloneChannel()) {
-                    lockChannel = NetService.getDefault().newChannel(proxy(leaderChannel).getLocation(lock.serverId));
-                    proxy(lockChannel).connect(null, lock.serverId, DingoConfiguration.location());
-                    participantChannels.put(lock.serverId, lockChannel);
-                }
+                lockChannel = NetService.getDefault().newChannel(location);
             }
-            lockChannel = lockChannel.cloneChannel();
             proxy(lockChannel).getLockChannel(null, lock);
             lockChannel.setCloseListener(channel -> unlockFuture.complete(null));
             lockFuture.get(3, TimeUnit.SECONDS);
@@ -349,7 +290,7 @@ public class MetaServiceApiImpl implements MetaServiceApi {
                 continue;
             }
             try (Channel channel = entry.getValue().cloneChannel()) {
-                proxy(channel).lockTable(null, requestId, lock);
+                proxy(channel).lockTable(null, requestId, lock, getLocation(lock.serverId));
             }
         }
     }
@@ -362,9 +303,6 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         }
         if (isLeader()) {
             proxyService.createTables(requestId, request);
-            createTableListener.accept(new Message((schema + "." + table).getBytes(StandardCharsets.UTF_8)));
-            MetaService.ROOT.cache.invalidSchema(schema);
-            log.info("Create table {}.{}", schema, table);
         } else {
             try (Channel channel = leaderChannel.cloneChannel()) {
                 proxy(channel).createTables(requestId, schema, table, request);
@@ -380,9 +318,6 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         }
         if (isLeader()) {
             proxyService.dropTables(requestId, request);
-            dropTableListener.accept(new Message((schema + "." + table).getBytes(StandardCharsets.UTF_8)));
-            MetaService.ROOT.cache.invalidTable(schema, table);
-            MetaService.ROOT.cache.invalidSchema(schema);
         } else {
             try (Channel channel = leaderChannel.cloneChannel()) {
                 proxy(channel).dropTables(requestId, schema, table, request);
@@ -398,8 +333,6 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         }
         if (isLeader()) {
             proxyService.createSchema(requestId, request);
-            createSchemaListener.accept(new Message(schema.getBytes(StandardCharsets.UTF_8)));
-            MetaService.ROOT.cache.invalidMetaServices();
         } else {
             try (Channel channel = leaderChannel.cloneChannel()) {
                 proxy(channel).createSchema(requestId, schema, request);
@@ -415,9 +348,6 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         }
         if (isLeader()) {
             proxyService.dropSchema(requestId, request);
-            dropSchemaListener.accept(new Message(schema.getBytes(StandardCharsets.UTF_8)));
-            MetaService.ROOT.cache.invalidMetaServices();
-            MetaService.ROOT.cache.invalidSchema(schema);
         } else {
             try (Channel channel = leaderChannel.cloneChannel()) {
                 proxy(channel).dropSchema(requestId, schema, request);

@@ -46,6 +46,7 @@ import static io.dingodb.common.CommonId.CommonType.TRANSACTION;
 import static io.dingodb.common.CommonId.CommonType.TXN_CACHE_BLOCK_LOCK;
 import static io.dingodb.common.CommonId.CommonType.TXN_CACHE_LOCK;
 import static io.dingodb.exec.Services.LOCAL_STORE;
+import static io.dingodb.transaction.api.LockType.ROW;
 import static io.dingodb.transaction.api.LockType.TABLE;
 
 public class ShowLocksOperation implements QueryOperation {
@@ -195,6 +196,7 @@ public class ShowLocksOperation implements QueryOperation {
         tableLocks.addAll(locations.stream()
             .map($ -> ApiRegistry.getDefault().proxy(Api.class, $))
             .flatMap($ -> $.tableLocks().stream())
+            .filter($ -> $.getType() == ROW)
             .collect(Collectors.toCollection(ArrayList::new)));
         tableLocks.stream().distinct().forEach(tableLock -> {
             // todo require filter?
@@ -205,11 +207,11 @@ public class ShowLocksOperation implements QueryOperation {
             String[] lock = new String[COLUMNS.size()];
             CommonId txnId = new CommonId(TRANSACTION, tableLock.lockTs, tableLock.currentTs);
             CommonId tableId = tableLock.tableId;
-            lock[SERVER_INDEX] = DingoConfiguration.serverId().toString();
+            lock[SERVER_INDEX] = tableLock.getServerId().toString();
             lock[TXN_INDEX] = txnId.toString();
             lock[TABLE_INDEX] = MetaService.root().getTable(tableId).name;
             lock[SCHEMA_INDEX] = getSchema(tableId);
-            lock[STATUS_INDEX] = lockFuture.isDone() && !lockFuture.isCancelled() ? LOCKED : BLOCK;
+            lock[STATUS_INDEX] = lockFuture == null ? "-" : lockFuture.isDone() && !lockFuture.isCancelled() ? LOCKED : BLOCK;
             lock[KEY_INDEX] = "-";
             lock[TYPE_INDEX] = tableLock.getType() == TABLE ? TABLE_TYPE : ROW_TYPE;
             lock[DURATION_INDEX] = String.valueOf(tsoService.timestamp(tso) - tsoService.timestamp(txnId.seq));
