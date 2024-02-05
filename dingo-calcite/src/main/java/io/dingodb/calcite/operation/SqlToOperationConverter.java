@@ -172,10 +172,8 @@ public final class SqlToOperationConverter {
             SqlLockBlock sqlLockBlock = (SqlLockBlock) sqlNode;
             return Optional.of(new LockBlockOperation(connection, sqlLockBlock.getSqlBlockList()));
         } else if (sqlNode instanceof SqlUnLockTable) {
-            SqlUnLockTable sqlUnLockTable = (SqlUnLockTable) sqlNode;
             return Optional.of(new UnlockTableOperation(connection));
         } else if (sqlNode instanceof SqlUnLockBlock) {
-            SqlUnLockBlock sqlUnLockBlock = (SqlUnLockBlock) sqlNode;
             return Optional.of(new UnlockBlockOperation(connection));
         } else if (sqlNode instanceof SqlKillQuery) {
             SqlKillQuery killQuery = (SqlKillQuery) sqlNode;
@@ -229,10 +227,14 @@ public final class SqlToOperationConverter {
                 opName = identifier.getSimple();
                 call = (SqlBasicCall) call.getOperandList().get(0);
             } else {
-                opName = call.toString();
-            }
-            if (opName.contains("`")) {
-                opName = opName.replace("`", "").replace("'", "");
+                StringBuilder colNmStr = new StringBuilder(opName);
+                if (call.getOperandList() != null && call.getOperandList().size() > 0) {
+                    colNmStr.append(call.getOperandList().get(0).toString());
+                }
+                opName = colNmStr.toString();
+                if (opName.contains("'")) {
+                    opName = opName.replace("'", "");
+                }
             }
             return new SqlShowCall(opName, call);
         }).collect(Collectors.toList());
