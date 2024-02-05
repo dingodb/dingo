@@ -81,7 +81,7 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
     private CoprocessorV2 coprocessor = null;
     private final boolean isLookUp;
     private final DingoType tableDataSchema;
-    private List<Column> tableDataColList;
+    private final List<Column> tableDataColList;
 
     public TxnPartVectorParam(
         CommonId partId,
@@ -161,7 +161,7 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
         this.scanTs = startTs;
     }
 
-    private TupleMapping tableDataKeyMapping() {
+    public TupleMapping tableDataKeyMapping() {
         int[] mappings = new int[tableDataSchema.fieldCount()];
         int keyCount = 0;
         int colSize = tableDataSchema.fieldCount();

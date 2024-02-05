@@ -16,7 +16,6 @@
 
 package io.dingodb.exec.fun;
 
-import io.dingodb.exec.fun.mysql.GlobalVariableFun;
 import io.dingodb.exec.fun.mysql.VersionFun;
 import io.dingodb.exec.fun.special.ThrowFun;
 import io.dingodb.exec.fun.vector.VectorCosineDistanceFun;
@@ -40,8 +39,6 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerTertiaryFun(SUBSTRING, Exprs.MID3);
         registerBinaryFun(PowFunFactory.NAME, PowFunFactory.INSTANCE);
         registerNullaryFun(ThrowFun.NAME, ThrowFun.INSTANCE);
-
-        registerUnaryFun(GlobalVariableFun.NAME, GlobalVariableFun.INSTANCE);
 
         registerBinaryFun(AutoIncrementFun.NAME, AutoIncrementFun.INSTANCE);
         registerTertiaryFun(VectorImageFun.NAME, VectorImageFun.INSTANCE);

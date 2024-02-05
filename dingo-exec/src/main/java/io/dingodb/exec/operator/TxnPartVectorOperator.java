@@ -49,7 +49,7 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
         TxnPartVectorParam param = vertex.getParam();
         KeyValueCodec tableCodec;
         tableCodec = CodecService.getDefault().createKeyValueCodec(
-            param.getTableDataSchema(), param.getTable().keyMapping()
+            param.getTableDataSchema(), param.tableDataKeyMapping()
         );
         StoreInstance instance = Services.KV_STORE.getInstance(param.getTableId(), param.getPartId());
         List<VectorSearchResponse> searchResponseList = instance.vectorSearch(

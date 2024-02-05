@@ -687,6 +687,7 @@ SqlNode OrderByLimitOpt(SqlNode e) :
     final SqlNodeList orderBy;
     final Span s = Span.of();
     SqlNode[] offsetFetch = {null, null};
+    ExportOptions exportOptions = null;
 }
 {
     (
@@ -713,7 +714,12 @@ SqlNode OrderByLimitOpt(SqlNode e) :
     |
         FetchClause(offsetFetch)
     ]
+    [ exportOptions = exportOptions() ]
     {
+        if (e instanceof SqlSelect && exportOptions != null) {
+           SqlSelect sqlSelect = (SqlSelect)e;
+           sqlSelect.setExportOptions(exportOptions);
+        }
         if (orderBy != null || offsetFetch[0] != null || offsetFetch[1] != null) {
             return new SqlOrderBy(getPos(), e,
                 Util.first(orderBy, SqlNodeList.EMPTY),
@@ -1316,14 +1322,7 @@ SqlNode SqlSelect() :
     final SqlNodeList windowDecls;
     final List<SqlNode> hints = new ArrayList<SqlNode>();
     final Span s;
-    boolean export = false;
-    String outfile = null;
-    byte[] terminated = new byte[]{0x09};
-    String enclosed = null;
-    byte[] lineTerminated = new byte[]{0x0a};
-    byte[] escaped = "\\".getBytes();
-    byte[] lineStarting = null;
-    String exportCharset = "utf8";
+    ExportOptions exportOptions = null;
 }
 {
     <SELECT> { s = span(); }
@@ -1347,74 +1346,14 @@ SqlNode SqlSelect() :
     }
     AddSelectItem(selectList)
     ( <COMMA> AddSelectItem(selectList) )*
-    [ <INTO> <OUTFILE> <QUOTED_STRING>
-        {
-          export = true;
-          outfile = token.image.replace("'", "");
-        }
-        [
-           <CHARACTER> <SET> <QUOTED_STRING> { exportCharset = token.image.replace(",", ""); }
-        ]
-        [
-           <FIELDS>
-			     [<TERMINATED> <BY> [<QUOTED_STRING> { terminated = getSpecialBytes(token.image); }]
-			                        [<BINARY_STRING_LITERAL> { terminated = getSpecialHexBytes(token.image);}]
-			     ]
-			     [<ENCLOSED> <BY> <QUOTED_STRING> { enclosed = token.image.replace("'", ""); } ]
-			     [<ESCAPED> <BY> [<QUOTED_STRING> { escaped = getSpecialBytes(token.image); }]
-			                     [<BINARY_STRING_LITERAL> { escaped = getSpecialHexBytes(token.image);}]
-			     ]
-         ]
-         [
-             <LINES>
-				     [ <STARTING> <BY> [<QUOTED_STRING> { lineStarting = getSpecialBytes(token.image); }]
-				                       [<BINARY_STRING_LITERAL> { lineStarting = getSpecialHexBytes(token.image); }]
-				     ]
-				     [ <TERMINATED> <BY> [<QUOTED_STRING> { lineTerminated = getSpecialBytes(token.image); } ]
-				                         [<BINARY_STRING_LITERAL> { lineTerminated = getSpecialHexBytes(token.image); }]
-				     ]
-				     [ <STARTING> <BY> [<QUOTED_STRING> { lineStarting = getSpecialBytes(token.image); }]
-				                       [<BINARY_STRING_LITERAL> { lineStarting = getSpecialHexBytes(token.image); }]
-				     ]
-         ]
-    ]
+    [ exportOptions = exportOptions() ]
     (
         <FROM> fromClause = FromClause()
         ( where = Where() | { where = null; } )
         ( groupBy = GroupBy() | { groupBy = null; } )
         ( having = Having() | { having = null; } )
         ( windowDecls = Window() | { windowDecls = null; } )
-        [ <INTO> <OUTFILE> <QUOTED_STRING>
-        {
-          export = true;
-          outfile = token.image.replace("'", "");
-        }
-        [
-                   <CHARACTER> <SET> <QUOTED_STRING> { exportCharset = token.image.replace(",", ""); }
-         ]
-         [
-            <FIELDS>
-			     [<TERMINATED> <BY> [<QUOTED_STRING> { terminated = getSpecialBytes(token.image); }]
-			                        [<BINARY_STRING_LITERAL> { terminated = getSpecialHexBytes(token.image);}]
-			     ]
-			     [<ENCLOSED> <BY> <QUOTED_STRING> { enclosed = token.image.replace("'", ""); } ]
-			     [<ESCAPED> <BY> [<QUOTED_STRING> { escaped = getSpecialBytes(token.image); }]
-			                     [<BINARY_STRING_LITERAL> { escaped = getSpecialHexBytes(token.image);}]
-			     ]
-         ]
-         [
-            <LINES>
-				     [ <STARTING> <BY> [<QUOTED_STRING> { lineStarting = getSpecialBytes(token.image); }]
-				                       [<BINARY_STRING_LITERAL> { lineStarting = getSpecialHexBytes(token.image); }]
-				     ]
-				     [ <TERMINATED> <BY> [<QUOTED_STRING> { lineTerminated = getSpecialBytes(token.image); } ]
-				                         [<BINARY_STRING_LITERAL> { lineTerminated = getSpecialHexBytes(token.image); }]
-				     ]
-				     [ <STARTING> <BY> [<QUOTED_STRING> { lineStarting = getSpecialBytes(token.image); }]
-				                       [<BINARY_STRING_LITERAL> { lineStarting = getSpecialHexBytes(token.image); }]
-				     ]
-         ]
-        ]
+        [ exportOptions = exportOptions() ]
     |
         E() {
             fromClause = null;
@@ -1429,8 +1368,53 @@ SqlNode SqlSelect() :
             new SqlNodeList(selectList, Span.of(selectList).pos()),
             fromClause, where, groupBy, having, windowDecls, null, null, null,
             new SqlNodeList(hints, getPos()),
-            export, outfile, terminated, enclosed, lineTerminated, escaped, exportCharset, lineStarting);
+            exportOptions);
     }
+}
+
+ExportOptions exportOptions(): {
+    boolean export = false;
+    String outfile = null;
+    byte[] terminated = new byte[]{0x09};
+    String enclosed = null;
+    byte[] lineTerminated = new byte[]{0x0a};
+    byte[] escaped = "\\".getBytes();
+    byte[] lineStarting = null;
+    String exportCharset = "utf8";
+} {
+    <INTO> <OUTFILE> <QUOTED_STRING>
+    {
+      export = true;
+      outfile = token.image.replace("'", "");
+    }
+    [
+       <CHARACTER> <SET> <QUOTED_STRING> { exportCharset = token.image.replace(",", ""); }
+    ]
+    [
+       <FIELDS>
+             [<TERMINATED> <BY> [<QUOTED_STRING> { terminated = getSpecialBytes(token.image); }]
+                                [<BINARY_STRING_LITERAL> { terminated = getSpecialHexBytes(token.image);}]
+             ]
+             [<ENCLOSED> <BY> <QUOTED_STRING> { enclosed = token.image.replace("'", ""); } ]
+             [<ESCAPED> <BY> [<QUOTED_STRING> { escaped = getSpecialBytes(token.image); }]
+                             [<BINARY_STRING_LITERAL> { escaped = getSpecialHexBytes(token.image);}]
+             ]
+     ]
+     [
+         <LINES>
+                 [ <STARTING> <BY> [<QUOTED_STRING> { lineStarting = getSpecialBytes(token.image); }]
+                                   [<BINARY_STRING_LITERAL> { lineStarting = getSpecialHexBytes(token.image); }]
+                 ]
+                 [ <TERMINATED> <BY> [<QUOTED_STRING> { lineTerminated = getSpecialBytes(token.image); } ]
+                                     [<BINARY_STRING_LITERAL> { lineTerminated = getSpecialHexBytes(token.image); }]
+                 ]
+                 [ <STARTING> <BY> [<QUOTED_STRING> { lineStarting = getSpecialBytes(token.image); }]
+                                   [<BINARY_STRING_LITERAL> { lineStarting = getSpecialHexBytes(token.image); }]
+                 ]
+     ]
+     {
+       return new ExportOptions(export, outfile, terminated, enclosed, lineTerminated, escaped, lineStarting, exportCharset);
+     }
 }
 
 /*
