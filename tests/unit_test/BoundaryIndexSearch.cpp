@@ -16,7 +16,7 @@ protected:
     const string indexDirectory = "./temp";
     const string indexDirectoryNotExists = "./temp2";
     void SetUp(){
-        ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", false, true));
+        ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", true, false, true));
         ASSERT_TRUE(tantivy_create_index(indexDirectory, false));
     }
     void TearDown(){
@@ -50,7 +50,7 @@ protected:
     const string indexDirectoryNotExists = "./temp2";
     const string indexEmptyDirectory = "./temp3";
     void SetUp(){
-        ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", false, true));
+        ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", true, false, true));
         ASSERT_TRUE(tantivy_create_index(indexEmptyDirectory, false));
         ASSERT_TRUE(tantivy_load_index(indexEmptyDirectory));
         ASSERT_TRUE(tantivy_create_index(indexDirectory, false));
@@ -226,7 +226,7 @@ protected:
     const string logPath = "./log";
     const string indexDirectory = "./temp";
     void SetUp(){
-        ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", false, true));
+        ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", true, false, true));
         ASSERT_TRUE(tantivy_create_index(indexDirectory, true));
         for (uint64_t i = 0; i < 20000; i++)
         {

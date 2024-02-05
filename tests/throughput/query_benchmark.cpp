@@ -283,7 +283,7 @@ int main(int argc, char* argv[])
 
     size_t total_rows = 5600000;
     size_t row_id_step = 8192;
-    tantivy_search_log4rs_with_callback("./tantivy_search_log/", "info", false, false, tantivy_easylogging_callback);
+    tantivy_search_log4rs_with_parameters("./tantivy_search_log/", "info", true, false, false, tantivy_easylogging_callback);
 
     ThreadPool pool(pool_size);
     std::atomic<int> query_count(0);

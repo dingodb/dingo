@@ -15,7 +15,7 @@ protected:
     const string indexDirectory = "./temp";
     const string logPath = "./log";
     void SetUp() override {
-        ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", false, false));
+        ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", true, false, false));
     }
     void TearDown() override {
         ASSERT_FALSE(tantivy_reader_free(indexDirectory));
@@ -92,7 +92,7 @@ protected:
     const string logPath = "./log";
 
     void SetUp() {
-        ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", false, false));
+        ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", true, false, false));
         ASSERT_TRUE(tantivy_create_index(indexDirectory, false));
     }
 
@@ -138,7 +138,7 @@ protected:
     const size_t totalDocNums = 10000;
 
     void SetUp() override {
-        ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "trace", false, false));
+        ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "trace", true, false, false));
         ASSERT_TRUE(tantivy_create_index(indexDirectory, false));
         IndexDocuments(indexDirectory, totalDocNums);
         ASSERT_TRUE(tantivy_create_index(indexEmptyDirectory, false));
@@ -209,7 +209,7 @@ class BoundaryTantivyCreateAndFreeIndexTest : public ::testing::Test, public Bou
 protected:
     const string logPath = "./log";
     void SetUp() {
-        ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", false, true));
+        ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", true, false, true));
     }
     void TearDown() {
         //
@@ -252,7 +252,7 @@ protected:
     const string indexDirectory = "./temp";
     const string indexDirectoryNotExists = "./temp2";
     void SetUp() {
-        ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", false, true));
+        ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", true, false, true));
         ASSERT_TRUE(tantivy_create_index(indexDirectory, false));
     }
     void TearDown() {

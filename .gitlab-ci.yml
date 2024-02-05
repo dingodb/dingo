@@ -1,0 +1,30 @@
+stages:
+  - build
+  - unit_test
+  - profiling
+
+build_binary:
+  stage: build
+  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.1
+  # only:
+  #   - master
+  script:
+    - ls -lh
+    - mkdir -p build_release
+    - >
+      cmake --no-warn-unused-cli
+      -DCMAKE_BUILD_TYPE:STRING=Release
+      -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE
+      -DCMAKE_C_COMPILER:FILEPATH=$(command -v clang-15)
+      -DCMAKE_CXX_COMPILER:FILEPATH=$(command -v clang++-15)
+      -S. -B./build_release -G Ninja
+    - cmake --build ./build_release --config Release --target all
+
+    - tar -czvf build_release.tar.gz ./build_release
+    - ls -lh build_release.tar.gz
+  artifacts:
+    name: "build_release"
+    expire_in: 7 week
+    paths:
+      - build_release.tar.gz
+

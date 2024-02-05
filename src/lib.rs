@@ -231,9 +231,8 @@ pub extern "C" fn tantivy_search_log4rs_initialize(
 /// - `log_in_file`: Whether record log content in file.
 ///   Note: 'fatal' is treated as 'error'.
 /// - `console_dispaly`: Enables logging to the console if set to true.
-/// - `callback`: A callback function, typically provided by ClickHouse.
-/// - `enable_callback`: Enables the use of the callback function if set to true.
 /// - `only_tantivy_search`: Only record `target=tantivy_search` log content.
+/// - `callback`: A callback function, typically provided by ClickHouse.
 ///
 /// Returns:
 /// - `true` if the logger is successfully initialized, `false` otherwise.
