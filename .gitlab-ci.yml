@@ -36,7 +36,6 @@ RelWithDebInfo:
 
 UnitTest:
   stage: UnitTest
-  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.2
   needs:
     - job: RelWithDebInfo
       artifacts: true
@@ -45,6 +44,7 @@ UnitTest:
     paths:
       - packages.tar.gz
     when: always
-  scripts:
+  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.2
+  script:
     - tar -zxvf packages.tar.gz
     - ./packages/unit_tests
