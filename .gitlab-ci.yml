@@ -10,6 +10,7 @@ build_binary:
   #   - master
   script:
     - ls -lh
+    - git submodule update --init --recursive
     - mkdir -p build_release
     - >
       cmake --no-warn-unused-cli
