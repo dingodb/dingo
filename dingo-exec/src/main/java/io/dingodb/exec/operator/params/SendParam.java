@@ -27,6 +27,7 @@ import io.dingodb.exec.channel.SendEndpoint;
 import io.dingodb.exec.codec.TxRxCodec;
 import io.dingodb.exec.codec.TxRxCodecImpl;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.tuple.TupleId;
 import io.dingodb.exec.utils.TagUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -50,7 +51,7 @@ public class SendParam extends AbstractParams {
     @JsonProperty("schema")
     private final DingoType schema;
 
-    private transient List<Object[]> tupleList;
+    private transient List<TupleId> tupleList;
     private transient TxRxCodec codec;
     private transient SendEndpoint endpoint;
 

@@ -24,6 +24,7 @@ import io.dingodb.exec.exception.TaskFinException;
 import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.RootParam;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -38,19 +39,21 @@ public final class RootOperator extends SinkOperator {
     }
 
     @Override
-    public boolean push(Object[] tuple, Vertex vertex) {
-        RootParam param = vertex.getParam();
-        if (vertex.getTask().getStatus() != Status.RUNNING) {
-            return false;
-        }
-        if (log.isDebugEnabled()) {
-            // if table has hide primary key then field count > tuple
-            if (param.getSchema().fieldCount() == tuple.length) {
-                log.debug("Put tuple {} into root queue.", param.getSchema().format(tuple));
+    public boolean push(Context context, Object[] tuple, Vertex vertex) {
+        synchronized (vertex) {
+            RootParam param = vertex.getParam();
+            if (vertex.getTask().getStatus() != Status.RUNNING) {
+                return false;
             }
+            if (log.isDebugEnabled()) {
+                // if table has hide primary key then field count > tuple
+                if (param.getSchema().fieldCount() == tuple.length) {
+                    log.debug("Put tuple {} into root queue.", param.getSchema().format(tuple));
+                }
+            }
+            param.forcePut(tuple);
+            return true;
         }
-        param.forcePut(tuple);
-        return true;
     }
 
     @Override

@@ -14,24 +14,23 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.operator;
+package io.dingodb.exec.tuple;
 
-import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.fin.Fin;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import io.dingodb.common.CommonId;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
-/**
- * Sink operator has only one input and no output.
- */
-public abstract class SinkOperator extends AbstractOperator {
+@Getter
+@Setter
+@Builder
+@EqualsAndHashCode
+@AllArgsConstructor
+public class TupleId {
 
-    @Override
-    public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
-        synchronized (vertex) {
-            fin(fin, vertex);
-        }
-    }
-
-    protected abstract void fin(Fin fin, Vertex vertex);
+    private CommonId partId;
+    private Object[] tuple;
 
 }

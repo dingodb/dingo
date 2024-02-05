@@ -20,12 +20,15 @@ import io.dingodb.exec.channel.SendEndpoint;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.SendParam;
+import io.dingodb.exec.tuple.TupleId;
 import io.dingodb.net.BufferOutputStream;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 public final class SendOperator extends SinkOperator {
@@ -37,16 +40,23 @@ public final class SendOperator extends SinkOperator {
     }
 
     @Override
-    public boolean push(Object[] tuple, Vertex vertex) {
-        try {
-            SendParam param = vertex.getParam();
-            param.getTupleList().add(tuple);
-            if (param.getTupleList().size() >= SEND_BATCH_SIZE) {
-                return sendTupleList(param);
+    public boolean push(Context context, Object[] tuple, Vertex vertex) {
+        synchronized (vertex) {
+            try {
+                SendParam param = vertex.getParam();
+                TupleId.TupleIdBuilder builder = TupleId.builder();
+                if (context != null && context.getDistribution() != null) {
+                    builder.partId(context.getDistribution().getId()).tuple(tuple);
+                }
+                TupleId tupleId = builder.tuple(tuple).build();
+                param.getTupleList().add(tupleId);
+                if (param.getTupleList().size() >= SEND_BATCH_SIZE) {
+                    return sendTupleList(param);
+                }
+                return true;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
-            return true;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -72,10 +82,14 @@ public final class SendOperator extends SinkOperator {
     private boolean sendTupleList(SendParam param) throws IOException {
         SendEndpoint endpoint = param.getEndpoint();
         int maxBufferSize = param.getMaxBufferSize();
-        List<Object[]> tupleList = param.getTupleList();
+        List<TupleId> tupleList = param.getTupleList();
         if (!tupleList.isEmpty()) {
             BufferOutputStream bos = endpoint.getOutputStream(maxBufferSize);
-            param.getCodec().encodeTuples(bos, tupleList);
+            if (tupleList.get(0).getPartId() != null) {
+                param.getCodec().encodeTupleIds(bos, tupleList);
+            } else {
+                param.getCodec().encodeTuples(bos, tupleList.stream().map(TupleId::getTuple).collect(Collectors.toList()));
+            }
             if (bos.bytes() > maxBufferSize) {
                 param.setMaxBufferSize(bos.bytes());
             }

@@ -16,12 +16,15 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.fin.OperatorProfile;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.ReceiveParam;
+import io.dingodb.exec.tuple.TupleId;
 import io.dingodb.exec.utils.QueueUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -57,8 +60,13 @@ public final class ReceiveOperator extends SourceOperator {
         OperatorProfile profile = param.getProfile(vertex.getId());
         profile.setStartTimeStamp(System.currentTimeMillis());
         while (true) {
-            Object[] tuple = QueueUtils.forceTake(param.getTupleQueue());
+            TupleId tupleId = QueueUtils.forceTake(param.getTupleQueue());
+            Object[] tuple = tupleId.getTuple();
             if (!(tuple[0] instanceof Fin)) {
+                RangeDistribution distribution = null;
+                if (tupleId.getPartId() != null) {
+                    distribution = RangeDistribution.builder().id(tupleId.getPartId()).build();
+                }
                 ++count;
                 if (log.isDebugEnabled()) {
                     log.debug("(tag = {}) Take out tuple {} from receiving queue.",
@@ -66,7 +74,7 @@ public final class ReceiveOperator extends SourceOperator {
                         param.getSchema().format(tuple)
                     );
                 }
-                if (!vertex.getSoleEdge().transformToNext(tuple)) {
+                if (!vertex.getSoleEdge().transformToNext(Context.builder().distribution(distribution).build(), tuple)) {
                     param.getEndpoint().stop();
                     // Stay in loop to receive FIN.
                 }

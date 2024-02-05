@@ -17,6 +17,7 @@
 package io.dingodb.exec.codec;
 
 import io.dingodb.common.type.DingoType;
+import io.dingodb.exec.tuple.TupleId;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericDatumReader;
