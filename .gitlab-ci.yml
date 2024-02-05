@@ -5,7 +5,7 @@ stages:
 
 build_binary:
   stage: build
-  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.1
+  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.2
   # only:
   #   - master
   script:
