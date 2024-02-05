@@ -41,6 +41,7 @@ import io.dingodb.verify.privilege.PrivilegeVerify;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlSetOption;
 import org.apache.calcite.sql.ddl.SqlDropTable;
 
 import java.sql.SQLClientInfoException;
@@ -201,6 +202,11 @@ public class DingoDdlVerify {
             }
             schemaTables = new String[] {sqlLoadData.getSchemaName(), sqlLoadData.getTableName()};
             accessTypes.add(DingoSqlAccessEnum.INSERT);
+        } else if (sqlNode instanceof SqlSetOption) {
+            SqlSetOption setOption = (SqlSetOption) sqlNode;
+            if ("SYSTEM".equalsIgnoreCase(setOption.getScope())) {
+                accessTypes.add(DingoSqlAccessEnum.SUPER);
+            }
         }
 
         if (schemaTables != null) {

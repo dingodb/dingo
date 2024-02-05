@@ -20,7 +20,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import io.dingodb.exec.fun.AutoIncrementFun;
 import io.dingodb.exec.fun.PowFunFactory;
-import io.dingodb.exec.fun.mysql.GlobalVariableFun;
 import io.dingodb.exec.fun.mysql.VersionFun;
 import io.dingodb.exec.fun.special.ThrowFun;
 import io.dingodb.exec.fun.vector.VectorCosineDistanceFun;
@@ -260,13 +259,6 @@ public class DingoOperatorTable implements SqlOperatorTable {
             ReturnTypes.VARCHAR_2000_NULLABLE,
             null,
             OperandTypes.NILADIC,
-            SqlFunctionCategory.STRING
-        );
-        registerFunction(
-            GlobalVariableFun.NAME,
-            ReturnTypes.VARCHAR_2000,
-            InferTypes.VARCHAR_1024,
-            OperandTypes.STRING,
             SqlFunctionCategory.STRING
         );
         registerFunction(

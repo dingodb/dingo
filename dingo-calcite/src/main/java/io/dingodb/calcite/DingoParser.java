@@ -71,6 +71,7 @@ import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlSetOption;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -233,7 +234,7 @@ public class DingoParser {
             );
 
             if (needExport(sqlNode)) {
-                io.dingodb.calcite.grammar.dml.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dml.SqlSelect) sqlNode;
+                io.dingodb.calcite.grammar.dql.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode;
                 relNode = new LogicalExportData(
                     cluster,
                     planner.emptyTraitSet(),
@@ -254,8 +255,8 @@ public class DingoParser {
     }
 
     private static boolean needExport(@NonNull SqlNode sqlNode) {
-        if (sqlNode instanceof io.dingodb.calcite.grammar.dml.SqlSelect) {
-            io.dingodb.calcite.grammar.dml.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dml.SqlSelect) sqlNode;
+        if (sqlNode instanceof io.dingodb.calcite.grammar.dql.SqlSelect) {
+            io.dingodb.calcite.grammar.dql.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode;
             return sqlSelect.isExport();
         }
         return false;
@@ -307,22 +308,11 @@ public class DingoParser {
         if (sqlNode instanceof SqlShow || sqlNode instanceof SqlDesc || sqlNode instanceof SqlNextAutoIncrement) {
             return true;
         } else if (sqlNode instanceof SqlSelect) {
-            SqlNodeList sqlNodes = ((SqlSelect) sqlNode).getSelectList();
-            SqlNode selectItem1 = sqlNodes.get(0);
-            if (selectItem1 instanceof SqlBasicCall) {
-                SqlBasicCall sqlBasicCall = (SqlBasicCall) selectItem1;
-                String operatorName = sqlBasicCall.getOperator().getName();
-                if (operatorName.equalsIgnoreCase("AS")) {
-                    SqlNode sqlNode1 = sqlBasicCall.getOperandList().get(0);
-                    if (sqlNode1 instanceof SqlBasicCall) {
-                        operatorName = ((SqlBasicCall) sqlNode1).getOperator().getName();
-                        return operatorName.equalsIgnoreCase("database")
-                            || operatorName.equalsIgnoreCase("@");
-                    }
-                } else {
-                    return operatorName.equalsIgnoreCase("database")
-                        || operatorName.equalsIgnoreCase("@");
-                }
+            return compatibleSelect((SqlSelect) sqlNode);
+        } else if (sqlNode instanceof SqlOrderBy) {
+            SqlOrderBy sqlOrderBy = (SqlOrderBy) sqlNode;
+            if (sqlOrderBy.query instanceof io.dingodb.calcite.grammar.dql.SqlSelect) {
+                return compatibleSelect((SqlSelect) sqlOrderBy.query);
             }
             return false;
         } else if (sqlNode instanceof SqlSetOption && !(sqlNode instanceof SqlSetPassword)) {
@@ -345,6 +335,30 @@ public class DingoParser {
             return true;
         }
         return false;
+    }
+
+    private static boolean compatibleSelect(SqlSelect sqlNode) {
+        SqlNodeList sqlNodes = sqlNode.getSelectList();
+        return sqlNodes.stream().allMatch(e -> {
+            if (e instanceof SqlBasicCall) {
+                SqlBasicCall sqlBasicCall = (SqlBasicCall) e;
+                String operatorName = sqlBasicCall.getOperator().getName();
+                if (operatorName.equalsIgnoreCase("AS")) {
+                    SqlNode sqlNode1 = sqlBasicCall.getOperandList().get(0);
+                    if (sqlNode1 instanceof SqlBasicCall) {
+                        operatorName = ((SqlBasicCall) sqlNode1).getOperator().getName();
+                        return operatorName.equalsIgnoreCase("database")
+                            || operatorName.equals("@")
+                            || operatorName.equals("@@");
+                    }
+                } else {
+                    return operatorName.equalsIgnoreCase("database")
+                        || operatorName.equals("@")
+                        || operatorName.equals("@@");
+                }
+            }
+            return false;
+        });
     }
 
     public static Operation convertToOperation(SqlNode sqlNode, Connection connection, DingoParserContext context) {

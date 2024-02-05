@@ -96,9 +96,9 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                         Column column = td.columns.get(i);
                         colRes.add(new Object[]{
                             "def",
-                            schema.getKey(),
-                            td.getName(),
-                            column.name,
+                            schema.getKey().toLowerCase(),
+                            td.getName().toLowerCase(),
+                            column.name.toLowerCase(),
                             // ordinal position
                             i + 1L,
                             // default value
@@ -148,8 +148,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
     private static Object[] getPartitionDetail(String schemaName, Table td, Partition partition) {
         return new Object[] {
             "def",
-            schemaName,
-            td.getName(),
+            schemaName.toLowerCase(),
+            td.getName().toLowerCase(),
             // part name
             null,
             // sub part name
@@ -211,7 +211,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         List<Object[]> schemaList = metaServiceMap
             .keySet()
             .stream()
-            .map(service -> new Object[]{"def", service, "utf8", "utf8_bin", null})
+            .map(service -> new Object[]{"def", service.toLowerCase(), "utf8", "utf8_bin", null})
             .collect(Collectors.toList());
         return schemaList.iterator();
     }
@@ -233,8 +233,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             createOptions = td.getProperties().toString();
                         }
                         return new Object[]{"def",
-                            e.getKey(),
-                            td.getName(),
+                            e.getKey().toLowerCase(),
+                            td.getName().toLowerCase(),
                             td.tableType,
                             td.getEngine(),
                             td.getVersion(),

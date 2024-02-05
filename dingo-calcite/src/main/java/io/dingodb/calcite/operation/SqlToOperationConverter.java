@@ -31,6 +31,7 @@ import io.dingodb.calcite.grammar.ddl.SqlUnLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockTable;
 import io.dingodb.calcite.grammar.dql.SqlDesc;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
+import io.dingodb.calcite.grammar.dql.SqlShowCall;
 import io.dingodb.calcite.grammar.dql.SqlShowCharset;
 import io.dingodb.calcite.grammar.dql.SqlShowCollation;
 import io.dingodb.calcite.grammar.dql.SqlShowColumns;
@@ -49,15 +50,19 @@ import io.dingodb.calcite.grammar.dql.SqlShowVariables;
 import io.dingodb.calcite.grammar.dql.SqlShowWarnings;
 import io.dingodb.exec.transaction.base.TransactionType;
 import org.apache.calcite.sql.SqlBasicCall;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlSetOption;
 import org.apache.commons.lang3.StringUtils;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public final class SqlToOperationConverter {
 
@@ -97,27 +102,12 @@ public final class SqlToOperationConverter {
             return Optional.of(new ShowNextAutoIncrementOperation(sqlNextAutoIncrement));
         } else if (sqlNode instanceof SqlSelect) {
             SqlSelect sqlSelect = ((SqlSelect) sqlNode);
-            SqlNodeList sqlNodes = sqlSelect.getSelectList();
-            SqlNode selectItem1 = sqlNodes.get(0);
-            if (selectItem1 instanceof SqlBasicCall) {
-                SqlBasicCall sqlBasicCall = (SqlBasicCall) selectItem1;
-                String operatorName = sqlBasicCall.getOperator().getName();
-                Optional select = adaptorSelect(operatorName, sqlBasicCall, connection, context);
-                if (select.isPresent()) {
-                    return select;
-                }
-                if (operatorName.equalsIgnoreCase("AS")) {
-                    SqlNode sqlNode1 = sqlBasicCall.getOperandList().get(0);
-                    if (sqlNode1 instanceof SqlBasicCall) {
-                        operatorName = ((SqlBasicCall) sqlNode1).getOperator().getName();
-                        select = adaptorSelect(operatorName, (SqlBasicCall) sqlNode1, connection, context);
-                        if (select.isPresent()) {
-                            return select;
-                        }
-                    }
-                }
-            }
-            return Optional.empty();
+            List<SqlShowCall> sqlShowCallList = getSqlShowCallList(sqlSelect);
+            return Optional.of(new ShowCallsOperation(sqlShowCallList, connection, context));
+        } else if (sqlNode instanceof SqlOrderBy) {
+            SqlSelect sqlSelect = (SqlSelect) ((SqlOrderBy) sqlNode).query;
+            List<SqlShowCall> sqlShowCallList = getSqlShowCallList(sqlSelect);
+            return Optional.of(new ShowCallsOperation(sqlShowCallList, connection, context));
         } else if (sqlNode instanceof SqlShowVariables) {
             SqlShowVariables sqlShowVariables = (SqlShowVariables) sqlNode;
             return Optional.of(new ShowVariablesOperation(sqlShowVariables.sqlLikePattern, sqlShowVariables.isGlobal,
@@ -229,6 +219,25 @@ public final class SqlToOperationConverter {
         }
     }
 
+    private static List<SqlShowCall> getSqlShowCallList(SqlSelect sqlSelect) {
+        SqlNodeList sqlNodes = sqlSelect.getSelectList();
+        return sqlNodes.stream().map(e -> {
+            SqlBasicCall call = (SqlBasicCall) e;
+            String opName = call.getOperator().getName();
+            if (opName.equalsIgnoreCase("AS")) {
+                SqlIdentifier identifier = (SqlIdentifier) call.getOperandList().get(1);
+                opName = identifier.getSimple();
+                call = (SqlBasicCall) call.getOperandList().get(0);
+            } else {
+                opName = call.toString();
+            }
+            if (opName.contains("`")) {
+                opName = opName.replace("`", "").replace("'", "");
+            }
+            return new SqlShowCall(opName, call);
+        }).collect(Collectors.toList());
+    }
+
     private static String getSchemaName(DingoParserContext context) {
         if (context.getUsedSchema() == null) {
             return context.getDefaultSchemaName();
@@ -236,16 +245,4 @@ public final class SqlToOperationConverter {
         return context.getUsedSchema().getName();
     }
 
-    private static Optional adaptorSelect(String operatorName,
-                                          SqlBasicCall sqlBasicCall,
-                                          Connection connection,
-                                          DingoParserContext context) {
-        if (operatorName.equalsIgnoreCase("database")) {
-            return Optional.of(new ShowCurrentDatabase(context));
-        } else if (operatorName.equalsIgnoreCase("@")) {
-            return Optional.of(new ShowUserVariableOperation(sqlBasicCall, connection));
-        } else {
-            return Optional.empty();
-        }
-    }
 }

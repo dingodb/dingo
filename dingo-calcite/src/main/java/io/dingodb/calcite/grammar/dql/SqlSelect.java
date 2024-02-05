@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.grammar.dml;
+package io.dingodb.calcite.grammar.dql;
 
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -27,15 +28,8 @@ import java.util.UUID;
 @Getter
 public class SqlSelect extends org.apache.calcite.sql.SqlSelect {
 
-    private boolean export;
-    private String outfile;
-    private byte[] terminated;
-
-    private String enclosed;
-    private byte[] lineTerminated;
-    private byte[] escaped;
-    private byte[] lineStarting;
-    private String charset;
+    @Setter
+    ExportOptions exportOptions;
 
     public SqlSelect(SqlParserPos pos,
                      @Nullable SqlNodeList keywordList,
@@ -64,26 +58,68 @@ public class SqlSelect extends org.apache.calcite.sql.SqlSelect {
                      @Nullable SqlNode offset,
                      @Nullable SqlNode fetch,
                      @Nullable SqlNodeList hints,
-                     boolean export,
-                     @Nullable String outfile,
-                     @Nullable byte[] terminated,
-                     @Nullable String enclosed,
-                     @Nullable byte[] lineTerminated,
-                     @Nullable byte[] escaped,
-                     @Nullable String charset,
-                     @Nullable byte[] lineStarting) {
+                     ExportOptions exportOptions) {
         super(pos, keywordList, selectList, from, where, groupBy, having, windowDecls, orderBy, offset, fetch, hints);
-        this.export = export;
-        this.outfile = outfile;
-        this.terminated = terminated;
-        this.enclosed = enclosed;
-        this.lineTerminated = lineTerminated;
-        this.escaped = escaped;
-        this.charset = charset;
-        this.lineStarting = lineStarting;
+        this.exportOptions =  exportOptions;
     }
 
     public String getSqlId() {
         return UUID.randomUUID().toString();
+    }
+
+    public boolean isExport() {
+        if (exportOptions != null) {
+            return exportOptions.isExport();
+        }
+        return false;
+    }
+
+    public String getOutfile() {
+        if (exportOptions != null) {
+            return exportOptions.getOutfile();
+        }
+        return null;
+    }
+
+    public byte[] getTerminated() {
+        if (exportOptions != null) {
+            return exportOptions.getTerminated();
+        }
+        return null;
+    }
+
+    public String getEnclosed() {
+        if (exportOptions != null) {
+            return exportOptions.getEnclosed();
+        }
+        return null;
+    }
+
+    public byte[] getLineTerminated() {
+        if (exportOptions != null) {
+            return exportOptions.getLineTerminated();
+        }
+        return null;
+    }
+
+    public byte[] getEscaped() {
+        if (exportOptions != null) {
+            return exportOptions.getEscaped();
+        }
+        return null;
+    }
+
+    public byte[] getLineStarting() {
+        if (exportOptions != null) {
+            return exportOptions.getLineStarting();
+        }
+        return null;
+    }
+
+    public String getCharset() {
+        if (exportOptions != null) {
+            return exportOptions.getCharset();
+        }
+        return null;
     }
 }

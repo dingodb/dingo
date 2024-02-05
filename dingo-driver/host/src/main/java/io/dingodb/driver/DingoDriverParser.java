@@ -233,7 +233,7 @@ public final class DingoDriverParser extends DingoParser {
             Operation operation = convertToOperation(sqlNode, connection, connection.getContext());
             Meta.StatementType statementType;
             List<ColumnMetaData> columns = new ArrayList<>();
-            if (sqlNode.getKind() == SqlKind.SELECT) {
+            if (sqlNode.getKind() == SqlKind.SELECT || sqlNode.getKind() == SqlKind.ORDER_BY) {
                 columns = ((QueryOperation)operation).columns().stream().map(column -> metaData(typeFactory, 0, column,
                     new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null))
                     .collect(Collectors.toList());

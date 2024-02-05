@@ -235,6 +235,6 @@ public final class PrivilegeVerify {
 
     public static boolean verifyDuplicate(String user, String host, String schema, String table,
                                           List<DingoSqlAccessEnum> accessTypes) {
-        return accessTypes.stream().noneMatch(accessType -> !verify(user, host, schema, table, accessType));
+        return accessTypes.stream().allMatch(accessType -> verify(user, host, schema, table, accessType));
     }
 }

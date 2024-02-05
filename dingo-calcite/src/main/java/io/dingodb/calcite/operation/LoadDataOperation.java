@@ -149,19 +149,6 @@ public class LoadDataOperation implements DmlOperation {
     @Override
     public boolean execute() {
         try {
-            FileInputStream is = new FileInputStream(filePath);
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1000];
-            int length;
-            while ((length = is.read(buffer)) != -1) {
-                bos.write(buffer, 0, length);
-                queue.put(bos.toByteArray());
-                bos.reset();
-            }
-            queue.put("end");
-            bos.close();
-            is.close();
-
             new Thread(() -> {
                 try {
                     byte[] preBytes = null;
@@ -190,7 +177,18 @@ public class LoadDataOperation implements DmlOperation {
                     isDone = true;
                 }
             }).start();
-
+            FileInputStream is = new FileInputStream(filePath);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            byte[] buffer = new byte[1000];
+            int length;
+            while ((length = is.read(buffer)) != -1) {
+                bos.write(buffer, 0, length);
+                queue.put(bos.toByteArray());
+                bos.reset();
+            }
+            queue.put("end");
+            bos.close();
+            is.close();
         } catch (FileNotFoundException e) {
             // Err code 2: No such file or directory
             throw DingoResource.DINGO_RESOURCE.accessError(filePath, 2, "No such file or directory").ex();
