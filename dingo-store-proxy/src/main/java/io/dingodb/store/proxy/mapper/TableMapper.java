@@ -46,6 +46,7 @@ import org.mapstruct.Mappings;
 import org.mapstruct.Named;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -144,15 +145,30 @@ public interface TableMapper {
         return codec.decodeKeyPrefix(CodecService.INSTANCE.setId(key.getStartKey(), 0));
     }
 
-    default io.dingodb.meta.entity.Partition partitionFrom(Partition partition, KeyValueCodec codec) {
+    default io.dingodb.meta.entity.Partition partitionFrom(
+        Partition partition, KeyValueCodec codec, String strategy
+    ) {
+        byte[] start = partition.getRange().getStartKey();
+        byte[] end = partition.getRange().getEndKey();
+        if (HASH_FUNC_NAME.equals(strategy)) {
+            start = Arrays.copyOf(start, start.length);
+            end = Arrays.copyOf(end, end.length);
+        } else {
+            start = CodecService.INSTANCE.setId(Arrays.copyOf(start, start.length), 0);
+            end = CodecService.INSTANCE.setId(Arrays.copyOf(end, end.length), 0);
+        }
         return io.dingodb.meta.entity.Partition.builder()
             .id(MAPPER.idFrom(partition.getId()))
             .operand(operandFrom(partition.getRange(), codec))
+            .start(start)
+            .end(end)
             .build();
     }
 
-    default List<io.dingodb.meta.entity.Partition> partitionFrom(List<Partition> partitions, KeyValueCodec codec) {
-        return partitions.stream().map($ -> partitionFrom($, codec)).collect(Collectors.toList());
+    default List<io.dingodb.meta.entity.Partition> partitionFrom(
+        List<Partition> partitions, KeyValueCodec codec, String strategy
+    ) {
+        return partitions.stream().map($ -> partitionFrom($, codec, strategy)).collect(Collectors.toList());
     }
 
     @Mappings({
@@ -173,7 +189,11 @@ public interface TableMapper {
         builder.partitionStrategy(fromPartitionStrategy(partitionRule.getStrategy()));
         KeyValueCodec codec = CodecService.INSTANCE
             .createKeyValueCodec(columnDefinitionFrom(tableWithId.getTableDefinition().getColumns()));
-        builder.partitions(partitionFrom(tableWithId.getTableDefinition().getTablePartition().getPartitions(), codec));
+        builder.partitions(partitionFrom(
+            tableWithId.getTableDefinition().getTablePartition().getPartitions(),
+            codec,
+            fromPartitionStrategy(partitionRule.getStrategy()))
+        );
         builder.tableId(MAPPER.idFrom(tableWithId.getTableId()));
         builder.indexes(indexes.stream().map($ -> indexTableFrom(builder, $, Collections.emptyList()))
             .collect(Collectors.toList()));
@@ -193,7 +213,11 @@ public interface TableMapper {
         builder.partitionStrategy(fromPartitionStrategy(partitionRule.getStrategy()));
         KeyValueCodec codec = CodecService.INSTANCE
             .createKeyValueCodec(columnDefinitionFrom(definition.getColumns()));
-        builder.partitions(partitionFrom(definition.getTablePartition().getPartitions(), codec));
+        builder.partitions(partitionFrom(
+            definition.getTablePartition().getPartitions(),
+            codec,
+            fromPartitionStrategy(partitionRule.getStrategy())
+        ));
         builder.tableId(MAPPER.idFrom(tableWithId.getTableId()));
         builder.primaryId(table.tableId);
         List<String> names = definition.getColumns().stream()

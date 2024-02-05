@@ -166,7 +166,7 @@ public class Channel implements io.dingodb.net.Channel {
     @Override
     public synchronized void setCloseListener(Consumer<io.dingodb.net.Channel> listener) {
         if (isClosed()) {
-            runner.forceFollow(() -> closeListener.accept(this));
+            runner.forceFollow(() -> Parameters.cleanNull(listener, EMPTY_CLOSE_LISTENER).accept(this));
         } else {
             this.closeListener = Parameters.cleanNull(listener, EMPTY_CLOSE_LISTENER);
         }

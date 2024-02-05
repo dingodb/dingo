@@ -187,7 +187,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
         name = cleanSchemaName(name);
         api.createSchema(tso(), name, CreateSchemaRequest.builder().parentSchemaId(id).schemaName(name).build());
-        cache.invalidMetaServices();
+        cache.invalidateMetaServices();
     }
 
     @Override
@@ -220,7 +220,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             return false;
         }
         api.dropSchema(tso(), name, DropSchemaRequest.builder().schemaId(getSubMetaService(name).id).build());
-        cache.invalidMetaServices();
+        cache.invalidateMetaServices();
         return true;
     }
 
@@ -261,7 +261,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         api.createTables(
             tso(), name, tableName, CreateTablesRequest.builder().schemaId(id).tableDefinitionWithIds(tables).build()
         );
-        cache.invalidSchema(name);
+        cache.refreshSchema(name);
     }
 
     @Override
@@ -313,12 +313,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
         tables.add(table);
         tables.addAll(indexes);
         api.dropTables(tso(), name, tableName, DropTablesRequest.builder().tableIds(oldIds).build());
-        cache.invalidTable(name, tableName);
-        cache.invalidSchema(name);
+        cache.refreshSchema(name);
         service.createTables(
             tso(),
             CreateTablesRequest.builder().schemaId(id).tableDefinitionWithIds(tables).build()
         );
+        cache.refreshSchema(name);
         return true;
     }
 
@@ -347,8 +347,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             Stream.of(table.getTableId()), indexIds.stream()).collect(Collectors.toList()
         );
         api.dropTables(tso(), name, tableName, DropTablesRequest.builder().tableIds(MAPPER.idTo(tableIds)).build());
-        cache.invalidTable(name, tableName);
-        cache.invalidSchema(name);
+        cache.refreshSchema(name);
         return true;
     }
 
@@ -432,7 +431,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 .build()
         );
         ComparableByteArray comparableKey = new ComparableByteArray(
-            key, table.partitionStrategy == HASH_FUNC_NAME ? 0 : 9
+            key, Objects.equals(table.partitionStrategy, HASH_FUNC_NAME) ? 0 : 9
         );
 
         Utils.loop(() -> !checkSplitFinish(comparableKey, table), TimeUnit.SECONDS.toNanos(1), 60);
@@ -446,14 +445,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     private boolean checkSplitFinish(ComparableByteArray comparableKey, Table table) {
-        return Utils.returned(
-            comparableKey.compareTo(cache.getRangeDistribution(table.tableId).floorKey(comparableKey)) == 0,
-            finish -> {
-                if (!finish) {
-                    cache.invalidDistribution(table.tableId);
-                }
-            }
-        );
+        return comparableKey.compareTo(cache.getRangeDistribution(table.tableId).floorKey(comparableKey)) == 0;
     }
 
     @Override

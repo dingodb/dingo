@@ -39,4 +39,9 @@ public class Partition {
     public final Object[] operand;
     @JsonProperty
     public final byte[] key;
+    @JsonProperty
+    public final byte[] start;
+    @JsonProperty
+    public final byte[] end;
+
 }

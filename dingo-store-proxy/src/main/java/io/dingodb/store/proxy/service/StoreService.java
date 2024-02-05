@@ -130,17 +130,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             try {
                 return method.invoke(storeInstance, args);
             } catch (Exception e) {
-                io.dingodb.store.proxy.meta.MetaService.ROOT.cache.invalidDistribution(
-                    storeInstance.tableId
-                );
-                io.dingodb.store.proxy.meta.MetaService.ROOT.cache.invalidDistribution(
-                    storeInstance.table.tableId
-                );
-                try {
-                    return method.invoke(storeInstance, args);
-                } catch (Exception exception) {
-                    throw Utils.extractThrowable(exception);
-                }
+                throw Utils.extractThrowable(e);
             }
         }
     }
