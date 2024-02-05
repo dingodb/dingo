@@ -1,65 +1,50 @@
 stages:
-  - build_package
-  - unit_test
-  - profiling
-
-Release:
-  stage: build_package
-  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.2
-  script:
-    - git submodule update --init --recursive
-    - mkdir -p build_release
-    - >
-      cmake --no-warn-unused-cli
-      -DCMAKE_BUILD_TYPE:STRING=Release
-      -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE
-      -DCMAKE_C_COMPILER:FILEPATH=$(command -v clang-15)
-      -DCMAKE_CXX_COMPILER:FILEPATH=$(command -v clang++-15)
-      -S. -B./build_release -G Ninja
-    - cmake --build ./build_release --config Release --target all
-    - mkdir -p release_packages
-    - cp ./build_release/benchmark/tantivy_search_benchmark ./release_packages
-    - cp ./build_release/libtantivy_search.a ./release_packages
-    - cp ./build_release/tests/throughput/throughput_test ./release_packages
-    - cp ./build_release/tests/unit_test/unit_tests ./release_packages
-    - tar -czvf release_packages.tar.gz ./release_packages
-    - md5sum ./release_packages/*
-    - md5sum release_packages.tar.gz
-    - ls -lh ./release_packages
-    - ls -lh release_packages.tar.gz
-  artifacts:
-    name: "release_packages"
-    expire_in: 2 week
-    paths:
-      - release_packages.tar.gz
+  - BuildPackage
+  - UnitTest
+  - Profiling
 
 RelWithDebInfo:
-  stage: build_package
+  stage: BuildPackage
   image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.2
   script:
     - git submodule update --init --recursive
-    - mkdir -p build_rel_with_deb_info
+    - mkdir -p build_packages
     - >
       cmake --no-warn-unused-cli
       -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
       -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE
       -DCMAKE_C_COMPILER:FILEPATH=$(command -v clang-15)
       -DCMAKE_CXX_COMPILER:FILEPATH=$(command -v clang++-15)
-      -S. -B./build_rel_with_deb_info -G Ninja
-    - cmake --build ./build_rel_with_deb_info --config RelWithDebInfo --target all
-    - mkdir -p rel_with_deb_info_packages
-    - cp ./build_rel_with_deb_info/benchmark/tantivy_search_benchmark ./rel_with_deb_info_packages
-    - cp ./build_rel_with_deb_info/libtantivy_search.a ./rel_with_deb_info_packages
-    - cp ./build_rel_with_deb_info/tests/throughput/throughput_test ./rel_with_deb_info_packages
-    - cp ./build_rel_with_deb_info/tests/unit_test/unit_tests ./rel_with_deb_info_packages
-    - tar -czvf rel_with_deb_info_packages.tar.gz ./rel_with_deb_info_packages
-    - md5sum ./rel_with_deb_info_packages/*
-    - md5sum rel_with_deb_info_packages.tar.gz
-    - ls -lh ./rel_with_deb_info_packages
-    - ls -lh rel_with_deb_info_packages.tar.gz
+      -S. -B./build_packages -G Ninja
+    - cmake --build ./build_packages --config RelWithDebInfo --target all
+    - mkdir -p packages
+    - cp ./build_packages/benchmark/tantivy_search_benchmark ./packages
+    - cp ./build_packages/libtantivy_search.a ./packages
+    - cp ./build_packages/tests/throughput/throughput_test ./packages
+    - cp ./build_packages/tests/unit_test/unit_tests ./packages
+    - tar -czvf packages.tar.gz ./packages
+    - md5sum ./packages/*
+    - md5sum packages.tar.gz
+    - ls -lh ./packages
+    - ls -lh packages.tar.gz
   artifacts:
-    name: "rel_with_deb_info_packages"
+    name: "packages"
     expire_in: 2 week
     paths:
-      - rel_with_deb_info_packages.tar.gz
+      - packages.tar.gz
 
+
+UnitTest:
+  stage: UnitTest
+  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.2
+  needs:
+    - job: RelWithDebInfo
+      artifacts: true
+  artifacts:
+    name: "packages"
+    paths:
+      - packages.tar.gz
+    when: always
+  scripts:
+    - tar -zxvf packages.tar.gz
+    - ./packages/unit_tests
