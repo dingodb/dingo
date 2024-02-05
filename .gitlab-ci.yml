@@ -4,12 +4,9 @@ stages:
   - profiling
 
 build_binary:
-  stage: build
+  stage: Release
   image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.2
-  # only:
-  #   - master
   script:
-    - ls -lh
     - git submodule update --init --recursive
     - mkdir -p build_release
     - >
@@ -20,12 +17,49 @@ build_binary:
       -DCMAKE_CXX_COMPILER:FILEPATH=$(command -v clang++-15)
       -S. -B./build_release -G Ninja
     - cmake --build ./build_release --config Release --target all
-
-    - tar -czvf build_release.tar.gz ./build_release
-    - ls -lh build_release.tar.gz
+    - mkdir -p release_packages
+    - cp ./build_release/benchmark/tantivy_search_benchmark ./release_packages
+    - cp ./build_release/libtantivy_search.a ./release_packages
+    - cp ./build_release/tests/throughput/throughput_test ./release_packages
+    - cp ./build_release/tests/unit_test/unit_tests ./release_packages
+    - tar -czvf release_packages.tar.gz ./release_packages
+    - md5sum ./release_packages/*
+    - md5sum release_packages.tar.gz
+    - ls -lh ./release_packages
+    - ls -lh release_packages.tar.gz
   artifacts:
-    name: "build_release"
-    expire_in: 7 week
+    name: "release_packages"
+    expire_in: 2 week
     paths:
-      - build_release.tar.gz
+      - release_packages.tar.gz
+
+build_binary:
+  stage: RelWithDebInfo
+  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.2
+  script:
+    - git submodule update --init --recursive
+    - mkdir -p build_rel_with_deb_info
+    - >
+      cmake --no-warn-unused-cli
+      -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
+      -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE
+      -DCMAKE_C_COMPILER:FILEPATH=$(command -v clang-15)
+      -DCMAKE_CXX_COMPILER:FILEPATH=$(command -v clang++-15)
+      -S. -B./build_rel_with_deb_info -G Ninja
+    - cmake --build ./build_rel_with_deb_info --config RelWithDebInfo --target all
+    - mkdir -p rel_with_deb_info_packages
+    - cp ./build_rel_with_deb_info/benchmark/tantivy_search_benchmark ./rel_with_deb_info_packages
+    - cp ./build_rel_with_deb_info/libtantivy_search.a ./rel_with_deb_info_packages
+    - cp ./build_rel_with_deb_info/tests/throughput/throughput_test ./rel_with_deb_info_packages
+    - cp ./build_rel_with_deb_info/tests/unit_test/unit_tests ./rel_with_deb_info_packages
+    - tar -czvf rel_with_deb_info_packages.tar.gz ./rel_with_deb_info_packages
+    - md5sum ./rel_with_deb_info_packages/*
+    - md5sum rel_with_deb_info_packages.tar.gz
+    - ls -lh ./rel_with_deb_info_packages
+    - ls -lh rel_with_deb_info_packages.tar.gz
+  artifacts:
+    name: "rel_with_deb_info_packages"
+    expire_in: 2 week
+    paths:
+      - rel_with_deb_info_packages.tar.gz
 
