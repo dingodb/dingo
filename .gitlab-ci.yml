@@ -1,10 +1,10 @@
 stages:
-  - build
+  - build_package
   - unit_test
   - profiling
 
-build_binary:
-  stage: Release
+Release:
+  stage: build_package
   image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.2
   script:
     - git submodule update --init --recursive
@@ -33,8 +33,8 @@ build_binary:
     paths:
       - release_packages.tar.gz
 
-build_binary:
-  stage: RelWithDebInfo
+RelWithDebInfo:
+  stage: build_package
   image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.2
   script:
     - git submodule update --init --recursive
