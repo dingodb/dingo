@@ -76,6 +76,7 @@ import java.util.StringJoiner;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 import static java.util.Collections.singletonList;
@@ -322,8 +323,8 @@ public class TransactionStoreInstance {
         long timeOut,
         CoprocessorV2 coprocessor
     ) {
-        setId(range.start);
-        setId(range.end);
+        Stream.of(range.start).peek(this::setId).forEach($ -> $[0] = 't');
+        Stream.of(range.end).peek(this::setId).forEach($ -> $[0] = 't');
         return new ScanIterator(ts, range, timeOut, coprocessor);
     }
 

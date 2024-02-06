@@ -26,6 +26,8 @@ import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 
+import static io.dingodb.common.util.Utils.calculatePrefixCount;
+
 public class GetDistributionOperator extends SourceOperator {
     public static final GetDistributionOperator INSTANCE = new GetDistributionOperator();
 
@@ -41,7 +43,9 @@ public class GetDistributionOperator extends SourceOperator {
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
 
         for (Object[] keyTuple : param.getKeyTuples()) {
-            CommonId partId = ps.calcPartId(param.getCodec().encodeKey(keyTuple), param.getDistributions());
+            CommonId partId = ps.calcPartId(
+                param.getCodec().encodeKeyPrefix(keyTuple, calculatePrefixCount(keyTuple)),
+                param.getDistributions());
             RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
             Context context = Context.builder().distribution(distribution).build();
             vertex.getSoleEdge().transformToNext(context, keyTuple);

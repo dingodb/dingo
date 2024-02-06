@@ -53,7 +53,7 @@ public class TxnGetByKeysParam extends FilterProjectParam {
         int isolationLevel,
         long timeOut
     ) {
-        super(tableId, null, schema, filter, selection, keyMapping);
+        super(tableId, schema, filter, selection, keyMapping);
         this.codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
         this.table = table;
         this.scanTs = scanTs;

@@ -69,7 +69,7 @@ public class PartRangeScanParam extends FilterProjectParam {
         DingoType outputSchema,
         boolean pushDown
     ) {
-        super(tableId, null, schema, filter, selection, keyMapping);
+        super(tableId, schema, filter, selection, keyMapping);
         this.aggKeys = aggKeys;
         this.aggList = aggList;
         this.outputSchema = outputSchema;

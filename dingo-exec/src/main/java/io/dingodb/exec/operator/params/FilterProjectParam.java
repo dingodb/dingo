@@ -44,13 +44,12 @@ public abstract class FilterProjectParam extends AbstractParams {
 
     public FilterProjectParam(
         CommonId tableId,
-        CommonId partId,
         DingoType schema,
         SqlExpr filter,
         TupleMapping selection,
         TupleMapping keyMapping
     ) {
-        super(partId, null);
+        super();
         this.tableId = tableId;
         this.schema = schema;
         this.filter = filter;
