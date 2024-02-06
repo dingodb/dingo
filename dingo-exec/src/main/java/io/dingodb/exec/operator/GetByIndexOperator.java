@@ -16,11 +16,18 @@
 
 package io.dingodb.exec.operator;
 
+import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
+import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.GetByIndexParam;
+import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
@@ -34,49 +41,48 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NavigableMap;
 
+import static io.dingodb.common.util.NoBreakFunctions.wrap;
 import static io.dingodb.common.util.Utils.calculatePrefixCount;
 
 @Slf4j
-public final class GetByIndexOperator extends FilterProjectSourceOperator {
+public final class GetByIndexOperator extends FilterProjectOperator {
     public static final GetByIndexOperator INSTANCE = new GetByIndexOperator();
 
     private GetByIndexOperator() {
     }
 
     @Override
-    protected @NonNull Iterator<Object[]> createSourceIterator(Vertex vertex) {
+    protected @NonNull Iterator<Object[]> createSourceIterator(Context context, Object[] tuple, Vertex vertex) {
         GetByIndexParam param = vertex.getParam();
-        List<Iterator<Object[]>> iteratorList = scan(param);
+        StoreInstance store = Services.KV_STORE.getInstance(param.getIndexTableId(), context.getDistribution().getId());
+        byte[] keys = param.getCodec().encodeKeyPrefix(tuple, calculatePrefixCount(tuple));
+        Iterator<Object[]> iterator = Iterators.transform(
+            store.scan(System.identityHashCode(keys), keys),
+            wrap(param.getCodec()::decode)::apply
+        );
         List<Object[]> objectList = new ArrayList<>();
-        for (Iterator<Object[]> iterator : iteratorList) {
-            while (iterator.hasNext()) {
-                Object[] objects = iterator.next();
-                if (param.isLookup()) {
-                    Object[] val = lookUp(objects, param);
-                    if (val != null) {
-                        objectList.add(val);
-                    }
-                } else {
-                    objectList.add(transformTuple(objects, param));
+        while (iterator.hasNext()) {
+            Object[] objects = iterator.next();
+            if (param.isLookup()) {
+                Object[] val = lookUp(objects, param);
+                if (val != null) {
+                    objectList.add(val);
                 }
+            } else {
+                objectList.add(transformTuple(objects, param));
             }
         }
-        return objectList.iterator();
-    }
 
-    private static List<Iterator<Object[]>> scan(GetByIndexParam param) {
-        List<Iterator<Object[]>> iteratorList = new ArrayList<>();
-        for (Object[] tuple : param.getIndexValues()) {
-            byte[] keys = param.getCodec().encodeKeyPrefix(tuple, calculatePrefixCount(tuple));
-            iteratorList.add(param.getPart().scan(keys));
-        }
-        return iteratorList;
+        return objectList.iterator();
     }
 
     private static Object[] lookUp(Object[] tuples, GetByIndexParam param) {
         TupleMapping indices = param.getKeyMapping();
         Table tableDefinition = param.getTable();
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
+            MetaService.root().getRangeDistribution(tableDefinition.tableId);
         Object[] keyTuples = new Object[tableDefinition.getColumns().size()];
         for (int i = 0; i < indices.getMappings().length; i ++) {
             keyTuples[indices.get(i)] = tuples[i];
@@ -85,7 +91,7 @@ public final class GetByIndexOperator extends FilterProjectSourceOperator {
         CommonId regionId = PartitionService.getService(
                 Optional.ofNullable(tableDefinition.getPartitionStrategy())
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-                .calcPartId(keys, param.getRanges());
+                .calcPartId(keys, ranges);
         StoreInstance storeInstance = StoreService.getDefault().getInstance(param.getTableId(), regionId);
         return param.getLookupCodec().decode(storeInstance.get(keys));
     }

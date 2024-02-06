@@ -23,8 +23,6 @@ import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
-import io.dingodb.codec.CodecService;
-import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
@@ -35,20 +33,22 @@ import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.GetByIndexParam;
+import io.dingodb.exec.operator.params.GetDistributionParam;
 import io.dingodb.exec.operator.params.IndexMergeParam;
+import io.dingodb.exec.operator.params.TxnGetByIndexParam;
+import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
-import io.dingodb.partition.DingoPartitionServiceProvider;
-import io.dingodb.partition.PartitionService;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 import lombok.AllArgsConstructor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -57,9 +57,10 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static io.dingodb.common.util.Utils.calculatePrefixCount;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_INDEX;
+import static io.dingodb.exec.utils.OperatorCodeUtils.GET_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.INDEX_MERGE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_GET_BY_INDEX;
 
 public final class DingoGetByIndexMergeVisitFun {
     @NonNull
@@ -68,6 +69,7 @@ public final class DingoGetByIndexMergeVisitFun {
         IdGenerator idGenerator,
         Location currentLocation,
         DingoJobVisitor visitor,
+        ITransaction transaction,
         @NonNull DingoGetByIndexMerge rel
     ) {
         //List<Output> outputs = DingoGetByIndexVisitFun.visit(job, idGenerator, currentLocation, visitor, rel);
@@ -77,7 +79,6 @@ public final class DingoGetByIndexMergeVisitFun {
         MetaService metaService = MetaServiceUtils.getMetaService(rel.getTable());
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         Map<CommonId, Set> indexSetMap = rel.getIndexSetMap();
-        NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
         final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
         boolean needLookup = true;
         for (Map.Entry<CommonId, Set> indexValSet : indexSetMap.entrySet()) {
@@ -85,21 +86,26 @@ public final class DingoGetByIndexMergeVisitFun {
             Table indexTd = rel.getIndexTdMap().get(idxId);
             NavigableMap<ComparableByteArray, RangeDistribution> indexRanges = metaService.getRangeDistribution(idxId);
 
-            PartitionService lookupPs = PartitionService.getService(
-                Optional.ofNullable(indexTd.getPartitionStrategy())
-                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
-                indexTd.tupleType(), indexTd.keyMapping())
-                ;
             List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(indexValSet.getValue(), indexTd);
 
-            Map<CommonId, List<Object[]>> partMap = new LinkedHashMap<>();
-            for (Object[] tuple : keyTuples) {
-                byte[] keys = codec.encodeKeyPrefix(tuple, calculatePrefixCount(tuple));
-                CommonId partId = lookupPs.calcPartId(keys, indexRanges);
-                partMap.putIfAbsent(partId, new LinkedList<>());
-                partMap.get(partId).add(tuple);
+            Vertex distributionVertex = new Vertex(GET_DISTRIBUTION, new GetDistributionParam(
+                keyTuples,
+                indexTd.keyMapping(),
+                indexTd,
+                indexRanges));
+            Task task;
+            if (transaction != null) {
+                task = job.getOrCreate(
+                    currentLocation,
+                    idGenerator,
+                    transaction.getType(),
+                    IsolationLevel.of(transaction.getIsolationLevel())
+                );
+            } else {
+                task = job.getOrCreate(currentLocation, idGenerator);
             }
+            distributionVertex.setId(idGenerator.getOperatorId(task.getId()));
+            task.putVertex(distributionVertex);
 
             List<Column> columnNames = indexTd.getColumns();
             TupleMapping tupleMapping = TupleMapping.of(
@@ -107,31 +113,43 @@ public final class DingoGetByIndexMergeVisitFun {
             );
             TupleMapping lookupKeyMapping = indexMergeMapping(td.keyMapping(), rel.getSelection());
 
-            for (Map.Entry<CommonId, List<Object[]>> entry : partMap.entrySet()) {
-                GetByIndexParam param = new GetByIndexParam(
+            long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
+            Vertex vertex;
+            if (transaction != null) {
+                vertex = new Vertex(TXN_GET_BY_INDEX, new TxnGetByIndexParam(
                     idxId,
-                    entry.getKey(),
                     tableInfo.getId(),
                     tupleMapping,
-                    entry.getValue(),
+                    SqlExprUtils.toSqlExpr(rel.getFilter()),
+                    rel.getSelection(),
+                    rel.isUnique(),
+                    indexTd,
+                    td,
+                    needLookup,
+                    scanTs,
+                    transaction.getLockTimeOut()
+                ));
+            } else {
+                vertex = new Vertex(GET_BY_INDEX, new GetByIndexParam(
+                    idxId,
+                    tableInfo.getId(),
+                    tupleMapping,
                     SqlExprUtils.toSqlExpr(rel.getFilter()),
                     lookupKeyMapping,
                     rel.isUnique(),
-                    ranges,
-                    codec,
                     indexTd,
                     td,
                     needLookup
-                );
-                Task task = job.getOrCreate(currentLocation, idGenerator);
-                Vertex vertex = new Vertex(GET_BY_INDEX, param);
-                OutputHint hint = new OutputHint();
-                hint.setPartId(entry.getKey());
-                vertex.setHint(hint);
-                vertex.setId(idGenerator.getOperatorId(task.getId()));
-                task.putVertex(vertex);
-                outputs.add(vertex);
+                ));
             }
+            OutputHint hint = new OutputHint();
+            vertex.setHint(hint);
+            vertex.setId(idGenerator.getOperatorId(task.getId()));
+            Edge edge = new Edge(distributionVertex, vertex);
+            distributionVertex.addEdge(edge);
+            vertex.addIn(edge);
+            task.putVertex(vertex);
+            outputs.add(vertex);
         }
 
         List<Vertex> inputs = DingoCoalesce.coalesce(idGenerator, outputs);

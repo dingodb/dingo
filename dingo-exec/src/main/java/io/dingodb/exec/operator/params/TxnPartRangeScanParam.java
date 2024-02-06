@@ -79,7 +79,7 @@ public class TxnPartRangeScanParam extends FilterProjectParam {
         long timeOut,
         boolean pushDown
     ) {
-        super(tableId, null, schema, filter, selection, keyMapping);
+        super(tableId, schema, filter, selection, keyMapping);
         this.aggKeys = aggKeys;
         this.aggList = aggList;
         this.outputSchema = outputSchema;

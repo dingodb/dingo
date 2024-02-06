@@ -99,7 +99,8 @@ import lombok.Setter;
     @JsonSubTypes.Type(ScanCleanCacheParam.class),
     @JsonSubTypes.Type(CleanCacheParam.class),
     @JsonSubTypes.Type(CopyParam.class),
-    @JsonSubTypes.Type(TxnGetByKeysParam.class)
+    @JsonSubTypes.Type(TxnGetByKeysParam.class),
+    @JsonSubTypes.Type(TxnGetByIndexParam.class)
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class AbstractParams {

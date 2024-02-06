@@ -31,9 +31,9 @@ import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
 @Getter
-@JsonTypeName("index")
+@JsonTypeName("txn_index")
 @JsonPropertyOrder({"indexTableId", "schema", "keyMapping", "filter", "selection"})
-public class GetByIndexParam extends FilterProjectParam {
+public class TxnGetByIndexParam extends FilterProjectParam {
 
     @JsonProperty("indexTableId")
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
@@ -48,8 +48,11 @@ public class GetByIndexParam extends FilterProjectParam {
     private final Table table;
     private final KeyValueCodec codec;
     private transient KeyValueCodec lookupCodec;
+    @JsonProperty("scanTs")
+    private final long scanTs;
+    private final long timeout;
 
-    public GetByIndexParam(
+    public TxnGetByIndexParam(
         CommonId indexTableId,
         CommonId tableId,
         TupleMapping keyMapping,
@@ -58,7 +61,9 @@ public class GetByIndexParam extends FilterProjectParam {
         boolean isUnique,
         Table index,
         Table table,
-        boolean isLookup
+        boolean isLookup,
+        long scanTs,
+        long timeout
     ) {
         super(tableId, table.tupleType(), filter, selection, keyMapping);
         this.indexTableId = indexTableId;
@@ -66,6 +71,8 @@ public class GetByIndexParam extends FilterProjectParam {
         this.isUnique = isUnique;
         this.index = index;
         this.table = table;
+        this.scanTs = scanTs;
+        this.timeout = timeout;
         this.codec = CodecService.getDefault().createKeyValueCodec(index.tupleType(), index.keyMapping());
     }
 
