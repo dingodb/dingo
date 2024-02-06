@@ -5,11 +5,6 @@ stages:
 
 RelWithDebInfo:
   stage: BuildPackage
-  cache:
-    key: ${CI_JOB_NAME}-cargo
-    paths:
-      - /root/.cargo/registry/
-    policy: pull-push
   image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.3
   script:
     - pwd
@@ -35,6 +30,11 @@ RelWithDebInfo:
     - ls -lh ./packages
     - ls -lh packages.tar.gz
     - du -h -d 1 /root/.cargo/registry/
+  cache:
+    key: ${CI_JOB_NAME}-cargo
+    paths:
+      - /root/.cargo/registry/
+    policy: pull-push
   artifacts:
     name: "packages"
     expire_in: 2 week
