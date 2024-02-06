@@ -14,7 +14,7 @@ RelWithDebInfo:
   before_script:
     - mkdir -p ./.cargo/registry/
     - du -h -d 1 ./.cargo/registry/
-    - rsync -av --ignore-existing ./.cargo/registry/ /root/.cargo/registry/
+    - rsync -a --ignore-existing ./.cargo/registry/ /root/.cargo/registry/
   script:
     - git submodule update --init --recursive
     - mkdir -p build_packages
@@ -37,7 +37,7 @@ RelWithDebInfo:
     - ls -lh ./packages
     - ls -lh packages.tar.gz
     - du -h -d 1 /root/.cargo/registry/
-    - rsync -av --ignore-existing /root/.cargo/registry/ ./.cargo/registry/ 
+    - rsync -a --ignore-existing /root/.cargo/registry/ ./.cargo/registry/ 
   artifacts:
     name: "packages"
     expire_in: 2 week
