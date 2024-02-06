@@ -43,17 +43,22 @@ public class NoneTransaction extends BaseTransaction {
 
     @Override
     public void resolveWriteConflict(JobManager jobManager, Location currentLocation, RuntimeException e) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public CacheToObject preWritePrimaryKey() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void rollBackPessimisticLock(JobManager jobManager) {
+        throw new UnsupportedOperationException();
+    }
 
+    @Override
+    public void rollBackPessimisticPrimaryLock(JobManager jobManager) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -63,22 +68,22 @@ public class NoneTransaction extends BaseTransaction {
 
     @Override
     public void setForUpdateTs(long forUpdateTs) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public byte[] getPrimaryKeyLock() {
-        return new byte[0];
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void setPrimaryKeyLock(byte[] primaryKeyLock) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void setPrimaryKeyFuture(Future future) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override

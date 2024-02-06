@@ -33,9 +33,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.PartDeleteParam;
 import io.dingodb.exec.operator.params.PartInsertParam;
 import io.dingodb.exec.operator.params.PartUpdateParam;
-import io.dingodb.exec.operator.params.PessimisticLockDeleteParam;
-import io.dingodb.exec.operator.params.PessimisticLockInsertParam;
-import io.dingodb.exec.operator.params.PessimisticLockUpdateParam;
+import io.dingodb.exec.operator.params.PessimisticLockParam;
 import io.dingodb.exec.operator.params.TxnPartDeleteParam;
 import io.dingodb.exec.operator.params.TxnPartInsertParam;
 import io.dingodb.exec.operator.params.TxnPartUpdateParam;
@@ -52,9 +50,7 @@ import static io.dingodb.calcite.rel.DingoRel.dingo;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_UPDATE;
-import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_DELETE;
-import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_INSERT;
-import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_UPDATE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_UPDATE;
@@ -76,38 +72,87 @@ public class DingoTableModifyVisitFun {
                 case INSERT:
                     if (transaction != null) {
                         boolean pessimisticTxn = transaction.isPessimistic();
-                        if (pessimisticTxn && transaction.getPrimaryKeyLock() == null) {
-                            vertex = new Vertex(PESSIMISTIC_LOCK_INSERT,
-                                new PessimisticLockInsertParam(
-                                    tableId,
-                                    td.tupleType(),
-                                    td.keyMapping(),
-                                    transaction.getIsolationLevel(),
-                                    transaction.getStartTs(),
-                                    transaction.getForUpdateTs(),
-                                    true,
-                                    transaction.getPrimaryKeyLock(),
-                                    transaction.getLockTimeOut(),
-                                    td));
-                        } else {
-                            vertex = new Vertex(TXN_PART_INSERT,
+                        if (pessimisticTxn) {
+                            PessimisticLockParam pessimisticLockParam = new PessimisticLockParam(
+                                tableId,
+                                td.tupleType(),
+                                td.keyMapping(),
+                                transaction.getIsolationLevel(),
+                                transaction.getStartTs(),
+                                transaction.getForUpdateTs(),
+                                true,
+                                transaction.getPrimaryKeyLock(),
+                                transaction.getLockTimeOut(),
+                                true,
+                                td
+                            );
+                            Vertex lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
+                            lockVertex.setId(idGenerator.getOperatorId(task.getId()));
+                            Edge inputEdge = new Edge(input, lockVertex);
+                            input.addEdge(inputEdge);
+                            lockVertex.addIn(inputEdge);
+                            task.putVertex(lockVertex);
+
+                            Vertex insertVertex = new Vertex(TXN_PART_INSERT,
                                 new TxnPartInsertParam(
                                     tableId,
                                     td.tupleType(),
                                     td.keyMapping(),
-                                    pessimisticTxn,
+                                    true,
                                     transaction.getIsolationLevel(),
                                     pessimisticTxn ? transaction.getPrimaryKeyLock() : null,
                                     transaction.getStartTs(),
                                     pessimisticTxn ? transaction.getForUpdateTs() : 0L,
                                     transaction.getLockTimeOut(),
                                     td));
+                            insertVertex.setId(idGenerator.getOperatorId(task.getId()));
+                            Edge lockEdge = new Edge(lockVertex, insertVertex);
+                            lockVertex.addEdge(lockEdge);
+                            insertVertex.addIn(lockEdge);
+                            OutputHint hint = new OutputHint();
+                            hint.setToSumUp(true);
+                            insertVertex.setHint(hint);
+                            task.putVertex(insertVertex);
+                            outputs.add(insertVertex);
+                        } else {
+                            vertex = new Vertex(TXN_PART_INSERT,
+                                new TxnPartInsertParam(
+                                    tableId,
+                                    td.tupleType(),
+                                    td.keyMapping(),
+                                    false,
+                                    transaction.getIsolationLevel(),
+                                    pessimisticTxn ? transaction.getPrimaryKeyLock() : null,
+                                    transaction.getStartTs(),
+                                    pessimisticTxn ? transaction.getForUpdateTs() : 0L,
+                                    transaction.getLockTimeOut(),
+                                    td));
+                            vertex.setId(idGenerator.getOperatorId(task.getId()));
+                            task.putVertex(vertex);
+                            input.setPin(0);
+                            OutputHint hint = new OutputHint();
+                            hint.setToSumUp(true);
+                            vertex.setHint(hint);
+                            Edge edge = new Edge(input, vertex);
+                            input.addEdge(edge);
+                            vertex.addIn(edge);
+                            outputs.add(vertex);
                         }
                     } else {
                         vertex = new Vertex(
                             PART_INSERT,
                             new PartInsertParam(tableId, td.tupleType(), td.keyMapping(), td)
                         );
+                        vertex.setId(idGenerator.getOperatorId(task.getId()));
+                        task.putVertex(vertex);
+                        input.setPin(0);
+                        OutputHint hint = new OutputHint();
+                        hint.setToSumUp(true);
+                        vertex.setHint(hint);
+                        Edge edge = new Edge(input, vertex);
+                        input.addEdge(edge);
+                        vertex.addIn(edge);
+                        outputs.add(vertex);
                     }
                     break;
                 case UPDATE:
@@ -118,9 +163,29 @@ public class DingoTableModifyVisitFun {
                     );
                     if (transaction != null) {
                         boolean pessimisticTxn = transaction.isPessimistic();
-                        if (pessimisticTxn && transaction.getPrimaryKeyLock() == null) {
-                            vertex = new Vertex(PESSIMISTIC_LOCK_UPDATE,
-                                new PessimisticLockUpdateParam(
+                        if (pessimisticTxn) {
+                            PessimisticLockParam pessimisticLockParam = new PessimisticLockParam(
+                                tableId,
+                                td.tupleType(),
+                                td.keyMapping(),
+                                transaction.getIsolationLevel(),
+                                transaction.getStartTs(),
+                                transaction.getForUpdateTs(),
+                                true,
+                                transaction.getPrimaryKeyLock(),
+                                transaction.getLockTimeOut(),
+                                false,
+                                td
+                            );
+                            Vertex lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
+                            lockVertex.setId(idGenerator.getOperatorId(task.getId()));
+                            Edge inputEdge = new Edge(input, lockVertex);
+                            input.addEdge(inputEdge);
+                            lockVertex.addIn(inputEdge);
+                            task.putVertex(lockVertex);
+
+                            Vertex updateVertex = new Vertex(TXN_PART_UPDATE,
+                                new TxnPartUpdateParam(
                                     tableId,
                                     td.tupleType(),
                                     td.keyMapping(),
@@ -128,15 +193,24 @@ public class DingoTableModifyVisitFun {
                                     rel.getSourceExpressionList().stream()
                                         .map(SqlExprUtils::toSqlExpr)
                                         .collect(Collectors.toList()),
-                                    transaction.getIsolationLevel(),
-                                    transaction.getStartTs(),
-                                    transaction.getForUpdateTs(),
                                     true,
-                                    transaction.getPrimaryKeyLock(),
+                                    transaction.getIsolationLevel(),
+                                    pessimisticTxn ? transaction.getPrimaryKeyLock() : null,
+                                    transaction.getStartTs(),
+                                    pessimisticTxn ? transaction.getForUpdateTs() : 0L,
                                     transaction.getLockTimeOut(),
                                     td
                                 )
                             );
+                            updateVertex.setId(idGenerator.getOperatorId(task.getId()));
+                            Edge lockEdge = new Edge(lockVertex, updateVertex);
+                            lockVertex.addEdge(lockEdge);
+                            updateVertex.addIn(lockEdge);
+                            OutputHint hint = new OutputHint();
+                            hint.setToSumUp(true);
+                            updateVertex.setHint(hint);
+                            task.putVertex(updateVertex);
+                            outputs.add(updateVertex);
                         } else {
                             vertex = new Vertex(TXN_PART_UPDATE,
                                 new TxnPartUpdateParam(
@@ -147,7 +221,7 @@ public class DingoTableModifyVisitFun {
                                     rel.getSourceExpressionList().stream()
                                         .map(SqlExprUtils::toSqlExpr)
                                         .collect(Collectors.toList()),
-                                    pessimisticTxn,
+                                    false,
                                     transaction.getIsolationLevel(),
                                     pessimisticTxn ? transaction.getPrimaryKeyLock() : null,
                                     transaction.getStartTs(),
@@ -156,6 +230,16 @@ public class DingoTableModifyVisitFun {
                                     td
                                 )
                             );
+                            vertex.setId(idGenerator.getOperatorId(task.getId()));
+                            task.putVertex(vertex);
+                            input.setPin(0);
+                            OutputHint hint = new OutputHint();
+                            hint.setToSumUp(true);
+                            vertex.setHint(hint);
+                            Edge edge = new Edge(input, vertex);
+                            input.addEdge(edge);
+                            vertex.addIn(edge);
+                            outputs.add(vertex);
                         }
                     } else {
                         vertex = new Vertex(PART_UPDATE,
@@ -170,33 +254,48 @@ public class DingoTableModifyVisitFun {
                                 td
                             )
                         );
+                        vertex.setId(idGenerator.getOperatorId(task.getId()));
+                        task.putVertex(vertex);
+                        input.setPin(0);
+                        OutputHint hint = new OutputHint();
+                        hint.setToSumUp(true);
+                        vertex.setHint(hint);
+                        Edge edge = new Edge(input, vertex);
+                        input.addEdge(edge);
+                        vertex.addIn(edge);
+                        outputs.add(vertex);
                     }
                     break;
                 case DELETE:
                     if (transaction != null) {
                         boolean pessimisticTxn = transaction.isPessimistic();
-                        if (pessimisticTxn && transaction.getPrimaryKeyLock() == null) {
-                            vertex = new Vertex(PESSIMISTIC_LOCK_DELETE,
-                                new PessimisticLockDeleteParam(
-                                    tableId,
-                                    td.tupleType(),
-                                    td.keyMapping(),
-                                    transaction.getIsolationLevel(),
-                                    transaction.getStartTs(),
-                                    transaction.getForUpdateTs(),
-                                    true,
-                                    transaction.getPrimaryKeyLock(),
-                                    transaction.getLockTimeOut(),
-                                    td
-                                )
+                        if (pessimisticTxn) {
+                            PessimisticLockParam pessimisticLockParam = new PessimisticLockParam(
+                                tableId,
+                                td.tupleType(),
+                                td.keyMapping(),
+                                transaction.getIsolationLevel(),
+                                transaction.getStartTs(),
+                                transaction.getForUpdateTs(),
+                                true,
+                                transaction.getPrimaryKeyLock(),
+                                transaction.getLockTimeOut(),
+                                false,
+                                td
                             );
-                        } else {
-                            vertex = new Vertex(TXN_PART_DELETE,
+                            Vertex lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
+                            lockVertex.setId(idGenerator.getOperatorId(task.getId()));
+                            Edge inputEdge = new Edge(input, lockVertex);
+                            input.addEdge(inputEdge);
+                            lockVertex.addIn(inputEdge);
+                            task.putVertex(lockVertex);
+
+                            Vertex delateVertex = new Vertex(TXN_PART_DELETE,
                                 new TxnPartDeleteParam(
                                     tableId,
                                     td.tupleType(),
                                     td.keyMapping(),
-                                    pessimisticTxn,
+                                    true,
                                     transaction.getIsolationLevel(),
                                     pessimisticTxn ? transaction.getPrimaryKeyLock() : null,
                                     transaction.getStartTs(),
@@ -205,26 +304,60 @@ public class DingoTableModifyVisitFun {
                                     td
                                 )
                             );
+                            delateVertex.setId(idGenerator.getOperatorId(task.getId()));
+                            Edge lockEdge = new Edge(lockVertex, delateVertex);
+                            lockVertex.addEdge(lockEdge);
+                            delateVertex.addIn(lockEdge);
+                            OutputHint hint = new OutputHint();
+                            hint.setToSumUp(true);
+                            delateVertex.setHint(hint);
+                            task.putVertex(delateVertex);
+                            outputs.add(delateVertex);
+                        } else {
+                            vertex = new Vertex(TXN_PART_DELETE,
+                                new TxnPartDeleteParam(
+                                    tableId,
+                                    td.tupleType(),
+                                    td.keyMapping(),
+                                    false,
+                                    transaction.getIsolationLevel(),
+                                    pessimisticTxn ? transaction.getPrimaryKeyLock() : null,
+                                    transaction.getStartTs(),
+                                    pessimisticTxn ? transaction.getForUpdateTs() : 0L,
+                                    transaction.getLockTimeOut(),
+                                    td
+                                )
+                            );
+                            vertex.setId(idGenerator.getOperatorId(task.getId()));
+                            task.putVertex(vertex);
+                            input.setPin(0);
+                            OutputHint hint = new OutputHint();
+                            hint.setToSumUp(true);
+                            vertex.setHint(hint);
+                            Edge edge = new Edge(input, vertex);
+                            input.addEdge(edge);
+                            vertex.addIn(edge);
+                            outputs.add(vertex);
                         }
                     } else {
                         vertex = new Vertex(PART_DELETE,
                             new PartDeleteParam(tableId, td.tupleType(), td.keyMapping(), td)
                         );
+                        vertex.setId(idGenerator.getOperatorId(task.getId()));
+                        task.putVertex(vertex);
+                        input.setPin(0);
+                        OutputHint hint = new OutputHint();
+                        hint.setToSumUp(true);
+                        vertex.setHint(hint);
+                        Edge edge = new Edge(input, vertex);
+                        input.addEdge(edge);
+                        vertex.addIn(edge);
+                        outputs.add(vertex);
                     }
                     break;
                 default:
                     throw new IllegalStateException("Operation \"" + rel.getOperation() + "\" is not supported.");
             }
-            vertex.setId(idGenerator.getOperatorId(task.getId()));
-            task.putVertex(vertex);
-            input.setPin(0);
-            OutputHint hint = new OutputHint();
-            hint.setToSumUp(true);
-            vertex.setHint(hint);
-            Edge edge = new Edge(input, vertex);
-            input.addEdge(edge);
-            vertex.addIn(edge);
-            outputs.add(vertex);
         }
         return outputs;
     }

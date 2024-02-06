@@ -73,6 +73,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
         TXN_CACHE_LOCK(11),
         TXN_CACHE_EXTRA_DATA(12),
         TXN_CACHE_BLOCK_LOCK(13),
+        TXN_CACHE_RESIDUAL_LOCK(14),
 
         OP(20),
         TRANSACTION(60),

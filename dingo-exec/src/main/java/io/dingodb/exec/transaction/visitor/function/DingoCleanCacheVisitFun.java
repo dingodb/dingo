@@ -47,7 +47,8 @@ public class DingoCleanCacheVisitFun {
             CleanCacheParam param = new CleanCacheParam(
                 new BooleanType(true),
                 transaction.getStartTs(),
-                transaction.getType()
+                transaction.getType(),
+                transaction.getIsolationLevel()
             );
             Vertex vertex = new Vertex(TXN_CLEAN_CACHE, param);
             Task task = input.getTask();

@@ -26,6 +26,8 @@ import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.params.CleanCacheParam;
+import io.dingodb.exec.transaction.util.TransactionUtil;
+import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 import lombok.extern.slf4j.Slf4j;
@@ -48,12 +50,36 @@ public class CleanCacheOperator extends TransactionOperator {
         if (param.getTransactionType() == TransactionType.OPTIMISTIC) {
             store.deletePrefix(keyValue.getKey());
         } else {
-            byte[] dataKey = keyValue.getKey();
-            byte[] lockKey = Arrays.copyOf(dataKey, dataKey.length);
-            lockKey[0] = (byte) CommonId.CommonType.TXN_CACHE_LOCK.getCode();
-            lockKey[lockKey.length - 2] = (byte) Op.LOCK.getCode();
-            KeyValue lockKeyValue = store.get(lockKey);
-            long forUpdateTs = PrimitiveCodec.decodeLong(lockKeyValue.getValue());
+            byte[] lockKey = keyValue.getKey();
+            Object[] decode = ByteUtils.decodePessimisticLock(keyValue);
+            CommonId txnId = (CommonId) decode[1];
+            CommonId tableId = (CommonId) decode[2];
+            CommonId newPartId = (CommonId) decode[3];
+            byte[] key = (byte[]) decode[5];
+            long forUpdateTs = (long) decode[6];
+            KeyValue residualKeyValue = store.get(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, lockKey));
+            if (residualKeyValue != null) {
+                TransactionUtil.pessimisticPrimaryLockRollBack(
+                    txnId,
+                    tableId,
+                    newPartId,
+                    param.getIsolationLevel(),
+                    param.getStartTs(),
+                    forUpdateTs,
+                    key
+                );
+            }
+            byte[] dataKey = Arrays.copyOf(lockKey, lockKey.length);
+            dataKey[0] = (byte) CommonId.CommonType.TXN_CACHE_DATA.getCode();
+            dataKey[dataKey.length - 2] = (byte) Op.DELETE.getCode();
+            // delete dataKey
+            store.deletePrefix(dataKey);
+            dataKey[dataKey.length - 2] = (byte) Op.PUT.getCode();
+            // delete dataKey
+            store.deletePrefix(dataKey);
+            dataKey[dataKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
+            // delete dataKey
+            store.deletePrefix(dataKey);
             byte[] jobIdBytes = new CommonId(CommonId.CommonType.JOB, param.getStartTs(), forUpdateTs).encode();
             byte[] txnIdBytes = vertex.getTask().getTxnId().encode();
             // delete extraData
@@ -66,8 +92,6 @@ public class CleanCacheOperator extends TransactionOperator {
             // delete blockLock
             lockKey[0] = (byte) CommonId.CommonType.TXN_CACHE_BLOCK_LOCK.getCode();
             store.deletePrefix(lockKey);
-            // delete dataKey
-            store.deletePrefix(dataKey);
         }
         return true;
     }

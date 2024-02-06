@@ -139,7 +139,7 @@ public abstract class BaseTransaction implements ITransaction {
         if (getType() == TransactionType.NONE) {
             return;
         }
-        if (getSqlList().size() == 0 || !cache.checkCleanContinue()) {
+        if (getSqlList().size() == 0 || !cache.checkCleanContinue(isPessimistic())) {
             log.warn("{} The current {} has no data to cleanUp", txnId, transactionOf());
             return;
         }
@@ -337,6 +337,7 @@ public abstract class BaseTransaction implements ITransaction {
             if (iterator.hasNext()) {
                 Object[] next = iterator.next();
             }
+            log.info("{} {} cleanUpJobRun end", txnId, transactionOf());
         } catch (Throwable throwable) {
             log.error(throwable.getMessage(), throwable);
         } finally {
@@ -356,6 +357,7 @@ public abstract class BaseTransaction implements ITransaction {
             if (iterator.hasNext()) {
                 Object[] next = iterator.next();
             }
+            log.info("{} {} commitJobRun end", txnId, transactionOf());
         } catch (Throwable throwable) {
             log.error(throwable.getMessage(), throwable);
         } finally {

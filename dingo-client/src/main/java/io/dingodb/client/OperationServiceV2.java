@@ -515,7 +515,8 @@ public class OperationServiceV2 {
                     td,
                     scanTs,
                     transaction.getIsolationLevel(),
-                    transaction.getLockTimeOut()));
+                    transaction.getLockTimeOut(),
+                    true));
         } else {
             vertex = new Vertex(GET_BY_KEYS,
                 new GetByKeysParam(tableId, td.tupleType(), td.keyMapping(), null, null, td));

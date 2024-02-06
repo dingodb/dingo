@@ -110,6 +110,10 @@ public abstract class TxnScanOperatorBase extends ScanOperatorBase {
             byte[] key1 = kv1.getKey();
             byte[] key2 = kv2.getKey();
             int code = key1[key1.length - 2];
+            if (code == Op.NONE.getCode()) {
+                kv1 = getNextValue(localKVIterator);
+                continue;
+            }
             if (ByteArrayUtils.lessThan(key1, key2, pos, key1.length - 2)) {
                 if (
                     (code == Op.PUT.getCode() || code == Op.PUTIFABSENT.getCode())
@@ -153,7 +157,8 @@ public abstract class TxnScanOperatorBase extends ScanOperatorBase {
             }
         }
         while (kv1 != null) {
-            if (!mergedList.contains(kv1) && (kv1.getKey()[kv1.getKey().length - 2] != Op.DELETE.getCode())) {
+            if (!mergedList.contains(kv1) && (!Op.isDelete(kv1.getKey()[kv1.getKey().length - 2]))
+                && (!Op.isNone(kv1.getKey()[kv1.getKey().length - 2]))) {
                 mergedList.add(kv1);
             }
             kv1 = getNextValue(localKVIterator);

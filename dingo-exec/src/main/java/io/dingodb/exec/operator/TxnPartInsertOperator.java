@@ -35,8 +35,8 @@ import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
-import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
+import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -95,60 +95,25 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 Op.PUTIFABSENT.getCode(),
                 len,
                 txnIdByte, tableIdByte, partIdByte);
-            byte[] lockKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, dataKey);
-            KeyValue oldKeyValue = store.get(lockKey);
+            KeyValue oldKeyValue = store.get(dataKey);
             byte[] primaryLockKeyBytes = (byte[]) ByteUtils.decodePessimisticExtraKey(primaryLockKey)[5];
             if (!(ByteArrayUtils.compare(keyValueKey, primaryLockKeyBytes, 1) == 0)) {
                 // This key appears for the first time in the current transaction
                 if (oldKeyValue == null) {
-                    // for check deadLock
-                    byte[] deadLockKeyBytes = ByteUtils.encode(
-                        CommonId.CommonType.TXN_CACHE_BLOCK_LOCK,
-                        keyValue.getKey(),
-                        Op.LOCK.getCode(),
-                        len,
-                        txnIdByte,
-                        tableIdByte,
-                        partIdByte
-                    );
-                    KeyValue deadLockKeyValue = new KeyValue(deadLockKeyBytes, null);
-                    store.put(deadLockKeyValue);
-                    TxnPessimisticLock txnPessimisticLock = TransactionUtil.pessimisticLock(
-                        param.getLockTimeOut(),
-                        txnId,
-                        tableId,
-                        partId,
-                        primaryLockKeyBytes,
-                        keyValueKey,
-                        param.getStartTs(),
-                        forUpdateTs,
-                        param.getIsolationLevel()
-                    );
-                    long newForUpdateTs = txnPessimisticLock.getForUpdateTs();
-                    if (newForUpdateTs != forUpdateTs) {
-                        forUpdateTsByte = PrimitiveCodec.encodeLong(newForUpdateTs);
+                    StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
+                    KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), keyValueKey, param.getLockTimeOut());
+                    if (kvKeyValue != null && kvKeyValue.getValue() != null) {
+                        throw new DuplicateEntryException("Duplicate entry " +
+                            TransactionUtil.duplicateEntryKey(CommonId.decode(tableIdByte), keyValueKey) + " for key 'PRIMARY'");
                     }
-                    // get lock success, delete deadLockKey
-                    store.deletePrefix(deadLockKeyBytes);
-                    // lockKeyValue
-                    KeyValue lockKeyValue = new KeyValue(lockKey, forUpdateTsByte);
-                    // extraKeyValue
-                    KeyValue extraKeyValue = new KeyValue(
-                        ByteUtils.encode(
-                            CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
-                            keyValueKey,
-                            Op.NONE.getCode(),
-                            len,
-                            jobIdByte,
-                            tableIdByte,
-                            partIdByte),
-                        keyValue.getValue()
-                    );
+                    byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
+                    store = Services.LOCAL_STORE.getInstance(tableId, partId);
+                    if (store.get(rollBackKey) != null) {
+                        store.deletePrefix(rollBackKey);
+                    }
                     // write data
                     keyValue.setKey(dataKey);
-                    if (store.put(lockKeyValue)
-                        && store.put(extraKeyValue)
-                        && store.put(keyValue)
+                    if ( store.put(keyValue)
                         && context.getIndexId() == null
                     ) {
                         param.inc();
@@ -162,10 +127,16 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 // primary lock not existed ：
                 // 1、first put primary lock
                 if (oldKeyValue == null) {
+                    byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
+                    store = Services.LOCAL_STORE.getInstance(tableId, partId);
+                    if (store.get(rollBackKey) != null) {
+                        store.deletePrefix(rollBackKey);
+                    }
                     // first put primary lock
-                    // put lock data
-                    KeyValue lockKeyValue = new KeyValue(lockKey, forUpdateTsByte);
-                    if (store.put(lockKeyValue) && context.getIndexId() == null) {
+                    keyValue.setKey(dataKey);
+                    if ( store.put(keyValue)
+                        && context.getIndexId() == null
+                    ) {
                         param.inc();
                     }
                 } else {
@@ -221,22 +192,11 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 throw new DuplicateEntryException("Duplicate entry " +
                     TransactionUtil.duplicateEntryKey(CommonId.decode(tableIdByte), key) + " for key 'PRIMARY'");
             } else {
-                // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
-                byte[] extraKey = ByteUtils.encode(
-                    CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
-                    key,
-                    oldKey[oldKey.length - 2],
-                    len,
-                    jobIdByte,
-                    tableIdByte,
-                    partIdByte
-                );
-                KeyValue extraKeyValue = new KeyValue(extraKey, Arrays.copyOf(value.getValue(), value.getValue().length));
                 // write data
                 keyValue.setKey(dataKey);
                 deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
                 store.deletePrefix(deleteKey);
-                if (store.put(extraKeyValue) && store.put(keyValue) && context.getIndexId() == null) {
+                if (store.put(keyValue) && context.getIndexId() == null) {
                     param.inc();
                 }
             }

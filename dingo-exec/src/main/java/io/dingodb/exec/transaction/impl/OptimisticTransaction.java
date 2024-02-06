@@ -61,6 +61,11 @@ public class OptimisticTransaction extends BaseTransaction {
     }
 
     @Override
+    public void rollBackPessimisticPrimaryLock(JobManager jobManager) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public long getForUpdateTs() {
         throw new UnsupportedOperationException();
     }

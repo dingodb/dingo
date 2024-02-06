@@ -33,7 +33,7 @@ import java.util.List;
 
 @Getter
 @JsonTypeName("cleanCache")
-@JsonPropertyOrder({"txnType", "startTs", "schema"})
+@JsonPropertyOrder({"txnType", "startTs", "isolationLevel", "schema"})
 public class CleanCacheParam extends AbstractParams {
 
     @JsonProperty("schema")
@@ -42,6 +42,8 @@ public class CleanCacheParam extends AbstractParams {
     private final long startTs;
     @JsonProperty("txnType")
     private final TransactionType transactionType;
+    @JsonProperty("isolationLevel")
+    private final int isolationLevel;
     @Setter
     private CommonId tableId;
     @Setter
@@ -50,11 +52,13 @@ public class CleanCacheParam extends AbstractParams {
     public CleanCacheParam(
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("startTs") long startTs,
-        @JsonProperty("txnType") TransactionType transactionType
+        @JsonProperty("txnType") TransactionType transactionType,
+        @JsonProperty("isolationLevel") int isolationLevel
     ) {
         this.schema = schema;
         this.startTs = startTs;
         this.transactionType = transactionType;
+        this.isolationLevel = isolationLevel;
     }
 
     @Override

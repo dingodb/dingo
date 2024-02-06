@@ -417,10 +417,24 @@ public class TransactionStoreInstance {
                 log.info("{} txnCheckStatus : {}", funName, statusResponse);
                 TxnResultInfo resultInfo = statusResponse.getTxnResult();
                 // success
+                Action action = statusResponse.getAction();
                 if (resultInfo == null) {
                     long lockTtl = statusResponse.getLockTtl();
                     long commitTs = statusResponse.getCommitTs();
-                    if (lockTtl > 0) {
+                    if (lockInfo.getLockType() == Op.Lock && lockInfo.getForUpdateTs() != 0
+                        && (action == Action.LockNotExistRollback
+                        || action == Action.TTLExpirePessimisticRollback
+                        || action == Action.TTLExpireRollback)) {
+                        // pessimistic lock
+                        TxnPessimisticRollBack pessimisticRollBack = TxnPessimisticRollBack.builder().
+                            isolationLevel(IsolationLevel.of(isolationLevel))
+                            .startTs(lockInfo.getLockTs())
+                            .forUpdateTs(lockInfo.getForUpdateTs())
+                            .keys(Collections.singletonList(lockInfo.getKey()))
+                            .build();
+                        txnPessimisticLockRollback(pessimisticRollBack);
+                        resolveLockStatus = ResolveLockStatus.PESSIMISTIC_ROLLBACK;
+                    } else if (lockTtl > 0) {
                         // wait
                         resolveLockStatus = ResolveLockStatus.LOCK_TTL;
                     } else if (commitTs > 0) {
@@ -447,24 +461,26 @@ public class TransactionStoreInstance {
                         resolveLockStatus = ResolveLockStatus.ROLLBACK;
                     }
                 } else {
-                    // pessimistic lock
-                    Action action = statusResponse.getAction();
-                    if (lockInfo.getLockType() == Op.Lock && lockInfo.getForUpdateTs() != 0) {
-                        if (action == Action.LockNotExistRollback
-                            || action == Action.TTLExpirePessimisticRollback
-                            || action == Action.TTLExpireRollback) {
-                            TxnPessimisticRollBack pessimisticRollBack = TxnPessimisticRollBack.builder().
-                                isolationLevel(IsolationLevel.of(isolationLevel))
-                                .startTs(lockInfo.getLockTs())
-                                .forUpdateTs(lockInfo.getForUpdateTs())
-                                .keys(Collections.singletonList(lockInfo.getKey()))
-                                .build();
-                            txnPessimisticLockRollback(pessimisticRollBack);
-                            resolveLockStatus = ResolveLockStatus.PESSIMISTIC_ROLLBACK;
-                        } else {
-                            resolveLockStatus = ResolveLockStatus.LOCK_TTL;
+                    lockInfo = resultInfo.getLocked();
+                    if (lockInfo != null) {
+                        // pessimistic lock
+                        if (lockInfo.getLockType() == Op.Lock && lockInfo.getForUpdateTs() != 0) {
+                            if (action == Action.LockNotExistRollback
+                                || action == Action.TTLExpirePessimisticRollback
+                                || action == Action.TTLExpireRollback) {
+                                TxnPessimisticRollBack pessimisticRollBack = TxnPessimisticRollBack.builder().
+                                    isolationLevel(IsolationLevel.of(isolationLevel))
+                                    .startTs(lockInfo.getLockTs())
+                                    .forUpdateTs(lockInfo.getForUpdateTs())
+                                    .keys(Collections.singletonList(lockInfo.getKey()))
+                                    .build();
+                                txnPessimisticLockRollback(pessimisticRollBack);
+                                resolveLockStatus = ResolveLockStatus.PESSIMISTIC_ROLLBACK;
+                            } else {
+                                resolveLockStatus = ResolveLockStatus.LOCK_TTL;
+                            }
+                            continue;
                         }
-                        continue;
                     }
                     // 1、PrimaryMismatch  or  TxnNotFound
                     if (resultInfo.getPrimaryMismatch() != null) {
@@ -479,6 +495,10 @@ public class TransactionStoreInstance {
                 WriteConflict writeConflict = txnResultInfo.getWriteConflict();
                 log.info("{} writeConflict : {}", funName, writeConflict);
                 if (writeConflict != null) {
+                    //  write column exist and commit_ts > for_update_ts
+                    if (funName.equalsIgnoreCase("txnPessimisticLock")) {
+                        continue;
+                    }
                     throw new WriteConflictException(writeConflict.toString());
                 }
             }
@@ -506,25 +526,37 @@ public class TransactionStoreInstance {
                 TxnCheckTxnStatusResponse statusResponse = txnCheckTxnStatus(txnCheckStatus);
                 log.info("{} txnCheckStatus : {}", funName, statusResponse);
                 TxnResultInfo resultInfo = statusResponse.getTxnResult();
-                // success
-                if (statusResponse.getAction() == Action.MinCommitTSPushed && statusResponse.getLockTtl() > 0) {
-                    resolvedLocks.add(lockInfo.getLockTs());
-                    resolveLockStatus = ResolveLockStatus.MIN_COMMIT_TS_PUSHED;
-                    continue;
-                }
                 if (resultInfo == null) {
+                    Action action = statusResponse.getAction();
                     long lockTtl = statusResponse.getLockTtl();
                     long commitTs = statusResponse.getCommitTs();
-                    if (lockTtl > 0) {
-                        // wait
-                        Action action = statusResponse.getAction();
-                        switch (action) {
-                            case MinCommitTSPushed:
-                                resolvedLocks.add(currentTs);
-                                resolveLockStatus = ResolveLockStatus.LOCK_TTL;
-                                break;
-                            default:
-                                break;
+                    if (lockInfo.getLockType() == Op.Lock && lockInfo.getForUpdateTs() != 0
+                        && (action == Action.LockNotExistRollback
+                        || action == Action.TTLExpirePessimisticRollback
+                        || action == Action.TTLExpireRollback)) {
+                        // pessimistic lock
+                        TxnPessimisticRollBack pessimisticRollBack = TxnPessimisticRollBack.builder().
+                            isolationLevel(IsolationLevel.of(isolationLevel))
+                            .startTs(lockInfo.getLockTs())
+                            .forUpdateTs(lockInfo.getForUpdateTs())
+                            .keys(Collections.singletonList(lockInfo.getKey()))
+                            .build();
+                        txnPessimisticLockRollback(pessimisticRollBack);
+                        resolveLockStatus = ResolveLockStatus.PESSIMISTIC_ROLLBACK;
+                    } else if (lockTtl > 0) {
+                        if (action != null) {
+                            // wait
+                            switch (action) {
+                                case MinCommitTSPushed:
+                                    resolvedLocks.add(currentTs);
+                                    resolveLockStatus = ResolveLockStatus.LOCK_TTL;
+                                    break;
+                                default:
+                                    break;
+                            }
+                        } else {
+                            // wait
+                            resolveLockStatus = ResolveLockStatus.LOCK_TTL;
                         }
                     } else if (commitTs > 0) {
                         // resolveLock store commit
@@ -550,26 +582,35 @@ public class TransactionStoreInstance {
                         resolveLockStatus = ResolveLockStatus.ROLLBACK;
                     }
                 } else {
-                    // pessimistic lock
-                    Action action = statusResponse.getAction();
-                    if (lockInfo.getLockType() == Op.Lock && lockInfo.getForUpdateTs() != 0
-                        && (action == Action.LockNotExistRollback
-                        || action == Action.TTLExpirePessimisticRollback
-                        || action == Action.TTLExpireRollback)) {
-                        TxnPessimisticRollBack pessimisticRollBack = TxnPessimisticRollBack.builder().
-                            isolationLevel(IsolationLevel.of(isolationLevel))
-                            .startTs(lockInfo.getLockTs())
-                            .forUpdateTs(lockInfo.getForUpdateTs())
-                            .keys(Collections.singletonList(lockInfo.getKey()))
-                            .build();
-                        txnPessimisticLockRollback(pessimisticRollBack);
-                        resolveLockStatus = ResolveLockStatus.PESSIMISTIC_ROLLBACK;
-                        continue;
-                    }
-                    if (lockInfo.getMinCommitTs() >= startTs) {
-                        resolvedLocks.add(lockInfo.getLockTs());
-                        resolveLockStatus = ResolveLockStatus.MIN_COMMIT_TS_PUSHED;
-                        continue;
+                    lockInfo = resultInfo.getLocked();
+                    if (lockInfo != null) {
+                        // success
+                        if (statusResponse.getAction() == Action.MinCommitTSPushed && statusResponse.getLockTtl() > 0) {
+                            resolvedLocks.add(lockInfo.getLockTs());
+                            resolveLockStatus = ResolveLockStatus.MIN_COMMIT_TS_PUSHED;
+                            continue;
+                        }
+                        // pessimistic lock
+                        Action action = statusResponse.getAction();
+                        if (lockInfo.getLockType() == Op.Lock && lockInfo.getForUpdateTs() != 0
+                            && (action == Action.LockNotExistRollback
+                            || action == Action.TTLExpirePessimisticRollback
+                            || action == Action.TTLExpireRollback)) {
+                            TxnPessimisticRollBack pessimisticRollBack = TxnPessimisticRollBack.builder().
+                                isolationLevel(IsolationLevel.of(isolationLevel))
+                                .startTs(lockInfo.getLockTs())
+                                .forUpdateTs(lockInfo.getForUpdateTs())
+                                .keys(Collections.singletonList(lockInfo.getKey()))
+                                .build();
+                            txnPessimisticLockRollback(pessimisticRollBack);
+                            resolveLockStatus = ResolveLockStatus.PESSIMISTIC_ROLLBACK;
+                            continue;
+                        }
+                        if (lockInfo.getMinCommitTs() >= startTs) {
+                            resolvedLocks.add(lockInfo.getLockTs());
+                            resolveLockStatus = ResolveLockStatus.MIN_COMMIT_TS_PUSHED;
+                            continue;
+                        }
                     }
                     // 1、PrimaryMismatch  or  TxnNotFound
                     if (resultInfo.getPrimaryMismatch() != null) {

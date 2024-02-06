@@ -42,6 +42,8 @@ public class TransactionCache {
 
     private final boolean pessimisticRollback;
 
+    private boolean pessimisticTransaction;
+
     private final boolean cleanCache;
 
     public TransactionCache(CommonId txnId) {
@@ -57,10 +59,11 @@ public class TransactionCache {
         this.cleanCache = false;
     }
 
-    public TransactionCache(CommonId txnId, boolean cleanCache) {
+    public TransactionCache(CommonId txnId, boolean cleanCache, boolean pessimisticTransaction) {
         this.txnId = txnId;
         this.pessimisticRollback = false;
         this.cleanCache = cleanCache;
+        this.pessimisticTransaction = pessimisticTransaction;
     }
 
 
@@ -101,6 +104,10 @@ public class TransactionCache {
         return cache.get(keys);
     }
 
+    public void deletePrefix(byte[] key) {
+        cache.deletePrefix(key);
+    }
+
     public byte[] getScanPrefix(CommonId.CommonType type, CommonId commonId) {
         byte[] txnByte = commonId.encode();
         byte[] result = new byte[txnByte.length + CommonId.TYPE_LEN];
@@ -114,8 +121,13 @@ public class TransactionCache {
         return iterator.hasNext();
     }
 
-    public boolean checkCleanContinue() {
-        Iterator<KeyValue> iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_DATA, txnId));
+    public boolean checkCleanContinue(boolean isPessimistic) {
+        Iterator<KeyValue> iterator;
+        if (isPessimistic) {
+            iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_LOCK, txnId));
+        } else {
+            iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_DATA, txnId));
+        }
         return iterator.hasNext();
     }
 
@@ -130,7 +142,11 @@ public class TransactionCache {
             iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_EXTRA_DATA, jobId));
             return Iterators.transform(iterator, wrap(ByteUtils::decode)::apply);
         } else if (cleanCache) {
-            iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_DATA, txnId));
+            if (pessimisticTransaction) {
+                iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_LOCK, txnId));
+            } else {
+                iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_DATA, txnId));
+            }
             return Iterators.transform(iterator, wrap(ByteUtils::decodeTxnCleanUp)::apply);
         } else {
             iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_DATA, txnId));
