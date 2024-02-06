@@ -35,7 +35,7 @@ RelWithDebInfo:
     - md5sum packages.tar.gz
     - ls -lh ./packages
     - ls -lh packages.tar.gz
-    - du -h -d 1 ~/.cargo/registry
+    - du -h -d 1 ~/.cargo
   artifacts:
     name: "packages"
     expire_in: 2 week
