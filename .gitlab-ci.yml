@@ -9,6 +9,7 @@ RelWithDebInfo:
     # key: $CI_JOB_NAME
     paths:
       - ~/.cargo/registry
+      - ~/.cargo/git
   image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.3
   script:
     - pwd
