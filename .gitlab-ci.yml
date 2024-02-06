@@ -1,3 +1,8 @@
+cache:
+  paths:
+    - ~/.cargo/git
+    - ~/.cargo/registry
+
 stages:
   - BuildPackage
   - UnitTest
@@ -5,7 +10,7 @@ stages:
 
 RelWithDebInfo:
   stage: BuildPackage
-  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.2
+  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.3
   script:
     - git submodule update --init --recursive
     - mkdir -p build_packages
@@ -39,7 +44,7 @@ UnitTest:
   needs:
     - job: RelWithDebInfo
       artifacts: true
-  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.2
+  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.3
   script:
     - tar -zxvf packages.tar.gz
     - ./packages/unit_tests
@@ -51,7 +56,7 @@ GoogleBenchmark:
       artifacts: false
     - job: RelWithDebInfo
       artifacts: true
-  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.2
+  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.3
   script:
     - tar -zxvf packages.tar.gz
     - bash scripts/download_datasets.sh
