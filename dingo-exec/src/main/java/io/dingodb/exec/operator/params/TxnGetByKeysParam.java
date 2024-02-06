@@ -30,7 +30,8 @@ import lombok.Getter;
 
 @Getter
 @JsonTypeName("txnGet")
-@JsonPropertyOrder({"scanTs", "isolationLevel", "timeOut", "table", "part", "schema", "keyMapping", "keys", "filter", "selection"})
+@JsonPropertyOrder({"scanTs", "isolationLevel", "timeOut", "isSelect", "table",
+    "part", "schema", "keyMapping", "keys", "filter", "selection"})
 public class TxnGetByKeysParam extends FilterProjectParam {
 
     private KeyValueCodec codec;
@@ -41,6 +42,8 @@ public class TxnGetByKeysParam extends FilterProjectParam {
     private final int isolationLevel;
     @JsonProperty("timeOut")
     private final long timeOut;
+    @JsonProperty("isSelect")
+    private final boolean isSelect;
 
     public TxnGetByKeysParam(
         CommonId tableId,
@@ -51,7 +54,8 @@ public class TxnGetByKeysParam extends FilterProjectParam {
         Table table,
         long scanTs,
         int isolationLevel,
-        long timeOut
+        long timeOut,
+        boolean isSelect
     ) {
         super(tableId, schema, filter, selection, keyMapping);
         this.codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
@@ -59,6 +63,7 @@ public class TxnGetByKeysParam extends FilterProjectParam {
         this.scanTs = scanTs;
         this.isolationLevel = isolationLevel;
         this.timeOut = timeOut;
+        this.isSelect = isSelect;
     }
 
     @Override

@@ -99,6 +99,9 @@ public class PessimisticTransaction extends BaseTransaction {
             DingoTransactionRenderJob.renderRollBackPessimisticLockJob(job, currentLocation, this, true);
             // 3、run RollBackPessimisticLock
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+            if (iterator.hasNext()) {
+                Object[] next = iterator.next();
+            }
             this.status = TransactionStatus.ROLLBACK_PESSIMISTIC_LOCK;
         } catch (Throwable t) {
             log.info(t.getMessage(), t);
@@ -109,6 +112,29 @@ public class PessimisticTransaction extends BaseTransaction {
             log.info("{} {}  RollBackPessimisticLock End Status:{}, Cost:{}ms",
                 txnId, transactionOf(), status, (System.currentTimeMillis() - rollBackStart));
             jobManager.removeJob(jobId);
+        }
+    }
+
+    @Override
+    public void rollBackPessimisticPrimaryLock(JobManager jobManager) {
+        if (future != null) {
+            future.cancel(true);
+        }
+        if (primaryKeyLock != null && forUpdateTs != 0) {
+            Object[] objects = ByteUtils.decodePessimisticExtraKey(primaryKeyLock);
+            CommonId tableId = (CommonId) objects[2];
+            CommonId newPartId = (CommonId) objects[3];
+            byte[] key = (byte[]) objects[5];
+            log.info("{} pessimisticPrimaryLockRollBack key:{}", txnId, Arrays.toString(key));
+            TransactionUtil.pessimisticPrimaryLockRollBack(
+                txnId,
+                tableId,
+                newPartId,
+                isolationLevel,
+                startTs,
+                forUpdateTs,
+                key
+            );
         }
     }
 
@@ -142,11 +168,14 @@ public class PessimisticTransaction extends BaseTransaction {
         deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
         byte[] updateKey = Arrays.copyOf(insertKey, insertKey.length);
         updateKey[updateKey.length - 2] = (byte) Op.PUT.getCode();
-        List<byte[]> bytes = new ArrayList<>(3);
+        byte[] noneKey  = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, updateKey);
+        List<byte[]> bytes = new ArrayList<>(4);
         bytes.add(insertKey);
         bytes.add(deleteKey);
         bytes.add(updateKey);
+        bytes.add(noneKey);
         List<KeyValue> keyValues = cache.getKeys(bytes);
+        cache.deletePrefix(noneKey);
         if (keyValues != null && keyValues.size() > 0) {
             if (keyValues.size() > 1) {
                 throw new RuntimeException(txnId + " PrimaryKey is not existed than two in local store");

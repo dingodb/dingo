@@ -51,6 +51,9 @@ public final class TxnGetByKeysOperator extends FilterProjectOperator {
         TxnGetByKeysParam param = vertex.getParam();
         param.setContext(context);
         byte[] keys = param.getCodec().encodeKey(tuple);
+        if (vertex.getTask().getTransactionType() == TransactionType.PESSIMISTIC && !param.isSelect()) {
+            return Collections.singletonList(tuple).iterator();
+        }
         CommonId tableId = param.getTableId();
         CommonId txnId = vertex.getTask().getTxnId();
         CommonId partId = context.getDistribution().getId();

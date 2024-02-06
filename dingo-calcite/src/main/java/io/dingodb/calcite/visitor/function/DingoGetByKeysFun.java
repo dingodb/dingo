@@ -120,7 +120,8 @@ public final class DingoGetByKeysFun {
                 td,
                 scanTs,
                 transaction.getIsolationLevel(),
-                transaction.getLockTimeOut()
+                transaction.getLockTimeOut(),
+                visitor.getKind() == SqlKind.SELECT
             );
             getVertex = new Vertex(TXN_GET_BY_KEYS, param);
         } else {

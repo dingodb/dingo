@@ -426,11 +426,18 @@ public final class DingoDriverParser extends DingoParser {
     ) {
         Job job = jobManager.createJob(transaction.getStartTs(), jobSeqId, transaction.getTxnId(), dingoType);
         DingoJobVisitor.renderJob(job, relNode, currentLocation, true, transaction, sqlNode.getKind());
-        Iterator<Object[]> iterator = jobManager.createIterator(job, null);
-        if (iterator.hasNext()) {
-            Object[] next = iterator.next();
+        try {
+            Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+            if (iterator.hasNext()) {
+                Object[] next = iterator.next();
+            }
+        } catch (Throwable throwable) {
+            log.error(throwable.getMessage(), throwable);
+            transaction.rollBackPessimisticPrimaryLock(jobManager);
+            throw ExceptionUtils.toRuntime(throwable);
+        } finally {
+            jobManager.removeJob(job.getJobId());
         }
-        jobManager.removeJob(job.getJobId());
     }
 
     private Set<RelOptTable> useTables(RelNode relNode, SqlNode sqlNode) {

@@ -39,6 +39,10 @@ public class ScanCleanCacheParam extends ScanCacheParam {
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
-        cache = new TransactionCache(vertex.getTask().getTxnId(), true);
+        cache = new TransactionCache(
+            vertex.getTask().getTxnId(),
+            true,
+            transactionType == TransactionType.PESSIMISTIC
+        );
     }
 }

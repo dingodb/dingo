@@ -28,6 +28,25 @@ public enum Op {
         return code;
     }
 
+    public static boolean isNone(int code) {
+        return code == NONE.getCode();
+    }
+    public static boolean isPut(int code) {
+        return code == PUT.getCode();
+    }
+    public static boolean isDelete(int code) {
+        return code == DELETE.getCode();
+    }
+    public static boolean isPutIfAbsent(int code) {
+        return code == PUTIFABSENT.getCode();
+    }
+    public static boolean isRollBack(int code) {
+        return code == ROLLBACK.getCode();
+    }
+    public static boolean isLock(int code) {
+        return code == LOCK.getCode();
+    }
+
     public static Op forNumber(int code) {
         switch (code) {
             case 0: return NONE;
