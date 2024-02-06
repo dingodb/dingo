@@ -58,10 +58,16 @@ GoogleBenchmark:
       artifacts: true
   image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.3
   script:
+    - if [ ! -f scripts/query_terms.json ] || [ ! -f scripts/wiki_560w.json ]; then bash scripts/download_datasets.sh; fi
     - tar -zxvf packages.tar.gz
-    - bash scripts/download_datasets.sh
     - ./packages/tantivy_search_benchmark --qtp=scripts/query_terms.json --dp=scripts/wiki_560w.json --ip=./temp --sbi=false | tee google_benchmark_results.txt
     - md5sum google_benchmark_results.txt
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}-datasets
+    paths:
+      - scripts/query_terms.json
+      - scripts/wiki_560w.json
+    policy: pull-push
   artifacts:
     name: "google_benchmark_results"
     expire_in: 2 week
