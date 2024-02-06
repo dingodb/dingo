@@ -3,8 +3,7 @@ use flurry::{DefaultHashBuilder, HashMap};
 use once_cell::sync::OnceCell;
 use std::hash::{BuildHasher, Hash};
 
-use crate::commons::*;
-use crate::INFO;
+use crate::{common::constants::LOG_CALLBACK, INFO};
 
 /// and this part of the code will need to be removed when rewriting the processor in the future.
 /// A cache structure that stores key-value pairs.
@@ -96,9 +95,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::flurry_cache::FlurryCache;
     use roaring::RoaringBitmap;
     use std::sync::Arc;
+
+    use crate::common::flurry_cache::FlurryCache;
 
     #[derive(Debug, PartialEq)]
     struct TestData {

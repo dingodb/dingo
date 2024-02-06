@@ -3,10 +3,10 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::{fs, path::Path};
 
-use crate::commons::CUSTOM_INDEX_SETTING_FILE_NAME;
 use crate::logger::ffi_logger::callback_with_thread_info;
 
-use crate::{commons::LOG_CALLBACK, WARNING};
+use crate::common::constants::CUSTOM_INDEX_SETTING_FILE_NAME;
+use crate::{common::constants::LOG_CALLBACK, WARNING};
 
 #[derive(Serialize, Deserialize)]
 pub struct CustomIndexSetting {
@@ -14,7 +14,7 @@ pub struct CustomIndexSetting {
 }
 
 /// Before build index, we need prepare this directory.
-pub fn prepare_index_directory(path: &Path) -> Result<(), String> {
+pub fn initialize_index_directory(path: &Path) -> Result<(), String> {
     if path.exists() {
         WARNING!(
             "Directory not empty, will remove old data to create new index in this directory:{:?}",
@@ -112,7 +112,7 @@ pub fn load_custom_index_setting(index_file_path: &Path) -> Result<CustomIndexSe
 #[cfg(test)]
 mod tests {
     #[test]
-    fn test_prepare_index_directory() {
-        // prepare_index_directory()
+    fn test_initialize_index_directory() {
+        // initialize_index_directory()
     }
 }

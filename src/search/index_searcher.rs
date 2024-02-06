@@ -1,11 +1,8 @@
-use crate::commons::LOG_CALLBACK;
 use crate::logger::ffi_logger::callback_with_thread_info;
 use crate::tokenizer::parse_and_register::get_custom_tokenizer;
 use crate::tokenizer::parse_and_register::register_tokenizer_to_index;
 use crate::RowIdWithScore;
-use crate::ERROR;
-use crate::INFO;
-use crate::WARNING;
+use crate::{common::constants::LOG_CALLBACK, ERROR, INFO, WARNING};
 use cxx::CxxString;
 use cxx::CxxVector;
 use cxx::UniquePtr;
@@ -19,8 +16,8 @@ use super::utils::perform_search;
 use super::utils::perform_search_with_range;
 use super::utils::row_ids_to_u8_bitmap;
 use super::utils::u8_bitmap_to_row_ids;
+use crate::common::constants::CACHE_FOR_SKIP_INDEX;
 use crate::common::index_utils::*;
-use crate::commons::CACHE_FOR_SKIP_INDEX;
 
 use tantivy::{Index, ReloadPolicy};
 

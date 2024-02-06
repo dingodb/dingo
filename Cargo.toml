@@ -44,15 +44,6 @@ use-flurry-cache = []
 use-shared-search-pool = []
 default = ["use-flurry-cache", "use-shared-search-pool"]
 
-[profile.release]
+[profile.relwithdebinfo]
+inherits = "release"
 debug = true
-
-
-[[bin]]
-name = "delete_term"
-path = "demo/delete_term.rs"
-
-[[bin]]
-name = "search_examples"
-path = "demo/search_examples.rs"
-

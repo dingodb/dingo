@@ -1,5 +1,4 @@
-use crate::commons::LogCallback;
-use crate::commons::LOG_CALLBACK;
+use crate::common::constants::{LogCallback, LOG_CALLBACK};
 use log::LevelFilter;
 use log4rs::{
     append::console::ConsoleAppender,
@@ -66,10 +65,10 @@ fn build_log_config(
     // TODO: refine this hard code.
     if log_in_file {
         let roller = FixedWindowRoller::builder()
-            .build(&log_rolling_pattern, 3)
+            .build(&log_rolling_pattern, 10)
             .map_err(|e| e.to_string())?;
 
-        let size_trigger = SizeTrigger::new(20 * 1024 * 1024); // log file trigger size: 20MB
+        let size_trigger = SizeTrigger::new(100 * 1024 * 1024); // log file trigger size: 20MB
         let policy = CompoundPolicy::new(Box::new(size_trigger), Box::new(roller));
 
         let file = RollingFileAppender::builder()

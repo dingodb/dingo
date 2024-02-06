@@ -1,8 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::logger::ffi_logger::callback_with_thread_info;
-use crate::WARNING;
-use crate::{commons::LOG_CALLBACK, INFO};
+use crate::{common::constants::LOG_CALLBACK, INFO, WARNING};
 use flurry::HashMap;
 use once_cell::sync::Lazy;
 use tantivy::{Document, Index, IndexWriter, Opstamp, Term};

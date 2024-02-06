@@ -6,8 +6,20 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 project(TANTIVY_LIB)
 add_subdirectory(contrib ${CMAKE_CURRENT_BINARY_DIR}/contrib)
 
-#find_package(Corrosion REQUIRED)
-corrosion_import_crate(MANIFEST_PATH "Cargo.toml")
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(RUST_PROFILE release)
+elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    set(RUST_PROFILE relwithdebinfo)
+elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(RUST_PROFILE dev)
+else()
+    set(RUST_PROFILE relwithdebinfo)
+endif()
+
+corrosion_import_crate(
+    MANIFEST_PATH "Cargo.toml"
+    PROFILE ${RUST_PROFILE}
+)
 
 set(rust_lib "tantivy_search")
 # -Wno-dollar-in-identifier-extension: cxx bridge complies names with '$'

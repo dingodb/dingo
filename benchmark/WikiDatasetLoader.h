@@ -7,7 +7,8 @@
 #include <mutex>
 #include <string>
 #include <tantivy_search.h>
-
+#include <random>
+#include <ctime>
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 
@@ -41,24 +42,22 @@ public:
     void setIndexDirectory(const std::string& index_directory);
     std::string getIndexDirectory();
 
-    std::vector<uint64_t> getRowIdRanges();
-    size_t getGranuleStep();
+    std::vector<uint64_t> getRowIdRanges(size_t index_granularity);
+    std::vector<size_t> generateRandomArray(int length, int min, int max);
 
 private:
     WikiDatasetLoader(){};
-    size_t row_id_step = 8192;
     size_t wiki_total_docs = 5600000; // wiki stored ≈ 560w rows doc
 
     std::string query_terms_file_path;
     std::string doc_file_path;
 
     std::string index_directory; // directory stored index files
-    std::vector<std::string> query_terms; // search some terms
+    std::vector<std::string> query_terms; // stored ≈ 10w terms for search
     std::vector<size_t> row_id_range;
     std::vector<Doc> docs;
 
     // mutexes for thread-safety
     std::mutex query_terms_mutex;
     std::mutex docs_mutex;
-    std::mutex row_id_range_mutex;
 };

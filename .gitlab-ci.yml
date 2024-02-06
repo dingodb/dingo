@@ -39,12 +39,28 @@ UnitTest:
   needs:
     - job: RelWithDebInfo
       artifacts: true
-  artifacts:
-    name: "packages"
-    paths:
-      - packages.tar.gz
-    when: always
   image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.2
   script:
     - tar -zxvf packages.tar.gz
     - ./packages/unit_tests
+
+GoogleBenchmark:
+  stage: Profiling
+  needs:
+    - job: UnitTest
+      artifacts: false
+    - job: RelWithDebInfo
+      artifacts: true
+  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.2
+  script:
+    - tar -zxvf packages.tar.gz
+    - bash scripts/download_datasets.sh
+    - ./packages/tantivy_search_benchmark --qtp=scripts/query_terms.json --dp=scripts/wiki_560w.json --ip=./temp --sbi=false | tee google_benchmark_results.txt
+    - md5sum google_benchmark_results.txt
+  artifacts:
+    name: "google_benchmark_results"
+    expire_in: 2 week
+    paths:
+      - google_benchmark_results.txt
+
+  

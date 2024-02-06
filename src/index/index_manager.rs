@@ -10,13 +10,12 @@ use tantivy::schema::FAST;
 use tantivy::schema::INDEXED;
 use tantivy::schema::{IndexRecordOption, STORED};
 
-use crate::commons::LOG_CALLBACK;
 use crate::logger::ffi_logger::callback_with_thread_info;
 use crate::search::index_r::*;
 use crate::search::index_searcher::tantivy_reader_free;
 use crate::tokenizer::parse_and_register::get_custom_tokenizer;
 use crate::tokenizer::parse_and_register::register_tokenizer_to_index;
-use crate::{DEBUG, ERROR, INFO, WARNING};
+use crate::{common::constants::LOG_CALLBACK, DEBUG, ERROR, INFO, WARNING};
 
 use super::index_w::*;
 use crate::common::index_utils::*;
@@ -59,32 +58,33 @@ pub fn tantivy_create_index_with_tokenizer(
         }
     };
 
-    // Try free index reader before prepare index directory.
+    // If the `index_path` already exists, it will be recreated,
+    // it's necessary to free any `index_reader` associated with this directory.
     if let Err(e) = tantivy_reader_free(index_path) {
         let error_msg = format!(
-            "Can't pre free index reader before prepare index directory, due to: {}",
+            "Can't pre free index reader before initialize index directory, due to: {}",
             e
         );
         ERROR!("{}", error_msg);
         return Err(error_msg);
     }
 
-    // Try free index writer before prepare index directory.
+    // If the `index_path` already exists, it will be recreated,
+    // it's necessary to free any `index_writer` associated with this directory.
     if let Err(e) = tantivy_writer_free(index_path) {
         let error_msg = format!(
-            "Can't pre free index reader before prepare index directory, due to: {}",
+            "Can't pre free index reader before initialize index directory, due to: {}",
             e
         );
         ERROR!("{}", error_msg);
         return Err(error_msg);
     }
 
-    // Prepare the index directory for use.
+    // Initialize the index directory, it will store tantivy index files.
     let index_files_directory: &Path = Path::new(&index_path_str);
+    initialize_index_directory(index_files_directory)?;
 
-    prepare_index_directory(index_files_directory)?;
-
-    // Save custom index settings.
+    // Save custom index settings to index directory.
     let custom_index_setting = CustomIndexSetting {
         tokenizer: tokenizer_with_parameter.to_string(),
     };
@@ -152,7 +152,6 @@ pub fn tantivy_create_index_with_tokenizer(
 
     // Create the writer with a specified buffer size (e.g., 64 MB).
     let writer = match index.writer_with_num_threads(2, 1024 * 1024 * 64) {
-        // 1 GB
         Ok(w) => w,
         Err(e) => {
             let error_info = format!("Failed to create tantivy writer: {}", e);
@@ -164,9 +163,6 @@ pub fn tantivy_create_index_with_tokenizer(
     // Configure and set the merge policy.
     let mut merge_policy = tantivy::merge_policy::LogMergePolicy::default();
     merge_policy.set_min_num_segments(5);
-    merge_policy.set_max_docs_before_merge(500000);
-    merge_policy.set_min_layer_size(10000);
-    merge_policy.set_level_log_size(0.75);
     writer.set_merge_policy(Box::new(merge_policy));
 
     // Save IndexW to cache.

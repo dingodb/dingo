@@ -143,6 +143,7 @@ impl TopDocsWithFilter {
         TopDocsWithFilter(self.0.with_stored_text(need_text))
     }
 
+    #[allow(dead_code)]
     pub fn with_initial_heap_size(self, initial_heap_size: usize) -> TopDocsWithFilter {
         TopDocsWithFilter(self.0.with_initial_heap_size(initial_heap_size))
     }

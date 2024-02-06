@@ -2,15 +2,13 @@ use ffi::RowIdWithScore;
 use libc::*;
 use std::{cmp::Ordering, ffi::CStr};
 
-pub mod common;
-mod commons;
-mod flurry_cache;
-pub mod index;
+mod common;
+mod index;
 mod logger;
-pub mod search;
+mod search;
 mod tokenizer;
 
-use commons::*;
+use common::constants::*;
 use index::index_manager::*;
 use logger::ffi_logger::*;
 use search::index_searcher::*;
@@ -201,10 +199,7 @@ pub mod ffi {
     }
 }
 
-pub type LogCallback = extern "C" fn(i32, *const c_char, *const c_char);
-extern "C" fn empty_log_callback(_level: i32, _msg: *const c_char, _file: *const c_char) {
-    // do nothing
-}
+// pub type LogCallback = extern "C" fn(i32, *const c_char, *const c_char);
 
 #[no_mangle]
 pub extern "C" fn tantivy_search_log4rs_initialize(

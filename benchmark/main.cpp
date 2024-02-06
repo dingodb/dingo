@@ -43,12 +43,14 @@ int main(int argc, char** argv) {
         }
         WikiDatasetLoader::getInstance().loadQueryTerms(query_term_path);
         WikiDatasetLoader::getInstance().setIndexDirectory(index_path);
-
+        tantivy_search_log4rs_initialize("./log", "info", true, false, false);
 
 
         // Run all benchmark
-        int benchmark_argc = 1;
-        char* benchmark_argv[] = { argv[0] };
+        int benchmark_argc = 2; // 参数数量
+        char* benchmark_program = argv[0]; // 程序名称，通常是 argv[0]
+        char benchmark_tabular_arg[] = "--benchmark_counters_tabular=true"; // 要添加的参数
+        char* benchmark_argv[] = { benchmark_program, benchmark_tabular_arg };
         ::benchmark::Initialize(&benchmark_argc, benchmark_argv);
         if (::benchmark::ReportUnrecognizedArguments(benchmark_argc, benchmark_argv)) return 1;
         ::benchmark::RunSpecifiedBenchmarks();

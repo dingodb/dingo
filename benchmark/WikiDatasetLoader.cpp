@@ -67,10 +67,7 @@ std::vector<std::string> WikiDatasetLoader::loadQueryTerms(const std::string& fi
 }
 
 std::vector<std::string> WikiDatasetLoader::loadQueryTerms(){
-    if(query_terms.empty()){
-        std::cout << "Query terms need initialize." << std::endl;
-    }
-    return query_terms;
+    return loadQueryTerms(query_terms_file_path);
 }
 
 std::vector<Doc> WikiDatasetLoader::loadDocs(const std::string& file_path) {
@@ -96,20 +93,20 @@ std::string WikiDatasetLoader::getIndexDirectory(){
     return this->index_directory;
 }
 
-std::vector<uint64_t> WikiDatasetLoader::getRowIdRanges(){
-    if(row_id_range.empty()){
-        std::lock_guard<std::mutex> lock(row_id_range_mutex);
-        if(row_id_range.empty()){
-            row_id_range = generate_rowid_range(row_id_step, 0, wiki_total_docs);
-        }
-    }
-    return row_id_range;
+std::vector<uint64_t> WikiDatasetLoader::getRowIdRanges(size_t index_granularity){
+    return generate_rowid_range(index_granularity, 0, wiki_total_docs);
 }
 
-size_t WikiDatasetLoader::getGranuleStep(){
-    if(row_id_step==0){
-        return 8192;
-    }
-    return row_id_step;
-}
+std::vector<size_t> WikiDatasetLoader::generateRandomArray(int length, int min, int max) {
+    if (min > max) std::swap(min, max);
+    std::mt19937 rng(static_cast<unsigned int>(time(nullptr)));
+    std::uniform_int_distribution<int> dist(min, max);
+    std::vector<size_t> randomArray;
+    randomArray.reserve(length);
 
+    for (int i = 0; i < length; ++i) {
+        randomArray.push_back(dist(rng));
+    }
+
+    return randomArray;
+}

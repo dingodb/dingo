@@ -2,13 +2,11 @@ use roaring::RoaringBitmap;
 use std::sync::Arc;
 use tantivy::query::{QueryParser, RegexQuery};
 
-use crate::commons::CACHE_FOR_SKIP_INDEX;
-use crate::commons::LOG_CALLBACK;
-use crate::logger::ffi_logger::callback_with_thread_info;
-use crate::ERROR;
-
 use super::index_r::*;
 use super::row_id_bitmap_collector::RowIdRoaringCollector;
+use crate::common::constants::CACHE_FOR_SKIP_INDEX;
+use crate::logger::ffi_logger::callback_with_thread_info;
+use crate::{common::constants::LOG_CALLBACK, ERROR};
 
 fn compute_bitmap(index_r: &IndexR, query_str: &str, use_regex: bool) -> Arc<RoaringBitmap> {
     let schema = index_r.reader.searcher().index().schema();
