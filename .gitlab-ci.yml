@@ -31,16 +31,12 @@ RelWithDebInfo:
     - cp ./build_packages/libtantivy_search.a ./packages
     - cp ./build_packages/tests/throughput/throughput_test ./packages
     - cp ./build_packages/tests/unit_test/unit_tests ./packages
-    - tar -czvf packages.tar.gz ./packages
+    - tar -czf packages.tar.gz ./packages
     - md5sum ./packages/*
     - md5sum packages.tar.gz
-    - ls -lh ./packages
     - ls -lh packages.tar.gz
   after_script:
-    - echo "before rsync build dependencies"
-    - du -h -d 0 /root/.cargo/registry/
     - rsync -a --ignore-existing /root/.cargo/registry/ ./.cargo/registry/ 
-    - echo "before rsync build dependencies"
     - du -h -d 0 ./.cargo/registry/
   artifacts:
     name: "packages"
@@ -58,6 +54,7 @@ UnitTest:
   script:
     - tar -zxvf packages.tar.gz
     - ./packages/unit_tests
+
 
 GoogleBenchmark:
   stage: Profiling
