@@ -10,10 +10,11 @@ RelWithDebInfo:
     paths:
       - /root/.cargo/registry
       - /root/.cargo/git
+    policy: pull-push
   image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.3
   script:
     - pwd
-    - ls /root/.cargo
+    - du -h -d 1 /root/.cargo
     - git submodule update --init --recursive
     - mkdir -p build_packages
     - >
@@ -34,7 +35,7 @@ RelWithDebInfo:
     - md5sum packages.tar.gz
     - ls -lh ./packages
     - ls -lh packages.tar.gz
-    - ls -lh ~/.cargo/registry
+    - du -h -d 1 ~/.cargo/registry
   artifacts:
     name: "packages"
     expire_in: 2 week
