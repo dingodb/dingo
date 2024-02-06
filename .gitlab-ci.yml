@@ -1,8 +1,3 @@
-cache:
-  paths:
-    - ~/.cargo/git
-    - ~/.cargo/registry
-
 stages:
   - BuildPackage
   - UnitTest
@@ -10,8 +5,13 @@ stages:
 
 RelWithDebInfo:
   stage: BuildPackage
+  cache:
+    # key: $CI_JOB_NAME
+    paths:
+      - ~/.cargo/registry
   image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.3
   script:
+    - pwd
     - git submodule update --init --recursive
     - mkdir -p build_packages
     - >
@@ -32,6 +32,7 @@ RelWithDebInfo:
     - md5sum packages.tar.gz
     - ls -lh ./packages
     - ls -lh packages.tar.gz
+    - ls -lh ~/.cargo/registry
   artifacts:
     name: "packages"
     expire_in: 2 week
