@@ -13,7 +13,7 @@ RelWithDebInfo:
     policy: pull-push
   before_script:
     - mkdir -p ./.cargo/registry/
-    - du -h -d 1 ./.cargo/registry/
+    - du -h -d 0 ./.cargo/registry/
     - rsync -a --ignore-existing ./.cargo/registry/ /root/.cargo/registry/
   script:
     - git submodule update --init --recursive
@@ -36,8 +36,12 @@ RelWithDebInfo:
     - md5sum packages.tar.gz
     - ls -lh ./packages
     - ls -lh packages.tar.gz
-    - du -h -d 1 /root/.cargo/registry/
+  after_script:
+    - echo "before rsync build dependencies"
+    - du -h -d 0 /root/.cargo/registry/
     - rsync -a --ignore-existing /root/.cargo/registry/ ./.cargo/registry/ 
+    - echo "before rsync build dependencies"
+    - du -h -d 0 ./.cargo/registry/
   artifacts:
     name: "packages"
     expire_in: 2 week
@@ -65,19 +69,19 @@ GoogleBenchmark:
   image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.4
   script:
     - if [ ! -f scripts/query_terms.json ] || [ ! -f scripts/wiki_560w.json ]; then bash scripts/download_datasets.sh; fi
-    # - tar -zxvf packages.tar.gz
-    # - ./packages/tantivy_search_benchmark --qtp=scripts/query_terms.json --dp=scripts/wiki_560w.json --ip=./temp --sbi=false | tee google_benchmark_results.txt
-    # - md5sum google_benchmark_results.txt
+    - tar -zxvf packages.tar.gz
+    - ./packages/tantivy_search_benchmark --qtp=scripts/query_terms.json --dp=scripts/wiki_560w.json --ip=./temp --sbi=false | tee google_benchmark_results.txt
+    - md5sum google_benchmark_results.txt
   cache:
     key: ${CI_JOB_NAME}-datasets
     paths:
       - scripts/query_terms.json
       - scripts/wiki_560w.json
     policy: pull-push
-  # artifacts:
-  #   name: "google_benchmark_results"
-  #   expire_in: 2 week
-  #   paths:
-  #     - google_benchmark_results.txt
+  artifacts:
+    name: "google_benchmark_results"
+    expire_in: 2 week
+    paths:
+      - google_benchmark_results.txt
 
   
