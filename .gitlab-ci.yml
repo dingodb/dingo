@@ -82,10 +82,10 @@ CodeCoverage:
     - rsync -a --ignore-existing /root/.cargo/registry/ cargo_cache/registry/ 
     - du -h -d 0 cargo_cache/registry/
   artifacts:
+    paths:
+      - cobertura.xml
     reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: cobertura.xml
+      cobertura: cobertura.xml
 
 
 GoogleBenchmark:
