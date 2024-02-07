@@ -23,7 +23,7 @@ using namespace std;
 namespace fs = std::filesystem;
 
 
-class Wiki560wSkipIndexSearchBenchmark : public benchmark::Fixture {
+class SkipIndex : public benchmark::Fixture {
 public:
     void SetUp(const ::benchmark::State& state) override {
         tantivy_load_index(WikiDatasetLoader::getInstance().getIndexDirectory());
@@ -85,45 +85,45 @@ private:
 };
 
 #define WIKI_560W_SKIPINDEX_RANDOM_SEARCH_BENCHMARK_REGISTER(queryCount, granuleSize) \
-    BENCHMARK_DEFINE_F(Wiki560wSkipIndexSearchBenchmark, SkipGranule_RandomQuery_##queryCount##_Terms_Wiki560w_Granule_##granuleSize)(benchmark::State& state) \
+    BENCHMARK_DEFINE_F(SkipIndex, wiki5m_rand_##queryCount##_ig_##granuleSize)(benchmark::State& state) \
     { \
         PerformRandomSearch(state, queryCount, granuleSize); \
     } \
-    BENCHMARK_REGISTER_F(Wiki560wSkipIndexSearchBenchmark, SkipGranule_RandomQuery_##queryCount##_Terms_Wiki560w_Granule_##granuleSize) \
+    BENCHMARK_REGISTER_F(SkipIndex, wiki5m_rand_##queryCount##_ig_##granuleSize) \
         ->Threads(1) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(Wiki560wSkipIndexSearchBenchmark, SkipGranule_RandomQuery_##queryCount##_Terms_Wiki560w_Granule_##granuleSize) \
+    BENCHMARK_REGISTER_F(SkipIndex, wiki5m_rand_##queryCount##_ig_##granuleSize) \
         ->Threads(2) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(Wiki560wSkipIndexSearchBenchmark, SkipGranule_RandomQuery_##queryCount##_Terms_Wiki560w_Granule_##granuleSize) \
+    BENCHMARK_REGISTER_F(SkipIndex, wiki5m_rand_##queryCount##_ig_##granuleSize) \
         ->Threads(4) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(Wiki560wSkipIndexSearchBenchmark, SkipGranule_RandomQuery_##queryCount##_Terms_Wiki560w_Granule_##granuleSize) \
+    BENCHMARK_REGISTER_F(SkipIndex, wiki5m_rand_##queryCount##_ig_##granuleSize) \
         ->Threads(8) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond);
 
 #define WIKI_560W_SKIPINDEX_NORMAL_SEARCH_BENCHMARK_REGISTER(granuleSize) \
-    BENCHMARK_DEFINE_F(Wiki560wSkipIndexSearchBenchmark, SkipGranule_NormalQuery_Wiki560w_Granule_##granuleSize)(benchmark::State& state) \
+    BENCHMARK_DEFINE_F(SkipIndex, wiki5m_normal_ig_##granuleSize)(benchmark::State& state) \
     { \
         PerformSearch(state, granuleSize); \
     } \
-    BENCHMARK_REGISTER_F(Wiki560wSkipIndexSearchBenchmark, SkipGranule_NormalQuery_Wiki560w_Granule_##granuleSize) \
+    BENCHMARK_REGISTER_F(SkipIndex, wiki5m_normal_ig_##granuleSize) \
         ->Threads(1) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(Wiki560wSkipIndexSearchBenchmark, SkipGranule_NormalQuery_Wiki560w_Granule_##granuleSize) \
+    BENCHMARK_REGISTER_F(SkipIndex, wiki5m_normal_ig_##granuleSize) \
         ->Threads(2) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(Wiki560wSkipIndexSearchBenchmark, SkipGranule_NormalQuery_Wiki560w_Granule_##granuleSize) \
+    BENCHMARK_REGISTER_F(SkipIndex, wiki5m_normal_ig_##granuleSize) \
         ->Threads(4) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(Wiki560wSkipIndexSearchBenchmark, SkipGranule_NormalQuery_Wiki560w_Granule_##granuleSize) \
+    BENCHMARK_REGISTER_F(SkipIndex, wiki5m_normal_ig_##granuleSize) \
         ->Threads(8) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond);
@@ -134,7 +134,7 @@ WIKI_560W_SKIPINDEX_RANDOM_SEARCH_BENCHMARK_REGISTER(1000, 8192)
 // WIKI_560W_SKIPINDEX_RANDOM_SEARCH_BENCHMARK_REGISTER(1000, 1024)
 WIKI_560W_SKIPINDEX_RANDOM_SEARCH_BENCHMARK_REGISTER(1000, 128)
 
-// WIKI_560W_SKIPINDEX_NORMAL_SEARCH_BENCHMARK_REGISTER(8192)
+WIKI_560W_SKIPINDEX_NORMAL_SEARCH_BENCHMARK_REGISTER(8192)
 // WIKI_560W_SKIPINDEX_NORMAL_SEARCH_BENCHMARK_REGISTER(2048)
 // WIKI_560W_SKIPINDEX_NORMAL_SEARCH_BENCHMARK_REGISTER(1024)
 // WIKI_560W_SKIPINDEX_NORMAL_SEARCH_BENCHMARK_REGISTER(128)

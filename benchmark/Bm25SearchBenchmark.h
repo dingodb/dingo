@@ -22,7 +22,7 @@ using namespace std;
 namespace fs = std::filesystem;
 
 
-class Wiki560wBM25SearchBenchmark : public benchmark::Fixture {
+class BM25 : public benchmark::Fixture {
 public:
     void SetUp(const ::benchmark::State& state) override {
         tantivy_load_index(WikiDatasetLoader::getInstance().getIndexDirectory());
@@ -68,45 +68,45 @@ private:
 };
 
 #define WIKI_560W_RANDOM_BM25_SEARCH_BENCHMARK_REGISTER(topK, queryCount) \
-    BENCHMARK_DEFINE_F(Wiki560wBM25SearchBenchmark, BM25_RandomQuery_##queryCount##_Terms_Wiki560w_Topk_##topK)(benchmark::State& state) \
+    BENCHMARK_DEFINE_F(BM25, rand_##queryCount##_k_##topK)(benchmark::State& state) \
     { \
         PerformRandomSearch(state, topK, queryCount); \
     } \
-    BENCHMARK_REGISTER_F(Wiki560wBM25SearchBenchmark, BM25_RandomQuery_##queryCount##_Terms_Wiki560w_Topk_##topK) \
+    BENCHMARK_REGISTER_F(BM25, rand_##queryCount##_k_##topK) \
         ->Threads(1) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(Wiki560wBM25SearchBenchmark, BM25_RandomQuery_##queryCount##_Terms_Wiki560w_Topk_##topK) \
+    BENCHMARK_REGISTER_F(BM25, rand_##queryCount##_k_##topK) \
         ->Threads(2) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(Wiki560wBM25SearchBenchmark, BM25_RandomQuery_##queryCount##_Terms_Wiki560w_Topk_##topK) \
+    BENCHMARK_REGISTER_F(BM25, rand_##queryCount##_k_##topK) \
         ->Threads(4) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(Wiki560wBM25SearchBenchmark, BM25_RandomQuery_##queryCount##_Terms_Wiki560w_Topk_##topK) \
+    BENCHMARK_REGISTER_F(BM25, rand_##queryCount##_k_##topK) \
         ->Threads(8) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond);
 
 #define WIKI_560W_NORMAL_BM25_SEARCH_BENCHMARK_REGISTER(topK) \
-    BENCHMARK_DEFINE_F(Wiki560wBM25SearchBenchmark, BM25_NormalQuery_##queryCount##_Terms_Wiki560w_Topk_##topK)(benchmark::State& state) \
+    BENCHMARK_DEFINE_F(BM25, normal_##queryCount##_k_##topK)(benchmark::State& state) \
     { \
         PerformSearch(state, topK); \
     } \
-    BENCHMARK_REGISTER_F(Wiki560wBM25SearchBenchmark, BM25_NormalQuery_##queryCount##_Terms_Wiki560w_Topk_##topK) \
+    BENCHMARK_REGISTER_F(BM25, normal_##queryCount##_k_##topK) \
         ->Threads(1) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(Wiki560wBM25SearchBenchmark, BM25_NormalQuery_##queryCount##_Terms_Wiki560w_Topk_##topK) \
+    BENCHMARK_REGISTER_F(BM25, normal_##queryCount##_k_##topK) \
         ->Threads(2) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(Wiki560wBM25SearchBenchmark, BM25_NormalQuery_##queryCount##_Terms_Wiki560w_Topk_##topK) \
+    BENCHMARK_REGISTER_F(BM25, normal_##queryCount##_k_##topK) \
         ->Threads(4) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(Wiki560wBM25SearchBenchmark, BM25_NormalQuery_##queryCount##_Terms_Wiki560w_Topk_##topK) \
+    BENCHMARK_REGISTER_F(BM25, normal_##queryCount##_k_##topK) \
         ->Threads(8) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond);
@@ -117,7 +117,7 @@ WIKI_560W_RANDOM_BM25_SEARCH_BENCHMARK_REGISTER(100, 1000);
 WIKI_560W_RANDOM_BM25_SEARCH_BENCHMARK_REGISTER(200, 1000);
 WIKI_560W_RANDOM_BM25_SEARCH_BENCHMARK_REGISTER(500, 1000);
 
-// WIKI_560W_NORMAL_BM25_SEARCH_BENCHMARK_REGISTER(10);
-// WIKI_560W_NORMAL_BM25_SEARCH_BENCHMARK_REGISTER(100);
-// WIKI_560W_NORMAL_BM25_SEARCH_BENCHMARK_REGISTER(200);
-// WIKI_560W_NORMAL_BM25_SEARCH_BENCHMARK_REGISTER(500);
+WIKI_560W_NORMAL_BM25_SEARCH_BENCHMARK_REGISTER(10);
+WIKI_560W_NORMAL_BM25_SEARCH_BENCHMARK_REGISTER(100);
+WIKI_560W_NORMAL_BM25_SEARCH_BENCHMARK_REGISTER(200);
+WIKI_560W_NORMAL_BM25_SEARCH_BENCHMARK_REGISTER(500);
