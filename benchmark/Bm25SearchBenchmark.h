@@ -61,8 +61,8 @@ private:
         }
 
         // Record custom counters
-        state.counters["Queries"] = queries;
-        state.counters["QPS(total)"] = benchmark::Counter(queries, benchmark::Counter::kIsRate);
+        // state.counters["Queries"] = queries;
+        state.counters["QPS"] = benchmark::Counter(queries, benchmark::Counter::kIsRate);
         state.counters["QPS(avgThreads)"] = benchmark::Counter(queries, benchmark::Counter::kAvgThreadsRate);
     }
 };

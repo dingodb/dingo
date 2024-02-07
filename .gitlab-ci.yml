@@ -9,15 +9,16 @@ RelWithDebInfo:
   cache:
     key: ${CI_JOB_NAME}-cargo
     paths:
-      - ./.cargo/registry/
+      - cargo_cache/registry/
     policy: pull-push
   before_script:
-    - mkdir -p ./.cargo/registry/
-    - du -h -d 0 ./.cargo/registry/
-    - rsync -a --ignore-existing ./.cargo/registry/ /root/.cargo/registry/
+    - mkdir -p cargo_cache/registry/
+    - du -h -d 0 cargo_cache/registry/
+    - rsync -a --ignore-existing cargo_cache/registry/ /root/.cargo/registry/
+    - mkdir -p build_packages
+    - mkdir -p packages
   script:
     - git submodule update --init --recursive
-    - mkdir -p build_packages
     - >
       cmake --no-warn-unused-cli
       -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
@@ -26,7 +27,6 @@ RelWithDebInfo:
       -DCMAKE_CXX_COMPILER:FILEPATH=$(command -v clang++-15)
       -S. -B./build_packages -G Ninja
     - cmake --build ./build_packages --config RelWithDebInfo --target all
-    - mkdir -p packages
     - cp ./build_packages/benchmark/tantivy_search_benchmark ./packages
     - cp ./build_packages/libtantivy_search.a ./packages
     - cp ./build_packages/tests/throughput/throughput_test ./packages
@@ -34,10 +34,10 @@ RelWithDebInfo:
     - tar -czf packages.tar.gz ./packages
     - md5sum ./packages/*
     - md5sum packages.tar.gz
-    - ls -lh packages.tar.gz
+    - ls -lh packages.tar.gz ./packages/*
   after_script:
-    - rsync -a --ignore-existing /root/.cargo/registry/ ./.cargo/registry/ 
-    - du -h -d 0 ./.cargo/registry/
+    - rsync -a --ignore-existing /root/.cargo/registry/ cargo_cache/registry/ 
+    - du -h -d 0 cargo_cache/registry/
   artifacts:
     name: "packages"
     expire_in: 2 week
@@ -52,7 +52,7 @@ UnitTest:
       artifacts: true
   image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.4
   script:
-    - tar -zxvf packages.tar.gz
+    - tar -zxf packages.tar.gz
     - ./packages/unit_tests
 
 
@@ -67,8 +67,8 @@ GoogleBenchmark:
   script:
     - if [ ! -f scripts/query_terms.json ] || [ ! -f scripts/wiki_560w.json ]; then bash scripts/download_datasets.sh; fi
     - tar -zxvf packages.tar.gz
-    - ./packages/tantivy_search_benchmark --qtp=scripts/query_terms.json --dp=scripts/wiki_560w.json --ip=./temp --sbi=false | tee google_benchmark_results.txt
-    - md5sum google_benchmark_results.txt
+    - ./packages/tantivy_search_benchmark --qtp=scripts/query_terms.json --dp=scripts/wiki_560w.json --ip=./temp --sbi=false | tee GoogleBenchmark.txt
+    - md5sum GoogleBenchmark.txt
   cache:
     key: ${CI_JOB_NAME}-datasets
     paths:
@@ -76,9 +76,9 @@ GoogleBenchmark:
       - scripts/wiki_560w.json
     policy: pull-push
   artifacts:
-    name: "google_benchmark_results"
+    name: "GoogleBenchmark"
     expire_in: 2 week
     paths:
-      - google_benchmark_results.txt
+      - GoogleBenchmark.txt
 
   
