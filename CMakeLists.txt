@@ -13,7 +13,7 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
 elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(RUST_PROFILE dev)
 else()
-    set(RUST_PROFILE relwithdebinfo)
+    set(RUST_PROFILE release)
 endif()
 
 corrosion_import_crate(

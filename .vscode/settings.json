@@ -87,4 +87,5 @@
     "cmake.configureArgs": [
         // "-DENABLE_JEMALLOC=ON",
     ],
+    "cmake.options.statusBarVisibility": "compact",
 }
