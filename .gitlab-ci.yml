@@ -78,9 +78,10 @@ CodeCoverage:
       BINARY_FILE=$(file target/debug/deps/tantivy_search* | grep 'executable' | cut -d: -f1 | head -n 1)
       llvm-cov-15 export -format=lcov ${BINARY_FILE} -instr-profile=tantivy_search.profdata --ignore-filename-regex='contrib/' --ignore-filename-regex='rustc.*' --ignore-filename-regex='.cargo/' > tantivy_search.lcov
     - lcov_cobertura tantivy_search.lcov -o cobertura.xml
-    - LINE_RATE=$(grep 'line-rate' cobertura.xml | sed -n 's/.*line-rate="\([^"]*\)".*/\1/p' | head -n 1)
-    - COVERAGE=$(echo "$LINE_RATE * 100" | bc -l)
-    - echo "CodeCoverage: $COVERAGE%"
+    - |
+      LINE_RATE=$(grep 'line-rate' cobertura.xml | sed -n 's/.*line-rate="\([^"]*\)".*/\1/p' | head -n 1)
+      COVERAGE=$(echo "$LINE_RATE * 100" | bc -l)
+      echo "CodeCoverage: $COVERAGE%"
   after_script:
     - rm -rf *.profraw *.profdata *.lcov target
     - rsync -a --ignore-existing /root/.cargo/registry/ cargo_cache/registry/ 
