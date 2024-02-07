@@ -1,6 +1,6 @@
 stages:
   - BuildPackage
-  - UnitTest
+  - Test
   - Profiling
 
 RelWithDebInfo:
@@ -46,7 +46,7 @@ RelWithDebInfo:
 
 
 UnitTest:
-  stage: UnitTest
+  stage: Test
   needs:
     - job: RelWithDebInfo
       artifacts: true
@@ -54,6 +54,38 @@ UnitTest:
   script:
     - tar -zxf packages.tar.gz
     - ./packages/unit_tests
+  
+CodeCoverage:
+  stage: Test
+  cache:
+    key: ${CI_JOB_NAME}-cargo
+    paths:
+      - cargo_cache/registry/
+    policy: pull-push
+  before_script:
+    - mkdir -p cargo_cache/registry/
+    - du -h -d 0 cargo_cache/registry/
+    - rsync -a --ignore-existing cargo_cache/registry/ /root/.cargo/registry/
+    - mkdir -p build_packages
+    - mkdir -p packages
+  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.4
+  script:
+    - export CARGO_INCREMENTAL=0
+    - export RUSTFLAGS="-Zinstrument-coverage"
+    - export LLVM_PROFILE_FILE="your_project-%p-%m.profraw"
+    - cargo +nightly test # 运行测试，生成覆盖率数据
+    - |
+      llvm-profdata merge -sparse ./*.profraw -o your_project.profdata
+    - |
+      grcov . -s . --binary-path ./target/debug/ -t cobertura --branch --ignore-not-existing --llvm --ignore "/*" --ignore "tests/*" -o cobertura.xml --excl-br-line "#\[derive\(" --excl-start "#\[cfg\(test\)\]" --excl-stop "#\]" --excl-line "#\[cfg\(test\)\]" --use-color
+  after_script:
+    - rsync -a --ignore-existing /root/.cargo/registry/ cargo_cache/registry/ 
+    - du -h -d 0 cargo_cache/registry/
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: cobertura.xml
 
 
 GoogleBenchmark:
