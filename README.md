@@ -1,5 +1,8 @@
 # Tantivy Search
 
+![coverage](https://git.moqi.ai/mqdb/tantivy-search/badges/tantivy_0.21.1/coverage.svg?job=CodeCoverage)
+
+
 This library is designed to integrate [tantivy](https://github.com/quickwit-oss/tantivy/) into [ClickHouse](https://github.com/ClickHouse/ClickHouse) and [MyScale](https://git.moqi.ai/mqdb/ClickHouse/).
 
 ## Development
