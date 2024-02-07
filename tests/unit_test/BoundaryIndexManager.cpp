@@ -10,6 +10,17 @@ using namespace std;
 namespace fs = std::filesystem;
 
 
+TEST(BoundaryTantivyLoggerTest, validParameter) {
+    ASSERT_TRUE(tantivy_search_log4rs_initialize("./log", "info", true, false, false));
+}
+
+TEST(BoundaryTantivyLoggerTest, nullptrParameter) {
+    ASSERT_FALSE(tantivy_search_log4rs_initialize(nullptr, "info", false, false, false));
+    ASSERT_FALSE(tantivy_search_log4rs_initialize("./log", nullptr, false, false, false));
+    ASSERT_FALSE(tantivy_search_log4rs_initialize(nullptr, nullptr, false, false, false));
+}
+
+
 class BoundaryTantivyCreateIndexWithTokenizerTest : public ::testing::Test {
 protected:
     const string indexDirectory = "./temp";
@@ -85,6 +96,13 @@ TEST_F(BoundaryTantivyCreateIndexWithTokenizerTest, InvalidTokenizerPrameter) {
     }
 }
 
+TEST_F(BoundaryTantivyCreateIndexWithTokenizerTest, nullptrParameter) {
+    ASSERT_ANY_THROW(tantivy_create_index_with_tokenizer(indexDirectory, nullptr, false));
+    ASSERT_FALSE(tantivy_writer_free(indexDirectory));
+    ASSERT_ANY_THROW(tantivy_create_index_with_tokenizer(nullptr, "default", false));
+    ASSERT_ANY_THROW(tantivy_create_index_with_tokenizer(nullptr, nullptr, false));
+}
+
 
 class BoundaryTantivyIndexDocTest : public ::testing::Test, public BoundaryUnitTestUtils {
 protected:
@@ -124,6 +142,16 @@ TEST_F(BoundaryTantivyIndexDocTest, index1wDocsWithDocLength1kStoredDoc) {
     for (size_t i = 0; i < 10000; i++)
     {
         ASSERT_TRUE(tantivy_index_doc(indexDirectory, i, generateRandomString(1000)));
+    }
+    ASSERT_TRUE(tantivy_writer_commit(indexDirectory));
+}
+
+TEST_F(BoundaryTantivyIndexDocTest, nullptrParameter) {
+    for (size_t i = 0; i < 10000; i++)
+    {
+        ASSERT_ANY_THROW(tantivy_index_doc(indexDirectory, i, nullptr));
+        ASSERT_ANY_THROW(tantivy_index_doc(nullptr, i, generateRandomString(100)));
+        ASSERT_ANY_THROW(tantivy_index_doc(nullptr, i, nullptr));
     }
     ASSERT_TRUE(tantivy_writer_commit(indexDirectory));
 }
@@ -246,6 +274,15 @@ TEST_F(BoundaryTantivyCreateAndFreeIndexTest, writerAndReaderCreateAndFree) {
     }
 }
 
+TEST_F(BoundaryTantivyCreateAndFreeIndexTest, nullptrParameter) {
+    ASSERT_ANY_THROW(tantivy_create_index(nullptr, false));
+    ASSERT_ANY_THROW(tantivy_index_doc("./temp///", 0, nullptr));
+    ASSERT_ANY_THROW(tantivy_index_doc(nullptr, 1, nullptr));
+    ASSERT_ANY_THROW(tantivy_writer_commit(nullptr));
+    ASSERT_ANY_THROW(tantivy_load_index(nullptr));
+}
+
+
 class BoundaryTantivyCommitTest : public ::testing::Test, public BoundaryUnitTestUtils {
 protected:
     const string logPath = "./log";
@@ -270,5 +307,10 @@ TEST_F(BoundaryTantivyCommitTest, commitNotExist) {
     }
     ASSERT_TRUE(tantivy_writer_commit(indexDirectory));
     ASSERT_ANY_THROW(tantivy_writer_commit(indexDirectoryNotExists));
+}
 
+TEST_F(BoundaryTantivyCommitTest, nullptrParameter) {
+    ASSERT_ANY_THROW(tantivy_index_doc(nullptr, 0, nullptr));
+    ASSERT_ANY_THROW(tantivy_index_doc(indexDirectory, 1, nullptr));
+    ASSERT_ANY_THROW(tantivy_writer_commit(nullptr));
 }

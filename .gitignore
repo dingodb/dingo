@@ -6,3 +6,7 @@ temp
 *.log
 *jemalloc*
 tests/throughput/*.json
+cobertura.xml
+*.lcov
+*.profdata
+*.profraw

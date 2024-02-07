@@ -209,7 +209,7 @@ pub extern "C" fn tantivy_search_log4rs_initialize(
     console_dispaly: bool,
     only_record_tantivy_search: bool,
 ) -> bool {
-    tantivy_search_log4rs_with_parameters(
+    tantivy_search_log4rs_initialize_with_callback(
         log_directory,
         log_level,
         log_in_file,
@@ -232,7 +232,7 @@ pub extern "C" fn tantivy_search_log4rs_initialize(
 /// Returns:
 /// - `true` if the logger is successfully initialized, `false` otherwise.
 #[no_mangle]
-pub extern "C" fn tantivy_search_log4rs_with_parameters(
+pub extern "C" fn tantivy_search_log4rs_initialize_with_callback(
     log_directory: *const c_char,
     log_level: *const c_char,
     log_in_file: bool,
@@ -240,18 +240,22 @@ pub extern "C" fn tantivy_search_log4rs_with_parameters(
     only_record_tantivy_search: bool,
     callback: LogCallback,
 ) -> bool {
+    if log_directory.is_null() || log_level.is_null() {
+        ERROR!("`log_directory` or `log_level` can't be nullptr");
+        return false;
+    }
     // Safely convert C strings to Rust String, checking for null pointers.
     let log_directory = match unsafe { CStr::from_ptr(log_directory) }.to_str() {
         Ok(path) => path.to_owned(),
         Err(_) => {
-            ERROR!("Log directory (string) can't be null or invalid");
+            ERROR!("`log_directory` (string) is invalid");
             return false;
         }
     };
     let log_level = match unsafe { CStr::from_ptr(log_level) }.to_str() {
         Ok(level) => level.to_owned(),
         Err(_) => {
-            ERROR!("Log level (string) can't be null or invalid");
+            ERROR!("`log_level` (string) is invalid");
             return false;
         }
     };

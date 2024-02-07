@@ -42,6 +42,11 @@ TEST_F(BoundaryTantivySearchReaderLoadTest, readerLoadAndFreeWithoutIndex) {
     ASSERT_FALSE(tantivy_reader_free(indexDirectoryNotExists));
 }
 
+TEST_F(BoundaryTantivySearchReaderLoadTest, nullptrParameter) {
+    ASSERT_ANY_THROW(tantivy_load_index(nullptr));
+    ASSERT_ANY_THROW(tantivy_reader_free(nullptr));
+}
+
 
 class BoundaryTantivySearchWithOutDocStoreTest : public ::testing::Test, public BoundaryUnitTestUtils {
 protected:
@@ -128,6 +133,16 @@ TEST_F(BoundaryTantivySearchWithOutDocStoreTest, tantivySearchInRowIdRangeWithEm
     ASSERT_TRUE(tantivy_count_in_rowid_range(indexEmptyDirectory, generateRandomString(100), 4294960000, 4294960000+1000, false)==0);
 }
 
+TEST_F(BoundaryTantivySearchWithOutDocStoreTest, tantivySearchInRowIdRangeNullptrParameter) {
+    ASSERT_ANY_THROW(tantivy_search_in_rowid_range(nullptr, generateRandomString(100), 0, 100, true));
+    ASSERT_ANY_THROW(tantivy_search_in_rowid_range(indexEmptyDirectory, nullptr, 0, 100, true));
+    ASSERT_ANY_THROW(tantivy_search_in_rowid_range(nullptr, nullptr, 0, 100, true));
+
+    ASSERT_ANY_THROW(tantivy_count_in_rowid_range(nullptr, generateRandomString(100), 0, 100, true));
+    ASSERT_ANY_THROW(tantivy_count_in_rowid_range(indexEmptyDirectory, nullptr, 0, 100, true));
+    ASSERT_ANY_THROW(tantivy_count_in_rowid_range(nullptr, nullptr, 0, 100, true));
+}
+
 TEST_F(BoundaryTantivySearchWithOutDocStoreTest, tantivyBM25Search) {
     for (size_t i = 0; i < 100; i++)
     {
@@ -178,6 +193,12 @@ TEST_F(BoundaryTantivySearchWithOutDocStoreTest, tantivyBM25SearchWithFilter) {
     }
 }
 
+TEST_F(BoundaryTantivySearchWithOutDocStoreTest, tantivyBM25SearchNullptrParameter) {
+    ASSERT_ANY_THROW(tantivy_bm25_search_with_filter(indexDirectory, nullptr, generateRandomUInt8Vector(10), 10, false));
+    ASSERT_ANY_THROW(tantivy_bm25_search_with_filter(nullptr, generateRandomNormalString(10), generateRandomUInt8Vector(10), 1000000, false));
+    ASSERT_ANY_THROW(tantivy_bm25_search_with_filter(nullptr, nullptr, generateRandomUInt8Vector(10), 10, true));
+}
+
 TEST_F(BoundaryTantivySearchWithOutDocStoreTest, tantivySearchBitmapResults) {
     for (size_t i = 0; i < 100; i++)
     {
@@ -220,6 +241,12 @@ TEST_F(BoundaryTantivySearchWithOutDocStoreTest, tantivySearchBitmapResultsWitho
     }
 }
 
+TEST_F(BoundaryTantivySearchWithOutDocStoreTest, tantivySearchBitmapResultsNullptrParameter) {
+    ASSERT_ANY_THROW(tantivy_search_bitmap_results(nullptr, generateRandomNormalString(10), true));
+    ASSERT_ANY_THROW(tantivy_search_bitmap_results(indexDirectory, nullptr, false));
+    ASSERT_ANY_THROW(tantivy_search_bitmap_results(nullptr, nullptr, false));
+}
+
 
 class BoundaryTantivySearchWithDocStoreTest : public ::testing::Test, public BoundaryUnitTestUtils {
 protected:
@@ -246,4 +273,10 @@ TEST_F(BoundaryTantivySearchWithDocStoreTest, tantivyBM25Search) {
     ASSERT_NO_THROW(tantivy_bm25_search(indexDirectory, generateRandomNormalString(100), 1000000, false));
     ASSERT_NO_THROW(tantivy_bm25_search(indexDirectory, generateRandomNormalString(100), 10, true));
     ASSERT_NO_THROW(tantivy_bm25_search(indexDirectory, generateRandomNormalString(100), 100000, true));
+}
+
+TEST_F(BoundaryTantivySearchWithDocStoreTest, tantivyBM25SearchNullptrParameter) {
+    ASSERT_ANY_THROW(tantivy_bm25_search(indexDirectory, nullptr, 10, false));
+    ASSERT_ANY_THROW(tantivy_bm25_search(nullptr, generateRandomNormalString(100), 1000000, false));
+    ASSERT_ANY_THROW(tantivy_bm25_search(nullptr, nullptr, 10, true));
 }

@@ -30,12 +30,12 @@ bool tantivy_search_log4rs_initialize(const char *log_directory,
 ///
 /// Returns:
 /// - `true` if the logger is successfully initialized, `false` otherwise.
-bool tantivy_search_log4rs_with_parameters(const char *log_directory,
-                                           const char *log_level,
-                                           bool log_in_file,
-                                           bool console_dispaly,
-                                           bool only_record_tantivy_search,
-                                           TantivySearchLogCallback callback);
+bool tantivy_search_log4rs_initialize_with_callback(const char *log_directory,
+                                                    const char *log_level,
+                                                    bool log_in_file,
+                                                    bool console_dispaly,
+                                                    bool only_record_tantivy_search,
+                                                    TantivySearchLogCallback callback);
 
 } // extern "C"
 
