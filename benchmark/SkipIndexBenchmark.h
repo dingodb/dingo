@@ -17,6 +17,8 @@
 #include <filesystem>
 #include <chrono>
 #include <thread>
+#include <mutex>
+
 using json = nlohmann::json;
 
 using namespace std;
@@ -27,32 +29,39 @@ class SkipIndex : public benchmark::Fixture {
 public:
     void SetUp(const ::benchmark::State& state) override {
         tantivy_load_index(WikiDatasetLoader::getInstance().getIndexDirectory());
+        InitializeResources();
     }
 
     void TearDown(const ::benchmark::State& state) override {
         tantivy_reader_free(WikiDatasetLoader::getInstance().getIndexDirectory());
     }
 
-
     void PerformSearch(benchmark::State& state, size_t granuleSize) {
         // Search for all given terms.
-        auto query_terms = WikiDatasetLoader::getInstance().loadQueryTerms();
-        std::vector<size_t> all_indexes(query_terms.size());
-        std::iota(all_indexes.begin(), all_indexes.end(), 0); // generate indices from 0 to query_terms.size()
-        SearchImpl(state, granuleSize, all_indexes);
+        SearchImpl(state, granuleSize, this->allIndices);
     }
 
     void PerformRandomSearch(benchmark::State& state, size_t queryCount, size_t granuleSize) {
         // Only random choose some terms to search.
-        auto query_terms = WikiDatasetLoader::getInstance().loadQueryTerms();
-        auto random_indexes = WikiDatasetLoader::getInstance().generateRandomArray(queryCount, 0, query_terms.size());
-        SearchImpl(state, granuleSize, random_indexes);
+        auto randomIndexes = WikiDatasetLoader::getInstance().generateRandomArray(queryCount, 0, this->queryTerms.size());
+        SearchImpl(state, granuleSize, randomIndexes);
     }
 private:
+    mutex resourceMutex;
+    vector<string> queryTerms;
+    vector<size_t> allIndices;
+    string indexDirectory;
+
+    void InitializeResources(){
+        lock_guard<mutex> lock(resourceMutex);
+        this->queryTerms = WikiDatasetLoader::getInstance().loadQueryTerms();
+        this->allIndices.resize(this->queryTerms.size());
+        iota(this->allIndices.begin(), this->allIndices.end(), 0);
+        this->indexDirectory = WikiDatasetLoader::getInstance().getIndexDirectory(); 
+    }
+
     void SearchImpl(benchmark::State& state, size_t granuleSize, const std::vector<size_t>& indexes) {
-        auto index_directory = WikiDatasetLoader::getInstance().getIndexDirectory();
-        auto row_id_ranges = WikiDatasetLoader::getInstance().getRowIdRanges(granuleSize);
-        auto query_terms = WikiDatasetLoader::getInstance().loadQueryTerms();
+        auto rowIdRanges = WikiDatasetLoader::getInstance().getRowIdRanges(granuleSize);
 
         // `queries` records the total number of iterations conducted with `table` as the unit of traversal.
         // `granule_queries` records the total number of iterations conducted with `granule` as the unit of traversal.
@@ -60,27 +69,22 @@ private:
 
         for (auto _ : state) {
             for (auto i : indexes) {
-                for (const auto& range : row_id_ranges) {
+                for (const auto& range : rowIdRanges) {
                     tantivy_search_in_rowid_range(
-                        index_directory,
-                        query_terms[i], 
+                        this->indexDirectory,
+                        this->queryTerms[i], 
                         range, 
                         range + granuleSize, 
                         false
                     );
                 }
-                granule_queries += row_id_ranges.size();
+                granule_queries += rowIdRanges.size();
             }
             queries += indexes.size();
         }
 
-        // Record custom counters
-        // state.counters["Queries"] = queries;
-        // state.counters["FFI_Queries"] = granule_queries;
         state.counters["QPS"] = benchmark::Counter(queries, benchmark::Counter::kIsRate);
-        // state.counters["QPS_FFI(total)"] = benchmark::Counter(granule_queries, benchmark::Counter::kIsRate);
         state.counters["QPS(avgThreads)"] = benchmark::Counter(queries, benchmark::Counter::kAvgThreadsRate);
-        // state.counters["QPS_FFI(avgThreads)"] = benchmark::Counter(granule_queries, benchmark::Counter::kAvgThreadsRate);
     }
 };
 
