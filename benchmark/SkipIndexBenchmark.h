@@ -28,12 +28,12 @@ namespace fs = std::filesystem;
 class SkipIndex : public benchmark::Fixture {
 public:
     void SetUp(const ::benchmark::State& state) override {
-        tantivy_load_index(WikiDatasetLoader::getInstance().getIndexDirectory());
         InitializeResources();
+        tantivy_load_index(this->indexDirectory);
     }
 
     void TearDown(const ::benchmark::State& state) override {
-        tantivy_reader_free(WikiDatasetLoader::getInstance().getIndexDirectory());
+        tantivy_reader_free(this->indexDirectory);
     }
 
     void PerformSearch(benchmark::State& state, size_t granuleSize) {

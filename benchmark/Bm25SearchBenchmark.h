@@ -25,43 +25,48 @@ namespace fs = std::filesystem;
 class BM25 : public benchmark::Fixture {
 public:
     void SetUp(const ::benchmark::State& state) override {
-        tantivy_load_index(WikiDatasetLoader::getInstance().getIndexDirectory());
+        InitializeResources();
+        tantivy_load_index(this->indexDirectory);
     }
 
     void TearDown(const ::benchmark::State& state) override {
-        tantivy_reader_free(WikiDatasetLoader::getInstance().getIndexDirectory());
+        tantivy_reader_free(this->indexDirectory);
     }
 
     void PerformSearch(benchmark::State& state, size_t topK) {
         // Search for all given terms.
-        auto query_terms = WikiDatasetLoader::getInstance().loadQueryTerms();
-        std::vector<size_t> all_indexes(query_terms.size());
-        std::iota(all_indexes.begin(), all_indexes.end(), 0); // generate indices from 0 to query_terms.size()
-        SearchImpl(state, topK, all_indexes);
+        SearchImpl(state, topK, this->allIndices);
     }
 
     void PerformRandomSearch(benchmark::State& state, size_t topK, size_t queryCount) {
         // Only random choose some terms to search.
-        auto query_terms = WikiDatasetLoader::getInstance().loadQueryTerms();
-        auto random_indexes = WikiDatasetLoader::getInstance().generateRandomArray(queryCount, 0, query_terms.size());
-        SearchImpl(state, topK, random_indexes);
+        auto randomIndexes = WikiDatasetLoader::getInstance().generateRandomArray(queryCount, 0, this->queryTerms.size());
+        SearchImpl(state, topK, randomIndexes);
     }
 private:
-    void SearchImpl(benchmark::State& state, size_t topK, const std::vector<size_t>& indexes) {
-        auto index_directory = WikiDatasetLoader::getInstance().getIndexDirectory();
-        auto query_terms = WikiDatasetLoader::getInstance().loadQueryTerms();
+    mutex resourceMutex;
+    vector<string> queryTerms;
+    vector<size_t> allIndices;
+    string indexDirectory;
 
+    void InitializeResources(){
+        lock_guard<mutex> lock(resourceMutex);
+        this->queryTerms = WikiDatasetLoader::getInstance().loadQueryTerms();
+        this->allIndices.resize(this->queryTerms.size());
+        iota(this->allIndices.begin(), this->allIndices.end(), 0);
+        this->indexDirectory = WikiDatasetLoader::getInstance().getIndexDirectory(); 
+    }
+
+    void SearchImpl(benchmark::State& state, size_t topK, const std::vector<size_t>& indexes) {
         // `queries` records the total number of bm25 queries.
         uint64_t queries = 0;
         for (auto _ : state) {
             for (auto i : indexes) {
-                tantivy_bm25_search(index_directory, query_terms[i], topK, false);
+                tantivy_bm25_search(this->indexDirectory, this->queryTerms[i], topK, false);
             }
             queries += indexes.size();
         }
 
-        // Record custom counters
-        // state.counters["Queries"] = queries;
         state.counters["QPS"] = benchmark::Counter(queries, benchmark::Counter::kIsRate);
         state.counters["QPS(avgThreads)"] = benchmark::Counter(queries, benchmark::Counter::kAvgThreadsRate);
     }
