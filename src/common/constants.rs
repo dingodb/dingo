@@ -6,6 +6,7 @@ use roaring::RoaringBitmap;
 use std::sync::Arc;
 
 // Cache queries results.
+// The cache's key is composed of reader.address, query_str, index_directory, use_regex.
 pub static CACHE_FOR_SKIP_INDEX: Lazy<
     FlurryCache<(usize, String, String, bool), Arc<RoaringBitmap>>,
 > = Lazy::new(|| FlurryCache::with_capacity(1000));
