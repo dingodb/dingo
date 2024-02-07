@@ -5,7 +5,7 @@ stages:
 
 RelWithDebInfo:
   stage: BuildPackage
-  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.6
+  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.7
   cache:
     key: ${CI_JOB_NAME}-cargo
     paths:
@@ -50,7 +50,7 @@ UnitTest:
   needs:
     - job: RelWithDebInfo
       artifacts: true
-  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.6
+  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.7
   script:
     - tar -zxf packages.tar.gz
     - ./packages/unit_tests
@@ -66,7 +66,7 @@ CodeCoverage:
     - mkdir -p cargo_cache/registry/
     - du -h -d 0 cargo_cache/registry/
     - rsync -a --ignore-existing cargo_cache/registry/ /root/.cargo/registry/
-  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.6
+  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.7
   script:
     - export CARGO_INCREMENTAL=0
     - export RUSTFLAGS="-C instrument-coverage"
@@ -96,7 +96,7 @@ GoogleBenchmark:
       artifacts: false
     - job: RelWithDebInfo
       artifacts: true
-  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.6
+  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.7
   script:
     - if [ ! -f scripts/query_terms.json ] || [ ! -f scripts/wiki_560w.json ]; then bash scripts/download_datasets.sh; fi
     - tar -zxvf packages.tar.gz
