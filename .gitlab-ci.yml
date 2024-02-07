@@ -78,16 +78,16 @@ CodeCoverage:
     - llvm-profdata-15 merge -sparse ./*.profraw -o tantivy_search.profdata
     - BINARY_FILE=$(file target/debug/deps/tantivy_search* | grep 'executable' | cut -d: -f1 | head -n 1)
     - llvm-cov-15 export -format=lcov ${BINARY_FILE} -instr-profile=tantivy_search.profdata > tantivy_search.lcov
-    - lcov_cobertura tantivy_search.lcov -o tantivy_search_cobertura.xml
+    - lcov_cobertura tantivy_search.lcov -o cobertura.xml
   after_script:
     - rm -rf *.profraw *.profdata *.lcov target
     - rsync -a --ignore-existing /root/.cargo/registry/ cargo_cache/registry/ 
     - du -h -d 0 cargo_cache/registry/
   artifacts:
     paths:
-      - tantivy_search_cobertura.xml
+      - cobertura.xml
     reports:
-      cobertura: tantivy_search_cobertura.xml
+      cobertura: cobertura.xml
 
 
 GoogleBenchmark:
