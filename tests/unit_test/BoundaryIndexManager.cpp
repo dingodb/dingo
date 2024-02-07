@@ -268,7 +268,7 @@ TEST_F(BoundaryTantivyCommitTest, commitNotExist) {
     {
         ASSERT_TRUE(tantivy_index_doc(indexDirectory, i, generateRandomString(100)));
     }
-    ASSERT_FALSE(tantivy_writer_commit(indexDirectory));
+    ASSERT_TRUE(tantivy_writer_commit(indexDirectory));
     ASSERT_ANY_THROW(tantivy_writer_commit(indexDirectoryNotExists));
 
 }
