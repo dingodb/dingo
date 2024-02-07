@@ -66,8 +66,6 @@ CodeCoverage:
     - mkdir -p cargo_cache/registry/
     - du -h -d 0 cargo_cache/registry/
     - rsync -a --ignore-existing cargo_cache/registry/ /root/.cargo/registry/
-    - mkdir -p build_packages
-    - mkdir -p packages
   image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.5
   script:
     - export CARGO_INCREMENTAL=0
@@ -76,8 +74,9 @@ CodeCoverage:
     - cargo +nightly-2023-09-10 clean
     - cargo +nightly-2023-09-10 test
     - llvm-profdata-15 merge -sparse ./*.profraw -o tantivy_search.profdata
-    - BINARY_FILE=$(file target/debug/deps/tantivy_search* | grep 'executable' | cut -d: -f1 | head -n 1)
-    - llvm-cov-15 export -format=lcov ${BINARY_FILE} -instr-profile=tantivy_search.profdata > tantivy_search.lcov
+    - |
+      BINARY_FILE=$(file target/debug/deps/tantivy_search* | grep 'executable' | cut -d: -f1 | head -n 1)
+      llvm-cov-15 export -format=lcov ${BINARY_FILE} -instr-profile=tantivy_search.profdata > tantivy_search.lcov
     - lcov_cobertura tantivy_search.lcov -o cobertura.xml
   after_script:
     - rm -rf *.profraw *.profdata *.lcov target
