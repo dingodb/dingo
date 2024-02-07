@@ -72,10 +72,10 @@ CodeCoverage:
   script:
     - export CARGO_INCREMENTAL=0
     - export RUSTFLAGS="-Zinstrument-coverage"
-    - export LLVM_PROFILE_FILE="your_project-%p-%m.profraw"
-    - cargo +nightly test # 运行测试，生成覆盖率数据
+    - export LLVM_PROFILE_FILE="tantivy-search-%p-%m.profraw"
+    - cargo +nightly-2023-09-10 test # 运行测试，生成覆盖率数据
     - |
-      llvm-profdata merge -sparse ./*.profraw -o your_project.profdata
+      llvm-profdata merge -sparse ./*.profraw -o tantivy-search.profdata
     - |
       grcov . -s . --binary-path ./target/debug/ -t cobertura --branch --ignore-not-existing --llvm --ignore "/*" --ignore "tests/*" -o cobertura.xml --excl-br-line "#\[derive\(" --excl-start "#\[cfg\(test\)\]" --excl-stop "#\]" --excl-line "#\[cfg\(test\)\]" --use-color
   after_script:
