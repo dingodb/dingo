@@ -8,12 +8,12 @@ use crate::logger::ffi_logger::callback_with_thread_info;
 use crate::common::constants::CUSTOM_INDEX_SETTING_FILE_NAME;
 use crate::{common::constants::LOG_CALLBACK, WARNING};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
 pub struct CustomIndexSetting {
     pub tokenizer: String,
 }
 
-/// Before build index, we need prepare this directory.
+/// Before build index, we need ensure this directory is empty.
 pub fn initialize_index_directory(path: &Path) -> Result<(), String> {
     if path.exists() {
         WARNING!(
@@ -111,8 +111,99 @@ pub fn load_custom_index_setting(index_file_path: &Path) -> Result<CustomIndexSe
 
 #[cfg(test)]
 mod tests {
+    use std::fs::{self, File};
+
+    use tempfile::TempDir;
+
+    use crate::{common::index_utils::{initialize_index_directory, load_custom_index_setting, save_custom_index_setting, CustomIndexSetting}, CUSTOM_INDEX_SETTING_FILE_NAME};
+
     #[test]
     fn test_initialize_index_directory() {
-        // initialize_index_directory()
+        // Prepare test directory.
+        let temp_dir = TempDir::new().expect("Can't create temp directory");
+        let temp_files = vec!["temp1.txt", "temp2.txt"];
+        for temp_file in temp_files {
+            let file_path = temp_dir.path().join(temp_file);
+            let _ = File::create(file_path).expect("Can't create temp file");
+        }
+        // Before initialize index directory.
+        let entries = fs::read_dir(temp_dir.path()).expect("Can't read directory");
+        let old_file_count = entries.filter_map(Result::ok)
+                                .filter(|e| e.path().is_file())
+                                .count();
+        assert_eq!(old_file_count, 2);
+
+        let _ = initialize_index_directory(temp_dir.path());
+
+        // After initialize index directory.
+        let entries2 = fs::read_dir(temp_dir.path()).expect("Can't read directory");
+        let new_file_count = entries2.filter_map(Result::ok)
+                                .filter(|e| e.path().is_file())
+                                .count();
+        assert_eq!(new_file_count, 0);
+
+        // `temp_dir` will be auto removed.
+    }
+
+    #[test]
+    fn test_initialize_index_directory_not_exist() {
+        // Prepare test directory.
+        let temp_dir = TempDir::new().expect("Can't create temp directory");
+        assert_eq!(temp_dir.path().exists(), true);
+        fs::remove_dir_all(temp_dir.path()).expect("Can't remove temp directory");
+        assert_eq!(temp_dir.path().exists(), false);
+        // Initialize a not exists directory.
+        let _ = initialize_index_directory(temp_dir.path());
+        assert_eq!(temp_dir.path().exists(), true);
+        
+        // `temp_dir` will be auto removed.
+    }
+
+    #[test]
+    fn test_save_custom_index_setting_success() {
+        // Prepare test directory.
+        let temp_dir = TempDir::new().expect("Can't create temp directory");
+        let custom_setting = CustomIndexSetting {
+            tokenizer: "default".to_string(),
+        };
+        let result = save_custom_index_setting(temp_dir.path(), &custom_setting);
+        assert!(result.is_ok());
+        let saved_file_path = temp_dir.path().join(CUSTOM_INDEX_SETTING_FILE_NAME);
+        assert!(saved_file_path.exists());
+        // `temp_dir` will be auto removed.
+    }
+
+    #[test]
+    fn test_save_custom_index_setting_fail_on_invalid_path() {
+        let temp_dir = TempDir::new().expect("Can't create temp directory");
+        fs::remove_dir_all(temp_dir.path()).expect("Can't remove temp directory");
+        assert_eq!(temp_dir.path().exists(), false);
+        let custom_setting = CustomIndexSetting {
+            tokenizer: "default".to_string(),
+        };
+        let result = save_custom_index_setting(temp_dir.path(), &custom_setting);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_load_custom_index_setting_success() {
+        let temp_dir = TempDir::new().unwrap();
+        let custom_setting = CustomIndexSetting {
+            tokenizer: "default".to_string(),
+        };
+
+        // Save a custom setting.
+        let result = save_custom_index_setting(&temp_dir.path(), &custom_setting);
+        assert!(result.is_ok());
+
+        let loaded_setting = load_custom_index_setting(temp_dir.path()).unwrap();
+        assert_eq!(loaded_setting, custom_setting);
+    }
+
+    #[test]
+    fn test_load_custom_index_setting_file_not_found() {
+        let temp_dir = TempDir::new().unwrap();
+        let result = load_custom_index_setting(temp_dir.path());
+        assert!(result.is_err());
     }
 }
