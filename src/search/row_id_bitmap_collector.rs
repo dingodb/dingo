@@ -35,7 +35,7 @@ impl Collector for RowIdRoaringCollector {
 
     fn merge_fruits(
         &self,
-        segment_row_ids: Vec<Arc<RoaringBitmap>>,
+        segment_row_ids:  Vec<<Self::Child as SegmentCollector>::Fruit>,
     ) -> tantivy::Result<Self::Fruit> {
         let mut row_id_roaring_bitmap = RoaringBitmap::new();
         for segment_row_id_roaring_bitmap in segment_row_ids {
@@ -88,6 +88,7 @@ impl SegmentCollector for RowIdRoaringSegmentCollector {
     }
 
     fn harvest(self) -> <Self as SegmentCollector>::Fruit {
-        Arc::clone(&self.row_id_roaring_bitmap)
+        // Arc::clone(&self.row_id_roaring_bitmap)
+        self.row_id_roaring_bitmap
     }
 }
