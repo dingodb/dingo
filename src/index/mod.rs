@@ -1,2 +1,3 @@
-pub mod index_manager;
-mod index_w;
+pub mod ffi_index_manager;
+pub mod ffi_index_writer_cache;
+mod ffi_index_writer;

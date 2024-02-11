@@ -9,7 +9,7 @@ mod search;
 mod tokenizer;
 
 use common::constants::*;
-use index::index_manager::*;
+use index::ffi_index_manager::*;
 use logger::ffi_logger::*;
 use search::index_searcher::*;
 

@@ -10,14 +10,15 @@ use tantivy::schema::FAST;
 use tantivy::schema::INDEXED;
 use tantivy::schema::{IndexRecordOption, STORED};
 
+use crate::index::ffi_index_writer::FFiIndexWriter;
 use crate::logger::ffi_logger::callback_with_thread_info;
 use crate::search::index_r::*;
 use crate::search::index_searcher::tantivy_reader_free;
 use crate::tokenizer::parse_and_register::get_custom_tokenizer;
 use crate::tokenizer::parse_and_register::register_tokenizer_to_index;
+use crate::FFI_INDEX_WRITER_CACHE;
 use crate::{common::constants::LOG_CALLBACK, DEBUG, ERROR, INFO, WARNING};
 
-use super::index_w::*;
 use crate::common::index_utils::*;
 
 use tantivy::{Document, Index, Term};
@@ -41,7 +42,7 @@ pub fn tantivy_create_index_with_tokenizer(
         Ok(content) => content.to_string(),
         Err(e) => {
             return Err(format!(
-                "Can't parse parameter index_path: {}, exception: {}",
+                "Can't parse parameter index_path:[{}] when create index with tokenizer, exception: {}",
                 index_path,
                 e.to_string()
             ));
@@ -51,8 +52,8 @@ pub fn tantivy_create_index_with_tokenizer(
         Ok(content) => content.to_string(),
         Err(e) => {
             return Err(format!(
-                "Can't parse parameter tokenizer_with_parameter: {}, exception: {}",
-                index_path,
+                "Can't parse parameter tokenizer_with_parameter:[{}] when create index with tokenizer, exception: {}",
+                tokenizer_with_parameter,
                 e.to_string()
             ));
         }
@@ -62,7 +63,7 @@ pub fn tantivy_create_index_with_tokenizer(
     // it's necessary to free any `index_reader` associated with this directory.
     if let Err(e) = tantivy_reader_free(index_path) {
         let error_msg = format!(
-            "Can't pre free index reader before initialize index directory, due to: {}",
+            "Can't free index reader before initialize index directory, exception: {}",
             e
         );
         ERROR!("{}", error_msg);
@@ -73,7 +74,7 @@ pub fn tantivy_create_index_with_tokenizer(
     // it's necessary to free any `index_writer` associated with this directory.
     if let Err(e) = tantivy_writer_free(index_path) {
         let error_msg = format!(
-            "Can't pre free index reader before initialize index directory, due to: {}",
+            "Can't free index writer before initialize index directory, exception: {}",
             e
         );
         ERROR!("{}", error_msg);
@@ -125,6 +126,7 @@ pub fn tantivy_create_index_with_tokenizer(
         tokenizer_with_parameter_str,
         doc_store
     );
+
     // Create the index in the specified directory.
     let mut index = match Index::create_in_dir(index_files_directory, schema) {
         Ok(index) => index,
@@ -166,13 +168,13 @@ pub fn tantivy_create_index_with_tokenizer(
     writer.set_merge_policy(Box::new(merge_policy));
 
     // Save IndexW to cache.
-    let indexw = IndexW {
+    let indexw = FFiIndexWriter {
         index,
         path: index_path_str.trim_end_matches('/').to_string(),
         writer: Mutex::new(Some(writer)),
     };
 
-    if let Err(e) = set_index_w(index_path_str.clone(), Arc::new(indexw)) {
+    if let Err(e) = FFI_INDEX_WRITER_CACHE.set_ffi_index_writer(index_path_str.clone(), Arc::new(indexw)) {
         ERROR!("{}", e);
         return Err(e);
     }
@@ -216,7 +218,7 @@ pub fn tantivy_index_doc(
         Ok(content) => content.to_string(),
         Err(e) => {
             return Err(format!(
-                "Can't parse parameter index_path: {}, exception: {}",
+                "Can't parse parameter index_path:[{}] when index doc, exception: {}",
                 index_path,
                 e.to_string()
             ));
@@ -226,7 +228,7 @@ pub fn tantivy_index_doc(
         Ok(content) => content.to_string(),
         Err(e) => {
             return Err(format!(
-                "Can't parse parameter doc: {}, exception: {}",
+                "Can't parse parameter doc:[{}] when index doc, exception: {}",
                 doc,
                 e.to_string()
             ));
@@ -234,10 +236,10 @@ pub fn tantivy_index_doc(
     };
 
     // get index writer from CACHE
-    let index_w = match get_index_w(index_path_str) {
+    let index_w = match FFI_INDEX_WRITER_CACHE.get_ffi_index_writer(index_path_str) {
         Ok(content) => content,
         Err(e) => {
-            ERROR!("{}", e);
+            ERROR!(function: "index_doc", "{}", e);
             return Err(e);
         }
     };
@@ -247,14 +249,14 @@ pub fn tantivy_index_doc(
     let text_field = match schema.get_field("text") {
         Ok(text_field_) => text_field_,
         Err(e) => {
-            ERROR!("Failed to get text field: {}", e.to_string());
+            ERROR!(function: "index_doc", "Failed to get text field: {}", e.to_string());
             return Err(e.to_string());
         }
     };
     let row_id_field = match schema.get_field("row_id") {
         Ok(row_id_field_) => row_id_field_,
         Err(e) => {
-            ERROR!("Failed to get row_id field: {}", e.to_string());
+            ERROR!(function: "index_doc", "Failed to get row_id field: {}", e.to_string());
             return Err(e.to_string());
         }
     };
@@ -269,7 +271,7 @@ pub fn tantivy_index_doc(
         Ok(_) => Ok(true),
         Err(e) => {
             let error_info = format!("Failed to index doc:{}", e);
-            ERROR!("{}", error_info);
+            ERROR!(function: "index_doc", "{}", error_info);
             Err(error_info.to_string())
         }
     }
@@ -292,7 +294,7 @@ pub fn tantivy_delete_row_ids(
         Ok(content) => content.to_string(),
         Err(e) => {
             return Err(format!(
-                "Can't parse parameter index_path: {}, exception: {}",
+                "Can't parse parameter index_path:[{}] when execute delete row ids, exception: {}",
                 index_path,
                 e.to_string()
             ));
@@ -301,10 +303,10 @@ pub fn tantivy_delete_row_ids(
     let row_ids: Vec<u32> = row_ids.iter().map(|s| *s as u32).collect();
 
     // get index writer from CACHE
-    let index_w = match get_index_w(index_path_str.clone()) {
+    let index_w = match FFI_INDEX_WRITER_CACHE.get_ffi_index_writer(index_path_str.clone()) {
         Ok(content) => content,
         Err(e) => {
-            ERROR!("{}", e);
+            ERROR!(function: "delete_row_ids", "{}", e);
             return Err(e);
         }
     };
@@ -314,7 +316,7 @@ pub fn tantivy_delete_row_ids(
     let row_id_field = match schema.get_field("row_id") {
         Ok(row_id_field_) => row_id_field_,
         Err(e) => {
-            ERROR!("Failed to get row_id field: {}", e.to_string());
+            ERROR!(function: "delete_row_ids", "Failed to get row_id field: {}", e.to_string());
             return Err(e.to_string());
         }
     };
@@ -327,7 +329,7 @@ pub fn tantivy_delete_row_ids(
             // something need to do.
         }
         Err(e) => {
-            ERROR!("{}", e);
+            ERROR!(function: "delete_row_ids", "{}", e);
             return Err(e);
         }
     }
@@ -338,7 +340,7 @@ pub fn tantivy_delete_row_ids(
         }
         Err(e) => {
             let error_info = format!("Failed to commit index writer: {}", e.to_string());
-            ERROR!("{}", error_info);
+            ERROR!(function: "delete_row_ids", "{}", error_info);
             return Err(error_info);
         }
     }
@@ -347,12 +349,12 @@ pub fn tantivy_delete_row_ids(
         Ok(current_index_reader) => match current_index_reader.reload() {
             Ok(_) => true,
             Err(e) => {
-                ERROR!("Can't reload reader after delete operation: {}", e);
+                ERROR!(function: "delete_row_ids", "Can't reload reader after delete operation: {}", e);
                 return Err(e);
             }
         },
         Err(e) => {
-            WARNING!("{}, skip reload it. ", e);
+            WARNING!(function: "delete_row_ids", "{}, skip reload it. ", e);
             true
         }
     };
@@ -372,7 +374,7 @@ pub fn tantivy_writer_commit(index_path: &CxxString) -> Result<bool, String> {
         Ok(content) => content.to_string(),
         Err(e) => {
             return Err(format!(
-                "Can't parse parameter index_path: {}, exception: {}",
+                "Can't parse parameter index_path:[{}] when commit index writer, exception: {}",
                 index_path,
                 e.to_string()
             ));
@@ -380,10 +382,10 @@ pub fn tantivy_writer_commit(index_path: &CxxString) -> Result<bool, String> {
     };
 
     // get index writer from CACHE
-    let index_w = match get_index_w(index_path_str) {
+    let index_w = match FFI_INDEX_WRITER_CACHE.get_ffi_index_writer(index_path_str) {
         Ok(content) => content,
         Err(e) => {
-            ERROR!("{}", e);
+            ERROR!(function: "writer_commit", "{}", e);
             return Err(e);
         }
     };
@@ -392,7 +394,7 @@ pub fn tantivy_writer_commit(index_path: &CxxString) -> Result<bool, String> {
         Ok(_) => Ok(true),
         Err(e) => {
             let error_info = format!("Failed to commit index writer: {}", e.to_string());
-            ERROR!("{}", error_info);
+            ERROR!(function: "writer_commit", "{}", error_info);
             return Err(error_info);
         }
     }
@@ -411,7 +413,7 @@ pub fn tantivy_writer_free(index_path: &CxxString) -> Result<bool, String> {
         Ok(content) => content.to_string(),
         Err(e) => {
             return Err(format!(
-                "Can't parse parameter index_path: {}, exception: {}",
+                "Can't parse parameter index_path:[{}] when free index writer, exception: {}",
                 index_path,
                 e.to_string()
             ));
@@ -419,25 +421,25 @@ pub fn tantivy_writer_free(index_path: &CxxString) -> Result<bool, String> {
     };
 
     // get index writer from CACHE
-    let index_w = match get_index_w(index_path_str.clone()) {
+    let index_w = match FFI_INDEX_WRITER_CACHE.get_ffi_index_writer(index_path_str.clone()) {
         Ok(content) => content,
         Err(e) => {
-            DEBUG!("Index writer already been removed: {}", e);
+            DEBUG!(function: "writer_free", "Index writer already been removed: {}", e);
             return Ok(false);
         }
     };
     if let Err(e) = index_w.wait_merging_threads() {
-        // TODO: time sleep?
-        ERROR!("{}", e);
-        return Err(e);
+        let error_info = format!("Can't wait merging threads, exception: {}", e);
+        ERROR!(function: "writer_free", "{}", error_info);
+        return Err(error_info);
     }
 
     // remove index writer from CACHE
-    if let Err(e) = remove_index_w(index_path_str.clone()) {
-        ERROR!("{}", e);
+    if let Err(e) = FFI_INDEX_WRITER_CACHE.remove_ffi_index_writer(index_path_str.clone()) {
+        ERROR!(function: "writer_free", "{}", e);
         return Err(e);
     };
 
-    INFO!("Index writer:[{}] has been freed", index_path_str);
+    INFO!(function: "writer_free", "Index writer:[{}] has been freed", index_path_str);
     Ok(true)
 }
