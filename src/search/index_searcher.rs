@@ -67,7 +67,7 @@ pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
     };
 
     // Load custom index settings.
-    let custom_index_setting = match load_custom_index_setting(index_files_directory) {
+    let custom_index_setting = match IndexUtils::load_custom_index_setting(index_files_directory) {
         Ok(setting) => setting,
         Err(e) => {
             let error_info = format!("Error loading custom index settings: {}", e);

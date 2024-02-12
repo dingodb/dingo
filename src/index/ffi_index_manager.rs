@@ -83,14 +83,14 @@ pub fn tantivy_create_index_with_tokenizer(
 
     // Initialize the index directory, it will store tantivy index files.
     let index_files_directory: &Path = Path::new(&index_path_str);
-    initialize_index_directory(index_files_directory)?;
+    IndexUtils::initialize_index_directory(index_files_directory)?;
 
     // Save custom index settings to index directory.
     let custom_index_setting = CustomIndexSetting {
         tokenizer: tokenizer_with_parameter.to_string(),
     };
 
-    save_custom_index_setting(index_files_directory, &custom_index_setting)?;
+    IndexUtils::save_custom_index_setting(index_files_directory, &custom_index_setting)?;
 
     // Get and register the tokenizer for the specified tokenizer.
     let (tokenizer_type, text_analyzer) = match get_custom_tokenizer(&tokenizer_with_parameter_str)
