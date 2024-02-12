@@ -34,7 +34,7 @@ pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
         Ok(content) => content.to_string(),
         Err(e) => {
             return Err(format!(
-                "Can't parse parameter index_path: {}, exception: {}",
+                "Can't parse parameter index_path:[{}] when load index, exception: {}",
                 index_path,
                 e.to_string()
             ));
@@ -173,7 +173,7 @@ pub fn tantivy_reader_free(index_path: &CxxString) -> Result<bool, String> {
         Ok(content) => content.to_string(),
         Err(e) => {
             return Err(format!(
-                "Can't parse parameter index_path: {}, exception: {}",
+                "Can't parse parameter index_path:[{}] when free reader, exception: {}",
                 index_path,
                 e.to_string()
             ));
@@ -223,7 +223,7 @@ pub fn tantivy_search_in_rowid_range(
         Ok(content) => content.to_string(),
         Err(e) => {
             return Err(format!(
-                "Can't parse parameter index_path: {}, exception: {}",
+                "Can't parse parameter index_path:[{}] when search in rowid range, exception: {}",
                 index_path,
                 e.to_string()
             ));
@@ -233,7 +233,7 @@ pub fn tantivy_search_in_rowid_range(
         Ok(content) => content.to_string(),
         Err(e) => {
             return Err(format!(
-                "Can't parse parameter index_path: {}, exception: {}",
+                "Can't parse parameter query_str:[{}] when search in rowid range, exception: {}",
                 query,
                 e.to_string()
             ));
@@ -284,7 +284,7 @@ pub fn tantivy_count_in_rowid_range(
         Ok(content) => content.to_string(),
         Err(e) => {
             return Err(format!(
-                "Can't parse parameter index_path: {}, exception: {}",
+                "Can't parse parameter index_path:[{}] when count in rowid range, exception: {}",
                 index_path,
                 e.to_string()
             ));
@@ -294,7 +294,7 @@ pub fn tantivy_count_in_rowid_range(
         Ok(content) => content.to_string(),
         Err(e) => {
             return Err(format!(
-                "Can't parse parameter index_path: {}, exception: {}",
+                "Can't parse parameter query_str:[{}] when count in rowid range, exception: {}",
                 query,
                 e.to_string()
             ));
@@ -342,7 +342,7 @@ pub fn tantivy_bm25_search_with_filter(
         Ok(content) => content.to_string(),
         Err(e) => {
             return Err(format!(
-                "Can't parse parameter index_path: {}, exception: {}",
+                "Can't parse parameter index_path:[{}] when bm25 search with filter, exception: {}",
                 index_path,
                 e.to_string()
             ));
@@ -352,7 +352,7 @@ pub fn tantivy_bm25_search_with_filter(
         Ok(content) => content.to_string(),
         Err(e) => {
             return Err(format!(
-                "Can't parse parameter index_path: {}, exception: {}",
+                "Can't parse parameter query_str:[{}] when bm25 search with filter, exception: {}",
                 query,
                 e.to_string()
             ));
@@ -466,7 +466,7 @@ pub fn tantivy_search_bitmap_results(
         Ok(content) => content.to_string(),
         Err(e) => {
             return Err(format!(
-                "Can't parse parameter index_path: {}, exception: {}",
+                "Can't parse parameter index_path:[{}] when search bitmap results, exception: {}",
                 index_path,
                 e.to_string()
             ));
@@ -476,7 +476,7 @@ pub fn tantivy_search_bitmap_results(
         Ok(content) => content.to_string(),
         Err(e) => {
             return Err(format!(
-                "Can't parse parameter index_path: {}, exception: {}",
+                "Can't parse parameter query_str:[{}] when search bitmap results, exception: {}",
                 query,
                 e.to_string()
             ));
