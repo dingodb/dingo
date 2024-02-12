@@ -28,7 +28,7 @@ namespace fs = std::filesystem;
 class SkipIndex : public benchmark::Fixture {
 public:
     void SetUp(const ::benchmark::State& state) override {
-        InitializeResources();
+        InitializeResourcesOnce();
         tantivy_load_index(this->indexDirectory);
     }
 
@@ -47,17 +47,21 @@ public:
         SearchImpl(state, granuleSize, randomIndexes);
     }
 private:
-    mutex resourceMutex;
+    // mutex resourceMutex;
+    std::once_flag flag;
     vector<string> queryTerms;
     vector<size_t> allIndices;
     string indexDirectory;
 
     void InitializeResources(){
-        lock_guard<mutex> lock(resourceMutex);
+        // lock_guard<mutex> lock(resourceMutex);
         this->queryTerms = WikiDatasetLoader::getInstance().loadQueryTerms();
         this->allIndices.resize(this->queryTerms.size());
         iota(this->allIndices.begin(), this->allIndices.end(), 0);
         this->indexDirectory = WikiDatasetLoader::getInstance().getIndexDirectory(); 
+    }
+    void InitializeResourcesOnce(){
+        call_once(flag, [this](){this->InitializeResources();});
     }
 
     void SearchImpl(benchmark::State& state, size_t granuleSize, const std::vector<size_t>& indexes) {
@@ -82,7 +86,8 @@ private:
             }
             queries += indexes.size();
         }
-
+        // std::cout<< "iteration count"<<state.iterations()<<" item processed"<<state.items_processed()<<std::endl;
+        
         state.counters["QPS"] = benchmark::Counter(queries, benchmark::Counter::kIsRate);
         state.counters["QPS(avgThreads)"] = benchmark::Counter(queries, benchmark::Counter::kAvgThreadsRate);
     }
