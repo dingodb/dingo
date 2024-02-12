@@ -302,7 +302,7 @@ pub fn tantivy_delete_row_ids(
     };
     let row_ids: Vec<u32> = row_ids.iter().map(|s| *s as u32).collect();
 
-    // get index writer from CACHE
+    // Get ffi index writer from CACHE
     let index_w = match FFI_INDEX_WRITER_CACHE.get_ffi_index_writer(index_path_str.clone()) {
         Ok(content) => content,
         Err(e) => {
@@ -311,7 +311,7 @@ pub fn tantivy_delete_row_ids(
         }
     };
 
-    // get schema from index writer.
+    // Get schema from index writer.
     let schema = index_w.index.schema();
     let row_id_field = match schema.get_field("row_id") {
         Ok(row_id_field_) => row_id_field_,
@@ -324,6 +324,8 @@ pub fn tantivy_delete_row_ids(
         .iter()
         .map(|row_id| Term::from_field_u64(row_id_field, *row_id as u64))
         .collect();
+
+    // Delete row_id terms.
     match index_w.delete_terms(terms) {
         Ok(_opstamp) => {
             // something need to do.
@@ -333,7 +335,7 @@ pub fn tantivy_delete_row_ids(
             return Err(e);
         }
     }
-    // after delete_term, need commit.
+    // After delete_term, need commit ffi index writer.
     match index_w.commit() {
         Ok(_) => {
             //
@@ -344,7 +346,7 @@ pub fn tantivy_delete_row_ids(
             return Err(error_info);
         }
     }
-    // try reload index reader from CACHE
+    // Try reload index reader from CACHE
     let reload_status = match get_index_r(index_path_str.clone()) {
         Ok(current_index_reader) => match current_index_reader.reload() {
             Ok(_) => true,

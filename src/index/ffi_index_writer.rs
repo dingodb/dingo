@@ -20,7 +20,7 @@ impl FFiIndexWriter {
                     // self.index.reader().unwrap().reload().map_err(|e| e.to_string());
                     // commit_status.map_err(|e| e.to_string())
                 } else {
-                    Err("IndexWriter is not available".to_string())
+                    Err("FFiIndexWriter is not available".to_string())
                 }
             }
             Err(e) => Err(format!("Lock error: {}", e)),
@@ -34,7 +34,7 @@ impl FFiIndexWriter {
                 if let Some(writer) = writer.as_mut() {
                     writer.add_document(document).map_err(|e| e.to_string())
                 } else {
-                    Err("IndexWriter is not available".to_string())
+                    Err("FFiIndexWriter is not available".to_string())
                 }
             }
             Err(e) => Err(format!("Lock error: {}", e)),
@@ -49,7 +49,7 @@ impl FFiIndexWriter {
                 if let Some(writer) = writer.as_mut() {
                     Ok(writer.delete_term(term))
                 } else {
-                    Err("IndexWriter is not available for delete_term".to_string())
+                    Err("FFiIndexWriter is not available for delete_term".to_string())
                 }
             }
             Err(e) => Err(format!("Lock error: {}", e)),
@@ -67,7 +67,7 @@ impl FFiIndexWriter {
                     }
                     Ok(opstamp)
                 } else {
-                    Err("IndexWriter is not available for delete_term".to_string())
+                    Err("FFiIndexWriter is not available for delete_term".to_string())
                 }
             }
             Err(e) => Err(format!("Lock error: {}", e)),
