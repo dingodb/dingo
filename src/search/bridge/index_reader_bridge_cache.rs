@@ -203,9 +203,9 @@ mod tests {
         let get_after_remove = test_cache.get_index_reader_bridge(path_str.to_string());
         assert!(get_after_remove.is_err());
         
-        // Remove a not exist `IndexReaderBridge` will not trigger error.
+        // Remove a not exist `IndexReaderBridge` will trigger an error.
         let second_removed = test_cache.remove_index_reader_bridge(path_str.to_string());
-        assert!(second_removed.is_ok());
+        assert!(second_removed.is_err());
     }
 
     #[test]
