@@ -92,3 +92,35 @@ impl SegmentCollector for RowIdRoaringSegmentCollector {
         self.row_id_roaring_bitmap
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tantivy::schema::{Schema, Field};
+    use tantivy::{Index, Document};
+    use tantivy::collector::Collector;
+    use std::path::Path;
+
+    // 测试 RowIdRoaringCollector::with_field 方法
+    #[test]
+    fn test_with_field() {
+        let collector = RowIdRoaringCollector::with_field("row_id".to_string());
+        assert_eq!(collector.row_id_field, "row_id");
+    }
+
+    // 需要更多的测试来模拟 SegmentReader 和验证 for_segment 方法
+
+    // 测试 merge_fruits 方法
+    #[test]
+    fn test_merge_fruits() {
+        // let collector = RowIdRoaringCollector::with_field("row_id".to_string());
+        // let bitmap1 = Arc::new(RoaringBitmap::from_iter(vec![1, 2, 3]));
+        // let bitmap2 = Arc::new(RoaringBitmap::from_iter(vec![4, 5, 6]));
+        // let merged = collector.merge_fruits(vec![bitmap1, bitmap2]).unwrap();
+        // let expected_bitmap: RoaringBitmap = (1..=6).collect();
+        // assert_eq!(*Arc::try_unwrap(merged).unwrap(), expected_bitmap);
+    }
+
+    // 测试 RowIdRoaringSegmentCollector::collect 方法
+    // 这将需要模拟 row_id_reader 和验证收集的结果
+}

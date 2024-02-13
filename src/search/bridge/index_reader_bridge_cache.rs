@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use crate::logger::ffi_logger::callback_with_thread_info;
-use crate::{common::constants::LOG_CALLBACK, DEBUG, WARNING};
+use crate::ERROR;
+use crate::{common::constants::LOG_CALLBACK, WARNING};
 use flurry::HashMap;
 use once_cell::sync::OnceCell;
 use tantivy::Executor;
@@ -55,8 +56,9 @@ impl  IndexReaderBridgeCache {
         if pinned.contains_key(&trimmed_key) {
             pinned.remove(&trimmed_key);
         } else {
-            let warning_info: String = format!("IndexReaderBridge doesn't exist, can't remove it with given key [{}]", trimmed_key);
-            WARNING!("{}", warning_info);
+            let error_info: String = format!("IndexReaderBridge doesn't exist, can't remove it with given key [{}]", trimmed_key);
+            ERROR!("{}", error_info);
+            return Err(error_info);
         }
         Ok(())
     }
@@ -83,9 +85,9 @@ mod tests {
     use std::sync::Arc;
 
     use tantivy::{merge_policy::LogMergePolicy, schema::{Schema, FAST, INDEXED, STORED, TEXT}, Document, Index};
-    use tempfile::{TempDir, TempPath};
+    use tempfile::TempDir;
 
-    use crate::{search::bridge::{index_reader_bridge::{self, IndexReaderBridge}, index_reader_bridge_cache::IndexReaderBridgeCache}, FFI_INDEX_SEARCHER_CACHE};
+    use crate::search::bridge::{index_reader_bridge::IndexReaderBridge, index_reader_bridge_cache::IndexReaderBridgeCache};
 
 
     fn create_index_reader_bridge(index_directory_str: &str)-> IndexReaderBridge {

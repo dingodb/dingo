@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests{
-    use tantivy::{Document, Index, IndexReader};
+    use tantivy::{Document, Index};
     use cxx::{let_cxx_string, CxxString, CxxVector};
     use tantivy::query::QueryParser;
     use tempfile::TempDir;

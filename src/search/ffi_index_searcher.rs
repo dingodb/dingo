@@ -181,11 +181,6 @@ pub fn tantivy_reader_free(index_path: &CxxString) -> Result<bool, String> {
         }
     };
 
-    // remove index reader from Reader Cache
-    if let Err(_) = FFI_INDEX_SEARCHER_CACHE.remove_index_reader_bridge(index_path_str.clone()) {
-        return Ok(false);
-    }
-
     // remove bitmap cache
     #[cfg(feature = "use-flurry-cache")]
     {
@@ -195,6 +190,11 @@ pub fn tantivy_reader_free(index_path: &CxxString) -> Result<bool, String> {
             .filter(|(_, _, ref element, _)| element == &index_path_str)
             .collect();
         CACHE_FOR_SKIP_INDEX.remove_keys(keys_need_remove);
+    }
+
+    // remove index reader from Reader Cache
+    if let Err(_) = FFI_INDEX_SEARCHER_CACHE.remove_index_reader_bridge(index_path_str.clone()) {
+        return Ok(false);
     }
 
     // success remove.
