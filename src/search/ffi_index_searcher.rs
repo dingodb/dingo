@@ -2,6 +2,7 @@ use crate::logger::ffi_logger::callback_with_thread_info;
 use crate::tokenizer::parse_and_register::get_custom_tokenizer;
 use crate::tokenizer::parse_and_register::register_tokenizer_to_index;
 use crate::RowIdWithScore;
+use crate::FFI_INDEX_SEARCHER_CACHE;
 use crate::{common::constants::LOG_CALLBACK, ERROR, INFO, WARNING};
 use cxx::CxxString;
 use cxx::CxxVector;
@@ -10,8 +11,8 @@ use roaring::RoaringBitmap;
 use std::{path::Path, sync::Arc};
 use tantivy::query::QueryParser;
 
-use super::index_r::*;
-use super::top_dos_with_bitmap_collector::TopDocsWithFilter;
+use super::bridge::index_reader_bridge::IndexReaderBridge;
+use super::collector::top_dos_with_bitmap_collector::TopDocsWithFilter;
 use super::utils::perform_search;
 use super::utils::perform_search_with_range;
 use super::utils::row_ids_to_u8_bitmap;
@@ -101,7 +102,7 @@ pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
     #[cfg(feature = "use-shared-search-pool")]
     {
         // Set the multithreaded executor for search.
-        match get_shared_multithread_executor(2) {
+        match FFI_INDEX_SEARCHER_CACHE.get_shared_multithread_executor(2) {
             Ok(shared_thread_pool) => {
                 index
                     .set_shared_multithread_executor(shared_thread_pool)
@@ -145,14 +146,14 @@ pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
         }
     };
 
-    // Save IndexR to cache.
-    let indexr = IndexR {
+    // Save IndexReaderBridge to cache.
+    let indexr = IndexReaderBridge {
         index,
         reader,
         path: index_path_str.trim_end_matches('/').to_string(),
     };
 
-    if let Err(e) = set_index_r(index_path_str.clone(), Arc::new(indexr)) {
+    if let Err(e) = FFI_INDEX_SEARCHER_CACHE.set_index_reader_bridge(index_path_str.clone(), Arc::new(indexr)) {
         ERROR!("{}", e);
         return Err(e);
     }
@@ -181,7 +182,7 @@ pub fn tantivy_reader_free(index_path: &CxxString) -> Result<bool, String> {
     };
 
     // remove index reader from Reader Cache
-    if let Err(_) = remove_index_r(index_path_str.clone()) {
+    if let Err(_) = FFI_INDEX_SEARCHER_CACHE.remove_index_reader_bridge(index_path_str.clone()) {
         return Ok(false);
     }
 
@@ -243,7 +244,7 @@ pub fn tantivy_search_in_rowid_range(
         return Err("lrange should smaller than rrange".to_string());
     }
     // get index reader from CACHE
-    let index_r = match get_index_r(index_path_str.clone()) {
+    let index_r = match FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path_str.clone()) {
         Ok(content) => content,
         Err(e) => {
             ERROR!("{}", e);
@@ -301,7 +302,7 @@ pub fn tantivy_count_in_rowid_range(
         }
     };
     // get index reader from CACHE
-    let index_r = match get_index_r(index_path_str.clone()) {
+    let index_r = match FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path_str.clone()) {
         Ok(content) => content,
         Err(e) => {
             ERROR!("{}", e);
@@ -363,7 +364,7 @@ pub fn tantivy_bm25_search_with_filter(
     let row_ids: Vec<u32> = u8_bitmap_to_row_ids(&u8_bitmap);
     // INFO!("alive row_ids is: {:?}", row_ids);
     // get index reader from CACHE
-    let index_r = match get_index_r(index_path_str.clone()) {
+    let index_r = match FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path_str.clone()) {
         Ok(content) => content,
         Err(e) => {
             ERROR!("{}", e);
@@ -483,7 +484,7 @@ pub fn tantivy_search_bitmap_results(
         }
     };
     // get index reader from CACHE
-    let index_r = match get_index_r(index_path_str.clone()) {
+    let index_r = match FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path_str.clone()) {
         Ok(content) => content,
         Err(e) => {
             ERROR!("{}", e);

@@ -1,5 +1,6 @@
 use crate::common::flurry_cache::FlurryCache;
-use crate::index::ffi_index_writer_cache::FFiIndexWriterCache;
+use crate::index::bridge::index_writer_bridge_cache::IndexWriterBridgeCache;
+use crate::search::bridge::index_reader_bridge_cache::IndexReaderBridgeCache;
 use libc::*;
 use once_cell::sync::Lazy;
 use once_cell::sync::OnceCell;
@@ -26,7 +27,8 @@ pub extern "C" fn empty_log_callback(_level: i32, _msg: *const c_char, _file: *c
 // Log callback function lazy init.
 pub static LOG_CALLBACK: OnceCell<LogCallback> = OnceCell::new();
 
-// Cache store FFiIndexWriterCache.
-pub static FFI_INDEX_WRITER_CACHE: Lazy<FFiIndexWriterCache> = Lazy::new(|| FFiIndexWriterCache::new());
+// Cache store IndexWriterBridgeCache.
+pub static FFI_INDEX_WRITER_CACHE: Lazy<IndexWriterBridgeCache> = Lazy::new(|| IndexWriterBridgeCache::new());
 
-// Cache store FFiIndexSearcherCache.
+// Cache store IndexReaderBridgeCache.
+pub static FFI_INDEX_SEARCHER_CACHE: Lazy<IndexReaderBridgeCache> = Lazy::new(|| IndexReaderBridgeCache::new());

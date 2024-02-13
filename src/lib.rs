@@ -11,7 +11,7 @@ mod tokenizer;
 use common::constants::*;
 use index::ffi_index_manager::*;
 use logger::ffi_logger::*;
-use search::index_searcher::*;
+use search::ffi_index_searcher::*;
 
 #[cxx::bridge]
 pub mod ffi {

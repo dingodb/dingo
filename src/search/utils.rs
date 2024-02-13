@@ -2,13 +2,13 @@ use roaring::RoaringBitmap;
 use std::sync::Arc;
 use tantivy::query::{QueryParser, RegexQuery};
 
-use super::index_r::*;
-use super::row_id_bitmap_collector::RowIdRoaringCollector;
+use super::bridge::index_reader_bridge::IndexReaderBridge;
+use super::collector::row_id_bitmap_collector::RowIdRoaringCollector;
 use crate::common::constants::CACHE_FOR_SKIP_INDEX;
 use crate::logger::ffi_logger::callback_with_thread_info;
 use crate::{common::constants::LOG_CALLBACK, ERROR};
 
-fn compute_bitmap(index_r: &IndexR, query_str: &str, use_regex: bool) -> Arc<RoaringBitmap> {
+fn compute_bitmap(index_r: &IndexReaderBridge, query_str: &str, use_regex: bool) -> Arc<RoaringBitmap> {
     let schema = index_r.reader.searcher().index().schema();
     let text = match schema.get_field("text") {
         Ok(str) => str,
@@ -85,7 +85,7 @@ fn intersect_and_return(
 /// Performs a search operation using the given index reader, query, and range.
 ///
 /// Arguments:
-/// - `index_r`: refrence to `IndexR`.
+/// - `index_r`: refrence to `IndexReaderBridge`.
 /// - `query_str`: query string.
 /// - `lrange`: The lower bound of the row ID range.
 /// - `rrange`: The upper bound of the row ID range.
@@ -95,7 +95,7 @@ fn intersect_and_return(
 /// - `Result<RoaringBitmap, String>`: A `RoaringBitmap` containing the search results,
 ///   or an error if the search fails.
 pub fn perform_search_with_range(
-    index_r: &IndexR,
+    index_r: &IndexReaderBridge,
     query_str: &str,
     lrange: u64,
     rrange: u64,
@@ -113,7 +113,7 @@ pub fn perform_search_with_range(
 }
 
 pub fn perform_search(
-    index_r: &IndexR,
+    index_r: &IndexReaderBridge,
     query_str: &str,
     use_regex: bool,
 ) -> Result<Arc<RoaringBitmap>, String> {

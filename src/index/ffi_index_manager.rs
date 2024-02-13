@@ -10,13 +10,12 @@ use tantivy::schema::FAST;
 use tantivy::schema::INDEXED;
 use tantivy::schema::{IndexRecordOption, STORED};
 
-use crate::index::ffi_index_writer::FFiIndexWriter;
+use crate::index::bridge::index_writer_bridge::IndexWriterBridge;
 use crate::logger::ffi_logger::callback_with_thread_info;
-use crate::search::index_r::*;
-use crate::search::index_searcher::tantivy_reader_free;
+use crate::search::ffi_index_searcher::tantivy_reader_free;
 use crate::tokenizer::parse_and_register::get_custom_tokenizer;
 use crate::tokenizer::parse_and_register::register_tokenizer_to_index;
-use crate::FFI_INDEX_WRITER_CACHE;
+use crate::{FFI_INDEX_SEARCHER_CACHE, FFI_INDEX_WRITER_CACHE};
 use crate::{common::constants::LOG_CALLBACK, DEBUG, ERROR, INFO, WARNING};
 
 use crate::common::index_utils::*;
@@ -168,13 +167,13 @@ pub fn tantivy_create_index_with_tokenizer(
     writer.set_merge_policy(Box::new(merge_policy));
 
     // Save IndexW to cache.
-    let indexw = FFiIndexWriter {
+    let indexw = IndexWriterBridge {
         index,
         path: index_path_str.trim_end_matches('/').to_string(),
         writer: Mutex::new(Some(writer)),
     };
 
-    if let Err(e) = FFI_INDEX_WRITER_CACHE.set_ffi_index_writer(index_path_str.clone(), Arc::new(indexw)) {
+    if let Err(e) = FFI_INDEX_WRITER_CACHE.set_index_writer_bridge(index_path_str.clone(), Arc::new(indexw)) {
         ERROR!("{}", e);
         return Err(e);
     }
@@ -236,7 +235,7 @@ pub fn tantivy_index_doc(
     };
 
     // get index writer from CACHE
-    let index_w = match FFI_INDEX_WRITER_CACHE.get_ffi_index_writer(index_path_str) {
+    let index_w = match FFI_INDEX_WRITER_CACHE.get_index_writer_bridge(index_path_str) {
         Ok(content) => content,
         Err(e) => {
             ERROR!(function: "index_doc", "{}", e);
@@ -303,7 +302,7 @@ pub fn tantivy_delete_row_ids(
     let row_ids: Vec<u32> = row_ids.iter().map(|s| *s as u32).collect();
 
     // Get ffi index writer from CACHE
-    let index_w = match FFI_INDEX_WRITER_CACHE.get_ffi_index_writer(index_path_str.clone()) {
+    let index_w = match FFI_INDEX_WRITER_CACHE.get_index_writer_bridge(index_path_str.clone()) {
         Ok(content) => content,
         Err(e) => {
             ERROR!(function: "delete_row_ids", "{}", e);
@@ -347,7 +346,7 @@ pub fn tantivy_delete_row_ids(
         }
     }
     // Try reload index reader from CACHE
-    let reload_status = match get_index_r(index_path_str.clone()) {
+    let reload_status = match FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path_str.clone()) {
         Ok(current_index_reader) => match current_index_reader.reload() {
             Ok(_) => true,
             Err(e) => {
@@ -384,7 +383,7 @@ pub fn tantivy_writer_commit(index_path: &CxxString) -> Result<bool, String> {
     };
 
     // get index writer from CACHE
-    let index_w = match FFI_INDEX_WRITER_CACHE.get_ffi_index_writer(index_path_str) {
+    let index_w = match FFI_INDEX_WRITER_CACHE.get_index_writer_bridge(index_path_str) {
         Ok(content) => content,
         Err(e) => {
             ERROR!(function: "writer_commit", "{}", e);
@@ -423,7 +422,7 @@ pub fn tantivy_writer_free(index_path: &CxxString) -> Result<bool, String> {
     };
 
     // get index writer from CACHE
-    let index_w = match FFI_INDEX_WRITER_CACHE.get_ffi_index_writer(index_path_str.clone()) {
+    let index_w = match FFI_INDEX_WRITER_CACHE.get_index_writer_bridge(index_path_str.clone()) {
         Ok(content) => content,
         Err(e) => {
             DEBUG!(function: "writer_free", "Index writer already been removed: {}", e);
@@ -437,7 +436,7 @@ pub fn tantivy_writer_free(index_path: &CxxString) -> Result<bool, String> {
     }
 
     // remove index writer from CACHE
-    if let Err(e) = FFI_INDEX_WRITER_CACHE.remove_ffi_index_writer(index_path_str.clone()) {
+    if let Err(e) = FFI_INDEX_WRITER_CACHE.remove_index_writer_bridge(index_path_str.clone()) {
         ERROR!(function: "writer_free", "{}", e);
         return Err(e);
     };
