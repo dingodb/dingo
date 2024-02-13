@@ -15,8 +15,8 @@ use crate::logger::ffi_logger::callback_with_thread_info;
 use crate::search::ffi_index_searcher::tantivy_reader_free;
 use crate::tokenizer::parse_and_register::get_custom_tokenizer;
 use crate::tokenizer::parse_and_register::register_tokenizer_to_index;
-use crate::{FFI_INDEX_SEARCHER_CACHE, FFI_INDEX_WRITER_CACHE};
 use crate::{common::constants::LOG_CALLBACK, DEBUG, ERROR, INFO, WARNING};
+use crate::{FFI_INDEX_SEARCHER_CACHE, FFI_INDEX_WRITER_CACHE};
 
 use crate::common::index_utils::*;
 
@@ -173,7 +173,9 @@ pub fn tantivy_create_index_with_tokenizer(
         writer: Mutex::new(Some(writer)),
     };
 
-    if let Err(e) = FFI_INDEX_WRITER_CACHE.set_index_writer_bridge(index_path_str.clone(), Arc::new(indexw)) {
+    if let Err(e) =
+        FFI_INDEX_WRITER_CACHE.set_index_writer_bridge(index_path_str.clone(), Arc::new(indexw))
+    {
         ERROR!("{}", e);
         return Err(e);
     }
@@ -346,7 +348,9 @@ pub fn tantivy_delete_row_ids(
         }
     }
     // Try reload index reader from CACHE
-    let reload_status = match FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path_str.clone()) {
+    let reload_status = match FFI_INDEX_SEARCHER_CACHE
+        .get_index_reader_bridge(index_path_str.clone())
+    {
         Ok(current_index_reader) => match current_index_reader.reload() {
             Ok(_) => true,
             Err(e) => {

@@ -23,10 +23,7 @@ where
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             capacity,
-            hash_map: HashMap::with_capacity_and_hasher(
-                capacity,
-                DefaultHashBuilder::default(),
-            ),
+            hash_map: HashMap::with_capacity_and_hasher(capacity, DefaultHashBuilder::default()),
         }
     }
 }
@@ -162,14 +159,17 @@ mod tests {
         for address in 0..100 {
             let key = (address, "a".to_string(), "b".to_string());
             let value = Arc::new(RoaringBitmap::new());
-            let _ = test_hashmap.resolve(key, || { value });
-            assert_eq!(test_hashmap.all_keys().len() % capacity, (address+1) % capacity);
+            let _ = test_hashmap.resolve(key, || value);
+            assert_eq!(
+                test_hashmap.all_keys().len() % capacity,
+                (address + 1) % capacity
+            );
         }
     }
 
     #[test]
     fn test_flurry_cache_drop_value() {
-        // These two hashmaps with different capacities are used to 
+        // These two hashmaps with different capacities are used to
         // test whether the `Arc` data stored in them is properly cleaned up.
         let test_hashmap_capacity_1: FlurryCache<(usize, String, String), Arc<TestData>> =
             FlurryCache::with_capacity(1);
@@ -179,14 +179,20 @@ mod tests {
 
         // `arc_data` pointer count should smaller than 20.
         for address in 0..20 {
-            let _ = test_hashmap_capacity_1.resolve((address, "a".to_string(), "b".to_string()), || Arc::clone(&arc_data));
+            let _ = test_hashmap_capacity_1
+                .resolve((address, "a".to_string(), "b".to_string()), || {
+                    Arc::clone(&arc_data)
+                });
         }
         assert!(Arc::strong_count(&arc_data) < 20);
 
         // `arc_data` pointer count should equal 21 (1+20=21).
         test_hashmap_capacity_1.clear();
         for address in 0..20 {
-            let _ = test_hashmap_capacity_100.resolve((address, "a".to_string(), "b".to_string()), || Arc::clone(&arc_data));
+            let _ = test_hashmap_capacity_100
+                .resolve((address, "a".to_string(), "b".to_string()), || {
+                    Arc::clone(&arc_data)
+                });
         }
         assert_eq!(Arc::strong_count(&arc_data), 21);
     }

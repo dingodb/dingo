@@ -8,7 +8,11 @@ use crate::common::constants::CACHE_FOR_SKIP_INDEX;
 use crate::logger::ffi_logger::callback_with_thread_info;
 use crate::{common::constants::LOG_CALLBACK, ERROR};
 
-fn compute_bitmap(index_r: &IndexReaderBridge, query_str: &str, use_regex: bool) -> Arc<RoaringBitmap> {
+fn compute_bitmap(
+    index_r: &IndexReaderBridge,
+    query_str: &str,
+    use_regex: bool,
+) -> Arc<RoaringBitmap> {
     let schema = index_r.reader.searcher().index().schema();
     let text = match schema.get_field("text") {
         Ok(str) => str,

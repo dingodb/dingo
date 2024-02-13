@@ -153,7 +153,9 @@ pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
         path: index_path_str.trim_end_matches('/').to_string(),
     };
 
-    if let Err(e) = FFI_INDEX_SEARCHER_CACHE.set_index_reader_bridge(index_path_str.clone(), Arc::new(indexr)) {
+    if let Err(e) =
+        FFI_INDEX_SEARCHER_CACHE.set_index_reader_bridge(index_path_str.clone(), Arc::new(indexr))
+    {
         ERROR!("{}", e);
         return Err(e);
     }

@@ -28,7 +28,9 @@ pub extern "C" fn empty_log_callback(_level: i32, _msg: *const c_char, _file: *c
 pub static LOG_CALLBACK: OnceCell<LogCallback> = OnceCell::new();
 
 // Cache store IndexWriterBridgeCache.
-pub static FFI_INDEX_WRITER_CACHE: Lazy<IndexWriterBridgeCache> = Lazy::new(|| IndexWriterBridgeCache::new());
+pub static FFI_INDEX_WRITER_CACHE: Lazy<IndexWriterBridgeCache> =
+    Lazy::new(|| IndexWriterBridgeCache::new());
 
 // Cache store IndexReaderBridgeCache.
-pub static FFI_INDEX_SEARCHER_CACHE: Lazy<IndexReaderBridgeCache> = Lazy::new(|| IndexReaderBridgeCache::new());
+pub static FFI_INDEX_SEARCHER_CACHE: Lazy<IndexReaderBridgeCache> =
+    Lazy::new(|| IndexReaderBridgeCache::new());

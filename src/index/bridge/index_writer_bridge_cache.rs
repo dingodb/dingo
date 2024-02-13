@@ -1,16 +1,18 @@
-use std::sync::Arc;
+use super::index_writer_bridge::IndexWriterBridge;
 use crate::logger::ffi_logger::callback_with_thread_info;
 use crate::{common::constants::LOG_CALLBACK, WARNING};
 use flurry::HashMap;
-use super::index_writer_bridge::IndexWriterBridge;
+use std::sync::Arc;
 
 pub struct IndexWriterBridgeCache {
-    cache: HashMap<String, Arc<IndexWriterBridge>>
+    cache: HashMap<String, Arc<IndexWriterBridge>>,
 }
 
 impl IndexWriterBridgeCache {
     pub fn new() -> Self {
-        Self { cache: HashMap::new() }
+        Self {
+            cache: HashMap::new(),
+        }
     }
 
     // TODO: trimmed need to be done in FFI entry.
@@ -26,7 +28,11 @@ impl IndexWriterBridgeCache {
         }
     }
 
-    pub fn set_index_writer_bridge(&self, key: String, value: Arc<IndexWriterBridge>) -> Result<(), String> {
+    pub fn set_index_writer_bridge(
+        &self,
+        key: String,
+        value: Arc<IndexWriterBridge>,
+    ) -> Result<(), String> {
         let pinned = self.cache.pin();
         let trimmed_key: String = key.trim_end_matches('/').to_string();
         if pinned.contains_key(&trimmed_key) {
@@ -59,15 +65,17 @@ impl IndexWriterBridgeCache {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
-    use std::sync::{Arc, Mutex};
-    use tantivy::{merge_policy::LogMergePolicy, schema::{Schema, FAST, INDEXED, STORED, TEXT}, Index};
-    use tempfile::TempDir;
-    use crate::index::bridge::index_writer_bridge_cache::IndexWriterBridgeCache;
     use crate::index::bridge::index_writer_bridge::IndexWriterBridge;
+    use crate::index::bridge::index_writer_bridge_cache::IndexWriterBridgeCache;
+    use std::sync::{Arc, Mutex};
+    use tantivy::{
+        merge_policy::LogMergePolicy,
+        schema::{Schema, FAST, INDEXED, STORED, TEXT},
+        Index,
+    };
+    use tempfile::TempDir;
 
     fn create_index_in_temp_directory(index_directory_str: &str) -> IndexWriterBridge {
         // Construct the schema for the index.
@@ -76,22 +84,25 @@ mod tests {
         schema_builder.add_text_field("text", TEXT | STORED);
         let schema = schema_builder.build();
         // Create the index in the specified directory.
-        let index = Index::create_in_dir(index_directory_str.to_string(), schema).expect("Can't create index");
+        let index = Index::create_in_dir(index_directory_str.to_string(), schema)
+            .expect("Can't create index");
         // Create the writer with a specified buffer size (e.g., 64 MB).
-        let writer = index.writer_with_num_threads(2, 1024 * 1024 * 64).expect("Can't create index writer");
+        let writer = index
+            .writer_with_num_threads(2, 1024 * 1024 * 64)
+            .expect("Can't create index writer");
         // Configure default merge policy
         writer.set_merge_policy(Box::new(LogMergePolicy::default()));
         // Generate indexW.
         let index_w = IndexWriterBridge {
             index,
-            path: index_directory_str.to_string(), 
+            path: index_directory_str.to_string(),
             writer: Mutex::new(Some(writer)),
         };
         index_w
     }
 
     #[test]
-    fn test_set_index_writer_bridge(){
+    fn test_set_index_writer_bridge() {
         let test_cache = IndexWriterBridgeCache::new();
         // Create two temp directory for test.
         let path_a = TempDir::new().expect("Can't create temp directory");
@@ -100,22 +111,18 @@ mod tests {
         let path_b_str = path_b.path().to_str().unwrap();
 
         let index_value_a = create_index_in_temp_directory(path_a_str);
-        let first_inserted = test_cache.set_index_writer_bridge(
-            path_a_str.to_string(), 
-            Arc::new(index_value_a)
-        );
+        let first_inserted =
+            test_cache.set_index_writer_bridge(path_a_str.to_string(), Arc::new(index_value_a));
         assert!(first_inserted.is_ok());
 
         let index_value_b = create_index_in_temp_directory(path_b_str);
-        let second_inserted = test_cache.set_index_writer_bridge(
-            path_b_str.to_string(), 
-            Arc::new(index_value_b)
-        );
+        let second_inserted =
+            test_cache.set_index_writer_bridge(path_b_str.to_string(), Arc::new(index_value_b));
         assert!(second_inserted.is_ok());
     }
 
     #[test]
-    fn test_get_and_set_index_writer_bridge(){
+    fn test_get_and_set_index_writer_bridge() {
         let test_cache = IndexWriterBridgeCache::new();
 
         // Create two temp directory for test.
@@ -126,7 +133,8 @@ mod tests {
 
         // Insert value `index_value_a` with the key `path_a_str` into cache.
         let index_value_a = Arc::new(create_index_in_temp_directory(path_a_str));
-        let first_inserted = test_cache.set_index_writer_bridge(path_a_str.to_string(), index_value_a);
+        let first_inserted =
+            test_cache.set_index_writer_bridge(path_a_str.to_string(), index_value_a);
         assert!(first_inserted.is_ok());
 
         let first_get = test_cache.get_index_writer_bridge(path_a_str.to_string());
@@ -139,7 +147,8 @@ mod tests {
 
         // Testing whether the cache can update the value for the same key (`path_a_str`).
         let index_value_b = Arc::new(create_index_in_temp_directory(path_b_str));
-        let second_inserted = test_cache.set_index_writer_bridge(path_a_str.to_string(), index_value_b);
+        let second_inserted =
+            test_cache.set_index_writer_bridge(path_a_str.to_string(), index_value_b);
         assert!(second_inserted.is_ok());
         let second_get = test_cache.get_index_writer_bridge(path_a_str.to_string());
         assert!(second_get.is_ok());
@@ -147,7 +156,7 @@ mod tests {
     }
 
     #[test]
-    fn test_remove_index_writer_bridge(){
+    fn test_remove_index_writer_bridge() {
         let test_cache = IndexWriterBridgeCache::new();
 
         // Create two temp directory for test.
@@ -156,12 +165,13 @@ mod tests {
 
         // Insert value `index_value` with the key `path_str` into cache.
         let index_value = Arc::new(create_index_in_temp_directory(path_str));
-        let first_inserted = test_cache.set_index_writer_bridge(path_str.to_string(), index_value.clone());
+        let first_inserted =
+            test_cache.set_index_writer_bridge(path_str.to_string(), index_value.clone());
         assert!(first_inserted.is_ok());
         let first_get = test_cache.get_index_writer_bridge(path_str.to_string());
         assert!(first_get.is_ok());
         assert_eq!(first_get.unwrap().path, path_str.to_string());
-        
+
         // Remove `index_value`
         let get_before_remove = test_cache.get_index_writer_bridge(path_str.to_string());
         assert!(get_before_remove.is_ok());
@@ -169,10 +179,9 @@ mod tests {
         assert!(first_removed.is_ok());
         let get_after_remove = test_cache.get_index_writer_bridge(path_str.to_string());
         assert!(get_after_remove.is_err());
-        
+
         // Remove a not exist `IndexWriterBridge` will not trigger error.
         let second_removed = test_cache.remove_index_writer_bridge(path_str.to_string());
         assert!(second_removed.is_ok());
     }
-
 }

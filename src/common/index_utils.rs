@@ -8,9 +8,9 @@ use crate::logger::ffi_logger::callback_with_thread_info;
 use crate::common::constants::CUSTOM_INDEX_SETTING_FILE_NAME;
 use crate::{common::constants::LOG_CALLBACK, WARNING};
 
-/// `CustomIndexSetting` is used to record some custom configuration information about the index, 
-/// such as the tokenizer and tokenizer parameters. 
-/// As requirements change, this structure will be further enriched. 
+/// `CustomIndexSetting` is used to record some custom configuration information about the index,
+/// such as the tokenizer and tokenizer parameters.
+/// As requirements change, this structure will be further enriched.
 /// However, the issue of upgrading to new features needs to be considered.
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
 pub struct CustomIndexSetting {
@@ -50,7 +50,10 @@ impl IndexUtils {
     }
 
     /// Save the custom index settings to a file.
-    pub fn save_custom_index_setting(path: &Path, setting: &CustomIndexSetting) -> Result<(), String> {
+    pub fn save_custom_index_setting(
+        path: &Path,
+        setting: &CustomIndexSetting,
+    ) -> Result<(), String> {
         let file_path = path.join(CUSTOM_INDEX_SETTING_FILE_NAME);
         let mut file = match File::create(&file_path) {
             Ok(content) => content,
@@ -117,15 +120,16 @@ impl IndexUtils {
         };
         Ok(result)
     }
-
 }
-
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        common::index_utils::{CustomIndexSetting, IndexUtils},
+        CUSTOM_INDEX_SETTING_FILE_NAME,
+    };
     use std::fs::{self, File};
     use tempfile::TempDir;
-    use crate::{common::index_utils::{IndexUtils, CustomIndexSetting}, CUSTOM_INDEX_SETTING_FILE_NAME};
 
     #[test]
     fn test_initialize_index_directory() {
@@ -138,18 +142,20 @@ mod tests {
         }
         // Before initialize index directory.
         let entries = fs::read_dir(temp_dir.path()).expect("Can't read directory");
-        let old_file_count = entries.filter_map(Result::ok)
-                                .filter(|e| e.path().is_file())
-                                .count();
+        let old_file_count = entries
+            .filter_map(Result::ok)
+            .filter(|e| e.path().is_file())
+            .count();
         assert_eq!(old_file_count, 2);
 
         let _ = IndexUtils::initialize_index_directory(temp_dir.path());
 
         // After initialize index directory.
         let entries2 = fs::read_dir(temp_dir.path()).expect("Can't read directory");
-        let new_file_count = entries2.filter_map(Result::ok)
-                                .filter(|e| e.path().is_file())
-                                .count();
+        let new_file_count = entries2
+            .filter_map(Result::ok)
+            .filter(|e| e.path().is_file())
+            .count();
         assert_eq!(new_file_count, 0);
     }
 

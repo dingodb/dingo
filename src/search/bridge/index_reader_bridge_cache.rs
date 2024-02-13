@@ -11,16 +11,22 @@ use super::index_reader_bridge::IndexReaderBridge;
 
 pub struct IndexReaderBridgeCache {
     cache: HashMap<String, Arc<IndexReaderBridge>>,
-    shared_thread_pool: OnceCell<Arc<Executor>>
+    shared_thread_pool: OnceCell<Arc<Executor>>,
 }
 
-
-impl  IndexReaderBridgeCache {
+impl IndexReaderBridgeCache {
     pub fn new() -> Self {
-        Self { cache: HashMap::new(), shared_thread_pool: OnceCell::new() }
+        Self {
+            cache: HashMap::new(),
+            shared_thread_pool: OnceCell::new(),
+        }
     }
 
-    pub fn set_index_reader_bridge(&self, key: String, value: Arc<IndexReaderBridge>) -> Result<(), String> {
+    pub fn set_index_reader_bridge(
+        &self,
+        key: String,
+        value: Arc<IndexReaderBridge>,
+    ) -> Result<(), String> {
         let pinned = self.cache.pin();
         let trimmed_key: String = key.trim_end_matches('/').to_string();
         if pinned.contains_key(&trimmed_key) {
@@ -49,14 +55,17 @@ impl  IndexReaderBridgeCache {
             )),
         }
     }
-    
+
     pub fn remove_index_reader_bridge(&self, key: String) -> Result<(), String> {
         let pinned = self.cache.pin();
         let trimmed_key: String = key.trim_end_matches('/').to_string();
         if pinned.contains_key(&trimmed_key) {
             pinned.remove(&trimmed_key);
         } else {
-            let error_info: String = format!("IndexReaderBridge doesn't exist, can't remove it with given key [{}]", trimmed_key);
+            let error_info: String = format!(
+                "IndexReaderBridge doesn't exist, can't remove it with given key [{}]",
+                trimmed_key
+            );
             ERROR!("{}", error_info);
             return Err(error_info);
         }
@@ -64,7 +73,10 @@ impl  IndexReaderBridgeCache {
     }
 
     // shared thread pool for index searcher.
-    pub fn get_shared_multithread_executor(&self, num_threads: usize) -> Result<Arc<Executor>, String> {
+    pub fn get_shared_multithread_executor(
+        &self,
+        num_threads: usize,
+    ) -> Result<Arc<Executor>, String> {
         if num_threads <= 0 {
             return Err("threads number minimum is 1".to_string());
         }
@@ -73,33 +85,40 @@ impl  IndexReaderBridgeCache {
                 .map(Arc::new)
                 .map_err(|e| e.to_string())
         });
-    
+
         res.map(|executor| executor.clone())
     }
 }
-
 
 #[cfg(test)]
 mod tests {
 
     use std::sync::Arc;
 
-    use tantivy::{merge_policy::LogMergePolicy, schema::{Schema, FAST, INDEXED, STORED, TEXT}, Document, Index};
+    use tantivy::{
+        merge_policy::LogMergePolicy,
+        schema::{Schema, FAST, INDEXED, STORED, TEXT},
+        Document, Index,
+    };
     use tempfile::TempDir;
 
-    use crate::search::bridge::{index_reader_bridge::IndexReaderBridge, index_reader_bridge_cache::IndexReaderBridgeCache};
+    use crate::search::bridge::{
+        index_reader_bridge::IndexReaderBridge, index_reader_bridge_cache::IndexReaderBridgeCache,
+    };
 
-
-    fn create_index_reader_bridge(index_directory_str: &str)-> IndexReaderBridge {
+    fn create_index_reader_bridge(index_directory_str: &str) -> IndexReaderBridge {
         // Construct the schema for the index.
         let mut schema_builder = Schema::builder();
         schema_builder.add_u64_field("row_id", FAST | INDEXED);
         schema_builder.add_text_field("text", TEXT | STORED);
         let schema = schema_builder.build();
         // Create the index in the specified directory.
-        let index = Index::create_in_dir(index_directory_str.to_string(), schema.clone()).expect("Can't create index");
+        let index = Index::create_in_dir(index_directory_str.to_string(), schema.clone())
+            .expect("Can't create index");
         // Create the writer with a specified buffer size (e.g., 64 MB).
-        let writer = index.writer_with_num_threads(2, 1024 * 1024 * 64).expect("Can't create index writer");
+        let writer = index
+            .writer_with_num_threads(2, 1024 * 1024 * 64)
+            .expect("Can't create index writer");
         // Configure default merge policy
         writer.set_merge_policy(Box::new(LogMergePolicy::default()));
         // Index some documents.
@@ -108,7 +127,7 @@ mod tests {
             "Artistic expressions reflect diverse cultural heritages.".to_string(),
             "Social movements transform societies, forging new paths.".to_string(),
             "Strategic military campaigns alter the balance of power.".to_string(),
-            "Ancient philosophies provide wisdom for modern dilemmas.".to_string()
+            "Ancient philosophies provide wisdom for modern dilemmas.".to_string(),
         ];
         for row_id in 0..docs.len() {
             let mut doc = Document::default();
@@ -125,7 +144,7 @@ mod tests {
     }
 
     #[test]
-    fn test_set_index_reader_bridge(){
+    fn test_set_index_reader_bridge() {
         let test_cache = IndexReaderBridgeCache::new();
         // Create two temp directory for test.
         let path_a = TempDir::new().expect("Can't create temp directory");
@@ -134,22 +153,18 @@ mod tests {
         let path_b_str = path_b.path().to_str().unwrap();
 
         let index_value_a = create_index_reader_bridge(path_a_str);
-        let first_inserted = test_cache.set_index_reader_bridge(
-            path_a_str.to_string(), 
-            Arc::new(index_value_a)
-        );
+        let first_inserted =
+            test_cache.set_index_reader_bridge(path_a_str.to_string(), Arc::new(index_value_a));
         assert!(first_inserted.is_ok());
 
         let index_value_b = create_index_reader_bridge(path_b_str);
-        let second_inserted = test_cache.set_index_reader_bridge(
-            path_b_str.to_string(), 
-            Arc::new(index_value_b)
-        );
+        let second_inserted =
+            test_cache.set_index_reader_bridge(path_b_str.to_string(), Arc::new(index_value_b));
         assert!(second_inserted.is_ok());
     }
 
     #[test]
-    fn test_get_and_set_index_reader_bridge(){
+    fn test_get_and_set_index_reader_bridge() {
         let test_cache = IndexReaderBridgeCache::new();
 
         // Create two temp directory for test.
@@ -160,7 +175,8 @@ mod tests {
 
         // Insert value `index_reader_bridge_a` with the key `path_a_str` into cache.
         let index_reader_bridge_a = Arc::new(create_index_reader_bridge(path_a_str));
-        let first_set = test_cache.set_index_reader_bridge(path_a_str.to_string(), index_reader_bridge_a);
+        let first_set =
+            test_cache.set_index_reader_bridge(path_a_str.to_string(), index_reader_bridge_a);
         assert!(first_set.is_ok());
         let first_get = test_cache.get_index_reader_bridge(path_a_str.to_string());
         assert!(first_get.is_ok());
@@ -172,7 +188,8 @@ mod tests {
 
         // Testing whether the cache can update the value for the same key (`path_a_str`).
         let index_reader_bridge_b = Arc::new(create_index_reader_bridge(path_b_str));
-        let second_set = test_cache.set_index_reader_bridge(path_a_str.to_string(), index_reader_bridge_b);
+        let second_set =
+            test_cache.set_index_reader_bridge(path_a_str.to_string(), index_reader_bridge_b);
         assert!(second_set.is_ok());
         let second_get = test_cache.get_index_reader_bridge(path_a_str.to_string());
         assert!(second_get.is_ok());
@@ -180,7 +197,7 @@ mod tests {
     }
 
     #[test]
-    fn test_remove_index_reader_bridge(){
+    fn test_remove_index_reader_bridge() {
         let test_cache = IndexReaderBridgeCache::new();
 
         // Create two temp directory for test.
@@ -189,12 +206,13 @@ mod tests {
 
         // Cache value `index_reader_bridge` with the key `path_str`.
         let index_reader_bridge = Arc::new(create_index_reader_bridge(path_str));
-        let first_inserted = test_cache.set_index_reader_bridge(path_str.to_string(), index_reader_bridge.clone());
+        let first_inserted =
+            test_cache.set_index_reader_bridge(path_str.to_string(), index_reader_bridge.clone());
         assert!(first_inserted.is_ok());
         let first_get = test_cache.get_index_reader_bridge(path_str.to_string());
         assert!(first_get.is_ok());
         assert_eq!(first_get.unwrap().path, path_str.to_string());
-        
+
         // Remove `index_reader_bridge`
         let get_before_remove = test_cache.get_index_reader_bridge(path_str.to_string());
         assert!(get_before_remove.is_ok());
@@ -202,7 +220,7 @@ mod tests {
         assert!(first_removed.is_ok());
         let get_after_remove = test_cache.get_index_reader_bridge(path_str.to_string());
         assert!(get_after_remove.is_err());
-        
+
         // Remove a not exist `IndexReaderBridge` will trigger an error.
         let second_removed = test_cache.remove_index_reader_bridge(path_str.to_string());
         assert!(second_removed.is_err());
@@ -213,9 +231,16 @@ mod tests {
         let test_cache = IndexReaderBridgeCache::new();
 
         assert!(test_cache.get_shared_multithread_executor(0).is_err());
-        let executor1 = test_cache.get_shared_multithread_executor(2).expect("Failed to get executor for the first time");
-        let executor2 = test_cache.get_shared_multithread_executor(4).expect("Failed to get executor for the second time");
+        let executor1 = test_cache
+            .get_shared_multithread_executor(2)
+            .expect("Failed to get executor for the first time");
+        let executor2 = test_cache
+            .get_shared_multithread_executor(4)
+            .expect("Failed to get executor for the second time");
 
-        assert!(Arc::ptr_eq(&executor1, &executor2), "Executors should be the same instance");
+        assert!(
+            Arc::ptr_eq(&executor1, &executor2),
+            "Executors should be the same instance"
+        );
     }
 }
