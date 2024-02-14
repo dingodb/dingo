@@ -360,7 +360,6 @@ pub fn get_custom_tokenizer(
 
 #[cfg(test)]
 mod tests {
-    use env_logger::Env;
     use rstest::rstest;
     use tantivy::{
         collector::Count,
@@ -475,7 +474,8 @@ mod tests {
 
     #[test]
     fn test_get_custom_tokenizer_sample() {
-        env_logger::Builder::from_env(Env::default().default_filter_or("trace")).init();
+        // env_logger is conflict with log4rs.
+        // env_logger::Builder::from_env(Env::default().default_filter_or("trace"));
 
         // init tokenizer
         let (tokenizer_type, tokenizer) = get_custom_tokenizer("chinese(default, search)").unwrap();

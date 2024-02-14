@@ -71,6 +71,8 @@ impl TantivySearchLogger {
 
 #[cfg(test)]
 mod tests {
+    use crate::LOG4RS_HANDLE;
+
     use super::*;
     use libc::*;
     use log::LevelFilter;
@@ -97,22 +99,20 @@ mod tests {
 
     #[test]
     fn test_update_log4rs_handler() {
-        let handler_cell: OnceCell<log4rs::Handle> = OnceCell::new();
-
         let stdout_appender = ConsoleAppender::builder()
             .encoder(Box::new(PatternEncoder::new("{d} - {l} - {m}\n")))
             .build();
 
         let log_config_info = Config::builder()
             .appender(Appender::builder().build("stdout", Box::new(stdout_appender)))
-            .build(Root::builder().appender("stdout").build(LevelFilter::Info))
+            .build(Root::builder().appender("stdout").build(LevelFilter::Debug))
             .expect("Failed to build log config with stdout appender");
 
-        assert!(handler_cell.get().is_none());
-        let result = TantivySearchLogger::update_log4rs_handler(&handler_cell, log_config_info);
+        assert!(LOG4RS_HANDLE.get().is_none());
+        let result = TantivySearchLogger::update_log4rs_handler(&LOG4RS_HANDLE, log_config_info);
         assert!(result.is_ok());
-        assert!(!format!("{:?}", handler_cell.get().unwrap()).contains("Debug"));
-        assert!(format!("{:?}", handler_cell.get().unwrap()).contains("Info"));
+        assert!(format!("{:?}", LOG4RS_HANDLE.get().unwrap()).contains("Debug"));
+        assert!(!format!("{:?}", LOG4RS_HANDLE.get().unwrap()).contains("Info"));
 
         // ConsoleAppender doesn't impl Clone trait.
         let stdout_appender = ConsoleAppender::builder()
@@ -121,14 +121,15 @@ mod tests {
 
         let log_config_debug = Config::builder()
             .appender(Appender::builder().build("stdout", Box::new(stdout_appender)))
-            .build(Root::builder().appender("stdout").build(LevelFilter::Debug))
+            .build(Root::builder().appender("stdout").build(LevelFilter::Info))
             .expect("Failed to build log config with stdout appender");
 
-        assert!(handler_cell.get().is_some());
-        let result = TantivySearchLogger::update_log4rs_handler(&handler_cell, log_config_debug);
+        assert!(LOG4RS_HANDLE.get().is_some());
+        let result = TantivySearchLogger::update_log4rs_handler(&LOG4RS_HANDLE, log_config_debug);
         assert!(result.is_ok());
-        assert!(format!("{:?}", handler_cell.get().unwrap()).contains("Debug"));
-        assert!(!format!("{:?}", handler_cell.get().unwrap()).contains("Info"));
+
+        assert!(!format!("{:?}", LOG4RS_HANDLE.get().unwrap()).contains("Debug"));
+        assert!(format!("{:?}", LOG4RS_HANDLE.get().unwrap()).contains("Info"));
     }
 
     #[test]
