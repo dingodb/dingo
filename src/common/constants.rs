@@ -5,10 +5,17 @@ use crate::search::bridge::index_reader_bridge_cache::IndexReaderBridgeCache;
 use crate::ERROR;
 use cxx::CxxString;
 use libc::*;
+use log::LevelFilter;
+use log4rs::append::console::ConsoleAppender;
+use log4rs::config::Appender;
+use log4rs::config::Root;
+use log4rs::encode::pattern::PatternEncoder;
+use log4rs::Config;
 use once_cell::sync::Lazy;
 use once_cell::sync::OnceCell;
 use roaring::RoaringBitmap;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 // Cache queries results.
 // The cache's key is composed of reader.address, query_str, index_directory, use_regex.
@@ -39,6 +46,10 @@ pub static FFI_INDEX_WRITER_CACHE: Lazy<IndexWriterBridgeCache> =
 pub static FFI_INDEX_SEARCHER_CACHE: Lazy<IndexReaderBridgeCache> =
     Lazy::new(|| IndexReaderBridgeCache::new());
 
+// Avoid some unit test run concurrently.
+#[allow(dead_code)]
+pub static TEST_MUTEX: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+
 pub fn convert_cxx_string(
     function: &str,
     parameter: &str,
@@ -58,6 +69,22 @@ pub fn convert_cxx_string(
         }
     };
     Ok(cxx_converted)
+}
+
+#[allow(dead_code)]
+pub fn update_logger_for_test(level: LevelFilter) {
+    let stdout_appender = ConsoleAppender::builder()
+        .encoder(Box::new(PatternEncoder::new("{d} - {l} - {m}\n")))
+        .build();
+
+    let log_config_info = Config::builder()
+        .appender(Appender::builder().build("stdout", Box::new(stdout_appender)))
+        .build(Root::builder().appender("stdout").build(level))
+        .expect("Failed to build log config with stdout appender");
+
+    // assert!(LOG4RS_HANDLE.get().is_none());
+    let result = TantivySearchLogger::update_log4rs_handler(&LOG4RS_HANDLE, log_config_info);
+    assert!(result.is_ok());
 }
 
 #[cfg(test)]

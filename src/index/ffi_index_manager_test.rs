@@ -1,10 +1,12 @@
 #[cfg(test)]
 mod tests {
     use cxx::{let_cxx_string, CxxString, CxxVector};
+    use log::LevelFilter;
     use tantivy::query::QueryParser;
     use tantivy::{Document, Index};
     use tempfile::TempDir;
 
+    use crate::update_logger_for_test;
     use crate::{
         search::collector::row_id_bitmap_collector::RowIdRoaringCollector, tantivy_create_index,
         tantivy_create_index_with_tokenizer, tantivy_delete_row_ids, tantivy_index_doc,
@@ -15,6 +17,7 @@ mod tests {
         index_directory: String,
         waiting_merging_threads_finished: bool,
     ) -> (QueryParser, Index) {
+        update_logger_for_test(LevelFilter::Debug);
         // get index writer from CACHE
         let index_writer_bridge = FFI_INDEX_WRITER_CACHE
             .get_index_writer_bridge(index_directory)

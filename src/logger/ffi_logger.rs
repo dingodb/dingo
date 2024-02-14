@@ -97,3 +97,51 @@ pub extern "C" fn tantivy_search_log4rs_initialize_with_callback(
 
     true
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ffi::CString;
+
+    // Convert a Rust string to a C-style string.
+    fn to_c_str(s: &str) -> *const c_char {
+        CString::new(s).unwrap().into_raw()
+    }
+
+    #[test]
+    fn test_tantivy_search_log4rs_initialize_null_arguments() {
+        // Test with null log_directory and log_level to ensure it returns false.
+        assert_eq!(
+            tantivy_search_log4rs_initialize(
+                std::ptr::null(),
+                std::ptr::null(),
+                false,
+                false,
+                false
+            ),
+            false
+        );
+    }
+
+    #[test]
+    fn test_tantivy_search_log4rs_initialize_invalid_path() {
+        // Assuming the function checks for the validity of the path,
+        let invalid_path = to_c_str(""); // will trigger a permission denied error.
+        let log_level = to_c_str("info");
+        assert_eq!(
+            tantivy_search_log4rs_initialize(invalid_path, log_level, true, true, false),
+            false
+        );
+    }
+
+    #[test]
+    fn test_tantivy_search_log4rs_initialize_invalid_log_level() {
+        // Provide an invalid log level and expect true, cause it will be treated as info.
+        let log_directory = to_c_str("/tmp");
+        let invalid_log_level = to_c_str("invalid"); // Assuming this is an invalid log level.
+        assert_eq!(
+            tantivy_search_log4rs_initialize(log_directory, invalid_log_level, true, true, false),
+            true
+        );
+    }
+}

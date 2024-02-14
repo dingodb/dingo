@@ -37,27 +37,23 @@ impl IndexUtils {
     /// Before build index, we need ensure this directory is empty.
     pub fn initialize_index_directory(path: &Path) -> Result<(), String> {
         if path.exists() {
-            WARNING!(
-                "Directory not empty, will remove old data to create new index in this directory:{:?}",
-                path
-            );
-
-            if let Err(e) = fs::remove_dir_all(path) {
-                return Err(format!(
+            WARNING!("Directory not empty, will recreate: {:?}", path);
+            fs::remove_dir_all(path).map_err(|e| {
+                format!(
                     "Can't remove directory: {:?}, exception:{}",
                     path,
                     e.to_string()
-                ));
-            }
+                )
+            })?;
         };
 
-        if let Err(e) = fs::create_dir_all(path) {
-            return Err(format!(
+        fs::create_dir_all(path).map_err(|e| {
+            format!(
                 "Can't create directory: {:?}, exception:{}",
                 path,
                 e.to_string()
-            ));
-        };
+            )
+        })?;
         Ok(())
     }
 
@@ -67,27 +63,21 @@ impl IndexUtils {
         setting: &CustomIndexSetting,
     ) -> Result<(), String> {
         let file_path = path.join(CUSTOM_INDEX_SETTING_FILE_NAME);
-        let mut file = match File::create(&file_path) {
-            Ok(content) => content,
-            Err(e) => {
-                return Err(format!(
-                    "Can't create index setting file:{:?}, exception:{}",
-                    path,
-                    e.to_string()
-                ))
-            }
-        };
+        let mut file = File::create(&file_path).map_err(|e| {
+            format!(
+                "Can't create index setting file:{:?}, exception:{}",
+                path,
+                e.to_string()
+            )
+        })?;
 
-        let setting_json = match serde_json::to_string(setting) {
-            Ok(json) => json,
-            Err(e) => {
-                return Err(format!(
-                    "Failed to serialize settings: {}, exception: {}",
-                    file_path.display(),
-                    e
-                ));
-            }
-        };
+        let setting_json = serde_json::to_string(setting).map_err(|e| {
+            format!(
+                "Failed to serialize settings: {}, exception: {}",
+                file_path.display(),
+                e.to_string()
+            )
+        })?;
 
         if let Err(e) = file.write_all(setting_json.as_bytes()) {
             return Err(format!(

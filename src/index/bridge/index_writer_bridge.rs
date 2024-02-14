@@ -16,9 +16,6 @@ impl IndexWriterBridge {
             Ok(mut writer) => {
                 if let Some(writer) = writer.as_mut() {
                     writer.commit().map_err(|e| e.to_string())
-                    // let commit_status = writer.commit();
-                    // self.index.reader().unwrap().reload().map_err(|e| e.to_string());
-                    // commit_status.map_err(|e| e.to_string())
                 } else {
                     Err("IndexWriterBridge is not available".to_string())
                 }

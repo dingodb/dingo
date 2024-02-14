@@ -206,16 +206,8 @@ pub fn tantivy_index_doc(
     doc: &CxxString,
 ) -> Result<bool, String> {
     // Parse parameter.
-    let index_path_str = convert_cxx_string(
-        "tantivy_index_doc",
-        "index_path",
-        index_path,
-    )?;
-    let doc_str = convert_cxx_string(
-        "tantivy_index_doc",
-        "doc",
-        doc,
-    )?;
+    let index_path_str = convert_cxx_string("tantivy_index_doc", "index_path", index_path)?;
+    let doc_str = convert_cxx_string("tantivy_index_doc", "doc", doc)?;
 
     // get index writer from CACHE
     let index_w = match FFI_INDEX_WRITER_CACHE.get_index_writer_bridge(index_path_str) {
@@ -272,11 +264,7 @@ pub fn tantivy_delete_row_ids(
     row_ids: &CxxVector<u32>,
 ) -> Result<bool, String> {
     // Parse parameter.
-    let index_path_str = convert_cxx_string(
-        "tantivy_delete_row_ids",
-        "index_path",
-        index_path,
-    )?;
+    let index_path_str = convert_cxx_string("tantivy_delete_row_ids", "index_path", index_path)?;
     let row_ids: Vec<u32> = row_ids.iter().map(|s| *s as u32).collect();
 
     // Get ffi index writer from CACHE
@@ -351,11 +339,7 @@ pub fn tantivy_delete_row_ids(
 /// - A bool value represent operation success.
 pub fn tantivy_writer_commit(index_path: &CxxString) -> Result<bool, String> {
     // Parse parameter.
-    let index_path_str = convert_cxx_string(
-        "tantivy_writer_commit",
-        "index_path",
-        index_path,
-    )?;
+    let index_path_str = convert_cxx_string("tantivy_writer_commit", "index_path", index_path)?;
 
     // get index writer from CACHE
     let index_w = match FFI_INDEX_WRITER_CACHE.get_index_writer_bridge(index_path_str) {
@@ -385,12 +369,7 @@ pub fn tantivy_writer_commit(index_path: &CxxString) -> Result<bool, String> {
 /// - A bool value represent operation success.
 pub fn tantivy_writer_free(index_path: &CxxString) -> Result<bool, String> {
     // Parse parameter.
-    let index_path_str = convert_cxx_string(
-        "tantivy_writer_free",
-        "index_path",
-        index_path,
-    )?;
-
+    let index_path_str = convert_cxx_string("tantivy_writer_free", "index_path", index_path)?;
 
     // get index writer from CACHE
     let index_w = match FFI_INDEX_WRITER_CACHE.get_index_writer_bridge(index_path_str.clone()) {

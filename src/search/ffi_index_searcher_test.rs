@@ -3,6 +3,7 @@ mod tests {
     use std::fs;
 
     use cxx::{let_cxx_string, CxxVector};
+    use log::LevelFilter;
     use tantivy::merge_policy::LogMergePolicy;
     use tantivy::schema::{Schema, FAST, INDEXED, STORED, TEXT};
     use tantivy::{Document, Index};
@@ -11,10 +12,11 @@ mod tests {
     use crate::{
         tantivy_bm25_search, tantivy_bm25_search_with_filter, tantivy_count_in_rowid_range,
         tantivy_load_index, tantivy_reader_free, tantivy_search_bitmap_results,
-        tantivy_search_in_rowid_range,
+        tantivy_search_in_rowid_range, update_logger_for_test,
     };
 
     fn commit_some_docs_for_test(index_directory: String, need_store_doc: bool) {
+        update_logger_for_test(LevelFilter::Debug);
         // Construct the schema for the index.
         let mut schema_builder = Schema::builder();
         schema_builder.add_u64_field("row_id", FAST | INDEXED);

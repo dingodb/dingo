@@ -22,7 +22,7 @@ impl TantivySearchLogger {
         match cell.get() {
             Some(handle) => {
                 handle.set_config(log_config);
-                INFO!("Successfully update log handler.");
+                INFO!("Successfully updated log handler.");
                 Ok(())
             }
             None => {
@@ -71,7 +71,7 @@ impl TantivySearchLogger {
 
 #[cfg(test)]
 mod tests {
-    use crate::LOG4RS_HANDLE;
+    use crate::{LOG4RS_HANDLE, TEST_MUTEX};
 
     use super::*;
     use libc::*;
@@ -99,6 +99,8 @@ mod tests {
 
     #[test]
     fn test_update_log4rs_handler() {
+        let _guard = TEST_MUTEX.lock().unwrap();
+
         let stdout_appender = ConsoleAppender::builder()
             .encoder(Box::new(PatternEncoder::new("{d} - {l} - {m}\n")))
             .build();
@@ -108,7 +110,7 @@ mod tests {
             .build(Root::builder().appender("stdout").build(LevelFilter::Debug))
             .expect("Failed to build log config with stdout appender");
 
-        assert!(LOG4RS_HANDLE.get().is_none());
+        // assert!(LOG4RS_HANDLE.get().is_none()); // Need set RUST_TEST_THREADS=1
         let result = TantivySearchLogger::update_log4rs_handler(&LOG4RS_HANDLE, log_config_info);
         assert!(result.is_ok());
         assert!(format!("{:?}", LOG4RS_HANDLE.get().unwrap()).contains("Debug"));

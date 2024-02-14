@@ -14,8 +14,8 @@ use tantivy::query::QueryParser;
 
 use super::bridge::index_reader_bridge::IndexReaderBridge;
 use super::collector::top_dos_with_bitmap_collector::TopDocsWithFilter;
-use super::ffi_index_searcher_utils::FFiIndexSearcherUtils;
 use super::ffi_index_searcher_utils::ConvertUtils;
+use super::ffi_index_searcher_utils::FFiIndexSearcherUtils;
 use crate::common::constants::CACHE_FOR_SKIP_INDEX;
 use crate::common::index_utils::*;
 
@@ -30,11 +30,7 @@ use tantivy::{Index, ReloadPolicy};
 /// - A bool value represent operation success.
 pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
     // Parse parameter.
-    let index_path_str = convert_cxx_string(
-        "tantivy_load_index",
-        "index_path",
-        index_path,
-    )?;
+    let index_path_str = convert_cxx_string("tantivy_load_index", "index_path", index_path)?;
 
     // Verify index files directory.
     let index_files_directory = Path::new(&index_path_str);
@@ -166,11 +162,7 @@ pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
 /// - A bool value represent operation success.
 pub fn tantivy_reader_free(index_path: &CxxString) -> Result<bool, String> {
     // Parse parameter.
-    let index_path_str = convert_cxx_string(
-        "tantivy_reader_free",
-        "index_path",
-        index_path,
-    )?;
+    let index_path_str = convert_cxx_string("tantivy_reader_free", "index_path", index_path)?;
 
     // remove bitmap cache
     #[cfg(feature = "use-flurry-cache")]
@@ -211,17 +203,10 @@ pub fn tantivy_search_in_rowid_range(
     use_regex: bool,
 ) -> Result<bool, String> {
     // Parse parameter.
-    let index_path_str = convert_cxx_string(
-        "tantivy_search_in_rowid_range",
-        "index_path",
-        index_path,
-    )?;
+    let index_path_str =
+        convert_cxx_string("tantivy_search_in_rowid_range", "index_path", index_path)?;
 
-    let query_str = convert_cxx_string(
-        "tantivy_search_in_rowid_range",
-        "query",
-        query,
-    )?;
+    let query_str = convert_cxx_string("tantivy_search_in_rowid_range", "query", query)?;
     if lrange > rrange {
         return Err("lrange should smaller than rrange".to_string());
     }
@@ -234,7 +219,9 @@ pub fn tantivy_search_in_rowid_range(
         }
     };
 
-    match FFiIndexSearcherUtils::perform_search_with_range(&index_r, &query_str, lrange, rrange, use_regex) {
+    match FFiIndexSearcherUtils::perform_search_with_range(
+        &index_r, &query_str, lrange, rrange, use_regex,
+    ) {
         Ok(row_id_range) => Ok(!row_id_range.is_empty()),
         Err(e) => {
             let error_info = format!("Error in search: {}", e);
@@ -263,17 +250,10 @@ pub fn tantivy_count_in_rowid_range(
     use_regex: bool,
 ) -> Result<u64, String> {
     // Parse parameter.
-    let index_path_str = convert_cxx_string(
-        "tantivy_count_in_rowid_range",
-        "index_path",
-        index_path,
-    )?;
+    let index_path_str =
+        convert_cxx_string("tantivy_count_in_rowid_range", "index_path", index_path)?;
 
-    let query_str = convert_cxx_string(
-        "tantivy_count_in_rowid_range",
-        "query",
-        query,
-    )?;
+    let query_str = convert_cxx_string("tantivy_count_in_rowid_range", "query", query)?;
     if lrange > rrange {
         return Err("lrange should smaller than rrange".to_string());
     }
@@ -286,7 +266,9 @@ pub fn tantivy_count_in_rowid_range(
         }
     };
 
-    match FFiIndexSearcherUtils::perform_search_with_range(&index_r, &query_str, lrange, rrange, use_regex) {
+    match FFiIndexSearcherUtils::perform_search_with_range(
+        &index_r, &query_str, lrange, rrange, use_regex,
+    ) {
         Ok(row_id_range) => Ok(row_id_range.len() as u64),
         Err(e) => {
             let error_info = format!("Error in search: {}", e);
@@ -315,16 +297,9 @@ pub fn tantivy_bm25_search_with_filter(
     need_text: bool,
 ) -> Result<Vec<RowIdWithScore>, String> {
     // Parse parameter.
-    let index_path_str = convert_cxx_string(
-        "tantivy_bm25_search_with_filter",
-        "index_path",
-        index_path,
-    )?;
-    let query_str = convert_cxx_string(
-        "tantivy_bm25_search_with_filter",
-        "query",
-        query,
-    )?;
+    let index_path_str =
+        convert_cxx_string("tantivy_bm25_search_with_filter", "index_path", index_path)?;
+    let query_str = convert_cxx_string("tantivy_bm25_search_with_filter", "query", query)?;
 
     let u8_bitmap: Vec<u8> = u8_bitmap.iter().map(|s| *s).collect();
     let row_ids: Vec<u32> = ConvertUtils::u8_bitmap_to_row_ids(&u8_bitmap);
@@ -429,16 +404,9 @@ pub fn tantivy_search_bitmap_results(
     use_regex: bool,
 ) -> Result<Vec<u8>, String> {
     // Parse parameter.
-    let index_path_str = convert_cxx_string(
-        "tantivy_search_bitmap_results",
-        "index_path",
-        index_path,
-    )?;
-    let query_str = convert_cxx_string(
-        "tantivy_search_bitmap_results",
-        "query",
-        query,
-    )?;
+    let index_path_str =
+        convert_cxx_string("tantivy_search_bitmap_results", "index_path", index_path)?;
+    let query_str = convert_cxx_string("tantivy_search_bitmap_results", "query", query)?;
 
     // get index reader from CACHE
     let index_r = match FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path_str.clone()) {
@@ -449,14 +417,15 @@ pub fn tantivy_search_bitmap_results(
         }
     };
 
-    let row_ids_bitmap = match FFiIndexSearcherUtils::perform_search(&index_r, &query_str, use_regex) {
-        Ok(content) => content,
-        Err(e) => {
-            let error_info = format!("Error in perform_search: {}", e);
-            ERROR!("{}", error_info);
-            return Err(error_info);
-        }
-    };
+    let row_ids_bitmap =
+        match FFiIndexSearcherUtils::perform_search(&index_r, &query_str, use_regex) {
+            Ok(content) => content,
+            Err(e) => {
+                let error_info = format!("Error in perform_search: {}", e);
+                ERROR!("{}", error_info);
+                return Err(error_info);
+            }
+        };
     let row_ids_number: Vec<u32> = row_ids_bitmap.iter().collect();
     let u8_bitmap: Vec<u8> = ConvertUtils::row_ids_to_u8_bitmap(&row_ids_number);
     Ok(u8_bitmap)
