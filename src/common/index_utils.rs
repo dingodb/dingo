@@ -14,9 +14,21 @@ use crate::{common::constants::LOG_CALLBACK, WARNING};
 /// However, the issue of upgrading to new features needs to be considered.
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
 pub struct CustomIndexSetting {
+    #[serde(default = "default_tokenizer")]
     pub tokenizer: String,
+    // Others settings.
 }
 
+impl Default for CustomIndexSetting {
+    fn default() -> Self {
+        Self {
+            tokenizer: "default".to_string(),
+        }
+    }
+}
+fn default_tokenizer() -> String {
+    "default".to_string()
+}
 /// `IndexUtils` serves as a collection of utility functions for index operations.
 /// It encapsulates global functions related to managing index directory.
 pub struct IndexUtils;
@@ -90,34 +102,31 @@ impl IndexUtils {
     /// Loads the custom index settings from a file.
     pub fn load_custom_index_setting(index_file_path: &Path) -> Result<CustomIndexSetting, String> {
         let file_path = index_file_path.join(CUSTOM_INDEX_SETTING_FILE_NAME);
-        let mut file = match File::open(file_path.clone()) {
-            Ok(content) => content,
-            Err(e) => {
-                return Err(format!(
-                    "Can't open custom index setting file:{:?}, exception:{}",
-                    file_path,
-                    e.to_string()
-                ))
-            }
-        };
-        let mut contents = String::new();
-        if let Err(e) = file.read_to_string(&mut contents) {
-            return Err(format!(
-                "Can't read custom index setting file:{:?}, exception:{}",
+        // check whether file exist.
+        if !file_path.exists() {
+            return Ok(CustomIndexSetting::default());
+        }
+        let mut file = File::open(file_path.clone()).map_err(|e| {
+            format!(
+                "Can't open custom index setting file:{:?}, exception:{}",
                 file_path,
                 e.to_string()
-            ));
-        };
-        let result: CustomIndexSetting = match serde_json::from_str(&contents) {
-            Ok(content) => content,
-            Err(e) => {
-                return Err(format!(
-                    "Can't get CustomIndexSetting variable from file:{:?}, exception:{}",
-                    file_path,
-                    e.to_string()
-                ))
-            }
-        };
+            )
+        })?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).map_err(|e| {
+            format!(
+                "Can't read custom index setting file:{:?}, exception:{}",
+                file_path, e
+            )
+        })?;
+
+        let result: CustomIndexSetting = serde_json::from_str(&contents).map_err(|e| {
+            format!(
+                "Can't get CustomIndexSetting variable from file:{:?}, exception:{}",
+                file_path, e
+            )
+        })?;
         Ok(result)
     }
 }
@@ -128,20 +137,31 @@ mod tests {
         common::index_utils::{CustomIndexSetting, IndexUtils},
         CUSTOM_INDEX_SETTING_FILE_NAME,
     };
+    use serde::{Deserialize, Serialize};
     use std::fs::{self, File};
     use tempfile::TempDir;
 
+    #[derive(Serialize, Deserialize)]
+    struct CustomIndexSettingV2 {
+        tokenizer: String,
+        version: u8,
+    }
+
+    #[derive(Serialize, Deserialize)]
+    struct CustomIndexSettingV3 {
+        column: String,
+    }
+
     #[test]
     fn test_initialize_index_directory() {
-        // Prepare test directory.
-        let temp_dir = TempDir::new().expect("Can't create temp directory");
+        let temp_dir = TempDir::new().unwrap();
         let temp_files = vec!["temp1.txt", "temp2.txt"];
         for temp_file in temp_files {
             let file_path = temp_dir.path().join(temp_file);
-            let _ = File::create(file_path).expect("Can't create temp file");
+            let _ = File::create(file_path).unwrap();
         }
-        // Before initialize index directory.
-        let entries = fs::read_dir(temp_dir.path()).expect("Can't read directory");
+        // Currently, this directory contains two files.
+        let entries = fs::read_dir(temp_dir.path()).unwrap();
         let old_file_count = entries
             .filter_map(Result::ok)
             .filter(|e| e.path().is_file())
@@ -150,8 +170,8 @@ mod tests {
 
         let _ = IndexUtils::initialize_index_directory(temp_dir.path());
 
-        // After initialize index directory.
-        let entries2 = fs::read_dir(temp_dir.path()).expect("Can't read directory");
+        // After initialize index directory, the directory has been cleaned.
+        let entries2 = fs::read_dir(temp_dir.path()).unwrap();
         let new_file_count = entries2
             .filter_map(Result::ok)
             .filter(|e| e.path().is_file())
@@ -160,21 +180,19 @@ mod tests {
     }
 
     #[test]
-    fn test_initialize_index_directory_not_exist() {
-        // Prepare test directory.
-        let temp_dir = TempDir::new().expect("Can't create temp directory");
-        assert_eq!(temp_dir.path().exists(), true);
-        fs::remove_dir_all(temp_dir.path()).expect("Can't remove temp directory");
-        assert_eq!(temp_dir.path().exists(), false);
+    fn test_initialize_index_directory_boundary() {
         // Initialize a not exists directory.
+        let temp_dir = TempDir::new().unwrap();
+        assert_eq!(temp_dir.path().exists(), true);
+        fs::remove_dir_all(temp_dir.path()).unwrap();
+        assert_eq!(temp_dir.path().exists(), false);
         let _ = IndexUtils::initialize_index_directory(temp_dir.path());
         assert_eq!(temp_dir.path().exists(), true);
     }
 
     #[test]
-    fn test_save_custom_index_setting_success() {
-        // Prepare test directory.
-        let temp_dir = TempDir::new().expect("Can't create temp directory");
+    fn test_save_and_load_custom_index_setting() {
+        let temp_dir = TempDir::new().unwrap();
         let custom_setting = CustomIndexSetting {
             tokenizer: "default".to_string(),
         };
@@ -182,12 +200,16 @@ mod tests {
         assert!(result.is_ok());
         let saved_file_path = temp_dir.path().join(CUSTOM_INDEX_SETTING_FILE_NAME);
         assert!(saved_file_path.exists());
+
+        let result = IndexUtils::load_custom_index_setting(temp_dir.path()).unwrap();
+        assert_eq!(result.tokenizer, custom_setting.tokenizer);
     }
 
     #[test]
-    fn test_save_custom_index_setting_fail_on_invalid_path() {
-        let temp_dir = TempDir::new().expect("Can't create temp directory");
-        fs::remove_dir_all(temp_dir.path()).expect("Can't remove temp directory");
+    fn test_save_custom_index_setting_boundary() {
+        // Trying to save custom index setting in a not exist directory.
+        let temp_dir = TempDir::new().unwrap();
+        fs::remove_dir_all(temp_dir.path()).unwrap();
         assert_eq!(temp_dir.path().exists(), false);
         let custom_setting = CustomIndexSetting {
             tokenizer: "default".to_string(),
@@ -197,7 +219,7 @@ mod tests {
     }
 
     #[test]
-    fn test_load_custom_index_setting_success() {
+    fn test_load_custom_index_setting() {
         let temp_dir = TempDir::new().unwrap();
         let custom_setting = CustomIndexSetting {
             tokenizer: "default".to_string(),
@@ -212,9 +234,42 @@ mod tests {
     }
 
     #[test]
-    fn test_load_custom_index_setting_file_not_found() {
+    fn test_load_custom_index_setting_boundary() {
+        // Load index settings with an empty directory.
         let temp_dir = TempDir::new().unwrap();
         let result = IndexUtils::load_custom_index_setting(temp_dir.path());
-        assert!(result.is_err());
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().tokenizer, "default");
+    }
+
+    #[test]
+    fn test_load_custom_index_setting_version_upgrade() {
+        let temp_dir = TempDir::new().unwrap();
+        // Create a version V2 `CustomIndexSetting` and serialize it to directory.
+        let file_data = CustomIndexSettingV2 {
+            tokenizer: "chinese".to_string(),
+            version: 2,
+        };
+        let serialized_person = serde_json::to_string_pretty(&file_data).unwrap();
+        let file_path = temp_dir.path().join(CUSTOM_INDEX_SETTING_FILE_NAME);
+        fs::write(file_path, serialized_person).unwrap();
+
+        let result = IndexUtils::load_custom_index_setting(temp_dir.path()).unwrap();
+        assert_eq!(result.tokenizer, "chinese");
+    }
+
+    #[test]
+    fn test_load_custom_index_setting_version_downgrade() {
+        let temp_dir = TempDir::new().unwrap();
+        // Create a version V3 `CustomIndexSetting` and serialize it to directory.
+        let file_data = CustomIndexSettingV3 {
+            column: "text".to_string(),
+        };
+        let serialized_person = serde_json::to_string_pretty(&file_data).unwrap();
+        let file_path = temp_dir.path().join(CUSTOM_INDEX_SETTING_FILE_NAME);
+        fs::write(file_path, serialized_person).unwrap();
+
+        let result = IndexUtils::load_custom_index_setting(temp_dir.path()).unwrap();
+        assert_eq!(result.tokenizer, "default");
     }
 }

@@ -303,6 +303,9 @@ pub fn tantivy_count_in_rowid_range(
             ));
         }
     };
+    if lrange > rrange {
+        return Err("lrange should smaller than rrange".to_string());
+    }
     // get index reader from CACHE
     let index_r = match FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path_str.clone()) {
         Ok(content) => content,
@@ -327,7 +330,7 @@ pub fn tantivy_count_in_rowid_range(
 /// Arguments:
 /// - `index_path`: The directory path for building the index.
 /// - `query`: Query string.
-/// - `u8_bitmap`: A vector<u8> bitmap represent row_ids need to be filtered.
+/// - `u8_bitmap`: A vector<u8> bitmap represent alives row_ids.
 /// - `top_k`: Try to search `k` results.
 /// - `need_text`: Whether need return origin doc content.
 ///
