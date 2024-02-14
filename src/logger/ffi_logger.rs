@@ -110,6 +110,7 @@ mod tests {
 
     #[test]
     fn test_tantivy_search_log4rs_initialize_null_arguments() {
+        let _guard = TEST_MUTEX.lock().unwrap();
         // Test with null log_directory and log_level to ensure it returns false.
         assert_eq!(
             tantivy_search_log4rs_initialize(
@@ -125,6 +126,7 @@ mod tests {
 
     #[test]
     fn test_tantivy_search_log4rs_initialize_invalid_path() {
+        let _guard = TEST_MUTEX.lock().unwrap();
         // Assuming the function checks for the validity of the path,
         let invalid_path = to_c_str(""); // will trigger a permission denied error.
         let log_level = to_c_str("info");
@@ -136,6 +138,7 @@ mod tests {
 
     #[test]
     fn test_tantivy_search_log4rs_initialize_invalid_log_level() {
+        let _guard = TEST_MUTEX.lock().unwrap();
         // Provide an invalid log level and expect true, cause it will be treated as info.
         let log_directory = to_c_str("/tmp");
         let invalid_log_level = to_c_str("invalid"); // Assuming this is an invalid log level.
