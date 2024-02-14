@@ -184,7 +184,6 @@ impl Collector for TopDocsWithFilter {
                 let row_id = row_id_field_reader.get_val(doc);
                 if self.row_id_bitmap.is_some()
                     && !self
-                        // .0
                         .row_id_bitmap
                         .clone()
                         .unwrap()
@@ -269,10 +268,10 @@ mod tests {
     use tantivy::merge_policy::LogMergePolicy;
     use tantivy::query::{Query, QueryParser};
     use tantivy::schema::{Schema, FAST, INDEXED, STORED, TEXT};
-    use tantivy::{Document, Index, IndexReader, ReloadPolicy};
+    use tantivy::{Document, Index, IndexReader, IndexWriter, ReloadPolicy, Term};
     use tempfile::TempDir;
 
-    fn get_reader_from_index_path(index_directory_str: &str) -> IndexReader {
+    fn get_reader_and_writer_from_index_path(index_directory_str: &str) -> (IndexReader, IndexWriter) {
         // Construct the schema for the index.
         let mut schema_builder = Schema::builder();
         schema_builder.add_u64_field("row_id", FAST | INDEXED);
@@ -309,7 +308,7 @@ mod tests {
             .try_into()
             .expect("Can't set reload policy");
 
-        reader
+        (reader, writer)
     }
 
     fn extract_from_index_reader(
@@ -338,7 +337,7 @@ mod tests {
     fn test_normal_search() {
         let temp_path = TempDir::new().expect("Can't create temp path");
         let temp_path_str = temp_path.path().to_str().unwrap();
-        let index_reader = get_reader_from_index_path(temp_path_str);
+        let (index_reader, _) = get_reader_and_writer_from_index_path(temp_path_str);
 
         // Prepare variables for search.
         let (text_field, _, text_query, index_searcher) =
@@ -367,12 +366,39 @@ mod tests {
     }
 
     #[test]
+    fn test_search_after_delete() {
+        let temp_path = TempDir::new().expect("Can't create temp path");
+        let temp_path_str = temp_path.path().to_str().unwrap();
+        let (index_reader, mut index_writer) = get_reader_and_writer_from_index_path(temp_path_str);
+
+        // Delete term row_id=0.
+        let term: Term = Term::from_field_u64(index_writer.index().schema().get_field("row_id").unwrap(), 0);
+        let _ = index_writer.delete_term(term);
+        assert!(index_writer.commit().is_ok());
+
+        // Prepare variables for search.
+        assert!(index_reader.reload().is_ok());
+        let (text_field, _, text_query, index_searcher) =
+            extract_from_index_reader(index_reader.clone());
+
+        let top_docs_collector = TopDocsWithFilter::with_limit(10)
+            .with_searcher(index_searcher.clone())
+            .with_text_field(text_field)
+            .with_stored_text(false);
+
+        let searched_results = index_searcher
+            .search(&text_query, &top_docs_collector)
+            .expect("Can't execute search.");
+        assert_eq!(searched_results.len(), 1);
+    }
+
+    #[test]
     fn test_boundary_searcher() {
         let temp_path = TempDir::new().expect("Can't create temp path");
         let temp_path_str = temp_path.path().to_str().unwrap();
 
         // Prepare variables for search.
-        let index_reader = get_reader_from_index_path(temp_path_str);
+        let (index_reader, _) = get_reader_and_writer_from_index_path(temp_path_str);
         let (text_field, _, text_query, index_searcher) =
             extract_from_index_reader(index_reader.clone());
 
@@ -413,7 +439,7 @@ mod tests {
         let temp_path_str = temp_path.path().to_str().unwrap();
 
         // Prepare variables for search.
-        let index_reader = get_reader_from_index_path(temp_path_str);
+        let (index_reader, _) = get_reader_and_writer_from_index_path(temp_path_str);
         let (text_field, _, text_query, index_searcher) =
             extract_from_index_reader(index_reader.clone());
 
@@ -455,7 +481,7 @@ mod tests {
         let temp_path_str = temp_path.path().to_str().unwrap();
 
         // Prepare variables for search.
-        let index_reader = get_reader_from_index_path(temp_path_str);
+        let (index_reader, _) = get_reader_and_writer_from_index_path(temp_path_str);
         let (text_field, _, text_query, index_searcher) =
             extract_from_index_reader(index_reader.clone());
 
@@ -496,7 +522,7 @@ mod tests {
         let temp_path_str = temp_path.path().to_str().unwrap();
 
         // Prepare variables for search.
-        let index_reader = get_reader_from_index_path(temp_path_str);
+        let (index_reader, _) = get_reader_and_writer_from_index_path(temp_path_str);
         let (text_field, _, text_query, index_searcher) =
             extract_from_index_reader(index_reader.clone());
 
