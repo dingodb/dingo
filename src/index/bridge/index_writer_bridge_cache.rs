@@ -1,5 +1,5 @@
 use super::index_writer_bridge::IndexWriterBridge;
-use crate::logger::ffi_logger::callback_with_thread_info;
+use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::{common::constants::LOG_CALLBACK, WARNING};
 use flurry::HashMap;
 use std::sync::Arc;
@@ -15,7 +15,6 @@ impl IndexWriterBridgeCache {
         }
     }
 
-    // TODO: trimmed need to be done in FFI entry.
     pub fn get_index_writer_bridge(&self, key: String) -> Result<Arc<IndexWriterBridge>, String> {
         let pinned = self.cache.pin();
         let trimmed_key: String = key.trim_end_matches('/').to_string();

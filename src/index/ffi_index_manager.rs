@@ -11,7 +11,7 @@ use tantivy::schema::INDEXED;
 use tantivy::schema::{IndexRecordOption, STORED};
 
 use crate::index::bridge::index_writer_bridge::IndexWriterBridge;
-use crate::logger::ffi_logger::callback_with_thread_info;
+use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::search::ffi_index_searcher::tantivy_reader_free;
 use crate::tokenizer::parse_and_register::get_custom_tokenizer;
 use crate::tokenizer::parse_and_register::register_tokenizer_to_index;

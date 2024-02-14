@@ -4,28 +4,28 @@ macro_rules! FATAL {
     (target: $target:expr, function: $function:expr, $($arg:tt)+) => {{
         log::error!(target: $target, "[{}] - {}", $function, format_args!($($arg)+));
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(-2, format!("[{}: {}] - {}", $target, $function, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(-2, format!("[{}: {}] - {}", $target, $function, format!($($arg)+)), *callback);
         }
     }};
     // provide function、message
     (function: $function:expr, $($arg:tt)+) => {{
         log::error!(target: "tantivy_search", "[{}] - {}", $function, format_args!($($arg)+));
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(-2, format!("[tantivy_search: {}] - {}", $function, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(-2, format!("[tantivy_search: {}] - {}", $function, format!($($arg)+)), *callback);
         }
     }};
     // provide target、message
     (target: $target:expr, $($arg:tt)+) => {{
         log::error!(target: $target, $($arg)+);
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(-2, format!("[{}] - {}", $target, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(-2, format!("[{}] - {}", $target, format!($($arg)+)), *callback);
         }
     }};
     // provide message, log will use default target, such as `tantivy_search`.
     ($($arg:tt)+) => {{
         log::error!(target: "tantivy_search", $($arg)+);
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(-2, format!("[tantivy_search] - {}", format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(-2, format!("[tantivy_search] - {}", format!($($arg)+)), *callback);
         }
     }};
 }
@@ -36,28 +36,28 @@ macro_rules! ERROR {
     (target: $target:expr, function: $function:expr, $($arg:tt)+) => {{
         log::error!(target: $target, "[{}] - {}", $function, format_args!($($arg)+));
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(-1, format!("[{}: {}] - {}", $target, $function, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(-1, format!("[{}: {}] - {}", $target, $function, format!($($arg)+)), *callback);
         }
     }};
     // provide function、message
     (function: $function:expr, $($arg:tt)+) => {{
         log::error!(target: "tantivy_search", "[{}] - {}", $function, format_args!($($arg)+));
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(-1, format!("[tantivy_search: {}] - {}", $function, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(-1, format!("[tantivy_search: {}] - {}", $function, format!($($arg)+)), *callback);
         }
     }};
     // provide target、message
     (target: $target:expr, $($arg:tt)+) => {{
         log::error!(target: $target, $($arg)+);
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(-1, format!("[{}] - {}", $target, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(-1, format!("[{}] - {}", $target, format!($($arg)+)), *callback);
         }
     }};
     // provide message, log will use default target, such as `tantivy_search`.
     ($($arg:tt)+) => {{
         log::error!(target: "tantivy_search", $($arg)+);
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(-1, format!("[tantivy_search] - {}", format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(-1, format!("[tantivy_search] - {}", format!($($arg)+)), *callback);
         }
     }};
 }
@@ -68,28 +68,28 @@ macro_rules! WARNING {
     (target: $target:expr, function: $function:expr, $($arg:tt)+) => {{
         log::warn!(target: $target, "[{}] - {}", $function, format_args!($($arg)+));
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(0, format!("[{}: {}] - {}", $target, $function, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(0, format!("[{}: {}] - {}", $target, $function, format!($($arg)+)), *callback);
         }
     }};
     // provide function、message
     (function: $function:expr, $($arg:tt)+) => {{
         log::warn!(target: "tantivy_search", "[{}] - {}", $function, format_args!($($arg)+));
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(0, format!("[tantivy_search: {}] - {}", $function, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(0, format!("[tantivy_search: {}] - {}", $function, format!($($arg)+)), *callback);
         }
     }};
     // provide target、message
     (target: $target:expr, $($arg:tt)+) => {{
         log::warn!(target: $target, $($arg)+);
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(0, format!("[{}] - {}", $target, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(0, format!("[{}] - {}", $target, format!($($arg)+)), *callback);
         }
     }};
     // provide message, log will use default target, such as `tantivy_search`.
     ($($arg:tt)+) => {{
         log::warn!(target: "tantivy_search", $($arg)+);
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(0, format!("[tantivy_search] - {}", format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(0, format!("[tantivy_search] - {}", format!($($arg)+)), *callback);
         }
     }};
 }
@@ -100,28 +100,28 @@ macro_rules! INFO {
     (target: $target:expr, function: $function:expr, $($arg:tt)+) => {{
         log::info!(target: $target, "[{}] - {}", $function, format_args!($($arg)+));
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(1, format!("[{}: {}] - {}", $target, $function, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(1, format!("[{}: {}] - {}", $target, $function, format!($($arg)+)), *callback);
         }
     }};
     // provide function、message
     (function: $function:expr, $($arg:tt)+) => {{
         log::info!(target: "tantivy_search", "[{}] - {}", $function, format_args!($($arg)+));
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(1, format!("[tantivy_search: {}] - {}", $function, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(1, format!("[tantivy_search: {}] - {}", $function, format!($($arg)+)), *callback);
         }
     }};
     // provide target、message
     (target: $target:expr, $($arg:tt)+) => {{
         log::info!(target: $target, $($arg)+);
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(1, format!("[{}] - {}", $target, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(1, format!("[{}] - {}", $target, format!($($arg)+)), *callback);
         }
     }};
     // provide message, log will use default target, such as `tantivy_search`.
     ($($arg:tt)+) => {{
         log::info!(target: "tantivy_search", $($arg)+);
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(1, format!("[tantivy_search] - {}", format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(1, format!("[tantivy_search] - {}", format!($($arg)+)), *callback);
         }
     }};
 }
@@ -132,28 +132,28 @@ macro_rules! DEBUG {
     (target: $target:expr, function: $function:expr, $($arg:tt)+) => {{
         log::debug!(target: $target, "[{}] - {}", $function, format_args!($($arg)+));
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(2, format!("[{}: {}] - {}", $target, $function, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(2, format!("[{}: {}] - {}", $target, $function, format!($($arg)+)), *callback);
         }
     }};
     // provide function、message
     (function: $function:expr, $($arg:tt)+) => {{
         log::debug!(target: "tantivy_search", "[{}] - {}", $function, format_args!($($arg)+));
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(2, format!("[tantivy_search: {}] - {}", $function, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(2, format!("[tantivy_search: {}] - {}", $function, format!($($arg)+)), *callback);
         }
     }};
     // provide target、message
     (target: $target:expr, $($arg:tt)+) => {{
         log::debug!(target: $target, $($arg)+);
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(2, format!("[{}] - {}", $target, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(2, format!("[{}] - {}", $target, format!($($arg)+)), *callback);
         }
     }};
     // provide message, log will use default target, such as `tantivy_search`.
     ($($arg:tt)+) => {{
         log::debug!(target: "tantivy_search", $($arg)+);
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(2, format!("[tantivy_search] - {}", format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(2, format!("[tantivy_search] - {}", format!($($arg)+)), *callback);
         }
     }};
 }
@@ -164,28 +164,28 @@ macro_rules! TRACE {
     (target: $target:expr, function: $function:expr, $($arg:tt)+) => {{
         log::trace!(target: $target, "[{}] - {}", $function, format_args!($($arg)+));
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(3, format!("[{}: {}] - {}", $target, $function, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(3, format!("[{}: {}] - {}", $target, $function, format!($($arg)+)), *callback);
         }
     }};
     // provide function、message
     (function: $function:expr, $($arg:tt)+) => {{
         log::trace!(target: "tantivy_search", "[{}] - {}", $function, format_args!($($arg)+));
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(3, format!("[tantivy_search: {}] - {}", $function, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(3, format!("[tantivy_search: {}] - {}", $function, format!($($arg)+)), *callback);
         }
     }};
     // provide target、message
     (target: $target:expr, $($arg:tt)+) => {{
         log::trace!(target: $target, $($arg)+);
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(3, format!("[{}] - {}", $target, format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(3, format!("[{}] - {}", $target, format!($($arg)+)), *callback);
         }
     }};
     // provide message, log will use default target, such as `tantivy_search`.
     ($($arg:tt)+) => {{
         log::trace!(target: "tantivy_search", $($arg)+);
         if let Some(callback) = LOG_CALLBACK.get() {
-            callback_with_thread_info(3, format!("[tantivy_search] - {}", format!($($arg)+)), *callback);
+            TantivySearchLogger::trigger_logger_callback(3, format!("[tantivy_search] - {}", format!($($arg)+)), *callback);
         }
     }};
 }

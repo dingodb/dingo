@@ -1,4 +1,4 @@
-use crate::logger::ffi_logger::callback_with_thread_info;
+use crate::logger::logger_bridge::TantivySearchLogger;
 use flurry::{DefaultHashBuilder, HashMap};
 use once_cell::sync::OnceCell;
 use std::hash::{BuildHasher, Hash};
@@ -85,7 +85,7 @@ where
     #[allow(dead_code)]
     pub fn len(&self) -> usize {
         let pinned = self.hash_map.pin();
-        return pinned.len();
+        pinned.len()
     }
 
     /// Removes a list of keys from the cache.

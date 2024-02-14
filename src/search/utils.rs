@@ -5,7 +5,7 @@ use tantivy::query::{QueryParser, RegexQuery};
 use super::bridge::index_reader_bridge::IndexReaderBridge;
 use super::collector::row_id_bitmap_collector::RowIdRoaringCollector;
 use crate::common::constants::CACHE_FOR_SKIP_INDEX;
-use crate::logger::ffi_logger::callback_with_thread_info;
+use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::{common::constants::LOG_CALLBACK, ERROR};
 
 fn compute_bitmap(

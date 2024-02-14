@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::{fs, path::Path};
 
-use crate::logger::ffi_logger::callback_with_thread_info;
+use crate::logger::logger_bridge::TantivySearchLogger;
 
 use crate::common::constants::CUSTOM_INDEX_SETTING_FILE_NAME;
 use crate::{common::constants::LOG_CALLBACK, WARNING};

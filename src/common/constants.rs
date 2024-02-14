@@ -20,10 +20,11 @@ pub static CUSTOM_INDEX_SETTING_FILE_NAME: &str = "custom_index_setting.json";
 pub type LogCallback = extern "C" fn(i32, *const c_char, *const c_char);
 
 // Empty log callback.
-pub extern "C" fn empty_log_callback(_level: i32, _msg: *const c_char, _file: *const c_char) {
+pub extern "C" fn empty_log_callback(_level: i32, _info: *const c_char, _message: *const c_char) {
     // do nothing
 }
-
+// Log4rs handler, related with logger.
+pub static LOG4RS_HANDLE: OnceCell<log4rs::Handle> = OnceCell::new();
 // Log callback function lazy init.
 pub static LOG_CALLBACK: OnceCell<LogCallback> = OnceCell::new();
 
