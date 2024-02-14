@@ -14,10 +14,8 @@ use tantivy::query::QueryParser;
 
 use super::bridge::index_reader_bridge::IndexReaderBridge;
 use super::collector::top_dos_with_bitmap_collector::TopDocsWithFilter;
-use super::utils::perform_search;
-use super::utils::perform_search_with_range;
-use super::utils::row_ids_to_u8_bitmap;
-use super::utils::u8_bitmap_to_row_ids;
+use super::ffi_index_searcher_utils::FFiIndexSearcherUtils;
+use super::ffi_index_searcher_utils::ConvertUtils;
 use crate::common::constants::CACHE_FOR_SKIP_INDEX;
 use crate::common::index_utils::*;
 
@@ -236,7 +234,7 @@ pub fn tantivy_search_in_rowid_range(
         }
     };
 
-    match perform_search_with_range(&index_r, &query_str, lrange, rrange, use_regex) {
+    match FFiIndexSearcherUtils::perform_search_with_range(&index_r, &query_str, lrange, rrange, use_regex) {
         Ok(row_id_range) => Ok(!row_id_range.is_empty()),
         Err(e) => {
             let error_info = format!("Error in search: {}", e);
@@ -288,7 +286,7 @@ pub fn tantivy_count_in_rowid_range(
         }
     };
 
-    match perform_search_with_range(&index_r, &query_str, lrange, rrange, use_regex) {
+    match FFiIndexSearcherUtils::perform_search_with_range(&index_r, &query_str, lrange, rrange, use_regex) {
         Ok(row_id_range) => Ok(row_id_range.len() as u64),
         Err(e) => {
             let error_info = format!("Error in search: {}", e);
@@ -329,7 +327,7 @@ pub fn tantivy_bm25_search_with_filter(
     )?;
 
     let u8_bitmap: Vec<u8> = u8_bitmap.iter().map(|s| *s).collect();
-    let row_ids: Vec<u32> = u8_bitmap_to_row_ids(&u8_bitmap);
+    let row_ids: Vec<u32> = ConvertUtils::u8_bitmap_to_row_ids(&u8_bitmap);
     // INFO!("alive row_ids is: {:?}", row_ids);
     // get index reader from CACHE
     let index_r = match FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path_str.clone()) {
@@ -451,7 +449,7 @@ pub fn tantivy_search_bitmap_results(
         }
     };
 
-    let row_ids_bitmap = match perform_search(&index_r, &query_str, use_regex) {
+    let row_ids_bitmap = match FFiIndexSearcherUtils::perform_search(&index_r, &query_str, use_regex) {
         Ok(content) => content,
         Err(e) => {
             let error_info = format!("Error in perform_search: {}", e);
@@ -460,6 +458,6 @@ pub fn tantivy_search_bitmap_results(
         }
     };
     let row_ids_number: Vec<u32> = row_ids_bitmap.iter().collect();
-    let u8_bitmap: Vec<u8> = row_ids_to_u8_bitmap(&row_ids_number);
+    let u8_bitmap: Vec<u8> = ConvertUtils::row_ids_to_u8_bitmap(&row_ids_number);
     Ok(u8_bitmap)
 }

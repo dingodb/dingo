@@ -73,7 +73,7 @@ private:
 
         for (auto _ : state) {
             for (auto i : indexes) {
-                if (i>=10000){
+                if (i>=2000){
                     break;
                 }
                 for (const auto& range : rowIdRanges) {
