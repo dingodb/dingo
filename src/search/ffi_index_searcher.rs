@@ -1,3 +1,4 @@
+use crate::common::constants::convert_cxx_string;
 use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::tokenizer::parse_and_register::get_custom_tokenizer;
 use crate::tokenizer::parse_and_register::register_tokenizer_to_index;
@@ -31,16 +32,11 @@ use tantivy::{Index, ReloadPolicy};
 /// - A bool value represent operation success.
 pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
     // Parse parameter.
-    let index_path_str = match index_path.to_str() {
-        Ok(content) => content.to_string(),
-        Err(e) => {
-            return Err(format!(
-                "Can't parse parameter index_path:[{}] when load index, exception: {}",
-                index_path,
-                e.to_string()
-            ));
-        }
-    };
+    let index_path_str = convert_cxx_string(
+        "tantivy_load_index",
+        "index_path",
+        index_path,
+    )?;
 
     // Verify index files directory.
     let index_files_directory = Path::new(&index_path_str);
@@ -172,16 +168,11 @@ pub fn tantivy_load_index(index_path: &CxxString) -> Result<bool, String> {
 /// - A bool value represent operation success.
 pub fn tantivy_reader_free(index_path: &CxxString) -> Result<bool, String> {
     // Parse parameter.
-    let index_path_str = match index_path.to_str() {
-        Ok(content) => content.to_string(),
-        Err(e) => {
-            return Err(format!(
-                "Can't parse parameter index_path:[{}] when free reader, exception: {}",
-                index_path,
-                e.to_string()
-            ));
-        }
-    };
+    let index_path_str = convert_cxx_string(
+        "tantivy_reader_free",
+        "index_path",
+        index_path,
+    )?;
 
     // remove bitmap cache
     #[cfg(feature = "use-flurry-cache")]
@@ -222,26 +213,17 @@ pub fn tantivy_search_in_rowid_range(
     use_regex: bool,
 ) -> Result<bool, String> {
     // Parse parameter.
-    let index_path_str = match index_path.to_str() {
-        Ok(content) => content.to_string(),
-        Err(e) => {
-            return Err(format!(
-                "Can't parse parameter index_path:[{}] when search in rowid range, exception: {}",
-                index_path,
-                e.to_string()
-            ));
-        }
-    };
-    let query_str = match query.to_str() {
-        Ok(content) => content.to_string(),
-        Err(e) => {
-            return Err(format!(
-                "Can't parse parameter query_str:[{}] when search in rowid range, exception: {}",
-                query,
-                e.to_string()
-            ));
-        }
-    };
+    let index_path_str = convert_cxx_string(
+        "tantivy_search_in_rowid_range",
+        "index_path",
+        index_path,
+    )?;
+
+    let query_str = convert_cxx_string(
+        "tantivy_search_in_rowid_range",
+        "query",
+        query,
+    )?;
     if lrange > rrange {
         return Err("lrange should smaller than rrange".to_string());
     }
@@ -283,26 +265,17 @@ pub fn tantivy_count_in_rowid_range(
     use_regex: bool,
 ) -> Result<u64, String> {
     // Parse parameter.
-    let index_path_str = match index_path.to_str() {
-        Ok(content) => content.to_string(),
-        Err(e) => {
-            return Err(format!(
-                "Can't parse parameter index_path:[{}] when count in rowid range, exception: {}",
-                index_path,
-                e.to_string()
-            ));
-        }
-    };
-    let query_str = match query.to_str() {
-        Ok(content) => content.to_string(),
-        Err(e) => {
-            return Err(format!(
-                "Can't parse parameter query_str:[{}] when count in rowid range, exception: {}",
-                query,
-                e.to_string()
-            ));
-        }
-    };
+    let index_path_str = convert_cxx_string(
+        "tantivy_count_in_rowid_range",
+        "index_path",
+        index_path,
+    )?;
+
+    let query_str = convert_cxx_string(
+        "tantivy_count_in_rowid_range",
+        "query",
+        query,
+    )?;
     if lrange > rrange {
         return Err("lrange should smaller than rrange".to_string());
     }
@@ -320,7 +293,7 @@ pub fn tantivy_count_in_rowid_range(
         Err(e) => {
             let error_info = format!("Error in search: {}", e);
             ERROR!("{}", error_info);
-            return Err(error_info);
+            Err(error_info)
         }
     }
 }
@@ -344,26 +317,16 @@ pub fn tantivy_bm25_search_with_filter(
     need_text: bool,
 ) -> Result<Vec<RowIdWithScore>, String> {
     // Parse parameter.
-    let index_path_str = match index_path.to_str() {
-        Ok(content) => content.to_string(),
-        Err(e) => {
-            return Err(format!(
-                "Can't parse parameter index_path:[{}] when bm25 search with filter, exception: {}",
-                index_path,
-                e.to_string()
-            ));
-        }
-    };
-    let query_str = match query.to_str() {
-        Ok(content) => content.to_string(),
-        Err(e) => {
-            return Err(format!(
-                "Can't parse parameter query_str:[{}] when bm25 search with filter, exception: {}",
-                query,
-                e.to_string()
-            ));
-        }
-    };
+    let index_path_str = convert_cxx_string(
+        "tantivy_bm25_search_with_filter",
+        "index_path",
+        index_path,
+    )?;
+    let query_str = convert_cxx_string(
+        "tantivy_bm25_search_with_filter",
+        "query",
+        query,
+    )?;
 
     let u8_bitmap: Vec<u8> = u8_bitmap.iter().map(|s| *s).collect();
     let row_ids: Vec<u32> = u8_bitmap_to_row_ids(&u8_bitmap);
@@ -468,26 +431,17 @@ pub fn tantivy_search_bitmap_results(
     use_regex: bool,
 ) -> Result<Vec<u8>, String> {
     // Parse parameter.
-    let index_path_str = match index_path.to_str() {
-        Ok(content) => content.to_string(),
-        Err(e) => {
-            return Err(format!(
-                "Can't parse parameter index_path:[{}] when search bitmap results, exception: {}",
-                index_path,
-                e.to_string()
-            ));
-        }
-    };
-    let query_str = match query.to_str() {
-        Ok(content) => content.to_string(),
-        Err(e) => {
-            return Err(format!(
-                "Can't parse parameter query_str:[{}] when search bitmap results, exception: {}",
-                query,
-                e.to_string()
-            ));
-        }
-    };
+    let index_path_str = convert_cxx_string(
+        "tantivy_search_bitmap_results",
+        "index_path",
+        index_path,
+    )?;
+    let query_str = convert_cxx_string(
+        "tantivy_search_bitmap_results",
+        "query",
+        query,
+    )?;
+
     // get index reader from CACHE
     let index_r = match FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path_str.clone()) {
         Ok(content) => content,

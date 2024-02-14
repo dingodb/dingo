@@ -1,6 +1,9 @@
 use crate::common::flurry_cache::FlurryCache;
 use crate::index::bridge::index_writer_bridge_cache::IndexWriterBridgeCache;
+use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::search::bridge::index_reader_bridge_cache::IndexReaderBridgeCache;
+use crate::ERROR;
+use cxx::CxxString;
 use libc::*;
 use once_cell::sync::Lazy;
 use once_cell::sync::OnceCell;
@@ -35,3 +38,40 @@ pub static FFI_INDEX_WRITER_CACHE: Lazy<IndexWriterBridgeCache> =
 // Cache store IndexReaderBridgeCache.
 pub static FFI_INDEX_SEARCHER_CACHE: Lazy<IndexReaderBridgeCache> =
     Lazy::new(|| IndexReaderBridgeCache::new());
+
+pub fn convert_cxx_string(
+    function: &str,
+    parameter: &str,
+    cxx_string: &CxxString,
+) -> Result<String, String> {
+    let cxx_converted = match cxx_string.to_str() {
+        Ok(content) => content.to_string(),
+        Err(e) => {
+            let exp = format!(
+                "Can't convert cxx_string `{}`:[{}], exception: {}",
+                parameter,
+                cxx_string,
+                e.to_string()
+            );
+            ERROR!(function: function, "{}", exp);
+            return Err(exp);
+        }
+    };
+    Ok(cxx_converted)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cxx::{let_cxx_string, CxxString};
+
+    #[test]
+    fn test_convert_cxx_string_success() {
+        let function_name = "test_function";
+        let parameter_name = "test_param";
+        let_cxx_string!(content = "Hello, world!");
+        let content_cxx: &CxxString = content.as_ref().get_ref();
+        let result = convert_cxx_string(function_name, parameter_name, &content_cxx);
+        assert_eq!(result, Ok(content.to_string()));
+    }
+}

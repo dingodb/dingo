@@ -10,6 +10,7 @@ use tantivy::schema::FAST;
 use tantivy::schema::INDEXED;
 use tantivy::schema::{IndexRecordOption, STORED};
 
+use crate::common::constants::convert_cxx_string;
 use crate::index::bridge::index_writer_bridge::IndexWriterBridge;
 use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::search::ffi_index_searcher::tantivy_reader_free;
@@ -37,26 +38,16 @@ pub fn tantivy_create_index_with_tokenizer(
     doc_store: bool,
 ) -> Result<bool, String> {
     // parse parameter
-    let index_path_str = match index_path.to_str() {
-        Ok(content) => content.to_string(),
-        Err(e) => {
-            return Err(format!(
-                "Can't parse parameter index_path:[{}] when create index with tokenizer, exception: {}",
-                index_path,
-                e.to_string()
-            ));
-        }
-    };
-    let tokenizer_with_parameter_str = match tokenizer_with_parameter.to_str() {
-        Ok(content) => content.to_string(),
-        Err(e) => {
-            return Err(format!(
-                "Can't parse parameter tokenizer_with_parameter:[{}] when create index with tokenizer, exception: {}",
-                tokenizer_with_parameter,
-                e.to_string()
-            ));
-        }
-    };
+    let index_path_str = convert_cxx_string(
+        "tantivy_create_index_with_tokenizer",
+        "index_path",
+        index_path,
+    )?;
+    let tokenizer_with_parameter_str = convert_cxx_string(
+        "tantivy_create_index_with_tokenizer",
+        "tokenizer_with_parameter",
+        tokenizer_with_parameter,
+    )?;
 
     // If the `index_path` already exists, it will be recreated,
     // it's necessary to free any `index_reader` associated with this directory.
@@ -215,26 +206,16 @@ pub fn tantivy_index_doc(
     doc: &CxxString,
 ) -> Result<bool, String> {
     // Parse parameter.
-    let index_path_str = match index_path.to_str() {
-        Ok(content) => content.to_string(),
-        Err(e) => {
-            return Err(format!(
-                "Can't parse parameter index_path:[{}] when index doc, exception: {}",
-                index_path,
-                e.to_string()
-            ));
-        }
-    };
-    let doc_str = match doc.to_str() {
-        Ok(content) => content.to_string(),
-        Err(e) => {
-            return Err(format!(
-                "Can't parse parameter doc:[{}] when index doc, exception: {}",
-                doc,
-                e.to_string()
-            ));
-        }
-    };
+    let index_path_str = convert_cxx_string(
+        "tantivy_index_doc",
+        "index_path",
+        index_path,
+    )?;
+    let doc_str = convert_cxx_string(
+        "tantivy_index_doc",
+        "doc",
+        doc,
+    )?;
 
     // get index writer from CACHE
     let index_w = match FFI_INDEX_WRITER_CACHE.get_index_writer_bridge(index_path_str) {
@@ -291,16 +272,11 @@ pub fn tantivy_delete_row_ids(
     row_ids: &CxxVector<u32>,
 ) -> Result<bool, String> {
     // Parse parameter.
-    let index_path_str = match index_path.to_str() {
-        Ok(content) => content.to_string(),
-        Err(e) => {
-            return Err(format!(
-                "Can't parse parameter index_path:[{}] when execute delete row ids, exception: {}",
-                index_path,
-                e.to_string()
-            ));
-        }
-    };
+    let index_path_str = convert_cxx_string(
+        "tantivy_delete_row_ids",
+        "index_path",
+        index_path,
+    )?;
     let row_ids: Vec<u32> = row_ids.iter().map(|s| *s as u32).collect();
 
     // Get ffi index writer from CACHE
@@ -375,16 +351,11 @@ pub fn tantivy_delete_row_ids(
 /// - A bool value represent operation success.
 pub fn tantivy_writer_commit(index_path: &CxxString) -> Result<bool, String> {
     // Parse parameter.
-    let index_path_str = match index_path.to_str() {
-        Ok(content) => content.to_string(),
-        Err(e) => {
-            return Err(format!(
-                "Can't parse parameter index_path:[{}] when commit index writer, exception: {}",
-                index_path,
-                e.to_string()
-            ));
-        }
-    };
+    let index_path_str = convert_cxx_string(
+        "tantivy_writer_commit",
+        "index_path",
+        index_path,
+    )?;
 
     // get index writer from CACHE
     let index_w = match FFI_INDEX_WRITER_CACHE.get_index_writer_bridge(index_path_str) {
@@ -400,7 +371,7 @@ pub fn tantivy_writer_commit(index_path: &CxxString) -> Result<bool, String> {
         Err(e) => {
             let error_info = format!("Failed to commit index writer: {}", e.to_string());
             ERROR!(function: "writer_commit", "{}", error_info);
-            return Err(error_info);
+            Err(error_info)
         }
     }
 }
@@ -414,16 +385,12 @@ pub fn tantivy_writer_commit(index_path: &CxxString) -> Result<bool, String> {
 /// - A bool value represent operation success.
 pub fn tantivy_writer_free(index_path: &CxxString) -> Result<bool, String> {
     // Parse parameter.
-    let index_path_str = match index_path.to_str() {
-        Ok(content) => content.to_string(),
-        Err(e) => {
-            return Err(format!(
-                "Can't parse parameter index_path:[{}] when free index writer, exception: {}",
-                index_path,
-                e.to_string()
-            ));
-        }
-    };
+    let index_path_str = convert_cxx_string(
+        "tantivy_writer_free",
+        "index_path",
+        index_path,
+    )?;
+
 
     // get index writer from CACHE
     let index_w = match FFI_INDEX_WRITER_CACHE.get_index_writer_bridge(index_path_str.clone()) {

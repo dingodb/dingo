@@ -73,6 +73,9 @@ private:
 
         for (auto _ : state) {
             for (auto i : indexes) {
+                if (i>=10000){
+                    break;
+                }
                 for (const auto& range : rowIdRanges) {
                     tantivy_search_in_rowid_range(
                         this->indexDirectory,

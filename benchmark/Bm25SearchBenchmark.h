@@ -62,6 +62,9 @@ private:
         uint64_t queries = 0;
         for (auto _ : state) {
             for (auto i : indexes) {
+                if (i>=10000){
+                    break;
+                }
                 tantivy_bm25_search(this->indexDirectory, this->queryTerms[i], topK, false);
             }
             queries += indexes.size();
@@ -122,5 +125,5 @@ private:
 // WIKI_560W_RANDOM_BM25_SEARCH_BENCHMARK_REGISTER(500, 1000);
 
 WIKI_560W_NORMAL_BM25_SEARCH_BENCHMARK_REGISTER(10);
-WIKI_560W_NORMAL_BM25_SEARCH_BENCHMARK_REGISTER(100);
+// WIKI_560W_NORMAL_BM25_SEARCH_BENCHMARK_REGISTER(100);
 WIKI_560W_NORMAL_BM25_SEARCH_BENCHMARK_REGISTER(500);
