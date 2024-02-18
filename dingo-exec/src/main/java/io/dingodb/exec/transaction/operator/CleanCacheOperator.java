@@ -17,7 +17,6 @@
 package io.dingodb.exec.transaction.operator;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
@@ -35,6 +34,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
 
+import static io.dingodb.common.CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK;
+import static io.dingodb.store.api.transaction.data.Op.DELETE;
+
 @Slf4j
 public class CleanCacheOperator extends TransactionOperator {
     public static final CleanCacheOperator INSTANCE = new CleanCacheOperator();
@@ -43,65 +45,69 @@ public class CleanCacheOperator extends TransactionOperator {
     }
 
     @Override
-    public synchronized boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        CleanCacheParam param = vertex.getParam();
-        StoreInstance store = Services.LOCAL_STORE.getInstance(null, null);
-        KeyValue keyValue = (KeyValue) tuple[0];
-        if (param.getTransactionType() == TransactionType.OPTIMISTIC) {
-            store.deletePrefix(keyValue.getKey());
-        } else {
-            byte[] lockKey = keyValue.getKey();
-            Object[] decode = ByteUtils.decodePessimisticLock(keyValue);
-            CommonId txnId = (CommonId) decode[1];
-            CommonId tableId = (CommonId) decode[2];
-            CommonId newPartId = (CommonId) decode[3];
-            byte[] key = (byte[]) decode[5];
-            long forUpdateTs = (long) decode[6];
-            KeyValue residualKeyValue = store.get(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, lockKey));
-            if (residualKeyValue != null) {
-                TransactionUtil.pessimisticPrimaryLockRollBack(
-                    txnId,
-                    tableId,
-                    newPartId,
-                    param.getIsolationLevel(),
-                    param.getStartTs(),
-                    forUpdateTs,
-                    key
-                );
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
+        synchronized (vertex) {
+            CleanCacheParam param = vertex.getParam();
+            StoreInstance store = Services.LOCAL_STORE.getInstance(null, null);
+            KeyValue keyValue = (KeyValue) tuple[0];
+            if (param.getTransactionType() == TransactionType.OPTIMISTIC) {
+                store.deletePrefix(keyValue.getKey());
+            } else {
+                byte[] lockKey = keyValue.getKey();
+                Object[] decode = ByteUtils.decodePessimisticLock(keyValue);
+                CommonId txnId = (CommonId) decode[1];
+                CommonId tableId = (CommonId) decode[2];
+                CommonId newPartId = (CommonId) decode[3];
+                byte[] key = (byte[]) decode[5];
+                long forUpdateTs = (long) decode[6];
+                KeyValue residualKeyValue = store.get(ByteUtils.getKeyByOp(TXN_CACHE_RESIDUAL_LOCK, DELETE, lockKey));
+                if (residualKeyValue != null) {
+                    TransactionUtil.pessimisticPrimaryLockRollBack(
+                        txnId,
+                        tableId,
+                        newPartId,
+                        param.getIsolationLevel(),
+                        param.getStartTs(),
+                        forUpdateTs,
+                        key
+                    );
+                }
+                byte[] dataKey = Arrays.copyOf(lockKey, lockKey.length);
+                dataKey[0] = (byte) CommonId.CommonType.TXN_CACHE_DATA.getCode();
+                dataKey[dataKey.length - 2] = (byte) DELETE.getCode();
+                // delete dataKey
+                store.deletePrefix(dataKey);
+                dataKey[dataKey.length - 2] = (byte) Op.PUT.getCode();
+                // delete dataKey
+                store.deletePrefix(dataKey);
+                dataKey[dataKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
+                // delete dataKey
+                store.deletePrefix(dataKey);
+                byte[] jobIdBytes = new CommonId(CommonId.CommonType.JOB, param.getStartTs(), forUpdateTs).encode();
+                byte[] txnIdBytes = vertex.getTask().getTxnId().encode();
+                // delete extraData
+                byte[] extraData = new byte[CommonId.TYPE_LEN + jobIdBytes.length];
+                extraData[0] = (byte) CommonId.CommonType.TXN_CACHE_EXTRA_DATA.getCode();
+                System.arraycopy(txnIdBytes, 0, extraData, CommonId.TYPE_LEN, jobIdBytes.length);
+                store.deletePrefix(extraData);
+                // delete lockData
+                store.deletePrefix(lockKey);
+                // delete blockLock
+                lockKey[0] = (byte) CommonId.CommonType.TXN_CACHE_BLOCK_LOCK.getCode();
+                store.deletePrefix(lockKey);
             }
-            byte[] dataKey = Arrays.copyOf(lockKey, lockKey.length);
-            dataKey[0] = (byte) CommonId.CommonType.TXN_CACHE_DATA.getCode();
-            dataKey[dataKey.length - 2] = (byte) Op.DELETE.getCode();
-            // delete dataKey
-            store.deletePrefix(dataKey);
-            dataKey[dataKey.length - 2] = (byte) Op.PUT.getCode();
-            // delete dataKey
-            store.deletePrefix(dataKey);
-            dataKey[dataKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
-            // delete dataKey
-            store.deletePrefix(dataKey);
-            byte[] jobIdBytes = new CommonId(CommonId.CommonType.JOB, param.getStartTs(), forUpdateTs).encode();
-            byte[] txnIdBytes = vertex.getTask().getTxnId().encode();
-            // delete extraData
-            byte[] extraData = new byte[CommonId.TYPE_LEN + jobIdBytes.length];
-            extraData[0] = (byte) CommonId.CommonType.TXN_CACHE_EXTRA_DATA.getCode();
-            System.arraycopy(txnIdBytes, 0, extraData, CommonId.TYPE_LEN, jobIdBytes.length);
-            store.deletePrefix(extraData);
-            // delete lockData
-            store.deletePrefix(lockKey);
-            // delete blockLock
-            lockKey[0] = (byte) CommonId.CommonType.TXN_CACHE_BLOCK_LOCK.getCode();
-            store.deletePrefix(lockKey);
+            return true;
         }
-        return true;
     }
 
     @Override
-    public synchronized void fin(int pin, @Nullable Fin fin, Vertex vertex) {
-        if (!(fin instanceof FinWithException)) {
-            vertex.getSoleEdge().transformToNext(new Object[]{true});
+    public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
+        synchronized (vertex) {
+            if (!(fin instanceof FinWithException)) {
+                vertex.getSoleEdge().transformToNext(new Object[]{true});
+            }
+            vertex.getSoleEdge().fin(fin);
         }
-        vertex.getSoleEdge().fin(fin);
     }
 
 }

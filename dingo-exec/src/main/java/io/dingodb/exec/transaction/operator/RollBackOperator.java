@@ -29,8 +29,8 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
-import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.params.RollBackParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
@@ -56,62 +56,77 @@ public class RollBackOperator extends TransactionOperator {
     }
 
     @Override
-    public synchronized boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        RollBackParam param = vertex.getParam();
-        CommonId.CommonType type = CommonId.CommonType.of((byte) tuple[0]);
-        CommonId txnId = (CommonId) tuple[1];
-        CommonId tableId = (CommonId) tuple[2];
-        CommonId newPartId = (CommonId) tuple[3];
-        int op = (byte) tuple[4];
-        byte[] key = (byte[]) tuple[5];
-        long forUpdateTs = 0;
-        if (tableId.type == CommonId.CommonType.INDEX) {
-            IndexTable indexTable = TransactionUtil.getIndexDefinitions(tableId);
-            if (indexTable.indexType.isVector) {
-                KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
-                Object[] decodeKey = codec.decodeKeyPrefix(key);
-                TupleMapping mapping = TupleMapping.of(new int[]{0});
-                DingoType dingoType = new LongType(false);
-                TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
-                KeyValueCodec vectorCodec = CodecService.getDefault().createKeyValueCodec(tupleType, mapping);
-                key = vectorCodec.encodeKeyPrefix(new Object[]{decodeKey[0]}, 1);
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
+        synchronized (vertex) {
+            RollBackParam param = vertex.getParam();
+            CommonId.CommonType type = CommonId.CommonType.of((byte) tuple[0]);
+            CommonId txnId = (CommonId) tuple[1];
+            CommonId tableId = (CommonId) tuple[2];
+            CommonId newPartId = (CommonId) tuple[3];
+            int op = (byte) tuple[4];
+            byte[] key = (byte[]) tuple[5];
+            long forUpdateTs = 0;
+            if (tableId.type == CommonId.CommonType.INDEX) {
+                IndexTable indexTable = TransactionUtil.getIndexDefinitions(tableId);
+                if (indexTable.indexType.isVector) {
+                    KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
+                    Object[] decodeKey = codec.decodeKeyPrefix(key);
+                    TupleMapping mapping = TupleMapping.of(new int[]{0});
+                    DingoType dingoType = new LongType(false);
+                    TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
+                    KeyValueCodec vectorCodec = CodecService.getDefault().createKeyValueCodec(tupleType, mapping);
+                    key = vectorCodec.encodeKeyPrefix(new Object[]{decodeKey[0]}, 1);
+                }
             }
-        }
-        if (param.getTransactionType() == TransactionType.PESSIMISTIC) {
-            StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
-            byte[] txnIdByte = txnId.encode();
-            byte[] tableIdByte = tableId.encode();
-            byte[] partIdByte = newPartId.encode();
-            int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
-            byte[] lockBytes = ByteUtils.encode(
-                CommonId.CommonType.TXN_CACHE_LOCK,
-                key,
-                Op.LOCK.getCode(),
-                len,
-                txnIdByte,
-                tableIdByte,
-                partIdByte);
-            KeyValue keyValue = store.get(lockBytes);
-            if (keyValue == null) {
-                throw new RuntimeException(txnId + " lock keyValue is null ");
+            if (param.getTransactionType() == TransactionType.PESSIMISTIC) {
+                StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
+                byte[] txnIdByte = txnId.encode();
+                byte[] tableIdByte = tableId.encode();
+                byte[] partIdByte = newPartId.encode();
+                int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
+                byte[] lockBytes = ByteUtils.encode(
+                    CommonId.CommonType.TXN_CACHE_LOCK,
+                    key,
+                    Op.LOCK.getCode(),
+                    len,
+                    txnIdByte,
+                    tableIdByte,
+                    partIdByte);
+                KeyValue keyValue = store.get(lockBytes);
+                if (keyValue == null) {
+                    throw new RuntimeException(txnId + " lock keyValue is null ");
+                }
+                forUpdateTs = (long) ByteUtils.decodePessimisticLock(keyValue)[6];
             }
-            forUpdateTs = (long) ByteUtils.decodePessimisticLock(keyValue)[6];
-        }
-        CommonId partId = param.getPartId();
-        if (partId == null) {
-            partId = newPartId;
-            param.setPartId(partId);
-            param.setTableId(tableId);
-            param.addKey(key);
-            param.addForUpdateTs(forUpdateTs);
-        } else if (partId.equals(newPartId)) {
-            param.addKey(key);
-            param.addForUpdateTs(forUpdateTs);
-            if (param.getKeys().size() == TransactionUtil.max_pre_write_count) {
+            CommonId partId = param.getPartId();
+            if (partId == null) {
+                partId = newPartId;
+                param.setPartId(partId);
+                param.setTableId(tableId);
+                param.addKey(key);
+                param.addForUpdateTs(forUpdateTs);
+            } else if (partId.equals(newPartId)) {
+                param.addKey(key);
+                param.addForUpdateTs(forUpdateTs);
+                if (param.getKeys().size() == TransactionUtil.max_pre_write_count) {
+                    boolean result = txnRollBack(
+                        param,
+                        txnId,
+                        tableId,
+                        partId,
+                        param.getTransactionType() == TransactionType.PESSIMISTIC
+                    );
+                    if (!result) {
+                        throw new RuntimeException(txnId + " " + partId + ",txnBatchRollback false");
+                    }
+                    param.getKeys().clear();
+                    param.setPartId(null);
+                }
+            } else {
                 boolean result = txnRollBack(
                     param,
                     txnId,
-                    tableId,
+                    param.getTableId(),
                     partId,
                     param.getTransactionType() == TransactionType.PESSIMISTIC
                 );
@@ -119,26 +134,13 @@ public class RollBackOperator extends TransactionOperator {
                     throw new RuntimeException(txnId + " " + partId + ",txnBatchRollback false");
                 }
                 param.getKeys().clear();
-                param.setPartId(null);
+                param.addKey(key);
+                param.addForUpdateTs(forUpdateTs);
+                param.setPartId(newPartId);
+                param.setTableId(tableId);
             }
-        } else {
-            boolean result = txnRollBack(
-                param,
-                txnId,
-                param.getTableId(),
-                partId,
-                param.getTransactionType() == TransactionType.PESSIMISTIC
-            );
-            if (!result) {
-                throw new RuntimeException(txnId + " " + partId + ",txnBatchRollback false");
-            }
-            param.getKeys().clear();
-            param.addKey(key);
-            param.addForUpdateTs(forUpdateTs);
-            param.setPartId(newPartId);
-            param.setTableId(tableId);
+            return true;
         }
-        return true;
     }
 
     private boolean txnRollBack(RollBackParam param, CommonId txnId, CommonId tableId, CommonId newPartId, boolean isPessimistic) {
@@ -220,26 +222,28 @@ public class RollBackOperator extends TransactionOperator {
     }
 
     @Override
-    public synchronized void fin(int pin, @Nullable Fin fin, Vertex vertex) {
-        if (!(fin instanceof FinWithException)) {
-            RollBackParam param = vertex.getParam();
-            if (param.getKeys().size() > 0) {
-                CommonId txnId = vertex.getTask().getTxnId();
-                boolean result = txnRollBack(
-                    param,
-                    txnId,
-                    param.getTableId(),
-                    param.getPartId(),
-                    param.getTransactionType() == TransactionType.PESSIMISTIC
-                );
-                if (!result) {
-                    throw new RuntimeException(txnId + " " + param.getPartId() + ",txnBatchRollback false");
+    public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
+        synchronized (vertex) {
+            if (!(fin instanceof FinWithException)) {
+                RollBackParam param = vertex.getParam();
+                if (param.getKeys().size() > 0) {
+                    CommonId txnId = vertex.getTask().getTxnId();
+                    boolean result = txnRollBack(
+                        param,
+                        txnId,
+                        param.getTableId(),
+                        param.getPartId(),
+                        param.getTransactionType() == TransactionType.PESSIMISTIC
+                    );
+                    if (!result) {
+                        throw new RuntimeException(txnId + " " + param.getPartId() + ",txnBatchRollback false");
+                    }
+                    param.getKeys().clear();
                 }
-                param.getKeys().clear();
+                vertex.getSoleEdge().transformToNext(new Object[]{true});
             }
-            vertex.getSoleEdge().transformToNext(new Object[]{true});
+            vertex.getSoleEdge().fin(fin);
         }
-        vertex.getSoleEdge().fin(fin);
     }
 
 }

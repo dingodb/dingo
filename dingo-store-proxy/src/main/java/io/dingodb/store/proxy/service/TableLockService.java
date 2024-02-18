@@ -20,6 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.DebugLog;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.store.proxy.meta.MetaServiceApiImpl;
 import io.dingodb.transaction.api.LockType;
@@ -38,6 +39,7 @@ import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -160,7 +162,11 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
                 try {
                     MetaServiceApiImpl.INSTANCE.lockTable(lock.lockTs, lock);
                 } catch (Exception e) {
-                    log.error("Lock table {} error.", tableId, e);
+                    if (e instanceof TimeoutException) {
+                        DebugLog.trace(log, "Lock table {} error.", tableId, e);
+                    } else {
+                        log.error("Lock table {} error.", tableId, e);
+                    }
                     locked = false;
                 }
             }

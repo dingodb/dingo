@@ -48,80 +48,82 @@ public class PessimisticRollBackOperator extends TransactionOperator {
     }
 
     @Override
-    public synchronized boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        PessimisticRollBackParam param = vertex.getParam();
-        CommonId.CommonType type = CommonId.CommonType.of((byte) tuple[0]);
-        CommonId txnId = (CommonId) tuple[1];
-        CommonId tableId = (CommonId) tuple[2];
-        CommonId newPartId = (CommonId) tuple[3];
-        int op = (byte) tuple[4];
-        byte[] key = (byte[]) tuple[5];
-        byte[] value = (byte[]) tuple[6];
-        StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
-        byte[] txnIdByte = txnId.encode();
-        byte[] tableIdByte = tableId.encode();
-        byte[] partIdByte = newPartId.encode();
-        byte[] startTsByte = PrimitiveCodec.encodeLong(param.getStartTs());
-        int len = txnIdByte.length + ByteUtils.StartTsLen + tableIdByte.length + partIdByte.length;
-        // first appearance
-        if (op == Op.NONE.getCode()) {
-            // cache delete key
-            byte[] dataKey = ByteUtils.encodePessimisticData(
-                key,
-                Op.PUTIFABSENT.getCode(),
-                len,
-                txnIdByte, startTsByte, tableIdByte, partIdByte);
-            store.deletePrefix(dataKey);
-            byte[] deleteKey = Arrays.copyOf(dataKey, dataKey.length);
-            deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
-            store.deletePrefix(deleteKey);
-            deleteKey[deleteKey.length - 2] = (byte) Op.PUT.getCode();
-            store.deletePrefix(deleteKey);
-        } else {
-            // cache delete key and set oldKeyValue
-            byte[] dataKey = ByteUtils.encodePessimisticData(
-                key,
-                Op.PUTIFABSENT.getCode(),
-                len,
-                txnIdByte, startTsByte, tableIdByte, partIdByte);
-            store.deletePrefix(dataKey);
-            byte[] deleteKey = Arrays.copyOf(dataKey, dataKey.length);
-            deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
-            store.deletePrefix(deleteKey);
-            deleteKey[deleteKey.length - 2] = (byte) Op.PUT.getCode();
-            store.deletePrefix(deleteKey);
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
+        synchronized (vertex) {
+            PessimisticRollBackParam param = vertex.getParam();
+            CommonId.CommonType type = CommonId.CommonType.of((byte) tuple[0]);
+            CommonId txnId = (CommonId) tuple[1];
+            CommonId tableId = (CommonId) tuple[2];
+            CommonId newPartId = (CommonId) tuple[3];
+            int op = (byte) tuple[4];
+            byte[] key = (byte[]) tuple[5];
+            byte[] value = (byte[]) tuple[6];
+            StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
+            byte[] txnIdByte = txnId.encode();
+            byte[] tableIdByte = tableId.encode();
+            byte[] partIdByte = newPartId.encode();
+            byte[] startTsByte = PrimitiveCodec.encodeLong(param.getStartTs());
+            int len = txnIdByte.length + ByteUtils.StartTsLen + tableIdByte.length + partIdByte.length;
+            // first appearance
+            if (op == Op.NONE.getCode()) {
+                // cache delete key
+                byte[] dataKey = ByteUtils.encodePessimisticData(
+                    key,
+                    Op.PUTIFABSENT.getCode(),
+                    len,
+                    txnIdByte, startTsByte, tableIdByte, partIdByte);
+                store.deletePrefix(dataKey);
+                byte[] deleteKey = Arrays.copyOf(dataKey, dataKey.length);
+                deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
+                store.deletePrefix(deleteKey);
+                deleteKey[deleteKey.length - 2] = (byte) Op.PUT.getCode();
+                store.deletePrefix(deleteKey);
+            } else {
+                // cache delete key and set oldKeyValue
+                byte[] dataKey = ByteUtils.encodePessimisticData(
+                    key,
+                    Op.PUTIFABSENT.getCode(),
+                    len,
+                    txnIdByte, startTsByte, tableIdByte, partIdByte);
+                store.deletePrefix(dataKey);
+                byte[] deleteKey = Arrays.copyOf(dataKey, dataKey.length);
+                deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
+                store.deletePrefix(deleteKey);
+                deleteKey[deleteKey.length - 2] = (byte) Op.PUT.getCode();
+                store.deletePrefix(deleteKey);
 
-            byte[] newKey = Arrays.copyOf(dataKey, dataKey.length);
-            newKey[newKey.length - 2] = (byte) op;
-            store.put(new KeyValue(newKey, value));
-        }
-        CommonId partId = param.getPartId();
-        if (partId == null) {
-            partId = newPartId;
-            param.setPartId(partId);
-            param.setTableId(tableId);
-            param.addKey(key);
-        } else if (partId.equals(newPartId)) {
-            param.addKey(key);
-            if (param.getKeys().size() == TransactionUtil.max_pre_write_count) {
-                boolean result = txnPessimisticRollBack(param, txnId, tableId, partId);
+                byte[] newKey = Arrays.copyOf(dataKey, dataKey.length);
+                newKey[newKey.length - 2] = (byte) op;
+                store.put(new KeyValue(newKey, value));
+            }
+            CommonId partId = param.getPartId();
+            if (partId == null) {
+                partId = newPartId;
+                param.setPartId(partId);
+                param.setTableId(tableId);
+                param.addKey(key);
+            } else if (partId.equals(newPartId)) {
+                param.addKey(key);
+                if (param.getKeys().size() == TransactionUtil.max_pre_write_count) {
+                    boolean result = txnPessimisticRollBack(param, txnId, tableId, partId);
+                    if (!result) {
+                        throw new RuntimeException(txnId + " " + partId + ",txnPessimisticRollBack false");
+                    }
+                    param.getKeys().clear();
+                    param.setPartId(null);
+                }
+            } else {
+                boolean result = txnPessimisticRollBack(param, txnId, param.getTableId(), partId);
                 if (!result) {
                     throw new RuntimeException(txnId + " " + partId + ",txnPessimisticRollBack false");
                 }
                 param.getKeys().clear();
-                param.setPartId(null);
+                param.addKey(key);
+                param.setPartId(newPartId);
+                param.setTableId(tableId);
             }
-        } else {
-            boolean result = txnPessimisticRollBack(param, txnId, param.getTableId(), partId);
-            if (!result) {
-                throw new RuntimeException(txnId + " " + partId + ",txnPessimisticRollBack false");
-            }
-            param.getKeys().clear();
-            param.addKey(key);
-            param.setPartId(newPartId);
-            param.setTableId(tableId);
+            return true;
         }
-        return true;
     }
 
     private boolean txnPessimisticRollBack(PessimisticRollBackParam param, CommonId txnId, CommonId tableId, CommonId newPartId) {
@@ -154,20 +156,22 @@ public class PessimisticRollBackOperator extends TransactionOperator {
     }
 
     @Override
-    public synchronized void fin(int pin, @Nullable Fin fin, Vertex vertex) {
-        if (!(fin instanceof FinWithException)) {
-            PessimisticRollBackParam param = vertex.getParam();
-            if (param.getKeys().size() > 0) {
-                CommonId txnId = vertex.getTask().getTxnId();
-                boolean result = txnPessimisticRollBack(param, txnId, param.getTableId(), param.getPartId());
-                if (!result) {
-                    throw new RuntimeException(txnId + " " + param.getPartId() + ",txnPessimisticRollBack false");
+    public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
+        synchronized (vertex) {
+            if (!(fin instanceof FinWithException)) {
+                PessimisticRollBackParam param = vertex.getParam();
+                if (param.getKeys().size() > 0) {
+                    CommonId txnId = vertex.getTask().getTxnId();
+                    boolean result = txnPessimisticRollBack(param, txnId, param.getTableId(), param.getPartId());
+                    if (!result) {
+                        throw new RuntimeException(txnId + " " + param.getPartId() + ",txnPessimisticRollBack false");
+                    }
+                    param.getKeys().clear();
                 }
-                param.getKeys().clear();
+                vertex.getSoleEdge().transformToNext(new Object[]{true});
             }
-            vertex.getSoleEdge().transformToNext(new Object[]{true});
+            vertex.getSoleEdge().fin(fin);
         }
-        vertex.getSoleEdge().fin(fin);
     }
 
 }

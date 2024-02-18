@@ -73,7 +73,10 @@ public class FixedChannelProxy<T> implements ApiProxy<T>, InvocationHandler {
         try {
             return ApiProxy.super.invoke(proxy, method, args);
         } catch (Exception e) {
-            log.error("Invoke proxy method [{}] error.", method.toGenericString(), e);
+            log.error(
+                "Invoke proxy method [{}] on [{}/{}] error.",
+                method.toGenericString(), channel().remoteLocation(), channel().channelId(), e
+            );
             throw Utils.extractThrowable(e);
         }
     }

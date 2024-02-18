@@ -50,67 +50,69 @@ public final class PreWriteOperator extends TransactionOperator {
     }
 
     @Override
-    public synchronized boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        PreWriteParam param = vertex.getParam();
-        CommonId.CommonType type = CommonId.CommonType.of((byte) tuple[0]);
-        CommonId txnId = (CommonId) tuple[1];
-        CommonId tableId = (CommonId) tuple[2];
-        CommonId newPartId = (CommonId) tuple[3];
-        int op = (byte) tuple[4];
-        byte[] key = (byte[]) tuple[5];
-        byte[] value = (byte[]) tuple[6];
-        // first key is primary key
-        if (ByteArrayUtils.compare(key, param.getPrimaryKey(), 1) == 0) {
-            return true;
-        }
-        StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
-        byte[] txnIdByte = txnId.encode();
-        byte[] tableIdByte = tableId.encode();
-        byte[] partIdByte = newPartId.encode();
-        int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
-        long forUpdateTs = 0;
-        if (param.getTransactionType() == TransactionType.PESSIMISTIC) {
-            byte[] lockBytes = ByteUtils.encode(
-                CommonId.CommonType.TXN_CACHE_LOCK,
-                key,
-                Op.LOCK.getCode(),
-                len,
-                txnIdByte, tableIdByte, partIdByte);
-            KeyValue keyValue = store.get(lockBytes);
-            if (keyValue == null) {
-                throw new RuntimeException(txnId + " lock keyValue is null ");
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
+        synchronized (vertex) {
+            PreWriteParam param = vertex.getParam();
+            CommonId.CommonType type = CommonId.CommonType.of((byte) tuple[0]);
+            CommonId txnId = (CommonId) tuple[1];
+            CommonId tableId = (CommonId) tuple[2];
+            CommonId newPartId = (CommonId) tuple[3];
+            int op = (byte) tuple[4];
+            byte[] key = (byte[]) tuple[5];
+            byte[] value = (byte[]) tuple[6];
+            // first key is primary key
+            if (ByteArrayUtils.compare(key, param.getPrimaryKey(), 1) == 0) {
+                return true;
             }
-            forUpdateTs = (long) ByteUtils.decodePessimisticLock(keyValue)[6];
-        }
-        // cache to mutations
-        Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, forUpdateTs, tableId, newPartId);
-        CommonId partId = param.getPartId();
-        if (partId == null) {
-            partId = newPartId;
-            param.setPartId(partId);
-            param.setTableId(tableId);
-            param.addMutation(mutation);
-        } else if (partId.equals(newPartId)) {
-            param.addMutation(mutation);
-            if (param.getMutations().size() == TransactionUtil.max_pre_write_count) {
-                boolean result = txnPreWrite(param, txnId, tableId, partId);
+            StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
+            byte[] txnIdByte = txnId.encode();
+            byte[] tableIdByte = tableId.encode();
+            byte[] partIdByte = newPartId.encode();
+            int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
+            long forUpdateTs = 0;
+            if (param.getTransactionType() == TransactionType.PESSIMISTIC) {
+                byte[] lockBytes = ByteUtils.encode(
+                    CommonId.CommonType.TXN_CACHE_LOCK,
+                    key,
+                    Op.LOCK.getCode(),
+                    len,
+                    txnIdByte, tableIdByte, partIdByte);
+                KeyValue keyValue = store.get(lockBytes);
+                if (keyValue == null) {
+                    throw new RuntimeException(txnId + " lock keyValue is null ");
+                }
+                forUpdateTs = (long) ByteUtils.decodePessimisticLock(keyValue)[6];
+            }
+            // cache to mutations
+            Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, forUpdateTs, tableId, newPartId);
+            CommonId partId = param.getPartId();
+            if (partId == null) {
+                partId = newPartId;
+                param.setPartId(partId);
+                param.setTableId(tableId);
+                param.addMutation(mutation);
+            } else if (partId.equals(newPartId)) {
+                param.addMutation(mutation);
+                if (param.getMutations().size() == TransactionUtil.max_pre_write_count) {
+                    boolean result = txnPreWrite(param, txnId, tableId, partId);
+                    if (!result) {
+                        throw new RuntimeException(txnId + " " + partId + ",txnPreWrite false,PrimaryKey:" + param.getPrimaryKey().toString());
+                    }
+                    param.getMutations().clear();
+                    param.setPartId(null);
+                }
+            } else {
+                boolean result = txnPreWrite(param, txnId, param.getTableId(), partId);
                 if (!result) {
                     throw new RuntimeException(txnId + " " + partId + ",txnPreWrite false,PrimaryKey:" + param.getPrimaryKey().toString());
                 }
                 param.getMutations().clear();
-                param.setPartId(null);
+                param.addMutation(mutation);
+                param.setPartId(newPartId);
+                param.setTableId(tableId);
             }
-        } else {
-            boolean result = txnPreWrite(param, txnId, param.getTableId(), partId);
-            if (!result) {
-                throw new RuntimeException(txnId + " " + partId + ",txnPreWrite false,PrimaryKey:" + param.getPrimaryKey().toString());
-            }
-            param.getMutations().clear();
-            param.addMutation(mutation);
-            param.setPartId(newPartId);
-            param.setTableId(tableId);
+            return true;
         }
-        return true;
     }
 
     private boolean txnPreWrite(PreWriteParam param, CommonId txnId, CommonId tableId, CommonId partId) {
@@ -183,25 +185,27 @@ public final class PreWriteOperator extends TransactionOperator {
     }
 
     @Override
-    public synchronized void fin(int pin, @Nullable Fin fin, Vertex vertex) {
-        if (!(fin instanceof FinWithException)) {
-            PreWriteParam param = vertex.getParam();
-            if (param.getMutations().size() > 0) {
-                boolean result = txnPreWrite(
-                    param,
-                    vertex.getTask().getTxnId(),
-                    param.getTableId(),
-                    param.getPartId()
-                );
-                if (!result) {
-                    throw new RuntimeException(vertex.getTask().getTxnId() + " " + param.getPartId()
-                        + ",txnPreWrite false,PrimaryKey:" + param.getPrimaryKey().toString());
+    public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
+        synchronized (vertex) {
+            if (!(fin instanceof FinWithException)) {
+                PreWriteParam param = vertex.getParam();
+                if (param.getMutations().size() > 0) {
+                    boolean result = txnPreWrite(
+                        param,
+                        vertex.getTask().getTxnId(),
+                        param.getTableId(),
+                        param.getPartId()
+                    );
+                    if (!result) {
+                        throw new RuntimeException(vertex.getTask().getTxnId() + " " + param.getPartId()
+                            + ",txnPreWrite false,PrimaryKey:" + param.getPrimaryKey().toString());
+                    }
+                    param.getMutations().clear();
                 }
-                param.getMutations().clear();
+                vertex.getSoleEdge().transformToNext(new Object[]{true});
             }
-            vertex.getSoleEdge().transformToNext(new Object[]{true});
+            vertex.getSoleEdge().fin(fin);
         }
-        vertex.getSoleEdge().fin(fin);
     }
 
 }

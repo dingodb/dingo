@@ -29,18 +29,20 @@ public final class FilterOperator extends SoleOutOperator {
     }
 
     @Override
-    public synchronized boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        FilterParam params = vertex.getParam();
-        // The eval result may be `null`
-        Boolean v = (Boolean) params.getFilter().eval(tuple);
-        if (v != null && v) {
-            return vertex.getSoleEdge().transformToNext(context, tuple);
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
+        synchronized (vertex) {
+            FilterParam params = vertex.getParam();
+            // The eval result may be `null`
+            Boolean v = (Boolean) params.getFilter().eval(tuple);
+            if (v != null && v) {
+                return vertex.getSoleEdge().transformToNext(context, tuple);
+            }
+            return true;
         }
-        return true;
     }
 
     @Override
-    public  void fin(int pin, Fin fin, Vertex vertex) {
+    public void fin(int pin, Fin fin, Vertex vertex) {
         vertex.getSoleEdge().fin(fin);
     }
 

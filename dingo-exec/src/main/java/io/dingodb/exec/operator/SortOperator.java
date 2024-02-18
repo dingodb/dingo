@@ -34,47 +34,51 @@ public class SortOperator extends SoleOutOperator {
     }
 
     @Override
-    public synchronized boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        SortParam param = vertex.getParam();
-        param.setContext(context);
-        int limit = param.getLimit();
-        int offset = param.getOffset();
-        List<SortCollation> collations = param.getCollations();
-        if (limit == 0) {
-            return false;
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
+        synchronized (vertex) {
+            SortParam param = vertex.getParam();
+            param.setContext(context);
+            int limit = param.getLimit();
+            int offset = param.getOffset();
+            List<SortCollation> collations = param.getCollations();
+            if (limit == 0) {
+                return false;
+            }
+            param.getCache().add(tuple);
+            return collations.size() > 0 || limit < 0 || param.getCache().size() < offset + limit;
         }
-        param.getCache().add(tuple);
-        return collations.size() > 0 || limit < 0 || param.getCache().size() < offset + limit;
     }
 
     @Override
-    public synchronized void fin(int pin, Fin fin, Vertex vertex) {
-        SortParam param = vertex.getParam();
-        int limit = param.getLimit();
-        int offset = param.getOffset();
-        List<Object[]> cache = param.getCache();
-        Comparator<Object[]> comparator = param.getComparator();
-        if (comparator != null) {
-            cache.sort(comparator);
+    public void fin(int pin, Fin fin, Vertex vertex) {
+        synchronized (vertex) {
+            SortParam param = vertex.getParam();
+            int limit = param.getLimit();
+            int offset = param.getOffset();
+            List<Object[]> cache = param.getCache();
+            Comparator<Object[]> comparator = param.getComparator();
+            if (comparator != null) {
+                cache.sort(comparator);
+            }
+            int o = 0;
+            int c = 0;
+            Edge edge = vertex.getSoleEdge();
+            for (Object[] tuple : cache) {
+                if (o < offset) {
+                    ++o;
+                    continue;
+                }
+                if (limit >= 0 && c >= limit) {
+                    break;
+                }
+                if (!edge.transformToNext(param.getContext(), tuple)) {
+                    break;
+                }
+                ++c;
+            }
+            edge.fin(fin);
+            // Reset
+            param.clear();
         }
-        int o = 0;
-        int c = 0;
-        Edge edge = vertex.getSoleEdge();
-        for (Object[] tuple : cache) {
-            if (o < offset) {
-                ++o;
-                continue;
-            }
-            if (limit >= 0 && c >= limit) {
-                break;
-            }
-            if (!edge.transformToNext(param.getContext(), tuple)) {
-                break;
-            }
-            ++c;
-        }
-        edge.fin(fin);
-        // Reset
-        param.clear();
     }
 }
