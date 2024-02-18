@@ -29,20 +29,24 @@ public abstract class PartModifyOperator extends SoleOutOperator {
     }
 
     @Override
-    public synchronized boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        return pushTuple(context, tuple, vertex);
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
+        synchronized (vertex) {
+            return pushTuple(context, tuple, vertex);
+        }
     }
 
     @Override
-    public synchronized void fin(int pin, Fin fin, Vertex vertex) {
-        PartModifyParam param = vertex.getParam();
-        Edge edge = vertex.getSoleEdge();
-        if (!(fin instanceof FinWithException)) {
-            edge.transformToNext(new Object[]{param.getCount()/*, param.getKeyState()*/});
+    public void fin(int pin, Fin fin, Vertex vertex) {
+        synchronized (vertex) {
+            PartModifyParam param = vertex.getParam();
+            Edge edge = vertex.getSoleEdge();
+            if (!(fin instanceof FinWithException)) {
+                edge.transformToNext(new Object[]{param.getCount()/*, param.getKeyState()*/});
+            }
+            edge.fin(fin);
+            // Reset
+            param.reset();
         }
-        edge.fin(fin);
-        // Reset
-        param.reset();
     }
 
     protected abstract boolean pushTuple(Context context, @Nullable Object[] tuple, Vertex vertex);

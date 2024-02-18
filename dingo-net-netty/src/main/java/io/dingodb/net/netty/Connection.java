@@ -170,10 +170,16 @@ public class Connection {
     }
 
     public void send(ByteBuf message) throws InterruptedException {
+        if (channel.isClosed()) {
+            throw new RuntimeException("Connection closed.");
+        }
         socket.writeAndFlush(message).await();
     }
 
     public void sendAsync(ByteBuf message) {
+        if (channel.isClosed()) {
+            throw new RuntimeException("Connection closed.");
+        }
         socket.writeAndFlush(message);
     }
 

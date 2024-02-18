@@ -44,7 +44,9 @@ public abstract class SourceParam extends AbstractParams {
     }
 
     public void clear() {
-        profiles.clear();
+        if (profiles != null) {
+            profiles.clear();
+        }
     }
 
     public synchronized OperatorProfile getProfile(CommonId id) {

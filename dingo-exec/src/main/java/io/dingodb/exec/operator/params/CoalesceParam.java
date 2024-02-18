@@ -66,7 +66,9 @@ public class CoalesceParam extends AbstractParams {
     }
 
     public void clear() {
-        profiles.clear();
+        if (profiles != null) {
+            profiles.clear();
+        }
     }
 
 }

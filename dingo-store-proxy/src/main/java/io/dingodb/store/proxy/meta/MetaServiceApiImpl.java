@@ -22,12 +22,12 @@ import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.util.Optional;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
 import io.dingodb.net.NetService;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.net.service.ListenService;
-import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.VersionService;
 import io.dingodb.sdk.service.entity.meta.CreateSchemaRequest;
@@ -120,21 +120,16 @@ public class MetaServiceApiImpl implements MetaServiceApi {
                     retryLock();
                     return;
                 }
-                Channel leaderChannel = NetService.getDefault().newChannel(leaderLocation);
-                try {
+
+                try (Channel leaderChannel = NetService.getDefault().newChannel(leaderLocation);) {
                     this.leaderChannel = leaderChannel.cloneChannel();
                     this.leaderChannel.setCloseListener(ch -> this.retryLock());
-                    participantChannels.put(leaderId, leaderChannel);
                     try (Channel syncLockChannel = leaderChannel.cloneChannel()) {
                         proxy(syncLockChannel).syncLock(null, ID);
                     }
-                    proxy(leaderChannel).connect(null, ID, DingoConfiguration.location());
-                    leaderChannel.setCloseListener(ch -> participantChannels.remove(leaderId));
-                    this.leaderId = leaderId;
+                    proxy(this.leaderChannel).connect(null, ID, DingoConfiguration.location());
                     lockService.watchLock(currentLock, this::retryLock);
-                } catch (Exception e) {
-                    leaderChannel.close();
-                    throw e;
+                    this.leaderId = leaderId;
                 }
                 log.info("Current {}, leader: {}.", ID, leaderId);
                 needLock = false;
@@ -169,15 +164,18 @@ public class MetaServiceApiImpl implements MetaServiceApi {
     }
 
     @Override
-    public void connect(Channel channel, CommonId serverId, Location location) {
+    public synchronized void connect(Channel channel, CommonId serverId, Location location) {
         if (!isReady()) {
             throw new RuntimeException("Offline, please wait and retry.");
         }
-        Optional.ifPresent(participantChannels.put(serverId, channel), Channel::close);
+        Optional.ofNullable(participantChannels.remove(serverId))
+            .ifPresent(ch -> ch.setCloseListener(null))
+            .ifPresent(Channel::close);
+        participantChannels.put(serverId, channel);
         participantLocations.put(serverId, location);
         log.info("Participant {} join.", serverId);
         channel.setCloseListener(ch -> {
-            participantChannels.remove(serverId, ch);
+            participantChannels.remove(serverId);
             log.info("Participant {} leave.", serverId);
         });
         participantJoinListener.accept(new Message(serverId.encode()));
@@ -266,8 +264,10 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         io.dingodb.store.proxy.service.TableLockService.INSTANCE.lock(lock);
         Channel lockChannel = participantChannels.get(lock.serverId);
         try {
-            if (lockChannel == null) {
+            if (lockChannel == null || lockChannel.isClosed()) {
                 lockChannel = NetService.getDefault().newChannel(location);
+            } else {
+                lockChannel = lockChannel.cloneChannel();
             }
             proxy(lockChannel).getLockChannel(null, lock);
             lockChannel.setCloseListener(channel -> unlockFuture.complete(null));

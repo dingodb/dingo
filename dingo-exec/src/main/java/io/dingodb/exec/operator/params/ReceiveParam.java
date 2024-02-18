@@ -94,7 +94,7 @@ public class ReceiveParam extends SourceParam {
     }
 
     public void addAll(List<OperatorProfile> profiles) {
-        this.profiles.addAll(profiles);
+        getProfiles().addAll(profiles);
     }
 
     @Override
