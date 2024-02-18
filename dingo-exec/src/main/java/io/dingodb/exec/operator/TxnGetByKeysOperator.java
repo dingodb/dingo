@@ -69,8 +69,8 @@ public final class TxnGetByKeysOperator extends FilterProjectOperator {
             vertex.getTask().getTransactionType());
         if (local != null) return local;
         StoreInstance store;
-        store = Services.KV_STORE.getInstance(param.getTableId(), context.getDistribution().getId());
-        KeyValue keyValue = store.txnGet(param.getScanTs(), param.getCodec().encodeKey(tuple), param.getTimeOut());
+        store = Services.KV_STORE.getInstance(tableId, partId);
+        KeyValue keyValue = store.txnGet(param.getScanTs(), keys, param.getTimeOut());
         if (keyValue == null || keyValue.getValue() == null) {
             return Collections.emptyIterator();
         }
