@@ -88,8 +88,16 @@ public final class DingoTableScanVisitFun {
             }
         }
         DistributionSourceParam distributionParam = new DistributionSourceParam(
-            td, ranges, startKey, endKey, withStart, withEnd, filter,
-            Optional.mapOrGet(rel.getFilter(), __ -> __.getKind() == SqlKind.NOT, () -> false), false);
+            td,
+            ranges,
+            startKey,
+            endKey,
+            withStart,
+            withEnd,
+            filter,
+            Optional.mapOrGet(rel.getFilter(), __ -> __.getKind() == SqlKind.NOT, () -> false),
+            false,
+            null);
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
         Task task;
         if (transaction != null) {

@@ -60,6 +60,6 @@ public class CalcDistributionOperator extends IteratorSourceOperator {
             distributions = ps.calcPartitionRange(startKey, endKey, withStart, withEnd, ranges);
         }
 
-        return new ArrayList<>(distributions).stream().map(d -> new Object[]{d}).iterator();
+        return new ArrayList<>(distributions).stream().map(d -> new Object[]{d, param.getKeyTuple()}).iterator();
     }
 }

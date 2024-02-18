@@ -389,8 +389,16 @@ public class OperationServiceV2 {
             end.columnOrder ? td.keyColumns() : OperationUtils.sortColumns(td.keyColumns())));
 
         DistributionSourceParam distributionParam = new DistributionSourceParam(
-            td, MetaService.root().getRangeDistribution(tableId),
-            startBytes, endBytes, keyRange.withStart, keyRange.withEnd, null, false, false);
+            td,
+            MetaService.root().getRangeDistribution(tableId),
+            startBytes,
+            endBytes,
+            keyRange.withStart,
+            keyRange.withEnd,
+            null,
+            false,
+            false,
+            null);
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
         Task task = job.getOrCreate(currentLocation, idGenerator);
         calcVertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -436,8 +444,16 @@ public class OperationServiceV2 {
         byte[] startKey = codec.encodeKeyPrefix(mapKeyPrefix(td, begin), begin.userKey.size());
         byte[] endKey = codec.encodeKeyPrefix(mapKeyPrefix(td, end), end.userKey.size());
         DistributionSourceParam distributionParam = new DistributionSourceParam(
-            td, MetaService.root().getRangeDistribution(tableId),
-            startKey, endKey, withBegin, withEnd, null, false, false);
+            td,
+            MetaService.root().getRangeDistribution(tableId),
+            startKey,
+            endKey,
+            withBegin,
+            withEnd,
+            null,
+            false,
+            false,
+            null);
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
         Task task = job.getOrCreate(currentLocation, idGenerator);
         calcVertex.setId(idGenerator.getOperatorId(task.getId()));

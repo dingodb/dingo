@@ -62,8 +62,17 @@ public final class DingoFunctionScanVisitFun {
         Table td = dingoTable.getTable();
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = metaService.getRangeDistribution(tableId);
 
-        DistributionSourceParam distributionParam = new DistributionSourceParam(td, ranges, null, null,
-            true, true, null, false, false);
+        DistributionSourceParam distributionParam = new DistributionSourceParam(
+            td,
+            ranges,
+            null,
+            null,
+            true,
+            true,
+            null,
+            false,
+            false,
+            null);
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
         Task task = job.getOrCreate(currentLocation, idGenerator);
         calcVertex.setId(idGenerator.getOperatorId(task.getId()));

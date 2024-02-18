@@ -64,8 +64,16 @@ public final class DingoRangeDeleteVisitFun {
         final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
         DistributionSourceParam distributionParam = new DistributionSourceParam(
-            td, ranges, rel.getStartKey(), rel.getEndKey(), rel.isIncludeStart(), rel.isIncludeEnd(),
-            null, false, rel.isNotBetween());
+            td,
+            ranges,
+            rel.getStartKey(),
+            rel.getEndKey(),
+            rel.isIncludeStart(),
+            rel.isIncludeEnd(),
+            null,
+            false,
+            rel.isNotBetween(),
+            null);
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
         Task task;
         if (transaction != null) {

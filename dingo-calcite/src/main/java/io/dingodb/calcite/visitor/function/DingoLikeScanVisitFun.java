@@ -73,8 +73,16 @@ public final class DingoLikeScanVisitFun {
         List<Vertex> outputs = new ArrayList<>();
 
         DistributionSourceParam distributionSourceParam = new DistributionSourceParam(
-            td, distributions, rel.getPrefix(), rel.getPrefix(),
-            true, true, null, false, false);
+            td,
+            distributions,
+            rel.getPrefix(),
+            rel.getPrefix(),
+            true,
+            true,
+            null,
+            false,
+            false,
+            null);
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionSourceParam);
 
         for (RangeDistribution distribution

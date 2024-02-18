@@ -91,7 +91,8 @@ public final class DingoScanWithRelOpVisitFun {
             withEnd,
             filter,
             false,
-            false
+            false,
+            null
         );
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
         Task task;
