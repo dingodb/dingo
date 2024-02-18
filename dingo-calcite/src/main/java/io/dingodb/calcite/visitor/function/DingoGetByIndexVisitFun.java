@@ -23,6 +23,8 @@ import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
+import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
@@ -35,8 +37,8 @@ import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.DistributionSourceParam;
 import io.dingodb.exec.operator.params.GetByIndexParam;
-import io.dingodb.exec.operator.params.GetDistributionParam;
 import io.dingodb.exec.operator.params.TxnGetByIndexParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.meta.MetaService;
@@ -52,9 +54,10 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.Utils.calculatePrefixCount;
 import static io.dingodb.common.util.Utils.isNeedLookUp;
+import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_INDEX;
-import static io.dingodb.exec.utils.OperatorCodeUtils.GET_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_GET_BY_INDEX;
 
 public final class DingoGetByIndexVisitFun {
@@ -89,69 +92,82 @@ public final class DingoGetByIndexVisitFun {
 
             List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(indexValSet.getValue(), indexTd);
 
-            Vertex distributionVertex = new Vertex(GET_DISTRIBUTION, new GetDistributionParam(
-                keyTuples,
-                indexTd.keyMapping(),
-                indexTd,
-                indexRanges));
-            Task task;
-            if (transaction != null) {
-                task = job.getOrCreate(
-                    currentLocation,
-                    idGenerator,
-                    transaction.getType(),
-                    IsolationLevel.of(transaction.getIsolationLevel())
-                );
-            } else {
-                task = job.getOrCreate(currentLocation, idGenerator);
-            }
-            distributionVertex.setId(idGenerator.getOperatorId(task.getId()));
-            task.putVertex(distributionVertex);
+            KeyValueCodec codec =
+                CodecService.getDefault().createKeyValueCodec(indexTd.tupleType(), indexTd.keyMapping());
+            for (Object[] keyTuple : keyTuples) {
+                byte[] keys = codec.encodeKeyPrefix(keyTuple, calculatePrefixCount(keyTuple));
+                Vertex distributionVertex = new Vertex(CALC_DISTRIBUTION, new DistributionSourceParam(
+                    indexTd,
+                    indexRanges,
+                    keys,
+                    keys,
+                    true,
+                    true,
+                    null,
+                    false,
+                    false,
+                    keyTuple));
 
-            List<Column> columnNames = indexTd.getColumns();
-            TupleMapping tupleMapping = TupleMapping.of(
-                columnNames.stream().map(td.columns::indexOf).collect(Collectors.toList())
-            );
-            if (!needLookup) {
-                needLookup = isNeedLookUp(rel.getSelection(), tupleMapping, td.columns.size());
+                Task task;
+                if (transaction != null) {
+                    task = job.getOrCreate(
+                        currentLocation,
+                        idGenerator,
+                        transaction.getType(),
+                        IsolationLevel.of(transaction.getIsolationLevel())
+                    );
+                } else {
+                    task = job.getOrCreate(currentLocation, idGenerator);
+                }
+                distributionVertex.setId(idGenerator.getOperatorId(task.getId()));
+                task.putVertex(distributionVertex);
+
+                List<Column> columnNames = indexTd.getColumns();
+                TupleMapping tupleMapping = TupleMapping.of(
+                    columnNames.stream().map(td.columns::indexOf).collect(Collectors.toList())
+                );
+                if (!needLookup) {
+                    needLookup = isNeedLookUp(rel.getSelection(), tupleMapping, td.columns.size());
+                }
+                long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
+                Vertex vertex;
+                if (transaction != null) {
+                    vertex = new Vertex(TXN_GET_BY_INDEX, new TxnGetByIndexParam(
+                        idxId,
+                        tableInfo.getId(),
+                        tupleMapping,
+                        SqlExprUtils.toSqlExpr(rel.getFilter()),
+                        rel.getSelection(),
+                        rel.isUnique(),
+                        indexTd,
+                        td,
+                        needLookup,
+                        scanTs,
+                        transaction.getLockTimeOut()
+                    ));
+                } else {
+                    vertex = new Vertex(GET_BY_INDEX, new GetByIndexParam(
+                        idxId,
+                        tableInfo.getId(),
+                        tupleMapping,
+                        SqlExprUtils.toSqlExpr(rel.getFilter()),
+                        rel.getSelection(),
+                        rel.isUnique(),
+                        indexTd,
+                        td,
+                        needLookup
+                    ));
+                }
+                OutputHint hint = new OutputHint();
+                vertex.setHint(hint);
+                vertex.setId(idGenerator.getOperatorId(task.getId()));
+                Edge edge = new Edge(distributionVertex, vertex);
+                distributionVertex.addEdge(edge);
+                vertex.addIn(edge);
+                task.putVertex(vertex);
+                outputs.add(vertex);
             }
-            long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
-            Vertex vertex;
-            if (transaction != null) {
-                vertex = new Vertex(TXN_GET_BY_INDEX, new TxnGetByIndexParam(
-                    idxId,
-                    tableInfo.getId(),
-                    tupleMapping,
-                    SqlExprUtils.toSqlExpr(rel.getFilter()),
-                    rel.getSelection(),
-                    rel.isUnique(),
-                    indexTd,
-                    td,
-                    needLookup,
-                    scanTs,
-                    transaction.getLockTimeOut()
-                ));
-            } else {
-                vertex = new Vertex(GET_BY_INDEX, new GetByIndexParam(
-                    idxId,
-                    tableInfo.getId(),
-                    tupleMapping,
-                    SqlExprUtils.toSqlExpr(rel.getFilter()),
-                    rel.getSelection(),
-                    rel.isUnique(),
-                    indexTd,
-                    td,
-                    needLookup
-                ));
-            }
-            OutputHint hint = new OutputHint();
-            vertex.setHint(hint);
-            vertex.setId(idGenerator.getOperatorId(task.getId()));
-            Edge edge = new Edge(distributionVertex, vertex);
-            distributionVertex.addEdge(edge);
-            vertex.addIn(edge);
-            task.putVertex(vertex);
-            outputs.add(vertex);
+
         }
         return outputs;
     }

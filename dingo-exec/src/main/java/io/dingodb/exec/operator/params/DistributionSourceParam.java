@@ -55,6 +55,7 @@ public class DistributionSourceParam extends SourceParam {
     private SqlExpr filter;
     private boolean logicalNot;
     private boolean notBetween;
+    private Object[] keyTuple;
 
     public DistributionSourceParam(
         Table td,
@@ -65,7 +66,8 @@ public class DistributionSourceParam extends SourceParam {
         boolean withEnd,
         SqlExpr filter,
         boolean logicalNot,
-        boolean notBetween
+        boolean notBetween,
+        Object[] keyTuple
     ) {
         this.td = td;
         this.rangeDistribution = rangeDistribution;
@@ -76,6 +78,7 @@ public class DistributionSourceParam extends SourceParam {
         this.filter = filter;
         this.logicalNot = logicalNot;
         this.notBetween = notBetween;
+        this.keyTuple = keyTuple;
     }
 
     @Override

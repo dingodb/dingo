@@ -42,6 +42,9 @@ public abstract class IteratorSourceOperator extends SourceOperator {
             Context.ContextBuilder builder = Context.builder();
             if (tuple[0] instanceof RangeDistribution) {
                 builder.distribution((RangeDistribution) tuple[0]);
+                if (tuple.length > 1) {
+                    tuple = (Object[]) tuple[1];
+                }
             }
             ++count;
             for (Edge edge : vertex.getOutList()) {
