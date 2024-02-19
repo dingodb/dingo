@@ -38,16 +38,13 @@ import static io.dingodb.net.netty.Constant.API_T;
 
 public interface ApiProxy<T> extends InvocationHandler {
 
-    Channel channel();
-
     T defined();
 
     int timeout();
 
     void invoke(Channel ch, ByteBuf buffer, CompletableFuture<Object> future) throws Exception;
 
-    @Override
-    default Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    default Object invoke(Channel channel, Method method, Object[] args) throws Throwable {
         ApiDeclaration declaration = method.getAnnotation(ApiDeclaration.class);
         if (declaration == null) {
             return invoke(method, args);
@@ -57,7 +54,6 @@ public interface ApiProxy<T> extends InvocationHandler {
             name = method.toGenericString();
         }
         CompletableFuture<Object> future = new CompletableFuture<>();
-        Channel channel = channel();
         try {
             channel.setMessageListener(callHandler(future));
             channel.setCloseListener(ch -> closeListener(channel, future));
