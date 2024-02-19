@@ -22,6 +22,8 @@ import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.QueryOperation;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -34,6 +36,10 @@ import java.util.Iterator;
 import java.util.List;
 
 public class DingoStatement extends AvaticaStatement {
+
+//    @Setter
+//    @Getter
+//    private boolean inTransaction;
     private String warning;
 
     DingoStatement(

@@ -77,6 +77,17 @@ public class DingoVectorProjectRule extends RelRule<DingoVectorProjectRule.Confi
         if (filter != null) {
             filter.accept(visitor);
         }
+
+        /*
+          select id, distance from xx where not in (sub item size > 20)  -> generate same node to infinite loop
+          join
+          left: vector scan -> logicalProject -> filter (cause infinite loop)
+          right: agg values
+          so break
+         */
+        if (projects.size() > selectedColumns.size()) {
+            return;
+        }
         // Order naturally to help decoding in push down.
         selectedColumns.sort(Comparator.naturalOrder());
         Mapping mapping = Mappings.target(selectedColumns, vector.getRowType().getFieldCount());

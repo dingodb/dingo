@@ -73,16 +73,6 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
     @Override
     public void onMatch(RelOptRuleCall call) {
         DingoVector vector = call.rel(0);
-        if (vector.getHints() == null) {
-            return;
-        }
-        if (vector.getHints().size() == 0) {
-            return;
-        } else {
-            if (!"vector_pre".equalsIgnoreCase(vector.getHints().get(0).hintName)) {
-                return;
-            }
-        }
         RelNode relNode = getDingoGetVectorByDistance(vector.getFilter(), vector);
         // pre filter
         call.transformTo(relNode);
@@ -271,9 +261,32 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         Config DEFAULT = ImmutableDingoVectorIndexRule.Config.builder()
             .description("DingoVectorIndexRule")
             .operandSupplier(b0 ->
-                b0.operand(DingoVector.class).predicate(rel -> rel.getFilter() != null).noInputs()
+                b0.operand(DingoVector.class).predicate(rel -> {
+                    boolean condition1 = rel.getFilter() != null;
+                    boolean condition2 = rel.getHints() != null
+                        && rel.getHints().size() > 0
+                        && "vector_pre".equalsIgnoreCase(rel.getHints().get(0).hintName);
+                    return condition2 && condition1;
+                }).noInputs()
             )
             .build();
+
+//        Config VECTOR_JOIN = ImmutableDingoVectorIndexRule.Config.builder()
+//            .description("DingoVectorJoinIndexRule")
+//            .operandSupplier(
+//                b0 -> b0.operand(LogicalJoin.class).predicate(rel -> {
+//                    List<RelHint> hints = rel.getHints();
+//                    if (hints != null && hints.size() > 0) {
+//                        return "vector_pre".equalsIgnoreCase(hints.get(0).hintName);
+//                    }
+//                    return false;
+//                }).oneInput(
+//                  b1 -> b1.operand(LogicalDingoVector.class).predicate(rel -> {
+//                      return rel.getFilter() == null;
+//                  }).noInputs()
+//                )
+//            )
+//            .build();
 
         @Override
         default DingoVectorIndexRule toRule() {

@@ -33,6 +33,13 @@ public class MysqlHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) {
+        if (log.isDebugEnabled()) {
+            log.debug("mysql connection:" + mysqlConnection
+                + ", dingo connection:" + mysqlConnection.getConnection()
+                + ", channel:" + ctx.channel()
+                + ", mysql conn count:" + MysqlNettyServer.connections.size()
+            );
+        }
         MessageProcess.process(msg, mysqlConnection);
     }
 
