@@ -35,39 +35,29 @@ public:
 
     void PerformSearch(benchmark::State& state, size_t topK) {
         // Search for all given terms.
-        SearchImpl(state, topK, this->allIndices);
+        Search1KImpl(state, topK);
     }
 
-    void PerformRandomSearch(benchmark::State& state, size_t topK, size_t queryCount) {
-        // Only random choose some terms to search.
-        auto randomIndexes = WikiDatasetLoader::getInstance().generateRandomArray(queryCount, 0, this->queryTerms.size());
-        SearchImpl(state, topK, randomIndexes);
-    }
 private:
     mutex resourceMutex;
     vector<string> queryTerms;
-    vector<size_t> allIndices;
     string indexDirectory;
 
     void InitializeResources(){
         lock_guard<mutex> lock(resourceMutex);
         this->queryTerms = WikiDatasetLoader::getInstance().loadQueryTerms();
-        this->allIndices.resize(this->queryTerms.size());
-        iota(this->allIndices.begin(), this->allIndices.end(), 0);
         this->indexDirectory = WikiDatasetLoader::getInstance().getIndexDirectory(); 
     }
 
-    void SearchImpl(benchmark::State& state, size_t topK, const std::vector<size_t>& indexes) {
+    void Search1KImpl(benchmark::State& state, size_t topK) {
         // `queries` records the total number of bm25 queries.
         uint64_t queries = 0;
         for (auto _ : state) {
-            for (auto i : indexes) {
-                if (i>=10000){
-                    break;
-                }
-                tantivy_bm25_search(this->indexDirectory, this->queryTerms[i], topK, false);
+            for (size_t i = 0; i < 1000; i++)
+            {
+                tantivy_bm25_search(this->indexDirectory, this->queryTerms[ (i+queries)%queryTerms.size() ], topK, false);
             }
-            queries += indexes.size();
+            queries += 1000;
         }
 
         state.counters["QPS"] = benchmark::Counter(queries, benchmark::Counter::kIsRate);
@@ -75,55 +65,28 @@ private:
     }
 };
 
-#define WIKI_560W_RANDOM_BM25_SEARCH_BENCHMARK_REGISTER(topK, queryCount) \
-    BENCHMARK_DEFINE_F(BM25, rand_##queryCount##_k_##topK)(benchmark::State& state) \
-    { \
-        PerformRandomSearch(state, topK, queryCount); \
-    } \
-    BENCHMARK_REGISTER_F(BM25, rand_##queryCount##_k_##topK) \
-        ->Threads(1) \
-        ->Iterations(4) \
-        ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(BM25, rand_##queryCount##_k_##topK) \
-        ->Threads(2) \
-        ->Iterations(4) \
-        ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(BM25, rand_##queryCount##_k_##topK) \
-        ->Threads(4) \
-        ->Iterations(4) \
-        ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(BM25, rand_##queryCount##_k_##topK) \
-        ->Threads(8) \
-        ->Iterations(4) \
-        ->Unit(benchmark::kMillisecond);
-
-#define WIKI_560W_NORMAL_BM25_SEARCH_BENCHMARK_REGISTER(topK) \
-    BENCHMARK_DEFINE_F(BM25, normal_##queryCount##_k_##topK)(benchmark::State& state) \
+#define WIKI_560W_QUERY1K_BM25_SEARCH_BENCHMARK_REGISTER(topK) \
+    BENCHMARK_DEFINE_F(BM25, query1k_top_##topK)(benchmark::State& state) \
     { \
         PerformSearch(state, topK); \
     } \
-    BENCHMARK_REGISTER_F(BM25, normal_##queryCount##_k_##topK) \
+    BENCHMARK_REGISTER_F(BM25, query1k_top_##topK) \
         ->Threads(1) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(BM25, normal_##queryCount##_k_##topK) \
+    BENCHMARK_REGISTER_F(BM25, query1k_top_##topK) \
         ->Threads(2) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(BM25, normal_##queryCount##_k_##topK) \
+    BENCHMARK_REGISTER_F(BM25, query1k_top_##topK) \
         ->Threads(4) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond); \
-    BENCHMARK_REGISTER_F(BM25, normal_##queryCount##_k_##topK) \
+    BENCHMARK_REGISTER_F(BM25, query1k_top_##topK) \
         ->Threads(8) \
         ->Iterations(4) \
         ->Unit(benchmark::kMillisecond);
 
 
-// WIKI_560W_RANDOM_BM25_SEARCH_BENCHMARK_REGISTER(10, 1000);
-// WIKI_560W_RANDOM_BM25_SEARCH_BENCHMARK_REGISTER(100, 1000);
-// WIKI_560W_RANDOM_BM25_SEARCH_BENCHMARK_REGISTER(500, 1000);
-
-WIKI_560W_NORMAL_BM25_SEARCH_BENCHMARK_REGISTER(10);
-// WIKI_560W_NORMAL_BM25_SEARCH_BENCHMARK_REGISTER(100);
-WIKI_560W_NORMAL_BM25_SEARCH_BENCHMARK_REGISTER(500);
+WIKI_560W_QUERY1K_BM25_SEARCH_BENCHMARK_REGISTER(10);
+WIKI_560W_QUERY1K_BM25_SEARCH_BENCHMARK_REGISTER(500);
