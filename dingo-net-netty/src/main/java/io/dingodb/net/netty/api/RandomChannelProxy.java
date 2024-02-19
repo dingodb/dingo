@@ -49,9 +49,6 @@ public class RandomChannelProxy<T> implements ApiProxy<T>, InvocationHandler {
     @Getter
     private final int timeout;
 
-    private boolean initializeChannel = false;
-    private Channel channel;
-
     public RandomChannelProxy(Supplier<Location> locationSupplier) {
         this(locationSupplier, null);
     }
@@ -64,15 +61,6 @@ public class RandomChannelProxy<T> implements ApiProxy<T>, InvocationHandler {
         this.locationSupplier = locationSupplier;
         this.defined = defined;
         this.timeout = timeout;
-    }
-
-    @Override
-    public synchronized Channel channel() {
-        if (initializeChannel) {
-            return channel;
-        }
-        initializeChannel = true;
-        return channel = netService.newChannel(locationSupplier.get());
     }
 
     @Override
@@ -92,12 +80,13 @@ public class RandomChannelProxy<T> implements ApiProxy<T>, InvocationHandler {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        Channel channel = netService.newChannel(locationSupplier.get());
         try {
-            return ApiProxy.super.invoke(proxy, method, args);
+            return ApiProxy.super.invoke(channel, method, args);
         } catch (Exception e) {
             log.error(
                 "Invoke proxy method [{}] on [{}/{}] error.",
-                method.toGenericString(), channel().remoteLocation(), channel().channelId(), e
+                method.toGenericString(), channel.remoteLocation(), channel.channelId(), e
             );
             throw Utils.extractThrowable(e);
         }

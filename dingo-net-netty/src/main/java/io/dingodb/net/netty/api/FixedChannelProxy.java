@@ -71,11 +71,11 @@ public class FixedChannelProxy<T> implements ApiProxy<T>, InvocationHandler {
     @Override
     public synchronized Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         try {
-            return ApiProxy.super.invoke(proxy, method, args);
+            return ApiProxy.super.invoke(channel, method, args);
         } catch (Exception e) {
             log.error(
                 "Invoke proxy method [{}] on [{}/{}] error.",
-                method.toGenericString(), channel().remoteLocation(), channel().channelId(), e
+                method.toGenericString(), channel.remoteLocation(), channel.channelId(), e
             );
             throw Utils.extractThrowable(e);
         }
