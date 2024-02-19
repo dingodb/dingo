@@ -109,6 +109,7 @@ public final class TxnGetByIndexOperator extends FilterProjectOperator {
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
             .calcPartId(keys, ranges);
 
+        keys = CodecService.getDefault().setId(keys, regionId.domain);
         Object[] local = createGetLocal(
             keys,
             txnId,
