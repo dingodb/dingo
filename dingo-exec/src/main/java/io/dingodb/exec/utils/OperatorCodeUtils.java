@@ -38,6 +38,7 @@ public final class OperatorCodeUtils {
     public static final CommonId TXN_LIKE_SCAN = new CommonId(CommonId.CommonType.OP, SOURCE, 11);
     public static final CommonId SCAN_CACHE = new CommonId(CommonId.CommonType.OP, SOURCE, 12);
     public static final CommonId INFO_SCHEMA_SCAN = new CommonId(CommonId.CommonType.OP, SOURCE, 13);
+    public static final CommonId TXN_PART_VECTOR = new CommonId(CommonId.CommonType.OP, SOURCE, 14);
 
     // op
     public static final CommonId PROJECT = new CommonId(CommonId.CommonType.OP, OP, 20);
@@ -74,19 +75,18 @@ public final class OperatorCodeUtils {
     public static final CommonId PART_RANGE_SCAN = new CommonId(CommonId.CommonType.OP, OP, 49);
     public static final CommonId PART_RANGE_DELETE = new CommonId(CommonId.CommonType.OP, OP, 50);
     public static final CommonId TXN_PART_RANGE_SCAN = new CommonId(CommonId.CommonType.OP, OP, 51);
-    public static final CommonId GET_BY_INDEX = new CommonId(CommonId.CommonType.OP, SOURCE, 52);
+    public static final CommonId GET_BY_INDEX = new CommonId(CommonId.CommonType.OP, OP, 52);
     public static final CommonId GET_BY_KEYS = new CommonId(CommonId.CommonType.OP, OP, 53);
     public static final CommonId TXN_PART_RANGE_DELETE = new CommonId(CommonId.CommonType.OP, OP, 54);
     public static final CommonId TXN_CLEAN_CACHE = new CommonId(CommonId.CommonType.OP, OP, 55);
     public static final CommonId COPY = new CommonId(CommonId.CommonType.OP, OP, 56);
+    
     public static final CommonId PIPE_OP = new CommonId(CommonId.CommonType.OP, OP, 60);
-
     public static final CommonId CACHE_OP = new CommonId(CommonId.CommonType.OP, OP, 61);
     public static final CommonId SCAN_WITH_NO_OP = new CommonId(CommonId.CommonType.OP, OP, 62);
     public static final CommonId SCAN_WITH_PIPE_OP = new CommonId(CommonId.CommonType.OP, OP, 63);
     public static final CommonId SCAN_WITH_CACHE_OP = new CommonId(CommonId.CommonType.OP, OP, 64);
     public static final CommonId TXN_GET_BY_KEYS = new CommonId(CommonId.CommonType.OP, OP, 65);
-    public static final CommonId TXN_PART_VECTOR = new CommonId(CommonId.CommonType.OP, SOURCE, 65);
     public static final CommonId TXN_SCAN_WITH_NO_OP = new CommonId(CommonId.CommonType.OP, OP, 66);
     public static final CommonId TXN_SCAN_WITH_PIPE_OP = new CommonId(CommonId.CommonType.OP, OP, 67);
     public static final CommonId TXN_SCAN_WITH_CACHE_OP = new CommonId(CommonId.CommonType.OP, OP, 68);
