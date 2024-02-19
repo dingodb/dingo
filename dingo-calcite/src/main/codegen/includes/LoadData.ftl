@@ -33,14 +33,14 @@ SqlLoadData SqlLoadData(): {
   <QUOTED_STRING> { filePath = token.image.replace("'", "").toLowerCase(); }
   <INTO> <TABLE> table = CompoundIdentifier()
    [
-      <CHARACTER> <SET> <QUOTED_STRING> { exportCharset = token.image.replace(",", ""); }
+      <CHARACTER> <SET> <QUOTED_STRING> { exportCharset = token.image.replace("'", ""); }
    ]
    [
      <FIELDS>
      [<TERMINATED> <BY> [<QUOTED_STRING> { terminated = getSpecialBytes(token.image); }]
                         [<BINARY_STRING_LITERAL> { terminated = getSpecialHexBytes(token.image);}]
      ]
-     [<ENCLOSED> <BY> <QUOTED_STRING> { enclosed = token.image.replace(",", ""); } ]
+     [<ENCLOSED> <BY> <QUOTED_STRING> { enclosed = token.image.replace("'", ""); } ]
      [<ESCAPED> <BY> [<QUOTED_STRING> { escaped = getSpecialBytes(token.image); }]
                      [<BINARY_STRING_LITERAL> { escaped = getSpecialHexBytes(token.image);}]
      ]

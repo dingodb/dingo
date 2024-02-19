@@ -1388,7 +1388,7 @@ ExportOptions exportOptions(): {
       outfile = token.image.replace("'", "");
     }
     [
-       <CHARACTER> <SET> <QUOTED_STRING> { exportCharset = token.image.replace(",", ""); }
+       <CHARACTER> <SET> <QUOTED_STRING> { exportCharset = token.image.replace("'", ""); }
     ]
     [
        <FIELDS>

@@ -18,15 +18,17 @@ package io.dingodb.driver.mysql;
 
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.mysql.netty.MysqlIdleStateHandler;
+import io.dingodb.driver.mysql.netty.MysqlNettyServer;
 import io.dingodb.driver.mysql.packet.AuthPacket;
 import io.netty.channel.socket.SocketChannel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Set;
 
+@Slf4j
 public class MysqlConnection {
     @Getter
     @Setter
@@ -76,5 +78,6 @@ public class MysqlConnection {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        log.info("mysql connections count:" + MysqlNettyServer.connections.size());
     }
 }

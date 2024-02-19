@@ -132,7 +132,8 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         destroy();
-        super.channelInactive(ctx);
+        //super.channelInactive(ctx);
+        ctx.close();
     }
 
     @Override
@@ -252,7 +253,8 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
                     }
                     service = null;
                     idleTimeoutFuture = null;
-                    log.info("this channel will close");
+                    log.info("this channel will close, mysql connection current count:"
+                        + MysqlNettyServer.connections.size());
                     ctx.channel().close();
                 } catch (Throwable t) {
                     ctx.fireExceptionCaught(t);
