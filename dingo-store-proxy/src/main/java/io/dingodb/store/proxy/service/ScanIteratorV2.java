@@ -136,6 +136,11 @@ public class ScanIteratorV2 implements Iterator<KeyValue>, AutoCloseable {
         channelProvider.before(request);
         KvScanContinueResponseV2 res = storeService.kvScanContinueV2(requestTs, request);
         channelProvider.after(res);
+        if (res != null && res.getError() != null && res.getError().getErrcode() != OK) {
+            hasMore = false;
+            scanRelease();
+            throw new RuntimeException(res.getError().getErrmsg());
+        }
         delegateIterator = Optional.mapOrGet(res.getKvs(), List::iterator, Collections::emptyIterator);
         if (!res.isHasMore()) {
             hasMore = false;

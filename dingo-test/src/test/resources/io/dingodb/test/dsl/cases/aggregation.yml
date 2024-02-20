@@ -44,7 +44,6 @@ cases:
           - 'STRING, INT, LONG, FLOAT, DOUBLE, STRING, STRING, TIMESTAMP'
           - 'zhngsna, 181, 702498643279, 2000.0, 2345.0, 2023-02-05, 22:10:10, 2024-05-04 12:00:00'
   - name: 'avg with filter'
-    only: true
     use:
       table: table1
     steps:

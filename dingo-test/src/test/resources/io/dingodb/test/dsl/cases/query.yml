@@ -5,7 +5,7 @@ tables:
     init: { file: vs_2.data.sql, count: 1 }
   table1:
     create: { file: i4k_vs0_i40_f80.create.sql }
-    init: { file: i4k_vs0_i40_f80.data.sql, count: 2 }
+    init: { file: i4k_vs0_i40_f80.data.sql, count: 3 }
 cases:
   - name: 'no primary key'
     use:
@@ -26,7 +26,8 @@ cases:
           - 'DECIMAL'
           - '10'
           - '625'
-  - name: 'function `pow(DOUBLE, INT)`'
+          - '17576'
+  - name: 'POW(DOUBLE, INT)'
     use:
       table: table1
     steps:
@@ -36,7 +37,8 @@ cases:
           - 'DOUBLE'
           - '2.58'
           - '11904.9921'
-  - name: 'function `mod`'
+          - '27.0'
+  - name: 'MOD'
     use:
       table: table1
     steps:
@@ -46,3 +48,13 @@ cases:
           - 'DECIMAL'
           - '2.58'
           - '9.11'
+          - '3.0'
+  - name: 'Concat string and non-string'
+    use:
+      table: table1
+    steps:
+      - sql: 'select name || amount || age naa from {table} where id = 3'
+        result:
+          - 'naa'
+          - 'STRING'
+          - 'Cindy3.026'
