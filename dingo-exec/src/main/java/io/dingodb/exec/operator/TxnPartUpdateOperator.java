@@ -30,14 +30,12 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnPartUpdateParam;
-import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
-import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -89,22 +87,31 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     .map(Column::getName)
                     .collect(Collectors.toList()));
                 tableId = context.getIndexId();
-                Object[] finalNewTuple = newTuple;
-                newTuple = columnIndices.stream().map(c -> finalNewTuple[c]).toArray();
+                if (!param.isPessimisticTxn()) {
+                    Object[] finalNewTuple = newTuple;
+                    newTuple = columnIndices.stream().map(c -> finalNewTuple[c]).toArray();
+                }
                 schema = indexTable.tupleType();
                 localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
                 codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
             }
             StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
             Object[] newTuple2 = (Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE);
-            KeyValue keyValue = wrap(codec::encode).apply(newTuple2);
-            CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
+
+            byte[] key = wrap(codec::encodeKey).apply(newTuple);
+            CodecService.getDefault().setId(key, partId.domain);
+            byte[] vectorKey;
+            if (context.getIndexId() != null) {
+                vectorKey = codec.encodeKeyPrefix(newTuple, 1);
+                CodecService.getDefault().setId(vectorKey, partId.domain);
+            } else {
+                vectorKey = key;
+            }
             byte[] primaryLockKey = param.getPrimaryLockKey();
             byte[] txnIdBytes = vertex.getTask().getTxnId().encode();
             byte[] tableIdBytes = tableId.encode();
             byte[] partIdBytes = partId.encode();
             if (param.isPessimisticTxn()) {
-                byte[] keyValueKey = keyValue.getKey();
                 byte[] jobIdByte = vertex.getTask().getJobId().encode();
                 long forUpdateTs = vertex.getTask().getJobId().seq;
                 byte[] forUpdateTsByte = PrimitiveCodec.encodeLong(forUpdateTs);
@@ -112,7 +119,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 // dataKeyValue   [10_txnId_tableId_partId_a_putIf, value]
                 byte[] dataKey = ByteUtils.encode(
                     CommonId.CommonType.TXN_CACHE_DATA,
-                    keyValueKey,
+                    key,
                     Op.PUT.getCode(),
                     len,
                     txnIdBytes,
@@ -120,7 +127,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     partIdBytes
                 );
                 if (!updated) {
-                    log.warn("{} updated is false key is {}", txnId, Arrays.toString(keyValue.getKey()));
+                    log.warn("{} updated is false key is {}", txnId, Arrays.toString(key));
                     byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
                     KeyValue rollBackKeyValue = new KeyValue(rollBackKey, null);
                     localStore.put(rollBackKeyValue);
@@ -129,18 +136,20 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 KeyValue oldKeyValue = localStore.get(dataKey);
                 byte[] primaryLockKeyBytes = (byte[]) ByteUtils.decodePessimisticExtraKey(primaryLockKey)[5];
                 if (log.isDebugEnabled()) {
-                    log.info("{} updated is true key is {}", txnId, Arrays.toString(keyValueKey));
+                    log.info("{} updated is true key is {}", txnId, Arrays.toString(key));
                 }
-                if (!(ByteArrayUtils.compare(keyValueKey, primaryLockKeyBytes, 1) == 0)) {
+                if (!(ByteArrayUtils.compare(key, primaryLockKeyBytes, 1) == 0)) {
                     // This key appears for the first time in the current transaction
                     if (oldKeyValue == null) {
-                        KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), keyValue.getKey(), param.getLockTimeOut());
+                        KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
                         if (kvKeyValue == null || kvKeyValue.getValue() == null) {
                             byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
                             KeyValue rollBackKeyValue = new KeyValue(rollBackKey, null);
                             localStore.put(rollBackKeyValue);
                             return true;
                         }
+                        KeyValue keyValue = wrap(codec::encode).apply(newTuple2);
+                        CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
                         // write data
                         keyValue.setKey(dataKey);
                         if (localStore.put(keyValue)
@@ -149,6 +158,8 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                             param.inc();
                         }
                     } else {
+                        KeyValue keyValue = wrap(codec::encode).apply(newTuple2);
+                        CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
                         // This key appears repeatedly in the current transaction
                         repeatKey(param, keyValue, txnId, localStore, dataKey,
                              context, updated);
@@ -158,13 +169,15 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     // 1、first put primary lock
                     if (oldKeyValue == null) {
                         // first put primary lock
-                        KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), keyValue.getKey(), param.getLockTimeOut());
+                        KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
                         if (kvKeyValue == null || kvKeyValue.getValue() == null) {
                             byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
                             KeyValue rollBackKeyValue = new KeyValue(rollBackKey, null);
                             localStore.put(rollBackKeyValue);
                             return true;
                         }
+                        KeyValue keyValue = wrap(codec::encode).apply(newTuple2);
+                        CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
                         // write data
                         keyValue.setKey(dataKey);
                         if (localStore.put(keyValue)
@@ -173,12 +186,16 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                             param.inc();
                         }
                     } else {
+                        KeyValue keyValue = wrap(codec::encode).apply(newTuple2);
+                        CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
                         // primary lock existed ：
                         repeatKey(param, keyValue, txnId, localStore, dataKey,
                             context, updated);
                     }
                 }
             } else {
+                KeyValue keyValue = wrap(codec::encode).apply(newTuple2);
+                CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
                 keyValue.setKey(
                     ByteUtils.encode(
                         CommonId.CommonType.TXN_CACHE_DATA,
