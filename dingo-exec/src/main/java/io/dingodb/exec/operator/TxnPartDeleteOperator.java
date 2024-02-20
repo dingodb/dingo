@@ -26,14 +26,12 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnPartDeleteParam;
-import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
-import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -66,15 +64,24 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                 .map(Column::getName)
                 .collect(Collectors.toList()));
             tableId = context.getIndexId();
-            Object[] finalTuple = tuple;
-            tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
+            if (!param.isPessimisticTxn()) {
+                Object[] finalTuple = tuple;
+                tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
+            }
             localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
             codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
         }
         StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
-        KeyValue kv = wrap(codec::encode).apply(tuple);
-        byte[] keys = kv.getKey();
+
+        byte[] keys = wrap(codec::encodeKey).apply(tuple);
         CodecService.getDefault().setId(keys, partId.domain);
+        byte[] vectorKey;
+        if (context.getIndexId() != null) {
+            vectorKey = codec.encodeKeyPrefix(tuple, 1);
+            CodecService.getDefault().setId(vectorKey, partId.domain);
+        } else {
+            vectorKey = keys;
+        }
         byte[] primaryLockKey = param.getPrimaryLockKey();
         byte[] txnIdBytes = vertex.getTask().getTxnId().encode();
         byte[] tableIdBytes = tableId.encode();
@@ -100,10 +107,16 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
             if (!(ByteArrayUtils.compare(keyValueKey, primaryLockKeyBytes, 1) == 0)) {
                 // This key appears for the first time in the current transaction
                 if (oldKeyValue == null) {
+                    KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
+                    if (kvKeyValue == null || kvKeyValue.getValue() == null) {
+                        return true;
+                    }
                     byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
                     if (localStore.get(rollBackKey) != null) {
                         localStore.deletePrefix(rollBackKey);
                     }
+                    KeyValue kv = wrap(codec::encode).apply(tuple);
+                    CodecService.getDefault().setId(keys, partId.domain);
                     // write data
                     KeyValue dataKeyValue = new KeyValue(dataKey, kv.getValue());
                     if (localStore.put(dataKeyValue)
@@ -128,16 +141,14 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                     byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
                     if (localStore.get(rollBackKey) != null) {
                         localStore.deletePrefix(rollBackKey);
-                    } else {
-                        KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), keyValueKey, param.getLockTimeOut());
-                        if (kvKeyValue == null || kvKeyValue.getValue() == null) {
-                            // first put primary lock
-                            // write data
-                            KeyValue dataKeyValue = new KeyValue(dataKey, kv.getValue());
-                            localStore.put(dataKeyValue);
-                            return true;
-                        }
                     }
+                    KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
+                    if (kvKeyValue == null || kvKeyValue.getValue() == null) {
+                        // first put primary lock
+                        return true;
+                    }
+                    KeyValue kv = wrap(codec::encode).apply(tuple);
+                    CodecService.getDefault().setId(keys, partId.domain);
                     // first put primary lock
                     // write data
                     KeyValue dataKeyValue = new KeyValue(dataKey, kv.getValue());
@@ -157,6 +168,8 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                 }
             }
         } else {
+            KeyValue kv = wrap(codec::encode).apply(tuple);
+            CodecService.getDefault().setId(keys, partId.domain);
             byte[] resultKeys = ByteUtils.encode(
                 CommonId.CommonType.TXN_CACHE_DATA,
                 keys,

@@ -339,11 +339,18 @@ public class TransactionStoreInstance {
             TxnBatchGetResponse response;
             if (indexService != null) {
                 response = indexService.txnBatchGet(txnBatchGetRequest);
+                if (response.getTxnResult() == null) {
+                    return response.getVectors().stream()
+                        .map(vectorWithId -> vectorWithId != null ?
+                            new io.dingodb.common.store.KeyValue(vectorWithId.getTableData().getTableKey(),
+                                vectorWithId.getTableData().getTableValue()) : null)
+                        .collect(Collectors.toList());
+                }
             } else {
                 response = storeService.txnBatchGet(txnBatchGetRequest);
-            }
-            if (response.getTxnResult() == null) {
-                return response.getKvs().stream().map(MAPPER::kvFrom).collect(Collectors.toList());
+                if (response.getTxnResult() == null) {
+                    return response.getKvs().stream().map(MAPPER::kvFrom).collect(Collectors.toList());
+                }
             }
             long elapsed = System.currentTimeMillis() - start;
             if (elapsed > timeOut) {

@@ -69,8 +69,10 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 .map(Column::getName)
                 .collect(Collectors.toList()));
             tableId = context.getIndexId();
-            Object[] finalTuple = tuple;
-            tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
+            if (!param.isPessimisticTxn()) {
+                Object[] finalTuple = tuple;
+                tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
+            }
             schema = indexTable.tupleType();
             localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
             codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
@@ -79,6 +81,13 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
         KeyValue keyValue = wrap(codec::encode).apply(newTuple);
         CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
+        byte[] key;
+        if (context.getIndexId() != null) {
+            key = codec.encodeKeyPrefix(newTuple, 1);
+            CodecService.getDefault().setId(key, partId.domain);
+        } else {
+            key = keyValue.getKey();
+        }
         byte[] primaryLockKey = param.getPrimaryLockKey();
         byte[] txnIdByte = txnId.encode();
         byte[] tableIdByte = tableId.encode();
@@ -101,10 +110,10 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             if (!(ByteArrayUtils.compare(keyValueKey, primaryLockKeyBytes, 1) == 0)) {
                 // This key appears for the first time in the current transaction
                 if (oldKeyValue == null) {
-                    KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), keyValueKey, param.getLockTimeOut());
+                    KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), key, param.getLockTimeOut());
                     if (kvKeyValue != null && kvKeyValue.getValue() != null) {
                         throw new DuplicateEntryException("Duplicate entry " +
-                            TransactionUtil.duplicateEntryKey(CommonId.decode(tableIdByte), keyValueKey) + " for key 'PRIMARY'");
+                            TransactionUtil.duplicateEntryKey(tableId, key) + " for key 'PRIMARY'");
                     }
                     byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
                     if (localStore.get(rollBackKey) != null) {
