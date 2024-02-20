@@ -200,6 +200,8 @@ public class MysqlCommands {
             MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, sqlException);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+            //MysqlResponseHandler.responseError(bakPacketId, mysqlConnection.channel, ErrorCode.ER_UNKNOWN_ERROR, "");
+            throw e;
         } finally {
             try {
                 if (statement != null) {

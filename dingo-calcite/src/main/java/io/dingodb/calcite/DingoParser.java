@@ -42,6 +42,7 @@ import io.dingodb.calcite.rel.DingoCost;
 import io.dingodb.calcite.rel.LogicalDingoRoot;
 import io.dingodb.calcite.rel.LogicalExportData;
 import io.dingodb.calcite.rule.DingoRules;
+import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.traits.DingoRelStreamingDef;
@@ -86,6 +87,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.io.File;
 import java.sql.Connection;
 import java.util.HashMap;
 import java.util.List;
@@ -235,6 +237,10 @@ public class DingoParser {
 
             if (needExport(sqlNode)) {
                 io.dingodb.calcite.grammar.dql.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode;
+                File file = new File(sqlSelect.getOutfile());
+                if (file.exists()) {
+                    throw DingoResource.DINGO_RESOURCE.exportFileExists(sqlSelect.getOutfile()).ex();
+                }
                 relNode = new LogicalExportData(
                     cluster,
                     planner.emptyTraitSet(),
@@ -246,7 +252,8 @@ public class DingoParser {
                     sqlSelect.getLineTerminated(),
                     sqlSelect.getEscaped(),
                     sqlSelect.getCharset(),
-                    sqlSelect.getLineStarting()
+                    sqlSelect.getLineStarting(),
+                    context.getTimeZone()
                 );
             }
         }

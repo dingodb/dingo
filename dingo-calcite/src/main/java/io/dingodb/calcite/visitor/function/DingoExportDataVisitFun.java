@@ -65,7 +65,8 @@ public final class DingoExportDataVisitFun {
                 rel.getLineTerminated(),
                 rel.getEscaped(),
                 rel.getCharset(),
-                rel.getLineStarting()
+                rel.getLineStarting(),
+                rel.getTimeZone()
             );
 
             return new Vertex(EXPORT_DATA, exportDataParam);

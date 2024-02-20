@@ -30,6 +30,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
+import java.util.TimeZone;
 
 public class DingoExportData extends SingleRel implements DingoRel {
 
@@ -57,6 +58,9 @@ public class DingoExportData extends SingleRel implements DingoRel {
     @Getter
     private final byte[] lineStarting;
 
+    @Getter
+    private final TimeZone timeZone;
+
     /**
      * Creates a <code>SingleRel</code>.
      *
@@ -74,7 +78,8 @@ public class DingoExportData extends SingleRel implements DingoRel {
                            byte[] lineTerminated,
                            byte[] escaped,
                            String charset,
-                           byte[] lineStarting) {
+                           byte[] lineStarting,
+                           TimeZone timeZone) {
         super(cluster, traits, input);
         this.outfile = outfile;
         this.terminated = terminated;
@@ -84,6 +89,7 @@ public class DingoExportData extends SingleRel implements DingoRel {
         this.escaped = escaped;
         this.charset = charset;
         this.lineStarting = lineStarting;
+        this.timeZone = timeZone;
     }
 
     @Override
@@ -119,6 +125,7 @@ public class DingoExportData extends SingleRel implements DingoRel {
             lineTerminated,
             escaped,
             charset,
-            lineStarting);
+            lineStarting,
+            timeZone);
     }
 }

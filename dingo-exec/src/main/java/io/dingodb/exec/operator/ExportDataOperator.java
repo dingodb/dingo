@@ -29,6 +29,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -38,6 +39,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static io.dingodb.common.mysql.constant.ServerConstant.ARRAY_SPLIT;
+import static io.dingodb.common.mysql.util.DataTimeUtils.getTime;
 import static io.dingodb.common.mysql.util.DataTimeUtils.getTimeStamp;
 
 @Slf4j
@@ -97,6 +99,8 @@ public class ExportDataOperator extends SoleOutOperator {
                     writer.write(base64String.getBytes());
                 } else if (val instanceof Timestamp) {
                     writer.write(getTimeStamp((Timestamp) val).getBytes());
+                } else if (val instanceof Time) {
+                    writer.write(getTime((Time) val, param.getLocalCalendar()).getBytes());
                 } else if (val instanceof Boolean) {
                     boolean valBool = (boolean) val;
                     if (valBool) {

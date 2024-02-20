@@ -24,6 +24,7 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 
 import java.util.List;
+import java.util.TimeZone;
 
 public class LogicalExportData extends SingleRel {
 
@@ -51,6 +52,9 @@ public class LogicalExportData extends SingleRel {
     @Getter
     private final byte[] lineStarting;
 
+    @Getter
+    private final TimeZone timeZone;
+
     public LogicalExportData(RelOptCluster cluster,
                              RelTraitSet traits,
                              RelNode input,
@@ -61,7 +65,8 @@ public class LogicalExportData extends SingleRel {
                              byte[] lineTerminated,
                              byte[] escaped,
                              String charset,
-                             byte[] lineStarting) {
+                             byte[] lineStarting,
+                             TimeZone timeZone) {
         super(cluster, traits, input);
         this.outfile = outfile;
         this.terminated = terminated;
@@ -71,6 +76,7 @@ public class LogicalExportData extends SingleRel {
         this.escaped = escaped;
         this.charset = charset;
         this.lineStarting = lineStarting;
+        this.timeZone = timeZone;
     }
 
     @Override
@@ -83,6 +89,6 @@ public class LogicalExportData extends SingleRel {
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new LogicalExportData(getCluster(), traitSet, sole(inputs),
-            outfile, terminated, statementId, enclosed, lineTerminated, escaped, charset, lineStarting);
+            outfile, terminated, statementId, enclosed, lineTerminated, escaped, charset, lineStarting, timeZone);
     }
 }

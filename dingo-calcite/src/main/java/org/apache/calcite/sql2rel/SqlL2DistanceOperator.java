@@ -22,11 +22,7 @@ import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.SqlWriter;
-import org.apache.calcite.sql.type.SqlOperandTypeChecker;
-import org.apache.calcite.sql.type.SqlOperandTypeInference;
-import org.apache.calcite.sql.type.SqlReturnTypeInference;
 import org.apache.calcite.sql.type.SqlTypeFamily;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static org.apache.calcite.sql.type.OperandTypes.family;
 import static org.apache.calcite.sql.type.SqlAppointReturnTypeInference.FLOAT;

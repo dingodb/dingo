@@ -112,11 +112,11 @@ public class TxnImportDataOperation {
     }
 
     public static CacheToObject getCacheToObject(Object[] tuples) {
-        CommonId tableId = (CommonId) tuples[1];
-        CommonId newPartId = (CommonId) tuples[2];
-        int op = (byte) tuples[3];
-        byte[] key = (byte[]) tuples[4];
-        byte[] value = (byte[]) tuples[5];
+        CommonId tableId = (CommonId) tuples[2];
+        CommonId newPartId = (CommonId) tuples[3];
+        int op = (byte) tuples[4];
+        byte[] key = (byte[]) tuples[5];
+        byte[] value = (byte[]) tuples[6];
         return new CacheToObject(TransactionCacheToMutation.cacheToMutation(
             op, key, value,0L, tableId, newPartId), tableId, newPartId
         );
@@ -199,12 +199,12 @@ public class TxnImportDataOperation {
             isolationLevel, TransactionType.OPTIMISTIC, timeOut);
         param.init(null);
         for (Object[] tuples : secondList) {
-            CommonId txnId = (CommonId) tuples[0];
-            CommonId tableId = (CommonId) tuples[1];
-            CommonId newPartId = (CommonId) tuples[2];
-            int op = (byte) tuples[3];
-            byte[] key = (byte[]) tuples[4];
-            byte[] value = (byte[]) tuples[5];
+            CommonId txnId = (CommonId) tuples[1];
+            CommonId tableId = (CommonId) tuples[2];
+            CommonId newPartId = (CommonId) tuples[3];
+            int op = (byte) tuples[4];
+            byte[] key = (byte[]) tuples[5];
+            byte[] value = (byte[]) tuples[6];
             Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, 0L, tableId, newPartId);
             CommonId partId = param.getPartId();
             if (partId == null) {
@@ -271,10 +271,10 @@ public class TxnImportDataOperation {
             commitTs, primaryKey, TransactionType.OPTIMISTIC);
         param.init(null);
         for (Object[] tuples : secondData) {
-            CommonId txnId = (CommonId) tuples[0];
-            CommonId tableId = (CommonId) tuples[1];
-            CommonId newPartId = (CommonId) tuples[2];
-            byte[] key = (byte[]) tuples[4];
+            CommonId txnId = (CommonId) tuples[1];
+            CommonId tableId = (CommonId) tuples[2];
+            CommonId newPartId = (CommonId) tuples[3];
+            byte[] key = (byte[]) tuples[5];
             param.addKey(key);
             CommonId partId = param.getPartId();
             if (partId == null) {
@@ -382,10 +382,10 @@ public class TxnImportDataOperation {
             RollBackParam param = new RollBackParam(dingoType, isolationLevel, startTs, TransactionType.OPTIMISTIC);
             param.init(null);
             for (Object[] tuples : tupleList) {
-                CommonId txnId = (CommonId) tuples[0];
-                CommonId tableId = (CommonId) tuples[1];
-                CommonId newPartId = (CommonId) tuples[2];
-                byte[] key = (byte[]) tuples[4];
+                CommonId txnId = (CommonId) tuples[1];
+                CommonId tableId = (CommonId) tuples[2];
+                CommonId newPartId = (CommonId) tuples[3];
+                byte[] key = (byte[]) tuples[5];
                 param.addKey(key);
                 CommonId partId = param.getPartId();
                 if (partId == null) {
