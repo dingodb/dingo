@@ -1,0 +1,31 @@
+name: Coverage
+
+on:
+  push:
+    branches: [tantivy_0.21.1]
+
+# Ensures that we cancel running jobs for the same PR / same workflow.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        run: rustup toolchain install nightly-2023-09-10 --profile minimal --component llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Generate code coverage
+        run: cargo +nightly-2023-09-10 llvm-cov --all-features --workspace --doctests --lcov --output-path lcov.info
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4.0.1
+        continue-on-error: true
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+          slug: MochiXu/tantivy-search
+          files: lcov.info
+          fail_ci_if_error: true
+    
