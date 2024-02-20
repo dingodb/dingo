@@ -58,7 +58,8 @@ public class DingoExportDataRule extends ConverterRule {
             logicalExportData.getLineTerminated(),
             logicalExportData.getEscaped(),
             logicalExportData.getCharset(),
-            logicalExportData.getLineStarting()
+            logicalExportData.getLineStarting(),
+            logicalExportData.getTimeZone()
         );
     }
 }

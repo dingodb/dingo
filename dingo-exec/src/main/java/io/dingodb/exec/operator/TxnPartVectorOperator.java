@@ -32,6 +32,7 @@ import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreService;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ import java.util.List;
 
 import static io.dingodb.exec.operator.TxnGetByKeysOperator.getLocalStore;
 
+@Slf4j
 public class TxnPartVectorOperator extends FilterProjectSourceOperator {
 
     public static final TxnPartVectorOperator INSTANCE = new TxnPartVectorOperator();
@@ -128,7 +130,7 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                 .stream()
                 .filter(element -> element.getName().equalsIgnoreCase(name))
                 .findFirst();
-            txnVecSelection[i] = result.map(param.getIndexTable().getColumns()::indexOf)
+            txnVecSelection[i] = result.map(param.getTableDataColList()::indexOf)
                 .orElseThrow(() -> new RuntimeException("not found vector selection"));
         }
         return TupleMapping.of(txnVecSelection);

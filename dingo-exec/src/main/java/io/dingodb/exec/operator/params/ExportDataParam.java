@@ -16,8 +16,11 @@
 
 package io.dingodb.exec.operator.params;
 
-import io.dingodb.common.util.ByteUtils;
 import lombok.Getter;
+
+import java.util.Calendar;
+import java.util.Locale;
+import java.util.TimeZone;
 
 @Getter
 public class ExportDataParam extends AbstractParams {
@@ -37,6 +40,8 @@ public class ExportDataParam extends AbstractParams {
 
     private final String charset;
 
+    private final Calendar localCalendar;
+
     public ExportDataParam(String outfile,
                            byte[] terminated,
                            String id,
@@ -44,7 +49,8 @@ public class ExportDataParam extends AbstractParams {
                            byte[] lineTerminated,
                            byte[] escaped,
                            String charset,
-                           byte[] lineStarting) {
+                           byte[] lineStarting,
+                           TimeZone timeZone) {
         this.outfile = outfile;
         this.terminated = terminated;
         this.id = id;
@@ -55,5 +61,6 @@ public class ExportDataParam extends AbstractParams {
         this.escaped = escaped;
         this.charset = charset;
         this.lineStarting = lineStarting;
+        this.localCalendar = Calendar.getInstance(timeZone, Locale.ROOT);
     }
 }

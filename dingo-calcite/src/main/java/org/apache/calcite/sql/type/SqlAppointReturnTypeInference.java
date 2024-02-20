@@ -34,7 +34,7 @@ public class SqlAppointReturnTypeInference implements SqlReturnTypeInference  {
         = new SqlAppointReturnTypeInference(ReturnTypes.ARG0, SqlTypeTransforms.TO_ARRAY);
 
     public static SqlReturnTypeInference FLOAT =
-        explicit(SqlTypeName.DOUBLE);
+        explicit(SqlTypeName.FLOAT);
 
     /**
      * Creates a SqlTypeTransformCascade from a rule and an array of one or more.

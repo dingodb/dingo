@@ -37,7 +37,23 @@ public final class ParseValueUtils {
     }
 
     public static byte[] getSpecialBytes(String image) {
-        return image.replace("'", "").toLowerCase().getBytes();
+        byte[] res = image.toLowerCase().getBytes();
+        if (res.length == 4) {
+            boolean mat = false;
+            for (byte b : res) {
+               if (b != 39) {
+                   mat = true;
+                   break;
+               }
+            }
+            if (mat) {
+                return res;
+            } else {
+                return new byte[] {39};
+            }
+        } else {
+            return res;
+        }
     }
 
     public static byte[] getSpecialHexBytes(String image) {
