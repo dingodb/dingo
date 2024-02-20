@@ -126,17 +126,20 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     tableIdBytes,
                     partIdBytes
                 );
-                if (!updated) {
-                    log.warn("{} updated is false key is {}", txnId, Arrays.toString(key));
-                    byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
-                    KeyValue rollBackKeyValue = new KeyValue(rollBackKey, null);
-                    localStore.put(rollBackKeyValue);
-                    return true;
-                }
                 KeyValue oldKeyValue = localStore.get(dataKey);
                 byte[] primaryLockKeyBytes = (byte[]) ByteUtils.decodePessimisticExtraKey(primaryLockKey)[5];
                 if (log.isDebugEnabled()) {
                     log.info("{} updated is true key is {}", txnId, Arrays.toString(key));
+                }
+                if (!updated) {
+                    log.warn("{} updated is false key is {}", txnId, Arrays.toString(key));
+                    // data is not exist local store
+                    if (oldKeyValue == null) {
+                        byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
+                        KeyValue rollBackKeyValue = new KeyValue(rollBackKey, null);
+                        localStore.put(rollBackKeyValue);
+                    }
+                    return true;
                 }
                 if (!(ByteArrayUtils.compare(key, primaryLockKeyBytes, 1) == 0)) {
                     // This key appears for the first time in the current transaction

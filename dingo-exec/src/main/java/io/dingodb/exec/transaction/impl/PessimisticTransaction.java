@@ -112,6 +112,17 @@ public class PessimisticTransaction extends BaseTransaction {
             log.info("{} {}  RollBackPessimisticLock End Status:{}, Cost:{}ms",
                 txnId, transactionOf(), status, (System.currentTimeMillis() - rollBackStart));
             jobManager.removeJob(jobId);
+            cleanPessimisticPrimaryLock();
+        }
+    }
+
+    private void cleanPessimisticPrimaryLock() {
+        if (primaryKeyLock != null && forUpdateTs != 0) {
+            KeyValue keyValue = cache.get(primaryKeyLock);
+            if (keyValue == null || keyValue.getValue() == null) {
+                primaryKeyLock = null;
+                forUpdateTs = 0L;
+            }
         }
     }
 

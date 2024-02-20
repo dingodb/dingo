@@ -38,6 +38,7 @@ import io.dingodb.common.util.Utils;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.meta.MetaService;
 import io.dingodb.transaction.api.LockType;
 import io.dingodb.transaction.api.TableLock;
@@ -316,7 +317,11 @@ public final class DingoDriverParser extends DingoParser {
         if (connection.getTransaction() != null) {
             transaction = connection.getTransaction();
         } else {
-            transaction = connection.createTransaction(isTxn ? OPTIMISTIC : NONE, connection.getAutoCommit());
+            // autocommit is true use current txn mode
+            transaction = connection.createTransaction(
+                isTxn ? ("pessimistic".equalsIgnoreCase(connection.getClientInfo("txn_mode")) ?
+                    TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC) : NONE,
+                connection.getAutoCommit());
         }
         startTs = transaction.getStartTs();
         txn_Id = transaction.getTxnId();

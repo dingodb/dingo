@@ -39,6 +39,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static io.dingodb.exec.utils.ByteUtils.getKeyByOp;
+
 
 @Slf4j
 public class PessimisticRollBackOperator extends TransactionOperator {
@@ -52,46 +54,37 @@ public class PessimisticRollBackOperator extends TransactionOperator {
         synchronized (vertex) {
             PessimisticRollBackParam param = vertex.getParam();
             CommonId.CommonType type = CommonId.CommonType.of((byte) tuple[0]);
-            CommonId txnId = (CommonId) tuple[1];
+            CommonId jobId = (CommonId) tuple[1];
             CommonId tableId = (CommonId) tuple[2];
             CommonId newPartId = (CommonId) tuple[3];
             int op = (byte) tuple[4];
             byte[] key = (byte[]) tuple[5];
             byte[] value = (byte[]) tuple[6];
+            CommonId txnId = vertex.getTask().getTxnId();
             StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
             byte[] txnIdByte = txnId.encode();
             byte[] tableIdByte = tableId.encode();
             byte[] partIdByte = newPartId.encode();
             byte[] startTsByte = PrimitiveCodec.encodeLong(param.getStartTs());
-            int len = txnIdByte.length + ByteUtils.StartTsLen + tableIdByte.length + partIdByte.length;
+            int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
+            // cache delete key
+            byte[] dataKey = ByteUtils.encode(
+                CommonId.CommonType.TXN_CACHE_DATA,
+                key,
+                Op.PUTIFABSENT.getCode(),
+                len,
+                txnIdByte, tableIdByte, partIdByte);
+            store.delete(dataKey);
+            byte[] deleteKey = Arrays.copyOf(dataKey, dataKey.length);
+            deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
+            store.delete(deleteKey);
+            deleteKey[deleteKey.length - 2] = (byte) Op.PUT.getCode();
+            store.delete(deleteKey);
+            byte[] lockKey = getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, deleteKey);
+            store.delete(lockKey);
             // first appearance
-            if (op == Op.NONE.getCode()) {
-                // cache delete key
-                byte[] dataKey = ByteUtils.encodePessimisticData(
-                    key,
-                    Op.PUTIFABSENT.getCode(),
-                    len,
-                    txnIdByte, startTsByte, tableIdByte, partIdByte);
-                store.deletePrefix(dataKey);
-                byte[] deleteKey = Arrays.copyOf(dataKey, dataKey.length);
-                deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
-                store.deletePrefix(deleteKey);
-                deleteKey[deleteKey.length - 2] = (byte) Op.PUT.getCode();
-                store.deletePrefix(deleteKey);
-            } else {
-                // cache delete key and set oldKeyValue
-                byte[] dataKey = ByteUtils.encodePessimisticData(
-                    key,
-                    Op.PUTIFABSENT.getCode(),
-                    len,
-                    txnIdByte, startTsByte, tableIdByte, partIdByte);
-                store.deletePrefix(dataKey);
-                byte[] deleteKey = Arrays.copyOf(dataKey, dataKey.length);
-                deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
-                store.deletePrefix(deleteKey);
-                deleteKey[deleteKey.length - 2] = (byte) Op.PUT.getCode();
-                store.deletePrefix(deleteKey);
-
+            if (op != Op.NONE.getCode()) {
+                // set oldKeyValue
                 byte[] newKey = Arrays.copyOf(dataKey, dataKey.length);
                 newKey[newKey.length - 2] = (byte) op;
                 store.put(new KeyValue(newKey, value));
