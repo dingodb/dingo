@@ -199,7 +199,7 @@ void TableElement(List<SqlNode> list) :
             columnList = ParenthesizedSimpleIdentifierList()
         )
         [ <WITH> withColumnList = ParenthesizedSimpleIdentifierList() ]
-        [ <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "LSM";} } ]
+        [ <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} } ]
         [
            <PARTITION> <BY>
            {
@@ -335,7 +335,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     int ttl = -1;
     PartitionDefinition partitionDefinition = null;
     int replica = 0;
-    String engine = "LSM";
+    String engine = null;
     Properties properties = null;
     int autoIncrement = 1;
     String charset = "utf8";
@@ -346,7 +346,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     [ tableElementList = TableElementList() ]
     (
-     <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "LSM";} }
+     <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
      |
      <TTL> <EQ> [ <MINUS> {ttl = positiveInteger("-" + getNextToken().image, "ttl");} ]
         { ttl = positiveInteger(getNextToken().image, "ttl"); }
