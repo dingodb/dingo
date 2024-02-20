@@ -15,7 +15,7 @@
  */
 
 plugins {
-    id 'org.springframework.boot' version '2.5.4'
+    id 'org.springframework.boot' version '2.5.15'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
     id "com.google.protobuf" version "0.8.18"
@@ -57,6 +57,7 @@ dependencies {
     implementation group: 'io.grpc', name: 'grpc-netty-shaded', version: 'grpc'.v()
 
     implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
+    implementation group: 'org.yaml', name: 'snakeyaml', version: 'snakeyaml'.v()
 
     compileOnly group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     compileOnly group: 'org.mapstruct', name: 'mapstruct-processor', version: 'mapstruct'.v()

@@ -1,5 +1,5 @@
 plugins {
-    id 'org.springframework.boot' version '2.5.4'
+    id 'org.springframework.boot' version '2.5.15'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
     id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
@@ -30,6 +30,7 @@ dependencies {
     implementation project(":dingo-verify")
 
     implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
+    implementation group: 'org.yaml', name: 'snakeyaml', version: 'snakeyaml'.v()
 
     compileOnly group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
