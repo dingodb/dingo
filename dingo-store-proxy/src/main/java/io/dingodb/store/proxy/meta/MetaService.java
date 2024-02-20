@@ -424,6 +424,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
         byte[] key = encoder.encodeKeyPrefix(detail.getOperand(), detail.getOperand().length);
         CommonId commonId = partitionService.calcPartId(key, getRangeDistribution(table.tableId));
         encoder.resetKeyPrefix(key, commonId.domain);
+        if (table.getEngine().startsWith("TXN")) {
+            key[0] = 't';
+        }
         Services.coordinatorService(Configuration.coordinatorSet()).splitRegion(
             tso(),
             SplitRegionRequest.builder()
