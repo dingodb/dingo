@@ -32,6 +32,7 @@ import io.dingodb.calcite.grammar.ddl.SqlUnLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockTable;
 import io.dingodb.calcite.grammar.dml.SqlExecute;
 import io.dingodb.calcite.grammar.dml.SqlPrepare;
+import io.dingodb.calcite.grammar.dql.ExportOptions;
 import io.dingodb.calcite.grammar.dql.SqlDesc;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
 import io.dingodb.calcite.grammar.dql.SqlShow;
@@ -237,10 +238,7 @@ public class DingoParser {
 
             if (needExport(sqlNode)) {
                 io.dingodb.calcite.grammar.dql.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode;
-                File file = new File(sqlSelect.getOutfile());
-                if (file.exists()) {
-                    throw DingoResource.DINGO_RESOURCE.exportFileExists(sqlSelect.getOutfile()).ex();
-                }
+                validatorExportParam(sqlSelect.getExportOptions());
                 relNode = new LogicalExportData(
                     cluster,
                     planner.emptyTraitSet(),
@@ -383,5 +381,16 @@ public class DingoParser {
             }
         }
         return sql;
+    }
+
+    public static void validatorExportParam(ExportOptions exportOptions) {
+        File file = new File(exportOptions.getOutfile());
+        if (file.exists()) {
+            throw DingoResource.DINGO_RESOURCE.exportFileExists(exportOptions.getOutfile()).ex();
+        }
+        String enclosed = exportOptions.getEnclosed();
+        if (enclosed != null && enclosed.equals("()")) {
+            throw DingoResource.DINGO_RESOURCE.fieldSeparatorError().ex();
+        }
     }
 }

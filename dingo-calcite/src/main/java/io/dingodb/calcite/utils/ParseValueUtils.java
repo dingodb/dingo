@@ -37,7 +37,7 @@ public final class ParseValueUtils {
     }
 
     public static byte[] getSpecialBytes(String image) {
-        byte[] res = image.toLowerCase().getBytes();
+        byte[] res = image.getBytes();
         if (res.length == 4) {
             boolean mat = false;
             for (byte b : res) {
