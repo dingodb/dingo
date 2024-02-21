@@ -39,6 +39,7 @@ public final class OperatorCodeUtils {
     public static final CommonId SCAN_CACHE = new CommonId(CommonId.CommonType.OP, SOURCE, 12);
     public static final CommonId INFO_SCHEMA_SCAN = new CommonId(CommonId.CommonType.OP, SOURCE, 13);
     public static final CommonId TXN_PART_VECTOR = new CommonId(CommonId.CommonType.OP, SOURCE, 14);
+    public static final CommonId CALC_DISTRIBUTION_1 = new CommonId(CommonId.CommonType.OP, SOURCE, 15);
 
     // op
     public static final CommonId PROJECT = new CommonId(CommonId.CommonType.OP, OP, 20);

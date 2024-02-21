@@ -25,14 +25,11 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
-import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.params.DistributionSourceParam;
 import io.dingodb.exec.operator.params.ScanParam;
 import io.dingodb.exec.operator.params.ScanWithRelOpParam;
@@ -43,6 +40,7 @@ import io.dingodb.expr.rel.CacheOp;
 import io.dingodb.expr.rel.PipeOp;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.runtime.exception.NeverRunHere;
+import io.dingodb.meta.entity.Partition;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.tso.TsoService;
@@ -54,8 +52,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
-import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
+import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION_1;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SCAN_WITH_CACHE_OP;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SCAN_WITH_NO_OP;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SCAN_WITH_PIPE_OP;
@@ -72,30 +73,9 @@ public final class DingoScanWithRelOpVisitFun {
         Job job, IdGenerator idGenerator, Location currentLocation,
         ITransaction transaction, DingoJobVisitor visitor, @NonNull DingoScanWithRelOp rel
     ) {
-        TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
-        final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
-
-        NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
-        SqlExpr filter = null;
-        byte[] startKey = null;
-        byte[] endKey = null;
-        boolean withStart = true;
-        boolean withEnd = false;
-        // TODO: need to create range by filters.
-        DistributionSourceParam distributionParam = new DistributionSourceParam(
-            td,
-            ranges,
-            startKey,
-            endKey,
-            withStart,
-            withEnd,
-            filter,
-            false,
-            false,
-            null
-        );
-        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
         Task task;
+        final TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
+        Supplier<Vertex> scanVertexCreator;
         if (transaction != null) {
             task = job.getOrCreate(
                 currentLocation,
@@ -103,107 +83,183 @@ public final class DingoScanWithRelOpVisitFun {
                 transaction.getType(),
                 IsolationLevel.of(transaction.getIsolationLevel())
             );
+            final long scanTs = getScanTs(transaction, visitor.getKind());
+            scanVertexCreator = () -> createTxnScanVertex(rel, tableInfo, transaction, scanTs);
         } else {
             task = job.getOrCreate(currentLocation, idGenerator);
+            scanVertexCreator = () -> createScanVertex(rel, tableInfo);
         }
-        calcVertex.setId(idGenerator.getOperatorId(task.getId()));
-        task.putVertex(calcVertex);
-
+        BiFunction<byte[], byte[], Vertex> calcVertexCreator
+            = (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end);
         List<Vertex> outputs = new ArrayList<>();
-
-        long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
-        // Use current read
-        if (transaction != null && transaction.isPessimistic()
-            && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.SnapshotIsolation
-            && (visitor.getKind() == SqlKind.INSERT || visitor.getKind() == SqlKind.DELETE
-            || visitor.getKind() == SqlKind.UPDATE)) {
-            scanTs = TsoService.getDefault().tso();
-        }
-        if (transaction != null && transaction.isPessimistic()
-            && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.ReadCommitted
-            && visitor.getKind() == SqlKind.SELECT) {
-            scanTs = TsoService.getDefault().tso();
-        }
-        Vertex vertex;
-        int partitionNums = td.getPartitions().size();
-        if (partitionNums == 0) {
-            partitionNums = 1;
-        }
-        for (int i = 0; i < partitionNums; i++) {
-            if (transaction != null) {
-                task = job.getOrCreate(
-                    currentLocation,
-                    idGenerator,
-                    transaction.getType(),
-                    IsolationLevel.of(transaction.getIsolationLevel())
-                );
-                RelOp relOp = rel.getRelOp();
-                if (relOp == null) {
-                    TxnScanParam param = new TxnScanParam(
-                        tableInfo.getId(),
-                        td.tupleType(),
-                        td.keyMapping(),
-                        scanTs,
-                        transaction.getIsolationLevel(),
-                        transaction.getLockTimeOut()
-                    );
-                    vertex = new Vertex(TXN_SCAN_WITH_NO_OP, param);
-                } else {
-                    TxnScanWithRelOpParam param = new TxnScanWithRelOpParam(
-                        tableInfo.getId(),
-                        td.tupleType(),
-                        td.keyMapping(),
-                        scanTs,
-                        transaction.getIsolationLevel(),
-                        transaction.getLockTimeOut(),
-                        relOp,
-                        DefinitionMapper.mapToDingoType(rel.getRowType()),
-                        rel.isPushDown()
-                    );
-                    if (relOp instanceof PipeOp) {
-                        vertex = new Vertex(TXN_SCAN_WITH_PIPE_OP, param);
-                    } else if (relOp instanceof CacheOp) {
-                        vertex = new Vertex(TXN_SCAN_WITH_CACHE_OP, param);
-                    } else {
-                        throw new NeverRunHere();
-                    }
+        final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
+        List<Partition> partitions = td.getPartitions();
+        if (partitions.isEmpty()) {
+            outputs.add(createVerticesForRange(task, idGenerator, calcVertexCreator, null, null, scanVertexCreator));
+        } else {
+            if (td.getPartitionStrategy().equalsIgnoreCase("HASH")) {
+                for (Partition partition : partitions) {
+                    outputs.add(createVerticesForRange(
+                        task,
+                        idGenerator,
+                        calcVertexCreator,
+                        partition.getStart(),
+                        partition.getEnd(),
+                        scanVertexCreator
+                    ));
                 }
             } else {
-                task = job.getOrCreate(currentLocation, idGenerator);
-                RelOp relOp = rel.getRelOp();
-                if (relOp == null) {
-                    ScanParam param = new ScanParam(
-                        tableInfo.getId(),
-                        td.tupleType(),
-                        td.keyMapping()
-                    );
-                    vertex = new Vertex(SCAN_WITH_NO_OP, param);
-                } else {
-                    ScanWithRelOpParam param = new ScanWithRelOpParam(
-                        tableInfo.getId(),
-                        td.tupleType(),
-                        td.keyMapping(),
-                        relOp,
-                        DefinitionMapper.mapToDingoType(rel.getRowType()),
-                        rel.isPushDown()
-                    );
-                    if (relOp instanceof PipeOp) {
-                        vertex = new Vertex(SCAN_WITH_PIPE_OP, param);
-                    } else if (relOp instanceof CacheOp) {
-                        vertex = new Vertex(SCAN_WITH_CACHE_OP, param);
-                    } else {
-                        throw new NeverRunHere();
-                    }
+                int partitionNum = partitions.size();
+                for (int i = 0; i < partitionNum; ++i) {
+                    Partition partition = partitions.get(i);
+                    outputs.add(createVerticesForRange(
+                        task,
+                        idGenerator,
+                        calcVertexCreator,
+                        partition.getStart(),
+                        i < partitionNum - 1 ? partitions.get(i + 1).getStart() : null,
+                        scanVertexCreator
+                    ));
                 }
             }
-            vertex.setHint(new OutputHint());
-            vertex.setId(idGenerator.getOperatorId(task.getId()));
-            Edge edge = new Edge(calcVertex, vertex);
-            calcVertex.addEdge(edge);
-            vertex.addIn(edge);
-            task.putVertex(vertex);
-            outputs.add(vertex);
         }
         return outputs;
+    }
+
+    private static @NonNull Vertex createVerticesForRange(
+        @NonNull Task task,
+        @NonNull IdGenerator idGenerator,
+        @NonNull BiFunction<byte[], byte[], Vertex> calcVertexCreator,
+        byte[] start,
+        byte[] end,
+        @NonNull Supplier<Vertex> scanVertexCreator
+    ) {
+        Vertex calcVertex = calcVertexCreator.apply(start, end);
+        calcVertex.setId(idGenerator.getOperatorId(task.getId()));
+        task.putVertex(calcVertex);
+        Vertex vertex = scanVertexCreator.get();
+        // vertex.setHint(new OutputHint());
+        vertex.setId(idGenerator.getOperatorId(task.getId()));
+        task.putVertex(vertex);
+        Edge edge = new Edge(calcVertex, vertex);
+        calcVertex.addEdge(edge);
+        vertex.addIn(edge);
+        return vertex;
+    }
+
+    private static long getScanTs(@NonNull ITransaction transaction, SqlKind kind) {
+        long scanTs = transaction.getStartTs();
+        // Use current read
+        if (
+            transaction.isPessimistic()
+                && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.SnapshotIsolation
+                && (kind == SqlKind.INSERT
+                || kind == SqlKind.DELETE
+                || kind == SqlKind.UPDATE)
+        ) {
+            scanTs = TsoService.getDefault().tso();
+        }
+        if (
+            transaction.isPessimistic()
+                && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.ReadCommitted
+                && kind == SqlKind.SELECT
+        ) {
+            scanTs = TsoService.getDefault().tso();
+        }
+        return scanTs;
+    }
+
+    private static @NonNull Vertex createScanVertex(
+        @NonNull DingoScanWithRelOp rel,
+        TableInfo tableInfo
+    ) {
+        final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
+        RelOp relOp = rel.getRelOp();
+        if (relOp == null) {
+            ScanParam param = new ScanParam(
+                tableInfo.getId(),
+                td.tupleType(),
+                td.keyMapping()
+            );
+            return new Vertex(SCAN_WITH_NO_OP, param);
+        } else {
+            ScanWithRelOpParam param = new ScanWithRelOpParam(
+                tableInfo.getId(),
+                td.tupleType(),
+                td.keyMapping(),
+                relOp,
+                DefinitionMapper.mapToDingoType(rel.getRowType()),
+                rel.isPushDown()
+            );
+            if (relOp instanceof PipeOp) {
+                return new Vertex(SCAN_WITH_PIPE_OP, param);
+            } else if (relOp instanceof CacheOp) {
+                return new Vertex(SCAN_WITH_CACHE_OP, param);
+            }
+        }
+        throw new NeverRunHere();
+    }
+
+    private static @NonNull Vertex createTxnScanVertex(
+        @NonNull DingoScanWithRelOp rel,
+        TableInfo tableInfo,
+        ITransaction transaction,
+        long scanTs
+    ) {
+        final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
+        RelOp relOp = rel.getRelOp();
+        if (relOp == null) {
+            TxnScanParam param = new TxnScanParam(
+                tableInfo.getId(),
+                td.tupleType(),
+                td.keyMapping(),
+                scanTs,
+                transaction.getIsolationLevel(),
+                transaction.getLockTimeOut()
+            );
+            return new Vertex(TXN_SCAN_WITH_NO_OP, param);
+        } else {
+            TxnScanWithRelOpParam param = new TxnScanWithRelOpParam(
+                tableInfo.getId(),
+                td.tupleType(),
+                td.keyMapping(),
+                scanTs,
+                transaction.getIsolationLevel(),
+                transaction.getLockTimeOut(),
+                relOp,
+                DefinitionMapper.mapToDingoType(rel.getRowType()),
+                rel.isPushDown()
+            );
+            if (relOp instanceof PipeOp) {
+                return new Vertex(TXN_SCAN_WITH_PIPE_OP, param);
+            } else if (relOp instanceof CacheOp) {
+                return new Vertex(TXN_SCAN_WITH_CACHE_OP, param);
+            }
+        }
+        throw new NeverRunHere();
+    }
+
+    private static @NonNull Vertex createCalcDistributionVertex(
+        @NonNull DingoScanWithRelOp rel,
+        @NonNull TableInfo tableInfo,
+        byte[] startKey,
+        byte[] endKey
+    ) {
+        final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
+        NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
+        // TODO: need to create range by filters.
+        DistributionSourceParam distributionParam = new DistributionSourceParam(
+            td,
+            ranges,
+            startKey,
+            endKey,
+            true,
+            false,
+            null,
+            false,
+            false,
+            null
+        );
+        return new Vertex(CALC_DISTRIBUTION_1, distributionParam);
     }
 }

@@ -174,14 +174,10 @@ public class ScanIteratorV2 implements Iterator<KeyValue>, AutoCloseable {
 
     @Override
     public boolean hasNext() {
-        if (delegateIterator.hasNext()) {
-            return true;
-        }
-        if (hasMore) {
+        while (hasMore && !delegateIterator.hasNext()) {
             scanContinue();
-            return delegateIterator.hasNext();
         }
-        return false;
+        return delegateIterator.hasNext();
     }
 
     @Override

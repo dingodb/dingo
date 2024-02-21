@@ -60,6 +60,7 @@ dependencies {
     implementation project(':dingo-transaction-api')
     intTestAnnotationProcessor 'org.projectlombok:lombok:' + 'lombok'.v()
     intTestCompileOnly 'org.projectlombok:lombok:' + 'lombok'.v()
+    intTestImplementation group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
     intTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:' + 'junit5'.v()
     intTestRuntimeOnly group: 'mysql', name: 'mysql-connector-java', version: '8.0.33'
     intTestRuntimeOnly group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
