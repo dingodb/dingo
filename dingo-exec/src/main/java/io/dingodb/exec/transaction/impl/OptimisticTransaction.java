@@ -90,6 +90,11 @@ public class OptimisticTransaction extends BaseTransaction {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public void rollBackResidualPessimisticLock(JobManager jobManager) {
+        throw new UnsupportedOperationException();
+    }
+
     public void retryPrepare() {
 //        TransactionManager.unregister(txnId);
         long start_ts = TransactionManager.nextTimestamp();

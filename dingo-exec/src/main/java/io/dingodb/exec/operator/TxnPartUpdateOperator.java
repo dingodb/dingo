@@ -137,6 +137,8 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     if (oldKeyValue == null) {
                         byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
                         KeyValue rollBackKeyValue = new KeyValue(rollBackKey, null);
+                        log.info("{}, updated is false residual key is:{}",
+                            txnId, Arrays.toString(rollBackKey));
                         localStore.put(rollBackKeyValue);
                     }
                     return true;
@@ -148,6 +150,8 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                         if (kvKeyValue == null || kvKeyValue.getValue() == null) {
                             byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
                             KeyValue rollBackKeyValue = new KeyValue(rollBackKey, null);
+                            log.info("{}, update key is not primaryLock residual key is:{}",
+                                txnId, Arrays.toString(rollBackKey));
                             localStore.put(rollBackKeyValue);
                             return true;
                         }
@@ -176,6 +180,8 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                         if (kvKeyValue == null || kvKeyValue.getValue() == null) {
                             byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
                             KeyValue rollBackKeyValue = new KeyValue(rollBackKey, null);
+                            log.info("{}, update first put primary lock residual key is:{}",
+                                txnId, Arrays.toString(rollBackKey));
                             localStore.put(rollBackKeyValue);
                             return true;
                         }

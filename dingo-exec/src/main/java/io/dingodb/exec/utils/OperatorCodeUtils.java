@@ -80,7 +80,7 @@ public final class OperatorCodeUtils {
     public static final CommonId TXN_PART_RANGE_DELETE = new CommonId(CommonId.CommonType.OP, OP, 54);
     public static final CommonId TXN_CLEAN_CACHE = new CommonId(CommonId.CommonType.OP, OP, 55);
     public static final CommonId COPY = new CommonId(CommonId.CommonType.OP, OP, 56);
-    
+
     public static final CommonId PIPE_OP = new CommonId(CommonId.CommonType.OP, OP, 60);
     public static final CommonId CACHE_OP = new CommonId(CommonId.CommonType.OP, OP, 61);
     public static final CommonId SCAN_WITH_NO_OP = new CommonId(CommonId.CommonType.OP, OP, 62);
@@ -92,6 +92,7 @@ public final class OperatorCodeUtils {
     public static final CommonId TXN_SCAN_WITH_CACHE_OP = new CommonId(CommonId.CommonType.OP, OP, 68);
     public static final CommonId TXN_GET_BY_INDEX = new CommonId(CommonId.CommonType.OP, OP, 69);
     public static final CommonId PESSIMISTIC_LOCK = new CommonId(CommonId.CommonType.OP, OP, 70);
+    public static final CommonId PESSIMISTIC_RESIDUAL_LOCK = new CommonId(CommonId.CommonType.OP, OP, 71);
 
     // sink
     public static final CommonId ROOT = new CommonId(CommonId.CommonType.OP, SINK, 80);

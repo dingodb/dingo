@@ -42,6 +42,8 @@ public class TransactionCache {
 
     private final boolean pessimisticRollback;
 
+    private final boolean pessimisticResidualLock;
+
     private boolean pessimisticTransaction;
 
     private final boolean cleanCache;
@@ -50,6 +52,7 @@ public class TransactionCache {
         this.txnId = txnId;
         this.pessimisticRollback = false;
         this.cleanCache = false;
+        this.pessimisticResidualLock = false;
     }
 
     public TransactionCache(CommonId txnId, long jobSeqId) {
@@ -57,6 +60,7 @@ public class TransactionCache {
         this.jobId = new CommonId(CommonId.CommonType.JOB, txnId.seq, jobSeqId);
         this.pessimisticRollback = true;
         this.cleanCache = false;
+        this.pessimisticResidualLock = false;
     }
 
     public TransactionCache(CommonId txnId, boolean cleanCache, boolean pessimisticTransaction) {
@@ -64,6 +68,15 @@ public class TransactionCache {
         this.pessimisticRollback = false;
         this.cleanCache = cleanCache;
         this.pessimisticTransaction = pessimisticTransaction;
+        this.pessimisticResidualLock = false;
+    }
+
+    public TransactionCache(CommonId txnId, boolean pessimisticResidualLock) {
+        this.txnId = txnId;
+        this.pessimisticRollback = false;
+        this.cleanCache = false;
+        this.pessimisticTransaction = true;
+        this.pessimisticResidualLock = pessimisticResidualLock;
     }
 
 
@@ -136,10 +149,18 @@ public class TransactionCache {
         return iterator.hasNext();
     }
 
+    public boolean checkResidualPessimisticLockContinue() {
+        Iterator<KeyValue> iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, txnId));
+        return iterator.hasNext();
+    }
+
     public Iterator<Object[]> iterator() {
         Iterator<KeyValue> iterator;
         if (pessimisticRollback) {
             iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_EXTRA_DATA, jobId));
+            return Iterators.transform(iterator, wrap(ByteUtils::decode)::apply);
+        } else if (pessimisticResidualLock) {
+            iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, txnId));
             return Iterators.transform(iterator, wrap(ByteUtils::decode)::apply);
         } else if (cleanCache) {
             if (pessimisticTransaction) {

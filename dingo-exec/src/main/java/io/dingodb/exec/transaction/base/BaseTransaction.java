@@ -158,6 +158,8 @@ public abstract class BaseTransaction implements ITransaction {
 
     public abstract CacheToObject preWritePrimaryKey();
 
+    public abstract void rollBackResidualPessimisticLock(JobManager jobManager);
+
     public String transactionOf() {
         TransactionType type = getType();
         switch (type) {
@@ -227,6 +229,10 @@ public abstract class BaseTransaction implements ITransaction {
         }
         if (getSqlList().size() == 0 || !cache.checkContinue()) {
             log.warn("{} The current {} has no data to commit",txnId, transactionOf());
+            if (isPessimistic()) {
+                // PessimisticRollback
+                rollBackResidualPessimisticLock(jobManager);
+            }
             return;
         }
         long preWriteStart = System.currentTimeMillis();
@@ -284,6 +290,11 @@ public abstract class BaseTransaction implements ITransaction {
             log.info("{} {} PreWrite End Status:{}, Cost:{}ms", txnId, transactionOf(),
                 status, (System.currentTimeMillis() - preWriteStart));
             jobManager.removeJob(jobId.get());
+        }
+
+        if (isPessimistic()) {
+            // PessimisticRollback
+            rollBackResidualPessimisticLock(jobManager);
         }
 
         try {

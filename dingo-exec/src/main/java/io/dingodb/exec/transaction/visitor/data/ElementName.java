@@ -31,6 +31,8 @@ public class ElementName {
 
     public static final String PESSIMISTIC_ROLLBACK_SCAN = "PessimisticRollBackScan";
 
+    public static final String PESSIMISTIC_RESIDUAL_LOCK= "PessimisticResidualLock";
+
     public static final String SINGLE_TRANSACTION_PRE_WRITE = "SingleTransactionPreWrite";
     public static final String MULTI_TRANSACTION_PRE_WRITE = "MultiTransactionPreWrite";
 
@@ -43,6 +45,9 @@ public class ElementName {
     public static final String MULTI_TRANSACTION_ROLLBACK = "MultiTransactionRollBack";
     public static final String SINGLE_TRANSACTION_PESSIMISTIC_ROLLBACK = "SingleTransactionPessimisticRollBack";
     public static final String MULTI_TRANSACTION_PESSIMISTIC_ROLLBACK = "MultiTransactionPessimisticRollBack";
+
+    public static final String SINGLE_TRANSACTION_RESIDUAL_LOCK = "SingleTransactionResidualLock";
+    public static final String MULTI_TRANSACTION_RESIDUAL_LOCK = "MultiTransactionResidualLock";
 
     public static final String SINGLE_TRANSACTION_CLEAN_CACHE = "SingleTransactionCleanCache";
     public static final String MULTI_TRANSACTION_CLEAN_CACHE = "MultiTransactionCleanCache";

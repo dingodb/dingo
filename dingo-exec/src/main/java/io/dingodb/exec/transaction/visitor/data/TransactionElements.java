@@ -28,11 +28,13 @@ public class TransactionElements {
         elementMap.put(ElementName.SINGLE_TRANSACTION_ROLLBACK, createSingleTransactionRollBack());
         elementMap.put(ElementName.SINGLE_TRANSACTION_PESSIMISTIC_ROLLBACK, createSingleTransactionRollBackPl());
         elementMap.put(ElementName.SINGLE_TRANSACTION_CLEAN_CACHE, createSingleTransactionCleanCache());
+        elementMap.put(ElementName.SINGLE_TRANSACTION_RESIDUAL_LOCK, createSingleTransactionResidualLock());
         elementMap.put(ElementName.MULTI_TRANSACTION_PRE_WRITE, createMultiTransactionPreWrite());
         elementMap.put(ElementName.MULTI_TRANSACTION_COMMIT, createMultiTransactionCommit());
         elementMap.put(ElementName.MULTI_TRANSACTION_ROLLBACK, createMultiTransactionRollBack());
         elementMap.put(ElementName.MULTI_TRANSACTION_PESSIMISTIC_ROLLBACK, createMultiTransactionRollBackPl());
         elementMap.put(ElementName.MULTI_TRANSACTION_CLEAN_CACHE, createMultiTransactionCleanCache());
+        elementMap.put(ElementName.MULTI_TRANSACTION_RESIDUAL_LOCK, createMultiTransactionResidualLock());
     }
 
     private static Element createSingleTransactionPreWrite() {
@@ -204,6 +206,41 @@ public class TransactionElements {
             .build();
         return root;
     }
+
+    private static Element createSingleTransactionResidualLock() {
+        ScanCacheResidualLockLeaf scanCacheResidualLockLeaf = ScanCacheResidualLockLeaf.builder()
+            .name(ElementName.SCAN_CACHE)
+            .build();
+        PessimisticResidualLockLeaf pessimisticResidualLockLeaf = PessimisticResidualLockLeaf.builder()
+            .name(ElementName.PESSIMISTIC_RESIDUAL_LOCK)
+            .data(scanCacheResidualLockLeaf)
+            .build();
+        RootLeaf root = RootLeaf.builder()
+            .name(ElementName.ROOT)
+            .data(pessimisticResidualLockLeaf)
+            .build();
+        return root;
+    }
+
+    private static Element createMultiTransactionResidualLock() {
+        ScanCacheResidualLockLeaf scanCacheResidualLockLeaf = ScanCacheResidualLockLeaf.builder()
+            .name(ElementName.SCAN_CACHE)
+            .build();
+        PessimisticResidualLockLeaf pessimisticResidualLockLeaf = PessimisticResidualLockLeaf.builder()
+            .name(ElementName.PESSIMISTIC_RESIDUAL_LOCK)
+            .data(scanCacheResidualLockLeaf)
+            .build();
+        StreamConverterLeaf streamConverterLeaf = StreamConverterLeaf.builder()
+            .name(ElementName.STREAM)
+            .data(pessimisticResidualLockLeaf)
+            .build();
+        RootLeaf root = RootLeaf.builder()
+            .name(ElementName.ROOT)
+            .data(streamConverterLeaf)
+            .build();
+        return root;
+    }
+
     public static Element getElement(String elementName) {
         return elementMap.get(elementName);
     }
