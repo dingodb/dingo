@@ -52,6 +52,11 @@ public class NoneTransaction extends BaseTransaction {
     }
 
     @Override
+    public void rollBackResidualPessimisticLock(JobManager jobManager) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void rollBackPessimisticLock(JobManager jobManager) {
         throw new UnsupportedOperationException();
     }

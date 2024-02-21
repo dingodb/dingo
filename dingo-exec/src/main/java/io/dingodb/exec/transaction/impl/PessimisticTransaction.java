@@ -23,9 +23,9 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.transaction.base.BaseTransaction;
+import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.base.TransactionStatus;
 import io.dingodb.exec.transaction.base.TransactionType;
-import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
@@ -158,6 +158,39 @@ public class PessimisticTransaction extends BaseTransaction {
     public synchronized void setPrimaryKeyLock(byte[] primaryKeyLock) {
         if (this.primaryKeyLock == null) {
             this.primaryKeyLock = primaryKeyLock;
+        }
+    }
+
+    public void rollBackResidualPessimisticLock(JobManager jobManager) {
+        long rollBackStart = System.currentTimeMillis();
+        if(!cache.checkResidualPessimisticLockContinue()) {
+            log.warn("{} The current {} has no data to rollBackResidualPessimisticLock",txnId, transactionOf());
+            return;
+        }
+        log.info("{} {} rollBackResidualPessimisticLock Start", txnId, transactionOf());
+        Location currentLocation = MetaService.root().currentLocation();
+        CommonId jobId = CommonId.EMPTY_JOB;
+        try {
+            // 1、get rollback_ts
+            long rollBackTs = TransactionManager.nextTimestamp();
+            // 2、generator job、task、rollBackResidualPessimisticLock
+            job = jobManager.createJob(startTs, rollBackTs, txnId, null);
+            jobId = job.getJobId();
+            DingoTransactionRenderJob.renderRollBackResidualPessimisticLockJob(job, currentLocation, this, true);
+            // 3、run rollBackResidualPessimisticLock
+            Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+            if (iterator.hasNext()) {
+                Object[] next = iterator.next();
+            }
+            this.status = TransactionStatus.ROLLBACK_RESIDUAL_PESSIMISTIC_LOCK;
+        } catch (Throwable t) {
+            log.info(t.getMessage(), t);
+            this.status = TransactionStatus.ROLLBACK_RESIDUAL_PESSIMISTIC_LOCK_FAIL;
+            throw new RuntimeException(t);
+        } finally {
+            log.info("{} {}  RollBackResidualPessimisticLock End Status:{}, Cost:{}ms",
+                txnId, transactionOf(), status, (System.currentTimeMillis() - rollBackStart));
+            jobManager.removeJob(jobId);
         }
     }
 

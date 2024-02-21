@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.transaction.base;
+package io.dingodb.exec.transaction.visitor.data;
 
-/**
- * Transaction Status
- */
-public enum TransactionStatus {
-    UNKNOWN, START, RUNNING, PRE_WRITE_START, PRE_WRITE, PRE_WRITE_RETRY, PRE_WRITE_FAIL, COMMIT, COMMIT_FAIL,
-    ROLLBACK, ROLLBACK_FAIL, ROLLBACK_PESSIMISTIC_LOCK, ROLLBACK_PESSIMISTIC_LOCK_FAIL,
-    ROLLBACK_RESIDUAL_PESSIMISTIC_LOCK, ROLLBACK_RESIDUAL_PESSIMISTIC_LOCK_FAIL, CLOSE
+import io.dingodb.exec.transaction.visitor.Visitor;
+import lombok.experimental.SuperBuilder;
+
+@SuperBuilder
+public class PessimisticResidualLockLeaf extends Leaf {
+
+    @Override
+    public <T> T accept(Visitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

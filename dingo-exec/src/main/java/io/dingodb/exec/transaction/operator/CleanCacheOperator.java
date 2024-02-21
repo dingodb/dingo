@@ -25,7 +25,6 @@ import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.params.CleanCacheParam;
-import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
@@ -34,7 +33,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
 
-import static io.dingodb.common.CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK;
 import static io.dingodb.store.api.transaction.data.Op.DELETE;
 
 @Slf4j
@@ -55,23 +53,7 @@ public class CleanCacheOperator extends TransactionOperator {
             } else {
                 byte[] lockKey = keyValue.getKey();
                 Object[] decode = ByteUtils.decodePessimisticLock(keyValue);
-                CommonId txnId = (CommonId) decode[1];
-                CommonId tableId = (CommonId) decode[2];
-                CommonId newPartId = (CommonId) decode[3];
-                byte[] key = (byte[]) decode[5];
                 long forUpdateTs = (long) decode[6];
-                KeyValue residualKeyValue = store.get(ByteUtils.getKeyByOp(TXN_CACHE_RESIDUAL_LOCK, DELETE, lockKey));
-                if (residualKeyValue != null) {
-                    TransactionUtil.pessimisticPrimaryLockRollBack(
-                        txnId,
-                        tableId,
-                        newPartId,
-                        param.getIsolationLevel(),
-                        param.getStartTs(),
-                        forUpdateTs,
-                        key
-                    );
-                }
                 byte[] dataKey = Arrays.copyOf(lockKey, lockKey.length);
                 dataKey[0] = (byte) CommonId.CommonType.TXN_CACHE_DATA.getCode();
                 dataKey[dataKey.length - 2] = (byte) DELETE.getCode();

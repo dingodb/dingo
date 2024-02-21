@@ -20,12 +20,14 @@ import io.dingodb.exec.transaction.visitor.data.CleanCacheLeaf;
 import io.dingodb.exec.transaction.visitor.data.CommitLeaf;
 import io.dingodb.exec.transaction.visitor.data.Composite;
 import io.dingodb.exec.transaction.visitor.data.Leaf;
+import io.dingodb.exec.transaction.visitor.data.PessimisticResidualLockLeaf;
 import io.dingodb.exec.transaction.visitor.data.PessimisticRollBackScanLeaf;
 import io.dingodb.exec.transaction.visitor.data.PreWriteLeaf;
 import io.dingodb.exec.transaction.visitor.data.RollBackLeaf;
 import io.dingodb.exec.transaction.visitor.data.PessimisticRollBackLeaf;
 import io.dingodb.exec.transaction.visitor.data.RootLeaf;
 import io.dingodb.exec.transaction.visitor.data.ScanCacheLeaf;
+import io.dingodb.exec.transaction.visitor.data.ScanCacheResidualLockLeaf;
 import io.dingodb.exec.transaction.visitor.data.ScanCleanCacheLeaf;
 import io.dingodb.exec.transaction.visitor.data.StreamConverterLeaf;
 import io.dingodb.exec.transaction.visitor.Visitor;
@@ -115,6 +117,22 @@ public class TestJobVisitor<T> implements Visitor<T> {
         if(scanCleanCacheLeaf.getData() != null)
             scanCleanCacheLeaf.getData().accept(this);
         System.out.println("visitor scanCleanCacheLeaf：" + scanCleanCacheLeaf.getName());
+        return null;
+    }
+
+    @Override
+    public T visit(PessimisticResidualLockLeaf pessimisticResidualLockLeaf) {
+        if(pessimisticResidualLockLeaf.getData() != null)
+            pessimisticResidualLockLeaf.getData().accept(this);
+        System.out.println("visitor pessimisticResidualLockLeaf：" + pessimisticResidualLockLeaf.getName());
+        return null;
+    }
+
+    @Override
+    public T visit(ScanCacheResidualLockLeaf scanCacheResidualLockLeaf) {
+        if(scanCacheResidualLockLeaf.getData() != null)
+            scanCacheResidualLockLeaf.getData().accept(this);
+        System.out.println("visitor scanCacheResidualLockLeaf：" + scanCacheResidualLockLeaf.getName());
         return null;
     }
 

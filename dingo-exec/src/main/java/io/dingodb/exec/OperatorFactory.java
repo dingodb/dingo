@@ -77,6 +77,7 @@ import io.dingodb.exec.operator.VectorPartitionOperator;
 import io.dingodb.exec.operator.VectorPointDistanceOperator;
 import io.dingodb.exec.transaction.operator.CleanCacheOperator;
 import io.dingodb.exec.transaction.operator.CommitOperator;
+import io.dingodb.exec.transaction.operator.PessimisticResidualLockOperator;
 import io.dingodb.exec.transaction.operator.PessimisticRollBackOperator;
 import io.dingodb.exec.transaction.operator.PreWriteOperator;
 import io.dingodb.exec.transaction.operator.RollBackOperator;
@@ -116,6 +117,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_UPDATE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_RESIDUAL_LOCK;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_ROLL_BACK;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PIPE_OP;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PRE_WRITE;
@@ -217,6 +219,7 @@ public final class OperatorFactory {
         OPERATORS.put(TXN_PART_VECTOR, TxnPartVectorOperator.INSTANCE);
         OPERATORS.put(TXN_GET_BY_INDEX, TxnGetByIndexOperator.INSTANCE);
         OPERATORS.put(PESSIMISTIC_LOCK, PessimisticLockOperator.INSTANCE);
+        OPERATORS.put(PESSIMISTIC_RESIDUAL_LOCK, PessimisticResidualLockOperator.INSTANCE);
     }
 
     private OperatorFactory() {
