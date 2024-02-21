@@ -32,6 +32,8 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ImportFileConverter;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.transaction.api.LockType;
+import io.dingodb.transaction.api.TransactionService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
@@ -81,7 +83,7 @@ public class LoadDataOperation implements DmlOperation {
     private volatile String errMessage;
     private final Table table;
     private final KeyValueCodec codec;
-    private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
+    private NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     private final DingoType schema;
 
     MetaService metaService;
@@ -95,6 +97,7 @@ public class LoadDataOperation implements DmlOperation {
     private int txnRetryCnt;
 
     private long timeOut;
+    private Connection connection;
 
     private final AtomicLong count = new AtomicLong(0);
 
@@ -144,17 +147,21 @@ public class LoadDataOperation implements DmlOperation {
         schema = table.tupleType();
         this.isTxn = checkEngine();
         this.statementId = UUID.randomUUID().toString();
+        this.connection = connection;
     }
 
     @Override
     public boolean execute() {
+        if (enclosed != null && enclosed.equals("()")) {
+            throw DingoResource.DINGO_RESOURCE.fieldSeparatorError().ex();
+        }
         try {
             new Thread(() -> {
                 try {
                     byte[] preBytes = null;
-                    if (isTxn) {
-                        // todo try to lock table
-                    }
+                    List<CommonId> tables = new ArrayList<>();
+                    tables.add(table.getTableId());
+                    TransactionService.getDefault().lockTable(connection, tables, LockType.TABLE);
                     while (true) {
                         Object val = queue.take();
                         if (val instanceof byte[]) {
@@ -166,7 +173,6 @@ public class LoadDataOperation implements DmlOperation {
                     }
                     if (isTxn) {
                         endWriteWithTxn();
-                        //todo try to unlock table
                     }
                 } catch (DuplicateEntryException e1) {
                     errMessage = "Duplicate entry for key 'PRIMARY'";
@@ -174,6 +180,7 @@ public class LoadDataOperation implements DmlOperation {
                     log.error(e2.getMessage(), e2);
                     errMessage = e2.getMessage();
                 } finally {
+                    TransactionService.getDefault().unlockTable(connection);
                     isDone = true;
                 }
             }).start();
@@ -316,12 +323,15 @@ public class LoadDataOperation implements DmlOperation {
         if (isTxn) {
             insertWithTxn(tuples);
         } else {
-            insertWithoutTxn(tuples);
+            insertWithoutTxn(tuples, false);
         }
     }
 
-    public void insertWithoutTxn(Object[] tuples) {
+    public void insertWithoutTxn(Object[] tuples, boolean retry) {
         try {
+            if (retry) {
+                distributions = metaService.getRangeDistribution(table.tableId);
+            }
             CommonId partId = PartitionService.getService(
                     Optional.ofNullable(table.getPartitionStrategy())
                         .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
@@ -329,15 +339,20 @@ public class LoadDataOperation implements DmlOperation {
             StoreInstance store = Services.KV_STORE.getInstance(table.getTableId(), partId);
             boolean insert = store.insertIndex(tuples);
             if (insert) {
-                store.insertWithIndex(tuples);
+                insert = store.insertWithIndex(tuples);
             }
-            count.incrementAndGet();
+            if (insert) {
+                count.incrementAndGet();
+            }
+            exceptionRetries = 0;
         } catch (Exception e) {
-            if (e.getMessage().contains("InvalidRouteTableException")) {
+            log.error(e.getMessage(), e);
+            if (e.getMessage().contains("epoch is not match, region_epoch")
+                || e.getMessage().contains("Key out of range")) {
                 if (!continueRetry()) {
-                    return;
+                    throw e;
                 }
-                insertWithoutTxn(tuples);
+                insertWithoutTxn(tuples, true);
             } else {
                 throw e;
             }
