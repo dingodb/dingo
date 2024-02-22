@@ -45,12 +45,12 @@ public final class PartInsertOperator extends PartModifyOperator {
         if (insert) {
             if (store.insertWithIndex(keyValue)) {
                 param.inc();
-                param.addKeyState(true);
+                context.addKeyState(true);
             } else {
-                param.addKeyState(false);
+                context.addKeyState(false);
             }
         } else {
-            param.addKeyState(false);
+            context.addKeyState(false);
         }
         return true;
     }

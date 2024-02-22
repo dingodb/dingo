@@ -41,7 +41,7 @@ public abstract class PartModifyOperator extends SoleOutOperator {
             PartModifyParam param = vertex.getParam();
             Edge edge = vertex.getSoleEdge();
             if (!(fin instanceof FinWithException)) {
-                edge.transformToNext(new Object[]{param.getCount()/*, param.getKeyState()*/});
+                edge.transformToNext(new Object[]{param.getCount()});
             }
             edge.fin(fin);
             // Reset

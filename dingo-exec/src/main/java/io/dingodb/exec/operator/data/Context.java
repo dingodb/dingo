@@ -20,7 +20,12 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
+@Setter
 @Getter
 @Builder
 public class Context {
@@ -28,9 +33,22 @@ public class Context {
     private int pin;
     private CommonId indexId;
     private RangeDistribution distribution;
+    private List<Boolean> keyState;
 
     public Context setPin(int pin) {
         this.pin = pin;
         return this;
+    }
+
+    public Context copy() {
+        return Context.builder().pin(pin).keyState(keyState).build();
+    }
+
+    public void addKeyState(boolean state) {
+        keyState.add(state);
+    }
+
+    public Boolean[] getKeyState() {
+        return keyState.toArray(new Boolean[0]);
     }
 }

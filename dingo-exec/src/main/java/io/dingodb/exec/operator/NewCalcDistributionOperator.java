@@ -47,7 +47,7 @@ public class NewCalcDistributionOperator extends SourceOperator {
     }
 
     @Override
-    public boolean push(@NonNull Vertex vertex) {
+    public boolean push(Context context, @NonNull Vertex vertex) {
         DistributionSourceParam param = vertex.getParam();
         Set<RangeDistribution> distributions = getRangeDistributions(param);
         for (RangeDistribution distribution : distributions) {
@@ -58,7 +58,7 @@ public class NewCalcDistributionOperator extends SourceOperator {
                     Arrays.toString(distribution.getEndKey())
                 );
             }
-            Context context = Context.builder().distribution(distribution).build();
+            context.setDistribution(distribution);
             if (!vertex.getSoleEdge().transformToNext(context, null)) {
                 break;
             }

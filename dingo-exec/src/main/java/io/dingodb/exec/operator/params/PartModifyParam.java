@@ -31,8 +31,6 @@ import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.NavigableMap;
 
 @Getter
@@ -52,7 +50,6 @@ public abstract class PartModifyParam extends AbstractParams {
     protected KeyValueCodec codec;
     @Setter
     protected NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
-    protected List<Boolean> keyState;
 
     public PartModifyParam(
         CommonId tableId,
@@ -71,19 +68,9 @@ public abstract class PartModifyParam extends AbstractParams {
     @Override
     public void init(Vertex vertex) {
         count = 0;
-        keyState = new ArrayList<>();
-    }
-
-    public void addKeyState(boolean state) {
-        keyState.add(state);
-    }
-
-    public Boolean[] getKeyState() {
-        return keyState.toArray(new Boolean[0]);
     }
 
     public void reset() {
         count = 0;
-        keyState.clear();
     }
 }

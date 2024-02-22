@@ -290,11 +290,12 @@ public class IndexService {
         DingoCommonId schemaId = metaService.getSchemaByName(
             GetSchemaByNameRequest.builder().schemaName(schema).build()
         ).getSchema().getId();
-        return metaService
-            .getIndexes(GetIndexesRequest.builder().schemaId(schemaId).build())
-            .getIndexDefinitionWithIds().stream()
-            .map(IndexDefinitionWithId::getIndexDefinition)
-            .collect(Collectors.toList());
+        return Optional.mapOrGet(
+            metaService.getIndexes(GetIndexesRequest.builder().schemaId(schemaId).build()).getIndexDefinitionWithIds(),
+            __ -> __.stream()
+                .map(IndexDefinitionWithId::getIndexDefinition)
+                .collect(Collectors.toList()),
+            Collections::emptyList);
     }
 
     public boolean updateMaxElements(String schema, String index, int max) {

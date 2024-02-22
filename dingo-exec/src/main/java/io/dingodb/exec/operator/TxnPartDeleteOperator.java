@@ -188,6 +188,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
             localStore.deletePrefix(insertKey);
             if (localStore.put(keyValue) && context.getIndexId() == null) {
                 param.inc();
+                context.addKeyState(true);
             }
         }
 

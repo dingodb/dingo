@@ -53,7 +53,7 @@ public final class ReceiveOperator extends SourceOperator {
     }
 
     @Override
-    public boolean push(Vertex vertex) {
+    public boolean push(Context context, Vertex vertex) {
         ReceiveParam param = vertex.getParam();
 
         long count = 0;
@@ -74,7 +74,8 @@ public final class ReceiveOperator extends SourceOperator {
                         param.getSchema().format(tuple)
                     );
                 }
-                if (!vertex.getSoleEdge().transformToNext(Context.builder().distribution(distribution).build(), tuple)) {
+                context.setDistribution(distribution);
+                if (!vertex.getSoleEdge().transformToNext(context, tuple)) {
                     param.getEndpoint().stop();
                     // Stay in loop to receive FIN.
                 }

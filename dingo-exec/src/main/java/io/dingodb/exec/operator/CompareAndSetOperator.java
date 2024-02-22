@@ -52,9 +52,9 @@ public class CompareAndSetOperator extends PartModifyOperator {
         KeyValue row = param.getCodec().encode(newTuple);
         if (store.update(row, old)) {
             param.inc();
-            param.addKeyState(true);
+            context.addKeyState(true);
         } else {
-            param.addKeyState(false);
+            context.addKeyState(false);
         }
 
         return true;

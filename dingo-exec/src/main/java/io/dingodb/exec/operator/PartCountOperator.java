@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.OperatorProfile;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PartCountParam;
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,7 +31,7 @@ public final class PartCountOperator extends SourceOperator {
     }
 
     @Override
-    public boolean push(Vertex vertex) {
+    public boolean push(Context context, Vertex vertex) {
         Edge edge = vertex.getSoleEdge();
         PartCountParam param = vertex.getParam();
         OperatorProfile profile = param.getProfile(vertex.getId());
