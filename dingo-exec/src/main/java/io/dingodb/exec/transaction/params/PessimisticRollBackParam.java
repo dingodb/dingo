@@ -41,7 +41,8 @@ public class PessimisticRollBackParam extends AbstractParams {
     @JsonProperty("isolationLevel")
     private final int isolationLevel;
     @JsonProperty("forUpdateTs")
-    private final long forUpdateTs;
+    @Setter
+    private long forUpdateTs;
     private List<byte[]> keys;
     @Setter
     private CommonId tableId;

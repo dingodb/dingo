@@ -65,7 +65,6 @@ public class PessimisticRollBackOperator extends TransactionOperator {
             byte[] txnIdByte = txnId.encode();
             byte[] tableIdByte = tableId.encode();
             byte[] partIdByte = newPartId.encode();
-            byte[] startTsByte = PrimitiveCodec.encodeLong(param.getStartTs());
             int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
             // cache delete key
             byte[] dataKey = ByteUtils.encode(
@@ -81,6 +80,14 @@ public class PessimisticRollBackOperator extends TransactionOperator {
             deleteKey[deleteKey.length - 2] = (byte) Op.PUT.getCode();
             store.delete(deleteKey);
             byte[] lockKey = getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, deleteKey);
+            KeyValue keyValue = store.get(lockKey);
+            long forUpdateTs;
+            if (keyValue != null || keyValue.getValue() != null) {
+                // forUpdateTs
+                forUpdateTs = PrimitiveCodec.decodeLong(keyValue.getValue());
+            } else {
+                forUpdateTs = param.getForUpdateTs();
+            }
             store.delete(lockKey);
             // first appearance
             if (op != Op.NONE.getCode()) {
@@ -95,7 +102,8 @@ public class PessimisticRollBackOperator extends TransactionOperator {
                 param.setPartId(partId);
                 param.setTableId(tableId);
                 param.addKey(key);
-            } else if (partId.equals(newPartId)) {
+                param.setForUpdateTs(forUpdateTs);
+            } else if (partId.equals(newPartId) && forUpdateTs == param.getForUpdateTs()) {
                 param.addKey(key);
                 if (param.getKeys().size() == TransactionUtil.max_pre_write_count) {
                     boolean result = txnPessimisticRollBack(param, txnId, tableId, partId);
@@ -104,6 +112,7 @@ public class PessimisticRollBackOperator extends TransactionOperator {
                     }
                     param.getKeys().clear();
                     param.setPartId(null);
+                    param.setForUpdateTs(forUpdateTs);
                 }
             } else {
                 boolean result = txnPessimisticRollBack(param, txnId, param.getTableId(), partId);
@@ -114,6 +123,7 @@ public class PessimisticRollBackOperator extends TransactionOperator {
                 param.addKey(key);
                 param.setPartId(newPartId);
                 param.setTableId(tableId);
+                param.setForUpdateTs(forUpdateTs);
             }
             return true;
         }

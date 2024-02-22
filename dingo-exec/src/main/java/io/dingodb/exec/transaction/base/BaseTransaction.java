@@ -317,7 +317,7 @@ public abstract class BaseTransaction implements ITransaction {
                 }
             );
             commitFuture = commit_future;
-//            commit_future.get();
+            commit_future.get();
             this.status = TransactionStatus.COMMIT;
         } catch (Throwable t) {
             log.info(t.getMessage(), t);
@@ -327,6 +327,7 @@ public abstract class BaseTransaction implements ITransaction {
             log.info("{} {} Commit End Status:{}, Cost:{}ms", txnId, transactionOf(),
                 status, (System.currentTimeMillis() - preWriteStart));
             jobManager.removeJob(jobId.get());
+            commitFuture = null;
 //            cleanUp();
         }
     }
