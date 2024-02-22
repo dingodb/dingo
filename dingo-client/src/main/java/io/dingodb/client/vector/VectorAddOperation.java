@@ -48,16 +48,20 @@ public class VectorAddOperation implements Operation {
 
         IndexDefinition index = indexInfo.definition;
 
-        long count = vectors.stream().map(VectorWithId::getId).distinct().count();
+        long count = vectors.stream()
+            .map(VectorWithId::getId)
+            .peek(id -> {
+                if (!index.isWithAutoIncrment() && id <= 0) {
+                    throw new DingoClientException("Vector id must great than zero.");
+                }
+            })
+            .distinct().count();
         if (!index.isWithAutoIncrment() && vectors.size() != count) {
             throw new DingoClientException(-1, "Vectors cannot be added repeatedly");
         }
 
         for (int i = 0; i < vectors.size(); i++) {
             VectorWithId vector = vectors.get(i);
-            if (!index.isWithAutoIncrment() && vector.getId() <= 0) {
-                throw new DingoClientException("Vector IDs do not support negative numbers.");
-            }
             if (index.isWithAutoIncrment()) {
                 long id = indexInfo.autoIncrementService.next(indexInfo.id);
                 vector.setId(id);
