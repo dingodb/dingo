@@ -23,8 +23,15 @@ import io.dingodb.expr.runtime.type.Type;
 import io.dingodb.proxy.handler.ExprOpDeserializer;
 import io.dingodb.proxy.handler.ExprTypeDeserializer;
 import io.dingodb.proxy.handler.ScalarValueDeserializer;
-import io.dingodb.proxy.handler.StringDataSerializer;
+import io.dingodb.proxy.handler.DataNestSerializer;
 import io.dingodb.proxy.handler.VectorIndexParameterDeserializer;
+import io.dingodb.sdk.service.entity.common.ScalarField;
+import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.BoolData;
+import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.BytesData;
+import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.DoubleData;
+import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.FloatData;
+import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.IntData;
+import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.LongData;
 import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.StringData;
 import io.dingodb.sdk.service.entity.common.ScalarValue;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter;
@@ -59,13 +66,18 @@ public class JacksonConfig {
 
 
     @Bean
-    public StringDataSerializer addStringDataSerializer(@Autowired ObjectMapper mapper) {
+    public DataNestSerializer addStringDataSerializer(@Autowired ObjectMapper mapper) {
         jsonMapper = mapper;
         SimpleModule simpleModule = new SimpleModule();
-        StringDataSerializer serializer = new StringDataSerializer();
-        simpleModule.addSerializer(StringData.class, serializer);
+        simpleModule.addSerializer(BoolData.class, new DataNestSerializer(DataNestSerializer.BoolDataValue));
+        simpleModule.addSerializer(IntData.class, new DataNestSerializer(DataNestSerializer.IntDataValue));
+        simpleModule.addSerializer(LongData.class, new DataNestSerializer(DataNestSerializer.LongDataValue));
+        simpleModule.addSerializer(FloatData.class, new DataNestSerializer(DataNestSerializer.FloatDataValue));
+        simpleModule.addSerializer(DoubleData.class, new DataNestSerializer(DataNestSerializer.DoubleDataValue));
+        simpleModule.addSerializer(StringData.class, new DataNestSerializer(DataNestSerializer.StringDataValue));
+        simpleModule.addSerializer(BytesData.class, new DataNestSerializer(DataNestSerializer.BytesDataValue));
         mapper.registerModule(simpleModule);
-        return serializer;
+        return new DataNestSerializer(DataNestSerializer.StringDataValue);
     }
 
     @Bean

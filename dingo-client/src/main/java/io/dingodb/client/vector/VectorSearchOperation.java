@@ -90,6 +90,9 @@ public class VectorSearchOperation implements Operation {
                 .vectorWithIds(vectorSearch.getVectors())
                 .build()
         ).getBatchResults();
+        if (results == null) {
+            return;
+        }
         for (int i = 0; i < results.size(); i++) {
             VectorWithDistanceResult result = results.get(i);
             if (result == null) {
