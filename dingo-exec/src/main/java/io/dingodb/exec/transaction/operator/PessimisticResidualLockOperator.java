@@ -23,6 +23,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.params.PessimisticResidualLockParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
@@ -47,10 +48,13 @@ public class PessimisticResidualLockOperator extends TransactionOperator {
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         synchronized (vertex) {
             PessimisticResidualLockParam param = vertex.getParam();
-            CommonId txnId = (CommonId) tuple[1];
-            CommonId tableId = (CommonId) tuple[2];
-            CommonId newPartId = (CommonId) tuple[3];
-            byte[] key = (byte[]) tuple[5];
+            TxnLocalData txnLocalData = (TxnLocalData) tuple[0];
+            CommonId.CommonType type = txnLocalData.getDataType();
+            CommonId txnId = txnLocalData.getTxnId();
+            CommonId tableId = txnLocalData.getTableId();
+            CommonId newPartId = txnLocalData.getPartId();
+            int op = txnLocalData.getOp().getCode();
+            byte[] key = txnLocalData.getKey();
             StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
             byte[] txnIdByte = txnId.encode();
             byte[] tableIdByte = tableId.encode();
@@ -68,8 +72,7 @@ public class PessimisticResidualLockOperator extends TransactionOperator {
             KeyValue keyValue = store.get(lockKey);
             if (keyValue != null && keyValue.getValue() != null) {
                 store.delete(key);
-                Object[] decode = ByteUtils.decodePessimisticLock(keyValue);
-                long forUpdateTs = (long) decode[6];
+                long forUpdateTs = ByteUtils.decodePessimisticLockValue(keyValue);
                 log.info("{}, PessimisticResidualLockOperator residual key is:{}, forUpdateTs is {}",
                     txnId, Arrays.toString(key), forUpdateTs);
                 TransactionUtil.pessimisticPrimaryLockRollBack(

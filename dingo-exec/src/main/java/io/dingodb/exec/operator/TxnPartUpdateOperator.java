@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
+import static io.dingodb.exec.utils.ByteUtils.decodePessimisticKey;
 
 @Slf4j
 public class TxnPartUpdateOperator extends PartModifyOperator {
@@ -127,7 +128,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     partIdBytes
                 );
                 KeyValue oldKeyValue = localStore.get(dataKey);
-                byte[] primaryLockKeyBytes = (byte[]) ByteUtils.decodePessimisticExtraKey(primaryLockKey)[5];
+                byte[] primaryLockKeyBytes = decodePessimisticKey(primaryLockKey);
                 if (log.isDebugEnabled()) {
                     log.info("{} updated is true key is {}", txnId, Arrays.toString(key));
                 }

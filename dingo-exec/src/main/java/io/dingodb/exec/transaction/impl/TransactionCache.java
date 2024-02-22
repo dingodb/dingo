@@ -21,6 +21,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.CacheToObject;
+import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.store.api.StoreInstance;
@@ -87,13 +88,14 @@ public class TransactionCache {
         if (iterator.hasNext()) {
             KeyValue keyValue = iterator.next();
             Object[] tuple = ByteUtils.decode(keyValue);
-            CommonId.CommonType type = CommonId.CommonType.of((byte) tuple[0]);
-            CommonId txnId = (CommonId) tuple[1];
-            CommonId tableId = (CommonId) tuple[2];
-            CommonId newPartId = (CommonId) tuple[3];
-            int op = (byte) tuple[4];
-            byte[] key = (byte[]) tuple[5];
-            byte[] value = (byte[]) tuple[6];
+            TxnLocalData txnLocalData = (TxnLocalData) tuple[0];
+            CommonId.CommonType type = txnLocalData.getDataType();
+            CommonId txnId = txnLocalData.getTxnId();
+            CommonId tableId = txnLocalData.getTableId();
+            CommonId newPartId = txnLocalData.getPartId();
+            int op = txnLocalData.getOp().getCode();
+            byte[] key = txnLocalData.getKey();
+            byte[] value = txnLocalData.getValue();
             primaryKey = new CacheToObject(TransactionCacheToMutation.cacheToMutation(
                 op,
                 key,

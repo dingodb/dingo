@@ -22,6 +22,7 @@ import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.params.CommitParam;
 import io.dingodb.exec.transaction.params.PreWriteParam;
@@ -112,11 +113,12 @@ public class TxnImportDataOperation {
     }
 
     public static CacheToObject getCacheToObject(Object[] tuples) {
-        CommonId tableId = (CommonId) tuples[2];
-        CommonId newPartId = (CommonId) tuples[3];
-        int op = (byte) tuples[4];
-        byte[] key = (byte[]) tuples[5];
-        byte[] value = (byte[]) tuples[6];
+        TxnLocalData txnLocalData = (TxnLocalData) tuples[0];
+        CommonId tableId = txnLocalData.getTableId();
+        CommonId newPartId = txnLocalData.getPartId();
+        int op = txnLocalData.getOp().getCode();
+        byte[] key = txnLocalData.getKey();
+        byte[] value = txnLocalData.getValue();
         return new CacheToObject(TransactionCacheToMutation.cacheToMutation(
             op, key, value,0L, tableId, newPartId), tableId, newPartId
         );
@@ -199,12 +201,13 @@ public class TxnImportDataOperation {
             isolationLevel, TransactionType.OPTIMISTIC, timeOut);
         param.init(null);
         for (Object[] tuples : secondList) {
-            CommonId txnId = (CommonId) tuples[1];
-            CommonId tableId = (CommonId) tuples[2];
-            CommonId newPartId = (CommonId) tuples[3];
-            int op = (byte) tuples[4];
-            byte[] key = (byte[]) tuples[5];
-            byte[] value = (byte[]) tuples[6];
+            TxnLocalData txnLocalData = (TxnLocalData) tuples[0];
+            CommonId txnId = txnLocalData.getTxnId();
+            CommonId tableId = txnLocalData.getTableId();
+            CommonId newPartId = txnLocalData.getPartId();
+            int op = txnLocalData.getOp().getCode();
+            byte[] key = txnLocalData.getKey();
+            byte[] value = txnLocalData.getValue();
             Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, 0L, tableId, newPartId);
             CommonId partId = param.getPartId();
             if (partId == null) {
@@ -271,10 +274,11 @@ public class TxnImportDataOperation {
             commitTs, primaryKey, TransactionType.OPTIMISTIC);
         param.init(null);
         for (Object[] tuples : secondData) {
-            CommonId txnId = (CommonId) tuples[1];
-            CommonId tableId = (CommonId) tuples[2];
-            CommonId newPartId = (CommonId) tuples[3];
-            byte[] key = (byte[]) tuples[5];
+            TxnLocalData txnLocalData = (TxnLocalData) tuples[0];
+            CommonId txnId = txnLocalData.getTxnId();
+            CommonId tableId = txnLocalData.getTableId();
+            CommonId newPartId = txnLocalData.getPartId();
+            byte[] key = txnLocalData.getKey();
             param.addKey(key);
             CommonId partId = param.getPartId();
             if (partId == null) {
@@ -382,10 +386,11 @@ public class TxnImportDataOperation {
             RollBackParam param = new RollBackParam(dingoType, isolationLevel, startTs, TransactionType.OPTIMISTIC);
             param.init(null);
             for (Object[] tuples : tupleList) {
-                CommonId txnId = (CommonId) tuples[1];
-                CommonId tableId = (CommonId) tuples[2];
-                CommonId newPartId = (CommonId) tuples[3];
-                byte[] key = (byte[]) tuples[5];
+                TxnLocalData txnLocalData = (TxnLocalData) tuples[0];
+                CommonId txnId = txnLocalData.getTxnId();
+                CommonId tableId = txnLocalData.getTableId();
+                CommonId newPartId = txnLocalData.getPartId();
+                byte[] key = txnLocalData.getKey();
                 param.addKey(key);
                 CommonId partId = param.getPartId();
                 if (partId == null) {

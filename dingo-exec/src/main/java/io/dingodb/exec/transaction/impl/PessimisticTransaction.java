@@ -26,6 +26,7 @@ import io.dingodb.exec.transaction.base.BaseTransaction;
 import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.base.TransactionStatus;
 import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
@@ -133,9 +134,10 @@ public class PessimisticTransaction extends BaseTransaction {
         }
         if (primaryKeyLock != null && forUpdateTs != 0) {
             Object[] objects = ByteUtils.decodePessimisticExtraKey(primaryKeyLock);
-            CommonId tableId = (CommonId) objects[2];
-            CommonId newPartId = (CommonId) objects[3];
-            byte[] key = (byte[]) objects[5];
+            TxnLocalData txnLocalData = (TxnLocalData) objects[0];
+            CommonId tableId = txnLocalData.getTableId();
+            CommonId newPartId = txnLocalData.getPartId();
+            byte[] key = txnLocalData.getKey();
             log.info("{} pessimisticPrimaryLockRollBack key:{}", txnId, Arrays.toString(key));
             TransactionUtil.pessimisticPrimaryLockRollBack(
                 txnId,
@@ -202,11 +204,12 @@ public class PessimisticTransaction extends BaseTransaction {
 
     public CacheToObject primaryLockTo() {
         Object[] objects = ByteUtils.decodePessimisticExtraKey(primaryKeyLock);
-        CommonId.CommonType type = CommonId.CommonType.of((byte) objects[0]);
-        CommonId txnId = (CommonId) objects[1];
-        CommonId tableId = (CommonId) objects[2];
-        CommonId newPartId = (CommonId) objects[3];
-        byte[] key = (byte[]) objects[5];
+        TxnLocalData txnLocalData = (TxnLocalData) objects[0];
+        CommonId.CommonType type = txnLocalData.getDataType();
+        CommonId tableId = txnLocalData.getTableId();
+        CommonId newPartId = txnLocalData.getPartId();
+        int op = txnLocalData.getOp().getCode();
+        byte[] key = txnLocalData.getKey();
         byte[] insertKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_DATA, Op.PUTIFABSENT, primaryKeyLock);
         byte[] deleteKey = Arrays.copyOf(insertKey, insertKey.length);
         deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
