@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
+import static io.dingodb.exec.utils.ByteUtils.decodePessimisticKey;
 
 @Slf4j
 public class TxnPartDeleteOperator extends PartModifyOperator {
@@ -103,7 +104,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                 partIdBytes
             );
             KeyValue oldKeyValue = localStore.get(dataKey);
-            byte[] primaryLockKeyBytes = (byte[]) ByteUtils.decodePessimisticExtraKey(primaryLockKey)[5];
+            byte[] primaryLockKeyBytes = decodePessimisticKey(primaryLockKey);
             if (!(ByteArrayUtils.compare(keyValueKey, primaryLockKeyBytes, 1) == 0)) {
                 // This key appears for the first time in the current transaction
                 if (oldKeyValue == null) {

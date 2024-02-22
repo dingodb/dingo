@@ -25,6 +25,7 @@ import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.Utils;
+import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
@@ -152,15 +153,16 @@ public class ShowLocksOperation implements QueryOperation {
         );
         while (iterator.hasNext()) {
             Object[] lockKeyTuple = ByteUtils.decode(iterator.next());
-            CommonId txnId = (CommonId) lockKeyTuple[1];
-            CommonId tableId = (CommonId) lockKeyTuple[2];
+            TxnLocalData txnLocalData = (TxnLocalData) lockKeyTuple[0];
+            CommonId txnId = txnLocalData.getTxnId();
+            CommonId tableId = txnLocalData.getTableId();
             String[] lock = new String[COLUMNS.size()];
             lock[SERVER_INDEX] = DingoConfiguration.serverId().toString();
             lock[TABLE_INDEX] = MetaService.root().getTable(tableId).name;
             lock[SCHEMA_INDEX] = getSchema(tableId);
             lock[TXN_INDEX] = txnId.toString();
             lock[STATUS_INDEX] = BLOCK;
-            lock[KEY_INDEX] = lockKey(tableId, (byte[]) lockKeyTuple[5]);
+            lock[KEY_INDEX] = lockKey(tableId, txnLocalData.getKey());
             lock[TYPE_INDEX] = ROW_TYPE;
             lock[DURATION_INDEX] = String.valueOf(tsoService.timestamp(tso) - tsoService.timestamp(txnId.seq));
             locks.add(lock);
@@ -174,15 +176,16 @@ public class ShowLocksOperation implements QueryOperation {
         );
         while (iterator.hasNext()) {
             Object[] lockKeyTuple = ByteUtils.decode(iterator.next());
+            TxnLocalData txnLocalData = (TxnLocalData) lockKeyTuple[0];
             String[] lock = new String[COLUMNS.size()];
-            CommonId txnId = (CommonId) lockKeyTuple[1];
-            CommonId tableId = (CommonId) lockKeyTuple[2];
+            CommonId txnId = txnLocalData.getTxnId();
+            CommonId tableId = txnLocalData.getTableId();
             lock[SERVER_INDEX] = DingoConfiguration.serverId().toString();
             lock[TXN_INDEX] = txnId.toString();
             lock[TABLE_INDEX] = MetaService.root().getTable(tableId).name;
             lock[SCHEMA_INDEX] = getSchema(tableId);
             lock[STATUS_INDEX] = LOCKED;
-            lock[KEY_INDEX] = lockKey(tableId, (byte[]) lockKeyTuple[5]);
+            lock[KEY_INDEX] = lockKey(tableId, txnLocalData.getKey());
             lock[TYPE_INDEX] = ROW_TYPE;
             lock[DURATION_INDEX] = String.valueOf(tsoService.timestamp(tso) - tsoService.timestamp(txnId.seq));
             locks.add(lock);

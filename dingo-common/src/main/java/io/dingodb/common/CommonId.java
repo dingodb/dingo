@@ -108,6 +108,8 @@ public class CommonId implements Comparable<CommonId>, Serializable {
                 case 10: return TXN_CACHE_DATA;
                 case 11: return TXN_CACHE_LOCK;
                 case 12: return TXN_CACHE_EXTRA_DATA;
+                case 13: return TXN_CACHE_BLOCK_LOCK;
+                case 14: return TXN_CACHE_RESIDUAL_LOCK;
                 case 20: return OP;
                 case 60: return TRANSACTION;
                 case 61: return TXN_INSTANCE;

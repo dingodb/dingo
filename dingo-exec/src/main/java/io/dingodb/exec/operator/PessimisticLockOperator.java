@@ -30,6 +30,7 @@ import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PessimisticLockParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
 import io.dingodb.exec.transaction.util.TransactionUtil;
@@ -57,6 +58,7 @@ import java.util.stream.Collectors;
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 import static io.dingodb.exec.utils.ByteUtils.decode;
 import static io.dingodb.exec.utils.ByteUtils.decodePessimisticExtraKey;
+import static io.dingodb.exec.utils.ByteUtils.decodePessimisticKey;
 import static io.dingodb.exec.utils.ByteUtils.encode;
 import static io.dingodb.exec.utils.ByteUtils.getKeyByOp;
 
@@ -293,7 +295,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
                     localStore.put(lockKeyValue);
                     return false;
                 } else {
-                    byte[] primaryLockKeyBytes = (byte[]) decodePessimisticExtraKey(primaryLockKey)[5];
+                    byte[] primaryLockKeyBytes = decodePessimisticKey(primaryLockKey);
                     long forUpdateTs = vertex.getTask().getJobId().seq;
                     byte[] forUpdateTsByte = PrimitiveCodec.encodeLong(forUpdateTs);
                     if (log.isDebugEnabled()) {
@@ -365,7 +367,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
                 bytes.add(deleteKey);
                 bytes.add(updateKey);
                 List<KeyValue> keyValues = localStore.get(bytes);
-                byte[] primaryLockKeyBytes = (byte[]) ByteUtils.decodePessimisticExtraKey(primaryLockKey)[5];
+                byte[] primaryLockKeyBytes = decodePessimisticKey(primaryLockKey);
                 if (keyValues != null && keyValues.size() > 0) {
                     if (keyValues.size() > 1) {
                         throw new RuntimeException(txnId + " Key is not existed than two in local localStore");
@@ -394,7 +396,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
                     }
                     localStore.put(extraKeyValue);
                     Object[] decode = decode(value);
-                    KeyValue keyValue = new KeyValue((byte[]) decode[5], value.getValue());
+                    KeyValue keyValue = new KeyValue(((TxnLocalData) decode[0]).getKey(), value.getValue());
                     Object[] result = codec.decode(keyValue);
                     vertex.getOutList().forEach(o -> o.transformToNext(context, result));
                     return true;

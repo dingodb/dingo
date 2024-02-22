@@ -52,8 +52,7 @@ public class CleanCacheOperator extends TransactionOperator {
                 store.deletePrefix(keyValue.getKey());
             } else {
                 byte[] lockKey = keyValue.getKey();
-                Object[] decode = ByteUtils.decodePessimisticLock(keyValue);
-                long forUpdateTs = (long) decode[6];
+                long forUpdateTs = ByteUtils.decodePessimisticLockValue(keyValue);
                 byte[] dataKey = Arrays.copyOf(lockKey, lockKey.length);
                 dataKey[0] = (byte) CommonId.CommonType.TXN_CACHE_DATA.getCode();
                 dataKey[dataKey.length - 2] = (byte) DELETE.getCode();

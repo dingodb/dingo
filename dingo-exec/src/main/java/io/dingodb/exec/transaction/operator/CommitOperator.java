@@ -30,6 +30,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.params.CommitParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.meta.entity.IndexTable;
@@ -55,12 +56,14 @@ public class CommitOperator extends TransactionOperator {
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         synchronized (vertex) {
             CommitParam param = vertex.getParam();
-            CommonId.CommonType type = CommonId.CommonType.of((byte) tuple[0]);
-            CommonId txnId = (CommonId) tuple[1];
-            CommonId tableId = (CommonId) tuple[2];
-            CommonId newPartId = (CommonId) tuple[3];
-            int op = (byte) tuple[4];
-            byte[] key = (byte[]) tuple[5];
+            TxnLocalData txnLocalData = (TxnLocalData) tuple[0];
+            CommonId.CommonType type = txnLocalData.getDataType();
+            CommonId txnId = txnLocalData.getTxnId();
+            CommonId tableId = txnLocalData.getTableId();
+            CommonId newPartId = txnLocalData.getPartId();
+            int op = txnLocalData.getOp().getCode();
+            byte[] key = txnLocalData.getKey();
+            byte[] value = txnLocalData.getValue();
             if (ByteArrayUtils.compare(key, param.getPrimaryKey(), 1) == 0) {
                 return true;
             }

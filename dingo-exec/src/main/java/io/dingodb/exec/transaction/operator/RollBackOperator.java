@@ -31,6 +31,7 @@ import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.params.RollBackParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
@@ -59,12 +60,13 @@ public class RollBackOperator extends TransactionOperator {
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         synchronized (vertex) {
             RollBackParam param = vertex.getParam();
-            CommonId.CommonType type = CommonId.CommonType.of((byte) tuple[0]);
-            CommonId txnId = (CommonId) tuple[1];
-            CommonId tableId = (CommonId) tuple[2];
-            CommonId newPartId = (CommonId) tuple[3];
-            int op = (byte) tuple[4];
-            byte[] key = (byte[]) tuple[5];
+            TxnLocalData txnLocalData = (TxnLocalData) tuple[0];
+            CommonId.CommonType type = txnLocalData.getDataType();
+            CommonId txnId = txnLocalData.getTxnId();
+            CommonId tableId = txnLocalData.getTableId();
+            CommonId newPartId = txnLocalData.getPartId();
+            int op = txnLocalData.getOp().getCode();
+            byte[] key = txnLocalData.getKey();
             long forUpdateTs = 0;
             if (tableId.type == CommonId.CommonType.INDEX) {
                 IndexTable indexTable = TransactionUtil.getIndexDefinitions(tableId);
@@ -96,7 +98,7 @@ public class RollBackOperator extends TransactionOperator {
                 if (keyValue == null) {
                     throw new RuntimeException(txnId + " lock keyValue is null ");
                 }
-                forUpdateTs = (long) ByteUtils.decodePessimisticLock(keyValue)[6];
+                forUpdateTs = ByteUtils.decodePessimisticLockValue(keyValue);
             }
             CommonId partId = param.getPartId();
             if (partId == null) {
