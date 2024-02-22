@@ -33,10 +33,10 @@ public abstract class SourceOperator extends SoleOutOperator {
 
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        return push(vertex);
+        return push(context, vertex);
     }
 
-    public abstract boolean push(Vertex vertex);
+    public abstract boolean push(Context context, Vertex vertex);
 
     @Override
     public  void fin(int pin, Fin fin, Vertex vertex) {

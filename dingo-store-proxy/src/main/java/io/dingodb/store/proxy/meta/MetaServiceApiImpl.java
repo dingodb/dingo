@@ -104,7 +104,6 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         log.info("Meta lock start...");
         leaderId = null;
         leaderChannel = null;
-        MetaService.ROOT.cache.clear();
         try {
             if (!lock.tryLock()) {
                 Kv currentLock = lockService.currentLock();

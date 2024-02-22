@@ -20,6 +20,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -42,6 +43,8 @@ public interface Task {
     Location getLocation();
 
     Vertex getRoot();
+
+    Context getContext();
 
     void markRoot(CommonId operatorId);
 
@@ -88,4 +91,6 @@ public interface Task {
     void setTxnId(CommonId txnId);
 
     void setBathTask(boolean bathTask);
+
+    void setContext(Context context);
 }

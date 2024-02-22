@@ -172,10 +172,10 @@ public class DingoStreamingConverterVisitFun {
         ITransaction transaction
     ) {
         List<Vertex> outputs = new LinkedList<>();
-        final TableInfo tableInfo = MetaServiceUtils.getTableInfo(copy.getTable());
         final Table table = copy.getTable().unwrap(DingoTable.class).getTable();
-        NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
         for (Vertex input : inputs) {
+            final TableInfo tableInfo = MetaServiceUtils.getTableInfo(copy.getTable());
+            NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
             Task task = input.getTask();
             CopyParam copyParam = new CopyParam();
             Vertex copyVertex = new Vertex(COPY, copyParam);

@@ -49,6 +49,7 @@ public class DistributeOperator extends SoleOutOperator {
 
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
+        context = context.copy();
         DistributionParam param = vertex.getParam();
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         while (retry-- > 0) {
@@ -58,14 +59,13 @@ public class DistributeOperator extends SoleOutOperator {
                     newTuple = Arrays.copyOfRange(tuple, 0, param.getTable().columns.size());
                 }
                 IndexTable indexTable = param.getIndexTable();
-                Context.ContextBuilder builder = Context.builder();
                 PartitionService ps = PartitionService.getService(
                     Optional.ofNullable(param.getTable().getPartitionStrategy())
                         .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
                 CommonId partId;
                 if (param.getTableId().type.code == CommonId.CommonType.INDEX.code
                     && indexTable != null) {
-                    builder.indexId(param.getTableId());
+                    context.setIndexId(param.getTableId());
                     ps = PartitionService.getService(
                         Optional.ofNullable(indexTable.getPartitionStrategy())
                             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
@@ -80,8 +80,9 @@ public class DistributeOperator extends SoleOutOperator {
                     partId = ps.calcPartId(newTuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
                 }
                 RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
+                context.setDistribution(distribution);
 
-                return vertex.getSoleEdge().transformToNext(builder.distribution(distribution).build(), tuple);
+                return vertex.getSoleEdge().transformToNext(context, tuple);
             } catch (RegionSplitException e) {
                 log.error(e.getMessage());
                 NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions =

@@ -38,6 +38,7 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.meta.MetaService;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -54,6 +55,7 @@ public final class JobManagerImpl implements JobManager {
 
     private final Map<CommonId, Job> jobMap = new ConcurrentHashMap<>();
     private final Map<Location, Channel> channelMap;
+    @Getter
     private final TaskManager taskManager;
     private final IdGenerator idGenerator;
 

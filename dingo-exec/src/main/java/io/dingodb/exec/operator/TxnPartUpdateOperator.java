@@ -223,6 +223,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     localStore.delete(keyValue.getKey());
                     if (localStore.put(keyValue) && context.getIndexId() == null) {
                         param.inc();
+                        context.addKeyState(true);
                     }
                 }
             }

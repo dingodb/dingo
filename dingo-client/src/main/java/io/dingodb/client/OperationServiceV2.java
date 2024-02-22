@@ -38,7 +38,9 @@ import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.impl.IdGeneratorImpl;
+import io.dingodb.exec.impl.JobIteratorImpl;
 import io.dingodb.exec.impl.JobManagerImpl;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.CoalesceParam;
 import io.dingodb.exec.operator.params.CompareAndSetParam;
 import io.dingodb.exec.operator.params.CopyParam;
@@ -76,6 +78,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 import static io.dingodb.client.utils.OperationUtils.mapKey2;
@@ -127,13 +130,27 @@ public class OperationServiceV2 {
         return TsoService.INSTANCE.tso();
     }
 
-    private ITransaction getTransaction(Table table) {
+    private ITransaction getTransaction(String schema, String tableName) {
+        MetaService metaService = getSubMetaService(schema);
+        Table table = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         if (table.engine != null && table.engine.contains("TXN")) {
             long startTs = TransactionManager.getStartTs();
-            return TransactionManager.createTransaction(
+            ITransaction transaction = TransactionManager.createTransaction(
                 TransactionType.OPTIMISTIC,
                 startTs,
                 IsolationLevel.SnapshotIsolation.getCode());
+            Properties properties = new Properties();
+            properties.setProperty("lock_wait_timeout", "50");
+            properties.setProperty("transaction_isolation", "REPEATABLE-READ");
+            properties.setProperty("transaction_read_only", "off");
+            properties.setProperty("txn_mode", "optimistic");
+            properties.setProperty("collect_txn", "true");
+            properties.setProperty("statement_timeout", "50000");
+            properties.setProperty("txn_inert_check", "off");
+            properties.setProperty("txn_retry", "off");
+            properties.setProperty("txn_retry_cnt", "0");
+            transaction.setTransactionConfig(properties);
+            return transaction;
         }
         return null;
     }
@@ -181,7 +198,13 @@ public class OperationServiceV2 {
 
     public List<Record> get(String schema, String tableName, List<Key> keys) {
         long jobSeqId = tso();
-        Job job = jobManager.createJob(jobSeqId, jobSeqId, CommonId.EMPTY_TRANSACTION, null);
+        ITransaction transaction = getTransaction(schema, tableName);
+        Job job;
+        if (transaction != null) {
+            job = jobManager.createJob(jobSeqId, jobSeqId, transaction.getTxnId(), null);
+        } else {
+            job = jobManager.createJob(jobSeqId, jobSeqId, CommonId.EMPTY_TRANSACTION, null);
+        }
         IdGeneratorImpl idGenerator = new IdGeneratorImpl(job.getJobId().seq);
 
         CommonId jobId = job.getJobId();
@@ -195,7 +218,7 @@ public class OperationServiceV2 {
         try {
             Location currentLocation = MetaService.root().currentLocation();
             // distribution --> getByKey --> root
-            List<Vertex> byKeyOutputs = getByKey(schema, tableName, job, idGenerator, currentLocation, tuples);
+            List<Vertex> byKeyOutputs = getByKey(table, job, idGenerator, currentLocation, transaction, tuples);
             List<Vertex> root = root(job, idGenerator, currentLocation, byKeyOutputs);
             if (root.size() > 0) {
                 throw new IllegalStateException("There root of plan must be `DingoRoot`");
@@ -215,7 +238,13 @@ public class OperationServiceV2 {
 
     public Boolean[] delete(String schema, String tableName, List<Key> keys) {
         long jobSeqId = tso();
-        Job job = jobManager.createJob(jobSeqId, jobSeqId, CommonId.EMPTY_TRANSACTION, null);
+        ITransaction transaction = getTransaction(schema, tableName);
+        Job job;
+        if (transaction != null) {
+            job = jobManager.createJob(jobSeqId, jobSeqId, transaction.getTxnId(), null);
+        } else {
+            job = jobManager.createJob(jobSeqId, jobSeqId, CommonId.EMPTY_TRANSACTION, null);
+        }
         IdGeneratorImpl idGenerator = new IdGeneratorImpl(job.getJobId().seq);
 
         CommonId jobId = job.getJobId();
@@ -230,25 +259,27 @@ public class OperationServiceV2 {
         try {
             Location currentLocation = MetaService.root().currentLocation();
             // values --> delete --> coalesce --> sumUp --> root
-            List<Vertex> valuesOutputs = values(schema, tableName, job, idGenerator, currentLocation, tuples);
-            List<Vertex> deleteOutputs = delete(schema, tableName, idGenerator, currentLocation, valuesOutputs);
-            List<Vertex> coalesceOutputs = coalesce(idGenerator, deleteOutputs);
-            List<Vertex> root = root(job, idGenerator, currentLocation, coalesceOutputs);
+            List<Vertex> getByKeyOutputs = getByKey(table, job, idGenerator, currentLocation, transaction, tuples);
+            List<Vertex> copyOutputs = copy(table, job, idGenerator, currentLocation, transaction, getByKeyOutputs);
+            List<Vertex> coalesceOutputs = coalesce(idGenerator, copyOutputs);
+            List<Vertex> deleteOutputs = delete(table, idGenerator, currentLocation, transaction, coalesceOutputs);
+            List<Vertex> root = root(job, idGenerator, currentLocation, deleteOutputs);
             if (root.size() > 0) {
                 throw new IllegalStateException("There root of plan must be `DingoRoot`");
             }
 
-            Iterator<Object[]> iterator = jobManager.createIterator(job, null);
-            Boolean[] keyState = null;
-            while (iterator.hasNext()) {
-                Boolean[] state = (Boolean[]) iterator.next()[1];
-                if (keyState != null) {
-                    Boolean[] dest = new Boolean[keyState.length + state.length];
-                    System.arraycopy(keyState, 0, dest, 0, keyState.length);
-                    System.arraycopy(state, 0, dest, keyState.length, state.length);
-                    keyState = dest;
-                }
-                keyState = state;
+            // Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+            Task task = job.getTasks().values().iterator().next();
+            if (task.getRoot() != null) {
+                jobManager.getTaskManager().addTask(task);
+                task.run(null);
+            }
+            Task rootTask = job.getRoot();
+            // Iterator<Object[]> iterator = new JobIteratorImpl(job, rootTask.getRoot());
+            Boolean[] keyState = task.getContext().getKeyState();
+            if (transaction != null) {
+                transaction.addSql("insert");
+                transaction.commit(jobManager);
             }
             return keyState;
         } finally {
@@ -258,44 +289,86 @@ public class OperationServiceV2 {
 
     public Boolean[] insert(String schema, String tableName, List<Object[]> tuples) {
         long jobSeqId = tso();
-        Job job = jobManager.createJob(jobSeqId, jobSeqId, CommonId.EMPTY_TRANSACTION, null);
+        ITransaction transaction = getTransaction(schema, tableName);
+        Job job;
+        if (transaction != null) {
+            job = jobManager.createJob(jobSeqId, jobSeqId, transaction.getTxnId(), null);
+        } else {
+            job = jobManager.createJob(jobSeqId, jobSeqId, CommonId.EMPTY_TRANSACTION, null);
+        }
         IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
 
+        MetaService metaService = getSubMetaService(schema);
+        Table table = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         CommonId jobId = job.getJobId();
         try {
             Location currentLocation = MetaService.root().currentLocation();
-            // values --> partition --> insert --> root
-            List<Vertex> valuesOutputs = values(schema, tableName, job, idGenerator, currentLocation, tuples);
-            List<Vertex> partitionOutputs = copy(schema, tableName, job, idGenerator, currentLocation, valuesOutputs);
-            List<Vertex> insertOutputs = insert(schema, tableName, idGenerator, currentLocation, partitionOutputs);
-            List<Vertex> root = root(job, idGenerator, currentLocation, insertOutputs);
+            // values --> partition --> insert --> coalesce --> sumUp --> root
+            List<Vertex> valuesOutputs = values(
+                job,
+                idGenerator,
+                currentLocation,
+                tuples);
+            List<Vertex> partitionOutputs = copy(
+                table,
+                job,
+                idGenerator,
+                currentLocation,
+                transaction,
+                valuesOutputs);
+            List<Vertex> insertOutputs = insert(
+                table,
+                idGenerator,
+                currentLocation,
+                transaction,
+                partitionOutputs);
+            List<Vertex> coalesceOutputs = coalesce(
+                idGenerator,
+                insertOutputs);
+            List<Vertex> root = root(
+                job,
+                idGenerator,
+                currentLocation,
+                coalesceOutputs);
             if (root.size() > 0) {
                 throw new IllegalStateException("There root of plan must be `DingoRoot`");
             }
 
-            Iterator<Object[]> iterator = jobManager.createIterator(job, null);
-            Boolean[] keyState = null;
-            while (iterator.hasNext()) {
-                Boolean[] state = (Boolean[]) iterator.next()[1];
-                if (keyState != null) {
-                    Boolean[] dest = new Boolean[keyState.length + state.length];
-                    System.arraycopy(keyState, 0, dest, 0, keyState.length);
-                    System.arraycopy(state, 0, dest, keyState.length, state.length);
-                    keyState = dest;
-                }
-                keyState = state;
+            // Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+            Task task = job.getTasks().values().iterator().next();
+            if (task.getRoot() != null) {
+                jobManager.getTaskManager().addTask(task);
+                task.run(null);
+            }
+            Task rootTask = job.getRoot();
+            // Iterator<Object[]> iterator = new JobIteratorImpl(job, rootTask.getRoot());
+            Boolean[] keyState = task.getContext().getKeyState();
+            if (transaction != null) {
+                transaction.addSql("insert");
+                transaction.commit(jobManager);
             }
             return keyState;
         } finally {
             jobManager.removeJob(jobId);
+            if (transaction != null) {
+                transaction.close(jobManager);
+            }
         }
     }
 
     public Boolean[] compareAndSet(String schema, String tableName, List<Object[]> tuples, List<Object[]> expects) {
         long jobSeqId = tso();
-        Job job = jobManager.createJob(jobSeqId, jobSeqId, CommonId.EMPTY_TRANSACTION, null);
+        ITransaction transaction = getTransaction(schema, tableName);
+        Job job;
+        if (transaction != null) {
+            job = jobManager.createJob(jobSeqId, jobSeqId, transaction.getTxnId(), null);
+        } else {
+            job = jobManager.createJob(jobSeqId, jobSeqId, CommonId.EMPTY_TRANSACTION, null);
+        }
         IdGeneratorImpl idGenerator = new IdGeneratorImpl(job.getJobId().seq);
 
+        MetaService metaService = getSubMetaService(schema);
+        Table table = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         CommonId jobId = job.getJobId();
         List<Object[]> newTuples = new ArrayList<>();
         for (int i = 0; i < tuples.size(); i++) {
@@ -309,10 +382,28 @@ public class OperationServiceV2 {
         try {
             // values --> partition --> compareAndSet --> root
             Location currentLocation = MetaService.root().currentLocation();
-            List<Vertex> valuesOutputs = values(schema, tableName, job, idGenerator, currentLocation, newTuples);
-            List<Vertex> partitionOutputs = copy(schema, tableName, job, idGenerator, currentLocation, valuesOutputs);
-            List<Vertex> compareAndSetOutputs = compareAndSet(schema, tableName, idGenerator, currentLocation, partitionOutputs);
-            List<Vertex> root = root(job, idGenerator, currentLocation, compareAndSetOutputs);
+            List<Vertex> valuesOutputs = values(
+                job,
+                idGenerator,
+                currentLocation,
+                newTuples);
+            List<Vertex> partitionOutputs = copy(
+                table,
+                job,
+                idGenerator,
+                currentLocation,
+                transaction,
+                valuesOutputs);
+            List<Vertex> compareAndSetOutputs = compareAndSet(
+                table,
+                idGenerator,
+                currentLocation,
+                partitionOutputs);
+            List<Vertex> root = root(
+                job,
+                idGenerator,
+                currentLocation,
+                compareAndSetOutputs);
             if (root.size() > 0) {
                 throw new IllegalStateException("There root of plan must be `DingoRoot`");
             }
@@ -477,9 +568,7 @@ public class OperationServiceV2 {
         return outputs;
     }
 
-    private List<Vertex> values(String schema,
-                                String tableName,
-                                Job job,
+    private List<Vertex> values(Job job,
                                 IdGenerator idGenerator,
                                 Location currentLocation,
                                 List<Object[]> tuples
@@ -488,6 +577,7 @@ public class OperationServiceV2 {
         ValuesParam valuesParam = new ValuesParam(tuples, null);
         Vertex values = new Vertex(VALUES, valuesParam);
         Task task = job.getOrCreate(currentLocation, idGenerator);
+        task.setContext(Context.builder().pin(0).keyState(new ArrayList<>()).build());
         values.setId(idGenerator.getOperatorId(task.getId()));
         OutputHint hint = new OutputHint();
         hint.setLocation(currentLocation);
@@ -498,17 +588,14 @@ public class OperationServiceV2 {
         return outputs;
     }
 
-    private List<Vertex> getByKey(String schema,
-                                  String tableName,
+    private List<Vertex> getByKey(Table td,
                                   Job job,
                                   IdGenerator idGenerator,
                                   Location currentLocation,
+                                  ITransaction transaction,
                                   List<Object[]> tuples
     ) {
-        MetaService metaService = getSubMetaService(schema);
-        Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         CommonId tableId = td.getTableId();
-        ITransaction transaction = getTransaction(td);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
             metaService.getRangeDistribution(tableId);
         List<Vertex> outputs = new LinkedList<>();
@@ -548,21 +635,18 @@ public class OperationServiceV2 {
         return outputs;
     }
 
-    private List<Vertex> copy(String schema,
-                              String tableName,
+    private List<Vertex> copy(Table td,
                               Job job,
                               IdGenerator idGenerator,
                               Location currentLocation,
+                              ITransaction transaction,
                               List<Vertex> inputs
     ) {
         List<Vertex> outpus = new LinkedList<>();
-        MetaService metaService = getSubMetaService(schema);
-        Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         CommonId tableId = td.getTableId();
-        ITransaction transaction = getTransaction(td);
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
-            metaService.getRangeDistribution(tableId);
         for (Vertex input : inputs) {
+            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> parts =
+                metaService.getRangeDistribution(tableId);
             Task task = input.getTask();
             Vertex copyVertex = new Vertex(COPY, new CopyParam());
             copyVertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -647,16 +731,13 @@ public class OperationServiceV2 {
         return outputs;
     }
 
-    private List<Vertex> delete(String schema,
-                                String tableName,
+    private List<Vertex> delete(Table td,
                                 IdGenerator idGenerator,
                                 Location currentLocation,
+                                ITransaction transaction,
                                 List<Vertex> inputs
     ) {
-        MetaService metaService = getSubMetaService(schema);
-        CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
-        Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
-        ITransaction transaction = getTransaction(td);
+        CommonId tableId = Parameters.nonNull(td.getTableId(), "Table not found.");
         List<Vertex> outputs = new LinkedList<>();
 
         for (Vertex input : inputs) {
@@ -695,16 +776,13 @@ public class OperationServiceV2 {
         return outputs;
     }
 
-    private List<Vertex> insert(String schema,
-                                String tableName,
+    private List<Vertex> insert(Table td,
                                 IdGenerator idGenerator,
                                 Location currentLocation,
+                                ITransaction transaction,
                                 List<Vertex> inputs
     ) {
-        MetaService metaService = getSubMetaService(schema);
-        CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
-        Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
-        ITransaction transaction = getTransaction(td);
+        CommonId tableId = Parameters.nonNull(td.getTableId(), "Table not found.");
         List<Vertex> outputs = new LinkedList<>();
 
         for (Vertex input : inputs) {
@@ -742,15 +820,12 @@ public class OperationServiceV2 {
         return outputs;
     }
 
-    private List<Vertex> compareAndSet(String schema,
-                                       String tableName,
+    private List<Vertex> compareAndSet(Table td,
                                        IdGenerator idGenerator,
                                        Location currentLocation,
                                        List<Vertex> inputs
     ) {
-        MetaService metaService = getSubMetaService(schema);
-        CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
-        Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
+        CommonId tableId = Parameters.nonNull(td.getTableId(), "Table not found.");
 
         List<Vertex> outputs = new LinkedList<>();
 

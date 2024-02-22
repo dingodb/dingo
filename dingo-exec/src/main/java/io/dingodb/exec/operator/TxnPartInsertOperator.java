@@ -169,6 +169,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             localStore.delete(deleteKey);
             if (localStore.put(keyValue) && context.getIndexId() == null) {
                 param.inc();
+                context.addKeyState(true);
             }
         }
         return true;

@@ -33,7 +33,7 @@ public class GetDistributionOperator extends SourceOperator {
     }
 
     @Override
-    public boolean push(Vertex vertex) {
+    public boolean push(Context context, Vertex vertex) {
         GetDistributionParam param = vertex.getParam();
         Table td = param.getTable();
         PartitionService ps = PartitionService.getService(
@@ -43,7 +43,7 @@ public class GetDistributionOperator extends SourceOperator {
         for (Object[] keyTuple : param.getKeyTuples()) {
             CommonId partId = ps.calcPartId(param.getCodec().encodeKey(keyTuple), param.getDistributions());
             RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
-            Context context = Context.builder().distribution(distribution).build();
+            context.setDistribution(distribution);
             vertex.getSoleEdge().transformToNext(context, keyTuple);
         }
 

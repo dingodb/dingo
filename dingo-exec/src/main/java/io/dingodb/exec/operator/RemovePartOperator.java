@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.OperatorProfile;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.RemovePartParam;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,7 +32,7 @@ public final class RemovePartOperator extends SourceOperator {
     }
 
     @Override
-    public boolean push(Vertex vertex) {
+    public boolean push(Context context, Vertex vertex) {
         RemovePartParam param = vertex.getParam();
         Edge edge = vertex.getSoleEdge();
         OperatorProfile profile = param.getProfile(vertex.getId());

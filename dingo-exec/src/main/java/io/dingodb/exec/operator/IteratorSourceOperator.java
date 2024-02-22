@@ -30,7 +30,7 @@ import java.util.Iterator;
 @Slf4j
 public abstract class IteratorSourceOperator extends SourceOperator {
     @Override
-    public boolean push(Vertex vertex) {
+    public boolean push(Context context, Vertex vertex) {
         long count = 0;
         long startTime = System.currentTimeMillis();
         SourceParam param = vertex.getParam();
@@ -39,16 +39,15 @@ public abstract class IteratorSourceOperator extends SourceOperator {
         Iterator<Object[]> iterator = createIterator(vertex);
         while (iterator.hasNext()) {
             Object[] tuple = iterator.next();
-            Context.ContextBuilder builder = Context.builder();
             if (tuple[0] instanceof RangeDistribution) {
-                builder.distribution((RangeDistribution) tuple[0]);
+                context.setDistribution((RangeDistribution) tuple[0]);
                 if (tuple.length > 1) {
                     tuple = (Object[]) tuple[1];
                 }
             }
             ++count;
             for (Edge edge : vertex.getOutList()) {
-                if (!edge.transformToNext(builder.build(), tuple)) {
+                if (!edge.transformToNext(context, tuple)) {
                     break;
                 }
             }
