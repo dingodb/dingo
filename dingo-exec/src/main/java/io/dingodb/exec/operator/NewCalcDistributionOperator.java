@@ -17,6 +17,7 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.DistributionSourceParam;
@@ -25,8 +26,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
+import java.util.Map;
+import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class NewCalcDistributionOperator extends SourceOperator {
@@ -37,12 +41,25 @@ public class NewCalcDistributionOperator extends SourceOperator {
 
     private static NavigableSet<RangeDistribution> getRangeDistributions(@NonNull DistributionSourceParam param) {
         PartitionService ps = param.getPs();
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
+            = param.getRangeDistribution();
+        if (log.isTraceEnabled()) {
+            log.trace(
+                "start = {}, end = {}, PartitionService = {}, RangeDistribution = {}",
+                Arrays.toString(param.getStartKey()),
+                Arrays.toString(param.getEndKey()),
+                ps.getClass().getCanonicalName(),
+                rangeDistribution.entrySet().stream()
+                    .map(e -> e.getKey().encodeToString()+": "+e.getValue())
+                    .collect(Collectors.joining("\n"))
+            );
+        }
         return ps.calcPartitionRange(
             param.getStartKey(),
             param.getEndKey(),
             param.isWithStart(),
             param.isWithEnd(),
-            param.getRangeDistribution()
+            rangeDistribution
         );
     }
 
@@ -50,13 +67,18 @@ public class NewCalcDistributionOperator extends SourceOperator {
     public boolean push(Context context, @NonNull Vertex vertex) {
         DistributionSourceParam param = vertex.getParam();
         Set<RangeDistribution> distributions = getRangeDistributions(param);
-        for (RangeDistribution distribution : distributions) {
-            if (log.isDebugEnabled()) {
-                log.debug(
-                    "Push distribution: from ({}) to ({})",
-                    Arrays.toString(distribution.getStartKey()),
-                    Arrays.toString(distribution.getEndKey())
+        if (log.isTraceEnabled()) {
+            if (distributions.isEmpty()) {
+                log.trace(
+                    "No data distribution from ({}) to ({})",
+                    Arrays.toString(param.getStartKey()),
+                    Arrays.toString(param.getEndKey())
                 );
+            }
+        }
+        for (RangeDistribution distribution : distributions) {
+            if (log.isTraceEnabled()) {
+                log.trace("Push distribution: {}", distribution);
             }
             context.setDistribution(distribution);
             if (!vertex.getSoleEdge().transformToNext(context, null)) {

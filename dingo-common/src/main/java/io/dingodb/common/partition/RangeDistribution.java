@@ -25,16 +25,15 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
 @Getter
 @Setter
 @Builder
-@ToString
 @EqualsAndHashCode
-public class RangeDistribution implements Distribution {
+public class RangeDistribution implements Distribution, Serializable {
 
     private static final long serialVersionUID = -2767354268752865267L;
 
@@ -93,5 +92,16 @@ public class RangeDistribution implements Distribution {
 
     public byte[] getEndKey() {
         return endKey == null ? null : Arrays.copyOf(endKey, endKey.length);
+    }
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName() + " "
+            + id + ": "
+            + (withStart ? '[' : '(')
+            + Arrays.toString(startKey)
+            + ", "
+            + Arrays.toString(endKey)
+            + (withEnd ? ']' : ')');
     }
 }

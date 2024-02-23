@@ -89,25 +89,29 @@ public final class DingoScanWithRelOpVisitFun {
             task = job.getOrCreate(currentLocation, idGenerator);
             scanVertexCreator = () -> createScanVertex(rel, tableInfo);
         }
-        BiFunction<byte[], byte[], Vertex> calcVertexCreator
-            = (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end);
-        List<Vertex> outputs = new ArrayList<>();
+        final List<Vertex> outputs = new ArrayList<>();
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
         List<Partition> partitions = td.getPartitions();
         if (partitions.isEmpty()) {
-            outputs.add(createVerticesForRange(task, idGenerator, calcVertexCreator, null, null, scanVertexCreator));
+            outputs.add(createVerticesForRange(
+                task,
+                idGenerator,
+                (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end, false),
+                null,
+                null,
+                scanVertexCreator
+            ));
         } else {
             if (td.getPartitionStrategy().equalsIgnoreCase("HASH")) {
-                for (Partition partition : partitions) {
-                    outputs.add(createVerticesForRange(
-                        task,
-                        idGenerator,
-                        calcVertexCreator,
-                        partition.getStart(),
-                        partition.getEnd(),
-                        scanVertexCreator
-                    ));
-                }
+                // Partition will be split in executing time.
+                outputs.add(createVerticesForRange(
+                    task,
+                    idGenerator,
+                    (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end, false),
+                    null,
+                    null,
+                    scanVertexCreator
+                ));
             } else {
                 int partitionNum = partitions.size();
                 for (int i = 0; i < partitionNum; ++i) {
@@ -115,7 +119,7 @@ public final class DingoScanWithRelOpVisitFun {
                     outputs.add(createVerticesForRange(
                         task,
                         idGenerator,
-                        calcVertexCreator,
+                        (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end, false),
                         partition.getStart(),
                         i < partitionNum - 1 ? partitions.get(i + 1).getStart() : null,
                         scanVertexCreator
@@ -243,7 +247,8 @@ public final class DingoScanWithRelOpVisitFun {
         @NonNull DingoScanWithRelOp rel,
         @NonNull TableInfo tableInfo,
         byte[] startKey,
-        byte[] endKey
+        byte[] endKey,
+        boolean withEnd
     ) {
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
@@ -254,7 +259,7 @@ public final class DingoScanWithRelOpVisitFun {
             startKey,
             endKey,
             true,
-            false,
+            withEnd,
             null,
             false,
             false,
