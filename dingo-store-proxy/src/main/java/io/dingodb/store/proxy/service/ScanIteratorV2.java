@@ -75,7 +75,7 @@ public class ScanIteratorV2 implements Iterator<KeyValue>, AutoCloseable {
         this.requestTs = requestTs;
         this.scanId = scanBegin(requestTs, channelProvider);
         this.channelProvider = channelProvider;
-        this.hasMore = true;
+        this.hasMore = (scanId != 0);
     }
 
     public long scanBegin(long requestTs, ChannelProvider channelProvider) {
@@ -104,9 +104,11 @@ public class ScanIteratorV2 implements Iterator<KeyValue>, AutoCloseable {
                     StoreServiceDescriptors.kvScanBeginV2Handlers
                 );
                 channelProvider.after(res);
-                if (res != null && (res.getError() == null || res.getError().getErrcode() == OK)) {
-                    this.storeService = createStoreService(channel);
-                    return scanId;
+                if (res != null) {
+                    if (res.getError() == null || res.getError().getErrcode() == OK) {
+                        this.storeService = createStoreService(channel);
+                        return res.getScanId();
+                    }
                 }
             } catch (Exception ignored) {
             }

@@ -31,6 +31,7 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class HashRangePartitionService implements PartitionService {
@@ -64,8 +65,8 @@ public class HashRangePartitionService implements PartitionService {
 
     @Override
     public NavigableSet<RangeDistribution> calcPartitionRange(
-        byte [] startKey,
-        byte [] endKey,
+        byte[] startKey,
+        byte[] endKey,
         boolean withStart,
         boolean withEnd,
         NavigableMap<ComparableByteArray, RangeDistribution> ranges
@@ -83,8 +84,8 @@ public class HashRangePartitionService implements PartitionService {
         NavigableSet<RangeDistribution> distributions = new TreeSet<>(RangeUtils.rangeComparator(1));
         for (Map.Entry<CommonId, NavigableMap<ComparableByteArray, RangeDistribution>> entry : map.entrySet()) {
             NavigableMap<ComparableByteArray, RangeDistribution> subMap = entry.getValue();
-            byte [] newStartKey;
-            byte [] newEndKey;
+            byte[] newStartKey;
+            byte[] newEndKey;
             boolean newWithStart;
             boolean newWithEnd;
             if (startKey == null) {
@@ -109,7 +110,18 @@ public class HashRangePartitionService implements PartitionService {
                 .withStart(newWithStart)
                 .withEnd(newWithEnd)
                 .build();
+            if (log.isTraceEnabled()) {
+                log.trace("Tangled range: {}", range);
+            }
             NavigableSet<RangeDistribution> subRanges = RangeUtils.getSubRangeDistribution(subMap.values(), range, 1);
+            if (log.isTraceEnabled()) {
+                log.trace(
+                    "Sub ranges: {}",
+                    subRanges.stream()
+                        .map(RangeDistribution::toString)
+                        .collect(Collectors.joining("\n"))
+                );
+            }
             subRanges.descendingSet().stream().skip(1).forEach(rd -> {
                 if (Arrays.equals(rd.getEndKey(), subMap.lastEntry().getValue().getEndKey())) {
                     rd.setWithEnd(true);
@@ -117,7 +129,7 @@ public class HashRangePartitionService implements PartitionService {
             });
             distributions.addAll(subRanges);
         }
-        return  distributions;
+        return distributions;
     }
 
 }
