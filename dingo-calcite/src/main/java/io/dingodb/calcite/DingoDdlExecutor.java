@@ -87,7 +87,6 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
-import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -548,7 +547,22 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         // Validate partition strategy
         validatePartitionBy(pks, tableDefinition, tableDefinition.getPartDefinition());
 
+        if (!indexTableDefinitions.isEmpty()) {
+            if (isNotTxnEngine(tableDefinition.getEngine())) {
+                throw new IllegalArgumentException("Table with index, the engine must be transactional.");
+            }
+            indexTableDefinitions.stream()
+                .filter(index -> isNotTxnEngine(index.getEngine()))
+                .findAny().ifPresent(index -> {
+                    throw new IllegalArgumentException("Index [" + index.getName() + "] engine must be transactional.");
+                });
+        }
+
         schema.createTables(tableDefinition, indexTableDefinitions);
+    }
+
+    private boolean isNotTxnEngine(String engine) {
+        return engine != null && !engine.isEmpty() && !engine.toUpperCase().startsWith("TXN");
     }
 
     @SuppressWarnings({"unused", "MethodMayBeStatic"})
