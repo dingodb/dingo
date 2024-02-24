@@ -20,9 +20,9 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.operation.DmlOperation;
 import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.QueryOperation;
+import io.dingodb.common.mysql.constant.ServerStatus;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
-import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
@@ -31,15 +31,21 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.SQLException;
 import java.sql.SQLWarning;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 public class DingoStatement extends AvaticaStatement {
 
-//    @Setter
-//    @Getter
-//    private boolean inTransaction;
+    // for mysql protocol
+    @Setter
+    private boolean inTransaction;
+
+    // for mysql protocol
+    @Setter
+    private boolean autoCommit;
+
+    // for mysql protocol
+    @Setter
+    private boolean transReadOnly;
     private String warning;
 
     DingoStatement(
@@ -123,5 +129,19 @@ public class DingoStatement extends AvaticaStatement {
         } else {
             return new SQLWarning(warning);
         }
+    }
+
+    public int getServerStatus() {
+        int initServerStatus = 0;
+        if (inTransaction) {
+            initServerStatus = ServerStatus.SERVER_STATUS_IN_TRANS;
+        }
+        if (autoCommit) {
+            initServerStatus |= ServerStatus.SERVER_STATUS_AUTOCOMMIT;
+        }
+        if (transReadOnly) {
+            initServerStatus |= ServerStatus.SERVER_STATUS_IN_TRANS_READONLY;
+        }
+        return initServerStatus;
     }
 }

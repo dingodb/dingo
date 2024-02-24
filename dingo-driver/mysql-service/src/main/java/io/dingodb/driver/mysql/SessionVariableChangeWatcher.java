@@ -20,8 +20,10 @@ import io.dingodb.common.mysql.client.SessionVariableChange;
 import io.dingodb.driver.mysql.netty.MysqlNettyServer;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -47,6 +49,19 @@ public class SessionVariableChangeWatcher implements Observer {
         } else if ("@password_reset".equalsIgnoreCase(sessionVariable.getName())) {
             MysqlConnection connection = MysqlNettyServer.connections.get(sessionVariable.getId());
             connection.passwordExpire = false;
+        } else if ("@connection_kill".equalsIgnoreCase(sessionVariable.getName())) {
+            Optional<String> matchMysqlConn = MysqlNettyServer.connections
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getValue().getThreadId() == Integer.parseInt(sessionVariable.getValue()))
+                .map(Map.Entry::getKey)
+                .findFirst();
+            if (matchMysqlConn.isPresent()) {
+                MysqlConnection connection = MysqlNettyServer.connections.get(matchMysqlConn.get());
+                if (connection != null) {
+                    connection.close();
+                }
+            }
         }
 
     }

@@ -62,7 +62,7 @@ public class MysqlPacketFactory {
     }
 
     public OKPacket getOkPacket(int affected, AtomicLong packetId, SQLWarning sqlWarning) {
-        return getOkPacket(affected, packetId, 0, BigInteger.ZERO, sqlWarning);
+        return getOkPacket(affected, packetId, SERVER_STATUS_AUTOCOMMIT, BigInteger.ZERO, sqlWarning);
     }
 
     public OKPacket getOkPacket(int affected, AtomicLong packetId, int serverStatus, SQLWarning sqlWarning) {
@@ -93,12 +93,12 @@ public class MysqlPacketFactory {
         okPacket.capabilities = MysqlServer.getServerCapabilities();
         okPacket.affectedRows = affected;
         okPacket.packetId = (byte) packetId.getAndIncrement();
-        int status = SERVER_STATUS_AUTOCOMMIT;
-        if (serverStatus != 0) {
-            status |= serverStatus;
-        }
+//        int status = SERVER_STATUS_AUTOCOMMIT;
+//        if (serverStatus != 0) {
+//            status |= serverStatus;
+//        }
         okPacket.warningCount = warningCount;
-        okPacket.serverStatus = status;
+        okPacket.serverStatus = serverStatus;
         okPacket.insertId = lastInsertId;
         return okPacket;
     }

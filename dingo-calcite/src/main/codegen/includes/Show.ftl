@@ -51,6 +51,8 @@ SqlShow SqlShow(): {
     show = SqlShowCharset(s)
     |
     show = SqlShowPlugins(s)
+    |
+    show = SqlShowProcess(s)
   )
   {
     return show;
@@ -214,4 +216,11 @@ SqlShow SqlShowPlugins(Span s): {
 } {
   <PLUGINS> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
   { return new SqlShowPlugins(s.end(this), pattern); }
+}
+
+SqlShow SqlShowProcess(Span s): {
+  String pattern = null;
+} {
+  <PROCESSLIST>
+  { return new SqlShowProcessList(s.end(this)); }
 }

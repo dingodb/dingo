@@ -52,6 +52,10 @@ public final class ParseValueUtils {
                 return new byte[] {39};
             }
         } else {
+            if (image.length() >= 3 && image.startsWith("'") && image.endsWith("'")) {
+                image = image.substring(1, image.length() - 1);
+                return image.getBytes();
+            }
             return res;
         }
     }

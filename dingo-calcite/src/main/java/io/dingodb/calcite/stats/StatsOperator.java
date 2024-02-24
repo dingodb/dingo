@@ -27,6 +27,7 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreService;
+import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -35,6 +36,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 
+import static io.dingodb.common.util.Utils.calculatePrefixCount;
+
+@Slf4j
 public abstract class StatsOperator {
     public static StoreService storeService = StoreService.getDefault();
     public static MetaService metaService = MetaService.root().getSubMetaService("MYSQL");
@@ -88,6 +92,25 @@ public abstract class StatsOperator {
             }
 
         });
+    }
+
+    public static void delStats(String schemaName, String tableName) {
+        try {
+            Object[] tuple = new Object[2];
+            tuple[0] = schemaName;
+            tuple[1] = tableName;
+
+            delStats(analyzeTaskStore, analyzeTaskCodec, tuple);
+            delStats(cmSketchStore, cmSketchCodec, tuple);
+            delStats(statsStore, statsCodec, tuple);
+            delStats(bucketsStore, bucketsCodec, tuple);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+    public static void delStats(StoreInstance store, KeyValueCodec codec, Object[] tuples) {
+        store.deletePrefix(codec.encodeKeyPrefix(tuples, calculatePrefixCount(tuples)));
     }
 
     public List<Object[]> scan(StoreInstance store, KeyValueCodec codec, RangeDistribution rangeDistribution) {
