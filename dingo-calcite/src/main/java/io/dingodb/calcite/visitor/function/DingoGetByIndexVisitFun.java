@@ -78,7 +78,6 @@ public final class DingoGetByIndexVisitFun {
         MetaService metaService = MetaServiceUtils.getMetaService(rel.getTable());
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         Map<CommonId, Set> indexSetMap = rel.getIndexSetMap();
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
         final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
         boolean needLookup = false;
         if (indexSetMap.size() > 1) {

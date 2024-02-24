@@ -120,8 +120,8 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
     }
 
     public void init() {
-        this.add("monitorTableModify", "0 0 22 * * ?", new TableModifyMonitorTask());
-        this.add("analyzeTable", "0 0 23 * * ?", new AnalyzeScanTask());
+        this.add("monitorTableModify", "0 0 0/1 * * ?", new TableModifyMonitorTask());
+        this.add("analyzeTable", "0 0 0/1 * * ?", new AnalyzeScanTask());
         Executors.scheduleWithFixedDelayAsync("refreshStat", new RefreshStatsTask(),
             10, 3600, TimeUnit.SECONDS);
     }

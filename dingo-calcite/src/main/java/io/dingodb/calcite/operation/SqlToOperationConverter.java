@@ -41,8 +41,9 @@ import io.dingodb.calcite.grammar.dql.SqlShowDatabases;
 import io.dingodb.calcite.grammar.dql.SqlShowEngines;
 import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
-import io.dingodb.calcite.grammar.dql.SqlShowPlugins;
 import io.dingodb.calcite.grammar.dql.SqlShowLocks;
+import io.dingodb.calcite.grammar.dql.SqlShowPlugins;
+import io.dingodb.calcite.grammar.dql.SqlShowProcessList;
 import io.dingodb.calcite.grammar.dql.SqlShowTableDistribution;
 import io.dingodb.calcite.grammar.dql.SqlShowTableStatus;
 import io.dingodb.calcite.grammar.dql.SqlShowTables;
@@ -157,8 +158,8 @@ public final class SqlToOperationConverter {
             try {
                 if (TransactionType.PESSIMISTIC.name().equalsIgnoreCase(sqlBeginTx.txnMode)) {
                     pessimistic = true;
-                } else if (sqlBeginTx.txnMode.equals("") &&
-                    TransactionType.PESSIMISTIC.name().equalsIgnoreCase(connection.getClientInfo("txn_mode"))) {
+                } else if (sqlBeginTx.txnMode.equals("")
+                    && TransactionType.PESSIMISTIC.name().equalsIgnoreCase(connection.getClientInfo("txn_mode"))) {
                     pessimistic = true;
                 }
             } catch (SQLException e) {
@@ -194,7 +195,11 @@ public final class SqlToOperationConverter {
             SqlShowCharset sqlShowCharset = (SqlShowCharset) sqlNode;
             return Optional.of(new ShowCharsetOperation(sqlShowCharset.sqlLikePattern));
         } else if (sqlNode instanceof SqlShowLocks) {
-            return Optional.of(new ShowLocksOperation(((SqlShowLocks) sqlNode).filterIdentifier, ((SqlShowLocks) sqlNode).filterKind, ((SqlShowLocks) sqlNode).filterOperand));
+            return Optional.of(new ShowLocksOperation(
+                ((SqlShowLocks) sqlNode).filterIdentifier,
+                ((SqlShowLocks) sqlNode).filterKind,
+                ((SqlShowLocks) sqlNode).filterOperand)
+            );
         } else if (sqlNode instanceof SqlCall) {
             SqlCall sqlCall = (SqlCall) sqlNode;
             if (sqlCall.getCall().names.size() == 2) {
@@ -212,6 +217,11 @@ public final class SqlToOperationConverter {
                 sqlLoadData.setSchemaName(getSchemaName(context));
             }
             return Optional.of(new LoadDataOperation(sqlLoadData, connection, context));
+        } else if (sqlNode instanceof SqlShowProcessList) {
+            SqlShowProcessList showProcessList = (SqlShowProcessList) sqlNode;
+            String user = context.getOption("user");
+            String host = context.getOption("host");
+            return Optional.of(new ShowProcessListOperation(showProcessList.isProcessPrivilege(), user, host));
         } else {
             return Optional.empty();
         }

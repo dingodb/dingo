@@ -56,6 +56,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.util.List;
@@ -79,6 +80,14 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     @Getter
     private List<CommonId> lockTables;
     private CompletableFuture<Void> unlockFuture;
+
+    @Getter
+    @Setter
+    private volatile String command;
+
+    @Getter
+    @Setter
+    private volatile long commandStartTime;
 
     @Setter
     @Getter
@@ -310,6 +319,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     ) throws SQLException {
         checkOpen();
         try {
+            this.command = sql;
             final Meta.StatementHandle h = meta.prepare(handle, sql, -1);
             return factory.newPreparedStatement(
                 this,
@@ -325,12 +335,35 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     }
 
     @Override
+    protected ResultSet executeQueryInternal(AvaticaStatement statement,
+                                             Meta.Signature signature,
+                                             Meta.Frame firstFrame,
+                                             QueryState state,
+                                             boolean isUpdate) throws SQLException {
+        try {
+            return super.executeQueryInternal(statement, signature, firstFrame, state, isUpdate);
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            this.commandStartTime = 0;
+        }
+    }
+
+    @Override
     protected Meta.ExecuteResult prepareAndExecuteInternal(
         AvaticaStatement statement,
         String sql,
         long maxRowCount
     ) throws SQLException, NoSuchStatementException {
-        return super.prepareAndExecuteInternal(statement, sql, maxRowCount);
+        this.command = sql;
+        this.commandStartTime = System.currentTimeMillis();
+        try {
+            Meta.ExecuteResult result = super.prepareAndExecuteInternal(statement, sql, maxRowCount);
+            return result;
+        } catch (Exception e) {
+            this.commandStartTime = 0;
+            throw e;
+        }
     }
 
     @Override

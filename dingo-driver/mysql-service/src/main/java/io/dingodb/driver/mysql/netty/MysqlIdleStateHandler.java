@@ -44,11 +44,13 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
 
     private volatile long idleTimeNanos;
 
+    private long interval;
+
     private long lastReadTime;
 
     private long lastWriteTime;
 
-    private long delayTime;
+    private final long delayTime;
 
     private ScheduledFuture<?> idleTimeoutFuture;
 
@@ -59,7 +61,7 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
 
     private Runnable command;
 
-    public MysqlIdleStateHandler(long allIdleTime) {
+    public MysqlIdleStateHandler(long allIdleTime, long interval) {
         TimeUnit unit = TimeUnit.SECONDS;
         if (unit == null) {
             throw new NullPointerException("unit");
@@ -70,6 +72,7 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
         } else {
             idleTimeNanos = Math.max(unit.toNanos(allIdleTime), MIN_TIMEOUT_NANOS);
         }
+        this.interval = interval;
     }
 
     public void setIdleTimeout(long idleTimeout, TimeUnit unit) {
@@ -85,7 +88,7 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
             lastReadTime = lastWriteTime = ticksInNanos();
             idleTimeNanos = idleTimeNanosTmp;
             if (idleTimeNanos > 0) {
-                idleTimeoutFuture = schedule(command, idleTimeNanos, TimeUnit.NANOSECONDS);
+                idleTimeoutFuture = schedule(command, interval, TimeUnit.SECONDS);
                 log.info("modify idleTimeNanos:" + idleTimeNanos);
             }
         }
@@ -127,6 +130,26 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
         // after the channelActive() event, initialize() will be called by beforeAdd().
         initialize(ctx);
         super.channelActive(ctx);
+    }
+
+    @Override
+    public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        super.disconnect(ctx, promise);
+    }
+
+    @Override
+    public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        super.close(ctx, promise);
+    }
+
+    @Override
+    public void deregister(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        super.deregister(ctx, promise);
+    }
+
+    @Override
+    public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+        super.channelUnregistered(ctx);
     }
 
     @Override
@@ -180,7 +203,7 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
         if (idleTimeNanos > 0) {
             command = new MysqlIdleStateHandler.IdleTimeoutTask(ctx);
             idleTimeoutFuture = schedule(command,
-                idleTimeNanos, TimeUnit.NANOSECONDS);
+                interval, TimeUnit.SECONDS);
             log.info("init idleTimeout task: " + idleTimeNanos);
         }
     }

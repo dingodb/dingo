@@ -16,7 +16,7 @@
 
 package io.dingodb.server.executor;
 
-import io.dingodb.driver.ServerMetaFactory;
+import io.dingodb.driver.ServerMeta;
 import io.dingodb.driver.api.DriverProxyApi;
 import io.dingodb.driver.api.MetaApi;
 import io.dingodb.net.NetService;
@@ -28,13 +28,12 @@ import org.apache.calcite.avatica.proto.Common;
 import org.apache.calcite.avatica.remote.LocalService;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.ServiceLoader;
 
 public class DriverProxyServer extends LocalService implements DriverProxyApi, MetaApi {
 
-    private static final Meta META = new ServerMetaFactory().create(Collections.emptyList());
+    private static final Meta META = ServerMeta.getInstance();
     private final NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
 
     private RpcMetadataResponse serverLevelRpcMetadata;

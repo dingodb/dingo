@@ -138,6 +138,8 @@ public class TxnImportDataOperation {
             .txnSize(1L)
             .tryOnePc(false)
             .maxCommitTs(0L)
+            .lockExtraDatas(TransactionUtil.toLockExtraDataList(cacheToObject.getTableId(), cacheToObject.getPartId(), txnId,
+                TransactionType.OPTIMISTIC.getCode(), 1))
             .build();
         try {
             StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
@@ -279,12 +281,12 @@ public class TxnImportDataOperation {
             CommonId tableId = txnLocalData.getTableId();
             CommonId newPartId = txnLocalData.getPartId();
             byte[] key = txnLocalData.getKey();
-            param.addKey(key);
             CommonId partId = param.getPartId();
             if (partId == null) {
                 partId = newPartId;
                 param.setPartId(partId);
                 param.setTableId(tableId);
+                param.addKey(key);
             } else if (partId.equals(newPartId)) {
                 param.addKey(key);
                 if (param.getKeys().size() == TransactionUtil.max_pre_write_count) {

@@ -18,6 +18,7 @@ package io.dingodb.driver.mysql.command;
 
 import io.dingodb.common.mysql.MysqlByteUtil;
 import io.dingodb.common.mysql.constant.ErrorCode;
+import io.dingodb.common.mysql.constant.ServerStatus;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.DingoPreparedStatement;
 import io.dingodb.driver.DingoStatement;
@@ -30,6 +31,8 @@ import io.dingodb.driver.mysql.packet.OKPacket;
 import io.dingodb.driver.mysql.packet.PrepareOkPacket;
 import io.dingodb.driver.mysql.packet.PreparePacket;
 import io.dingodb.driver.mysql.packet.QueryPacket;
+import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.exec.transaction.base.TransactionType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.Meta;
 
@@ -182,15 +185,16 @@ public class MysqlCommands {
                 DingoStatement dingoStatement = (DingoStatement) statement;
                 String jobIdPrefix = dingoStatement.handle.toString();
                 OKPacket okPacket;
+                int initServerStatus = dingoStatement.getServerStatus();
                 if (mysqlConnection.getConnection().getClientInfo().containsKey(jobIdPrefix)) {
                     String lastInsertId = mysqlConnection.getConnection()
                         .getClientInfo().getProperty(jobIdPrefix, "0");
                     okPacket = MysqlPacketFactory.getInstance()
-                        .getOkPacket(count, packetId, 0, new BigInteger(lastInsertId), sqlWarning);
+                        .getOkPacket(count, packetId, initServerStatus, new BigInteger(lastInsertId), sqlWarning);
                     mysqlConnection.getConnection().getClientInfo().remove(jobIdPrefix);
                 } else {
                     okPacket = MysqlPacketFactory.getInstance()
-                        .getOkPacket(count, packetId, sqlWarning);
+                        .getOkPacket(count, packetId, initServerStatus, BigInteger.ZERO, sqlWarning);
                 }
                 MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
             }
@@ -322,12 +326,14 @@ public class MysqlCommands {
                 SQLWarning sqlWarning = preparedStatement.getWarnings();
                 int affected = preparedStatement.executeUpdate();
                 String jobIdPrefix = preparedStatement.handle.toString();
+                DingoConnection connection = (DingoConnection) mysqlConnection.getConnection();
+                int initServerStatus = getInitServerStatus(connection);
                 OKPacket okPacket;
                 if (mysqlConnection.getConnection().getClientInfo().containsKey(jobIdPrefix)) {
                     String lastInsertId = mysqlConnection.getConnection()
                         .getClientInfo().getProperty(jobIdPrefix, "0");
                     okPacket = MysqlPacketFactory.getInstance()
-                        .getOkPacket(affected, packetId, 0, new BigInteger(lastInsertId), sqlWarning);
+                        .getOkPacket(affected, packetId, initServerStatus, new BigInteger(lastInsertId), sqlWarning);
                     mysqlConnection.getConnection().getClientInfo().remove(jobIdPrefix);
                 } else {
                     okPacket = mysqlPacketFactory.getOkPacket(affected, packetId, sqlWarning);
@@ -340,6 +346,28 @@ public class MysqlCommands {
             MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_UNKNOWN_ERROR, "");
             log.error(e.getMessage(), e);
         }
+    }
+
+    public static int getInitServerStatus(DingoConnection connection) {
+        String tranReadOnly = connection.getClientInfo("transaction_read_only");
+        tranReadOnly = tranReadOnly == null ? "off" : tranReadOnly;
+        boolean txReadOnly = tranReadOnly.equalsIgnoreCase("on");
+        ITransaction transaction = connection.getTransaction();
+        boolean inTransaction = false;
+        if (transaction != null) {
+            inTransaction = connection.getTransaction().getType() != TransactionType.NONE;
+        }
+        int initServerStatus = 0;
+        if (inTransaction) {
+            initServerStatus = ServerStatus.SERVER_STATUS_IN_TRANS;
+        }
+        if (connection.getAutoCommit()) {
+            initServerStatus |= ServerStatus.SERVER_STATUS_AUTOCOMMIT;
+        }
+        if (txReadOnly) {
+            initServerStatus |= ServerStatus.SERVER_STATUS_IN_TRANS_READONLY;
+        }
+        return initServerStatus;
     }
 
 }

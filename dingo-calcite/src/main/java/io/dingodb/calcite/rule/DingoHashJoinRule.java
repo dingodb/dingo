@@ -57,28 +57,28 @@ public class DingoHashJoinRule extends ConverterRule {
      */
     public static boolean match(@NonNull LogicalJoin rel) {
         JoinInfo joinInfo = rel.analyzeCondition();
-        boolean res = false;
-        // select * from a left join b on a.id=b.id and a.no>6
-        // nonEquiConditions contain a.no > 6
-        if (!joinInfo.nonEquiConditions.isEmpty()) {
-            res = nonEqui(joinInfo.nonEquiConditions);
-        }
-        return joinInfo.isEqui() || res;
+//        boolean res = false;
+//        // select * from a left join b on a.id=b.id and a.no>6
+//        // nonEquiConditions contain a.no > 6
+//        if (!joinInfo.nonEquiConditions.isEmpty()) {
+//            res = nonEqui(joinInfo.nonEquiConditions);
+//        }
+        return joinInfo.isEqui();
     }
 
-    public static boolean nonEqui(List<RexNode> nonEquiList) {
-        for (RexNode condition : nonEquiList) {
-            if (condition instanceof RexCall) {
-                RexCall rexCall = (RexCall) condition;
-                Optional<RexNode> optional
-                    = rexCall.getOperands().stream().filter(rexNode -> rexNode instanceof RexLiteral).findFirst();
-                if (rexCall.getOperands().size() == 2 && optional.isPresent()) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+//    public static boolean nonEqui(List<RexNode> nonEquiList) {
+//        for (RexNode condition : nonEquiList) {
+//            if (condition instanceof RexCall) {
+//                RexCall rexCall = (RexCall) condition;
+//                Optional<RexNode> optional
+//                    = rexCall.getOperands().stream().filter(rexNode -> rexNode instanceof RexLiteral).findFirst();
+//                if (rexCall.getOperands().size() == 2 && optional.isPresent()) {
+//                    return true;
+//                }
+//            }
+//        }
+//        return false;
+//    }
 
     @Override
     public @Nullable RelNode convert(RelNode rel) {

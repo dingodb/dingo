@@ -35,8 +35,8 @@ import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
 import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.calcite.schema.DingoSchema;
+import io.dingodb.calcite.stats.StatsOperator;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.privilege.PrivilegeDefinition;
@@ -114,8 +114,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     public static final DingoDdlExecutor INSTANCE = new DingoDdlExecutor();
 
     private static final Pattern namePattern = Pattern.compile("^[A-Z_][A-Z\\d_]*$");
-
-    private final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
     public UserService userService;
 
@@ -602,6 +600,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             future.get(ttl, TimeUnit.SECONDS);
             schema.dropTable(tableName);
             userService.dropTablePrivilege(schema.name(), tableName);
+            //StatsOperator.delStats(schema.name(), tableName);
         } catch (TimeoutException e) {
             future.cancel(true);
             throw new RuntimeException("Lock wait timeout exceeded.");

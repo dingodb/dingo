@@ -392,6 +392,9 @@ public class LoadDataOperation implements DmlOperation {
             List<Object[]> caches = ExecutionEnvironment.memoryCache
                 .computeIfAbsent(statementId, e -> new ArrayList<>());
             List<Object[]> tupleList = getCacheTupleList(caches, txnId);
+            if (tupleList.size() == 0) {
+                return;
+            }
             txnImportDataOperation.insertByTxn(tupleList);
             count.addAndGet(tupleList.size());
         } finally {

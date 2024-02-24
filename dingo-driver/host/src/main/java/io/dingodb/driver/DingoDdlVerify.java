@@ -34,6 +34,7 @@ import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
 import io.dingodb.calcite.grammar.dql.SqlShowCreateUser;
 import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
+import io.dingodb.calcite.grammar.dql.SqlShowProcessList;
 import io.dingodb.calcite.grammar.dql.SqlShowTableDistribution;
 import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.privilege.DingoSqlAccessEnum;
@@ -207,6 +208,9 @@ public class DingoDdlVerify {
             if ("SYSTEM".equalsIgnoreCase(setOption.getScope())) {
                 accessTypes.add(DingoSqlAccessEnum.SUPER);
             }
+        } else if (sqlNode instanceof SqlShowProcessList) {
+            SqlShowProcessList showProcessList = (SqlShowProcessList) sqlNode;
+            accessTypes.add(DingoSqlAccessEnum.PROCESS);
         }
 
         if (schemaTables != null) {
@@ -215,7 +219,12 @@ public class DingoDdlVerify {
         }
         if (!PrivilegeVerify.verifyDuplicate(user, host, schemaName, tableName,
             accessTypes)) {
-            throw throwable(accessTypes, sqlNode, user, host, tableName);
+            if (sqlNode instanceof SqlShowProcessList) {
+                SqlShowProcessList showProcessList = (SqlShowProcessList) sqlNode;
+                showProcessList.setProcessPrivilege(false);
+            } else {
+                throw throwable(accessTypes, sqlNode, user, host, tableName);
+            }
         }
     }
 

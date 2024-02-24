@@ -25,10 +25,12 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioChannelOption;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.net.StandardSocketOptions;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -50,6 +52,8 @@ public class MysqlNettyServer {
             .channel(NioServerSocketChannel.class)
             .group(eventLoopGroup)
             .childOption(ChannelOption.TCP_NODELAY, true)
+            .childOption(ChannelOption.SO_KEEPALIVE, Boolean.TRUE)
+            .childOption(NioChannelOption.of(StandardSocketOptions.SO_KEEPALIVE), Boolean.TRUE)
             .childHandler(channelInitializer());
         if (host != null) {
             server.localAddress(host, port);
@@ -72,7 +76,7 @@ public class MysqlNettyServer {
                 ch.pipeline().addLast("handshake", new HandshakeHandler(mysqlConnection));
                 ch.pipeline().addLast("decoder", new MysqlDecoder());
                 MysqlIdleStateHandler mysqlIdleStateHandler = new MysqlIdleStateHandler(
-                    28800);
+                    28800, 60);
                 mysqlConnection.mysqlIdleStateHandler = mysqlIdleStateHandler;
                 ch.pipeline().addLast("idleStateHandler", mysqlIdleStateHandler);
                 ch.pipeline()

@@ -364,6 +364,9 @@ public final class DingoVectorVisitFun {
             .map(i -> table.getColumns().get(i))
             .filter(col -> !col.isPrimary())
             .collect(Collectors.toList());
+        if (selectionName.size() == 0) {
+            return false;
+        }
 
         // vector index only with field can push down
         List<Column> filterIndexCols = indexTable.getColumns().stream()

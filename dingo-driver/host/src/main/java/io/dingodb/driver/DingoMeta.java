@@ -285,6 +285,13 @@ public class DingoMeta extends MetaImpl {
             statement.removeJob(jobManager);
             final Timer.Context timeCtx = DingoMetrics.getTimeContext("parse_query");
             Meta.Signature signature = parser.parseQuery(jobManager, sh.toString(), sql);
+            // for mysql protocol start
+            statement.setInTransaction(parser.isInTransaction());
+            statement.setAutoCommit(connection.getAutoCommit());
+            String tranReadOnly = connection.getClientInfo("transaction_read_only");
+            tranReadOnly = tranReadOnly == null ? "off" : tranReadOnly;
+            statement.setTransReadOnly(tranReadOnly.equalsIgnoreCase("on"));
+            // for mysql protocol end
             timeCtx.stop();
             sh.signature = signature;
             final int updateCount = getUpdateCount(signature.statementType);
@@ -484,6 +491,7 @@ public class DingoMeta extends MetaImpl {
             log.error("Fetch catch exception:{}", e, e);
             throw ExceptionUtils.toRuntime(e);
         } finally {
+            ((DingoConnection) connection).setCommandStartTime(0);
             if (log.isDebugEnabled()) {
                 log.debug("DingoMeta fetch, cost: {}ms.", System.currentTimeMillis() - startTime);
             }

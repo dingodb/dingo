@@ -18,6 +18,7 @@ package io.dingodb.driver.mysql.command;
 
 import io.dingodb.common.mysql.ExtendedClientCapabilities;
 import io.dingodb.common.mysql.MysqlServer;
+import io.dingodb.common.mysql.constant.ServerStatus;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.common.DingoArray;
 import io.dingodb.driver.mysql.MysqlConnection;
@@ -29,6 +30,7 @@ import io.dingodb.driver.mysql.packet.OKPacket;
 import io.dingodb.driver.mysql.packet.PreparePacket;
 import io.dingodb.driver.mysql.packet.PrepareResultSetRowPacket;
 import io.dingodb.driver.mysql.packet.ResultSetRowPacket;
+import io.dingodb.exec.exception.TaskFinException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.socket.SocketChannel;
@@ -47,6 +49,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static io.dingodb.calcite.operation.SetOptionOperation.CONNECTION_CHARSET;
 import static io.dingodb.common.util.Utils.getCharacterSet;
 import static io.dingodb.common.util.Utils.getDateByTimezone;
+import static io.dingodb.driver.mysql.command.MysqlCommands.getInitServerStatus;
 
 @Slf4j
 public final class MysqlResponseHandler {
@@ -67,7 +70,7 @@ public final class MysqlResponseHandler {
             for (ColumnPacket columnPacket : columnPackets) {
                 columnPacket.write(buffer);
             }
-            OKPacket okPacket = factory.getOkEofPacket(0, packetId, 0);
+            OKPacket okPacket = factory.getOkEofPacket(0, packetId, ServerStatus.SERVER_STATUS_AUTOCOMMIT);
             okPacket.write(buffer);
             mysqlConnection.channel.writeAndFlush(buffer);
         } catch (SQLException e) {
@@ -105,9 +108,12 @@ public final class MysqlResponseHandler {
                 columnPacket.write(buffer);
             }
 
+            int initServerStatus = getInitServerStatus((DingoConnection) mysqlConnection.getConnection());
             if (deprecateEof) {
                 handlerRowPacket(resultSet, packetId, mysqlConnection, buffer, columnCount);
-                OKPacket okEofPacket = factory.getOkEofPacket(0, packetId, 0);
+                OKPacket okEofPacket = factory.getOkEofPacket(
+                    0, packetId, initServerStatus
+                );
                 okEofPacket.write(buffer);
             } else {
                 // intermediate eof
@@ -219,6 +225,7 @@ public final class MysqlResponseHandler {
     public static void responseError(AtomicLong packetId,
                                      SocketChannel channel,
                                      SQLException exception) {
+        exception = errorDingo2Mysql(exception);
         ERRPacket ep = new ERRPacket();
         ep.packetId = (byte) packetId.getAndIncrement();
         ep.capabilities = MysqlServer.getServerCapabilities();
@@ -234,6 +241,16 @@ public final class MysqlResponseHandler {
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         ep.write(buffer);
         channel.writeAndFlush(buffer);
+    }
+
+    public static SQLException errorDingo2Mysql(SQLException e) {
+        if (e.getMessage().contains("Duplicate")) {
+            return new SQLException("Duplicate data for key 'PRIMARY'", "23000", 1062);
+        } else if (e.getErrorCode() == 9001 && e.getSQLState().equals("45000")) {
+            return new SQLException(e.getMessage(), "HY000", 1105);
+        } else {
+            return e;
+        }
     }
 
     public static void responseOk(OKPacket okPacket, SocketChannel channel) {
@@ -277,10 +294,13 @@ public final class MysqlResponseHandler {
             for (ColumnPacket columnPacket : columns) {
                 columnPacket.write(buffer);
             }
+            int serverStatus = getInitServerStatus((DingoConnection) mysqlConnection.getConnection());
 
             if (deprecateEof) {
                 handlerPrepareRowPacket(resultSet, packetId, mysqlConnection, buffer, columnCount);
-                OKPacket okEofPacket = factory.getOkEofPacket(0, packetId, 0);
+                OKPacket okEofPacket = factory.getOkEofPacket(
+                    0, packetId, serverStatus
+                );
                 okEofPacket.write(buffer);
             } else {
                 // intermediate eof

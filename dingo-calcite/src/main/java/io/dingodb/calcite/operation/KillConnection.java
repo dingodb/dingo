@@ -16,16 +16,43 @@
 
 package io.dingodb.calcite.operation;
 
+import lombok.Getter;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+
 public class KillConnection implements DdlOperation{
 
-    private int threadId;
+    Connection connection;
 
-    public KillConnection(int threadId) {
+    private Integer threadId;
+
+    public KillConnection(Integer threadId) {
         this.threadId = threadId;
+    }
+
+    public void initConnection(Connection connection) {
+        this.connection = connection;
     }
 
     @Override
     public void execute() {
-        // todo
+        try {
+            if (connection == null) {
+                return;
+            }
+            connection.setClientInfo("@connection_kill", String.valueOf(threadId));
+            connection.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String getThreadId() {
+        return threadId.toString();
+    }
+
+    public String getMysqlThreadId() {
+        return "mysql:" + threadId.toString();
     }
 }

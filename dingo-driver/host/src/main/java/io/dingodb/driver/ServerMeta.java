@@ -44,9 +44,12 @@ import java.util.stream.Collectors;
 // On each request, create a local meta (which is light-weighted) to do the work.
 @Slf4j
 public class ServerMeta implements Meta {
-    private final Map<String, DingoConnection> connectionMap = new ConcurrentHashMap<>();
+    public final Map<String, DingoConnection> connectionMap = new ConcurrentHashMap<>();
 
-    public ServerMeta() {
+    private static final ServerMeta INSTANCE = new ServerMeta();
+
+    public static ServerMeta getInstance() {
+        return INSTANCE;
     }
 
     private static @NonNull MetaResultSet mapMetaResultSet(String connectionId, @NonNull MetaResultSet resultSet) {
@@ -547,7 +550,9 @@ public class ServerMeta implements Meta {
         }
         DingoConnection connection = connectionMap.get(sh.connectionId);
         StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
-        return connection.getMeta().fetch(newSh, offset, fetchMaxRowCount);
+        Frame frame = connection.getMeta().fetch(newSh, offset, fetchMaxRowCount);
+        connection.setCommandStartTime(0);
+        return frame;
     }
 
     @Deprecated
@@ -645,8 +650,8 @@ public class ServerMeta implements Meta {
         Properties properties = new Properties();
         properties.putAll(info);
         DingoConnection connection = DingoDriver.INSTANCE.createConnection(null, properties);
-        loadGlobalVariables(connection);
         connectionMap.put(ch.id, connection);
+        loadGlobalVariables(connection);
         // connection with init db
         connectionUrlSync(ch, properties);
         if (SecurityConfiguration.isAuth()) {
