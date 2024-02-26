@@ -111,6 +111,6 @@ public interface DingoResource {
     @BaseMessage("Error 1086(HY000): File ''{0}'' already exists")
     ExInst<DingoSqlException> exportFileExists(String a0);
 
-    @BaseMessage("Error 1083(42000): Field separator argument is not what is expected; check the manual")
+    @BaseMessage("Error 1083(42000): Field/Line separator argument is not what is expected; check the manual")
     ExInst<DingoSqlException> fieldSeparatorError();
 }

@@ -155,6 +155,11 @@ public class LoadDataOperation implements DmlOperation {
         if (enclosed != null && enclosed.equals("()")) {
             throw DingoResource.DINGO_RESOURCE.fieldSeparatorError().ex();
         }
+        if ((linesTerm.length >= 2 && !(linesTerm[0] == 0x0d && linesTerm[1] == 0x0a))
+            || fieldsTerm.length >= 2
+            || escaped.length >= 2) {
+            throw DingoResource.DINGO_RESOURCE.fieldSeparatorError().ex();
+        }
         try {
             new Thread(() -> {
                 try {
@@ -360,8 +365,11 @@ public class LoadDataOperation implements DmlOperation {
     }
 
     public void insertWithTxn(Object[] tuples) {
-        List<Object[]> caches = ExecutionEnvironment.memoryCache.computeIfAbsent(statementId, e -> new ArrayList<>());
-        caches.add(tuples);
+        List<KeyValue> caches = ExecutionEnvironment.memoryCache.computeIfAbsent(statementId, e -> new ArrayList<>());
+        KeyValue keyValue = codec.encode(tuples);
+        if (!caches.contains(keyValue)) {
+            caches.add(keyValue);
+        }
         if (caches.size() > 50000) {
             try {
                 long startTs = TransactionManager.getStartTs();
@@ -371,8 +379,8 @@ public class LoadDataOperation implements DmlOperation {
                 TxnImportDataOperation txnImportDataOperation = new TxnImportDataOperation(
                     startTs, txnId, txnRetry, txnRetryCnt, timeOut
                 );
-                txnImportDataOperation.insertByTxn(tupleList);
-                count.addAndGet(tuples.length);
+                int result = txnImportDataOperation.insertByTxn(tupleList);
+                count.addAndGet(result);
             } finally {
                 ExecutionEnvironment.memoryCache.remove(statementId);
             }
@@ -389,29 +397,28 @@ public class LoadDataOperation implements DmlOperation {
             TxnImportDataOperation txnImportDataOperation = new TxnImportDataOperation(
                 startTs, txnId, txnRetry, txnRetryCnt, timeOut
             );
-            List<Object[]> caches = ExecutionEnvironment.memoryCache
+            List<KeyValue> caches = ExecutionEnvironment.memoryCache
                 .computeIfAbsent(statementId, e -> new ArrayList<>());
             List<Object[]> tupleList = getCacheTupleList(caches, txnId);
             if (tupleList.size() == 0) {
                 return;
             }
-            txnImportDataOperation.insertByTxn(tupleList);
-            count.addAndGet(tupleList.size());
+            int result = txnImportDataOperation.insertByTxn(tupleList);
+            count.addAndGet(result);
         } finally {
             ExecutionEnvironment.memoryCache.remove(statementId);
         }
     }
 
-    public List<Object[]> getCacheTupleList(List<Object[]> tupleList, CommonId txnId) {
+    public List<Object[]> getCacheTupleList(List<KeyValue> keyValueList, CommonId txnId) {
         List<Object[]> tupleCacheList = new ArrayList<>();
-        for (Object[] tuples : tupleList) {
-            tupleCacheList.add(getCacheTuples(tuples, txnId));
+        for (KeyValue keyValue : keyValueList) {
+            tupleCacheList.add(getCacheTuples(keyValue, txnId));
         }
         return tupleCacheList;
     }
 
-    public Object[] getCacheTuples(Object[] tuples, CommonId txnId) {
-        KeyValue keyValue = codec.encode(tuples);
+    public Object[] getCacheTuples(KeyValue keyValue, CommonId txnId) {
         CommonId partId = PartitionService.getService(
                 Optional.ofNullable(table.getPartitionStrategy())
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))

@@ -19,6 +19,7 @@ package io.dingodb.common.environment;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.privilege.PrivilegeGather;
+import io.dingodb.common.store.KeyValue;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -36,7 +37,7 @@ public class ExecutionEnvironment {
 
     public static ExecutionEnvironment INSTANCE = new ExecutionEnvironment();
 
-    public static Map<Object, List<Object[]>> memoryCache = new HashMap<>();
+    public static Map<Object, List<KeyValue>> memoryCache = new HashMap<>();
 
     @Getter
     @Setter
