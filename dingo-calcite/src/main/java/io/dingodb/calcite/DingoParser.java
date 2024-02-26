@@ -392,5 +392,11 @@ public class DingoParser {
         if (enclosed != null && enclosed.equals("()")) {
             throw DingoResource.DINGO_RESOURCE.fieldSeparatorError().ex();
         }
+        byte[] linesTerm = exportOptions.getLineTerminated();
+        if ((linesTerm.length >= 2 && !(linesTerm[0] == 0x0d && linesTerm[1] == 0x0a))
+            || exportOptions.getTerminated().length >= 2
+            || exportOptions.getEscaped().length >= 2) {
+            throw DingoResource.DINGO_RESOURCE.fieldSeparatorError().ex();
+        }
     }
 }

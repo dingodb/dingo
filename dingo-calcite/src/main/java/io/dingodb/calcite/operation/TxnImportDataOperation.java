@@ -69,7 +69,7 @@ public class TxnImportDataOperation {
         this.timeOut = timeOut;
     }
 
-    public void insertByTxn(List<Object[]> tupleList) {
+    public int insertByTxn(List<Object[]> tupleList) {
         CacheToObject primaryObj = null;
         List<Object[]> secondList = null;
         try {
@@ -105,6 +105,7 @@ public class TxnImportDataOperation {
             // commit second key
             assert secondList != null;
             commitSecondData(secondList);
+            return tupleList.size();
         } finally {
             if (future != null) {
                 future.cancel(true);
@@ -393,11 +394,11 @@ public class TxnImportDataOperation {
                 CommonId tableId = txnLocalData.getTableId();
                 CommonId newPartId = txnLocalData.getPartId();
                 byte[] key = txnLocalData.getKey();
-                param.addKey(key);
                 CommonId partId = param.getPartId();
                 if (partId == null) {
                     partId = newPartId;
                     param.setPartId(partId);
+                    param.addKey(key);
                     param.setTableId(tableId);
                 } else if (partId.equals(newPartId)) {
                     param.addKey(key);
