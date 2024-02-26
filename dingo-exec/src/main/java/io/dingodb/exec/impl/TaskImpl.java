@@ -120,7 +120,6 @@ public final class TaskImpl implements Task {
     private transient CountDownLatch activeThreads = null;
     @Getter
     private transient TaskStatus taskInitStatus;
-    @Getter
     @Setter
     private transient Context context;
 
@@ -148,6 +147,13 @@ public final class TaskImpl implements Task {
         this.maxExecutionTime = maxExecutionTime;
         this.isSelect = isSelect;
         this.context = Context.builder().pin(0).keyState(new ArrayList<>()).build();
+    }
+
+    public Context getContext() {
+        if (this.context == null) {
+            this.context = Context.builder().pin(0).keyState(new ArrayList<>()).build();
+        }
+        return this.context;
     }
 
     @Override
@@ -256,7 +262,7 @@ public final class TaskImpl implements Task {
             Executors.execute("operator-" + jobId + "-" + id + "-" + operatorId, () -> {
                 final long startTime = System.currentTimeMillis();
                 try {
-                    while (operator.push(context.copy(), null, vertex)) {
+                    while (operator.push(getContext().copy(), null, vertex)) {
                         log.info("Operator {} need another pushing.", vertex.getId());
                     }
                     operator.fin(0, null, vertex);

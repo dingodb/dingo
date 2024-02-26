@@ -17,10 +17,11 @@
 package io.dingodb.exec.transaction.visitor.function;
 
 import io.dingodb.common.Location;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
-import io.dingodb.exec.base.Output;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
@@ -39,7 +40,7 @@ public class DingoStreamConverterVisitFun {
             outputs = outputs.stream().map(input -> {
                 Location targetLocation = currentLocation;
                 return DingoTransactionExchangeFun.exchange(job, idGenerator, transaction,
-                    input, targetLocation, new BooleanType(true));
+                    input, targetLocation, DingoTypeFactory.tuple(new DingoType[]{new BooleanType(true)}));
             }).collect(Collectors.toList());
             outputs = DingoCoalesceVisitFun.visit(job, idGenerator, currentLocation,
                 transaction, visitor, outputs, streamConverterLeaf);
