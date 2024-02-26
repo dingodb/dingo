@@ -10,9 +10,7 @@ mod tests {
     use tempfile::TempDir;
 
     use crate::{
-        tantivy_bm25_search, tantivy_bm25_search_with_filter, tantivy_count_in_rowid_range,
-        tantivy_load_index, tantivy_reader_free, tantivy_search_bitmap_results,
-        tantivy_search_in_rowid_range, update_logger_for_test,
+        tantivy_bm25_search, tantivy_bm25_search_with_filter, tantivy_count_in_rowid_range, tantivy_indexed_doc_counts, tantivy_load_index, tantivy_reader_free, tantivy_search_bitmap_results, tantivy_search_in_rowid_range, update_logger_for_test
     };
 
     fn commit_some_docs_for_test(index_directory: String, need_store_doc: bool) {
@@ -556,5 +554,42 @@ mod tests {
 
         let result = tantivy_search_bitmap_results(empty_path_cxx, query_cxx, false);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_tantivy_indexed_doc_counts() {
+        let temp_path = TempDir::new().unwrap();
+        let temp_path_str = temp_path.path().to_str().unwrap();
+        let_cxx_string!(temp_path_cxx = temp_path_str);
+        let index_directory = temp_path_cxx.as_ref().get_ref();
+
+        // Index some docs and load index reader.
+        commit_some_docs_for_test(temp_path_str.to_string(), false);
+        assert!(tantivy_load_index(index_directory).is_ok());
+
+        assert_eq!(tantivy_indexed_doc_counts(index_directory).unwrap(), 5);
+    }
+
+    #[test]
+    fn test_tantivy_indexed_doc_counts_boundary_1() {
+        let temp_path = TempDir::new().unwrap();
+        let temp_path_str = temp_path.path().to_str().unwrap();
+        let_cxx_string!(temp_path_cxx = temp_path_str);
+        let index_directory = temp_path_cxx.as_ref().get_ref();
+
+        // Index some docs and doesn't load index reader.
+        commit_some_docs_for_test(temp_path_str.to_string(), false);
+
+        assert_eq!(tantivy_indexed_doc_counts(index_directory).unwrap(), 0);
+    }
+
+    #[test]
+    fn test_tantivy_indexed_doc_counts_boundary_2() {
+        let temp_path = TempDir::new().unwrap();
+        let temp_path_str = temp_path.path().to_str().unwrap();
+        let_cxx_string!(temp_path_cxx = temp_path_str);
+        let index_directory = temp_path_cxx.as_ref().get_ref();
+
+        assert_eq!(tantivy_indexed_doc_counts(index_directory).unwrap(), 0);
     }
 }

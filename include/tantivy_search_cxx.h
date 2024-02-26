@@ -862,3 +862,13 @@ bool tantivy_search_in_rowid_range(::std::string const &index_path, ::std::strin
 // Returns:
 // - row_ids u8 bitmap.
 ::rust::Vec<::std::uint8_t> tantivy_search_bitmap_results(::std::string const &index_path, ::std::string const &query, bool use_regex);
+
+// Get the number of documents stored in the index file.
+// In general, we can consider the number of stored documents as 'n',
+// and the range of row_id is [0, n-1].
+// Arguments:
+// - `index_path`: The directory path for building the index.
+//
+// Returns:
+// - The count of documents stored in the index file.
+::std::uint64_t tantivy_indexed_doc_counts(::std::string const &index_path);

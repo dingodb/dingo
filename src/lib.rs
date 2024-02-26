@@ -196,6 +196,18 @@ pub mod ffi {
             use_regex: bool,
         ) -> Result<Vec<u8>>;
 
+        /// Get the number of documents stored in the index file.
+        /// In general, we can consider the number of stored documents as 'n',
+        /// and the range of row_id is [0, n-1].
+        /// Arguments:
+        /// - `index_path`: The directory path for building the index.
+        ///
+        /// Returns:
+        /// - The count of documents stored in the index file.
+        fn tantivy_indexed_doc_counts(
+            index_path: &CxxString,
+        ) -> Result<u64>;
+
     }
 }
 

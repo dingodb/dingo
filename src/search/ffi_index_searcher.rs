@@ -430,3 +430,30 @@ pub fn tantivy_search_bitmap_results(
     let u8_bitmap: Vec<u8> = ConvertUtils::row_ids_to_u8_bitmap(&row_ids_number);
     Ok(u8_bitmap)
 }
+
+
+/// Get the number of documents stored in the index file.
+/// In general, we can consider the number of stored documents as 'n',
+/// and the range of row_id is [0, n-1].
+/// Arguments:
+/// - `index_path`: The directory path for building the index.
+///
+/// Returns:
+/// - The count of documents stored in the index file.
+pub fn tantivy_indexed_doc_counts(
+    index_path: &CxxString,
+) -> Result<u64, String> {
+    // Parse parameter.
+    let index_path_str = convert_cxx_string("tantivy_indexed_doc_counts", "index_path", index_path)?;
+
+    // get index writer from CACHE
+    let index_r = match FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path_str.clone()) {
+        Ok(content) => content,
+        Err(e) => {
+            ERROR!(function: "tantivy_indexed_doc_counts", "Index reader already been removed: {}", e);
+            return Ok(0);
+        }
+    };
+    let num_docs = index_r.reader.searcher().num_docs();
+    Ok(num_docs)
+}
