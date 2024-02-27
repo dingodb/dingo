@@ -19,7 +19,7 @@ package io.dingodb.exec.fun.vector;
 import io.dingodb.exec.restful.VectorExtract;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
-import io.dingodb.expr.runtime.type.ListType;
+import io.dingodb.expr.runtime.op.OpKey;
 import io.dingodb.expr.runtime.type.Type;
 import io.dingodb.expr.runtime.type.Types;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -53,7 +53,7 @@ public class VectorTextFun extends BinaryOp {
     }
 
     @Override
-    public Object keyOf(@NonNull Type type0, @NonNull Type type1) {
+    public OpKey keyOf(@NonNull Type type0, @NonNull Type type1) {
         if (type0.equals(Types.STRING) && type1.equals(Types.STRING)) {
             return Types.STRING;
         }
@@ -61,7 +61,7 @@ public class VectorTextFun extends BinaryOp {
     }
 
     @Override
-    public BinaryOp getOp(Object key) {
+    public BinaryOp getOp(OpKey key) {
         return (key != null && key.equals(Types.STRING)) ? INSTANCE : null;
     }
 }

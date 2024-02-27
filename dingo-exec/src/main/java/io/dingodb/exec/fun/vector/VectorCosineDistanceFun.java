@@ -18,6 +18,7 @@ package io.dingodb.exec.fun.vector;
 
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
+import io.dingodb.expr.runtime.op.OpKey;
 import io.dingodb.expr.runtime.type.Type;
 import io.dingodb.expr.runtime.type.Types;
 import lombok.AccessLevel;
@@ -74,9 +75,9 @@ public class VectorCosineDistanceFun extends BinaryVectorVectorFun {
         List tmp = (List) value1;
         List<Float> vectorB;
         if (tmp.size() > 0 && tmp.get(0) instanceof Float) {
-             vectorB = transform((List<Float>) value1);
+            vectorB = transform((List<Float>) value1);
         } else {
-             vectorB = transformDecimal((List<Number>) value1);
+            vectorB = transformDecimal((List<Number>) value1);
         }
         double distance = innerProduct(vectorA, vectorB);
         BigDecimal distanceAccurate = new BigDecimal(distance);
@@ -95,7 +96,7 @@ public class VectorCosineDistanceFun extends BinaryVectorVectorFun {
     }
 
     @Override
-    public BinaryOp getOp(Object key) {
+    public BinaryOp getOp(OpKey key) {
         return INSTANCE;
     }
 }

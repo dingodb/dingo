@@ -17,6 +17,7 @@
 package io.dingodb.exec.fun.vector;
 
 import io.dingodb.expr.runtime.op.BinaryOp;
+import io.dingodb.expr.runtime.op.OpKey;
 import io.dingodb.expr.runtime.type.Type;
 import io.dingodb.expr.runtime.type.Types;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -25,7 +26,7 @@ public abstract class BinaryVectorVectorFun extends BinaryOp {
     private static final long serialVersionUID = 9015040211359619477L;
 
     @Override
-    public Object keyOf(@NonNull Type type0, @NonNull Type type1) {
+    public OpKey keyOf(@NonNull Type type0, @NonNull Type type1) {
         if (type0.equals((Types.LIST_FLOAT)) && type1.equals((Types.LIST_FLOAT))) {
             return Types.LIST_FLOAT;
         }
@@ -33,7 +34,7 @@ public abstract class BinaryVectorVectorFun extends BinaryOp {
     }
 
     @Override
-    public BinaryOp getOp(Object key) {
+    public BinaryOp getOp(OpKey key) {
         return (key != null && key.equals(Types.LIST_FLOAT)) ? this : null;
     }
 }
