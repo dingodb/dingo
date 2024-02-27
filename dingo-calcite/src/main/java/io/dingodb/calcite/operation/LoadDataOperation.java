@@ -55,8 +55,12 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -365,10 +369,12 @@ public class LoadDataOperation implements DmlOperation {
     }
 
     public void insertWithTxn(Object[] tuples) {
-        List<KeyValue> caches = ExecutionEnvironment.memoryCache.computeIfAbsent(statementId, e -> new ArrayList<>());
+        Map<String, KeyValue> caches = ExecutionEnvironment.memoryCache
+            .computeIfAbsent(statementId, e -> new LinkedHashMap<>());
         KeyValue keyValue = codec.encode(tuples);
-        if (!caches.contains(keyValue)) {
-            caches.add(keyValue);
+        String cacheKey = Base64.getEncoder().encodeToString(keyValue.getKey());
+        if (!caches.containsKey(cacheKey)) {
+            caches.put(cacheKey, keyValue);
         }
         if (caches.size() > 50000) {
             try {
@@ -397,8 +403,8 @@ public class LoadDataOperation implements DmlOperation {
             TxnImportDataOperation txnImportDataOperation = new TxnImportDataOperation(
                 startTs, txnId, txnRetry, txnRetryCnt, timeOut
             );
-            List<KeyValue> caches = ExecutionEnvironment.memoryCache
-                .computeIfAbsent(statementId, e -> new ArrayList<>());
+            Map<String, KeyValue> caches = ExecutionEnvironment.memoryCache
+                .computeIfAbsent(statementId, e -> new LinkedHashMap<>());
             List<Object[]> tupleList = getCacheTupleList(caches, txnId);
             if (tupleList.size() == 0) {
                 return;
@@ -410,9 +416,9 @@ public class LoadDataOperation implements DmlOperation {
         }
     }
 
-    public List<Object[]> getCacheTupleList(List<KeyValue> keyValueList, CommonId txnId) {
+    public List<Object[]> getCacheTupleList(Map<String, KeyValue> keyValueMap, CommonId txnId) {
         List<Object[]> tupleCacheList = new ArrayList<>();
-        for (KeyValue keyValue : keyValueList) {
+        for (KeyValue keyValue : keyValueMap.values()) {
             tupleCacheList.add(getCacheTuples(keyValue, txnId));
         }
         return tupleCacheList;

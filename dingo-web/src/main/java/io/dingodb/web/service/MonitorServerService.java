@@ -79,6 +79,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.Utils.buildKeyStr;
@@ -237,10 +238,10 @@ public class MonitorServerService {
         String funcName = tableDefinition.getPartition().getFuncName();
         boolean isOriginalKey = funcName.equalsIgnoreCase("HASH");
         DingoType dingoType = DingoTypeFactory.tuple(
-            tableDefinition.getColumns().stream().map(col -> DingoTypeFactory.INSTANCE.scalar(
-                col.getType(),
-                col.isNullable()
-            )).toArray(DingoType[]::new)
+            tableDefinition.getColumns()
+                .stream()
+                .map(col -> DingoTypeFactory.INSTANCE.fromName(col.getType(), col.getElementType(), col.isNullable())
+                ).toArray(DingoType[]::new)
         );
         RangeDistribution[] rangeDistributions = metaServiceClient
             .getRangeDistribution(table).values().toArray(new RangeDistribution[0]);
@@ -473,24 +474,37 @@ public class MonitorServerService {
         return storeServiceConnector.exec(stub -> stub.hello(helloRequest));
     }
 
-    private static List<Partition> getPartitionDtoList(TableDefinition tableDef,
+    private List<Partition> getPartitionDtoList(TableDefinition tableDef,
                                                        int partCount,
                                                        Collection<RangeDistribution> rangeDistributions) {
-        List<Long> partIdList = new ArrayList<>();
+        DingoKeyValueCodec codec = DingoKeyValueCodec.of(0, tableDef);
+        String funcName = tableDef.getPartition().getFuncName();
+        boolean isOriginalKey = funcName.equalsIgnoreCase("HASH");
+        List<Long> partIdList = new ArrayList<>(0);
+        AtomicLong partColSizeAto = new AtomicLong();
         rangeDistributions.forEach(r -> {
             if (!partIdList.contains(r.getId().parentId())) {
                 partIdList.add(r.getId().parentId());
             }
+            if (partColSizeAto.get() == 0) {
+                setId(r.getRange().startKey);
+                Object[] start = codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(r.getRange().startKey,
+                    r.getRange().startKey.length) : r.getRange().startKey);
+                long partByColCount = Arrays.stream(start).filter(Objects::nonNull).count();
+                partColSizeAto.set(partByColCount);
+            }
         });
+        long partColSize = partColSizeAto.get();
         partIdList.sort(Comparator.reverseOrder());
 
         String partType = tableDef.getPartition().getFuncName();
         List<Partition> partitions = new ArrayList<>();
         for (int i = 0; i < partCount; i++) {
             String partName = partIdList.get(i).toString();
-            List<String> keyNameList = tableDef.getKeyColumns().stream()
-                .map(io.dingodb.sdk.common.table.Column::getName)
-                .collect(Collectors.toList());
+            List<String> keyNameList = new ArrayList<>();
+            for (int c = 0; c < partColSize; c ++) {
+                keyNameList.add(tableDef.getKeyColumns().get(c).getName());
+            }
             String cols = StringUtils.join(keyNameList);
             partitions.add(new Partition(partIdList.get(i),
                 partName, partType, cols));

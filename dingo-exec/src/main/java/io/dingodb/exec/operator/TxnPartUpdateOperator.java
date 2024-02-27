@@ -62,6 +62,11 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
     @Override
     protected boolean pushTuple(Context context, Object[] tuple, Vertex vertex) {
         TxnPartUpdateParam param = vertex.getParam();
+        if (param.isHasAutoInc() && param.getAutoIncColIdx() < tuple.length) {
+            long autoIncVal = Long.parseLong(tuple[param.getAutoIncColIdx()].toString());
+            MetaService metaService = MetaService.root();
+            metaService.updateAutoIncrement(param.getTableId(), autoIncVal);
+        }
         param.setContext(context);
         DingoType schema = param.getSchema();
         TupleMapping mapping = param.getMapping();

@@ -18,6 +18,8 @@ package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.traits.DingoRelTraitsUtils;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -31,6 +33,13 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.List;
 
 public final class DingoTableModify extends TableModify implements DingoRel {
+    @Setter
+    @Getter
+    private boolean hasAutoIncrement;
+    @Getter
+    @Setter
+    private int autoIncrementColIndex;
+
     public DingoTableModify(
         RelOptCluster cluster,
         RelTraitSet traitSet,

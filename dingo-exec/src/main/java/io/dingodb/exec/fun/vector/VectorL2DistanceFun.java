@@ -35,7 +35,7 @@ public class VectorL2DistanceFun extends BinaryVectorVectorFun {
     private VectorL2DistanceFun() {
     }
 
-    private static double l2DistanceCombine(@NonNull List<Float> vectorA, List<Number> vectorB) {
+    public static double l2DistanceCombine(@NonNull List<Float> vectorA, List<Number> vectorB) {
         double distance = 0.0;
         for (int i = 0; i < vectorA.size(); i++) {
             distance += Math.pow(vectorA.get(i) - vectorB.get(i).floatValue(), 2);

@@ -37,7 +37,7 @@ public class ExecutionEnvironment {
 
     public static ExecutionEnvironment INSTANCE = new ExecutionEnvironment();
 
-    public static Map<Object, List<KeyValue>> memoryCache = new HashMap<>();
+    public static Map<Object, Map<String, KeyValue>> memoryCache = new HashMap<>();
 
     @Getter
     @Setter

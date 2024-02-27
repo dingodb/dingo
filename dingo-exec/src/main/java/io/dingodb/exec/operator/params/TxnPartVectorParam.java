@@ -78,6 +78,9 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
     private final int isolationLevel;
     @JsonProperty("timeOut")
     private final long timeOut;
+
+    private int vectorIndex;
+    private String distanceType;
     private CoprocessorV2 coprocessor = null;
     private final boolean isLookUp;
     private final DingoType tableDataSchema;
@@ -100,7 +103,9 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
         long scanTs,
         int isolationLevel,
         long timeOut,
-        TupleMapping resultSelection
+        TupleMapping resultSelection,
+        int vectorIndex,
+        String distanceType
     ) {
         super(table.tableId, partId, schema, filter, selection, table.keyMapping());
         this.table = table;
@@ -124,6 +129,8 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
 
         List<DingoType> priType = tableDataColList.stream().map(Column::getType).collect(Collectors.toList());
         this.tableDataSchema = DingoTypeFactory.tuple(priType.toArray(new DingoType[]{}));
+        this.vectorIndex = vectorIndex;
+        this.distanceType = distanceType;
     }
 
     @Override
