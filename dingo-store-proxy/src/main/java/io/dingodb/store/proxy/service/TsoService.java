@@ -20,15 +20,14 @@ import com.google.auto.service.AutoService;
 import io.dingodb.sdk.service.MetaService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.entity.common.Location;
-import io.dingodb.sdk.service.entity.meta.TsoOpType;
 import io.dingodb.sdk.service.entity.meta.TsoRequest;
 import io.dingodb.sdk.service.entity.meta.TsoTimestamp;
 import io.dingodb.store.proxy.Configuration;
 import io.dingodb.tso.TsoServiceProvider;
 
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+
+import static io.dingodb.sdk.service.entity.meta.TsoOpType.OP_GEN_TSO;
 
 public class TsoService implements io.dingodb.tso.TsoService {
 
@@ -82,17 +81,21 @@ public class TsoService implements io.dingodb.tso.TsoService {
     @Override
     public long tso() {
         TsoTimestamp startTimestamp = tsoMetaService.tsoService(
-            trace(), TsoRequest.builder().opType(TsoOpType.OP_GEN_TSO).count(1L).build()
+            trace(), TsoRequest.builder().opType(OP_GEN_TSO).count(1L).build()
         ).getStartTimestamp();
         return (startTimestamp.getPhysical() << PHYSICAL_SHIFT) + (startTimestamp.getLogical() & MAX_LOGICAL);
     }
 
     @Override
+    public long tso(long timestamp) {
+        return timestamp << PHYSICAL_SHIFT;
+    }
+
+    @Override
     public long timestamp() {
-        TsoTimestamp startTimestamp = tsoMetaService.tsoService(
-            trace(), TsoRequest.builder().opType(TsoOpType.OP_GEN_TSO).count(1L).build()
-        ).getStartTimestamp();
-        return startTimestamp.getPhysical();
+        return tsoMetaService.tsoService(
+            trace(), TsoRequest.builder().opType(OP_GEN_TSO).count(1L).build()
+        ).getStartTimestamp().getPhysical();
     }
 
     @Override

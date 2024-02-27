@@ -49,6 +49,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 
 import static io.dingodb.common.CommonId.CommonType.CLUSTER;
+import static io.dingodb.common.CommonId.CommonType.SDK;
 import static io.dingodb.sdk.service.Services.metaService;
 import static io.dingodb.transaction.api.LockType.RANGE;
 import static io.dingodb.transaction.api.LockType.TABLE;
@@ -105,7 +106,7 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         leaderId = null;
         leaderChannel = null;
         try {
-            if (!lock.tryLock()) {
+            if (ID.type == SDK || !lock.tryLock()) {
                 Kv currentLock = lockService.currentLock();
                 String[] ss = new String(currentLock.getKv().getValue()).split("#");
                 CommonId leaderId = CommonId.parse(ss[0]);

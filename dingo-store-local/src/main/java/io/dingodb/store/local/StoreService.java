@@ -55,7 +55,7 @@ public class StoreService implements io.dingodb.store.api.StoreService {
             options.setTargetFileSizeBase(Configuration.instance().getFileSize());
             rocksdb = RocksDB.open(path);
         } catch (Exception e) {
-            log.info("No local db.");
+            log.info("No local db.", e);
         }
         db = rocksdb;
     }
