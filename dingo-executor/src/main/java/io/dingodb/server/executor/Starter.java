@@ -31,6 +31,7 @@ import io.dingodb.net.MysqlNetServiceProvider;
 import io.dingodb.net.NetService;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.scheduler.SchedulerService;
+import io.dingodb.server.executor.schedule.SafePointUpdateTask;
 import io.dingodb.server.executor.service.ClusterService;
 import io.dingodb.store.proxy.service.AutoIncrementService;
 import io.dingodb.tso.TsoService;
@@ -93,6 +94,7 @@ public class Starter {
         // TODO Use job/task implement api.
         ApiRegistry.getDefault().register(ShowLocksOperation.Api.class, new ShowLocksOperation.Api() { });
 
+        SafePointUpdateTask.run();
     }
 
 }

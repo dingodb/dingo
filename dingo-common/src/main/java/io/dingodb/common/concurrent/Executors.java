@@ -94,10 +94,22 @@ public final class Executors {
         return GLOBAL_SCHEDULE_POOL.schedule(() -> submit(name, command), delay, unit);
     }
 
+    public static ScheduledFuture<?> scheduleWithFixedDelay(
+        String name, Runnable command, long initialDelay, long period, TimeUnit unit
+    ) {
+        return GLOBAL_SCHEDULE_POOL.scheduleWithFixedDelay(wrap(name, command), initialDelay, period, unit);
+    }
+
     public static ScheduledFuture<?> scheduleWithFixedDelayAsync(
         String name, Runnable command, long initialDelay, long period, TimeUnit unit
     ) {
         return GLOBAL_SCHEDULE_POOL.scheduleWithFixedDelay(() -> execute(name, command), initialDelay, period, unit);
+    }
+
+    public static ScheduledFuture<?> scheduleAtFixedRate(
+        String name, Runnable command, long initialDelay, long period, TimeUnit unit
+    ) {
+        return GLOBAL_SCHEDULE_POOL.scheduleAtFixedRate(wrap(name, command), initialDelay, period, unit);
     }
 
     public static ScheduledFuture<?> scheduleAtFixedRateAsync(

@@ -35,7 +35,6 @@ import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
 import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.calcite.schema.DingoSchema;
-import io.dingodb.calcite.stats.StatsOperator;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
@@ -369,40 +368,44 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .build();
     }
 
-    private static @NonNull Pair<DingoSchema, String> getSchemaAndTableName(
-        @NonNull SqlIdentifier id, CalcitePrepare.@NonNull Context context
+    private static DingoSchema getSchema(
+        @NonNull SqlIdentifier id, CalcitePrepare.@NonNull Context context, boolean ifExist
     ) {
         CalciteSchema rootSchema = context.getMutableRootSchema();
         assert rootSchema != null : "No root schema.";
-        final List<String> defaultSchemaPath = context.getDefaultSchemaPath();
-        assert defaultSchemaPath.size() == 1 : "Assume that the schema path has only one level.";
-        // todo: current version, ignore name case
-        CalciteSchema defaultSchema = rootSchema.getSubSchema(defaultSchemaPath.get(0), false);
-        if (defaultSchema == null) {
-            defaultSchema = rootSchema;
-        }
+
         List<String> names = new ArrayList<>(id.names);
-        Schema schema;
-        String tableName;
+        Schema schema = null;
+
         if (names.size() == 1) {
-            schema = defaultSchema.schema;
-            tableName = names.get(0);
+            final List<String> defaultSchemaPath = context.getDefaultSchemaPath();
+            assert defaultSchemaPath.size() == 1 : "Assume that the schema path has only one level.";
+            // todo: current version, ignore name case
+            schema = Optional.mapOrNull(rootSchema.getSubSchema(defaultSchemaPath.get(0), false), $ -> $.schema);
         } else {
             // todo: current version, ignore name case
             CalciteSchema subSchema = rootSchema.getSubSchema(names.get(0), false);
             if (subSchema != null) {
                 schema = subSchema.schema;
-                tableName = String.join(".", Util.skip(names));
-            } else {
-                schema = defaultSchema.schema;
-                tableName = String.join(".", names);
+            } else if (!ifExist) {
+                throw DINGO_RESOURCE.unknownSchema(names.get(0)).ex();
             }
         }
+        return (DingoSchema) schema;
+    }
 
-        if (!(schema instanceof DingoSchema)) {
-            throw new AssertionError("The schema not found or not belong to dingo.");
+    private static @NonNull String getTableName(@NonNull SqlIdentifier id, CalcitePrepare.@NonNull Context context) {
+        if (id.names.size() == 1) {
+            return id.names.get(0).toUpperCase();
+        } else {
+            return id.names.get(1).toUpperCase();
         }
-        return Pair.of((DingoSchema) schema, tableName.toUpperCase());
+    }
+
+    private static @NonNull Pair<DingoSchema, String> getSchemaAndTableName(
+        @NonNull SqlIdentifier id, CalcitePrepare.@NonNull Context context
+    ) {
+        return Pair.of(getSchema(id, context, false), getTableName(id, context));
     }
 
     public void execute(SqlCreateSchema schema, CalcitePrepare.Context context) {
@@ -416,7 +419,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 RESOURCE.schemaExists(schemaName)
             );
         }
-
     }
 
     public void execute(SqlDropSchema schema, CalcitePrepare.Context context) {
@@ -447,14 +449,13 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     public void execute(SqlCreateTable createT, CalcitePrepare.Context context) {
         DingoSqlCreateTable create = (DingoSqlCreateTable) createT;
         log.info("DDL execute: {}", create);
-        final Pair<DingoSchema, String> schemaTableName
-            = getSchemaAndTableName(create.name, context);
+        DingoSchema schema = getSchema(create.name, context, false);
         SqlNodeList columnList = create.columnList;
         if (columnList == null) {
             throw SqlUtil.newContextException(create.name.getParserPosition(),
                 RESOURCE.createTableRequiresColumnList());
         }
-        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        final String tableName = getTableName(create.name, context);
 
         // Get all primary key
         List<String> pks = create.columnList.stream()
@@ -505,8 +506,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw new RuntimeException("Duplicate column names are not allowed in table definition. Total: "
                 + realColCnt + ", distinct: " + distinctColCnt);
         }
-
-        final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
 
         // Check table exist
         if (schema.getTable(tableName) != null) {
@@ -566,13 +565,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     @SuppressWarnings({"unused", "MethodMayBeStatic"})
     public void execute(SqlDropTable drop, CalcitePrepare.Context context) throws Exception {
         log.info("DDL execute: {}", drop);
-        final Pair<DingoSchema, String> schemaTableName
-            = getSchemaAndTableName(drop.name, context);
-        final DingoSchema schema = schemaTableName.left;
-        final String tableName = schemaTableName.right;
-        final boolean existed;
-        assert schema != null;
-        assert tableName != null;
+        final DingoSchema schema = getSchema(drop.name, context, drop.ifExists);
+        if (schema == null) {
+            return;
+        }
+        final String tableName = getTableName(drop.name, context);
         int ttl = Optional.mapOrGet(
             ((Connection) context).getClientInfo("lock_wait_timeout"), Integer::parseInt, () -> 50
         );

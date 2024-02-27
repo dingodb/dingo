@@ -261,9 +261,9 @@ public class DingoDdlVerify {
         }
         // todo: current version, ignore name case
         CalciteSchema schema = connection.getContext().getRootSchema().getSubSchema(schemaName, false);
-        if (schema == null) {
-            throw new RuntimeException("Schema not found: " + schemaName);
-        }
+//        if (schema == null) {
+//            throw new RuntimeException("Schema not found: " + schemaName);
+//        }
 
         return new String[] {schemaName, tableName};
     }
