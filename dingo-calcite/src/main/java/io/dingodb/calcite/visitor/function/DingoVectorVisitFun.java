@@ -80,6 +80,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import static io.dingodb.calcite.rel.LogicalDingoTableScan.getIndexMetricType;
 import static io.dingodb.common.util.Utils.isNeedLookUp;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_VECTOR;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_VECTOR;
@@ -105,6 +106,11 @@ public final class DingoVectorVisitFun {
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = metaService.getRangeDistribution(tableId);
         List<Object> operandsList = rel.getOperands();
 
+        SqlIdentifier vectorColNmIdf = (SqlIdentifier) operandsList.get(1);
+        String vectorColNm = "";
+        if (vectorColNmIdf != null) {
+            vectorColNm = vectorColNmIdf.getSimple();
+        }
         Float[] floatArray = getVectorFloats(operandsList);
 
         if (!(operandsList.get(3) instanceof SqlNumericLiteral)) {
@@ -209,6 +215,15 @@ public final class DingoVectorVisitFun {
                 );
                 vertex = new Vertex(PART_VECTOR, param);
             } else {
+                String finalVectorColNm = vectorColNm;
+                int vectorIdx = dingoTable.getTable()
+                    .columns
+                    .stream()
+                    .filter(col -> col.getName().equalsIgnoreCase(finalVectorColNm))
+                    .map(col -> dingoTable.getTable().columns.indexOf(col))
+                    .findFirst().orElse(10000);
+                String metricType = getIndexMetricType(dingoTable, vectorColNm);
+
                 RelOp relOp = null;
                 if (rexFilter != null) {
                     Expr expr = RexConverter.convert(rexFilter);
@@ -233,7 +248,9 @@ public final class DingoVectorVisitFun {
                     scanTs,
                     transaction.getIsolationLevel(),
                     transaction.getLockTimeOut(),
-                    resultSelection
+                    resultSelection,
+                    vectorIdx,
+                    metricType
                 );
                 vertex = new Vertex(TXN_PART_VECTOR, param);
             }

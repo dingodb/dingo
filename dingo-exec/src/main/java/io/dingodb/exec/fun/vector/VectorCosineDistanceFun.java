@@ -70,7 +70,11 @@ public class VectorCosineDistanceFun extends BinaryVectorVectorFun {
 
     @Override
     protected Object evalNonNullValue(@NonNull Object value0, @NonNull Object value1, ExprConfig config) {
-        List<Float> vectorA = transform((List<Float>) value0);
+        return cosine((List<Float>) value0, value1);
+    }
+
+    public static float cosine(List<Float> value0, @NonNull Object value1) {
+        List<Float> vectorA = transform(value0);
         List tmp = (List) value1;
         List<Float> vectorB;
         if (tmp.size() > 0 && tmp.get(0) instanceof Float) {

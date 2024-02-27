@@ -25,6 +25,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PartUpdateParam;
+import io.dingodb.meta.MetaService;
 import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,6 +42,11 @@ public final class PartUpdateOperator extends PartModifyOperator {
     @Override
     public boolean pushTuple(Context context, Object[] tuple, Vertex vertex) {
         PartUpdateParam param = vertex.getParam();
+        if (param.isHasAutoInc() && param.getAutoIncColIdx() < tuple.length) {
+            long autoIncVal = Long.parseLong(tuple[param.getAutoIncColIdx()].toString());
+            MetaService metaService = MetaService.root();
+            metaService.updateAutoIncrement(param.getTableId(), autoIncVal);
+        }
         RangeDistribution distribution = context.getDistribution();
         DingoType schema = param.getSchema();
         TupleMapping mapping = param.getMapping();

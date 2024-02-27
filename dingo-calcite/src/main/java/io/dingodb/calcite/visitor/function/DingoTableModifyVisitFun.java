@@ -199,7 +199,9 @@ public class DingoTableModifyVisitFun {
                                     transaction.getStartTs(),
                                     pessimisticTxn ? transaction.getForUpdateTs() : 0L,
                                     transaction.getLockTimeOut(),
-                                    td
+                                    td,
+                                    rel.isHasAutoIncrement(),
+                                    rel.getAutoIncrementColIndex()
                                 )
                             );
                             updateVertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -227,7 +229,9 @@ public class DingoTableModifyVisitFun {
                                     transaction.getStartTs(),
                                     pessimisticTxn ? transaction.getForUpdateTs() : 0L,
                                     transaction.getLockTimeOut(),
-                                    td
+                                    td,
+                                    rel.isHasAutoIncrement(),
+                                    rel.getAutoIncrementColIndex()
                                 )
                             );
                             vertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -251,7 +255,9 @@ public class DingoTableModifyVisitFun {
                                 rel.getSourceExpressionList().stream()
                                     .map(SqlExprUtils::toSqlExpr)
                                     .collect(Collectors.toList()),
-                                td
+                                td,
+                                rel.isHasAutoIncrement(),
+                                rel.getAutoIncrementColIndex()
                             )
                         );
                         vertex.setId(idGenerator.getOperatorId(task.getId()));

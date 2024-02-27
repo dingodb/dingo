@@ -28,13 +28,14 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 import java.util.NavigableMap;
 
 @Getter
 @JsonTypeName("update")
-@JsonPropertyOrder({"table", "schema", "keyMapping", "mapping", "updates"})
+@JsonPropertyOrder({"table", "schema", "keyMapping", "mapping", "updates", "hasAutoInc", "autoIncColIdx"})
 public class PartUpdateParam extends PartModifyParam {
 
     @JsonProperty("mapping")
@@ -42,17 +43,27 @@ public class PartUpdateParam extends PartModifyParam {
     @JsonProperty("updates")
     private final List<SqlExpr> updates;
 
+    @JsonProperty("hasAutoInc")
+    private final boolean hasAutoInc;
+
+    @JsonProperty("autoIncColIdx")
+    private final int autoIncColIdx;
+
     public PartUpdateParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("mapping") TupleMapping mapping,
         @JsonProperty("updates") List<SqlExpr> updates,
-        Table table
+        Table table,
+        @JsonProperty("hasAutoInc") boolean hasAutoInc,
+        @JsonProperty("autoIncColIdx") int autoIncColIdx
     ) {
         super(tableId, schema, keyMapping, table);
         this.mapping = mapping;
         this.updates = updates;
+        this.hasAutoInc = hasAutoInc;
+        this.autoIncColIdx = autoIncColIdx;
     }
 
     @Override

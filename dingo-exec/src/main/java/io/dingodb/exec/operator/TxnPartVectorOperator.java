@@ -36,9 +36,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import static io.dingodb.exec.fun.vector.VectorCosineDistanceFun.cosine;
+import static io.dingodb.exec.fun.vector.VectorIPDistanceFun.innerProduct;
+import static io.dingodb.exec.fun.vector.VectorL2DistanceFun.l2DistanceCombine;
 import static io.dingodb.exec.operator.TxnGetByKeysOperator.getLocalStore;
 
 @Slf4j
@@ -49,6 +53,8 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
     @Override
     protected @NonNull Iterator<Object[]> createSourceIterator(Vertex vertex) {
         TxnPartVectorParam param = vertex.getParam();
+        int vecIdx = param.getVectorIndex();
+        String distanceType = param.getDistanceType();
         KeyValueCodec tableCodec;
         tableCodec = CodecService.getDefault().createKeyValueCodec(
             param.getTableDataSchema(), param.tableDataKeyMapping()
@@ -85,7 +91,27 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                     );
                 if (local != null) {
                     while (local.hasNext()) {
-                        results.add(local.next());
+                        Object[] objects = local.next();
+                        if (vecIdx >= objects.length || distanceType == null) {
+                            objects[objects.length - 1] = 0.0f;
+                        } else {
+                            Object ov = objects[vecIdx];
+                            if (ov instanceof List) {
+                                Object targetVector = Arrays.asList(param.getFloatArray());
+                                float distance = 0.0f;
+                                if (distanceType.contains("L2")) {
+                                    distance = (float) l2DistanceCombine((List<Float>) ov, (List<Number>) targetVector);
+                                } else if (distanceType.contains("INNER_PRODUCT")) {
+                                    distance = (float) innerProduct((List<Float>) ov, (List<Float>) targetVector);
+                                } else if (distanceType.contains("COSINE")) {
+                                    distance = cosine((List<Float>) ov, targetVector);
+                                }
+                                objects[objects.length - 1] = distance;
+                            } else {
+                                objects[objects.length - 1] = 0.0;
+                            }
+                        }
+                        results.add(objects);
                     }
                     continue;
                 }

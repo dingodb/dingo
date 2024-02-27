@@ -31,13 +31,19 @@ import java.util.List;
 
 @Getter
 @JsonTypeName("txn_update")
-@JsonPropertyOrder({"pessimisticTxn", "isolationLevel", "primaryLockKey", "lockTimeOut", "startTs", "forUpdateTs", "table", "schema", "keyMapping", "mapping", "updates"})
+@JsonPropertyOrder({"pessimisticTxn", "isolationLevel", "primaryLockKey", "lockTimeOut", "startTs", "forUpdateTs", "table", "schema", "keyMapping", "mapping", "updates", "hasAutoInc", "autoIncColIdx"})
 public class TxnPartUpdateParam extends TxnPartModifyParam {
 
     @JsonProperty("mapping")
     private final TupleMapping mapping;
     @JsonProperty("updates")
     private final List<SqlExpr> updates;
+
+    @JsonProperty("hasAutoInc")
+    private final boolean hasAutoInc;
+
+    @JsonProperty("autoIncColIdx")
+    private final int autoIncColIdx;
 
     public TxnPartUpdateParam(
         @JsonProperty("table") CommonId tableId,
@@ -51,12 +57,16 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
         @JsonProperty("startTs") long startTs,
         @JsonProperty("forUpdateTs") long forUpdateTs,
         @JsonProperty("lockTimeOut") long lockTimeOut,
-        Table table
+        Table table,
+        @JsonProperty("hasAutoInc") boolean hasAutoInc,
+        @JsonProperty("autoIncColIdx") int autoIncColIdx
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
         this.mapping = mapping;
         this.updates = updates;
+        this.hasAutoInc = hasAutoInc;
+        this.autoIncColIdx = autoIncColIdx;
     }
 
     @Override
