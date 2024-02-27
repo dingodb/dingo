@@ -17,166 +17,237 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PessimisticLockInsertParam;
-import io.dingodb.exec.transaction.base.ITransaction;
-import io.dingodb.exec.transaction.base.TransactionType;
-import io.dingodb.exec.transaction.impl.TransactionManager;
-import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
-import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
-import io.dingodb.store.api.transaction.exception.RegionSplitException;
+import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.concurrent.Future;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
+import static io.dingodb.exec.utils.ByteUtils.decodePessimisticKey;
+import static io.dingodb.exec.utils.ByteUtils.encode;
+import static io.dingodb.exec.utils.ByteUtils.getKeyByOp;
 
 @Slf4j
-public class PessimisticLockInsertOperator extends PartModifyOperator {
+public class PessimisticLockInsertOperator extends SoleOutOperator {
     public static final PessimisticLockInsertOperator INSTANCE = new PessimisticLockInsertOperator();
 
     @Override
-    protected boolean pushTuple(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        PessimisticLockInsertParam param = vertex.getParam();
-        CommonId txnId = vertex.getTask().getTxnId();
-        ITransaction transaction = TransactionManager.getTransaction(txnId);
-        if (transaction == null || transaction.getPrimaryKeyLock() != null) {
-            return false;
-        }
-        DingoType schema = param.getSchema();
-        Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
-        KeyValue keyValue = wrap(param.getCodec()::encode).apply(newTuple);
-        CommonId jobId = vertex.getTask().getJobId();
-        CommonId tableId = param.getTableId();
-        CommonId partId = context.getDistribution().getId();
-        CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
-        StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, partId);
-        byte[] jobIdByte = jobId.encode();
-        byte[] txnIdByte = txnId.encode();
-        byte[] tableIdByte = tableId.encode();
-        byte[] partIdByte = partId.encode();
-        int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
-        // for check deadLock
-        byte[] deadLockKeyBytes = ByteUtils.encode(
-            CommonId.CommonType.TXN_CACHE_BLOCK_LOCK,
-            keyValue.getKey(),
-            Op.LOCK.getCode(),
-            len,
-            txnIdByte,
-            tableIdByte,
-            partIdByte
-        );
-        KeyValue deadLockKeyValue = new KeyValue(deadLockKeyBytes, null);
-        store.put(deadLockKeyValue);
-        // add
-        byte[] primaryKey = Arrays.copyOf(keyValue.getKey(), keyValue.getKey().length);
-        long startTs = param.getStartTs();
-        Future future = null;
-        TxnPessimisticLock txnPessimisticLock = TxnPessimisticLock.builder().
-            isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
-            .primaryLock(primaryKey)
-            .mutations(Collections.singletonList(
-                TransactionCacheToMutation.cacheToPessimisticLockMutation(
-                    primaryKey, TransactionUtil.toLockExtraData(
-                        tableId,
-                        partId,
-                        txnId,
-                        TransactionType.PESSIMISTIC.getCode()
-                    ), jobId.seq
-                )
-            ))
-            .lockTtl(TransactionManager.lockTtlTm())
-            .startTs(startTs)
-            .forUpdateTs(jobId.seq)
-            .build();
-        try {
-            store = Services.KV_STORE.getInstance(tableId, partId);
-            future = store.txnPessimisticLockPrimaryKey(txnPessimisticLock, param.getLockTimeOut());
-        } catch (RegionSplitException e) {
-            log.error(e.getMessage(), e);
-            CommonId regionId = TransactionUtil.singleKeySplitRegionId(tableId, txnId, primaryKey);
-            store = Services.KV_STORE.getInstance(tableId, regionId);
-            future = store.txnPessimisticLockPrimaryKey(txnPessimisticLock, param.getLockTimeOut());
-        } catch (Throwable e) {
-            log.error(e.getMessage(), e);
-            // primaryKeyLock rollback
-            TransactionUtil.pessimisticPrimaryLockRollBack(
-                txnId,
-                tableId,
-                partId,
-                param.getIsolationLevel(),
-                startTs,
-                txnPessimisticLock.getForUpdateTs(),
-                primaryKey
-            );
-            store = Services.LOCAL_STORE.getInstance(tableId, partId);
-            // delete deadLockKey
-            store.deletePrefix(deadLockKeyBytes);
-            throw new RuntimeException(e.getMessage());
-        }
-        if (future == null) {
-            // primaryKeyLock rollback
-            TransactionUtil.pessimisticPrimaryLockRollBack(
-                txnId,
-                tableId,
-                partId,
-                param.getIsolationLevel(),
-                startTs,
-                txnPessimisticLock.getForUpdateTs(),
-                primaryKey
-            );
-            store = Services.LOCAL_STORE.getInstance(tableId, partId);
-            // delete deadLockKey
-            store.deletePrefix(deadLockKeyBytes);
-            throw new RuntimeException(txnId + " future is null " + partId + ",txnPessimisticLockPrimaryKey false");
-        }
-        long forUpdateTs = txnPessimisticLock.getForUpdateTs();
-        transaction.setForUpdateTs(forUpdateTs);
-        transaction.setPrimaryKeyFuture(future);
-        store = Services.LOCAL_STORE.getInstance(tableId, partId);
-        // get lock success, delete deadLockKey
-        store.deletePrefix(deadLockKeyBytes);
-        // lockKeyValue  [11_txnId_tableId_partId_a_lock, forUpdateTs1]
-        transaction.setPrimaryKeyLock(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, deadLockKeyBytes));
-        // extraKeyValue  [12_jobId_tableId_partId_a_none, value]
-        byte[] extraKeyBytes = ByteUtils.encode(
-            CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
-            keyValue.getKey(),
-            Op.NONE.getCode(),
-            len,
-            jobIdByte,
-            tableIdByte,
-            partIdByte
-        );
-        KeyValue extraKeyValue = new KeyValue(extraKeyBytes, keyValue.getValue());
-        // dataKeyValue   [10_txnId_tableId_partId_a_putIf, value]
-        keyValue.setKey(
-            ByteUtils.encode(
-                CommonId.CommonType.TXN_CACHE_DATA,
-                keyValue.getKey(),
-                Op.PUTIFABSENT.getCode(),
+    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
+        synchronized (vertex) {
+            PessimisticLockInsertParam param = vertex.getParam();
+            param.setContext(context);
+            CommonId txnId = vertex.getTask().getTxnId();
+            CommonId tableId = param.getTableId();
+            CommonId partId = context.getDistribution().getId();
+            CommonId jobId = vertex.getTask().getJobId();
+            byte[] primaryLockKey = param.getPrimaryLockKey();
+            DingoType schema = param.getSchema();
+            StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
+            KeyValueCodec codec = param.getCodec();
+            boolean isVector = false;
+            if (context.getIndexId() != null) {
+                Table indexTable = MetaService.root().getTable(context.getIndexId());
+                List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
+                    .map(Column::getName)
+                    .collect(Collectors.toList()));
+                tableId = context.getIndexId();
+                Object[] finalTuple = tuple;
+                tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
+                schema = indexTable.tupleType();
+                IndexTable index = TransactionUtil.getIndexDefinitions(tableId);
+                if (index.indexType.isVector) {
+                    isVector = true;
+                }
+                localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
+                codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
+            }
+            StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
+            Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
+            KeyValue keyValue = wrap(codec::encode).apply(newTuple);
+            CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
+            byte[] key = keyValue.getKey();
+            byte[] vectorKey;
+            if (isVector) {
+                vectorKey = codec.encodeKeyPrefix(newTuple, 1);
+                CodecService.getDefault().setId(vectorKey, partId.domain);
+            } else {
+                vectorKey = key;
+            }
+            byte[] txnIdByte = txnId.encode();
+            byte[] tableIdByte = tableId.encode();
+            byte[] partIdByte = partId.encode();
+            byte[] jobIdByte = vertex.getTask().getJobId().encode();
+            int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
+            byte[] lockKeyBytes = encode(
+                CommonId.CommonType.TXN_CACHE_LOCK,
+                key,
+                Op.LOCK.getCode(),
                 len,
                 txnIdByte,
                 tableIdByte,
-                partIdByte)
-        );
-        if (store.put(extraKeyValue) && store.put(keyValue)) {
-            param.inc();
+                partIdByte
+            );
+            KeyValue oldKeyValue = localStore.get(lockKeyBytes);
+            if (oldKeyValue == null) {
+                // for check deadLock
+                byte[] deadLockKeyBytes = encode(
+                    CommonId.CommonType.TXN_CACHE_BLOCK_LOCK,
+                    key,
+                    Op.LOCK.getCode(),
+                    len,
+                    txnIdByte,
+                    tableIdByte,
+                    partIdByte
+                );
+                KeyValue deadLockKeyValue = new KeyValue(deadLockKeyBytes, null);
+                localStore.put(deadLockKeyValue);
+
+                byte[] primaryLockKeyBytes = decodePessimisticKey(primaryLockKey);
+                long forUpdateTs = vertex.getTask().getJobId().seq;
+                byte[] forUpdateTsByte = PrimitiveCodec.encodeLong(forUpdateTs);
+                if (log.isDebugEnabled()) {
+                    log.info("{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, forUpdateTs, Arrays.toString(key));
+                }
+                TxnPessimisticLock txnPessimisticLock = TransactionUtil.pessimisticLock(
+                    param.getLockTimeOut(),
+                    txnId,
+                    tableId,
+                    partId,
+                    primaryLockKeyBytes,
+                    key,
+                    param.getStartTs(),
+                    forUpdateTs,
+                    param.getIsolationLevel()
+                );
+                long newForUpdateTs = txnPessimisticLock.getForUpdateTs();
+                if (newForUpdateTs != forUpdateTs) {
+                    forUpdateTsByte = PrimitiveCodec.encodeLong(newForUpdateTs);
+                }
+                if (log.isDebugEnabled()) {
+                    log.info("{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, newForUpdateTs, Arrays.toString(key));
+                }
+                // get lock success, delete deadLockKey
+                localStore.delete(deadLockKeyBytes);
+                byte[] lockKey = getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, deadLockKeyBytes);
+                // lockKeyValue
+                KeyValue lockKeyValue = new KeyValue(lockKey, forUpdateTsByte);
+                localStore.put(lockKeyValue);
+                // index use keyPrefix
+//                KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
+//                if ((kvKeyValue == null || kvKeyValue.getValue() == null) && !param.isInsert()) {
+//                    @Nullable Object[] finalTuple1 = tuple;
+//                    vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple1));
+//                    return true;
+//                }
+                // extraKeyValue
+                KeyValue extraKeyValue = new KeyValue(
+                    ByteUtils.encode(
+                        CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
+                        key,
+                        Op.NONE.getCode(),
+                        len,
+                        jobIdByte,
+                        tableIdByte,
+                        partIdByte),
+                    keyValue.getValue()
+                );
+                localStore.put(extraKeyValue);
+//                Object[] result = codec.decode(keyValue);
+                vertex.getOutList().forEach(o -> o.transformToNext(context, newTuple));
+                return true;
+            } else {
+                byte[] dataKey = getKeyByOp(CommonId.CommonType.TXN_CACHE_DATA, Op.PUT, lockKeyBytes);
+                byte[] deleteKey = Arrays.copyOf(dataKey, dataKey.length);
+                deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
+                byte[] updateKey = Arrays.copyOf(dataKey, dataKey.length);
+                updateKey[updateKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
+                List<byte[]> bytes = new ArrayList<>(3);
+                bytes.add(dataKey);
+                bytes.add(deleteKey);
+                bytes.add(updateKey);
+                List<KeyValue> keyValues = localStore.get(bytes);
+                byte[] primaryLockKeyBytes = decodePessimisticKey(primaryLockKey);
+                if (keyValues != null && keyValues.size() > 0) {
+                    if (keyValues.size() > 1) {
+                        throw new RuntimeException(txnId + " Key is not existed than two in local localStore");
+                    }
+                    KeyValue value = keyValues.get(0);
+                    byte[] oldKey = value.getKey();
+                    if (log.isDebugEnabled()) {
+                        log.info("{}, repeat key :{}", txnId, Arrays.toString(oldKey));
+                    }
+                    // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
+                    byte[] extraKey = ByteUtils.encode(
+                        CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
+                        key,
+                        oldKey[oldKey.length - 2],
+                        len,
+                        jobIdByte,
+                        tableIdByte,
+                        partIdByte
+                    );
+                    KeyValue extraKeyValue;
+                    if (value.getValue() == null) {
+                        // delete
+                        extraKeyValue = new KeyValue(extraKey, null);
+                    } else {
+                        extraKeyValue = new KeyValue(extraKey, Arrays.copyOf(value.getValue(), value.getValue().length));
+                    }
+                    localStore.put(extraKeyValue);
+//                    Object[] decode = decode(value);
+//                    keyValue = new KeyValue(((TxnLocalData) decode[0]).getKey(), value.getValue());
+//                    Object[] result = codec.decode(keyValue);
+                    vertex.getOutList().forEach(o -> o.transformToNext(context, newTuple));
+                    return true;
+                } else {
+                    KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
+                    if (kvKeyValue == null || kvKeyValue.getValue() == null) {
+                        log.info("{}, repeat primary key :{} keyValue is null", txnId, Arrays.toString(primaryLockKeyBytes));
+                        @Nullable Object[] finalTuple1 = tuple;
+                        vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple1));
+                        return true;
+                    }
+                    log.info("{}, repeat primary key :{} keyValue is not null", txnId, Arrays.toString(key));
+                    if (isVector) {
+                        kvKeyValue.setKey(codec.encodeKey(newTuple));
+                    }
+                    Object[] result = codec.decode(kvKeyValue);
+                    vertex.getOutList().forEach(o -> o.transformToNext(context, result));
+                    return true;
+                }
+            }
         }
-        return false;
+    }
+
+    @Override
+    public synchronized void fin(int pin, Fin fin, Vertex vertex) {
+        PessimisticLockInsertParam param = vertex.getParam();
+        vertex.getSoleEdge().fin(fin);
+        // Reset
+        param.reset();
     }
 }

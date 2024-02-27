@@ -68,6 +68,7 @@ import io.dingodb.store.proxy.Configuration;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -76,6 +77,7 @@ import java.util.StringJoiner;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
@@ -88,6 +90,8 @@ public class TransactionStoreInstance {
     private final StoreService storeService;
     private final IndexService indexService;
     private final CommonId partitionId;
+
+    private final static int VectorKeyLen = 17;
 
     public TransactionStoreInstance(StoreService storeService, IndexService indexService, CommonId partitionId) {
         this.storeService = storeService;
@@ -256,6 +260,7 @@ public class TransactionStoreInstance {
         while (true) {
             TxnPessimisticLockResponse response;
             if (indexService != null) {
+                txnPessimisticLock.getMutations().stream().forEach( $ -> $.setKey(Arrays.copyOf($.getKey(), VectorKeyLen)));
                 response = indexService.txnPessimisticLock(MAPPER.pessimisticLockTo(txnPessimisticLock));
             } else {
                 response = storeService.txnPessimisticLock(MAPPER.pessimisticLockTo(txnPessimisticLock));
@@ -296,6 +301,13 @@ public class TransactionStoreInstance {
         txnPessimisticRollBack.getKeys().stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
         TxnPessimisticRollbackResponse response;
         if (indexService != null) {
+            List<byte[]> keys = txnPessimisticRollBack.getKeys();
+            IntStream.range(0, keys.size())
+                .forEach(i -> {
+                    byte[] key = keys.get(i);
+                    byte[] newKey = Arrays.copyOf(key, VectorKeyLen);
+                    keys.set(i, newKey);
+                });
             response = indexService.txnPessimisticRollback(MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
         } else {
             response = storeService.txnPessimisticRollback(MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
@@ -338,6 +350,7 @@ public class TransactionStoreInstance {
             txnBatchGetRequest.setResolveLocks(resolvedLocks);
             TxnBatchGetResponse response;
             if (indexService != null) {
+                txnBatchGetRequest.getKeys().stream().forEach( $ -> Arrays.copyOf($, VectorKeyLen));
                 response = indexService.txnBatchGet(txnBatchGetRequest);
                 if (response.getTxnResult() == null) {
                     return response.getVectors().stream()
@@ -383,6 +396,7 @@ public class TransactionStoreInstance {
         txnBatchRollBack.getKeys().stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
         TxnBatchRollbackResponse response;
         if (indexService != null) {
+            txnBatchRollBack.getKeys().stream().forEach( $ -> Arrays.copyOf($, VectorKeyLen));
             response = indexService.txnBatchRollback(MAPPER.rollbackTo(txnBatchRollBack));
         } else {
             response = storeService.txnBatchRollback(MAPPER.rollbackTo(txnBatchRollBack));

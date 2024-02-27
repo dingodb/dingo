@@ -38,6 +38,7 @@ import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
 import io.dingodb.sdk.common.serial.schema.DingoSchema;
 import io.dingodb.sdk.common.serial.schema.LongSchema;
@@ -67,6 +68,7 @@ import io.dingodb.sdk.service.entity.store.KvDeleteRangeRequest;
 import io.dingodb.sdk.service.entity.store.KvGetRequest;
 import io.dingodb.sdk.service.entity.store.KvPutIfAbsentRequest;
 import io.dingodb.sdk.service.entity.store.KvPutRequest;
+import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.proxy.service.CodecService.KeyValueCodec;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
@@ -130,7 +132,11 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             try {
                 return method.invoke(storeInstance, args);
             } catch (Exception e) {
-                throw Utils.extractThrowable(e);
+                Throwable throwable = Utils.extractThrowable(e);
+                if (throwable instanceof DingoClientException.InvalidRouteTableException) {
+                    throw new RegionSplitException(throwable);
+                }
+                throw throwable;
             }
         }
     }
