@@ -32,6 +32,7 @@ import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
@@ -64,12 +65,17 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         DingoType schema = param.getSchema();
         StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
         KeyValueCodec codec = param.getCodec();
+        boolean isVector = false;
         if (context.getIndexId() != null) {
             Table indexTable = MetaService.root().getTable(context.getIndexId());
             List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
                 .map(Column::getName)
                 .collect(Collectors.toList()));
             tableId = context.getIndexId();
+            IndexTable index = TransactionUtil.getIndexDefinitions(tableId);
+            if (index.indexType.isVector) {
+                isVector = true;
+            }
             if (!param.isPessimisticTxn()) {
                 Object[] finalTuple = tuple;
                 tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
@@ -83,7 +89,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         KeyValue keyValue = wrap(codec::encode).apply(newTuple);
         CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
         byte[] key;
-        if (context.getIndexId() != null) {
+        if (isVector) {
             key = codec.encodeKeyPrefix(newTuple, 1);
             CodecService.getDefault().setId(key, partId.domain);
         } else {

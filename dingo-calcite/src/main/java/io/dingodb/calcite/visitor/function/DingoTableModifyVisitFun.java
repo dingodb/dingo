@@ -30,10 +30,14 @@ import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.PessimisticLockInsertOperator;
 import io.dingodb.exec.operator.params.PartDeleteParam;
 import io.dingodb.exec.operator.params.PartInsertParam;
 import io.dingodb.exec.operator.params.PartUpdateParam;
+import io.dingodb.exec.operator.params.PessimisticLockDeleteParam;
+import io.dingodb.exec.operator.params.PessimisticLockInsertParam;
 import io.dingodb.exec.operator.params.PessimisticLockParam;
+import io.dingodb.exec.operator.params.PessimisticLockUpdateParam;
 import io.dingodb.exec.operator.params.TxnPartDeleteParam;
 import io.dingodb.exec.operator.params.TxnPartInsertParam;
 import io.dingodb.exec.operator.params.TxnPartUpdateParam;
@@ -51,6 +55,9 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.PART_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_UPDATE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_DELETE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_INSERT;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_UPDATE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_UPDATE;
@@ -73,20 +80,37 @@ public class DingoTableModifyVisitFun {
                     if (transaction != null) {
                         boolean pessimisticTxn = transaction.isPessimistic();
                         if (pessimisticTxn) {
-                            PessimisticLockParam pessimisticLockParam = new PessimisticLockParam(
-                                tableId,
-                                td.tupleType(),
-                                td.keyMapping(),
-                                transaction.getIsolationLevel(),
-                                transaction.getStartTs(),
-                                transaction.getForUpdateTs(),
-                                true,
-                                transaction.getPrimaryKeyLock(),
-                                transaction.getLockTimeOut(),
-                                true,
-                                td
-                            );
-                            Vertex lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
+                            Vertex lockVertex ;
+                            if (transaction.getPrimaryKeyLock() == null) {
+                                PessimisticLockParam pessimisticLockParam = new PessimisticLockParam(
+                                    tableId,
+                                    td.tupleType(),
+                                    td.keyMapping(),
+                                    transaction.getIsolationLevel(),
+                                    transaction.getStartTs(),
+                                    transaction.getForUpdateTs(),
+                                    true,
+                                    transaction.getPrimaryKeyLock(),
+                                    transaction.getLockTimeOut(),
+                                    true,
+                                    td
+                                );
+                                lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
+                            } else {
+                                PessimisticLockInsertParam pessimisticLockParam = new PessimisticLockInsertParam(
+                                    tableId,
+                                    td.tupleType(),
+                                    td.keyMapping(),
+                                    transaction.getIsolationLevel(),
+                                    transaction.getStartTs(),
+                                    transaction.getForUpdateTs(),
+                                    true,
+                                    transaction.getPrimaryKeyLock(),
+                                    transaction.getLockTimeOut(),
+                                    td
+                                );
+                                lockVertex = new Vertex(PESSIMISTIC_LOCK_INSERT, pessimisticLockParam);
+                            }
                             lockVertex.setId(idGenerator.getOperatorId(task.getId()));
                             Edge inputEdge = new Edge(input, lockVertex);
                             input.addEdge(inputEdge);
@@ -164,20 +188,41 @@ public class DingoTableModifyVisitFun {
                     if (transaction != null) {
                         boolean pessimisticTxn = transaction.isPessimistic();
                         if (pessimisticTxn) {
-                            PessimisticLockParam pessimisticLockParam = new PessimisticLockParam(
-                                tableId,
-                                td.tupleType(),
-                                td.keyMapping(),
-                                transaction.getIsolationLevel(),
-                                transaction.getStartTs(),
-                                transaction.getForUpdateTs(),
-                                true,
-                                transaction.getPrimaryKeyLock(),
-                                transaction.getLockTimeOut(),
-                                false,
-                                td
-                            );
-                            Vertex lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
+                            Vertex lockVertex;
+                            if (transaction.getPrimaryKeyLock() == null) {
+                                PessimisticLockParam pessimisticLockParam = new PessimisticLockParam(
+                                    tableId,
+                                    td.tupleType(),
+                                    td.keyMapping(),
+                                    transaction.getIsolationLevel(),
+                                    transaction.getStartTs(),
+                                    transaction.getForUpdateTs(),
+                                    true,
+                                    transaction.getPrimaryKeyLock(),
+                                    transaction.getLockTimeOut(),
+                                    false,
+                                    td
+                                );
+                                lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
+                            } else {
+                                PessimisticLockUpdateParam pessimisticLockParam = new PessimisticLockUpdateParam(
+                                    tableId,
+                                    td.tupleType(),
+                                    td.keyMapping(),
+                                    updateMapping,
+                                    rel.getSourceExpressionList().stream()
+                                        .map(SqlExprUtils::toSqlExpr)
+                                        .collect(Collectors.toList()),
+                                    transaction.getIsolationLevel(),
+                                    transaction.getStartTs(),
+                                    transaction.getForUpdateTs(),
+                                    true,
+                                    transaction.getPrimaryKeyLock(),
+                                    transaction.getLockTimeOut(),
+                                    td
+                                );
+                                lockVertex = new Vertex(PESSIMISTIC_LOCK_UPDATE, pessimisticLockParam);
+                            }
                             lockVertex.setId(idGenerator.getOperatorId(task.getId()));
                             Edge inputEdge = new Edge(input, lockVertex);
                             input.addEdge(inputEdge);
@@ -270,20 +315,37 @@ public class DingoTableModifyVisitFun {
                     if (transaction != null) {
                         boolean pessimisticTxn = transaction.isPessimistic();
                         if (pessimisticTxn) {
-                            PessimisticLockParam pessimisticLockParam = new PessimisticLockParam(
-                                tableId,
-                                td.tupleType(),
-                                td.keyMapping(),
-                                transaction.getIsolationLevel(),
-                                transaction.getStartTs(),
-                                transaction.getForUpdateTs(),
-                                true,
-                                transaction.getPrimaryKeyLock(),
-                                transaction.getLockTimeOut(),
-                                false,
-                                td
-                            );
-                            Vertex lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
+                            Vertex lockVertex;
+                            if (transaction.getPrimaryKeyLock() == null) {
+                                PessimisticLockParam pessimisticLockParam = new PessimisticLockParam(
+                                    tableId,
+                                    td.tupleType(),
+                                    td.keyMapping(),
+                                    transaction.getIsolationLevel(),
+                                    transaction.getStartTs(),
+                                    transaction.getForUpdateTs(),
+                                    true,
+                                    transaction.getPrimaryKeyLock(),
+                                    transaction.getLockTimeOut(),
+                                    false,
+                                    td
+                                );
+                                lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
+                            } else {
+                                PessimisticLockDeleteParam pessimisticLockParam = new PessimisticLockDeleteParam(
+                                    tableId,
+                                    td.tupleType(),
+                                    td.keyMapping(),
+                                    transaction.getIsolationLevel(),
+                                    transaction.getStartTs(),
+                                    transaction.getForUpdateTs(),
+                                    true,
+                                    transaction.getPrimaryKeyLock(),
+                                    transaction.getLockTimeOut(),
+                                    td
+                                );
+                                lockVertex = new Vertex(PESSIMISTIC_LOCK_DELETE, pessimisticLockParam);
+                            }
                             lockVertex.setId(idGenerator.getOperatorId(task.getId()));
                             Edge inputEdge = new Edge(input, lockVertex);
                             input.addEdge(inputEdge);

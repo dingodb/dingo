@@ -20,6 +20,10 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 public class RegionSplitException extends RuntimeException {
+    public RegionSplitException(Throwable cause) {
+        super(cause);
+    }
+
     public RegionSplitException(String message) {
         super(message);
     }

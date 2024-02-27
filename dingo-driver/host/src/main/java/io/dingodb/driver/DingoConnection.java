@@ -177,6 +177,10 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             } else {
                 txIsolation = getClientInfo("transaction_isolation");
             }
+            if (type == TransactionType.OPTIMISTIC && txIsolation.equalsIgnoreCase("READ-COMMITTED")) {
+                throw new RuntimeException("Optimistic transaction only support" +
+                    " read committed transaction isolation level");
+            }
             this.transaction = TransactionManager.createTransaction(type, startTs,
                 TransactionUtil.convertIsolationLevel(txIsolation));
             transaction.setTransactionConfig(sessionVariables);

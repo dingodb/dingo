@@ -89,6 +89,11 @@ public class TransactionUtil {
         MetaService root = MetaService.root();
         Table table = root.getTable(tableId);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution = root.getRangeDistribution(tableId);
+        if (Optional.ofNullable(table.getPartitionStrategy())
+            .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME)
+            .equalsIgnoreCase(DingoPartitionServiceProvider.RANGE_FUNC_NAME)) {
+            CodecService.getDefault().setId(key, 0L);
+        }
         CommonId regionId = PartitionService.getService(
                 Optional.ofNullable(table.getPartitionStrategy())
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
@@ -105,6 +110,11 @@ public class TransactionUtil {
         final PartitionService ps = PartitionService.getService(
             Optional.ofNullable(table.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+        if (Optional.ofNullable(table.getPartitionStrategy())
+            .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME)
+            .equalsIgnoreCase(DingoPartitionServiceProvider.RANGE_FUNC_NAME)) {
+            keys.forEach( k -> CodecService.getDefault().setId(k, 0L));
+        }
         Map<CommonId, List<byte[]>> partMap = ps.partKeys(keys, rangeDistribution);
         log.info("{} regin split retry tableId:{}", txnId, tableId);
         return partMap;

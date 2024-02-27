@@ -24,16 +24,21 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnPartUpdateParam;
+import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.tso.TsoService;
@@ -64,6 +69,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
 
         int tupleSize = schema.fieldCount();
         Object[] newTuple = Arrays.copyOf(tuple, tupleSize);
+        Object[] copyTuple = Arrays.copyOf(tuple, tuple.length);
         boolean updated = false;
         int i = 0;
         try {
@@ -81,33 +87,51 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             CommonId tableId = param.getTableId();
             CommonId partId = context.getDistribution().getId();
             KeyValueCodec codec = param.getCodec();
-            StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
+            boolean calcPartId = false;
+            boolean isVector = false;
             if (context.getIndexId() != null) {
                 Table indexTable = MetaService.root().getTable(context.getIndexId());
                 List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
                     .map(Column::getName)
                     .collect(Collectors.toList()));
                 tableId = context.getIndexId();
-                if (!param.isPessimisticTxn()) {
-                    Object[] finalNewTuple = newTuple;
-                    newTuple = columnIndices.stream().map(c -> finalNewTuple[c]).toArray();
+                IndexTable index = TransactionUtil.getIndexDefinitions(tableId);
+                if (index.indexType.isVector) {
+                    isVector = true;
                 }
                 schema = indexTable.tupleType();
-                localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
                 codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
+                Object[] finalNewTuple = newTuple;
+                newTuple = columnIndices.stream().map(c -> finalNewTuple[c]).toArray();
+                Object[] copyNewTuple = copyTuple;
+                copyTuple = columnIndices.stream().map(c -> copyNewTuple[c]).toArray();
+                if (updated && columnIndices.stream().anyMatch(c -> mapping.contains(c))) {
+                    PartitionService ps = PartitionService.getService(
+                        Optional.ofNullable(indexTable.getPartitionStrategy())
+                            .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+                    byte[] key = wrap(codec::encodeKey).apply(newTuple);
+                    partId = ps.calcPartId(key, MetaService.root().getRangeDistribution(tableId));
+                    log.info("{} update index primary key is{} calcPartId is {}",
+                        txnId,
+                        Arrays.toString(key),
+                        partId
+                    );
+                    calcPartId = true;
+                }
             }
-            StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
             Object[] newTuple2 = (Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE);
 
             byte[] key = wrap(codec::encodeKey).apply(newTuple);
             CodecService.getDefault().setId(key, partId.domain);
             byte[] vectorKey;
-            if (context.getIndexId() != null) {
+            if (isVector) {
                 vectorKey = codec.encodeKeyPrefix(newTuple, 1);
                 CodecService.getDefault().setId(vectorKey, partId.domain);
             } else {
                 vectorKey = key;
             }
+            StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
+            StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
             byte[] primaryLockKey = param.getPrimaryLockKey();
             byte[] txnIdBytes = vertex.getTask().getTxnId().encode();
             byte[] tableIdBytes = tableId.encode();
@@ -147,6 +171,14 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 if (!(ByteArrayUtils.compare(key, primaryLockKeyBytes, 1) == 0)) {
                     // This key appears for the first time in the current transaction
                     if (oldKeyValue == null) {
+                        if (calcPartId) {
+                            KeyValue keyValue = wrap(codec::encode).apply(newTuple2);
+                            CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
+                            // write data
+                            keyValue.setKey(dataKey);
+                            localStore.put(keyValue);
+                            return true;
+                        }
                         KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
                         if (kvKeyValue == null || kvKeyValue.getValue() == null) {
                             byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
@@ -206,6 +238,22 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             } else {
                 KeyValue keyValue = wrap(codec::encode).apply(newTuple2);
                 CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
+                if (calcPartId) {
+                    // begin insert update commit
+                    byte[] oldKey = wrap(codec::encodeKey).apply(copyTuple);
+                    CodecService.getDefault().setId(oldKey, context.getDistribution().getId().domain);
+                    localStore = Services.LOCAL_STORE.getInstance(tableId, context.getDistribution().getId());
+                    localStore.delete(ByteUtils.encode(
+                        CommonId.CommonType.TXN_CACHE_DATA,
+                        oldKey,
+                        Op.PUTIFABSENT.getCode(),
+                        (txnIdBytes.length + tableIdBytes.length + partIdBytes.length),
+                        txnIdBytes,
+                        tableIdBytes,
+                        context.getDistribution().getId().encode())
+                    );
+                    localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
+                }
                 keyValue.setKey(
                     ByteUtils.encode(
                         CommonId.CommonType.TXN_CACHE_DATA,
