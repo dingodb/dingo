@@ -18,6 +18,7 @@ package io.dingodb.exec.fun.vector;
 
 import io.dingodb.exec.restful.VectorExtract;
 import io.dingodb.expr.runtime.ExprConfig;
+import io.dingodb.expr.runtime.op.OpKey;
 import io.dingodb.expr.runtime.op.TertiaryOp;
 import io.dingodb.expr.runtime.type.Type;
 import io.dingodb.expr.runtime.type.Types;
@@ -57,7 +58,7 @@ public class VectorImageFun extends TertiaryOp {
     }
 
     @Override
-    public Object keyOf(@NonNull Type type0, @NonNull Type type1, @NonNull Type type2) {
+    public OpKey keyOf(@NonNull Type type0, @NonNull Type type1, @NonNull Type type2) {
         if (type0.equals(Types.STRING) && type1.equals(Types.STRING) && type2.equals(Types.BOOL)) {
             return Types.STRING;
         }
@@ -65,7 +66,7 @@ public class VectorImageFun extends TertiaryOp {
     }
 
     @Override
-    public TertiaryOp getOp(Object key) {
+    public TertiaryOp getOp(OpKey key) {
         return (key != null && key.equals(Types.STRING)) ? INSTANCE : null;
     }
 }
