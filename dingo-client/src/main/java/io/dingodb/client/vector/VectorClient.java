@@ -170,6 +170,10 @@ public class VectorClient {
         return indexService.exec(schema, indexName, VectorAddOperation.getInstance(), vectors, context);
     }
 
+    public List<VectorWithId> vectorUpsert(String schema, String indexName, List<VectorWithId> vectors) {
+        return vectorAdd(schema, indexName, vectors, false, true);
+    }
+
     private void checkAddSize(List<VectorWithId> vectors) {
         if (vectors.size() > 1024) {
             throw new DingoClientException("Param vectors size " + vectors.size() + " is exceed max batch count 1024");

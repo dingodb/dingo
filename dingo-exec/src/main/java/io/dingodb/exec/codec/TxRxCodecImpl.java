@@ -17,6 +17,7 @@
 package io.dingodb.exec.codec;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
@@ -53,7 +54,7 @@ public class TxRxCodecImpl implements TxRxCodec {
     @Override
     public void encodeTupleIds(OutputStream os, List<TupleId> tupleIds) throws IOException {
         os.write(TUPLES_ID_FLAG);
-        os.write(tupleIds.size());
+        os.write(PrimitiveCodec.encodeInt(tupleIds.size()));
         List<Object[]> tuples = new ArrayList<>();
         for (TupleId tupleId : tupleIds) {
             os.write(tupleId.getPartId().encode());
@@ -84,7 +85,9 @@ public class TxRxCodecImpl implements TxRxCodec {
             case ABNORMAL_FIN_FLAG:
                 return Collections.singletonList(TupleId.builder().tuple(new Object[]{FinWithException.deserialize(is)}).build());
             case TUPLES_ID_FLAG:
-                int size = is.read();
+                byte[] sizeByte = new byte[4];
+                is.read(sizeByte, 0, 4);
+                int size = PrimitiveCodec.decodeInt(sizeByte);
                 List<CommonId> commonIds = new ArrayList<>();
                 for (int i = 0; i < size; i++) {
                     byte[] b1 = new byte[CommonId.LEN];
