@@ -92,7 +92,8 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                 }
             }
             boolean isVector = false;
-//            Object[] newIndexTuple = tuple;
+            boolean calcPartId = false;
+            Object[] oldIndexTuple = tuple;
             if (context.getIndexId() != null) {
                 Table indexTable = MetaService.root().getTable(context.getIndexId());
                 List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
@@ -102,6 +103,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                 // old key
                 Object[] finalTuple = tuple;
                 tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
+                oldIndexTuple = Arrays.copyOf(tuple, tuple.length);
                 if (updated) {
                     Object[] finalNewIndexTuple = newTuple;
                     tuple = columnIndices.stream().map(i -> finalNewIndexTuple[i]).toArray();
@@ -123,6 +125,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                         Arrays.toString(key),
                         partId
                     );
+                    calcPartId = true;
                 }
             }
             localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
@@ -157,6 +160,10 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
             );
             KeyValue oldKeyValue = localStore.get(lockKeyBytes);
             if (oldKeyValue == null) {
+                if (calcPartId) {
+                    resolveKeyChange(vertex, param, txnId, tableId, context.getDistribution().getId(), primaryLockKey,
+                        codec, oldIndexTuple, txnIdByte, tableIdByte, jobIdByte, len, isVector);
+                }
                 // for check deadLock
                 byte[] deadLockKeyBytes = encode(
                     CommonId.CommonType.TXN_CACHE_BLOCK_LOCK,
@@ -309,6 +316,99 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
             }
         }
     }
+
+    private void resolveKeyChange(Vertex vertex, PessimisticLockUpdateParam param, CommonId txnId,
+                                  CommonId tableId, CommonId partId, byte[] primaryLockKey,
+                                  KeyValueCodec codec, Object[] newTuple, byte[] txnIdByte,
+                                  byte[] tableIdByte, byte[] jobIdByte, int len, boolean isVector) {
+        byte[] oldKey = wrap(codec::encodeKey).apply(newTuple);
+        CodecService.getDefault().setId(oldKey, partId.domain);
+        byte[] vectorKey;
+        if (isVector) {
+            vectorKey = codec.encodeKeyPrefix(newTuple, 1);
+            CodecService.getDefault().setId(vectorKey, partId.domain);
+        } else {
+            vectorKey = oldKey;
+        }
+        StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
+        StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
+        byte[] partIdByte = partId.encode();
+        // for check deadLock
+        byte[] deadLockKeyBytes = encode(
+            CommonId.CommonType.TXN_CACHE_BLOCK_LOCK,
+            oldKey,
+            Op.LOCK.getCode(),
+            len,
+            txnIdByte,
+            tableIdByte,
+            partIdByte
+        );
+        KeyValue deadLockKeyValue = new KeyValue(deadLockKeyBytes, null);
+        localStore.put(deadLockKeyValue);
+        byte[] primaryLockKeyBytes = decodePessimisticKey(primaryLockKey);
+        long forUpdateTs = vertex.getTask().getJobId().seq;
+        byte[] forUpdateTsByte = PrimitiveCodec.encodeLong(forUpdateTs);
+        if (log.isDebugEnabled()) {
+            log.info("{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, forUpdateTs, Arrays.toString(oldKey));
+        }
+        TxnPessimisticLock txnPessimisticLock = TransactionUtil.pessimisticLock(
+            param.getLockTimeOut(),
+            txnId,
+            tableId,
+            partId,
+            primaryLockKeyBytes,
+            oldKey,
+            param.getStartTs(),
+            forUpdateTs,
+            param.getIsolationLevel()
+        );
+        long newForUpdateTs = txnPessimisticLock.getForUpdateTs();
+        if (newForUpdateTs != forUpdateTs) {
+            forUpdateTsByte = PrimitiveCodec.encodeLong(newForUpdateTs);
+        }
+        if (log.isDebugEnabled()) {
+            log.info("{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, newForUpdateTs, Arrays.toString(oldKey));
+        }
+        // get lock success, delete deadLockKey
+        localStore.delete(deadLockKeyBytes);
+        byte[] lockKey = getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, deadLockKeyBytes);
+        // lockKeyValue
+        KeyValue lockKeyValue = new KeyValue(lockKey, forUpdateTsByte);
+        localStore.put(lockKeyValue);
+        KeyValue kvKeyValue = null;
+        try {
+            // index use keyPrefix
+            kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
+        } catch (Throwable throwable) {
+            throw new RuntimeException(throwable);
+        } finally {
+            if (kvKeyValue != null && kvKeyValue.getValue() != null) {
+                // extraKeyValue
+                KeyValue extraKeyValue = new KeyValue(
+                    ByteUtils.encode(
+                        CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
+                        oldKey,
+                        Op.NONE.getCode(),
+                        len,
+                        jobIdByte,
+                        tableIdByte,
+                        partIdByte),
+                    kvKeyValue.getValue()
+                );
+                localStore.put(extraKeyValue);
+                // data
+                byte[] dataKey = getKeyByOp(CommonId.CommonType.TXN_CACHE_DATA, Op.PUTIFABSENT, deadLockKeyBytes);
+                localStore.delete(dataKey);
+                byte[] updateKey = Arrays.copyOf(dataKey, dataKey.length);
+                updateKey[updateKey.length - 2] = (byte) Op.PUT.getCode();
+                localStore.delete(updateKey);
+                byte[] deleteKey = Arrays.copyOf(dataKey, dataKey.length);
+                deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
+                localStore.put(new KeyValue(deleteKey, kvKeyValue.getValue()));
+            }
+        }
+    }
+
 
     @Override
     public synchronized void fin(int pin, Fin fin, Vertex vertex) {
