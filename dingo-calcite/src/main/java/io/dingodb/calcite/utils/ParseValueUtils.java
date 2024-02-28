@@ -36,6 +36,18 @@ public final class ParseValueUtils {
         }
     }
 
+    public static String getEnclosed(String enclose) {
+        if (enclose.equals("''''")) {
+            return "'";
+        } else {
+            if (enclose.length() >= 3 && enclose.startsWith("'") && enclose.endsWith("'")) {
+                enclose = enclose.substring(1, enclose.length() - 1);
+                return enclose;
+            }
+            return enclose;
+        }
+    }
+
     public static byte[] getSpecialBytes(String image) {
         byte[] res = image.getBytes();
         if (res.length == 4) {

@@ -53,7 +53,7 @@ public class ExportDataOperator extends SoleOutOperator {
     private final Map<String, FileOutputStream> fileMap = new ConcurrentHashMap<>();
 
     @Override
-    public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
+    public synchronized boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         ExportDataParam param = vertex.getParam();
         writeFiles(tuple, param);
         return true;

@@ -32,6 +32,7 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ImportFileConverter;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.transaction.api.LockType;
 import io.dingodb.transaction.api.TransactionService;
 import io.dingodb.meta.MetaService;
@@ -56,7 +57,6 @@ import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -68,10 +68,11 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
+import static io.dingodb.common.util.Utils.getByteIndexOf;
 
 @Slf4j
 public class LoadDataOperation implements DmlOperation {
-    private DingoParserContext context;
+    private final DingoParserContext context;
 
     private final String filePath;
     private final byte[] fieldsTerm;
@@ -101,7 +102,7 @@ public class LoadDataOperation implements DmlOperation {
     private int txnRetryCnt;
 
     private long timeOut;
-    private Connection connection;
+    private final Connection connection;
 
     private final AtomicLong count = new AtomicLong(0);
 
@@ -159,11 +160,6 @@ public class LoadDataOperation implements DmlOperation {
         if (enclosed != null && enclosed.equals("()")) {
             throw DingoResource.DINGO_RESOURCE.fieldSeparatorError().ex();
         }
-        if ((linesTerm.length >= 2 && !(linesTerm[0] == 0x0d && linesTerm[1] == 0x0a))
-            || fieldsTerm.length >= 2
-            || escaped.length >= 2) {
-            throw DingoResource.DINGO_RESOURCE.fieldSeparatorError().ex();
-        }
         try {
             new Thread(() -> {
                 try {
@@ -175,7 +171,7 @@ public class LoadDataOperation implements DmlOperation {
                         Object val = queue.take();
                         if (val instanceof byte[]) {
                             byte[] bytes = (byte[]) val;
-                            preBytes = handMessage(bytes, preBytes, fieldsTerm, linesTerm);
+                            preBytes = splitLine(bytes, preBytes, fieldsTerm, linesTerm);
                         } else {
                             break;
                         }
@@ -253,68 +249,51 @@ public class LoadDataOperation implements DmlOperation {
         return errMessage;
     }
 
-    private byte[] handMessage(byte[] bytes, byte[] preBytes, byte[] fieldsTerm, byte[] linesTerm)
+    // simple line split
+    private byte[] splitLine(byte[] current, byte[] pre, byte[] fieldsTerm, byte[] linesTerm)
         throws UnsupportedEncodingException {
-        boolean defaultLinesTerm = linesTerm.length == 1 && linesTerm[0] == 0x0a;
+        byte[] bytes;
+        if (pre != null) {
+            bytes = new byte[current.length + pre.length];
+            System.arraycopy(pre, 0, bytes, 0, pre.length);
+            System.arraycopy(current, 0, bytes, pre.length, current.length);
+        } else {
+            bytes = current;
+        }
+
         int len = bytes.length;
         int lineBreakPos = 0;
-        for (int i = 0; i < len; i ++) {
-            byte b = bytes[i];
-            // line break is hex 0d0a
-            if ((linesTerm.length == 2 && b == linesTerm[1] && i >= 1 && bytes[i - 1] == linesTerm[0])
-                || (defaultLinesTerm && b == 0x0a && i >= 1 && bytes[i - 1] == 0x0d)
-                || (defaultLinesTerm && b == 0x0a && preBytes != null && preBytes[preBytes.length - 1] == 0x0d)) {
-                byte[] lineBytes = new byte[i - lineBreakPos - 1];
+        int searchPos = 0;
+        boolean isContinue = true;
+        while (isContinue) {
+            searchPos = Math.max(searchPos, lineBreakPos);
+            int id1 = getByteIndexOf(bytes, linesTerm, searchPos, len);
+            if (id1 > 0) {
+                byte[] lineBytes = new byte[id1 - lineBreakPos];
                 System.arraycopy(bytes, lineBreakPos, lineBytes, 0, lineBytes.length);
-
-                if (preBytes != null) {
-                    byte[] realBytes = new byte[preBytes.length + lineBytes.length];
-                    System.arraycopy(preBytes, 0, realBytes, 0, preBytes.length);
-                    System.arraycopy(lineBytes, 0, realBytes, preBytes.length, lineBytes.length);
-                    preBytes = null;
-                    lineBytes = realBytes;
-                }
-                Object[] tuple;
-                if (fieldsTerm.length == 1) {
-                    tuple = splitRow(lineBytes, fieldsTerm[0]);
+                int id2 = getByteIndexOf(lineBytes, lineStarting, 0, lineBytes.length);
+                if (id2 == 0 && bytes[id1 - 1] != escaped[0]) {
+                    Object[] tuple = splitRow(lineBytes, fieldsTerm);
+                    insertTuples(tuple);
+                    int tmp1 = id1 + linesTerm.length;
+                    if (tmp1 == len) {
+                        isContinue = false;
+                        lineBreakPos = tmp1;
+                    }
+                    if (tmp1 < len - 1) {
+                        lineBreakPos = tmp1;
+                    }
                 } else {
-                    throw new RuntimeException("Fields terminated does not support multiple bytes");
+                    searchPos = id1 + 1;
                 }
-                insertTuples(tuple);
-                lineBreakPos = i + 1;
-            } else if ((linesTerm.length == 1 && b == linesTerm[0]) && ((i >= 1 && bytes[i - 1] != escaped[0])
-                || (i == 0 && preBytes != null && preBytes[preBytes.length - 1] != escaped[0]))) {
-                byte[] lineBytes = new byte[i - lineBreakPos];
-                System.arraycopy(bytes, lineBreakPos, lineBytes, 0, lineBytes.length);
-
-                if (preBytes != null) {
-                    byte[] realBytes = new byte[preBytes.length + lineBytes.length];
-                    System.arraycopy(preBytes, 0, realBytes, 0, preBytes.length);
-                    System.arraycopy(lineBytes, 0, realBytes, preBytes.length, lineBytes.length);
-                    preBytes = null;
-                    lineBytes = realBytes;
-                }
-                Object[] tuple = null;
-                if (fieldsTerm.length == 1) {
-                    tuple = splitRow(lineBytes, fieldsTerm[0]);
-                } else {
-                    throw new RuntimeException("Fields terminated does not support multiple bytes");
-                }
-                insertTuples(tuple);
-                lineBreakPos = i + 1;
+            } else {
+                isContinue = false;
             }
         }
+        byte[] preBytes = null;
         if (lineBreakPos <= len - 1) {
-            if (preBytes != null) {
-                int tmpLen = len - lineBreakPos;
-                byte[] bytes1 = new byte[tmpLen + preBytes.length];
-                System.arraycopy(preBytes, 0, bytes1, 0, preBytes.length);
-                System.arraycopy(bytes, 0, bytes1, preBytes.length, tmpLen);
-                preBytes = bytes1;
-            } else {
-                preBytes = new byte[len - lineBreakPos];
-                System.arraycopy(bytes, lineBreakPos, preBytes, 0, preBytes.length);
-            }
+            preBytes = new byte[len - lineBreakPos];
+            System.arraycopy(bytes, lineBreakPos, preBytes, 0, preBytes.length);
         }
         return preBytes;
     }
@@ -357,7 +336,8 @@ public class LoadDataOperation implements DmlOperation {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             if (e.getMessage().contains("epoch is not match, region_epoch")
-                || e.getMessage().contains("Key out of range")) {
+                || e.getMessage().contains("Key out of range")
+                || e instanceof RegionSplitException) {
                 if (!continueRetry()) {
                     throw e;
                 }
@@ -376,7 +356,7 @@ public class LoadDataOperation implements DmlOperation {
         if (!caches.containsKey(cacheKey)) {
             caches.put(cacheKey, keyValue);
         }
-        if (caches.size() > 50000) {
+        if (caches.size() > 1024) {
             try {
                 long startTs = TransactionManager.getStartTs();
                 CommonId txnId = new CommonId(CommonId.CommonType.TRANSACTION,
@@ -387,6 +367,7 @@ public class LoadDataOperation implements DmlOperation {
                 );
                 int result = txnImportDataOperation.insertByTxn(tupleList);
                 count.addAndGet(result);
+                caches.clear();
             } finally {
                 ExecutionEnvironment.memoryCache.remove(statementId);
             }
@@ -411,6 +392,7 @@ public class LoadDataOperation implements DmlOperation {
             }
             int result = txnImportDataOperation.insertByTxn(tupleList);
             count.addAndGet(result);
+            caches.clear();
         } finally {
             ExecutionEnvironment.memoryCache.remove(statementId);
         }
@@ -455,7 +437,7 @@ public class LoadDataOperation implements DmlOperation {
         return true;
     }
 
-    public Object[] splitRow(byte[] bytes, byte terminated) throws UnsupportedEncodingException {
+    public Object[] splitRow(byte[] bytes, byte[] terminated) throws UnsupportedEncodingException {
         if (lineStarting != null) {
             byte[] bytesTmp = new byte[bytes.length - lineStarting.length];
             System.arraycopy(bytes, lineStarting.length, bytesTmp, 0, bytesTmp.length);
@@ -463,10 +445,19 @@ public class LoadDataOperation implements DmlOperation {
         }
         int len = bytes.length;
         int fieldBreakPos = 0;
+        byte fieldsTermByte;
+        boolean terminatedOnlyByte = false;
+        int termLen = terminated.length;
+        if (termLen == 1) {
+            fieldsTermByte = terminated[0];
+            terminatedOnlyByte = true;
+        } else {
+            fieldsTermByte = terminated[terminated.length - 1];
+        }
         List<String> tupleList = new ArrayList<>();
         for (int i = 0; i < len; i ++) {
             byte b = bytes[i];
-            if (b == terminated && i >= 1 && bytes[i - 1] != escaped[0]) {
+            if (terminatedOnlyByte && b == fieldsTermByte && i >= 1 && bytes[i - 1] != escaped[0]) {
                 byte[] fieldBytes = new byte[i - fieldBreakPos];
                 System.arraycopy(bytes, fieldBreakPos, fieldBytes, 0, fieldBytes.length);
                 String valTmp = new String(fieldBytes, charset);
@@ -476,6 +467,31 @@ public class LoadDataOperation implements DmlOperation {
                     tupleList.add(StringEscapeUtils.unescapeJson(valTmp));
                 }
                 fieldBreakPos = i + 1;
+            } else if (!terminatedOnlyByte && b == fieldsTermByte) {
+                // example fields term len == 5 and b == 24
+                // bytes[23] == term[3] and bytes[22] == term[2] and bytes[21] == term[1] and bytes[20] == term[0]
+                // bytes[19] != escaped[0]
+                int ix = 1;
+                boolean res3 = true;
+                while (ix < termLen) {
+                    boolean res = bytes[i - ix] == terminated[termLen - ix - 1];
+                    if (!res) {
+                        res3 = false;
+                        break;
+                    }
+                    ix ++;
+                }
+                if (res3 && bytes[i - termLen] != escaped[0]) {
+                    byte[] fieldBytes = new byte[i - termLen + 1 - fieldBreakPos];
+                    System.arraycopy(bytes, fieldBreakPos, fieldBytes, 0, fieldBytes.length);
+                    String valTmp = new String(fieldBytes, charset);
+                    if ("\\N".equalsIgnoreCase(valTmp)) {
+                        tupleList.add(valTmp);
+                    } else {
+                        tupleList.add(StringEscapeUtils.unescapeJson(valTmp));
+                    }
+                    fieldBreakPos = i + 1;
+                }
             }
         }
         if (fieldBreakPos <= len - 1) {
@@ -487,8 +503,30 @@ public class LoadDataOperation implements DmlOperation {
             } else {
                 tupleList.add(StringEscapeUtils.unescapeJson(valTmp));
             }
-        } else if (bytes[len - 1] == terminated) {
-            tupleList.add("");
+        } else if (bytes[len - 1] == fieldsTermByte) {
+            if (terminatedOnlyByte) {
+                // 1,2,3,
+                // tuples 1, 2, 3, ""
+                tupleList.add("");
+            } else {
+                // 1--2--3--
+                // example i == 8 and termlen == 2
+                // bytes[7] == termlen[0] && bytes[6] != escaped[0]
+                int ix = 1;
+                boolean res3 = true;
+                while (ix < termLen) {
+                    boolean res = bytes[len - ix - 1] == fieldsTerm[termLen - ix - 1];
+                    if (!res) {
+                        res3 = false;
+                        break;
+                    }
+                    ix ++;
+                }
+
+                if (res3 && bytes[len - termLen - 1] != escaped[0]) {
+                    tupleList.add("");
+                }
+            }
         }
 
         return tupleList.toArray(new String[0]);
