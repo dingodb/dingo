@@ -12,4 +12,5 @@ create table {table} (
     zip_code varchar(20),
     is_delete boolean,
     PRIMARY KEY (id)
-) partition by range values (1001),(5001),(10001),(15001) with (propKey=propValue)
+) partition by range values (1001),(5001),(10001),(15001)
+with (propKey=propValue)

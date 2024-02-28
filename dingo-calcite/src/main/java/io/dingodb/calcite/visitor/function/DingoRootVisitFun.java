@@ -17,7 +17,7 @@
 package io.dingodb.calcite.visitor.function;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.rel.DingoRoot;
+import io.dingodb.calcite.rel.dingo.DingoRoot;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;

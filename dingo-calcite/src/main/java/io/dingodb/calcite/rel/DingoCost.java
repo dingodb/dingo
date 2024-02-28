@@ -118,8 +118,8 @@ public class DingoCost implements RelOptCost {
         if (this == INFINITY) {
             return this;
         }
-
-        return new DingoCost(this.rowCount - other.getRows(), 0, 0);
+        double rows = rowCount - other.getRows();
+        return new DingoCost(Math.max(rows, 0.0), 0, 0);
     }
 
     public RelOptCost multiplyBy(double factor) {

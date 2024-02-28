@@ -18,7 +18,7 @@ package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
-import io.dingodb.calcite.rel.DingoRoot;
+import io.dingodb.calcite.rel.dingo.DingoRoot;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.type.converter.DefinitionMapper;

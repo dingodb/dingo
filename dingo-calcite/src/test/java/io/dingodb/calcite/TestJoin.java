@@ -17,10 +17,10 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
-import io.dingodb.calcite.rel.DingoHashJoin;
-import io.dingodb.calcite.rel.DingoRoot;
-import io.dingodb.calcite.rel.DingoStreamingConverter;
-import io.dingodb.calcite.rel.LogicalDingoRoot;
+import io.dingodb.calcite.rel.dingo.DingoHashJoin;
+import io.dingodb.calcite.rel.dingo.DingoRoot;
+import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
+import io.dingodb.calcite.rel.logical.LogicalDingoRoot;
 import io.dingodb.calcite.rel.dingo.DingoRelOp;
 import io.dingodb.calcite.rel.dingo.DingoScanWithRelOp;
 import io.dingodb.calcite.traits.DingoRelStreaming;

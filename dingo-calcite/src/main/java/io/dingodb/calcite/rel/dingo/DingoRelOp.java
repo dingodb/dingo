@@ -53,13 +53,18 @@ public final class DingoRelOp extends LogicalRelOp implements DingoRel {
     }
 
     @Override
-    public @NonNull Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
-        return Pair.of(childTraits, ImmutableList.of(childTraits));
+    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
+        return visitor.visitDingoRelOp(this);
     }
 
     @Override
-    public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
-        return visitor.visitDingoRelOp(this);
+    public @NonNull Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(@NonNull RelTraitSet required) {
+        return Pair.of(required, ImmutableList.of(required));
+    }
+
+    @Override
+    public @NonNull Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
+        return Pair.of(childTraits, ImmutableList.of(childTraits));
     }
 
     @Override

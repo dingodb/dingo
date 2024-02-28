@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite.rel;
 
-import io.dingodb.calcite.traits.DingoRelTraitsUtils;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import lombok.Getter;
 import lombok.Setter;
@@ -82,10 +81,5 @@ public final class DingoTableModify extends TableModify implements DingoRel {
             getSourceExpressionList(),
             isFlattened()
         );
-    }
-
-    @Override
-    public @Nullable RelNode derive(@NonNull RelTraitSet childTraits, int childId) {
-        return DingoRelTraitsUtils.deriveToRelNode(this, childTraits);
     }
 }

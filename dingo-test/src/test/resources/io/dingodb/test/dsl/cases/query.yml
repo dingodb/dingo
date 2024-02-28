@@ -1,11 +1,11 @@
 ---
 tables:
   table0:
-    create: { file: vs_2.create.sql }
-    init: { file: vs_2.data.sql, count: 1 }
+    create: { file: tables/vs_2.create.sql }
+    init: { file: tables/vs_2.data.sql, count: 1 }
   table1:
-    create: { file: i4k_vs0_i40_f80.create.sql }
-    init: { file: i4k_vs0_i40_f80.data.sql, count: 3 }
+    create: { file: tables/i4k_vs0_i40_f80.create.sql }
+    init: { file: tables/i4k_vs0_i40_f80.data.sql, count: 3 }
 cases:
   - name: 'no primary key'
     use:

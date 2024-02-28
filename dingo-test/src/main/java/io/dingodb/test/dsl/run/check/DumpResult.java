@@ -20,6 +20,7 @@ import io.dingodb.test.utils.ResultSetUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Arrays;
 
@@ -29,6 +30,21 @@ public class DumpResult extends ResultCheck {
         @NonNull ResultSet resultSet,
         @NonNull CheckContext context
     ) throws SQLException {
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        for (int i = 1; i <= metaData.getColumnCount(); ++i) {
+            if (i > 1) {
+                System.out.print(", ");
+            }
+            System.out.print(metaData.getColumnLabel(i));
+        }
+        System.out.println();
+        for (int i = 1; i <= metaData.getColumnCount(); ++i) {
+            if (i > 1) {
+                System.out.print(", ");
+            }
+            System.out.print(metaData.getColumnTypeName(i));
+        }
+        System.out.println();
         while (resultSet.next()) {
             Object[] row = ResultSetUtils.getRow(resultSet);
             System.out.println(Arrays.toString(row));

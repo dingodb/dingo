@@ -14,49 +14,43 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.rule;
+package io.dingodb.calcite.rule.dingo;
 
-import io.dingodb.calcite.rel.DingoSort;
+import io.dingodb.calcite.rel.dingo.DingoRoot;
+import io.dingodb.calcite.rel.logical.LogicalDingoRoot;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rel.logical.LogicalSort;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Collections;
-
-public class DingoSortRule extends ConverterRule {
+public class DingoRootRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
-            LogicalSort.class,
+            LogicalDingoRoot.class,
             Convention.NONE,
             DingoConvention.INSTANCE,
-            "DingoSortRule"
+            "DingoRootRule"
         )
-        .withRuleFactory(DingoSortRule::new);
+        .withRuleFactory(DingoRootRule::new);
 
-    protected DingoSortRule(Config config) {
+    protected DingoRootRule(Config config) {
         super(config);
     }
 
     @Override
-    public RelNode convert(RelNode rel) {
-        LogicalSort sort = (LogicalSort) rel;
-        RelTraitSet traits = sort.getTraitSet()
+    public @Nullable RelNode convert(RelNode rel) {
+        LogicalDingoRoot root = (LogicalDingoRoot) rel;
+        RelTraitSet traits = root.getTraitSet()
             .replace(DingoConvention.INSTANCE)
             .replace(DingoRelStreaming.ROOT);
-        // The input need not be sorted.
-        RelTraitSet inputTraits = traits.replace(RelCollationTraitDef.INSTANCE, Collections.emptyList());
-        return new DingoSort(
-            sort.getCluster(),
+        return new DingoRoot(
+            root.getCluster(),
             traits,
-            convert(sort.getInput(), inputTraits),
-            sort.getCollation(),
-            sort.offset,
-            sort.fetch
+            convert(root.getInput(), traits),
+            root.getSelection()
         );
     }
 }

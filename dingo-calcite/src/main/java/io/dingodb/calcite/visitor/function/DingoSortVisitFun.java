@@ -16,7 +16,7 @@
 
 package io.dingodb.calcite.visitor.function;
 
-import io.dingodb.calcite.rel.DingoSort;
+import io.dingodb.calcite.rel.dingo.DingoSort;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.IdGenerator;

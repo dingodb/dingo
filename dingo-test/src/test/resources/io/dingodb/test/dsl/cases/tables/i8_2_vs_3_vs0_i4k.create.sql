@@ -1,0 +1,10 @@
+CREATE TABLE DINGO.{table} (
+    create_time BIGINT NOT NULL,
+    update_time BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    code VARCHAR(255) NOT NULL,
+    type VARCHAR(255) NOT NULL,
+    remark VARCHAR(255),
+    id INTEGER NOT NULL AUTO_INCREMENT,
+    PRIMARY KEY (id)
+) AUTO_INCREMENT = 1000 COMMENT='功能操作表'

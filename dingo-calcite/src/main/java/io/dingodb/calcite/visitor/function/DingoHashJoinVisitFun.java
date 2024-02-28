@@ -16,7 +16,7 @@
 
 package io.dingodb.calcite.visitor.function;
 
-import io.dingodb.calcite.rel.DingoHashJoin;
+import io.dingodb.calcite.rel.dingo.DingoHashJoin;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;

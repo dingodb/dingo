@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
-import io.dingodb.calcite.rel.DingoStreamingConverter;
+import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoValues;

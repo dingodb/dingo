@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.rel;
+package io.dingodb.calcite.rel.logical;
 
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;

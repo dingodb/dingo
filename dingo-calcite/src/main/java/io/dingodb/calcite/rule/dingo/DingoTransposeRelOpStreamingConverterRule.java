@@ -14,62 +14,53 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.rule;
+package io.dingodb.calcite.rule.dingo;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.rel.DingoAggregate;
-import io.dingodb.calcite.rel.DingoReduce;
+import io.dingodb.calcite.rel.dingo.DingoRelOp;
 import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
-import io.dingodb.calcite.traits.DingoRelStreaming;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.rel.RelNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
 @Value.Enclosing
-public class DingoAggregateReduceRule extends RelRule<RelRule.Config> {
-    protected DingoAggregateReduceRule(Config config) {
+public class DingoTransposeRelOpStreamingConverterRule extends RelRule<RelRule.Config> {
+    protected DingoTransposeRelOpStreamingConverterRule(Config config) {
         super(config);
     }
 
     @Override
     public void onMatch(@NonNull RelOptRuleCall call) {
-        DingoAggregate aggregate = call.rel(0);
+        DingoRelOp op = call.rel(0);
         DingoStreamingConverter converter = call.rel(1);
-        RelOptCluster cluster = aggregate.getCluster();
+        RelNode input = converter.getInput();
         call.transformTo(
-            new DingoReduce(
-                cluster,
-                aggregate.getTraitSet(),
-                converter.copy(
-                    converter.getTraitSet(),
-                    ImmutableList.of(aggregate.copy(
-                        converter.getInput().getTraitSet(),
-                        converter.getInputs()
-                    ))
-                ),
-                aggregate.getGroupSet(),
-                aggregate.getAggCallList(),
-                aggregate.getInput().getRowType()
+            converter.copy(
+                op.getTraitSet(),
+                ImmutableList.of(op.copy(
+                    input.getTraitSet(),
+                    ImmutableList.of(input)
+                ))
             )
         );
     }
 
     @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config DEFAULT = ImmutableDingoAggregateReduceRule.Config.builder()
-            .description("DingoAggregateReduceRule")
+        Config DEFAULT = ImmutableDingoTransposeRelOpStreamingConverterRule.Config.builder()
+            .description("DingoTransposeRelOpStreamingConverterRule")
             .operandSupplier(b0 ->
-                b0.operand(DingoAggregate.class).trait(DingoRelStreaming.ROOT).oneInput(b1 ->
+                b0.operand(DingoRelOp.class).oneInput(b1 ->
                     b1.operand(DingoStreamingConverter.class).anyInputs()
                 )
             )
             .build();
 
         @Override
-        default DingoAggregateReduceRule toRule() {
-            return new DingoAggregateReduceRule(this);
+        default DingoTransposeRelOpStreamingConverterRule toRule() {
+            return new DingoTransposeRelOpStreamingConverterRule(this);
         }
     }
 }

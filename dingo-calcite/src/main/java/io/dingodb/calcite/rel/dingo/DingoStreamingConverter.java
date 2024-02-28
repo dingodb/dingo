@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.rel;
+package io.dingodb.calcite.rel.dingo;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.rel.DingoRel;
 import io.dingodb.calcite.traits.DingoRelPartition;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.traits.DingoRelStreamingDef;
@@ -24,11 +25,11 @@ import io.dingodb.calcite.visitor.DingoRelVisitor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -81,16 +82,25 @@ public class DingoStreamingConverter extends SingleRel implements DingoRel {
     }
 
     @Override
-    public @NonNull Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
-        return Pair.of(getTraitSet(), ImmutableList.of(childTraits));
-    }
-
-    @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new DingoStreamingConverter(
             getCluster(),
             traitSet,
             sole(inputs)
         );
+    }
+
+    @Override
+    public @Nullable RelNode passThrough(RelTraitSet required) {
+        if (getInput().getTraitSet().satisfies(required)) {
+            return getInput();
+        }
+        return copy(required, getInputs());
+    }
+
+    @Override
+    public @Nullable RelNode derive(RelTraitSet childTraits, int childId) {
+        RelNode newInput = RelOptRule.convert(getInput(), childTraits);
+        return copy(getTraitSet(), ImmutableList.of(newInput));
     }
 }

@@ -17,7 +17,7 @@
 package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.calcite.DingoTable;
-import io.dingodb.calcite.rel.DingoStreamingConverter;
+import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
 import io.dingodb.calcite.traits.DingoRelPartition;
 import io.dingodb.calcite.traits.DingoRelPartitionByIndex;
 import io.dingodb.calcite.traits.DingoRelPartitionByKeys;
@@ -26,12 +26,10 @@ import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.TableInfo;
-import io.dingodb.calcite.utils.TableUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;

@@ -1,16 +1,25 @@
 tables:
   students:
-    create: { file: vsk_vs0_i40_vs0_2.create.sql }
-    init: { file: vsk_vs0_i40_vs0_2.data.sql, count: 8 }
+    create: { file: tables/vsk_vs0_i40_vs0_2.create.sql }
+    init: { file: tables/vsk_vs0_i40_vs0_2.data.sql, count: 8 }
   courses:
-    create: { file: vsk_vs0_2.create.sql }
-    init: { file: vsk_vs0_2.data.sql, count: 3 }
+    create: { file: tables/vsk_vs0_2.create.sql }
+    init: { file: tables/vsk_vs0_2.data.sql, count: 3 }
   scores:
-    create: { file: vsk_2_i40.create.sql }
-    init: { file: vsk_2_i40.data.sql, count: 11 }
+    create: { file: tables/vsk_2_i40.create.sql }
+    init: { file: tables/vsk_2_i40.data.sql, count: 11 }
   classes:
-    create: { file: vsk_vs0.create.sql }
-    init: { file: vsk_vs0.data.sql }
+    create: { file: tables/vsk_vs0.create.sql }
+    init: { file: tables/vsk_vs0.data.sql }
+  permission:
+    create: { file: tables/i8_2_vs_i4_2_vs0_i4_i4k.create.sql }
+    init: { file: tables/i8_2_vs_i4_2_vs0_i4_i4k.data.sql }
+  resource:
+    create: { file: tables/i8_2_i4k_i40_vs0_vs_i40_vs0_2_i4.create.sql }
+    init: { file: tables/i8_2_i4k_i40_vs0_vs_i40_vs0_2_i4.data.sql }
+  operation:
+    create: { file: tables/i8_2_vs_3_vs0_i4k.create.sql }
+    init: { file: tables/i8_2_vs_3_vs0_i4k.data.sql }
 cases:
   - name: Join 3 tables with sub queries
     use:
@@ -18,13 +27,23 @@ cases:
       table1: courses
       table2: scores
     steps:
-      - file: join_3_tables.sql
-        result: join_3_tables.csv
+      - file: sql/join_3_tables.sql
+        result: csv/join_3_tables.csv
   - name: Join 3 tables
     use:
       table0: students
       table1: classes
       table2: scores
     steps:
-      - file: join_3_tables_1.sql
-        result: join_3_tables_1.csv
+      - file: sql/join_3_tables_1.sql
+        result: csv/join_3_tables_1.csv
+  - name: Join 3 tables filtered by IN with list size >= 19
+    use:
+      table0: permission
+      table1: resource
+      table2: operation
+    steps:
+      - file: sql/join_3_tables_2.sql
+        result:
+          - 'pid, rid, rname, type, key, code, oname, rel_id'
+          - 'INT, INT, STRING, STRING, STRING, STRING, STRING, INT'
