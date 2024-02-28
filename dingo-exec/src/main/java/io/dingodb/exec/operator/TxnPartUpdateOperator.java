@@ -243,20 +243,27 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             } else {
                 KeyValue keyValue = wrap(codec::encode).apply(newTuple2);
                 CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
+                log.info("{} update key is {}, partId is {}", txnId, Arrays.toString(keyValue.getKey()), partId);
                 if (calcPartId) {
                     // begin insert update commit
                     byte[] oldKey = wrap(codec::encodeKey).apply(copyTuple);
                     CodecService.getDefault().setId(oldKey, context.getDistribution().getId().domain);
                     localStore = Services.LOCAL_STORE.getInstance(tableId, context.getDistribution().getId());
-                    localStore.delete(ByteUtils.encode(
+                    byte[] oldDataKey = ByteUtils.encode(
                         CommonId.CommonType.TXN_CACHE_DATA,
                         oldKey,
                         Op.PUTIFABSENT.getCode(),
                         (txnIdBytes.length + tableIdBytes.length + partIdBytes.length),
                         txnIdBytes,
                         tableIdBytes,
-                        context.getDistribution().getId().encode())
-                    );
+                        context.getDistribution().getId().encode());
+                    localStore.delete(oldDataKey);
+                    byte[] updateKey = Arrays.copyOf(oldDataKey, oldDataKey.length);
+                    updateKey[updateKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
+                    localStore.delete(updateKey);
+                    byte[] deleteKey = Arrays.copyOf(oldDataKey, oldDataKey.length);
+                    deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
+                    localStore.put(new KeyValue(deleteKey, null));
                     localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
                 }
                 keyValue.setKey(
