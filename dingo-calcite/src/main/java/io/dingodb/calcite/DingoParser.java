@@ -40,7 +40,7 @@ import io.dingodb.calcite.meta.DingoRelMetadataProvider;
 import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.SqlToOperationConverter;
 import io.dingodb.calcite.rel.DingoCost;
-import io.dingodb.calcite.rel.LogicalDingoRoot;
+import io.dingodb.calcite.rel.logical.LogicalDingoRoot;
 import io.dingodb.calcite.rel.LogicalExportData;
 import io.dingodb.calcite.rule.DingoRules;
 import io.dingodb.calcite.runtime.DingoResource;
@@ -49,7 +49,6 @@ import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.traits.DingoRelStreamingDef;
 import io.dingodb.common.error.DingoError;
 import io.dingodb.common.error.DingoException;
-import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -91,7 +90,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.File;
 import java.sql.Connection;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -103,14 +101,14 @@ import static io.dingodb.calcite.rule.DingoRules.DINGO_AGGREGATE_RULE;
 import static io.dingodb.calcite.rule.DingoRules.DINGO_AGGREGATE_SCAN_RULE;
 import static io.dingodb.calcite.rule.DingoRules.DINGO_FILTER_RULE;
 import static io.dingodb.calcite.rule.DingoRules.DINGO_PROJECT_RULE;
-import static io.dingodb.calcite.rule.DingoRules.DINGO_REDUCE_AGGREGATE_RULE;
-import static io.dingodb.calcite.rule.DingoRules.DINGO_REL_OP_RULE;
-import static io.dingodb.calcite.rule.DingoRules.DINGO_SCAN_WITH_REL_OP_RULE;
-import static io.dingodb.calcite.rule.DingoRules.LOGICAL_MERGE_REL_OP_SCAN_RULE;
-import static io.dingodb.calcite.rule.DingoRules.LOGICAL_REL_OP_FROM_FILTER_RULE;
-import static io.dingodb.calcite.rule.DingoRules.LOGICAL_REL_OP_FROM_PROJECT_RULE;
-import static io.dingodb.calcite.rule.DingoRules.LOGICAL_SCAN_WITH_REL_OP_RULE;
-import static io.dingodb.calcite.rule.DingoRules.LOGICAL_SPLIT_AGGREGATE_RULE;
+import static io.dingodb.calcite.rule.dingo.DingoPhysicalRules.DINGO_REDUCE_AGGREGATE_RULE;
+import static io.dingodb.calcite.rule.dingo.DingoPhysicalRules.DINGO_REL_OP_RULE;
+import static io.dingodb.calcite.rule.dingo.DingoPhysicalRules.DINGO_SCAN_WITH_REL_OP_RULE;
+import static io.dingodb.calcite.rule.logical.DingoLogicalRules.LOGICAL_MERGE_REL_OP_SCAN_RULE;
+import static io.dingodb.calcite.rule.logical.DingoLogicalRules.LOGICAL_REL_OP_FROM_FILTER_RULE;
+import static io.dingodb.calcite.rule.logical.DingoLogicalRules.LOGICAL_REL_OP_FROM_PROJECT_RULE;
+import static io.dingodb.calcite.rule.logical.DingoLogicalRules.LOGICAL_SCAN_WITH_REL_OP_RULE;
+import static io.dingodb.calcite.rule.logical.DingoLogicalRules.LOGICAL_SPLIT_AGGREGATE_RULE;
 
 // Each sql parsing requires a new instance.
 @Slf4j

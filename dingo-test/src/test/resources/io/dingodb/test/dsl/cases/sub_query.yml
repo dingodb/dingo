@@ -1,11 +1,11 @@
 ---
 tables:
   table0:
-    create: { file: i4k_vs_vs0_ts0_vs_i4.create.sql }
-    init: { file: i4k_vs_vs0_ts0_vs_i4.data.sql, count: 12 }
+    create: { file: tables/i4k_vs_vs0_ts0_vs_i4.create.sql }
+    init: { file: tables/i4k_vs_vs0_ts0_vs_i4.data.sql, count: 12 }
   table1:
-    create: { file: i4k_vs0_i40.create.sql }
-    init: { file: i4k_vs0_i40.data.sql, count: 6 }
+    create: { file: tables/i4k_vs0_i40.create.sql }
+    init: { file: tables/i4k_vs0_i40.data.sql, count: 6 }
 cases:
   - name: 'query table 1 filter by not in table 2'
     use:

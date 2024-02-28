@@ -17,6 +17,7 @@
 package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.rel.DingoVector;
+import io.dingodb.calcite.rule.dingo.DingoHashJoinRule;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.type.DingoSqlTypeFactory;

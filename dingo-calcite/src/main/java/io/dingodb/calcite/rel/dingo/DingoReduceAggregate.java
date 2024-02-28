@@ -18,7 +18,6 @@ package io.dingodb.calcite.rel.dingo;
 
 import io.dingodb.calcite.rel.DingoRel;
 import io.dingodb.calcite.rel.logical.LogicalReduceAggregate;
-import io.dingodb.calcite.traits.DingoRelTraitsUtils;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
@@ -28,7 +27,6 @@ import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 
@@ -64,10 +62,5 @@ public final class DingoReduceAggregate extends LogicalReduceAggregate implement
     @Override
     public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visitDingoAggregateReduce(this);
-    }
-
-    @Override
-    public @Nullable RelNode derive(RelTraitSet childTraits, int childId) {
-        return DingoRelTraitsUtils.deriveToRelNode(this, childTraits);
     }
 }

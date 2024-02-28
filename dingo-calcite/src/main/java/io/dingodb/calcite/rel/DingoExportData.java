@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite.rel;
 
-import io.dingodb.calcite.traits.DingoRelTraitsUtils;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
@@ -65,7 +64,7 @@ public class DingoExportData extends SingleRel implements DingoRel {
      * Creates a <code>SingleRel</code>.
      *
      * @param cluster Cluster this relational expression belongs to
-     * @param traits traits
+     * @param traits  traits
      * @param input   Input relational expression
      */
     public DingoExportData(RelOptCluster cluster,
@@ -105,11 +104,6 @@ public class DingoExportData extends SingleRel implements DingoRel {
     @Override
     public double estimateRowCount(RelMetadataQuery mq) {
         return 1;
-    }
-
-    @Override
-    public @Nullable RelNode derive(RelTraitSet childTraits, int childId) {
-        return DingoRelTraitsUtils.deriveToRelNode(this, childTraits);
     }
 
     @Override

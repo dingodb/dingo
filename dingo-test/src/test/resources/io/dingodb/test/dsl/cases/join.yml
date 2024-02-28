@@ -1,0 +1,133 @@
+tables:
+  artists:
+    create: { file: tables/i4k_vs_2.create.sql }
+    init: { file: tables/i4k_vs_2.data.sql, count: 12 }
+  songs:
+    create: { file: tables/i4k_vs_i4.create.sql }
+    init: { file: tables/i4k_vs_i4.data.sql, count: 20 }
+  beauties:
+    create: { file: tables/i4k_vs_vs0_ts0_vs_i40.create.sql }
+    init: { file: tables/i4k_vs_vs0_ts0_vs_i40.data.sql, count: 12 }
+  boys:
+    create: { file: tables/i4k_vs_i4.1.create.sql }
+    init: { file: tables/i4k_vs_i4.1.data.sql, count: 6 }
+  employees:
+    create: { file: tables/i4k_vs0_5_f80_2_i40_2_ts0.create.sql }
+    init: { file: tables/i4k_vs0_5_f80_2_i40_2_ts0.data.sql, count: 107 }
+  jobs:
+    create: { file: tables/i4k_vs0_i40_2.create.sql }
+    init: { file: tables/i4k_vs0_i40_2.data.sql, count: 19 }
+  students:
+    create: { file: tables/i4k_vs0_i40.1.create.sql }
+    init: { file: tables/i4k_vs0_i40.1.data.sql, count: 3 }
+  classes:
+    create: { file: tables/i4k_vs.create.sql }
+    init: { file: tables/i4k_vs.data.sql, count: 3 }
+  staff:
+    create: { file: tables/i4k_vs0_i40.2.create.sql }
+    init: { file: tables/i4k_vs0_i40.2.data.sql, count: 11 }
+cases:
+  - name: Inner join
+    use:
+      table0: songs
+      table1: artists
+    steps:
+      - file: sql/inner_join.sql
+        result: csv/inner_join.csv
+  - name: Inner join filtered
+    use:
+      table0: songs
+      table1: artists
+    steps:
+      - file: sql/inner_join_filtered.sql
+        result: csv/inner_join_filtered.csv
+  - name: Left join
+    use:
+      table0: songs
+      table1: artists
+    steps:
+      - file: sql/left_join.sql
+        result: csv/left_join.csv
+  - name: Left join with filter
+    use:
+      table0: songs
+      table1: artists
+    steps:
+      - file: sql/left_join_filtered.sql
+        result: csv/inner_join.csv
+  - name: Right join
+    use:
+      table0: songs
+      table1: artists
+    steps:
+      - file: sql/right_join.sql
+        result: csv/right_join.csv
+  - name: Full join
+    use:
+      table0: songs
+      table1: artists
+    steps:
+      - file: sql/full_join.sql
+        result: csv/full_join.csv
+  - name: Cartesian join
+    use:
+      table0: songs
+      table1: artists
+    steps:
+      - file: sql/cartesian_join.sql
+        result: csv/cartesian_join.csv
+  - name: Inner join non-eq
+    use:
+      table0: songs
+      table1: artists
+    steps:
+      - file: sql/inner_join_non_eq.sql
+        result: csv/inner_join_non_eq.csv
+  - name: Right join filtered
+    use:
+      table0: beauties
+      table1: boys
+    steps:
+      - file: sql/right_join_filtered.sql
+        result: csv/right_join_filtered.csv
+  - name: Right join filtered `not in`
+    use:
+      table0: beauties
+      table1: boys
+    steps:
+      - file: sql/right_join_filtered_not_in.sql
+        result: csv/right_join_filtered_not_in.csv
+  - name: Inner join using
+    use:
+      table0: employees
+      table1: jobs
+    steps:
+      - file: sql/inner_join_using.sql
+        result: csv/inner_join_using.csv
+  - name: Full join filtered
+    use:
+      table0: students
+      table1: classes
+    steps:
+      - file: sql/full_join_filtered.sql
+        result: csv/full_join_filtered.csv
+  - name: Left join filtered 1
+    use:
+      table0: students
+      table1: classes
+    steps:
+      - file: sql/left_join_filtered_1.sql
+        result: csv/full_join_filtered.csv
+  - name: Right join filtered 1
+    use:
+      table0: students
+      table1: classes
+    steps:
+      - file: sql/right_join_filtered_1.sql
+        result: csv/full_join_filtered.csv
+  - name: Self join
+    use:
+      table: staff
+    steps:
+      - file: sql/self_join.sql
+        result: csv/self_join.csv

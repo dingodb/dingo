@@ -17,9 +17,9 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
-import io.dingodb.calcite.rel.DingoRoot;
-import io.dingodb.calcite.rel.DingoSort;
-import io.dingodb.calcite.rel.LogicalDingoRoot;
+import io.dingodb.calcite.rel.dingo.DingoRoot;
+import io.dingodb.calcite.rel.dingo.DingoSort;
+import io.dingodb.calcite.rel.logical.LogicalDingoRoot;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.test.asserts.Assert;
