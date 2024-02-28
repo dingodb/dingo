@@ -23,7 +23,7 @@ SqlLoadData SqlLoadData(): {
   byte[] terminated = "	".getBytes();
   String enclosed = null;
   byte[] escaped = "\\".getBytes();
-  byte[] lineTerminated = new byte[]{0x0a};
+  byte[] lineTerminated = new byte[]{0x0d, 0x0a};
   byte[] lineStarting = null;
   String exportCharset = null;
   int ignoreNum = 0;
@@ -40,7 +40,7 @@ SqlLoadData SqlLoadData(): {
      [<TERMINATED> <BY> [<QUOTED_STRING> { terminated = getSpecialBytes(token.image); }]
                         [<BINARY_STRING_LITERAL> { terminated = getSpecialHexBytes(token.image);}]
      ]
-     [<ENCLOSED> <BY> <QUOTED_STRING> { enclosed = token.image.replace("'", ""); } ]
+     [<ENCLOSED> <BY> <QUOTED_STRING> { enclosed = getEnclosed(token.image); } ]
      [<ESCAPED> <BY> [<QUOTED_STRING> { escaped = getSpecialBytes(token.image); }]
                      [<BINARY_STRING_LITERAL> { escaped = getSpecialHexBytes(token.image);}]
      ]

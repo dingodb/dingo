@@ -166,7 +166,7 @@ public final class Utils {
         int i = 0;
         for (Object val : tuple) {
             if (val != null) {
-                i ++;
+                i++;
             } else {
                 break;
             }
@@ -180,7 +180,7 @@ public final class Utils {
         }
         return objectList.stream().map(e -> {
             if (e instanceof Time) {
-                Time date  = (Time) e;
+                Time date = (Time) e;
                 long v = date.getTime();
                 v -= timeZone.getOffset(v);
                 return new Time(v);
@@ -241,6 +241,32 @@ public final class Utils {
             }
         }
         return false;
+    }
+
+    public static int getByteIndexOf(byte[] sources, byte[] src, int startIndex, int endIndex) {
+        if (src == null || src.length == 0) {
+            return 0;
+        }
+        if (sources == null || sources.length == 0) {
+            return -1;
+        }
+        if (endIndex > sources.length) {
+            endIndex = sources.length;
+        }
+        int i, j;
+        for (i = startIndex; i < endIndex; i++) {
+            if (sources[i] == src[0] && i + src.length <= endIndex) {
+                for (j = 1; j < src.length; j++) {
+                    if (sources[i + j] != src[j]) {
+                        break;
+                    }
+                }
+                if (j == src.length) {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
 
     public static final int INTEGER_LEN_IN_BYTES = 4;

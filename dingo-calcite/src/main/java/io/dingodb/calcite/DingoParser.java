@@ -49,6 +49,7 @@ import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.traits.DingoRelStreamingDef;
 import io.dingodb.common.error.DingoError;
 import io.dingodb.common.error.DingoException;
+import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -90,6 +91,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.File;
 import java.sql.Connection;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -392,11 +394,6 @@ public class DingoParser {
         if (enclosed != null && enclosed.equals("()")) {
             throw DingoResource.DINGO_RESOURCE.fieldSeparatorError().ex();
         }
-        byte[] linesTerm = exportOptions.getLineTerminated();
-        if ((linesTerm.length >= 2 && !(linesTerm[0] == 0x0d && linesTerm[1] == 0x0a))
-            || exportOptions.getTerminated().length >= 2
-            || exportOptions.getEscaped().length >= 2) {
-            throw DingoResource.DINGO_RESOURCE.fieldSeparatorError().ex();
-        }
     }
+
 }
