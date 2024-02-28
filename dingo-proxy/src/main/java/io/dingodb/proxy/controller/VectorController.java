@@ -80,6 +80,27 @@ public class VectorController {
         }
     }
 
+    @ApiOperation("Vector upsert")
+    @PutMapping("/api/{schema}/{index}/upsert")
+    public Result<List<VectorWithId>> vectorUpsert(
+        @PathVariable String schema,
+        @PathVariable String index,
+        @RequestBody List<VectorWithId> vectors) {
+        try {
+            List<io.dingodb.sdk.service.entity.common.VectorWithId> result = vectorClient
+                .vectorUpsert(schema, index, vectors.stream()
+                    .map(mapper::mapping)
+                    .collect(Collectors.toList())
+                );
+            return Result.ok(result.stream().map(mapper::mapping).collect(Collectors.toList()));
+        } catch (Exception e) {
+            List<VectorWithId> result = new ArrayList<>();
+            vectors.forEach(v -> result.add(null));
+            log.error("Vector upsert error.", e);
+            return Result.build(500, e.getMessage(), result);
+        }
+    }
+
     @ApiOperation("Vector delete")
     @DeleteMapping("/api/{schema}/{index}")
     public Result<List<Boolean>> vectorDelete(
