@@ -81,7 +81,7 @@ public class PessimisticTransaction extends BaseTransaction {
     public synchronized void rollBackPessimisticLock(JobManager jobManager) {
         long rollBackStart = System.currentTimeMillis();
         cache.setJobId(job.getJobId());
-        if(!cache.checkPessimisticLockContinue()) {
+        if(!cache.checkPessimisticLockContinue() && !isCrossNode) {
             log.warn("{} The current {} has no data to rollBackPessimisticLock",txnId, transactionOf());
             return;
         }
@@ -100,7 +100,7 @@ public class PessimisticTransaction extends BaseTransaction {
             DingoTransactionRenderJob.renderRollBackPessimisticLockJob(job, currentLocation, this, true);
             // 3、run RollBackPessimisticLock
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
-            if (iterator.hasNext()) {
+            while (iterator.hasNext()) {
                 Object[] next = iterator.next();
             }
             this.status = TransactionStatus.ROLLBACK_PESSIMISTIC_LOCK;
@@ -165,7 +165,7 @@ public class PessimisticTransaction extends BaseTransaction {
 
     public void rollBackResidualPessimisticLock(JobManager jobManager) {
         long rollBackStart = System.currentTimeMillis();
-        if(!cache.checkResidualPessimisticLockContinue()) {
+        if(!cache.checkResidualPessimisticLockContinue() && !isCrossNode) {
             log.warn("{} The current {} has no data to rollBackResidualPessimisticLock",txnId, transactionOf());
             return;
         }
@@ -181,7 +181,7 @@ public class PessimisticTransaction extends BaseTransaction {
             DingoTransactionRenderJob.renderRollBackResidualPessimisticLockJob(job, currentLocation, this, true);
             // 3、run rollBackResidualPessimisticLock
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
-            if (iterator.hasNext()) {
+            while (iterator.hasNext()) {
                 Object[] next = iterator.next();
             }
             this.status = TransactionStatus.ROLLBACK_RESIDUAL_PESSIMISTIC_LOCK;
