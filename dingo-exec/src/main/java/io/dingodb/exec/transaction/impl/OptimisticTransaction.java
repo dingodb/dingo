@@ -113,7 +113,7 @@ public class OptimisticTransaction extends BaseTransaction {
     public void retryRun(JobManager jobManager, Job job, Location currentLocation) {
         DingoTransactionRenderJob.renderPreWriteJob(job, currentLocation, this, true);
         Iterator<Object[]> iterator = jobManager.createIterator(job, null);
-        if (iterator.hasNext()) {
+        while (iterator.hasNext()) {
             Object[] next = iterator.next();
         }
     }

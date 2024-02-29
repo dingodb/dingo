@@ -139,7 +139,7 @@ public abstract class BaseTransaction implements ITransaction {
         if (getType() == TransactionType.NONE) {
             return;
         }
-        if (getSqlList().size() == 0 || !cache.checkCleanContinue(isPessimistic())) {
+        if (getSqlList().size() == 0 || (!cache.checkCleanContinue(isPessimistic()) && !isCrossNode)) {
             log.warn("{} The current {} has no data to cleanUp", txnId, transactionOf());
             return;
         }
@@ -182,6 +182,9 @@ public abstract class BaseTransaction implements ITransaction {
     @Override
     public void registerChannel(CommonId commonId, Channel channel) {
         channelMap.put(commonId, channel);
+        log.info("{} {} isCrossNode commonId is {} location is {}", txnId, transactionOf(),
+            commonId, channel.remoteLocation());
+        isCrossNode = true;
     }
 
     @Override
@@ -227,7 +230,7 @@ public abstract class BaseTransaction implements ITransaction {
         if (getType() == TransactionType.NONE) {
             return;
         }
-        if (getSqlList().size() == 0 || !cache.checkContinue()) {
+        if (getSqlList().size() == 0 || (!cache.checkContinue() && !isCrossNode)) {
             log.warn("{} The current {} has no data to commit",txnId, transactionOf());
             if (isPessimistic()) {
                 // PessimisticRollback
@@ -251,7 +254,7 @@ public abstract class BaseTransaction implements ITransaction {
             DingoTransactionRenderJob.renderPreWriteJob(job, currentLocation, this, true);
             // 3、run PreWrite
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
-            if (iterator.hasNext()) {
+            while (iterator.hasNext()) {
                 Object[] next = iterator.next();
             }
             this.status = TransactionStatus.PRE_WRITE;
@@ -346,7 +349,7 @@ public abstract class BaseTransaction implements ITransaction {
                 commitFuture.get();
             }
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
-            if (iterator.hasNext()) {
+            while (iterator.hasNext()) {
                 Object[] next = iterator.next();
             }
             log.info("{} {} cleanUpJobRun end", txnId, transactionOf());
@@ -366,7 +369,7 @@ public abstract class BaseTransaction implements ITransaction {
             DingoTransactionRenderJob.renderCommitJob(job, currentLocation, this, true);
             // 6、run Commit
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
-            if (iterator.hasNext()) {
+            while (iterator.hasNext()) {
                 Object[] next = iterator.next();
             }
             log.info("{} {} commitJobRun end", txnId, transactionOf());
@@ -382,7 +385,7 @@ public abstract class BaseTransaction implements ITransaction {
         if (getType() == TransactionType.NONE) {
             return;
         }
-        if (getSqlList().size() == 0 || !cache.checkContinue()) {
+        if (getSqlList().size() == 0 || (!cache.checkContinue() && !isCrossNode)) {
             log.warn("{} The current {} has no data to rollback",txnId, transactionOf());
             return;
         }
