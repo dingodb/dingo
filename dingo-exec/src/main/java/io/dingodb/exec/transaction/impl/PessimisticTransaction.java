@@ -81,7 +81,7 @@ public class PessimisticTransaction extends BaseTransaction {
     public synchronized void rollBackPessimisticLock(JobManager jobManager) {
         long rollBackStart = System.currentTimeMillis();
         cache.setJobId(job.getJobId());
-        if(!cache.checkPessimisticLockContinue() && !isCrossNode) {
+        if(!cache.checkPessimisticLockContinue()) {
             log.warn("{} The current {} has no data to rollBackPessimisticLock",txnId, transactionOf());
             return;
         }
@@ -129,25 +129,34 @@ public class PessimisticTransaction extends BaseTransaction {
 
     @Override
     public void rollBackPessimisticPrimaryLock(JobManager jobManager) {
-        if (future != null) {
-            future.cancel(true);
-        }
-        if (primaryKeyLock != null && forUpdateTs != 0) {
-            Object[] objects = ByteUtils.decodePessimisticExtraKey(primaryKeyLock);
-            TxnLocalData txnLocalData = (TxnLocalData) objects[0];
-            CommonId tableId = txnLocalData.getTableId();
-            CommonId newPartId = txnLocalData.getPartId();
-            byte[] key = txnLocalData.getKey();
-            log.info("{} pessimisticPrimaryLockRollBack key:{}", txnId, Arrays.toString(key));
-            TransactionUtil.pessimisticPrimaryLockRollBack(
-                txnId,
-                tableId,
-                newPartId,
-                isolationLevel,
-                startTs,
-                forUpdateTs,
-                key
-            );
+        try {
+            if (future != null) {
+                future.cancel(true);
+            }
+            if (primaryKeyLock != null && forUpdateTs != 0) {
+                Object[] objects = ByteUtils.decodePessimisticExtraKey(primaryKeyLock);
+                TxnLocalData txnLocalData = (TxnLocalData) objects[0];
+                CommonId tableId = txnLocalData.getTableId();
+                CommonId newPartId = txnLocalData.getPartId();
+                byte[] key = txnLocalData.getKey();
+                cache.deletePrefix(primaryKeyLock);
+                log.info("{} pessimisticPrimaryLockRollBack key:{}", txnId, Arrays.toString(key));
+                TransactionUtil.pessimisticPrimaryLockRollBack(
+                    txnId,
+                    tableId,
+                    newPartId,
+                    isolationLevel,
+                    startTs,
+                    forUpdateTs,
+                    key
+                );
+            }
+        } catch (Throwable throwable) {
+            log.error("rollBackPessimisticPrimaryLock exception:{}", throwable, throwable);
+        } finally {
+            future = null;
+            primaryKeyLock = null;
+            forUpdateTs = 0L;
         }
     }
 
@@ -165,7 +174,7 @@ public class PessimisticTransaction extends BaseTransaction {
 
     public void rollBackResidualPessimisticLock(JobManager jobManager) {
         long rollBackStart = System.currentTimeMillis();
-        if(!cache.checkResidualPessimisticLockContinue() && !isCrossNode) {
+        if(!cache.checkResidualPessimisticLockContinue()) {
             log.warn("{} The current {} has no data to rollBackResidualPessimisticLock",txnId, transactionOf());
             return;
         }

@@ -139,7 +139,7 @@ public abstract class BaseTransaction implements ITransaction {
         if (getType() == TransactionType.NONE) {
             return;
         }
-        if (getSqlList().size() == 0 || (!cache.checkCleanContinue(isPessimistic()) && !isCrossNode)) {
+        if (getSqlList().size() == 0 || !cache.checkCleanContinue(isPessimistic())) {
             log.warn("{} The current {} has no data to cleanUp", txnId, transactionOf());
             return;
         }
@@ -230,7 +230,7 @@ public abstract class BaseTransaction implements ITransaction {
         if (getType() == TransactionType.NONE) {
             return;
         }
-        if (getSqlList().size() == 0 || (!cache.checkContinue() && !isCrossNode)) {
+        if (getSqlList().size() == 0 || !cache.checkContinue()) {
             log.warn("{} The current {} has no data to commit",txnId, transactionOf());
             if (isPessimistic()) {
                 // PessimisticRollback
@@ -385,7 +385,7 @@ public abstract class BaseTransaction implements ITransaction {
         if (getType() == TransactionType.NONE) {
             return;
         }
-        if (getSqlList().size() == 0 || (!cache.checkContinue() && !isCrossNode)) {
+        if (getSqlList().size() == 0 || !cache.checkContinue()) {
             log.warn("{} The current {} has no data to rollback",txnId, transactionOf());
             return;
         }
