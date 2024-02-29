@@ -461,7 +461,7 @@ public final class DingoDriverParser extends DingoParser {
         DingoJobVisitor.renderJob(job, relNode, currentLocation, true, transaction, sqlNode.getKind());
         try {
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
-            if (iterator.hasNext()) {
+            while (iterator.hasNext()) {
                 Object[] next = iterator.next();
             }
         } catch (Throwable throwable) {
