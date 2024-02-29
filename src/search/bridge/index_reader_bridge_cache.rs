@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
 use crate::logger::logger_bridge::TantivySearchLogger;
-use crate::ERROR;
-use crate::{common::constants::LOG_CALLBACK, WARNING};
+use crate::{common::constants::LOG_CALLBACK, WARNING, DEBUG};
 use flurry::HashMap;
 use once_cell::sync::OnceCell;
 use tantivy::Executor;
@@ -66,7 +65,7 @@ impl IndexReaderBridgeCache {
                 "IndexReaderBridge doesn't exist, can't remove it with given key [{}]",
                 trimmed_key
             );
-            ERROR!("{}", error_info);
+            DEBUG!("{}", error_info);
             return Err(error_info);
         }
         Ok(())
