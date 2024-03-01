@@ -22,6 +22,8 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +31,8 @@ import java.util.Set;
 
 @Slf4j
 public class TableModifyMonitorTask extends StatsOperator implements Runnable {
+
+    private static final BigDecimal MODIFY_COMMIT_RATE = new BigDecimal(0.3);
 
     @Override
     public void run() {
@@ -53,7 +57,7 @@ public class TableModifyMonitorTask extends StatsOperator implements Runnable {
                     commitCount = commitCountMap.get(commonId);
                 }
                 Double totalCount = subMetaService.getTableStatistic(t.name).getRowCount();
-                if (autoAnalyzeTriggerPolicy(key, t.name, commitCount, totalCount)) {
+                if (autoAnalyzeTriggerPolicy(key, t.name, commitCount)) {
                     if (commitCount > totalCount) {
                         commitCount = totalCount.longValue();
                     }
@@ -70,30 +74,36 @@ public class TableModifyMonitorTask extends StatsOperator implements Runnable {
     /**
      * auto analyze trigger policy.
      * 1. count > 1000
-     * 2. (this table commit - last table commit)/totalCount > 0.5
+     * 2. (this table commit - last table commit) > 1000
      * @param schemaName schema custom
      * @param tableName table
      * @param commitCount update,delete,insert
-     * @param totalCount table row count
      * @return auto analyze flag
      */
-    private boolean autoAnalyzeTriggerPolicy(String schemaName, String tableName, long commitCount,
-                                             Double totalCount) {
+    private boolean autoAnalyzeTriggerPolicy(String schemaName, String tableName, long commitCount) {
         long lastCommit = 0;
+        long processRows = 0;
         try {
             Object[] values = get(analyzeTaskStore, analyzeTaskCodec, getAnalyzeTaskKeys(schemaName, tableName));
             if (values != null) {
-                lastCommit = (long) values[9];
+                if (values[9] != null) {
+                    lastCommit = (long) values[9];
+                }
+                if (values[3] != null) {
+                    processRows = (long) values[3];
+                }
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
         commitCount -= lastCommit;
-        if (totalCount > 1000) {
-            double modifyRate = commitCount / totalCount;
-            if (modifyRate > 0.5) {
-                return true;
-            }
+        if (processRows == 0 && commitCount > 1000) {
+            return true;
+        } else if (processRows > 1000) {
+            BigDecimal modify = new BigDecimal(commitCount);
+            BigDecimal count = new BigDecimal(processRows);
+            BigDecimal rate = modify.divide(count, RoundingMode.HALF_UP);
+            return rate.compareTo(MODIFY_COMMIT_RATE) > 0;
         }
         return false;
     }

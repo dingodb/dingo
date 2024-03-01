@@ -25,6 +25,7 @@ import io.dingodb.calcite.rel.DingoGetVectorByDistance;
 import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoVector;
+import io.dingodb.calcite.rel.LogicalDingoVector;
 import io.dingodb.calcite.rel.VectorStreamConvertor;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
@@ -78,7 +79,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         call.transformTo(relNode);
     }
 
-    public static RelNode getDingoGetVectorByDistance(RexNode condition, DingoVector vector) {
+    public static RelNode getDingoGetVectorByDistance(RexNode condition, LogicalDingoVector vector) {
         DingoTable dingoTable = vector.getTable().unwrap(DingoTable.class);
         assert dingoTable != null;
         TupleMapping selection = getDefaultSelection(dingoTable);
@@ -145,7 +146,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
             );
     }
 
-    private static DingoGetByIndex preScalarRelNode(DingoVector dingoVector,
+    private static DingoGetByIndex preScalarRelNode(LogicalDingoVector dingoVector,
                                          IndexValueMapSet<Integer, RexNode> indexValueMapSet,
                                          Table td,
                                          TupleMapping selection,
@@ -193,7 +194,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
 
     private static RelNode prePrimaryOrScalarPlan(
                                           RexNode condition,
-                                          DingoVector vector,
+                                          LogicalDingoVector vector,
                                           Pair<Integer, Integer> vectorIdPair,
                                           RelTraitSet traitSet,
                                           TupleMapping selection) {

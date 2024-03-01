@@ -111,6 +111,8 @@ public class DingoDdlVerify {
                     throw new RuntimeException(e);
                 }
                 return;
+            } else if ("root".equals(sqlSetPassword.user) && "%".equals(sqlSetPassword.host)) {
+                throw new DingoSqlException(String.format("Access denied for user '%s'@'%s'", user, host));
             }
             accessTypes.add(DingoSqlAccessEnum.UPDATE);
             schemaTables = new String[] {"mysql", "user"};
@@ -153,6 +155,8 @@ public class DingoDdlVerify {
                     }
                 }
                 return;
+            } else if ("root".equals(sqlAlterUser.user) && "%".equals(sqlAlterUser.host)) {
+                throw new DingoSqlException(String.format("Access denied for user '%s'@'%s'", user, host));
             }
             accessTypes.add(DingoSqlAccessEnum.CREATE_USER);
         } else if (sqlNode instanceof SqlShowGrants) {

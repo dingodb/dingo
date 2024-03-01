@@ -66,6 +66,11 @@ public class ShowCallsOperation implements QueryOperation {
                 } else if (variableName.startsWith("session.")) {
                     variableName = variableName.substring(8);
                     try {
+                        if ("tx_isolation".equals(variableName)) {
+                            variableName = "transaction_isolation";
+                        } else if ("tx_read_only".equals(variableName)) {
+                            variableName = "transaction_read_only";
+                        }
                         value = connection.getClientInfo(variableName);
                     } catch (SQLException e) {
                         log.error(e.getMessage(), e);

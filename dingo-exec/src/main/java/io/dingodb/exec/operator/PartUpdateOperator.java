@@ -42,11 +42,6 @@ public final class PartUpdateOperator extends PartModifyOperator {
     @Override
     public boolean pushTuple(Context context, Object[] tuple, Vertex vertex) {
         PartUpdateParam param = vertex.getParam();
-        if (param.isHasAutoInc() && param.getAutoIncColIdx() < tuple.length) {
-            long autoIncVal = Long.parseLong(tuple[param.getAutoIncColIdx()].toString());
-            MetaService metaService = MetaService.root();
-            metaService.updateAutoIncrement(param.getTableId(), autoIncVal);
-        }
         RangeDistribution distribution = context.getDistribution();
         DingoType schema = param.getSchema();
         TupleMapping mapping = param.getMapping();
@@ -68,6 +63,11 @@ public final class PartUpdateOperator extends PartModifyOperator {
                     newTuple[index] = newValue;
                     updated = true;
                 }
+            }
+            if (param.isHasAutoInc() && param.getAutoIncColIdx() < tuple.length) {
+                long autoIncVal = Long.parseLong(newTuple[param.getAutoIncColIdx()].toString());
+                MetaService metaService = MetaService.root();
+                metaService.updateAutoIncrement(param.getTableId(), autoIncVal);
             }
             Object[] newTuple2 = (Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE);
             Object[] oldTuple = Arrays.copyOf(tuple, tupleSize);
