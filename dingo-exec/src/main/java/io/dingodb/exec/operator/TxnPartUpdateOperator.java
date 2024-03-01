@@ -23,6 +23,7 @@ import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
@@ -62,11 +63,6 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
     @Override
     protected boolean pushTuple(Context context, Object[] tuple, Vertex vertex) {
         TxnPartUpdateParam param = vertex.getParam();
-        if (param.isHasAutoInc() && param.getAutoIncColIdx() < tuple.length) {
-            long autoIncVal = Long.parseLong(tuple[param.getAutoIncColIdx()].toString());
-            MetaService metaService = MetaService.root();
-            metaService.updateAutoIncrement(param.getTableId(), autoIncVal);
-        }
         param.setContext(context);
         DingoType schema = param.getSchema();
         TupleMapping mapping = param.getMapping();
@@ -87,6 +83,11 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     newTuple[index] = newValue;
                     updated = true;
                 }
+            }
+            if (param.isHasAutoInc() && param.getAutoIncColIdx() < tuple.length) {
+                long autoIncVal = Long.parseLong(newTuple[param.getAutoIncColIdx()].toString());
+                MetaService metaService = MetaService.root();
+                metaService.updateAutoIncrement(param.getTableId(), autoIncVal);
             }
             CommonId txnId = vertex.getTask().getTxnId();
             CommonId tableId = param.getTableId();
@@ -126,11 +127,11 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             }
             Object[] newTuple2 = (Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE);
 
-            byte[] key = wrap(codec::encodeKey).apply(newTuple);
+            byte[] key = wrap(codec::encodeKey).apply(newTuple2);
             CodecService.getDefault().setId(key, partId.domain);
             byte[] vectorKey;
             if (isVector) {
-                vectorKey = codec.encodeKeyPrefix(newTuple, 1);
+                vectorKey = codec.encodeKeyPrefix(newTuple2, 1);
                 CodecService.getDefault().setId(vectorKey, partId.domain);
             } else {
                 vectorKey = key;
@@ -263,7 +264,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     localStore.delete(updateKey);
                     byte[] deleteKey = Arrays.copyOf(oldDataKey, oldDataKey.length);
                     deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
-                    localStore.put(new KeyValue(deleteKey, null));
+                    localStore.put(new KeyValue(deleteKey, wrap(codec::encode).apply(copyTuple).getValue()));
                     localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
                 }
                 keyValue.setKey(

@@ -335,7 +335,7 @@ public final class DingoDriverParser extends DingoParser {
         long startTs = 0L;
         long jobSeqId = TsoService.getDefault().tso();
         CommonId txn_Id;
-        boolean pessimisticTxn = false;
+        boolean pessimisticTxn;
         ITransaction transaction;
         if (connection.getTransaction() != null) {
             transaction = connection.getTransaction();

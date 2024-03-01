@@ -176,8 +176,9 @@ public class MonitorServerService {
             .getRangeDistribution(table).values().toArray(new RangeDistribution[0]);
         DingoKeyValueCodec codec = DingoKeyValueCodec.of(0, tableDefinition);
         DingoType dingoType = DingoTypeFactory.tuple(
-            tableDefinition.getColumns().stream().map(col -> DingoTypeFactory.INSTANCE.scalar(
+            tableDefinition.getColumns().stream().map(col -> DingoTypeFactory.INSTANCE.fromName(
                 col.getType(),
+                col.getElementType(),
                 col.isNullable()
             )).toArray(DingoType[]::new)
         );
@@ -208,8 +209,9 @@ public class MonitorServerService {
                     .toArray(new RangeDistribution[0]);
                 DingoKeyValueCodec codec = DingoKeyValueCodec.of(0, e.getValue());
                 DingoType dingoType = DingoTypeFactory.tuple(
-                    e.getValue().getColumns().stream().map(col -> DingoTypeFactory.INSTANCE.scalar(
+                    e.getValue().getColumns().stream().map(col -> DingoTypeFactory.INSTANCE.fromName(
                         col.getType(),
+                        col.getElementType(),
                         col.isNullable()
                     )).toArray(DingoType[]::new)
                 );
@@ -303,8 +305,9 @@ public class MonitorServerService {
                     0, e.getValue()
                 );
                 DingoType dingoType = DingoTypeFactory.tuple(
-                    e.getValue().getColumns().stream().map(col -> DingoTypeFactory.INSTANCE.scalar(
+                    e.getValue().getColumns().stream().map(col -> DingoTypeFactory.INSTANCE.fromName(
                         col.getType(),
+                        col.getElementType(),
                         col.isNullable()
                     )).toArray(DingoType[]::new)
                 );

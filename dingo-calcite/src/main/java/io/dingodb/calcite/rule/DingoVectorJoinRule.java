@@ -16,8 +16,8 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.rule.dingo.DingoHashJoinRule;
+import io.dingodb.calcite.rel.LogicalDingoVector;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
@@ -55,12 +55,12 @@ public class DingoVectorJoinRule extends RelRule<DingoVectorJoinRule.Config>  {
         RelSubset subset = (RelSubset) newLogicalJoin.getLeft();
         if (subset.getRelList().size() == 1) {
             RelNode relNode = subset.getBestOrOriginal();
-            if (relNode instanceof DingoVector) {
-                DingoVector vector = (DingoVector) relNode;
+            if (relNode instanceof LogicalDingoVector) {
+                LogicalDingoVector vector = (LogicalDingoVector) relNode;
                 RelTraitSet traits = vector.getTraitSet()
                     .replace(DingoConvention.INSTANCE)
                     .replace(DingoRelStreaming.of(vector.getTable()));
-                DingoVector replaceVector = (DingoVector) vector.copy(traits, vector.getInputs(),
+                LogicalDingoVector replaceVector = (LogicalDingoVector) vector.copy(traits, vector.getInputs(),
                     vector.getCall(), vector.getElementType(), vector.getRowType(), vector.getColumnMappings());
                 RexBuilder rexBuilder = new RexBuilder(DingoSqlTypeFactory.INSTANCE);
                 RexLiteral rexLiteral = rexBuilder.makeLiteral("1");
@@ -92,7 +92,7 @@ public class DingoVectorJoinRule extends RelRule<DingoVectorJoinRule.Config>  {
                         RelSubset subset = (RelSubset) rel.getLeft();
                         if (subset.getRelList().size() == 1) {
                             RelNode relNode = subset.getBestOrOriginal();
-                            if (relNode instanceof DingoVector) {
+                            if (relNode instanceof LogicalDingoVector) {
                                 return true;
                             }
                         }
