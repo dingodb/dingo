@@ -83,8 +83,8 @@ public class TestUpdate {
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.UPDATE)
-            .soleInput().isA(DingoRelOp.class)
             .soleInput().isA(DingoStreamingConverter.class)
+            .soleInput().isA(DingoRelOp.class)
             .soleInput().isA(DingoGetByKeys.class);
     }
 
@@ -104,8 +104,8 @@ public class TestUpdate {
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.UPDATE)
-            .soleInput().isA(DingoRelOp.class)
             .soleInput().isA(DingoStreamingConverter.class)
+            .soleInput().isA(DingoRelOp.class)
             .soleInput().isA(DingoGetByKeys.class);
     }
 
@@ -128,8 +128,8 @@ public class TestUpdate {
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.UPDATE)
-            .soleInput().isA(DingoRelOp.class)
             .soleInput().isA(DingoStreamingConverter.class)
+            .soleInput().isA(DingoRelOp.class)
             .soleInput().isA(DingoHashJoin.class);
         assertJoin.input(0).isA(DingoStreamingConverter.class)
             .soleInput().isA(DingoGetByKeys.class);

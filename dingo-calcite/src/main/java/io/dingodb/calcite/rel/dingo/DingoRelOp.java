@@ -57,9 +57,17 @@ public final class DingoRelOp extends LogicalRelOp implements DingoRel {
         return visitor.visitDingoRelOp(this);
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Return {@code null} to make the traits always consistent with its input, so no {@link DingoStreamingConverter}
+     * is inserted in between. This is vital for SQL parameterized insert, where the parameterized value is implemented
+     * as a {@code Project} with a dummy {@code Values} input. It is also important to push expr down.
+     */
     @Override
-    public @NonNull Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(@NonNull RelTraitSet required) {
-        return Pair.of(required, ImmutableList.of(required));
+    public @Nullable Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(@NonNull RelTraitSet required) {
+        // return Pair.of(required, ImmutableList.of(required));
+        return null;
     }
 
     @Override
