@@ -61,7 +61,7 @@ public class ScanWithRelOpParam extends ScanParam {
     @JsonProperty("rel")
     @JsonSerialize(using = RelOpSerializer.class)
     @JsonDeserialize(using = RelOpDeserializer.class)
-    private final RelOp relOp;
+    private RelOp relOp;
     @JsonProperty("pushDown")
     private final boolean pushDown;
 
@@ -90,7 +90,7 @@ public class ScanWithRelOpParam extends ScanParam {
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
-        relOp.compile(new DingoCompileContext(
+        relOp = relOp.compile(new DingoCompileContext(
             (TupleType) schema.getType(),
             (TupleType) vertex.getParasType().getType()
         ), config);

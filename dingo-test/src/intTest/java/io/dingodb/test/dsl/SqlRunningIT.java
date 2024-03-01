@@ -46,6 +46,11 @@ public class SqlRunningIT extends SqlTestRunner {
     }
 
     @TestFactory
+    public Stream<DynamicTest> testJoin() {
+        return getTests(SqlTestCaseYamlBuilder.of("cases/join.yml"));
+    }
+
+    @TestFactory
     public Stream<DynamicTest> testJoin3Tables() {
         return getTests(SqlTestCaseYamlBuilder.of("cases/join_3_tables.yml"));
     }
@@ -113,31 +118,6 @@ public class SqlRunningIT extends SqlTestRunner {
     @TestFactory
     public Stream<DynamicTest> testParameterQuery() {
         return getTests(new ParameterQueryCases());
-    }
-
-    @TestFactory
-    public Stream<DynamicTest> testJoin() {
-        return getTests(SqlTestCaseYamlBuilder.of("join_i4k_vs_i4__i4k_vs_2/join_cases.yml"));
-    }
-
-    @TestFactory
-    public Stream<DynamicTest> testJoin1() {
-        return getTests(SqlTestCaseYamlBuilder.of("join_i4k_vs0_i40__i4k_vs/join_cases.yml"));
-    }
-
-    @TestFactory
-    public Stream<DynamicTest> testJoin2() {
-        return getTests(SqlTestCaseYamlBuilder.of("join_i4k_vs0_5_f80_2_i40_2_ts0__i4k_vs0_i40_2/join_cases.yml"));
-    }
-
-    @TestFactory
-    public Stream<DynamicTest> testJoin3() {
-        return getTests(SqlTestCaseYamlBuilder.of("join_i4k_vs_vs0_ts0_vs_i40__i4k_vs_i4/join_cases.yml"));
-    }
-
-    @TestFactory
-    public Stream<DynamicTest> testSelfJoin() {
-        return getTests(SqlTestCaseYamlBuilder.of("i4k_vs0_i40/self_join_cases.yml"));
     }
 
     @TestFactory
