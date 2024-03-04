@@ -57,7 +57,7 @@ docker pull dingodatabase/dingo:latest
 
 ```shell
 # Method one
-curl https://raw.githubusercontent.com/dingodb/dingo/dingo-v0.7.0/docker/docker-compose.yml -o docker-compose.yml
+curl https://raw.githubusercontent.com/dingodb/dingo/develop/docker/docker-compose.yml -o docker-compose.yml
  
 # Method two
 git clone https://github.com/dingodb/dingo.git
