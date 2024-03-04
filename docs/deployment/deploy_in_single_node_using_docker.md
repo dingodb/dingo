@@ -64,13 +64,13 @@ git clone https://github.com/dingodb/dingo.git
 cd dingo/docker
 ```
 #### (2) Configuration file description
-The docker-compose file includes 3 coordinators, 3 stores, 3 indexes, 1 executor, and 1 web. You can modify the file to start only a subset of these nodes or add more nodes based on your actual needs.
+The docker-compose file includes 3 coordinators, 3 stores, 3 indexes, 1 executor, and 1 proxy. You can modify the file to start only a subset of these nodes or add more nodes based on your actual needs.
 
-The coordinators, stores, and indexes use the host network mode, while the executor and web use the bridge network mode.
+The coordinators, stores, and indexes use the host network mode, while the executor and proxy use the bridge network mode.
 
 #### (3) Start the corresponding containers
 ```shell
-#  Replace with your own IP address (do not use 127.0.0.1 as web and executor use the bridge network and 127.0.0.1 does not point to the host)
+#  Replace with your own IP address (do not use 127.0.0.1 as proxy and executor use the bridge network and 127.0.0.1 does not point to the host)
 # If the docker-compose.yml file is in the current directory and has the same name, you do not need to use the -f parameter.
 DINGO_HOST_IP=x.x.x.x docker-compose -f ./docker-compose.yml up -d
  
@@ -92,7 +92,7 @@ fa0d18e2d0fe   dingodatabase/dingo-store:latest           "/opt/dingo-store/sc�
 92cf6df0e87d   dingodatabase/dingo-store:latest           "/opt/dingo-store/sc…"   45 hours ago   Up 45 hours                                                                                              store1
 9775c834ee2b   dingodatabase/dingo-store:latest           "/opt/dingo-store/sc…"   45 hours ago   Up 45 hours                                                                                              index1
 3439f679c211   dingodatabase/dingo-store:latest           "/opt/dingo-store/sc…"   45 hours ago   Up 45 hours                                                                                              coordinator1
-c927d17f848f   dingodatabase/dingo:latest                 "/opt/dingo/bin/star…"   45 hours ago   Up 45 hours   0.0.0.0:9999->9999/tcp, :::9999->9999/tcp, 0.0.0.0:13000->13000/tcp, :::13000->13000/tcp   web
+c927d17f848f   dingodatabase/dingo:latest                 "/opt/dingo/bin/star…"   45 hours ago   Up 45 hours   0.0.0.0:9999->9999/tcp, :::9999->9999/tcp, 0.0.0.0:13000->13000/tcp, :::13000->13000/tcp   proxy
 72381a6822ef   dingodatabase/dingo-store:latest           "/opt/dingo-store/sc…"   45 hours ago   Up 45 hours                                                                                              coordinator2
 1581e4b35d14   dingodatabase/dingo:latest                 "/opt/dingo/bin/star…"   45 hours ago   Up 45 hours   0.0.0.0:3307->3307/tcp, :::3307->3307/tcp, 0.0.0.0:8765->8765/tcp, :::8765->8765/tcp       executor
 18f8f13b7fab   dingodatabase/dingo-store:latest           "/opt/dingo-store/sc…"   45 hours ago   Up 45 hours                                                                                              coordinator3
@@ -249,7 +249,7 @@ DINGODB_HAVE_INDEX_AVAILABLE, index_count=3
 ./dingodb_client --method=CreateTable --name=test1  # Create table
 ./dingodb_client --method=GetTable --id=60067     # View the table
 ```
-#### (3) View the state of dingo(executor/web)
+#### (3) View the state of dingo(executor/proxy)
 ```shell
 # To view the executor and ensure that the MySQL init process was successful.
 [root@dingo221 ~]# docker logs executor
@@ -323,6 +323,6 @@ init mysql.TABLE_BUCKETS success
 Java mysql init succes
  
  
-#  The address to access the web swagger,replace <your_ip_address> with your actual IP address.
+#  The address to access the proxy swagger,replace <your_ip_address> with your actual IP address.
 http://<your_ip_address>:13000/swagger-ui/index.html
 ```
