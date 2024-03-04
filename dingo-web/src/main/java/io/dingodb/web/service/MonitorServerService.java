@@ -498,6 +498,9 @@ public class MonitorServerService {
             }
         });
         long partColSize = partColSizeAto.get();
+        if (partColSize == 0) {
+            partColSize = tableDef.getPrimaryKeyCount();
+        }
         partIdList.sort(Comparator.reverseOrder());
 
         String partType = tableDef.getPartition().getFuncName();
