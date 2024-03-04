@@ -16,9 +16,12 @@
 
 package io.dingodb.exec.utils;
 
+import io.dingodb.common.exception.DingoSqlException;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.concurrent.BlockingQueue;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public final class QueueUtils {
     private QueueUtils() {
@@ -41,5 +44,24 @@ public final class QueueUtils {
             } catch (InterruptedException ignored) {
             }
         }
+    }
+
+    public static <T> @NonNull T forceTake(@NonNull BlockingQueue<T> queue, long timeoutMS) {
+        long startTime = System.currentTimeMillis();
+        long remainingTime;
+        while ((remainingTime = timeoutMS - (System.currentTimeMillis() - startTime)) > 0) {
+            try {
+                T result;
+                if ((result = queue.poll(remainingTime, MILLISECONDS)) != null) {
+                    return result;
+                }
+            } catch (InterruptedException ignored) {
+            }
+        }
+        throw new DingoSqlException(
+            "query execution was interrupted, maximum statement execution time exceeded",
+            3024,
+            "HY000"
+        );
     }
 }
