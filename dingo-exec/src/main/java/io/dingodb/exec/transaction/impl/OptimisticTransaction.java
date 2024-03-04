@@ -24,12 +24,12 @@ import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.exception.TaskFinException;
 import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.transaction.base.BaseTransaction;
+import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.base.TransactionStatus;
 import io.dingodb.exec.transaction.base.TransactionType;
-import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.util.TransactionUtil;
-import io.dingodb.store.api.StoreInstance;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
+import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
@@ -119,11 +119,15 @@ public class OptimisticTransaction extends BaseTransaction {
     }
 
     @Override
-    public CacheToObject preWritePrimaryKey() {
+    public void preWritePrimaryKey() {
         // 1、get first key from cache
-        CacheToObject cacheToObject = cache.getPrimaryKey();
+        cacheToObject = cache.getPrimaryKey();
         byte[] key = cacheToObject.getMutation().getKey();
         primaryKey = key;
+        txnPreWritePrimaryKey(cacheToObject);
+    }
+
+    private void txnPreWritePrimaryKey(CacheToObject cacheToObject) {
         // 2、call sdk preWritePrimaryKey
         TxnPreWrite txnPreWrite = TxnPreWrite.builder()
             .isolationLevel(IsolationLevel.of(
@@ -137,7 +141,7 @@ public class OptimisticTransaction extends BaseTransaction {
             .tryOnePc(false)
             .maxCommitTs(0L)
             .lockExtraDatas(TransactionUtil.toLockExtraDataList(cacheToObject.getTableId(), cacheToObject.getPartId(), txnId,
-            TransactionType.OPTIMISTIC.getCode(), 1))
+                TransactionType.OPTIMISTIC.getCode(), 1))
             .build();
         Future future = null;
         try {
@@ -153,20 +157,22 @@ public class OptimisticTransaction extends BaseTransaction {
             throw new RuntimeException(txnId + " future is null " + cacheToObject.getPartId() + ",preWritePrimaryKey false,PrimaryKey:" + primaryKey);
         }
         this.future = future;
-        return cacheToObject;
     }
 
     @Override
     public void resolveWriteConflict(JobManager jobManager, Location currentLocation, RuntimeException e) {
         rollback(jobManager);
-        CommonId retryJobId = CommonId.EMPTY_JOB;;
+        CommonId retryJobId = CommonId.EMPTY_JOB;
         int txnRetryLimit = transactionConfig.getTxn_retry_limit();
+        log.info("{} {} retry txnRetryLimit is {} txnAutoRetry is {}", txnId,
+            transactionOf(), txnRetryLimit, transactionConfig.isDisable_txn_auto_retry());
         RuntimeException conflictException = e;
         while (transactionConfig.isDisable_txn_auto_retry() && (txnRetryLimit-- > 0)) {
             try {
                 conflictException = null;
                 retryPrepare();
                 log.info("{} {} retry", txnId, transactionOf());
+                txnPreWritePrimaryKey(cacheToObject);
                 Job job = createRetryJob(jobManager);
                 retryJobId = job.getJobId();
                 retryRun(jobManager, job, currentLocation);

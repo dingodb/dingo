@@ -264,6 +264,9 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                     KeyValue value = keyValues.get(0);
                     byte[] oldKey = value.getKey();
                     log.info("{}, repeat key :{}", txnId, Arrays.toString(oldKey));
+                    if (oldKey[oldKey.length - 2] == Op.DELETE.getCode()) {
+                        return true;
+                    }
                     // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
                     byte[] extraKey = ByteUtils.encode(
                         CommonId.CommonType.TXN_CACHE_EXTRA_DATA,

@@ -40,14 +40,16 @@ public final class ReduceOperator extends SoleOutOperator {
     }
 
     @Override
-    public  void fin(int pin, Fin fin, Vertex vertex) {
-        ReduceParam param = vertex.getParam();
-        Edge edge = vertex.getSoleEdge();
-        for (Object[] t : param.getCache()) {
-            if (!edge.transformToNext(t)) {
-                break;
+    public void fin(int pin, Fin fin, Vertex vertex) {
+        synchronized (vertex) {
+            ReduceParam param = vertex.getParam();
+            Edge edge = vertex.getSoleEdge();
+            for (Object[] t : param.getCache()) {
+                if (!edge.transformToNext(t)) {
+                    break;
+                }
             }
+            edge.fin(fin);
         }
-        edge.fin(fin);
     }
 }

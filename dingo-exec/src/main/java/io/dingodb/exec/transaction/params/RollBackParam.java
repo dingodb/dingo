@@ -32,7 +32,7 @@ import java.util.List;
 
 @Getter
 @JsonTypeName("rollback")
-@JsonPropertyOrder({"txnType", "isolationLevel", "startTs", "schema"})
+@JsonPropertyOrder({"txnType", "isolationLevel", "startTs", "primaryKey", "schema"})
 public class RollBackParam extends AbstractParams {
 
     @JsonProperty("schema")
@@ -43,6 +43,8 @@ public class RollBackParam extends AbstractParams {
     private final int isolationLevel;
     @JsonProperty("txnType")
     private final TransactionType transactionType;
+    @JsonProperty("primaryKey")
+    private final byte[] primaryKey;
     private List<byte[]> keys;
     @Setter
     private CommonId tableId;
@@ -54,12 +56,14 @@ public class RollBackParam extends AbstractParams {
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("isolationLevel") int isolationLevel,
         @JsonProperty("startTs") long startTs,
-        @JsonProperty("txnType") TransactionType transactionType
+        @JsonProperty("txnType") TransactionType transactionType,
+        @JsonProperty("primaryKey") byte[] primaryKey
     ) {
         this.schema = schema;
         this.startTs = startTs;
         this.isolationLevel = isolationLevel;
         this.transactionType = transactionType;
+        this.primaryKey = primaryKey;
     }
 
     @Override

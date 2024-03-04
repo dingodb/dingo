@@ -386,7 +386,7 @@ public class TxnImportDataOperation {
             // 1、get commit_ts
             // 2、generator job、task、RollBackOperator
             // 3、run RollBack
-            RollBackParam param = new RollBackParam(dingoType, isolationLevel, startTs, TransactionType.OPTIMISTIC);
+            RollBackParam param = new RollBackParam(dingoType, isolationLevel, startTs, TransactionType.OPTIMISTIC, primaryKey);
             param.init(null);
             for (Object[] tuples : tupleList) {
                 TxnLocalData txnLocalData = (TxnLocalData) tuples[0];
