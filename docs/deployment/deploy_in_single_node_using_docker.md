@@ -57,11 +57,11 @@ docker pull dingodatabase/dingo:latest
 
 ```shell
 # Method one
-curl https://raw.githubusercontent.com/dingodb/dingo-store/main/docker/docker-compose.yml -o docker-compose.yml
+curl https://raw.githubusercontent.com/dingodb/dingo/dingo-v0.7.0/docker/docker-compose.yml -o docker-compose.yml
  
 # Method two
-git clone https://github.com/dingodb/dingo-store.git
-cd dingo-store/docker
+git clone -b dingo-v0.7.0 https://github.com/dingodb/dingo.git
+cd dingo/docker
 ```
 #### (2) Configuration file description
 The docker-compose file includes 3 coordinators, 3 stores, 3 indexes, 1 executor, and 1 web. You can modify the file to start only a subset of these nodes or add more nodes based on your actual needs.
