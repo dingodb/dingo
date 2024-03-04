@@ -68,7 +68,7 @@ public final class JobImpl implements Job {
     private CommonId rootTaskId = null;
 
     private final long maxExecutionTime;
-    private Boolean isSelect;
+    private final Boolean isSelect;
 
     @JsonCreator
     public JobImpl(@JsonProperty("jobId") CommonId jobId, @JsonProperty("jobId") CommonId txnId) {

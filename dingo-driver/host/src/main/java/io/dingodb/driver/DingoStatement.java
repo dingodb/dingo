@@ -21,9 +21,11 @@ import io.dingodb.calcite.operation.DmlOperation;
 import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.QueryOperation;
 import io.dingodb.common.mysql.constant.ServerStatus;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import lombok.Setter;
+import lombok.SneakyThrows;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -95,6 +97,7 @@ public class DingoStatement extends AvaticaStatement {
     }
 
     @NonNull
+    @SneakyThrows
     public Iterator<Object[]> createIterator(@NonNull JobManager jobManager) {
         Meta.Signature signature = getSignature();
         if (signature instanceof DingoExplainSignature) {
@@ -102,7 +105,9 @@ public class DingoStatement extends AvaticaStatement {
             return ImmutableList.of(new Object[]{explainSignature.toString()}).iterator();
         } else if (signature instanceof DingoSignature) {
             Job job = jobManager.getJob(((DingoSignature) signature).getJobId());
-            return jobManager.createIterator(job, null);
+            return jobManager.createIterator(
+                job, null, Optional.mapOrGet(connection.getClientInfo("max_execution_time"), Long::parseLong, () -> 0L)
+            );
         } else if (signature instanceof MysqlSignature) {
             Operation operation = ((MysqlSignature) signature).getOperation();
             if (operation instanceof QueryOperation) {

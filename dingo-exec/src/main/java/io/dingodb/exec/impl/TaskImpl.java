@@ -26,7 +26,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
-import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.OperatorFactory;
 import io.dingodb.exec.base.Operator;
@@ -53,11 +52,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.dingodb.exec.utils.OperatorCodeUtils.ROOT;
@@ -223,22 +218,7 @@ public final class TaskImpl implements Task {
             return;
         }
         // This method should not be blocked, so schedule a running thread.
-        if (maxExecutionTime == 0 || (isSelect == null || !isSelect)) {
-            Executors.execute("task-" + jobId + "-" + id, () -> internalRun(paras));
-        } else {
-            CompletableFuture<Void> future = Executors.submit("task-" + jobId + "-" + id, () -> internalRun(paras));
-            try {
-                future.get(maxExecutionTime, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-            } catch (TimeoutException e) {
-                throw new DingoSqlException(
-                    "query execution was interrupted, maximum statement execution time exceeded",
-                    3024,
-                    "HY000"
-                );
-            }
-        }
+        Executors.execute("task-" + jobId + "-" + id, () -> internalRun(paras));
     }
 
     // Synchronize to make sure there are only one thread run this.

@@ -33,7 +33,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 
 @Getter
 @JsonTypeName("root")
-@JsonPropertyOrder({"schema"})
+@JsonPropertyOrder({"schema", "takeTtl"})
 public class RootParam extends AbstractParams {
 
     public static final int TUPLE_QUEUE_SIZE = 512;
@@ -45,6 +45,8 @@ public class RootParam extends AbstractParams {
     @Setter
     private transient Fin errorFin;
     private transient BlockingQueue<Object[]> tupleQueue;
+    @Setter
+    private transient long takeTtl;
 
     public RootParam(DingoType schema, @Nullable TupleMapping selection) {
         this.schema = schema;
@@ -61,6 +63,10 @@ public class RootParam extends AbstractParams {
     }
 
     public Object[] forceTake() {
-        return QueueUtils.forceTake(tupleQueue);
+        if (takeTtl == 0) {
+            return QueueUtils.forceTake(tupleQueue);
+        } else {
+            return QueueUtils.forceTake(tupleQueue, takeTtl);
+        }
     }
 }

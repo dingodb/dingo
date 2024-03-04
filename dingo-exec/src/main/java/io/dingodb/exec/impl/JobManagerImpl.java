@@ -33,6 +33,7 @@ import io.dingodb.exec.impl.message.CreateTaskMessage;
 import io.dingodb.exec.impl.message.DestroyTaskMessage;
 import io.dingodb.exec.impl.message.RunTaskMessage;
 import io.dingodb.exec.impl.message.TaskMessage;
+import io.dingodb.exec.operator.params.RootParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.meta.MetaService;
@@ -114,6 +115,13 @@ public final class JobManagerImpl implements JobManager {
         run(job, paras);
         Task root = job.getRoot();
         return new JobIteratorImpl(job, root.getRoot());
+    }
+
+    @Override
+    public @NonNull Iterator<Object[]> createIterator(@NonNull Job job, Object @Nullable [] paras, long takeNextTimeout) {
+        RootParam param = job.getRoot().getRoot().getParam();
+        param.setTakeTtl(takeNextTimeout);
+        return createIterator(job, paras);
     }
 
     @Override
