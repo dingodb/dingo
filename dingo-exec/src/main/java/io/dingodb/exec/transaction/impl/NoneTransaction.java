@@ -47,7 +47,7 @@ public class NoneTransaction extends BaseTransaction {
     }
 
     @Override
-    public CacheToObject preWritePrimaryKey() {
+    public void preWritePrimaryKey() {
         throw new UnsupportedOperationException();
     }
 

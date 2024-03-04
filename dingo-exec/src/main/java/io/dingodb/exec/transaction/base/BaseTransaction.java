@@ -77,6 +77,7 @@ public abstract class BaseTransaction implements ITransaction {
     protected boolean autoCommit;
     protected TransactionConfig transactionConfig;
     protected Future commitFuture;
+    protected CacheToObject cacheToObject;
 
     protected CompletableFuture<Void> finishedFuture = new CompletableFuture<>();
 
@@ -156,7 +157,7 @@ public abstract class BaseTransaction implements ITransaction {
 
     public abstract void resolveWriteConflict(JobManager jobManager, Location currentLocation, RuntimeException e);
 
-    public abstract CacheToObject preWritePrimaryKey();
+    public abstract void preWritePrimaryKey();
 
     public abstract void rollBackResidualPessimisticLock(JobManager jobManager);
 
@@ -242,11 +243,10 @@ public abstract class BaseTransaction implements ITransaction {
         Location currentLocation = MetaService.root().currentLocation();
         AtomicReference<CommonId> jobId = new AtomicReference<>(CommonId.EMPTY_JOB);
         this.status = TransactionStatus.PRE_WRITE_START;
-        CacheToObject cacheToObject = null;
         try {
             log.info("{} {} Start PreWritePrimaryKey", txnId, transactionOf());
             // 1、PreWritePrimaryKey 、heartBeat
-            cacheToObject = preWritePrimaryKey();
+            preWritePrimaryKey();
             // 2、generator job、task、PreWriteOperator
             long jobSeqId = TransactionManager.nextTimestamp();
             job = jobManager.createJob(startTs, jobSeqId, txnId, null);
@@ -279,15 +279,18 @@ public abstract class BaseTransaction implements ITransaction {
                 rollback(jobManager);
                 throw e;
             } else {
+                rollback(jobManager);
                 throw e;
             }
         } catch (Exception e) {
             log.info(e.getMessage(), e);
             this.status = TransactionStatus.PRE_WRITE_FAIL;
+            rollback(jobManager);
             throw e;
         } catch (Throwable t) {
             log.info(t.getMessage(), t);
             this.status = TransactionStatus.PRE_WRITE_FAIL;
+            rollback(jobManager);
             throw new RuntimeException(t);
         } finally {
             log.info("{} {} PreWrite End Status:{}, Cost:{}ms", txnId, transactionOf(),

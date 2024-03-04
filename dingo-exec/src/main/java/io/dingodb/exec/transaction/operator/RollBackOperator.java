@@ -25,6 +25,7 @@ import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
@@ -68,6 +69,11 @@ public class RollBackOperator extends TransactionOperator {
             int op = txnLocalData.getOp().getCode();
             byte[] key = txnLocalData.getKey();
             long forUpdateTs = 0;
+            boolean isPessimistic = param.getTransactionType() == TransactionType.PESSIMISTIC;
+            // first key is primary key
+            if ((ByteArrayUtils.compare(key, param.getPrimaryKey(), 1) == 0) && isPessimistic) {
+                return true;
+            }
             if (tableId.type == CommonId.CommonType.INDEX) {
                 IndexTable indexTable = TransactionUtil.getIndexDefinitions(tableId);
                 if (indexTable.indexType.isVector) {
@@ -80,7 +86,7 @@ public class RollBackOperator extends TransactionOperator {
                     key = vectorCodec.encodeKeyPrefix(new Object[]{decodeKey[0]}, 1);
                 }
             }
-            if (param.getTransactionType() == TransactionType.PESSIMISTIC) {
+            if (isPessimistic) {
                 StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
                 byte[] txnIdByte = txnId.encode();
                 byte[] tableIdByte = tableId.encode();

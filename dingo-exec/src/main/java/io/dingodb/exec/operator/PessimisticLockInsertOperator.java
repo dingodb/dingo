@@ -37,6 +37,7 @@ import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
+import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -199,6 +200,11 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                     byte[] oldKey = value.getKey();
                     if (log.isDebugEnabled()) {
                         log.info("{}, repeat key :{}", txnId, Arrays.toString(oldKey));
+                    }
+                    if (oldKey[oldKey.length - 2] == Op.PUTIFABSENT.getCode()
+                        || oldKey[oldKey.length - 2] == Op.PUT.getCode()) {
+                        throw new DuplicateEntryException("Duplicate entry " +
+                            TransactionUtil.duplicateEntryKey(tableId, key) + " for key 'PRIMARY'");
                     }
                     // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
                     byte[] extraKey = ByteUtils.encode(

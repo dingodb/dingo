@@ -252,9 +252,9 @@ public class PessimisticTransaction extends BaseTransaction {
         }
     }
     @Override
-    public CacheToObject preWritePrimaryKey() {
+    public void preWritePrimaryKey() {
         // 1、get first key from cache
-        CacheToObject cacheToObject = primaryLockTo();
+        cacheToObject = primaryLockTo();
         primaryKey = cacheToObject.getMutation().getKey();
         // 2、call sdk preWritePrimaryKey
         TxnPreWrite txnPreWrite = TxnPreWrite.builder()
@@ -304,12 +304,63 @@ public class PessimisticTransaction extends BaseTransaction {
                     + primaryKey.toString());
             }
         }
-        return cacheToObject;
     }
 
     @Override
     public void resolveWriteConflict(JobManager jobManager, Location currentLocation, RuntimeException e) {
         rollback(jobManager);
         throw e;
+    }
+
+    @Override
+    public synchronized void rollback(JobManager jobManager) {
+        // PessimisticRollback
+        rollBackResidualPessimisticLock(jobManager);
+        if (getSqlList().size() == 0 || !cache.checkContinue()) {
+            log.warn("{} The current {} has no data to rollback",txnId, transactionOf());
+            return;
+        }
+        // first rollback primaryKey
+        rollbackPrimaryKeyLock();
+        long rollBackStart = System.currentTimeMillis();
+        log.info("{} {} RollBack Start", txnId, transactionOf());
+        Location currentLocation = MetaService.root().currentLocation();
+        CommonId jobId = CommonId.EMPTY_JOB;
+        try {
+            // 1、get commit_ts
+            long rollbackTs = TransactionManager.nextTimestamp();
+            // 2、generator job、task、RollBackOperator
+            job = jobManager.createJob(startTs, rollbackTs, txnId, null);
+            jobId = job.getJobId();
+            DingoTransactionRenderJob.renderRollBackJob(job, currentLocation, this, true);
+            // 3、run RollBack
+            Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+            this.status = TransactionStatus.ROLLBACK;
+        } catch (Throwable t) {
+            log.info(t.getMessage(), t);
+            this.status = TransactionStatus.ROLLBACK_FAIL;
+            throw new RuntimeException(t);
+        } finally {
+            log.info("{} {} RollBack End Status:{}, Cost:{}ms", txnId, transactionOf(),
+                status, (System.currentTimeMillis() - rollBackStart));
+            jobManager.removeJob(jobId);
+        }
+    }
+
+    private void rollbackPrimaryKeyLock() {
+        if (cacheToObject == null) {
+            cacheToObject = primaryLockTo();
+            primaryKey = cacheToObject.getMutation().getKey();
+            log.info("{} rollbackPrimaryKeyLock key:{}", txnId, Arrays.toString(primaryKey));
+        }
+        TransactionUtil.pessimisticPrimaryLockRollBack(
+            txnId,
+            cacheToObject.getTableId(),
+            cacheToObject.getPartId(),
+            isolationLevel,
+            startTs,
+            cacheToObject.getMutation().getForUpdateTs(),
+            primaryKey
+        );
     }
 }
