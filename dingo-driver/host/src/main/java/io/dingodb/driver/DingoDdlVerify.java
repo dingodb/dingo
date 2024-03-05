@@ -202,10 +202,7 @@ public class DingoDdlVerify {
             }
         } else if (sqlNode instanceof SqlLoadData) {
             SqlLoadData sqlLoadData = (SqlLoadData) sqlNode;
-            if (sqlLoadData.getSchemaName() == null) {
-                sqlLoadData.setSchemaName(connection.getContext().getDefaultSchemaName());
-            }
-            schemaTables = new String[] {sqlLoadData.getSchemaName(), sqlLoadData.getTableName()};
+            schemaTables = initSchemaTable(sqlLoadData.getTableId().names, connection);
             accessTypes.add(DingoSqlAccessEnum.INSERT);
         } else if (sqlNode instanceof SqlSetOption) {
             SqlSetOption setOption = (SqlSetOption) sqlNode;
@@ -213,7 +210,6 @@ public class DingoDdlVerify {
                 accessTypes.add(DingoSqlAccessEnum.SUPER);
             }
         } else if (sqlNode instanceof SqlShowProcessList) {
-            SqlShowProcessList showProcessList = (SqlShowProcessList) sqlNode;
             accessTypes.add(DingoSqlAccessEnum.PROCESS);
         }
 

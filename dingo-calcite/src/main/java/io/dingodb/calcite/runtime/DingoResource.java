@@ -96,7 +96,7 @@ public interface DingoResource {
 
     @BaseMessage("Transaction characteristics can't be changed while a transaction is in progress")
     ExInst<DingoSqlException> transChangeError();
-    @BaseMessage("Can not get stat of ''{0}'' (Errcode: '{1}' - ''{2}'')")
+    @BaseMessage("Can not get stat of ''{0}'' (Errcode: ''{1}'' - ''{2}'')")
     ExInst<DingoSqlException> accessError(String a0, int a1, String a2);
 
     @BaseMessage("Can not create/write to file ''{0}'' (Errcode: 13 - Permission denied)")

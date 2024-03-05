@@ -26,6 +26,7 @@ import io.dingodb.exec.operator.params.ExportDataParam;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -41,11 +42,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import static io.dingodb.common.mysql.constant.ServerConstant.ARRAY_SPLIT;
 import static io.dingodb.common.mysql.util.DataTimeUtils.getTime;
 import static io.dingodb.common.mysql.util.DataTimeUtils.getTimeStamp;
+import static io.dingodb.common.util.Utils.getByteIndexOf;
 
 @Slf4j
 public class ExportDataOperator extends SoleOutOperator {
     public static final ExportDataOperator INSTANCE = new ExportDataOperator();
-    private final String WRITE_FILE_ERROR = "Error 1 (HY000): Can't create/write to file '%s' "
+    private final String WRITE_FILE_ERROR = "Error 1 (HY000): Can not create/write to file '%s' "
         + "(Errcode: 13 - Permission denied)";
     private final String FILE_EXISTS = "Error 1086(HY000): File '%s' already exists";
     private final byte[] EMPTY_BYTES = "\\N".getBytes();
@@ -67,8 +69,6 @@ public class ExportDataOperator extends SoleOutOperator {
         byte[] lineTerminated = param.getLineTerminated();
         byte[] lineStarting = param.getLineStarting();
         String charset = param.getCharset();
-        List<Byte> escaped = new ArrayList<>();
-        escaped.addAll(Bytes.asList(param.getEscaped()));
 
         FileOutputStream writer = fileMap.get(param.getId());
         try {
@@ -126,11 +126,11 @@ public class ExportDataOperator extends SoleOutOperator {
                     writer.write("]".getBytes());
                 } else if (val instanceof String) {
                     byte[] bytes = val.toString().getBytes(charset);
-                    bytes = escaped(bytes, terminated, lineTerminated, escaped);
+                    bytes = combineEscaped(bytes, terminated, lineTerminated, lineStarting, param.getEscaped());
                     writer.write(bytes);
                 } else if (val instanceof LinkedHashMap) {
                     byte[] bytes = val.toString().getBytes(charset);
-                    bytes = escaped(bytes, terminated, lineTerminated, escaped);
+                    bytes = combineEscaped(bytes, terminated, lineTerminated, lineStarting,  param.getEscaped());
                     writer.write(bytes);
                 } else {
                     writer.write(val.toString().getBytes(charset));
@@ -165,29 +165,59 @@ public class ExportDataOperator extends SoleOutOperator {
         }
     }
 
-    private byte[] escaped(byte[] source, byte[] fieldTerm, byte[] lineTerm, List<Byte> escaped) {
-        List<Byte> bytes =  new ArrayList<>();
-        int len = source.length;
-        boolean term1 = fieldTerm.length == 1;
-        boolean term2 = fieldTerm.length == 2;
+    public static byte[] combineEscaped(byte[] source, byte[] fieldTerm, byte[] lineTerm,
+                                        byte[] lineStarting, byte[] escaped) {
+        if (fieldTerm != null) {
+            source = escaped(source, fieldTerm, escaped);
+        }
+        if (lineTerm != null) {
+            source = escaped(source, lineTerm, escaped);
+        }
+        if (lineStarting != null) {
+            source = escaped(source, lineStarting, escaped);
+        }
+        return source;
+    }
 
-        boolean lterm1 = lineTerm.length == 1;
-        boolean lterm2 = lineTerm.length == 2;
-
-        for (int i = 0; i < len; i ++) {
-            byte b = source[i];
-            if (term1 && b == fieldTerm[0]) {
-                bytes.addAll(escaped);
-            } else if (term2 && b == fieldTerm[1] && i >= 1 && source[i - 1] == fieldTerm[0]) {
-                bytes.addAll(escaped);
-            } else if (lterm1 && b == lineTerm[0]) {
-                bytes.addAll(escaped);
-            } else if (lterm2 && b == lineTerm[1] && i >= 1 && source[i - 1] == lineTerm[0]) {
-                bytes.addAll(escaped);
+    private static byte[] escaped(byte[] bytes, byte[] term, byte[] escaped) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        int len = bytes.length;
+        int breakPos = 0;
+        int searchPos = 0;
+        boolean isContinue = true;
+        try {
+            while (isContinue) {
+                searchPos = Math.max(searchPos, breakPos);
+                int id1 = getByteIndexOf(bytes, term, searchPos, len);
+                if (id1 >= 0) {
+                    byte[] tmpBytes = new byte[id1 - breakPos];
+                    System.arraycopy(bytes, breakPos, tmpBytes, 0, tmpBytes.length);
+                    outputStream.write(tmpBytes);
+                    outputStream.write(escaped);
+                    outputStream.write(term);
+                    int tmp1 = id1 + term.length;
+                    if (tmp1 == len) {
+                        isContinue = false;
+                        breakPos = tmp1;
+                    }
+                    if (tmp1 <= len - 1) {
+                        breakPos = tmp1;
+                    }
+                } else {
+                    isContinue = false;
+                }
             }
-            bytes.add(b);
+
+            byte[] preBytes;
+            if (breakPos <= len - 1) {
+                preBytes = new byte[len - breakPos];
+                System.arraycopy(bytes, breakPos, preBytes, 0, preBytes.length);
+                outputStream.write(preBytes);
+            }
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
         }
 
-        return Bytes.toArray(bytes);
+        return outputStream.toByteArray();
     }
 }

@@ -175,10 +175,13 @@ public class StatsNormal implements Cloneable {
         } else if (type instanceof DoubleType || type instanceof LongType) {
             baseSize = 8;
         }
-        if (baseSize > 0) {
+        if (baseSize > 0 && totalCount > 0) {
             avgColSize = baseSize * (1 - (numNull / totalCount));
         } else {
-            avgColSize = totalColSize / (totalCount - numNull);
+            long nonNumNull = totalCount - numNull;
+            if (nonNumNull > 0) {
+                avgColSize = totalColSize / nonNumNull;
+            }
         }
     }
 

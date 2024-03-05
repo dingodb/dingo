@@ -65,7 +65,7 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
     private final Map<String, Object> parameterMap;
     private final IndexTable indexTable;
 
-    private final RelOp relOp;
+    private RelOp relOp;
 
     private final TupleMapping resultSelection;
 
@@ -142,7 +142,7 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
                 builder.selection(selection.stream().boxed().collect(Collectors.toList()));
                 this.selection = resultSelection;
             }
-            relOp.compile(new DingoCompileContext(
+            relOp = relOp.compile(new DingoCompileContext(
                 (TupleType) tableDataSchema.getType(),
                 (TupleType) vertex.getParasType().getType()
             ), new DingoRelConfig());

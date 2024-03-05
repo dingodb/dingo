@@ -35,6 +35,8 @@ public class SqlLoadData extends SqlDdl {
     @Setter
     private String schemaName;
     private final String tableName;
+
+    private SqlIdentifier tableId;
     private final String filePath;
     private final byte[] terminated;
 
@@ -65,6 +67,7 @@ public class SqlLoadData extends SqlDdl {
                        String charset,
                        int ignoreNum) {
         super(OPERATOR, pos);
+        this.tableId = tableId;
         if (tableId.names.size() > 1) {
             this.schemaName = tableId.names.get(0);
             this.tableName = tableId.names.get(1);

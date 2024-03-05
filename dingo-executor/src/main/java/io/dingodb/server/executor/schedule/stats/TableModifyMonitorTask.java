@@ -58,7 +58,7 @@ public class TableModifyMonitorTask extends StatsOperator implements Runnable {
                 }
                 Double totalCount = subMetaService.getTableStatistic(t.name).getRowCount();
                 if (autoAnalyzeTriggerPolicy(key, t.name, commitCount)) {
-                    if (commitCount > totalCount) {
+                    if (totalCount > 0 && commitCount > totalCount) {
                         commitCount = totalCount.longValue();
                     }
                     analyzeTaskList.add(generateAnalyzeTask(key, t.name, totalCount.longValue(), commitCount));
