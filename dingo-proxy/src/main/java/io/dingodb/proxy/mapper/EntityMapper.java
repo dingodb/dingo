@@ -143,7 +143,7 @@ public interface EntityMapper {
         io.dingodb.expr.runtime.expr.Expr dingoExpr = expr.toDingoExpr(attrNames, attrSchemas, attrTypes);
         RelOp relOp = RelOpBuilder.builder().filter(dingoExpr).build();
         TupleType tupleType = Types.tuple(attrTypes.toArray(new Type[0]));
-        relOp.compile(new TupleCompileContextImpl(tupleType), RelConfig.DEFAULT);
+        relOp = relOp.compile(new TupleCompileContextImpl(tupleType), RelConfig.DEFAULT);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         if (RelOpCoder.INSTANCE.visit(relOp, outputStream) != CodingFlag.OK) {
             throw new RuntimeException("Expr coder visit error, expr: " + expr + ", after compile " + dingoExpr);

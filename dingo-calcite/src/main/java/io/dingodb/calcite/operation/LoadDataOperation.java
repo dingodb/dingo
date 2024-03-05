@@ -265,6 +265,7 @@ public class LoadDataOperation implements DmlOperation {
         int lineBreakPos = 0;
         int searchPos = 0;
         boolean isContinue = true;
+        int loopCount = 0;
         while (isContinue) {
             searchPos = Math.max(searchPos, lineBreakPos);
             int id1 = getByteIndexOf(bytes, linesTerm, searchPos, len);
@@ -280,13 +281,17 @@ public class LoadDataOperation implements DmlOperation {
                         isContinue = false;
                         lineBreakPos = tmp1;
                     }
-                    if (tmp1 < len - 1) {
+                    if (tmp1 <= len - 1) {
                         lineBreakPos = tmp1;
                     }
                 } else {
                     searchPos = id1 + 1;
                 }
             } else {
+                isContinue = false;
+            }
+            loopCount ++;
+            if (loopCount >= len) {
                 isContinue = false;
             }
         }

@@ -45,6 +45,8 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
+import io.dingodb.tso.TsoService;
+import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.LinkedList;
@@ -129,6 +131,18 @@ public final class DingoGetByIndexVisitFun {
                     needLookup = isNeedLookUp(rel.getSelection(), tupleMapping, td.columns.size());
                 }
                 long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
+                // Use current read
+                if (transaction != null && transaction.isPessimistic()
+                    && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.SnapshotIsolation
+                    && (visitor.getKind() == SqlKind.INSERT || visitor.getKind() == SqlKind.DELETE
+                    || visitor.getKind() == SqlKind.UPDATE) ) {
+                    scanTs = TsoService.getDefault().tso();
+                }
+                if (transaction != null && transaction.isPessimistic()
+                    && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.ReadCommitted
+                    && visitor.getKind() == SqlKind.SELECT) {
+                    scanTs = TsoService.getDefault().tso();
+                }
                 Vertex vertex;
                 if (transaction != null) {
                     vertex = new Vertex(TXN_GET_BY_INDEX, new TxnGetByIndexParam(

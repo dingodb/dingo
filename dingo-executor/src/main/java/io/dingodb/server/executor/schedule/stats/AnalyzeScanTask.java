@@ -20,9 +20,12 @@ import io.dingodb.calcite.stats.StatsOperator;
 import io.dingodb.calcite.stats.StatsTaskState;
 import io.dingodb.calcite.stats.task.AnalyzeTask;
 import io.dingodb.common.concurrent.LinkedRunner;
+import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.util.ByteArrayUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.NavigableMap;
 
 @Slf4j
 public class AnalyzeScanTask extends StatsOperator implements Runnable {
@@ -32,8 +35,13 @@ public class AnalyzeScanTask extends StatsOperator implements Runnable {
     public void run() {
         // query analyze task
         // add linkedRunner
-        List<Object[]> analyzeTaskList = scan(analyzeTaskStore, analyzeTaskCodec,
-            metaService.getRangeDistribution(analyzeTaskTblId).pollFirstEntry().getValue());
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges
+            = metaService.getRangeDistribution(analyzeTaskTblId);
+        RangeDistribution rangeDistribution = ranges.values().stream().findFirst().orElse(null);
+        if (rangeDistribution == null) {
+            return;
+        }
+        List<Object[]> analyzeTaskList = scan(analyzeTaskStore, analyzeTaskCodec, rangeDistribution);
 
         analyzeTaskList.forEach(v -> {
             String state = (String) v[6];
