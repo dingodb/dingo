@@ -28,6 +28,7 @@ import io.dingodb.exec.tuple.TupleKey;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -68,7 +69,8 @@ public class HashJoinOperator extends SoleOutOperator {
             }
         } else if (pin == 1) { //right
             TupleKey rightKey = new TupleKey(rightMapping.revMap(tuple));
-            List<TupleWithJoinFlag> list = param.getHashMap().computeIfAbsent(rightKey, k -> new LinkedList<>());
+            List<TupleWithJoinFlag> list = param.getHashMap()
+                .computeIfAbsent(rightKey, k -> Collections.synchronizedList(new LinkedList<>()));
             list.add(new TupleWithJoinFlag(tuple));
         }
         return true;

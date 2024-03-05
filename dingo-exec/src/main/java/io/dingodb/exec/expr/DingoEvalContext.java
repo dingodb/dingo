@@ -23,7 +23,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 public class DingoEvalContext implements TupleEvalContext {
     private static final long serialVersionUID = -5336801318047905367L;
 
-    private final ThreadLocal<Object[]> tuple = new ThreadLocal<>();
+    private transient final ThreadLocal<Object[]> tuple = new ThreadLocal<>();
 
     @Setter
     private Object[] paras = null;
