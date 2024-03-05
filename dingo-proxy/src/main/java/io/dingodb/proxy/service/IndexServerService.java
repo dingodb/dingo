@@ -78,6 +78,35 @@ public class IndexServerService extends IndexServiceGrpc.IndexServiceImplBase {
     }
 
     @Override
+    public void vectorUpsert(
+        ProxyIndex.VectorAddRequest req,
+        StreamObserver<ProxyIndex.VectorAddResponse> resObserver
+    ) {
+        ProxyError.Error.Builder error = ProxyError.Error.newBuilder();
+        ProxyIndex.VectorAddResponse.Builder builder = ProxyIndex.VectorAddResponse.newBuilder();
+        try {
+            List<VectorWithId> reqVectors = req.getVectorsList()
+                .stream()
+                .map(Conversion::mapping)
+                .collect(Collectors.toList());
+            List<VectorWithId> resVectors = vectorClient.vectorUpsert(
+                req.getSchemaName(),
+                req.getIndexName(),
+                reqVectors
+            );
+            builder.addAllVectors(resVectors.stream().map(Conversion::mapping).collect(Collectors.toList()));
+            error.setErrcode(ProxyError.Errno.OK);
+        } catch (Exception e) {
+            List<VectorWithId> result = new ArrayList<>();
+            req.getVectorsList().forEach(v -> result.add(null));
+            builder.addAllVectors(result.stream().map(Conversion::mapping).collect(Collectors.toList()));
+            error.setErrcode(ProxyError.Errno.EINTERNAL).setErrmsg(e.getMessage());
+        }
+        resObserver.onNext(builder.setError(error.build()).build());
+        resObserver.onCompleted();
+    }
+
+    @Override
     public void vectorGet(ProxyIndex.VectorGetRequest req, StreamObserver<ProxyIndex.VectorGetResponse> resObserver) {
         ProxyIndex.VectorGetResponse.Builder builder = ProxyIndex.VectorGetResponse.newBuilder();
         ProxyError.Error.Builder error = ProxyError.Error.newBuilder();

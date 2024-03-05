@@ -253,7 +253,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     byte[] oldDataKey = ByteUtils.encode(
                         CommonId.CommonType.TXN_CACHE_DATA,
                         oldKey,
-                        Op.PUTIFABSENT.getCode(),
+                        Op.PUT.getCode(),
                         (txnIdBytes.length + tableIdBytes.length + partIdBytes.length),
                         txnIdBytes,
                         tableIdBytes,

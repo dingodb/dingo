@@ -36,27 +36,31 @@ public final class CoalesceOperator extends SoleOutOperator {
 
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        if (log.isDebugEnabled()) {
-            log.debug("Got tuple from pin {}.", context.getPin());
+        synchronized (vertex) {
+            if (log.isDebugEnabled()) {
+                log.debug("Got tuple from pin {}.", context.getPin());
+            }
+            return vertex.getSoleEdge().transformToNext(context, tuple);
         }
-        return vertex.getSoleEdge().transformToNext(context, tuple);
     }
 
     @Override
     public void fin(int pin, Fin fin, Vertex vertex) {
-        CoalesceParam param = vertex.getParam();
-        if (log.isDebugEnabled()) {
-            log.debug("Got FIN from pin {}.", pin);
-        }
-        Edge edge = vertex.getSoleEdge();
-        if (fin instanceof FinWithException) {
-            edge.fin(fin);
-            return;
-        }
-        setFin(pin, fin, param);
-        if (isAllFin(param)) {
-            edge.fin(new FinWithProfiles(param.getProfiles()));
-            param.clear();
+        synchronized (vertex) {
+            CoalesceParam param = vertex.getParam();
+            if (log.isDebugEnabled()) {
+                log.debug("Got FIN from pin {}.", pin);
+            }
+            Edge edge = vertex.getSoleEdge();
+            if (fin instanceof FinWithException) {
+                edge.fin(fin);
+                return;
+            }
+            setFin(pin, fin, param);
+            if (isAllFin(param)) {
+                edge.fin(new FinWithProfiles(param.getProfiles()));
+                param.clear();
+            }
         }
     }
 
