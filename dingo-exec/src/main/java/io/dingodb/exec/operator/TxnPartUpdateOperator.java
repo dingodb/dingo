@@ -249,23 +249,25 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     // begin insert update commit
                     byte[] oldKey = wrap(codec::encodeKey).apply(copyTuple);
                     CodecService.getDefault().setId(oldKey, context.getDistribution().getId().domain);
-                    localStore = Services.LOCAL_STORE.getInstance(tableId, context.getDistribution().getId());
-                    byte[] oldDataKey = ByteUtils.encode(
-                        CommonId.CommonType.TXN_CACHE_DATA,
-                        oldKey,
-                        Op.PUT.getCode(),
-                        (txnIdBytes.length + tableIdBytes.length + partIdBytes.length),
-                        txnIdBytes,
-                        tableIdBytes,
-                        context.getDistribution().getId().encode());
-                    localStore.delete(oldDataKey);
-                    byte[] updateKey = Arrays.copyOf(oldDataKey, oldDataKey.length);
-                    updateKey[updateKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
-                    localStore.delete(updateKey);
-                    byte[] deleteKey = Arrays.copyOf(oldDataKey, oldDataKey.length);
-                    deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
-                    localStore.put(new KeyValue(deleteKey, wrap(codec::encode).apply(copyTuple).getValue()));
-                    localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
+                    if (!ByteArrayUtils.equal(keyValue.getKey(), oldKey)) {
+                        localStore = Services.LOCAL_STORE.getInstance(tableId, context.getDistribution().getId());
+                        byte[] oldDataKey = ByteUtils.encode(
+                            CommonId.CommonType.TXN_CACHE_DATA,
+                            oldKey,
+                            Op.PUT.getCode(),
+                            (txnIdBytes.length + tableIdBytes.length + partIdBytes.length),
+                            txnIdBytes,
+                            tableIdBytes,
+                            context.getDistribution().getId().encode());
+                        localStore.delete(oldDataKey);
+                        byte[] updateKey = Arrays.copyOf(oldDataKey, oldDataKey.length);
+                        updateKey[updateKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
+                        localStore.delete(updateKey);
+                        byte[] deleteKey = Arrays.copyOf(oldDataKey, oldDataKey.length);
+                        deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
+                        localStore.put(new KeyValue(deleteKey, wrap(codec::encode).apply(copyTuple).getValue()));
+                        localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
+                    }
                 }
                 keyValue.setKey(
                     ByteUtils.encode(

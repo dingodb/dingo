@@ -206,6 +206,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                             && columnDefinition.getElementType().equals("FLOAT"))) {
                         throw new RuntimeException("Invalid column type: " + columnName);
                     }
+                    if (columnDefinition.isNullable()) {
+                        throw new RuntimeException("Column must be not null, column name: " + columnName);
+                    }
                     primary = -1;
                 }
 
@@ -215,7 +218,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     .elementType(columnDefinition.getElementType())
                     .precision(columnDefinition.getPrecision())
                     .scale(columnDefinition.getScale())
-                    .nullable(columnDefinition.isNullable())
+                    .nullable(i == 1 || columnDefinition.isNullable())
                     .primary(primary)
                     .build();
                 indexColumnDefinitions.add(indexColumnDefinition);

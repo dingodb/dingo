@@ -38,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -84,10 +84,13 @@ public class TransactionCacheToMutation {
             if (column1.getElementTypeName().equalsIgnoreCase("FLOAT")) {
                 List<Float> values = (List<Float>) record[colNames.indexOf(column1.getName())];
                 vector = Vector.builder().dimension(values.size()).floatValues(values).valueType(Vector.ValueType.FLOAT).build();
+                record[colNames.indexOf(column1.getName())] = Collections.emptyList();
             } else {
                 List<byte[]> values = (List<byte[]>) record[colNames.indexOf(column1.getName())];
                 vector = Vector.builder().dimension(values.size()).binaryValues(values).valueType(Vector.ValueType.UINT8).build();
+                record[colNames.indexOf(column1.getName())] = Collections.emptyList();
             }
+            value = keyValueCodec.encode(record).getValue();
             VectorTableData vectorTableData = new VectorTableData(key, value);
             vectorWithId = VectorWithId.builder()
                 .id(longId)
