@@ -284,6 +284,8 @@ public final class MysqlInit {
         values.add(new Object[]{"txn_inert_check", "off"});
         values.add(new Object[]{"txn_retry", "off"});
         values.add(new Object[]{"txn_retry_cnt", "0"});
+        values.add(new Object[]{"enable_safe_point_update", "1"});
+        values.add(new Object[]{"txn_history_duration", String.valueOf(60 * 60 * 24 * 7)});
         return values;
     }
 
