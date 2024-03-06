@@ -32,6 +32,7 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.net.Channel;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
+import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
@@ -247,6 +248,10 @@ public abstract class BaseTransaction implements ITransaction {
             log.info("{} {} Start PreWritePrimaryKey", txnId, transactionOf());
             // 1、PreWritePrimaryKey 、heartBeat
             preWritePrimaryKey();
+            if (cacheToObject.getMutation().getOp() == Op.CheckNotExists) {
+                log.info("{} {} PreWritePrimaryKey Op is CheckNotExists", txnId, transactionOf());
+                return;
+            }
             // 2、generator job、task、PreWriteOperator
             long jobSeqId = TransactionManager.nextTimestamp();
             job = jobManager.createJob(startTs, jobSeqId, txnId, null);

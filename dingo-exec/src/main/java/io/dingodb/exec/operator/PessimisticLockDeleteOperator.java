@@ -210,6 +210,7 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
                     KeyValue value = keyValues.get(0);
                     byte[] oldKey = value.getKey();
                     log.info("{}, repeat key :{}", txnId, Arrays.toString(oldKey));
+                    localStore.delete(oldKey);
                     // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
                     byte[] extraKey = ByteUtils.encode(
                         CommonId.CommonType.TXN_CACHE_EXTRA_DATA,

@@ -84,9 +84,30 @@ public final class PreWriteOperator extends TransactionOperator {
                     throw new RuntimeException(txnId + " lock keyValue is null ");
                 }
                 forUpdateTs = ByteUtils.decodePessimisticLockValue(keyValue);
+            } else {
+                byte[] checkBytes = ByteUtils.encode(
+                    CommonId.CommonType.TXN_CACHE_CHECK_DATA,
+                    key,
+                    Op.CheckNotExists.getCode(),
+                    len,
+                    txnIdByte, tableIdByte, partIdByte);
+                KeyValue keyValue = store.get(checkBytes);
+                if (keyValue != null && keyValue.getValue() != null) {
+                    switch (Op.forNumber(op)) {
+                        case PUT:
+                            op = Op.PUTIFABSENT.getCode();
+                            break;
+                        case DELETE:
+                            op = Op.CheckNotExists.getCode();
+                            break;
+                        default:
+                            break;
+                    }
+                }
             }
             // cache to mutations
             Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, forUpdateTs, tableId, newPartId);
+            log.info("{} mutation: {}", txnId, mutation);
             CommonId partId = param.getPartId();
             if (partId == null) {
                 partId = newPartId;
