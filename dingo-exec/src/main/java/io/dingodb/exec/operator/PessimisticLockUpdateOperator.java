@@ -23,6 +23,7 @@ import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
@@ -162,7 +163,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
             if (oldKeyValue == null) {
                 if (calcPartId) {
                     resolveKeyChange(vertex, param, txnId, tableId, context.getDistribution().getId(), primaryLockKey,
-                        codec, oldIndexTuple, txnIdByte, tableIdByte, jobIdByte, len, isVector);
+                        codec, oldIndexTuple, txnIdByte, tableIdByte, jobIdByte, len, isVector, key);
                 }
                 // for check deadLock
                 byte[] deadLockKeyBytes = encode(
@@ -323,9 +324,12 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
     private void resolveKeyChange(Vertex vertex, PessimisticLockUpdateParam param, CommonId txnId,
                                   CommonId tableId, CommonId partId, byte[] primaryLockKey,
                                   KeyValueCodec codec, Object[] newTuple, byte[] txnIdByte,
-                                  byte[] tableIdByte, byte[] jobIdByte, int len, boolean isVector) {
+                                  byte[] tableIdByte, byte[] jobIdByte, int len, boolean isVector, byte[] key) {
         byte[] oldKey = wrap(codec::encodeKey).apply(newTuple);
         CodecService.getDefault().setId(oldKey, partId.domain);
+        if (ByteArrayUtils.equal(key, oldKey)) {
+            return;
+        }
         byte[] vectorKey;
         if (isVector) {
             vectorKey = codec.encodeKeyPrefix(newTuple, 1);
