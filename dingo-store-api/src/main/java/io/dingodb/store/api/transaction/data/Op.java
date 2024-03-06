@@ -17,7 +17,7 @@
 package io.dingodb.store.api.transaction.data;
 
 public enum Op {
-    NONE(0), PUT(1), DELETE(2), PUTIFABSENT(3), ROLLBACK(4), LOCK(5);
+    NONE(0), PUT(1), DELETE(2), PUTIFABSENT(3), ROLLBACK(4), LOCK(5), CheckNotExists(6);
     private final int code;
 
     Op(int code) {
@@ -55,6 +55,7 @@ public enum Op {
             case 3: return PUTIFABSENT;
             case 4: return ROLLBACK;
             case 5: return LOCK;
+            case 6: return CheckNotExists;
             default: return null;
         }
     }

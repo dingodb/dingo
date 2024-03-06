@@ -25,6 +25,7 @@ import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.api.transaction.data.Op;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -85,7 +86,7 @@ public class TransactionCache {
         // call StoreService
         CacheToObject primaryKey = null;
         Iterator<KeyValue> iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_DATA, txnId));
-        if (iterator.hasNext()) {
+        while (iterator.hasNext()) {
             KeyValue keyValue = iterator.next();
             Object[] tuple = ByteUtils.decode(keyValue);
             TxnLocalData txnLocalData = (TxnLocalData) tuple[0];
@@ -96,6 +97,29 @@ public class TransactionCache {
             int op = txnLocalData.getOp().getCode();
             byte[] key = txnLocalData.getKey();
             byte[] value = txnLocalData.getValue();
+            byte[] txnIdByte = txnId.encode();
+            byte[] tableIdByte = tableId.encode();
+            byte[] partIdByte = newPartId.encode();
+            int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
+            byte[] checkBytes = ByteUtils.encode(
+                CommonId.CommonType.TXN_CACHE_CHECK_DATA,
+                key,
+                Op.CheckNotExists.getCode(),
+                len,
+                txnIdByte, tableIdByte, partIdByte);
+            keyValue = cache.get(checkBytes);
+            if (keyValue != null && keyValue.getValue() != null) {
+                switch (Op.forNumber(op)) {
+                    case PUT:
+                        op = Op.PUTIFABSENT.getCode();
+                        break;
+                    case DELETE:
+                        op = Op.CheckNotExists.getCode();
+                        break;
+                    default:
+                        break;
+                }
+            }
             primaryKey = new CacheToObject(TransactionCacheToMutation.cacheToMutation(
                 op,
                 key,
@@ -105,7 +129,11 @@ public class TransactionCache {
                 newPartId), tableId, newPartId
             );
             log.info("txnId:{} primary key is {}" , txnId, primaryKey);
-        } else {
+            if (op != Op.CheckNotExists.getCode()) {
+                break;
+            }
+        }
+        if (primaryKey == null) {
             throw new RuntimeException(txnId + ",PrimaryKey is null");
         }
         return primaryKey;

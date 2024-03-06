@@ -49,7 +49,9 @@ public class CleanCacheOperator extends TransactionOperator {
             StoreInstance store = Services.LOCAL_STORE.getInstance(null, null);
             KeyValue keyValue = (KeyValue) tuple[0];
             if (param.getTransactionType() == TransactionType.OPTIMISTIC) {
-                store.deletePrefix(keyValue.getKey());
+                byte[] key = keyValue.getKey();
+                store.deletePrefix(key);
+                store.deletePrefix(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, key));
             } else {
                 byte[] lockKey = keyValue.getKey();
                 long forUpdateTs = ByteUtils.decodePessimisticLockValue(keyValue);

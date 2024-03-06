@@ -146,6 +146,12 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     if (localStore.get(rollBackKey) != null) {
                         localStore.deletePrefix(rollBackKey);
                     }
+                    byte[] deleteKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_DATA, Op.DELETE, dataKey);
+                    if (localStore.get(deleteKey) != null) {
+                        // delete  ->  insert  convert --> put
+                        dataKey[dataKey.length - 2] = (byte) Op.PUT.getCode();
+                        localStore.deletePrefix(deleteKey);
+                    }
                     // first put primary lock
                     keyValue.setKey(dataKey);
                     if ( localStore.put(keyValue)
@@ -160,18 +166,46 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 }
             }
         } else {
-            keyValue.setKey(
-                ByteUtils.encode(
-                    CommonId.CommonType.TXN_CACHE_DATA,
-                    keyValue.getKey(),
-                    Op.PUTIFABSENT.getCode(),
-                    (txnIdByte.length + tableIdByte.length + partIdByte.length),
-                    txnIdByte,
-                    tableIdByte,
-                    partIdByte)
-            );
-            byte[] deleteKey = Arrays.copyOf(keyValue.getKey(), keyValue.getKey().length);
+            byte[] insertKey = ByteUtils.encode(
+                CommonId.CommonType.TXN_CACHE_DATA,
+                keyValue.getKey(),
+                Op.PUTIFABSENT.getCode(),
+                (txnIdByte.length + tableIdByte.length + partIdByte.length),
+                txnIdByte,
+                tableIdByte,
+                partIdByte);
+            byte[] deleteKey = Arrays.copyOf(insertKey, insertKey.length);
             deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
+            byte[] updateKey = Arrays.copyOf(insertKey, insertKey.length);
+            updateKey[updateKey.length - 2] = (byte) Op.PUT.getCode();
+            List<byte[]> bytes = new ArrayList<>(3);
+            bytes.add(insertKey);
+            bytes.add(deleteKey);
+            bytes.add(updateKey);
+            List<KeyValue> keyValues = localStore.get(bytes);
+            if (keyValues != null && keyValues.size() > 0) {
+                if (keyValues.size() > 1) {
+                    throw new RuntimeException(txnId + " Key is not existed than two in local store");
+                }
+                KeyValue value = keyValues.get(0);
+                byte[] oldKey = value.getKey();
+                if (oldKey[oldKey.length - 2] == Op.PUTIFABSENT.getCode()
+                    || oldKey[oldKey.length - 2] == Op.PUT.getCode()) {
+                    throw new DuplicateEntryException("Duplicate entry " +
+                        TransactionUtil.duplicateEntryKey(tableId, key) + " for key 'PRIMARY'");
+                } else {
+                    // delete  ->  insert  convert --> put
+                    insertKey[updateKey.length - 2] = (byte) Op.PUT.getCode();
+                }
+            } else {
+                keyValue.setKey(
+                    ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, insertKey)
+                );
+                localStore.put(keyValue);
+            }
+            keyValue.setKey(
+                insertKey
+            );
             localStore.delete(deleteKey);
             if (localStore.put(keyValue) && context.getIndexId() == null) {
                 param.inc();

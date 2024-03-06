@@ -177,6 +177,8 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 if (!(ByteArrayUtils.compare(key, primaryLockKeyBytes, 1) == 0)) {
                     // This key appears for the first time in the current transaction
                     if (oldKeyValue == null) {
+                        localStore.delete(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_DATA, Op.PUT, dataKey));
+                        localStore.delete(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_DATA, Op.PUTIFABSENT, dataKey));
                         if (calcPartId) {
                             KeyValue keyValue = wrap(codec::encode).apply(newTuple2);
                             CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
@@ -214,6 +216,8 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     // primary lock not existed ：
                     // 1、first put primary lock
                     if (oldKeyValue == null) {
+                        localStore.delete(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_DATA, Op.PUT, dataKey));
+                        localStore.delete(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_DATA, Op.PUTIFABSENT, dataKey));
                         // first put primary lock
                         KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
                         if (kvKeyValue == null || kvKeyValue.getValue() == null) {
