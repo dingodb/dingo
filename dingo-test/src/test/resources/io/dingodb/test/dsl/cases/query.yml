@@ -7,7 +7,7 @@ tables:
     create: { file: tables/i4k_vs0_i40_f80.create.sql }
     init: { file: tables/i4k_vs0_i40_f80.data.sql, count: 3 }
 cases:
-  - name: 'no primary key'
+  - name: 'No primary key'
     use:
       table: table0
     steps:
@@ -16,7 +16,7 @@ cases:
           - 'username, role'
           - 'STRING, STRING'
           - 'nacos, ROLE_ADMIN'
-  - name: 'function `pow(INT, INT)`'
+  - name: 'POW(INT, INT)'
     use:
       table: table1
     steps:

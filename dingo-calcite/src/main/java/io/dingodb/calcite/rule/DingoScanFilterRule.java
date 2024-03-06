@@ -18,6 +18,7 @@ package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.visitor.RexConverter;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.logical.LogicalFilter;
@@ -35,6 +36,11 @@ public class DingoScanFilterRule extends RelRule<DingoScanFilterRule.Config> imp
     public void onMatch(@NonNull RelOptRuleCall call) {
         final LogicalFilter filter = call.rel(0);
         final LogicalDingoTableScan scan = call.rel(1);
+        try {
+            RexConverter.convert(filter.getCondition());
+        } catch (RexConverter.UnsupportedRexNode e) {
+            return;
+        }
         call.transformTo(
             new LogicalDingoTableScan(
                 scan.getCluster(),

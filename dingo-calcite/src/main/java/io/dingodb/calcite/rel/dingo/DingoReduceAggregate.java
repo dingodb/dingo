@@ -19,13 +19,12 @@ package io.dingodb.calcite.rel.dingo;
 import io.dingodb.calcite.rel.DingoRel;
 import io.dingodb.calcite.rel.logical.LogicalReduceAggregate;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
+import io.dingodb.expr.rel.RelOp;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
@@ -39,11 +38,10 @@ public final class DingoReduceAggregate extends LogicalReduceAggregate implement
         RelTraitSet traits,
         List<RelHint> hints,
         RelNode input,
-        ImmutableBitSet groupSet,
-        List<AggregateCall> aggregateCallList,
+        RelOp relOp,
         RelDataType originalInputType
     ) {
-        super(cluster, traits, hints, input, groupSet, aggregateCallList, originalInputType);
+        super(cluster, traits, hints, input, relOp, originalInputType);
     }
 
     @Override
@@ -53,8 +51,7 @@ public final class DingoReduceAggregate extends LogicalReduceAggregate implement
             traitSet,
             getHints(),
             sole(inputs),
-            groupSet,
-            aggregateCallList,
+            relOp,
             originalInputType
         );
     }

@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.rule.logical;
 
+import com.google.common.collect.ImmutableSet;
 import io.dingodb.calcite.rel.logical.LogicalReduceAggregate;
 import io.dingodb.calcite.rel.logical.LogicalRelOp;
 import io.dingodb.exec.expr.DingoCompileContext;
@@ -34,11 +35,22 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
 import java.util.List;
+import java.util.Set;
 
 import static io.dingodb.common.util.Utils.sole;
 
 @Value.Enclosing
 public class LogicalSplitAggregateRule extends RelRule<LogicalSplitAggregateRule.Config> implements SubstitutionRule {
+    // TODO: GROUPING is not supported, maybe it is useful.
+    private static final Set<SqlKind> supportedAggregations = ImmutableSet.of(
+        SqlKind.COUNT,
+        SqlKind.SUM,
+        SqlKind.SUM0,
+        SqlKind.MAX,
+        SqlKind.MIN,
+        SqlKind.SINGLE_VALUE
+    );
+
     protected LogicalSplitAggregateRule(Config config) {
         super(config);
     }
@@ -47,8 +59,7 @@ public class LogicalSplitAggregateRule extends RelRule<LogicalSplitAggregateRule
         return rel.getAggCallList().stream().noneMatch(agg -> {
             SqlKind kind = agg.getAggregation().getKind();
             // AVG must be transformed to SUM/COUNT before.
-            // TODO: GROUPING is not supported, maybe it is useful.
-            if (kind == SqlKind.AVG || kind == SqlKind.GROUPING) {
+            if (!supportedAggregations.contains(kind)) {
                 return true;
             }
             // After apply `CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES`, the sql: `select count(distinct a) from t`
@@ -72,12 +83,15 @@ public class LogicalSplitAggregateRule extends RelRule<LogicalSplitAggregateRule
             case COUNT:
                 return Exprs.op(Exprs.COUNT_AGG, var);
             case SUM:
-            case SUM0:
                 return Exprs.op(Exprs.SUM_AGG, var);
+            case SUM0:
+                return Exprs.op(Exprs.SUM0_AGG, var);
             case MAX:
                 return Exprs.op(Exprs.MAX_AGG, var);
             case MIN:
                 return Exprs.op(Exprs.MIN_AGG, var);
+            case SINGLE_VALUE:
+                return Exprs.op(Exprs.SINGLE_VALUE_AGG, var);
             default:
                 break;
         }
@@ -126,8 +140,7 @@ public class LogicalSplitAggregateRule extends RelRule<LogicalSplitAggregateRule
                 aggregate.getTraitSet(),
                 aggregate.getHints(),
                 rel,
-                aggregate.getGroupSet(),
-                aggregate.getAggCallList(),
+                relOp,
                 aggregate.getInput().getRowType()
             )
         );

@@ -94,6 +94,7 @@ public final class OperatorCodeUtils {
     public static final CommonId TXN_GET_BY_INDEX = new CommonId(CommonId.CommonType.OP, OP, 69);
     public static final CommonId PESSIMISTIC_LOCK = new CommonId(CommonId.CommonType.OP, OP, 70);
     public static final CommonId PESSIMISTIC_RESIDUAL_LOCK = new CommonId(CommonId.CommonType.OP, OP, 71);
+    public static final CommonId REDUCE_REL_OP = new CommonId(CommonId.CommonType.OP, OP, 72);
 
     // sink
     public static final CommonId ROOT = new CommonId(CommonId.CommonType.OP, SINK, 80);

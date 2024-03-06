@@ -51,8 +51,7 @@ public class DingoReduceAggregateRule extends ConverterRule {
             traits,
             reduce.getHints(),
             convert(reduce.getInput(), traits),
-            reduce.getGroupSet(),
-            reduce.getAggregateCallList(),
+            reduce.getRelOp(),
             reduce.getOriginalInputType()
         );
     }

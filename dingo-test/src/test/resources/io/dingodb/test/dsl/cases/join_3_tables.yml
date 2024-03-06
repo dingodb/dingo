@@ -21,7 +21,7 @@ tables:
     create: { file: tables/i8_2_vs_3_vs0_i4k.create.sql }
     init: { file: tables/i8_2_vs_3_vs0_i4k.data.sql }
 cases:
-  - name: Join 3 tables with sub queries
+  - name: 'Join 3 tables with sub queries'
     use:
       table0: students
       table1: courses
@@ -29,7 +29,7 @@ cases:
     steps:
       - file: sql/join_3_tables.sql
         result: csv/join_3_tables.csv
-  - name: Join 3 tables
+  - name: 'Join 3 tables'
     use:
       table0: students
       table1: classes
@@ -37,7 +37,7 @@ cases:
     steps:
       - file: sql/join_3_tables_1.sql
         result: csv/join_3_tables_1.csv
-  - name: Join 3 tables filtered by IN with list size >= 19
+  - name: 'Join 3 tables filtered by IN with list size >= 19'
     use:
       table0: permission
       table1: resource

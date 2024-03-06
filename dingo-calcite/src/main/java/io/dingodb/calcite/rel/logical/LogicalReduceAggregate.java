@@ -17,16 +17,15 @@
 package io.dingodb.calcite.rel.logical;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.expr.rel.RelOp;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
-import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
@@ -38,9 +37,7 @@ public class LogicalReduceAggregate extends SingleRel {
     @Getter
     protected final ImmutableList<RelHint> hints;
     @Getter
-    protected final ImmutableBitSet groupSet;
-    @Getter
-    protected final List<AggregateCall> aggregateCallList;
+    protected final RelOp relOp;
     @Getter
     protected final RelDataType originalInputType;
 
@@ -49,15 +46,13 @@ public class LogicalReduceAggregate extends SingleRel {
         RelTraitSet traits,
         List<RelHint> hints,
         RelNode input,
-        ImmutableBitSet groupSet,
-        List<AggregateCall> aggregateCallList,
+        RelOp relOp,
         RelDataType originalInputType
     ) {
         super(cluster, traits, input);
         this.hints = ImmutableList.copyOf(hints);
         this.input = input;
-        this.groupSet = groupSet;
-        this.aggregateCallList = aggregateCallList;
+        this.relOp = relOp;
         this.originalInputType = originalInputType;
     }
 
@@ -68,8 +63,7 @@ public class LogicalReduceAggregate extends SingleRel {
             traitSet,
             hints,
             sole(inputs),
-            groupSet,
-            aggregateCallList,
+            relOp,
             originalInputType
         );
     }
@@ -77,8 +71,7 @@ public class LogicalReduceAggregate extends SingleRel {
     @Override
     public @NonNull RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
-        pw.item("groupSet", groupSet);
-        pw.item("aggregateCallList", aggregateCallList);
+        pw.item("relOp", relOp);
         pw.item("originalInputType", originalInputType);
         return pw;
     }
