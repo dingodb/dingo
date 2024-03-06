@@ -684,7 +684,7 @@ public class TransactionStoreInstance {
             fetch();
         }
 
-        private void fetch() {
+        private synchronized void fetch() {
             if (!hasMore) {
                 return;
             }
@@ -732,9 +732,9 @@ public class TransactionStoreInstance {
                 keyValues = Optional.ofNullable(txnScanResponse.getKvs()).map(List::iterator).orElseGet(Collections::emptyIterator);
                 hasMore = txnScanResponse.isHasMore();
                 if (hasMore) {
+                    withStart = false;
                     current = new StoreInstance.Range(txnScanResponse.getEndKey(), range.end, withStart, range.withEnd);
                 }
-                withStart = false;
                 break;
             }
         }
