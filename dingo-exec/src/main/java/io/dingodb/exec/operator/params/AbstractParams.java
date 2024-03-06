@@ -64,6 +64,7 @@ import lombok.Setter;
     @JsonSubTypes.Type(PartUpdateParam.class),
     @JsonSubTypes.Type(ProjectParam.class),
     @JsonSubTypes.Type(ReceiveParam.class),
+    @JsonSubTypes.Type(ReduceRelOpParam.class),
     @JsonSubTypes.Type(ReduceParam.class),
     @JsonSubTypes.Type(RootParam.class),
     @JsonSubTypes.Type(RelOpParam.class),

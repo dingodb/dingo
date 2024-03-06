@@ -6,8 +6,11 @@ tables:
   table1:
     create: { file: tables/i4k_vs0_i40.create.sql }
     init: { file: tables/i4k_vs0_i40.data.sql, count: 6 }
+  table2:
+    create: { file: tables/i4k_vs0_i40_f80.create.sql }
+    init: { file: tables/i4k_vs0_i40_f80.data.1.sql, count: 9 }
 cases:
-  - name: 'query table 1 filter by not in table 2'
+  - name: 'Query table 1 filtered by not in table 2'
     use:
       table0: table0
       table1: table1
@@ -18,7 +21,7 @@ cases:
           - 'INT, STRING, INT'
           - '5, Zhang Fei, 1000'
           - '6, Panda, 400'
-  - name: 'query table 1 filter by in table 2'
+  - name: 'Query table 1 filtered by in table 2'
     use:
       table0: table0
       table1: table1
@@ -31,3 +34,14 @@ cases:
           - '2, Han Han, 800'
           - '3, Xiao Ming, 50'
           - '4, DuanYU, 300'
+  - name: 'Query table filtered by single value in table'
+    use:
+      table: table2
+    steps:
+      - sql: 'select * from {table} where amount>(select amount from {table} where name=''Emily'')'
+        result:
+          - "ID, NAME, AGE, AMOUNT"
+          - "INTEGER, VARCHAR, INTEGER, DOUBLE"
+          - "6, Alice, 32, 6.1"
+          - "7, Betty, 18, 6.9"
+          - "8, Alice, 22, 7.3"

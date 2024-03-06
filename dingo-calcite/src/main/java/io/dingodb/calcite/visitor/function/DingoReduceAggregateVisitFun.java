@@ -26,17 +26,17 @@ import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.params.ReduceParam;
+import io.dingodb.exec.operator.params.ReduceRelOpParam;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
 import static io.dingodb.common.util.Utils.sole;
-import static io.dingodb.exec.utils.OperatorCodeUtils.REDUCE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.REDUCE_REL_OP;
 
-public final class DingoAggregateReduceVisitFun {
-    private DingoAggregateReduceVisitFun() {
+public final class DingoReduceAggregateVisitFun {
+    private DingoReduceAggregateVisitFun() {
     }
 
     public static @NonNull Collection<Vertex> visit(
@@ -47,12 +47,11 @@ public final class DingoAggregateReduceVisitFun {
         @NonNull DingoReduceAggregate rel
     ) {
         Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
-        ReduceParam param = new ReduceParam(AggFactory.getAggKeys(rel.getGroupSet()),
-            AggFactory.getAggList(rel.getAggregateCallList(),
-                DefinitionMapper.mapToDingoType(rel.getOriginalInputType())
-            )
+        ReduceRelOpParam param = new ReduceRelOpParam(
+            rel.getRelOp(),
+            DefinitionMapper.mapToDingoType(rel.getOriginalInputType())
         );
-        Vertex vertex = new Vertex(REDUCE, param);
+        Vertex vertex = new Vertex(REDUCE_REL_OP, param);
         Vertex input = sole(inputs);
         Task task = input.getTask();
         vertex.setId(idGenerator.getOperatorId(task.getId()));

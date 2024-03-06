@@ -57,19 +57,21 @@ import java.util.stream.IntStream;
 public class ScanWithRelOpParam extends ScanParam {
     @JsonProperty("outSchema")
     private final DingoType outputSchema;
+    @JsonProperty("pushDown")
+    private final boolean pushDown;
+
+    @Getter
+    private final transient DingoRelConfig config;
+
     @Getter
     @JsonProperty("rel")
     @JsonSerialize(using = RelOpSerializer.class)
     @JsonDeserialize(using = RelOpDeserializer.class)
     private RelOp relOp;
-    @JsonProperty("pushDown")
-    private final boolean pushDown;
 
     @Getter
-    private final DingoRelConfig config;
-    @Getter
     @Setter
-    private CoprocessorV2 coprocessor;
+    private transient CoprocessorV2 coprocessor;
 
     public ScanWithRelOpParam(
         CommonId tableId,
