@@ -1,0 +1,37 @@
+---
+tables:
+  table0:
+    create: { file: tables/i4k_vs_f80.create.sql }
+  table1:
+    create: { file: tables/i4k_vs_f80.auto.create.sql }
+cases:
+  - name: 'Insert casted values'
+    use:
+      table: table0
+    modify:
+      - table0
+    steps:
+      - sql: 'insert into {table} values (1, 100, 1.0), (2, 200, 2.0)'
+        count: 2
+      - sql: 'select * from {table}'
+        result:
+          - 'id, name, amount'
+          - 'INT, STRING, DOUBLE'
+          - '1, 100, 1.0'
+          - '2, 200, 2.0'
+  - name: 'Insert into auto table the same values'
+    use:
+      table: table1
+    modify:
+      - table1
+    steps:
+      - sql: 'insert into {table}(name, amount) values (100, 1.0), (100, 1.0), (100, 1.0)'
+        count: 3
+      - sql: 'select * from {table}'
+        dump: true
+        result:
+          - 'id, name, amount'
+          - 'INT, STRING, DOUBLE'
+          - '1, 100, 1.0'
+          - '2, 100, 1.0'
+          - '3, 100, 1.0'

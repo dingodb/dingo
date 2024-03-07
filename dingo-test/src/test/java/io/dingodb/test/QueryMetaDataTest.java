@@ -44,7 +44,7 @@ public class QueryMetaDataTest {
         ConnectionFactory.initLocalEnvironment();
         context = new SqlExecContext(ConnectionFactory.getConnection());
         context.addTableMapping("table", "test");
-        context.execSql(file("dsl/i4k_vs_f80/create.sql"));
+        context.execSql(file("dsl/cases/tables/i4k_vs_f80.create.sql"));
         context.addTableMapping("table", "test1");
         context.execSql(file("dsl/i4k_vsk_lk_vs_f80/create.sql"));
     }

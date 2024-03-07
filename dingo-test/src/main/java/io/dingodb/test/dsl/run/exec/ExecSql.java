@@ -38,6 +38,10 @@ public class ExecSql implements Exec {
         CheckContext checkContext = execContext.execSql(sqlString);
         if (check != null) {
             check.check(checkContext);
+        } else {
+            if (checkContext.getException() != null) {
+                throw new SQLException(checkContext.getException());
+            }
         }
     }
 }

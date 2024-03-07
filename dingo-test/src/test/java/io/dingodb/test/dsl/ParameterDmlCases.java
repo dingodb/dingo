@@ -33,7 +33,7 @@ public class ParameterDmlCases extends SqlTestCaseJavaBuilder {
 
     @Override
     protected void build() {
-        table("i4k_vs_f80", file("i4k_vs_f80/create.sql"));
+        table("i4k_vs_f80", file("cases/tables/i4k_vs_f80.create.sql"));
 
         test("Insert")
             .use("table", "i4k_vs_f80")
@@ -116,7 +116,7 @@ public class ParameterDmlCases extends SqlTestCaseJavaBuilder {
         test("delete")
             .use("table", "i4k_vs_f80")
             .modify("i4k_vs_f80")
-            .step(file("i4k_vs_f80/data.sql"))
+            .step(file("cases/tables/i4k_vs_f80.data.sql"))
             .custom(context -> {
                 String sql = "delete from {table} where name = ?";
                 try (PreparedStatement statement = context.getConnection().prepareStatement(context.transSql(sql))) {

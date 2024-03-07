@@ -2,7 +2,7 @@
 tables:
   table0:
     create: { file: tables/i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0.create.sql }
-    init: { file: tables/i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0_more.data.sql, count: 31 }
+    init: { file: tables/i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0.data.1.sql, count: 31 }
   table1:
     create: { file: tables/i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0.create.sql }
     init: { file: tables/i4k_vs0_i40_f80_vs0_dt0_tm0_ts0_l0.data.sql, count: 21 }

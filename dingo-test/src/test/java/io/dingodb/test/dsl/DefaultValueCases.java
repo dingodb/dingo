@@ -33,7 +33,7 @@ public class DefaultValueCases extends SqlTestCaseJavaBuilder {
 
     @Override
     protected void build() {
-        table("i4k_vs_f80", file("i4k_vs_f80/create.sql"));
+        table("i4k_vs_f80", file("cases/tables/i4k_vs_f80.create.sql"));
 
         table("i4k_vs_f80_def", file("i4k_vs_f80/create_with_default.sql"));
 

@@ -50,6 +50,7 @@ public class DingoValuesUnionRule extends RelRule<DingoValuesUnionRule.Config> i
             union.getRowType(),
             tuples
         );
+        // TODO: bug if there are duplicate inputs.
         List<RelNode> otherInputs = union.getInputs().stream()
             .filter(n -> !((RelSubset) n).getRelList().contains(value0)
                 && !((RelSubset) n).getRelList().contains(value1))

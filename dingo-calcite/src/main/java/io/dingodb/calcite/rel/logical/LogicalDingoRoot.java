@@ -28,7 +28,7 @@ import java.util.List;
 
 public class LogicalDingoRoot extends SingleRel {
     @Getter
-    private final TupleMapping selection;
+    protected final TupleMapping selection;
 
     public LogicalDingoRoot(RelOptCluster cluster, RelTraitSet traits, RelNode input, TupleMapping selection) {
         super(cluster, traits, input);

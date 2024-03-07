@@ -49,8 +49,8 @@ public class ParameterQueryCases extends SqlTestCaseJavaBuilder {
                 }
             });
 
-        table("i4k_vs_f80", file("i4k_vs_f80/create.sql"))
-            .init(file("i4k_vs_f80/data.sql"), 9);
+        table("i4k_vs_f80", file("cases/tables/i4k_vs_f80.create.sql"))
+            .init(file("cases/tables/i4k_vs_f80.data.sql"), 9);
 
         test("Select filtered")
             .use("table", "i4k_vs_f80")
