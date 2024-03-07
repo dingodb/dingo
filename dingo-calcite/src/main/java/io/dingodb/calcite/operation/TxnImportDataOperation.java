@@ -413,14 +413,31 @@ public class TxnImportDataOperation {
                 CommonId tableId = txnLocalData.getTableId();
                 CommonId newPartId = txnLocalData.getPartId();
                 byte[] key = txnLocalData.getKey();
+                long forUpdateTs = 0;
+
+                if (tableId.type == CommonId.CommonType.INDEX) {
+                    IndexTable indexTable = TransactionUtil.getIndexDefinitions(tableId);
+                    if (indexTable.indexType.isVector) {
+                        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
+                        Object[] decodeKey = codec.decodeKeyPrefix(key);
+                        TupleMapping mapping = TupleMapping.of(new int[]{0});
+                        DingoType dingoType = new LongType(false);
+                        TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
+                        KeyValueCodec vectorCodec = CodecService.getDefault().createKeyValueCodec(tupleType, mapping);
+                        key = vectorCodec.encodeKeyPrefix(new Object[]{decodeKey[0]}, 1);
+                    }
+                }
+
                 CommonId partId = param.getPartId();
                 if (partId == null) {
                     partId = newPartId;
                     param.setPartId(partId);
                     param.addKey(key);
                     param.setTableId(tableId);
+                    param.addForUpdateTs(forUpdateTs);
                 } else if (partId.equals(newPartId)) {
                     param.addKey(key);
+                    param.addForUpdateTs(forUpdateTs);
                     if (param.getKeys().size() == TransactionUtil.max_pre_write_count) {
                         boolean result = txnRollBack(param, txnId, tableId, partId);
                         if (!result) {
@@ -430,7 +447,7 @@ public class TxnImportDataOperation {
                         param.setPartId(null);
                     }
                 } else {
-                    boolean result = txnRollBack(param, txnId, tableId, partId);
+                    boolean result = txnRollBack(param, txnId, param.getTableId(), partId);
                     if (!result) {
                         throw new RuntimeException(txnId + " " + partId + ",txnBatchRollback false");
                     }
@@ -438,6 +455,7 @@ public class TxnImportDataOperation {
                     param.addKey(key);
                     param.setPartId(newPartId);
                     param.setTableId(tableId);
+                    param.addForUpdateTs(forUpdateTs);
                 }
             }
             if (param.getKeys().size() > 0) {
