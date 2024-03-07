@@ -184,9 +184,9 @@ public class TransactionStoreInstance {
         }
         StringJoiner joiner = new StringJoiner("-");
         try {
-            mapping.stream().forEach(index -> {
-                joiner.add(keyValues[index].toString());
-            });
+            mapping.stream().forEach(index ->
+                joiner.add(keyValues[index] == null ? "null" : keyValues[index].toString())
+            );
         } catch (Exception e) {
             throw new RuntimeException("Error joining primary key", e);
         }

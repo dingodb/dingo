@@ -49,6 +49,7 @@ import io.dingodb.tso.TsoService;
 import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -95,8 +96,13 @@ public final class DingoGetByIndexVisitFun {
 
             KeyValueCodec codec =
                 CodecService.getDefault().createKeyValueCodec(indexTd.tupleType(), indexTd.keyMapping());
+            List<ByteArrayUtils.ComparableByteArray> keyList = new ArrayList<>();
             for (Object[] keyTuple : keyTuples) {
                 byte[] keys = codec.encodeKeyPrefix(keyTuple, calculatePrefixCount(keyTuple));
+                if (keyList.contains(new ByteArrayUtils.ComparableByteArray(keys))) {
+                    continue;
+                }
+                keyList.add(new ByteArrayUtils.ComparableByteArray(keys));
                 Vertex distributionVertex = new Vertex(CALC_DISTRIBUTION, new DistributionSourceParam(
                     indexTd,
                     indexRanges,
