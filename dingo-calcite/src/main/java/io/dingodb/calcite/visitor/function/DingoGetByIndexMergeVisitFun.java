@@ -29,6 +29,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
@@ -96,8 +97,13 @@ public final class DingoGetByIndexMergeVisitFun {
             List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(indexValSet.getValue(), indexTd);
             KeyValueCodec codec =
                 CodecService.getDefault().createKeyValueCodec(indexTd.tupleType(), indexTd.keyMapping());
+            List<ByteArrayUtils.ComparableByteArray> keyList = new ArrayList<>();
             for (Object[] keyTuple : keyTuples) {
                 byte[] keys = codec.encodeKeyPrefix(keyTuple, calculatePrefixCount(keyTuple));
+                if (keyList.contains(new ByteArrayUtils.ComparableByteArray(keys))) {
+                    continue;
+                }
+                keyList.add(new ByteArrayUtils.ComparableByteArray(keys));
                 Vertex distributionVertex = new Vertex(CALC_DISTRIBUTION, new DistributionSourceParam(
                     indexTd,
                     indexRanges,
