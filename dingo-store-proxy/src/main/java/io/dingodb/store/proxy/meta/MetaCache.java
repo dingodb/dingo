@@ -25,6 +25,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.service.MetaService;
@@ -38,6 +39,7 @@ import io.dingodb.sdk.service.entity.meta.GetSchemaByNameRequest;
 import io.dingodb.sdk.service.entity.meta.GetSchemasRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableRangeRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableRequest;
+import io.dingodb.sdk.service.entity.meta.GetTableResponse;
 import io.dingodb.sdk.service.entity.meta.GetTablesRequest;
 import io.dingodb.sdk.service.entity.meta.MetaEvent;
 import io.dingodb.sdk.service.entity.meta.MetaEventIndex;
@@ -219,17 +221,6 @@ public class MetaCache {
             .collect(Collectors.toMap(Table::getName, Function.identity()));
     }
 
-    private LoadingCache<CommonId, Table> buildTableIdCache() {
-        return CacheBuilder.newBuilder()
-            .expireAfterAccess(60, TimeUnit.MINUTES).expireAfterWrite(60, TimeUnit.MINUTES)
-            .build(new CacheLoader<CommonId, Table>() {
-                @Override
-                public Table load(CommonId tableId) throws Exception {
-                    return loadTable(tableId);
-                }
-            });
-    }
-
     private LoadingCache<CommonId, NavigableMap<ComparableByteArray, RangeDistribution>> buildDistributionCache() {
         return CacheBuilder.newBuilder()
             .expireAfterAccess(10, TimeUnit.MINUTES).expireAfterWrite(10, TimeUnit.MINUTES)
@@ -242,12 +233,15 @@ public class MetaCache {
     }
 
     private Table loadTable(CommonId tableId) {
-        TableDefinitionWithId tableWithId = metaService.getTable(
+        return Optional.ofNullable(metaService.getTable(
             tso(), GetTableRequest.builder().tableId(MAPPER.idTo(tableId)).build()
-        ).getTableDefinitionWithId();
-        Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
-        table.indexes.forEach($ -> tableIdCache.put($.getTableId(), $));
-        return table;
+        )).map(GetTableResponse::getTableDefinitionWithId)
+            .ifAbsent(() -> log.warn("Table {} not found.", tableId))
+            .map(tableWithId -> {
+                Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
+                table.indexes.forEach($ -> tableIdCache.put($.getTableId(), $));
+                return table;
+            }).orNull();
     }
 
     private List<TableDefinitionWithId> getIndexes(TableDefinitionWithId tableWithId, DingoCommonId tableId) {

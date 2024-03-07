@@ -24,6 +24,7 @@ import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.VectorPointDistanceParam;
+import io.dingodb.tool.api.ToolService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -73,7 +74,7 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
             .algorithmType(param.getAlgType())
             .metricType(param.getMetricType())
             .build();
-        List<Float> floatArray = param.getToolService().vectorCalcDistance(
+        List<Float> floatArray = ToolService.getDefault().vectorCalcDistance(
             param.getIndexTableId(),
             param.getRangeDistribution().getId(),
             vectorCalcDistance).get(0);
