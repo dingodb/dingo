@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.tool.api.ToolService;
 import lombok.Getter;
 
 import java.util.LinkedList;
@@ -47,9 +46,7 @@ public class VectorPointDistanceParam extends AbstractParams {
 
     private final CommonId indexTableId;
 
-    ToolService toolService;
-
-    List<Object[]> cache;
+    private final List<Object[]> cache;
 
     private final TupleMapping selection;
 
@@ -71,7 +68,6 @@ public class VectorPointDistanceParam extends AbstractParams {
         this.metricType = metricType;
         this.indexTableId = indexTableId;
         cache = new LinkedList<>();
-        toolService = ToolService.getDefault();
         this.selection = selection;
     }
 
