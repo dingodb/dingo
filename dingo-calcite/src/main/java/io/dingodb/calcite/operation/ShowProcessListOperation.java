@@ -59,7 +59,7 @@ public class ShowProcessListOperation implements QueryOperation {
             processInfo.getClient(),
             processInfo.getDb(),
             processInfo.getCommand(), processInfo.getTime(), processInfo.getState(), processInfo.getInfo(),
-            processInfo.getType()
+            processInfo.getType(), processInfo.getTxnIdStr()
         }).collect(Collectors.toList());
         return tupleList.iterator();
     }
@@ -75,6 +75,7 @@ public class ShowProcessListOperation implements QueryOperation {
         columns.add("State");
         columns.add("Info");
         columns.add("Type");
+        columns.add("TXN");
         return columns;
     }
 }

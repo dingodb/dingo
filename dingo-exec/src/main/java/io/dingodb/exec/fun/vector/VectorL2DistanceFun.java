@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.fun.vector;
 
+import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
 import io.dingodb.expr.runtime.op.OpKey;
@@ -36,6 +37,11 @@ public class VectorL2DistanceFun extends BinaryVectorVectorFun {
     }
 
     public static double l2DistanceCombine(@NonNull List<Float> vectorA, List<Number> vectorB) {
+        if (vectorA.size() != vectorB.size()) {
+            throw new DingoSqlException(
+                "The dimensions of the source vector and the target vector must be consistent",5001, "45000"
+            );
+        }
         double distance = 0.0;
         for (int i = 0; i < vectorA.size(); i++) {
             distance += Math.pow(vectorA.get(i) - vectorB.get(i).floatValue(), 2);

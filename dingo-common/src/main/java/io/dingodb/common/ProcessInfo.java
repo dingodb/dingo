@@ -30,4 +30,5 @@ public class ProcessInfo {
     private String state;
     private String info;
     private String client;
+    private String txnIdStr;
 }

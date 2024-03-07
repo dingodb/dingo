@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.fun.vector;
 
+import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
 import io.dingodb.expr.runtime.op.OpKey;
@@ -75,8 +76,13 @@ public class VectorCosineDistanceFun extends BinaryVectorVectorFun {
     }
 
     public static float cosine(List<Float> value0, @NonNull Object value1) {
-        List<Float> vectorA = transform(value0);
         List tmp = (List) value1;
+        if (value0.size() != tmp.size()) {
+            throw new DingoSqlException(
+                "The dimensions of the source vector and the target vector must be consistent",5001, "45000"
+            );
+        }
+        List<Float> vectorA = transform(value0);
         List<Float> vectorB;
         if (tmp.size() > 0 && tmp.get(0) instanceof Float) {
             vectorB = transform((List<Float>) value1);
@@ -85,7 +91,6 @@ public class VectorCosineDistanceFun extends BinaryVectorVectorFun {
         }
         double distance = innerProduct(vectorA, vectorB);
         BigDecimal distanceAccurate = new BigDecimal(distance);
-        distanceAccurate = distanceAccurate.setScale(2, RoundingMode.HALF_UP);
         return distanceAccurate.floatValue();
     }
 

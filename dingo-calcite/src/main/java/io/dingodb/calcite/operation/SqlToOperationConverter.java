@@ -168,7 +168,8 @@ public final class SqlToOperationConverter {
             return Optional.of(new StartTransactionOperation(connection, pessimistic));
         } else if (sqlNode instanceof SqlLockTable) {
             SqlLockTable sqlLockTable = (SqlLockTable) sqlNode;
-            return Optional.of(new LockTableOperation(connection, sqlLockTable.tableList));
+            String usedSchemaName = getSchemaName(context);
+            return Optional.of(new LockTableOperation(connection, sqlLockTable.tableList, usedSchemaName));
         } else if (sqlNode instanceof SqlLockBlock) {
             SqlLockBlock sqlLockBlock = (SqlLockBlock) sqlNode;
             return Optional.of(new LockBlockOperation(connection, sqlLockBlock.getSqlBlockList()));
