@@ -71,7 +71,7 @@ public class RollBackOperator extends TransactionOperator {
             long forUpdateTs = 0;
             boolean isPessimistic = param.getTransactionType() == TransactionType.PESSIMISTIC;
             // first key is primary key
-            if ((ByteArrayUtils.compare(key, param.getPrimaryKey(), 1) == 0) && isPessimistic) {
+            if (isPessimistic && (ByteArrayUtils.compare(key, param.getPrimaryKey(), 1) == 0)) {
                 return true;
             }
             if (tableId.type == CommonId.CommonType.INDEX) {
