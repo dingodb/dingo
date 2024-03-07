@@ -27,7 +27,7 @@ import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-public class DingoSort extends Sort implements DingoRel {
+public final class DingoSort extends Sort implements DingoRel {
     public DingoSort(
         RelOptCluster cluster,
         RelTraitSet traits,

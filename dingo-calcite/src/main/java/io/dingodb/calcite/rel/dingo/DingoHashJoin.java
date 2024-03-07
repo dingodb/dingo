@@ -31,7 +31,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.List;
 import java.util.Set;
 
-public class DingoHashJoin extends Join implements DingoRel {
+public final class DingoHashJoin extends Join implements DingoRel {
     public DingoHashJoin(
         RelOptCluster cluster,
         RelTraitSet traitSet,
@@ -46,7 +46,7 @@ public class DingoHashJoin extends Join implements DingoRel {
     }
 
     @Override
-    public Join copy(
+    public @NonNull Join copy(
         RelTraitSet traitSet,
         RexNode conditionExpr,
         RelNode left,

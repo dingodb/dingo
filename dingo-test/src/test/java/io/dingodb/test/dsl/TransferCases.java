@@ -25,8 +25,8 @@ public class TransferCases extends SqlTestCaseJavaBuilder {
 
     @Override
     protected void build() {
-        table("i4k_vs_f80", file("i4k_vs_f80/create.sql"))
-            .init(file("i4k_vs_f80/data.sql"));
+        table("i4k_vs_f80", file("cases/tables/i4k_vs_f80.create.sql"))
+            .init(file("cases/tables/i4k_vs_f80.data.sql"));
 
         table("i4k_vsk_lk_vs_f80", file("i4k_vsk_lk_vs_f80/create.sql"));
 

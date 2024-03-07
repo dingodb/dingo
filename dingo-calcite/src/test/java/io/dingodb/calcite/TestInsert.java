@@ -17,13 +17,14 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
-import io.dingodb.calcite.rel.dingo.DingoRoot;
-import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
 import io.dingodb.calcite.rel.DingoTableModify;
+import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
-import io.dingodb.calcite.rel.logical.LogicalDingoRoot;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.rel.dingo.DingoRoot;
 import io.dingodb.calcite.rel.dingo.DingoScanWithRelOp;
+import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
+import io.dingodb.calcite.rel.logical.LogicalDingoRoot;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.expr.runtime.exception.CastingException;
 import io.dingodb.test.asserts.Assert;
@@ -50,7 +51,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.sql.Date;
 import java.util.List;
 import java.util.Properties;
 
@@ -126,17 +126,12 @@ public class TestInsert {
             .soleInput().isA(LogicalUnion.class)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
-        DingoValues values = (DingoValues) Assert.relNode(optimized)
+        Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.INSERT)
             .soleInput().isA(DingoStreamingConverter.class)
-            .soleInput().isA(DingoValues.class)
-            .getInstance();
-        assertThat(values.getTuples()).hasSize(2).containsExactlyInAnyOrder(
-            new Object[]{1, "Alice", 1.0},
-            new Object[]{2, "Betty", 2.0}
-        );
+            .soleInput().isA(DingoUnion.class);
     }
 
     @Test
@@ -150,17 +145,12 @@ public class TestInsert {
             .soleInput().isA(LogicalUnion.class)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
-        DingoValues values = (DingoValues) Assert.relNode(optimized)
+        Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.INSERT)
             .soleInput().isA(DingoStreamingConverter.class)
-            .soleInput().isA(DingoValues.class)
-            .getInstance();
-        assertThat(values.getTuples()).hasSize(2).containsExactlyInAnyOrder(
-            new Object[]{1, "Peso", new Date(0L)},
-            new Object[]{2, "Alice", new Date(24L * 60L * 60L * 1000L)}
-        );
+            .soleInput().isA(DingoUnion.class);
     }
 
     @Test

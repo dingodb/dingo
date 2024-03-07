@@ -36,7 +36,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.List;
 import java.util.Set;
 
-public class DingoStreamingConverter extends SingleRel implements DingoRel {
+public final class DingoStreamingConverter extends SingleRel implements DingoRel {
     public DingoStreamingConverter(
         RelOptCluster cluster,
         RelTraitSet traits,

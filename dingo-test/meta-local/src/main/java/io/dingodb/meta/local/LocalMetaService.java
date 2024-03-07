@@ -46,6 +46,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.CommonId.CommonType.DISTRIBUTION;
@@ -64,12 +65,9 @@ public class LocalMetaService implements MetaService {
     private static final AtomicInteger metaServiceSeq = new AtomicInteger(1);
     private static final AtomicInteger tableSeq = new AtomicInteger(1);
     private static final AtomicInteger distributionSeq = new AtomicInteger(1);
+    private static final AtomicLong autoIncrementId = new AtomicLong(1);
     private static Location location;
-
     private static NavigableMap<ComparableByteArray, RangeDistribution> defaultDistributions;
-
-    private static long autoIncrementId = 1;
-
     private final CommonId id;
     private final String name;
 
@@ -141,13 +139,13 @@ public class LocalMetaService implements MetaService {
     @Override
     public void createTables(@NonNull TableDefinition tableDefinition,
                              @NonNull List<TableDefinition> indexTableDefinitions) {
-        CommonId tableId = new CommonId(TABLE , id.seq, tableSeq.incrementAndGet());
+        CommonId tableId = new CommonId(TABLE, id.seq, tableSeq.incrementAndGet());
         tableDefinitions.put(tableId, tableDefinition);
         if (tableDefinition.getPartDefinition() != null) {
             KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
             PartitionDetailDefinition start = null;
             for (PartitionDetailDefinition detail : tableDefinition.getPartDefinition().getDetails()) {
-                if (detail.getOperand().length == 0){
+                if (detail.getOperand().length == 0) {
                     continue;
                 }
                 createDistribution(tableId, start, detail, codec);
@@ -342,14 +340,6 @@ public class LocalMetaService implements MetaService {
         defaultDistributions = distributions;
     }
 
-    @AutoService(MetaServiceProvider.class)
-    public static class Provider implements MetaServiceProvider {
-        @Override
-        public io.dingodb.meta.MetaService root() {
-            return ROOT;
-        }
-    }
-
     @Override
     public TableStatistic getTableStatistic(@NonNull String tableName) {
         return () -> 30000d;
@@ -362,7 +352,7 @@ public class LocalMetaService implements MetaService {
 
     @Override
     public Long getAutoIncrement(CommonId tableId) {
-        return autoIncrementId++;
+        return autoIncrementId.getAndIncrement();
     }
 
     @Override
@@ -375,4 +365,11 @@ public class LocalMetaService implements MetaService {
 
     }
 
+    @AutoService(MetaServiceProvider.class)
+    public static class Provider implements MetaServiceProvider {
+        @Override
+        public io.dingodb.meta.MetaService root() {
+            return ROOT;
+        }
+    }
 }

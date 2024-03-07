@@ -1,4 +1,4 @@
-insert into departments(department_id, department_name, manager_id, location_id) values
+insert into {table} (department_id, department_name, manager_id, location_id) values
 (10, 'Adm', 200, 1700),
 (20, 'Mar', 201, 1800),
 (30, 'Pur', 114, 1700),

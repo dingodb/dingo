@@ -36,7 +36,7 @@ public class QueryPlanTest {
     public static void setupAll() throws Exception {
         ConnectionFactory.initLocalEnvironment();
         context = new SqlExecContext(ConnectionFactory.getConnection());
-        context.execSql(file("dsl/i4k_vs_f80/create.sql"));
+        context.execSql(file("dsl/cases/tables/i4k_vs_f80.create.sql"));
     }
 
     @AfterAll

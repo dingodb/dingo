@@ -37,11 +37,11 @@ public final class StressDmlCases extends SqlTestCaseJavaBuilder {
 
     @Override
     protected void build() {
-        table("i4k_vs_f80", file("i4k_vs_f80/create.sql"));
+        table("i4k_vs_f80", file("cases/tables/i4k_vs_f80.create.sql"));
 
         table(
             "i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0",
-            file("cases/tables/i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0_partitions.create.sql")
+            file("cases/tables/i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0.partitions.create.sql")
         );
 
         test("Insert")

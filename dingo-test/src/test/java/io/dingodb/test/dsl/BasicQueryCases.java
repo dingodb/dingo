@@ -27,13 +27,13 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
 
     @Override
     public void build() {
-        table("i4k_vs_f80", file("i4k_vs_f80/create.sql"))
-            .init(file("i4k_vs_f80/data.sql"), 9);
+        table("i4k_vs_f80", file("cases/tables/i4k_vs_f80.create.sql"))
+            .init(file("cases/tables/i4k_vs_f80.data.sql"), 9);
 
-        table("i4k_vs_f80(empty)", file("i4k_vs_f80/create.sql"));
+        table("i4k_vs_f80(empty)", file("cases/tables/i4k_vs_f80.create.sql"));
 
         table("i4k_vsk_f80", file("i4k_vsk_f80/create.sql"))
-            .init(file("i4k_vs_f80/data.sql"), 9);
+            .init(file("cases/tables/i4k_vs_f80.data.sql"), 9);
 
         table("i4k_vs0_i40_f80", file("cases/tables/i4k_vs0_i40_f80.create.sql"))
             .init(file("cases/tables/i4k_vs0_i40_f80.data.sql"), 2);
