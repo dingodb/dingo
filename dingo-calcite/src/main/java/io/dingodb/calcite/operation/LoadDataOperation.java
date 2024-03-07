@@ -59,10 +59,10 @@ import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -375,7 +375,7 @@ public class LoadDataOperation implements DmlOperation {
 
     public void insertWithTxn(Object[] tuples) {
         Map<String, KeyValue> caches = ExecutionEnvironment.memoryCache
-            .computeIfAbsent(statementId, e -> new LinkedHashMap<>());
+            .computeIfAbsent(statementId, e -> new TreeMap<>());
         KeyValue keyValue = codec.encode(tuples);
 
         CommonId txnId = getTxnId();
@@ -472,7 +472,7 @@ public class LoadDataOperation implements DmlOperation {
                 startTs, txnId, txnRetry, txnRetryCnt, timeOut
             );
             Map<String, KeyValue> caches = ExecutionEnvironment.memoryCache
-                .computeIfAbsent(statementId, e -> new LinkedHashMap<>());
+                .computeIfAbsent(statementId, e -> new TreeMap<>());
             List<Object[]> tupleList = getCacheTupleList(caches, txnId);
             if (tupleList.size() == 0) {
                 return;

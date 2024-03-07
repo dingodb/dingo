@@ -131,7 +131,12 @@ public final class SqlToOperationConverter {
             return Optional.of(new ShowColumnsOperation(sqlNode));
         } else if (sqlNode instanceof SqlShowTableDistribution) {
             SqlShowTableDistribution sqlShowTableDistribution = (SqlShowTableDistribution) sqlNode;
-            return Optional.of(new ShowTableDistributionOperation(sqlNode, sqlShowTableDistribution.tableName));
+            if (sqlShowTableDistribution.schemaName == null) {
+                sqlShowTableDistribution.schemaName = getSchemaName(context);
+            }
+            return Optional.of(new ShowTableDistributionOperation(
+                sqlNode, sqlShowTableDistribution.schemaName, sqlShowTableDistribution.tableName
+            ));
         } else if (sqlNode instanceof SqlDesc) {
             SqlDesc sqlDesc = (SqlDesc) sqlNode;
             if (StringUtils.isEmpty(sqlDesc.schemaName)) {

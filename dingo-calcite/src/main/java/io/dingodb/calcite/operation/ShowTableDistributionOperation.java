@@ -39,6 +39,8 @@ import static io.dingodb.common.util.Utils.buildKeyStr;
 
 public class ShowTableDistributionOperation implements QueryOperation {
 
+    private final String usedSchemaName;
+
     @Setter
     public SqlNode sqlNode;
 
@@ -46,9 +48,10 @@ public class ShowTableDistributionOperation implements QueryOperation {
 
     private String tableName;
 
-    public ShowTableDistributionOperation(SqlNode sqlNode, String tableName) {
+    public ShowTableDistributionOperation(SqlNode sqlNode, String usedSchemaName, String tableName) {
         this.sqlNode = sqlNode;
-        metaService = MetaService.root().getSubMetaService(MetaServiceUtils.getSchemaName(tableName));
+        this.usedSchemaName = usedSchemaName;
+        metaService = MetaService.root().getSubMetaService(usedSchemaName);
         this.tableName = tableName;
     }
 
