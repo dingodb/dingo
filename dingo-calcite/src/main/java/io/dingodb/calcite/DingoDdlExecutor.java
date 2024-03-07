@@ -218,7 +218,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     .elementType(columnDefinition.getElementType())
                     .precision(columnDefinition.getPrecision())
                     .scale(columnDefinition.getScale())
-                    .nullable(i == 1 || columnDefinition.isNullable())
+                    .nullable(columnDefinition.isNullable())
                     .primary(primary)
                     .build();
                 indexColumnDefinitions.add(indexColumnDefinition);

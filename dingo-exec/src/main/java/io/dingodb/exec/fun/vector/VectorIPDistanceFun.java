@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.fun.vector;
 
+import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
 import io.dingodb.expr.runtime.op.OpKey;
@@ -45,6 +46,11 @@ public class VectorIPDistanceFun extends BinaryVectorVectorFun {
     }
 
     public static double innerProductCombine(List<Float> vectorA, List<Number> vectorB) {
+        if (vectorA != null && vectorA.size() != vectorB.size()) {
+            throw new DingoSqlException(
+                "The dimensions of the source vector and the target vector must be consistent",5001, "45000"
+            );
+        }
         double dotProduct = 0.0;
         for (int i = 0; i < vectorA.size(); i++) {
             dotProduct += vectorA.get(i) * vectorB.get(i).floatValue();
@@ -56,7 +62,6 @@ public class VectorIPDistanceFun extends BinaryVectorVectorFun {
     protected Object evalNonNullValue(@NonNull Object value0, @NonNull Object value1, ExprConfig config) {
         double distance = innerProductCombine((List<Float>) value0, (List<Number>) value1);
         BigDecimal distanceAccurate = new BigDecimal(distance);
-        distanceAccurate = distanceAccurate.setScale(2, RoundingMode.HALF_UP);
         return distanceAccurate.floatValue();
     }
 

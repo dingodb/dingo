@@ -32,6 +32,7 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ImportFileConverter;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.transaction.api.LockType;
 import io.dingodb.transaction.api.TransactionService;
@@ -66,6 +67,7 @@ import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 import static io.dingodb.common.util.Utils.getByteIndexOf;
@@ -239,6 +241,10 @@ public class LoadDataOperation implements DmlOperation {
                 context.setWarningList(sqlWarningList);
             }
         }
+        List<IndexTable> indexTableList = table.getIndexes();
+        if (indexTableList != null) {
+            insertCount = indexTableList.size() > 0 ? insertCount / (indexTableList.size() + 1)  : insertCount;
+        }
         List<Object[]> objects = new ArrayList<>();
         objects.add(new Object[] {insertCount});
         return objects.iterator();
@@ -314,6 +320,9 @@ public class LoadDataOperation implements DmlOperation {
         tuples = (Object[]) schema.convertFrom(tuples, new ImportFileConverter(escaped));
 
         if (isTxn) {
+            if (dataGenNum == 200) {
+                refreshTxnId = true;
+            }
             insertWithTxn(tuples);
         } else {
             insertWithoutTxn(tuples, false);
@@ -353,22 +362,73 @@ public class LoadDataOperation implements DmlOperation {
         }
     }
 
+    public CommonId getTxnId() {
+        if (refreshTxnId || txnId == null) {
+            txnId = new CommonId(CommonId.CommonType.TRANSACTION,
+                TransactionManager.getServerId().seq, TransactionManager.getStartTs());
+        }
+        return txnId;
+    }
+
+    CommonId txnId;
+    boolean refreshTxnId = false;
+
     public void insertWithTxn(Object[] tuples) {
         Map<String, KeyValue> caches = ExecutionEnvironment.memoryCache
             .computeIfAbsent(statementId, e -> new LinkedHashMap<>());
         KeyValue keyValue = codec.encode(tuples);
+
+        CommonId txnId = getTxnId();
+        recodePriTable(keyValue, txnId);
         String cacheKey = Base64.getEncoder().encodeToString(keyValue.getKey());
         if (!caches.containsKey(cacheKey)) {
             caches.put(cacheKey, keyValue);
         }
-        if (caches.size() > 1024) {
+        List<IndexTable> indexTableList = table.getIndexes();
+        if (indexTableList != null) {
+            for (IndexTable indexTable : indexTableList) {
+                List<Integer> columnIndices = table.getColumnIndices(indexTable.columns.stream()
+                    .map(Column::getName)
+                    .collect(Collectors.toList()));
+                Object[] tuplesTmp = columnIndices.stream().map(i -> tuples[i]).toArray();
+                KeyValueCodec codec = CodecService.getDefault()
+                    .createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
+
+                keyValue = wrap(codec::encode).apply(tuplesTmp);
+                PartitionService ps = PartitionService.getService(
+                    Optional.ofNullable(indexTable.getPartitionStrategy())
+                        .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+                NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
+                    metaService.getRangeDistribution(indexTable.tableId);
+                CommonId partId = ps.calcPartId(keyValue.getKey(), ranges);
+                CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
+
+                byte[] txnIdByte = txnId.encode();
+                byte[] tableIdByte = indexTable.tableId.encode();
+                byte[] partIdByte = partId.encode();
+                keyValue.setKey(
+                    ByteUtils.encode(
+                        CommonId.CommonType.TXN_CACHE_DATA,
+                        keyValue.getKey(),
+                        Op.PUTIFABSENT.getCode(),
+                        (txnIdByte.length + tableIdByte.length + partIdByte.length),
+                        txnIdByte,
+                        tableIdByte,
+                        partIdByte)
+                );
+                cacheKey = Base64.getEncoder().encodeToString(keyValue.getKey());
+                if (!caches.containsKey(cacheKey)) {
+                    caches.put(cacheKey, keyValue);
+                }
+            }
+        }
+
+        long start = System.currentTimeMillis();
+        if (refreshTxnId) {
             try {
-                long startTs = TransactionManager.getStartTs();
-                CommonId txnId = new CommonId(CommonId.CommonType.TRANSACTION,
-                    TransactionManager.getServerId().seq, startTs);
                 List<Object[]> tupleList = getCacheTupleList(caches, txnId);
                 TxnImportDataOperation txnImportDataOperation = new TxnImportDataOperation(
-                    startTs, txnId, txnRetry, txnRetryCnt, timeOut
+                    txnId.seq, txnId, txnRetry, txnRetryCnt, timeOut
                 );
                 int result = txnImportDataOperation.insertByTxn(tupleList);
                 count.addAndGet(result);
@@ -376,16 +436,38 @@ public class LoadDataOperation implements DmlOperation {
             } finally {
                 ExecutionEnvironment.memoryCache.remove(statementId);
             }
+            refreshTxnId = false;
+        }
+        long end = System.currentTimeMillis();
+        if (log.isDebugEnabled()) {
+            log.debug("insert txn batch size:" + caches.size() + ", cost time:" + (end - start) + "ms");
         }
     }
 
+    private void recodePriTable(KeyValue keyValue, CommonId txnId) {
+        CommonId partId = PartitionService.getService(
+                Optional.ofNullable(table.getPartitionStrategy())
+                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
+            .calcPartId(keyValue.getKey(), distributions);
+        // todo replace
+        CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
+        byte[] txnIdByte = txnId.encode();
+        byte[] tableIdByte = table.getTableId().encode();
+        byte[] partIdByte = partId.encode();
+
+        keyValue.setKey(ByteUtils.encode(
+            CommonId.CommonType.TXN_CACHE_DATA,
+            keyValue.getKey(),
+            Op.PUTIFABSENT.getCode(),
+            (txnIdByte.length + tableIdByte.length + partIdByte.length),
+            txnIdByte, tableIdByte, partIdByte));
+    }
+
     public void endWriteWithTxn() {
+        long start = System.currentTimeMillis();
         try {
-            long startTs = TransactionManager.getStartTs();
-            CommonId txnId = new CommonId(
-                CommonId.CommonType.TRANSACTION,
-                TransactionManager.getServerId().seq,
-                startTs);
+            CommonId txnId = getTxnId();
+            long startTs = txnId.seq;
             TxnImportDataOperation txnImportDataOperation = new TxnImportDataOperation(
                 startTs, txnId, txnRetry, txnRetryCnt, timeOut
             );
@@ -401,31 +483,21 @@ public class LoadDataOperation implements DmlOperation {
         } finally {
             ExecutionEnvironment.memoryCache.remove(statementId);
         }
+        long end = System.currentTimeMillis();
+        if (log.isDebugEnabled()) {
+            log.debug("insert txn end batch, cost time:" + (end - start) + "ms");
+        }
     }
 
     public List<Object[]> getCacheTupleList(Map<String, KeyValue> keyValueMap, CommonId txnId) {
         List<Object[]> tupleCacheList = new ArrayList<>();
         for (KeyValue keyValue : keyValueMap.values()) {
-            tupleCacheList.add(getCacheTuples(keyValue, txnId));
+            tupleCacheList.add(getCacheTuples(keyValue));
         }
         return tupleCacheList;
     }
 
-    public Object[] getCacheTuples(KeyValue keyValue, CommonId txnId) {
-        CommonId partId = PartitionService.getService(
-                Optional.ofNullable(table.getPartitionStrategy())
-                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-            .calcPartId(keyValue.getKey(), distributions);
-        byte[] txnIdByte = txnId.encode();
-        byte[] tableIdByte = table.getTableId().encode();
-        byte[] partIdByte = partId.encode();
-
-        keyValue.setKey(ByteUtils.encode(
-            CommonId.CommonType.TXN_CACHE_DATA,
-            keyValue.getKey(),
-            Op.PUTIFABSENT.getCode(),
-            (txnIdByte.length + tableIdByte.length + partIdByte.length),
-            txnIdByte, tableIdByte, partIdByte));
+    public Object[] getCacheTuples(KeyValue keyValue) {
         return io.dingodb.exec.utils.ByteUtils.decode(keyValue);
     }
 

@@ -30,13 +30,16 @@ import java.util.List;
 
 public class LockTableOperation implements DdlOperation {
 
-    private Connection connection;
+    private final String usedSchemaName;
 
-    private List<SqlIdentifier> tableList;
+    private final Connection connection;
 
-    public LockTableOperation(Connection connection, List<SqlIdentifier> tableList) {
+    private final List<SqlIdentifier> tableList;
+
+    public LockTableOperation(Connection connection, List<SqlIdentifier> tableList, String usedSchemaName) {
         this.connection = connection;
         this.tableList = tableList;
+        this.usedSchemaName = usedSchemaName;
     }
 
     @Override
@@ -50,7 +53,7 @@ public class LockTableOperation implements DdlOperation {
                 metaService = metaService.getSubMetaService(names.get(0));
                 tableName = names.get(1);
             } else {
-                metaService = metaService.getSubMetaService(MetaService.DINGO_NAME);
+                metaService = metaService.getSubMetaService(usedSchemaName);
             }
             tables.add(Parameters.nonNull(metaService.getTable(tableName), "table not found").getTableId());
         }

@@ -601,6 +601,10 @@ public final class DingoDriverParser extends DingoParser {
                     id = id.substring(6);
                 }
                 DingoConnection dingoConn = entry.getValue();
+                String txnIdStr = "";
+                if (dingoConn.getTransaction() != null && dingoConn.getTransaction().getTxnId() != null) {
+                    txnIdStr = dingoConn.getTransaction().getTxnId().toString();
+                }
                 String info = dingoConn.getCommand();
                 long commandStartTime = dingoConn.getCommandStartTime();
                 String costTimeStr = null;
@@ -620,6 +624,7 @@ public final class DingoDriverParser extends DingoParser {
                 processInfo.setType(type);
                 processInfo.setCommand(command);
                 processInfo.setTime(costTimeStr);
+                processInfo.setTxnIdStr(txnIdStr);
                 try {
                     processInfo.setState(dingoConn.isClosed() ? "closed" : "open");
                 } catch (SQLException e) {
