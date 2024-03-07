@@ -61,12 +61,12 @@ impl IndexReaderBridgeCache {
         if pinned.contains_key(&trimmed_key) {
             pinned.remove(&trimmed_key);
         } else {
-            let error_info: String = format!(
+            let message: String = format!(
                 "IndexReaderBridge doesn't exist, can't remove it with given key [{}]",
                 trimmed_key
             );
-            DEBUG!("{}", error_info);
-            return Err(error_info);
+            DEBUG!("{}", message);
+            return Err(message);
         }
         Ok(())
     }

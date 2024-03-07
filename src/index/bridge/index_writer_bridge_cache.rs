@@ -1,6 +1,6 @@
 use super::index_writer_bridge::IndexWriterBridge;
 use crate::logger::logger_bridge::TantivySearchLogger;
-use crate::{common::constants::LOG_CALLBACK, WARNING};
+use crate::{common::constants::LOG_CALLBACK, DEBUG, WARNING};
 use flurry::HashMap;
 use std::sync::Arc;
 
@@ -54,11 +54,11 @@ impl IndexWriterBridgeCache {
         if pinned.contains_key(&trimmed_key) {
             pinned.remove(&trimmed_key);
         } else {
-            let warning = format!(
+            let message = format!(
                 "IndexWriterBridge doesn't exist, can't remove it with given key: [{}]",
                 trimmed_key
             );
-            WARNING!("{}", warning)
+            DEBUG!("{}", message)
         }
         Ok(())
     }
