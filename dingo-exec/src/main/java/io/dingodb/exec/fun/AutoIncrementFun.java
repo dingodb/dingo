@@ -17,6 +17,7 @@
 package io.dingodb.exec.fun;
 
 import io.dingodb.expr.runtime.ExprConfig;
+import io.dingodb.expr.runtime.expr.BinaryOpExpr;
 import io.dingodb.expr.runtime.op.BinaryOp;
 import io.dingodb.expr.runtime.op.OpKey;
 import io.dingodb.expr.runtime.type.Type;
@@ -38,6 +39,11 @@ public class AutoIncrementFun extends BinaryOp {
     protected Object evalNonNullValue(@NonNull Object value0, @NonNull Object value1, ExprConfig config) {
         MetaService metaService = MetaService.root().getSubMetaService((String) value0);
         return metaService.getAutoIncrement(metaService.getTable((String) value1).getTableId());
+    }
+
+    @Override
+    public boolean isConst(@NonNull BinaryOpExpr expr) {
+        return false;
     }
 
     @Override

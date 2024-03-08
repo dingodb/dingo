@@ -28,7 +28,6 @@ cases:
       - sql: 'insert into {table}(name, amount) values (100, 1.0), (100, 1.0), (100, 1.0)'
         count: 3
       - sql: 'select * from {table}'
-        dump: true
         result:
           - 'id, name, amount'
           - 'INT, STRING, DOUBLE'
