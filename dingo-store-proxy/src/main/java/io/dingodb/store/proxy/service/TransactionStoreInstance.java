@@ -72,7 +72,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.StringJoiner;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
@@ -741,26 +740,15 @@ public class TransactionStoreInstance {
 
         @Override
         public boolean hasNext() {
-            if (keyValues.hasNext()) {
-                return true;
-            }
-            if (hasMore) {
+            while (hasMore && !keyValues.hasNext()) {
                 fetch();
-                return keyValues.hasNext();
             }
-            return false;
+            return keyValues.hasNext();
         }
 
         @Override
         public io.dingodb.common.store.KeyValue next() {
-            if (keyValues.hasNext()) {
-                return MAPPER.kvFrom(keyValues.next());
-            }
-            if (hasMore) {
-                fetch();
-                return MAPPER.kvFrom(keyValues.next());
-            }
-            throw new NoSuchElementException();
+            return MAPPER.kvFrom(keyValues.next());
         }
     }
 
