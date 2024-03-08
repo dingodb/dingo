@@ -46,6 +46,7 @@ import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -128,6 +129,7 @@ public class RollBackOperator extends TransactionOperator {
                         throw new RuntimeException(txnId + " " + partId + ",txnBatchRollback false");
                     }
                     param.getKeys().clear();
+                    param.getForUpdateTsList().clear();
                     param.setPartId(null);
                 }
             } else {
@@ -143,6 +145,7 @@ public class RollBackOperator extends TransactionOperator {
                 }
                 param.getKeys().clear();
                 param.addKey(key);
+                param.getForUpdateTsList().clear();
                 param.addForUpdateTs(forUpdateTs);
                 param.setPartId(newPartId);
                 param.setTableId(tableId);

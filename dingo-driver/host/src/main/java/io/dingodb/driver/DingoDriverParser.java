@@ -402,7 +402,10 @@ public final class DingoDriverParser extends DingoParser {
             null,
             cursorFactory,
             statementType,
-            job.getJobId()
+            job.getJobId(),
+            sqlNode,
+            relNode,
+            parasType
         );
     }
 
@@ -448,6 +451,69 @@ public final class DingoDriverParser extends DingoParser {
         }
     }
 
+
+    @Nonnull
+    public Meta.Signature retryQuery(
+        JobManager jobManager,
+        String jobIdPrefix,
+        String sql,
+        SqlNode sqlNode,
+        RelNode relNode,
+        RelDataType parasType,
+        List<ColumnMetaData> columns
+    ) {
+        JavaTypeFactory typeFactory = connection.getTypeFactory();
+        final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
+        Meta.StatementType statementType = null;
+        extractAutoIncrement(relNode, jobIdPrefix);
+        Location currentLocation = MetaService.root().currentLocation();
+        Set<RelOptTable> tables = useTables(relNode, sqlNode);
+        switch (sqlNode.getKind()) {
+            case INSERT:
+            case DELETE:
+            case UPDATE:
+                statementType = Meta.StatementType.IS_DML;
+                break;
+            default:
+                statementType = Meta.StatementType.SELECT;
+                break;
+        }
+
+        ITransaction transaction = connection.createTransaction(
+            TransactionType.OPTIMISTIC,
+            connection.getAutoCommit()
+        );
+        long startTs = transaction.getStartTs();
+        long jobSeqId = TsoService.getDefault().tso();
+        lockTables(tables, transaction.getStartTs(), jobSeqId, transaction.getFinishedFuture());
+        String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
+        maxExecutionTimeStr = maxExecutionTimeStr == null ? "0" : maxExecutionTimeStr;
+        long maxTimeOut = Long.parseLong(maxExecutionTimeStr);
+        Job job = jobManager.createJob(
+            startTs, jobSeqId, transaction.getTxnId(), DefinitionMapper.mapToDingoType(parasType), maxTimeOut,
+            false
+        );
+        DingoJobVisitor.renderJob(
+            job,
+            relNode,
+            currentLocation,
+            true,
+            transaction.getType() == NONE ? null : connection.getTransaction(),
+            sqlNode.getKind()
+        );
+        return new DingoSignature(
+            columns,
+            sql,
+            createParameterList(parasType),
+            null,
+            cursorFactory,
+            statementType,
+            job.getJobId(),
+            sqlNode,
+            relNode,
+            parasType
+        );
+    }
     private void runPessimisticPrimaryKeyJob(
         long jobSeqId,
         JobManager jobManager,
