@@ -29,16 +29,21 @@ import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.table.IndexScan;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.Optional;
 import io.dingodb.driver.type.converter.AvaticaResultSetConverter;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.base.Task;
+import io.dingodb.exec.exception.TaskFinException;
+import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.verify.privilege.PrivilegeVerify;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.AvaticaUtils;
@@ -380,7 +385,7 @@ public class DingoMeta extends MetaImpl {
         }
         try {
             for (List<TypedValue> parameterValue : parameterValues) {
-                ExecuteResult executeResult = execBach(sh, parameterValue, -1);
+                ExecuteResult executeResult = execBatch(sh, parameterValue, -1);
                 final long updateCount =
                     executeResult.resultSets.size() == 1
                         ? executeResult.resultSets.get(0).updateCount
@@ -427,6 +432,11 @@ public class DingoMeta extends MetaImpl {
         long offset,
         int fetchMaxRowCount
     ) throws NoSuchStatementException {
+        return getFrame(sh, offset, fetchMaxRowCount);
+    }
+
+    @NonNull
+    private Frame getFrame(StatementHandle sh, long offset, int fetchMaxRowCount) throws NoSuchStatementException {
         final long startTime = System.currentTimeMillis();
         AvaticaStatement statement = ((DingoConnection) connection).getStatement(sh);
         try {
@@ -438,6 +448,7 @@ public class DingoMeta extends MetaImpl {
             Iterator<Object[]> iterator = resultSet.getIterator();
             ITransaction transaction = ((DingoConnection) connection).getTransaction();
             final List rows = new ArrayList(fetchMaxRowCount);
+            boolean done = false;
             try {
                 if (iterator == null) {
                     iterator = createIterator(statement);
@@ -477,16 +488,47 @@ public class DingoMeta extends MetaImpl {
                 }
                 throw ExceptionUtils.toRuntime(e);
             }
-            boolean done = fetchMaxRowCount == 0 || !iterator.hasNext();
+            done = fetchMaxRowCount == 0 || !iterator.hasNext();
             if (transaction != null) {
                 log.info("{} sql:{} , txnAutoCommit:{}, txnType:{} ", transaction.getTxnId(),
                     signature.sql, transaction.isAutoCommit(), transaction.getType());
                 transaction.addSql(signature.sql);
                 if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
-                    connection.commit();
+                    try {
+                        connection.commit();
+                    } catch (TaskFinException e1) {
+                        log.info(e1.getMessage(), e1);
+                        if (e1.getErrorType().equals(ErrorType.WriteConflict)) {
+                            return requireNonNull(
+                                resolveWriteConflict(
+                                sh,
+                                offset,
+                                fetchMaxRowCount,
+                                statement,
+                                resultSet,
+                                signature,
+                                transaction,
+                                e1)
+                            );
+                        } else {
+                            throw e1;
+                        }
+                    } catch (WriteConflictException e2) {
+                        return requireNonNull(
+                            resolveWriteConflict(
+                                sh,
+                                offset,
+                                fetchMaxRowCount,
+                                statement,
+                                resultSet,
+                                signature,
+                                transaction,
+                                e2)
+                        );
+                    }
                 }
             }
-            return new Frame(offset, done, rows);
+            return new Frame(offset, done, rows) ;
         } catch (Throwable e) {
             log.error("Fetch catch exception:{}", e, e);
             throw ExceptionUtils.toRuntime(e);
@@ -496,6 +538,44 @@ public class DingoMeta extends MetaImpl {
                 log.debug("DingoMeta fetch, cost: {}ms.", System.currentTimeMillis() - startTime);
             }
         }
+    }
+
+    private Frame resolveWriteConflict(StatementHandle sh, long offset, int fetchMaxRowCount,
+                                       AvaticaStatement statement, DingoResultSet resultSet,
+                                       Signature signature, ITransaction transaction,
+                                       RuntimeException exception) throws SQLException, NoSuchStatementException {
+        int txnRetryLimit = getTxnRetryLimit();
+        log.info("retry txnRetryLimit is {} txnAutoRetry is {}", txnRetryLimit, isDisableTxnRetry());
+        RuntimeException conflictException = exception;
+        while (isDisableTxnRetry() && (txnRetryLimit-- > 0) && !transaction.isPessimistic()) {
+            ((DingoStatement) statement).removeJob(jobManager);
+            DingoDriverParser parser = new DingoDriverParser((DingoConnection) connection);
+            Signature signature1 = parser.retryQuery(jobManager, sh.toString(), sh.signature.sql,
+                ((DingoSignature) sh.signature).getSqlNode(), ((DingoSignature) sh.signature).getRelNode(),
+                ((DingoSignature) sh.signature).getParasType(),
+                signature.columns);
+            ((DingoStatement) statement).setSignature(signature1);
+            resultSet.setIterator(null);
+            Frame frame = getFrame(sh, offset, fetchMaxRowCount);
+            return frame;
+        }
+        if (conflictException != null) {
+            throw conflictException;
+        }
+        return null;
+    }
+
+
+    public int getTxnRetryLimit() throws SQLException {
+        Optional<String> retryCountOpt = Optional.ofNullable(
+            connection.getClientInfo("txn_retry_cnt"));
+        return retryCountOpt
+            .map(Integer::parseInt)
+            .orElse(0);
+    }
+
+    public boolean isDisableTxnRetry() throws SQLException {
+        return "on".equalsIgnoreCase(connection.getClientInfo("txn_retry"));
     }
 
     @Deprecated
@@ -600,7 +680,7 @@ public class DingoMeta extends MetaImpl {
         return transaction;
     }
 
-    public ExecuteResult execBach(
+    public ExecuteResult execBatch(
         @NonNull StatementHandle sh,
         List<TypedValue> parameterValues,
         int maxRowsInFirstFrame
@@ -652,17 +732,14 @@ public class DingoMeta extends MetaImpl {
             }
         } catch (Throwable e) {
             log.error(e.getMessage(), e);
-            throw new RuntimeException(e);
+            throw e;
         } finally {
-            try {
-                ((DingoConnection) connection).cleanTransaction();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+            ((DingoConnection) connection).cleanTransaction();
         }
     }
 
     @Override
+    @SneakyThrows
     public void commit(ConnectionHandle ch) {
         try {
             ITransaction transaction = ((DingoConnection) connection).getTransaction();
@@ -671,17 +748,14 @@ public class DingoMeta extends MetaImpl {
             }
         } catch (Throwable e) {
             log.error(e.getMessage(), e);
-            throw new RuntimeException(e);
+            throw e;
         } finally {
-            try {
-                cleanTransaction();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+            cleanTransaction();
         }
     }
 
     @Override
+    @SneakyThrows
     public void rollback(ConnectionHandle ch) {
         try {
             ITransaction transaction = ((DingoConnection) connection).getTransaction();
@@ -690,13 +764,9 @@ public class DingoMeta extends MetaImpl {
             }
         } catch (Throwable e) {
             log.error(e.getMessage(), e);
-            throw new RuntimeException(e);
+            throw e;
         } finally {
-            try {
-                cleanTransaction();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+            cleanTransaction();
         }
     }
 

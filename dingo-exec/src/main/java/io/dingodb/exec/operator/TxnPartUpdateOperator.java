@@ -25,6 +25,7 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.DebugLog;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
@@ -117,7 +118,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
                     byte[] key = wrap(codec::encodeKey).apply(newTuple);
                     partId = ps.calcPartId(key, MetaService.root().getRangeDistribution(tableId));
-                    log.info("{} update index primary key is{} calcPartId is {}",
+                    DebugLog.debugDelegate(log, "{} update index primary key is{} calcPartId is {}",
                         txnId,
                         Arrays.toString(key),
                         partId
@@ -159,16 +160,14 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 );
                 KeyValue oldKeyValue = localStore.get(dataKey);
                 byte[] primaryLockKeyBytes = decodePessimisticKey(primaryLockKey);
-                if (log.isDebugEnabled()) {
-                    log.info("{} updated is true key is {}", txnId, Arrays.toString(key));
-                }
+                DebugLog.debugDelegate(log, "{} updated is true key is {}", txnId, Arrays.toString(key));
                 if (!updated) {
                     log.warn("{} updated is false key is {}", txnId, Arrays.toString(key));
                     // data is not exist local store
                     if (oldKeyValue == null) {
                         byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
                         KeyValue rollBackKeyValue = new KeyValue(rollBackKey, null);
-                        log.info("{}, updated is false residual key is:{}",
+                        DebugLog.debugDelegate(log, "{}, updated is false residual key is:{}",
                             txnId, Arrays.toString(rollBackKey));
                         localStore.put(rollBackKeyValue);
                     }
@@ -191,7 +190,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                         if (kvKeyValue == null || kvKeyValue.getValue() == null) {
                             byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
                             KeyValue rollBackKeyValue = new KeyValue(rollBackKey, null);
-                            log.info("{}, update key is not primaryLock residual key is:{}",
+                            DebugLog.debugDelegate(log, "{}, update key is not primaryLock residual key is:{}",
                                 txnId, Arrays.toString(rollBackKey));
                             localStore.put(rollBackKeyValue);
                             return true;
@@ -223,7 +222,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                         if (kvKeyValue == null || kvKeyValue.getValue() == null) {
                             byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
                             KeyValue rollBackKeyValue = new KeyValue(rollBackKey, null);
-                            log.info("{}, update first put primary lock residual key is:{}",
+                            DebugLog.debugDelegate(log, "{}, update first put primary lock residual key is:{}",
                                 txnId, Arrays.toString(rollBackKey));
                             localStore.put(rollBackKeyValue);
                             return true;
@@ -248,7 +247,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             } else {
                 KeyValue keyValue = wrap(codec::encode).apply(newTuple2);
                 CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
-                log.info("{} update key is {}, partId is {}", txnId, Arrays.toString(keyValue.getKey()), partId);
+                DebugLog.debugDelegate(log, "{} update key is {}, partId is {}", txnId, Arrays.toString(keyValue.getKey()), partId);
                 if (calcPartId) {
                     // begin insert update commit
                     byte[] oldKey = wrap(codec::encodeKey).apply(copyTuple);

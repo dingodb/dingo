@@ -21,6 +21,9 @@ import lombok.Getter;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.SqlNode;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
@@ -32,6 +35,13 @@ public final class DingoSignature extends Meta.Signature {
     @Getter
     private final CommonId jobId;
 
+    // for optimistic transaction retry
+    @Getter
+    private final SqlNode sqlNode;
+    @Getter
+    private final RelNode relNode;
+    @Getter
+    private final RelDataType parasType;
     public DingoSignature(
         List<ColumnMetaData> columns,
         String sql,
@@ -39,7 +49,8 @@ public final class DingoSignature extends Meta.Signature {
         Meta.StatementType statementType,
         @Nullable CommonId jobId
     ) {
-        this(columns, sql, null, null, cursorFactory, statementType, jobId);
+        this(columns, sql, null, null, cursorFactory, statementType,
+            jobId, null, null, null);
     }
 
     public DingoSignature(
@@ -49,9 +60,15 @@ public final class DingoSignature extends Meta.Signature {
         Map<String, Object> internalParameters,
         Meta.CursorFactory cursorFactory,
         Meta.StatementType statementType,
-        @Nullable CommonId jobId
+        @Nullable CommonId jobId,
+        SqlNode sqlNode,
+        RelNode relNode,
+        RelDataType parasType
     ) {
         super(columns, sql, parameters, internalParameters, cursorFactory, statementType);
         this.jobId = jobId;
+        this.sqlNode = sqlNode;
+        this.relNode = relNode;
+        this.parasType = parasType;
     }
 }

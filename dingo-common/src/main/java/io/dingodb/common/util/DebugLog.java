@@ -16,8 +16,12 @@
 
 package io.dingodb.common.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 
+import static io.dingodb.common.util.StackTraces.CURRENT_STACK;
+
+@Slf4j
 public final class DebugLog {
     private DebugLog() {
     }
@@ -55,6 +59,12 @@ public final class DebugLog {
     public static void trace(Logger logger, String message, Object... args) {
         if (logger.isTraceEnabled()) {
             logger.trace(message, args);
+        }
+    }
+
+    public static void debugDelegate(Logger logger, String message, Object... args) {
+        if (log.isDebugEnabled()) {
+            logger.info(StackTraces.stack(CURRENT_STACK + 1) + "::" + message, args);
         }
     }
 

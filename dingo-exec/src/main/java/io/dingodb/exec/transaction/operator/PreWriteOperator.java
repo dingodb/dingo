@@ -19,6 +19,7 @@ package io.dingodb.exec.transaction.operator;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.DebugLog;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
@@ -107,7 +108,7 @@ public final class PreWriteOperator extends TransactionOperator {
             }
             // cache to mutations
             Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, forUpdateTs, tableId, newPartId);
-            log.info("{} mutation: {}", txnId, mutation);
+            DebugLog.debugDelegate(log, "{} mutation: {}", txnId, mutation);
             CommonId partId = param.getPartId();
             if (partId == null) {
                 partId = newPartId;

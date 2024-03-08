@@ -21,8 +21,6 @@ import io.dingodb.common.Location;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
-import io.dingodb.exec.exception.TaskFinException;
-import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.transaction.base.BaseTransaction;
 import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.base.TransactionStatus;
@@ -33,7 +31,6 @@ import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
-import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
@@ -162,43 +159,7 @@ public class OptimisticTransaction extends BaseTransaction {
     @Override
     public void resolveWriteConflict(JobManager jobManager, Location currentLocation, RuntimeException e) {
         rollback(jobManager);
-        CommonId retryJobId = CommonId.EMPTY_JOB;
-        int txnRetryLimit = transactionConfig.getTxn_retry_limit();
-        log.info("{} {} retry txnRetryLimit is {} txnAutoRetry is {}", txnId,
-            transactionOf(), txnRetryLimit, transactionConfig.isDisable_txn_auto_retry());
-        RuntimeException conflictException = e;
-        while (transactionConfig.isDisable_txn_auto_retry() && (txnRetryLimit-- > 0)) {
-            try {
-                conflictException = null;
-                retryPrepare();
-                log.info("{} {} retry", txnId, transactionOf());
-                txnPreWritePrimaryKey(cacheToObject);
-                Job job = createRetryJob(jobManager);
-                retryJobId = job.getJobId();
-                retryRun(jobManager, job, currentLocation);
-                this.status = TransactionStatus.PRE_WRITE;
-                break;
-            } catch (TaskFinException e1) {
-                conflictException = e1;
-                log.info(e1.getMessage(), e1);
-                if (e1.getErrorType().equals(ErrorType.WriteConflict)) {
-                    rollback(jobManager);
-                } else {
-                    break;
-                }
-            } catch (WriteConflictException e2) {
-                conflictException = e2;
-                log.info(e2.getMessage(), e2);
-                rollback(jobManager);
-            } finally {
-                jobManager.removeJob(retryJobId);
-            }
-        }
-        if (conflictException != null) {
-            throw conflictException;
-        } else {
-            log.info("{} {} preWrite retry success", txnId, transactionOf());
-        }
+        throw e;
     }
 
 }
