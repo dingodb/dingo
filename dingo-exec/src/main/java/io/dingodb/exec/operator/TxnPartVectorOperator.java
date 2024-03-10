@@ -123,6 +123,8 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                 }
                 Object[] decode = param.getCodec().decode(keyValue);
                 decode[decode.length - 1] = response.getDistance();
+
+                decode[vecIdx] = response.getFloatValues();
                 results.add(decode);
             }
         } else {

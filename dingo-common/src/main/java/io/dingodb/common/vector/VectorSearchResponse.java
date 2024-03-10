@@ -19,6 +19,8 @@ package io.dingodb.common.vector;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 public class VectorSearchResponse {
@@ -28,5 +30,7 @@ public class VectorSearchResponse {
     long vectorId;
 
     float distance;
+
+    List<Float> floatValues;
 
 }

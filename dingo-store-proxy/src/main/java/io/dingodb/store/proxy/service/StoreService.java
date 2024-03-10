@@ -616,6 +616,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     } else {
                         response = new VectorSearchResponse();
                     }
+                    response.setFloatValues(vectorWithDistance.getVectorWithId().getVector().getFloatValues());
                     response.setKey(vectorWithDistance.getVectorWithId().getTableData().getTableKey());
                     response.setDistance(vectorWithDistance.getDistance());
                     response.setVectorId(vectorWithDistance.getVectorWithId().getId());
