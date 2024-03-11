@@ -173,13 +173,7 @@ void TableElement(List<SqlNode> list) :
         [ <PRIMARY> <KEY> { columnDec.setPrimaryKey(true); }]
         [ <COMMENT> (<IDENTIFIER>|<QUOTED_STRING>) { columnDec.setComment(token.image); } ]
         [ <ON> <UPDATE> <CURRENT_TIMESTAMP> ]
-    |
-        { list.add(id); }
     )
-|
-    id = SimpleIdentifier() {
-        list.add(id);
-    }
 |
     [ <CONSTRAINT> { s.add(this); } name = SimpleIdentifier() ]
     (
