@@ -6,7 +6,7 @@ mod index;
 mod logger;
 mod search;
 mod tokenizer;
-
+mod utils;
 use common::constants::*;
 use index::ffi_index_manager::*;
 use search::ffi_index_searcher::*;
@@ -34,10 +34,10 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A bool value represent operation success.
-        fn tantivy_create_index_with_tokenizer(
+        fn ffi_create_index_with_parameter(
             index_path: &CxxString,
-            tokenizer_with_parameter: &CxxString,
-            doc_store: bool,
+            column_names: &CxxVector<CxxString>,
+            index_json_parameter: &CxxString,
         ) -> Result<bool>;
 
         /// Creates an index using the default tokenizer.
@@ -47,7 +47,10 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A bool value represent operation success.
-        fn tantivy_create_index(index_path: &CxxString, doc_store: bool) -> Result<bool>;
+        fn ffi_create_index(
+            index_path: &CxxString,
+            column_names: &CxxVector<CxxString>,
+        ) -> Result<bool>;
 
         /// Indexes a document.
         ///
@@ -58,7 +61,12 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A bool value represent operation success.        
-        fn tantivy_index_doc(index_path: &CxxString, row_id: u64, doc: &CxxString) -> Result<bool>;
+        fn ffi_index_multi_column_docs(
+            index_path: &CxxString,
+            row_id: u64,
+            column_names: &CxxVector<CxxString>,
+            column_docs: &CxxVector<CxxString>,
+        ) -> Result<bool>;
 
         /// Delete a group of row_ids.
         ///
@@ -68,8 +76,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A bool value represent operation success.
-        fn tantivy_delete_row_ids(index_path: &CxxString, row_ids: &CxxVector<u32>)
-            -> Result<bool>;
+        fn ffi_delete_row_ids(index_path: &CxxString, row_ids: &CxxVector<u32>) -> Result<bool>;
 
         /// Commits the changes to the index, writing it to the file system.
         ///
@@ -78,7 +85,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A bool value represent operation success.
-        fn tantivy_writer_commit(index_path: &CxxString) -> Result<bool>;
+        fn ffi_index_writer_commit(index_path: &CxxString) -> Result<bool>;
 
         /// Frees the index writer and waits for all merging threads to complete.
         ///
@@ -87,7 +94,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A bool value represent operation success.
-        fn tantivy_writer_free(index_path: &CxxString) -> Result<bool>;
+        fn tantivy_index_writer_free(index_path: &CxxString) -> Result<bool>;
 
         /// Loads an index from a specified directory.
         ///
@@ -96,7 +103,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A bool value represent operation success.
-        fn tantivy_load_index(index_path: &CxxString) -> Result<bool>;
+        fn ffi_load_index(index_path: &CxxString) -> Result<bool>;
 
         /// Frees the index reader.
         ///
@@ -105,7 +112,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A bool value represent operation success.
-        fn tantivy_reader_free(index_path: &CxxString) -> Result<bool>;
+        fn ffi_free_reader(index_path: &CxxString) -> Result<bool>;
 
         /// Determines if a query string appears within a specified row ID range.
         ///
@@ -118,7 +125,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A bool value represent whether granule hitted.
-        fn tantivy_search_in_rowid_range(
+        fn ffi_search_in_rowid_range(
             index_path: &CxxString,
             query: &CxxString,
             lrange: u64,
@@ -137,7 +144,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - The count of occurrences of the query string within the row ID range.
-        fn tantivy_count_in_rowid_range(
+        fn ffi_count_in_rowid_range(
             index_path: &CxxString,
             query: &CxxString,
             lrange: u64,
@@ -156,7 +163,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A group of RowIdWithScore Objects.
-        fn tantivy_bm25_search_with_filter(
+        fn ffi_bm25_search_with_filter(
             index_path: &CxxString,
             query: &CxxString,
             u8_bitmap: &CxxVector<u8>,
@@ -174,7 +181,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A group of RowIdWithScore Objects.
-        fn tantivy_bm25_search(
+        fn ffi_bm25_search(
             index_path: &CxxString,
             query: &CxxString,
             top_k: u32,
@@ -190,7 +197,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - row_ids u8 bitmap.
-        pub fn tantivy_search_bitmap_results(
+        pub fn ffi_search_bitmap_results(
             index_path: &CxxString,
             query: &CxxString,
             use_regex: bool,
@@ -204,9 +211,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - The count of documents stored in the index file.
-        fn tantivy_indexed_doc_counts(
-            index_path: &CxxString,
-        ) -> Result<u64>;
+        fn ffi_indexed_doc_counts(index_path: &CxxString) -> Result<u64>;
 
     }
 }

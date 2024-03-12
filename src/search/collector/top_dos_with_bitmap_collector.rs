@@ -183,11 +183,7 @@ impl Collector for TopDocsWithFilter {
             weight.for_each_pruning(threshold, reader, &mut |doc, score| {
                 let row_id = row_id_field_reader.get_val(doc);
                 if self.row_id_bitmap.is_some()
-                    && !self
-                        .row_id_bitmap
-                        .clone()
-                        .unwrap()
-                        .contains(row_id as u32)
+                    && !self.row_id_bitmap.clone().unwrap().contains(row_id as u32)
                 {
                     return threshold;
                 }
@@ -271,7 +267,9 @@ mod tests {
     use tantivy::{Document, Index, IndexReader, IndexWriter, ReloadPolicy, Term};
     use tempfile::TempDir;
 
-    fn get_reader_and_writer_from_index_path(index_directory_str: &str) -> (IndexReader, IndexWriter) {
+    fn get_reader_and_writer_from_index_path(
+        index_directory_str: &str,
+    ) -> (IndexReader, IndexWriter) {
         // Construct the schema for the index.
         let mut schema_builder = Schema::builder();
         schema_builder.add_u64_field("row_id", FAST | INDEXED);
@@ -372,7 +370,10 @@ mod tests {
         let (index_reader, mut index_writer) = get_reader_and_writer_from_index_path(temp_path_str);
 
         // Delete term row_id=0.
-        let term: Term = Term::from_field_u64(index_writer.index().schema().get_field("row_id").unwrap(), 0);
+        let term: Term = Term::from_field_u64(
+            index_writer.index().schema().get_field("row_id").unwrap(),
+            0,
+        );
         let _ = index_writer.delete_term(term);
         assert!(index_writer.commit().is_ok());
 

@@ -1,5 +1,6 @@
 pub mod bridge;
 pub mod collector;
 pub mod ffi_index_searcher;
-mod ffi_index_searcher_test;
-mod ffi_index_searcher_utils;
+pub mod index_searcher_core;
+mod index_searcher_test;
+mod index_searcher_utils;

@@ -733,7 +733,7 @@ struct RowIdWithScore final {
 //
 // Returns:
 // - A bool value represent operation success.
-bool tantivy_create_index_with_tokenizer(::std::string const &index_path, ::std::string const &tokenizer_with_parameter, bool doc_store);
+bool ffi_create_index_with_parameter(::std::string const &index_path, ::std::vector<::std::string> const &column_names, ::std::string const &index_json_parameter);
 
 // Creates an index using the default tokenizer.
 //
@@ -742,7 +742,7 @@ bool tantivy_create_index_with_tokenizer(::std::string const &index_path, ::std:
 //
 // Returns:
 // - A bool value represent operation success.
-bool tantivy_create_index(::std::string const &index_path, bool doc_store);
+bool ffi_create_index(::std::string const &index_path, ::std::vector<::std::string> const &column_names);
 
 // Indexes a document.
 //
@@ -753,7 +753,7 @@ bool tantivy_create_index(::std::string const &index_path, bool doc_store);
 //
 // Returns:
 // - A bool value represent operation success.        
-bool tantivy_index_doc(::std::string const &index_path, ::std::uint64_t row_id, ::std::string const &doc);
+bool ffi_index_multi_column_docs(::std::string const &index_path, ::std::uint64_t row_id, ::std::vector<::std::string> const &column_names, ::std::vector<::std::string> const &column_docs);
 
 // Delete a group of row_ids.
 //
@@ -763,7 +763,7 @@ bool tantivy_index_doc(::std::string const &index_path, ::std::uint64_t row_id, 
 //
 // Returns:
 // - A bool value represent operation success.
-bool tantivy_delete_row_ids(::std::string const &index_path, ::std::vector<::std::uint32_t> const &row_ids);
+bool ffi_delete_row_ids(::std::string const &index_path, ::std::vector<::std::uint32_t> const &row_ids);
 
 // Commits the changes to the index, writing it to the file system.
 //
@@ -772,7 +772,7 @@ bool tantivy_delete_row_ids(::std::string const &index_path, ::std::vector<::std
 //
 // Returns:
 // - A bool value represent operation success.
-bool tantivy_writer_commit(::std::string const &index_path);
+bool ffi_index_writer_commit(::std::string const &index_path);
 
 // Frees the index writer and waits for all merging threads to complete.
 //
@@ -781,7 +781,7 @@ bool tantivy_writer_commit(::std::string const &index_path);
 //
 // Returns:
 // - A bool value represent operation success.
-bool tantivy_writer_free(::std::string const &index_path);
+bool tantivy_index_writer_free(::std::string const &index_path);
 
 // Loads an index from a specified directory.
 //
@@ -790,7 +790,7 @@ bool tantivy_writer_free(::std::string const &index_path);
 //
 // Returns:
 // - A bool value represent operation success.
-bool tantivy_load_index(::std::string const &index_path);
+bool ffi_load_index(::std::string const &index_path);
 
 // Frees the index reader.
 //
@@ -799,7 +799,7 @@ bool tantivy_load_index(::std::string const &index_path);
 //
 // Returns:
 // - A bool value represent operation success.
-bool tantivy_reader_free(::std::string const &index_path);
+bool ffi_free_reader(::std::string const &index_path);
 
 // Determines if a query string appears within a specified row ID range.
 //
@@ -812,7 +812,7 @@ bool tantivy_reader_free(::std::string const &index_path);
 //
 // Returns:
 // - A bool value represent whether granule hitted.
-bool tantivy_search_in_rowid_range(::std::string const &index_path, ::std::string const &query, ::std::uint64_t lrange, ::std::uint64_t rrange, bool use_regex);
+bool ffi_search_in_rowid_range(::std::string const &index_path, ::std::string const &query, ::std::uint64_t lrange, ::std::uint64_t rrange, bool use_regex);
 
 // Counts the occurrences of a query string within a specified row ID range.
 //
@@ -825,7 +825,7 @@ bool tantivy_search_in_rowid_range(::std::string const &index_path, ::std::strin
 //
 // Returns:
 // - The count of occurrences of the query string within the row ID range.
-::std::uint64_t tantivy_count_in_rowid_range(::std::string const &index_path, ::std::string const &query, ::std::uint64_t lrange, ::std::uint64_t rrange, bool use_regex);
+::std::uint64_t ffi_count_in_rowid_range(::std::string const &index_path, ::std::string const &query, ::std::uint64_t lrange, ::std::uint64_t rrange, bool use_regex);
 
 // Execute bm25_search with filter row_ids.
 //
@@ -838,7 +838,7 @@ bool tantivy_search_in_rowid_range(::std::string const &index_path, ::std::strin
 //
 // Returns:
 // - A group of RowIdWithScore Objects.
-::rust::Vec<::RowIdWithScore> tantivy_bm25_search_with_filter(::std::string const &index_path, ::std::string const &query, ::std::vector<::std::uint8_t> const &u8_bitmap, ::std::uint32_t top_k, bool need_text);
+::rust::Vec<::RowIdWithScore> ffi_bm25_search_with_filter(::std::string const &index_path, ::std::string const &query, ::std::vector<::std::uint8_t> const &u8_bitmap, ::std::uint32_t top_k, bool need_text);
 
 // Execute bm25_search.
 //
@@ -850,7 +850,7 @@ bool tantivy_search_in_rowid_range(::std::string const &index_path, ::std::strin
 //
 // Returns:
 // - A group of RowIdWithScore Objects.
-::rust::Vec<::RowIdWithScore> tantivy_bm25_search(::std::string const &index_path, ::std::string const &query, ::std::uint32_t top_k, bool need_text);
+::rust::Vec<::RowIdWithScore> ffi_bm25_search(::std::string const &index_path, ::std::string const &query, ::std::uint32_t top_k, bool need_text);
 
 // Execute search with like pattern or not.
 //
@@ -861,7 +861,7 @@ bool tantivy_search_in_rowid_range(::std::string const &index_path, ::std::strin
 //
 // Returns:
 // - row_ids u8 bitmap.
-::rust::Vec<::std::uint8_t> tantivy_search_bitmap_results(::std::string const &index_path, ::std::string const &query, bool use_regex);
+::rust::Vec<::std::uint8_t> ffi_search_bitmap_results(::std::string const &index_path, ::std::string const &query, bool use_regex);
 
 // Get the number of documents stored in the index file.
 // In general, we can consider the number of stored documents as 'n',
@@ -871,4 +871,4 @@ bool tantivy_search_in_rowid_range(::std::string const &index_path, ::std::strin
 //
 // Returns:
 // - The count of documents stored in the index file.
-::std::uint64_t tantivy_indexed_doc_counts(::std::string const &index_path);
+::std::uint64_t ffi_indexed_doc_counts(::std::string const &index_path);

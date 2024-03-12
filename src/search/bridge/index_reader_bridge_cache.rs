@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::logger::logger_bridge::TantivySearchLogger;
-use crate::{common::constants::LOG_CALLBACK, WARNING, DEBUG};
+use crate::{common::constants::LOG_CALLBACK, DEBUG, WARNING};
 use flurry::HashMap;
 use once_cell::sync::OnceCell;
 use tantivy::Executor;
