@@ -67,6 +67,9 @@ public final class ReceiveOperator extends SourceOperator {
                 if (tupleId.getPartId() != null) {
                     distribution = RangeDistribution.builder().id(tupleId.getPartId()).build();
                 }
+                if (tupleId.getIndexId() != null) {
+                    context.setIndexId(tupleId.getIndexId());
+                }
                 ++count;
                 if (log.isDebugEnabled()) {
                     log.debug("(tag = {}) Take out tuple {} from receiving queue.",

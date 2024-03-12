@@ -46,7 +46,7 @@ public final class SendOperator extends SinkOperator {
                 SendParam param = vertex.getParam();
                 TupleId.TupleIdBuilder builder = TupleId.builder();
                 if (context != null && context.getDistribution() != null) {
-                    builder.partId(context.getDistribution().getId()).tuple(tuple);
+                    builder.partId(context.getDistribution().getId()).tuple(tuple).indexId(context.getIndexId());
                 }
                 TupleId tupleId = builder.tuple(tuple).build();
                 param.getTupleList().add(tupleId);

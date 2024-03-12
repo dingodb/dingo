@@ -59,6 +59,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
 
     public static final CommonId EMPTY_TASK = new CommonId(CommonType.TASK, 0, 0);
     public static final CommonId EMPTY_TXN_INSTANCE = new CommonId(CommonType.TXN_INSTANCE, 0, 0);
+    public static final CommonId EMPTY_INDEX = new CommonId(CommonType.INDEX, 0, 0);
 
     // data 0 -> 19, op 20 -> 59 , exec 60 -> 79, listen,notify 80-90, cluster 120-127
     public enum CommonType {
