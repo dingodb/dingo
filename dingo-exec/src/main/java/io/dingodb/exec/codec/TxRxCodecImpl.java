@@ -58,6 +58,7 @@ public class TxRxCodecImpl implements TxRxCodec {
         List<Object[]> tuples = new ArrayList<>();
         for (TupleId tupleId : tupleIds) {
             os.write(tupleId.getPartId().encode());
+            os.write(tupleId.getIndexId() == null ? CommonId.EMPTY_INDEX.encode(): tupleId.getIndexId().encode());
             tuples.add(tupleId.getTuple());
         }
         codec.encode(os, tuples);
@@ -88,16 +89,26 @@ public class TxRxCodecImpl implements TxRxCodec {
                 byte[] sizeByte = new byte[4];
                 is.read(sizeByte, 0, 4);
                 int size = PrimitiveCodec.decodeInt(sizeByte);
-                List<CommonId> commonIds = new ArrayList<>();
+                List<CommonId> partIds = new ArrayList<>();
+                List<CommonId> indexIds = new ArrayList<>();
                 for (int i = 0; i < size; i++) {
                     byte[] b1 = new byte[CommonId.LEN];
                     is.read(b1, 0, CommonId.LEN);
-                    commonIds.add(CommonId.decode(b1));
+                    partIds.add(CommonId.decode(b1));
+                    byte[] b2 = new byte[CommonId.LEN];
+                    is.read(b2, 0 ,CommonId.LEN);
+                    indexIds.add(CommonId.decode(b2));
                 }
                 List<Object[]> tuples = codec.decode(is);
                 List<TupleId> tupleIds = new ArrayList<>();
-                for (int i = 0; i < commonIds.size(); i++) {
-                    tupleIds.add(TupleId.builder().partId(commonIds.get(i)).tuple(tuples.get(i)).build());
+                for (int i = 0; i < partIds.size(); i++) {
+                    CommonId indexId = indexIds.get(i);
+                    tupleIds.add(TupleId.builder()
+                        .partId(partIds.get(i))
+                        .tuple(tuples.get(i))
+                        .indexId(indexId.equals(CommonId.EMPTY_INDEX) ? null : indexId)
+                        .build()
+                    );
                 }
                 return tupleIds;
             default:

@@ -357,7 +357,7 @@ public final class DingoDriverParser extends DingoParser {
         if (pessimisticTxn) {
             transaction.setForUpdateTs(jobSeqId);
         }
-        if (pessimisticTxn && transaction.getPrimaryKeyLock() == null) {
+        if (pessimisticTxn && transaction.getPrimaryKeyLock() == null && explain == null) {
             runPessimisticPrimaryKeyJob(jobSeqId, jobManager, transaction, sqlNode, relNode,
                 currentLocation, DefinitionMapper.mapToDingoType(parasType));
             jobSeqId = transaction.getForUpdateTs();

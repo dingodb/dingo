@@ -28,6 +28,7 @@ dependencies {
     implementation project(":dingo-exec")
     implementation project(":dingo-net-api")
     implementation project(":dingo-net-netty")
+    implementation project(":dingo-store-local")
 
     testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()
     testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: 'slf4j'.v()
@@ -72,7 +73,8 @@ fatJar.dependsOn(
     ':dingo-store-proxy:jar',
     ':dingo-tool-api:jar',
     ':dingo-exec:jar',
-    ':dingo-transaction-api:jar'
+    ':dingo-transaction-api:jar',
+    ':dingo-store-local:jar'
 )
 
 tasks.named("build") { x ->

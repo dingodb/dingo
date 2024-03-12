@@ -31,6 +31,7 @@ import lombok.Setter;
 public class TupleId {
 
     private CommonId partId;
+    private CommonId indexId;
     private Object[] tuple;
 
 }
