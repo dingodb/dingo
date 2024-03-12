@@ -67,6 +67,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -106,7 +107,7 @@ public class MetaCache {
         this.tsoService = TsoService.INSTANCE.isAvailable() ? TsoService.INSTANCE : new TsoService(coordinators);
         this.tableIdCache = new ConcurrentSkipListMap<>();
         this.distributionCache = buildDistributionCache();
-        this.cache = new HashMap<>();
+        this.cache = new ConcurrentHashMap<>();
         Executors.execute("watch-meta", () -> {
             while (true) {
                 try {
@@ -218,7 +219,7 @@ public class MetaCache {
         return schema.getTableIds().stream()
             .map(MAPPER::idFrom)
             .map(this::getTable)
-            .collect(Collectors.toMap(Table::getName, Function.identity()));
+            .collect(Collectors.toConcurrentMap(Table::getName, Function.identity()));
     }
 
     private LoadingCache<CommonId, NavigableMap<ComparableByteArray, RangeDistribution>> buildDistributionCache() {
