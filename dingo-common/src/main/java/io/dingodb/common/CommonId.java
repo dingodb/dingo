@@ -155,7 +155,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
         return str == null ? str = type.name() + '_' + domain + '_' + seq : str;
     }
 
-    public byte[] encode() {
+    public synchronized byte[] encode() {
         if (content == null) {
             content = new byte[LEN];
             content[0] = (byte) type.code;
@@ -166,10 +166,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
     }
 
     public byte[] encode(byte[] target, int index) {
-        if (content == null) {
-            encode();
-        }
-        System.arraycopy(content, 0, target, index, LEN);
+        System.arraycopy(encode(), 0, target, index, LEN);
         return target;
     }
 
