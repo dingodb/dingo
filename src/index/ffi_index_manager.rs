@@ -14,23 +14,23 @@ pub fn ffi_create_index_with_parameter(
     index_path: &CxxString,
     column_names: &CxxVector<CxxString>,
     index_json_parameter: &CxxString,
-) -> Result<bool, TantivySearchError> {
+) -> Result<bool, String> {
     let index_path: String = CXX_STRING_CONERTER.convert(index_path).map_err(|e|{
         ERROR!(function: "ffi_create_index_with_parameter", "Can't convert 'index_path', message: {}", e);
-        TantivySearchError::CxxConvertError(e)
+        TantivySearchError::CxxConvertError(e).to_string()
     })?;
 
     let column_names: Vec<String> = CXX_VECTOR_STRING_CONERTER.convert(column_names).map_err(|e|{
         ERROR!(function: "ffi_create_index_with_parameter", "Can't convert 'column_names', message: {}", e);
-        TantivySearchError::CxxConvertError(e)
+        TantivySearchError::CxxConvertError(e).to_string()
     })?;
 
     let index_json_parameter: String = CXX_STRING_CONERTER.convert(index_json_parameter).map_err(|e|{
         ERROR!(function: "ffi_create_index_with_parameter", "Can't convert 'index_json_parameter', message: {}", e);
-        TantivySearchError::CxxConvertError(e)
+        TantivySearchError::CxxConvertError(e).to_string()
     })?;
 
-    create_index_with_parameter(&index_path, &column_names, &index_json_parameter)
+    create_index_with_parameter(&index_path, &column_names, &index_json_parameter).map_err(|e|{e.to_string()})
 }
 
 /// 创建索引，不提供索引参数

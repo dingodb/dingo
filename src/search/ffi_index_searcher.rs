@@ -42,7 +42,7 @@ pub fn ffi_search_in_rowid_range(
         ERROR!(function: "ffi_search_in_rowid_range", "Can't convert 'index_path', message: {}", e);
         TantivySearchError::CxxConvertError(e)
     })?;
-    let column_name: String = CXX_STRING_CONERTER.convert(query).map_err(|e| {
+    let column_name: String = CXX_STRING_CONERTER.convert(column_name).map_err(|e| {
         ERROR!(function: "ffi_count_in_rowid_range", "Can't convert 'column_name', message: {}", e);
         TantivySearchError::CxxConvertError(e)
     })?;
@@ -69,7 +69,7 @@ pub fn ffi_count_in_rowid_range(
         ERROR!(function: "ffi_count_in_rowid_range", "Can't convert 'index_path', message: {}", e);
         TantivySearchError::CxxConvertError(e)
     })?;
-    let column_name: String = CXX_STRING_CONERTER.convert(query).map_err(|e| {
+    let column_name: String = CXX_STRING_CONERTER.convert(column_name).map_err(|e| {
         ERROR!(function: "ffi_count_in_rowid_range", "Can't convert 'column_name', message: {}", e);
         TantivySearchError::CxxConvertError(e)
     })?;
