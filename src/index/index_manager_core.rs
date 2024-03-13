@@ -64,7 +64,7 @@ pub fn create_index_with_parameter(
             TantivySearchError::TokenizerUtilsError(e)
         })?;
     
-    DEBUG!(function:"create_index_with_parameter", "col_tokenizer_map len is: {:?}", col_tokenizer_map.len());
+    INFO!(function:"create_index_with_parameter", "col_tokenizer_map len is: {:?}", col_tokenizer_map.len());
 
     // Construct the schema for the index.
     let mut schema_builder = Schema::builder();
@@ -72,9 +72,10 @@ pub fn create_index_with_parameter(
 
     for column_name in column_names {
         if let Some(tokenizer_config) = col_tokenizer_map.get(column_name) {
+            let tokenizer_name = format!("{}_{}", column_name, tokenizer_config.tokenizer_type.name());
             let mut text_options = TextOptions::default().set_indexing_options(
                 TextFieldIndexing::default()
-                    .set_tokenizer(tokenizer_config.tokenizer_type.name())
+                    .set_tokenizer(&tokenizer_name)
                     .set_index_option(IndexRecordOption::WithFreqsAndPositions),
             );
 
@@ -82,10 +83,10 @@ pub fn create_index_with_parameter(
                 text_options = text_options.set_stored();
             }
 
-            DEBUG!(function:"create_index_with_parameter", "column_name:{}, field_options name: {}", column_name, tokenizer_config.tokenizer_type.name());
+            INFO!(function:"create_index_with_parameter", "column_name:{}, field_options name: {}", column_name, tokenizer_name);
             schema_builder.add_text_field(&column_name, text_options);
         } else {
-            DEBUG!(function:"create_index_with_parameter", "column_name:{}, field_options name: {}", column_name, "TEXT");
+            INFO!(function:"create_index_with_parameter", "column_name:{}, field_options name: {}", column_name, "TEXT");
             schema_builder.add_text_field(&column_name, TEXT);
         }
     }
