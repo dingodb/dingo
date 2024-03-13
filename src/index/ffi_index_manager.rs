@@ -101,9 +101,9 @@ pub fn ffi_index_writer_commit(index_path: &CxxString) -> Result<bool, TantivySe
 }
 
 /// 释放索引
-pub fn tantivy_index_writer_free(index_path: &CxxString) -> Result<bool, TantivySearchError> {
+pub fn ffi_index_writer_free(index_path: &CxxString) -> Result<bool, TantivySearchError> {
     let index_path: String = CXX_STRING_CONERTER.convert(index_path).map_err(|e| {
-        ERROR!(function: "tantivy_index_writer_free", "Can't convert 'index_path', message: {}", e);
+        ERROR!(function: "ffi_index_writer_free", "Can't convert 'index_path', message: {}", e);
         TantivySearchError::CxxConvertError(e)
     })?;
     free_index_writer(&index_path)

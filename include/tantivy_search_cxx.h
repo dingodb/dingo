@@ -781,7 +781,7 @@ bool ffi_index_writer_commit(::std::string const &index_path);
 //
 // Returns:
 // - A bool value represent operation success.
-bool tantivy_index_writer_free(::std::string const &index_path);
+bool ffi_index_writer_free(::std::string const &index_path);
 
 // Loads an index from a specified directory.
 //

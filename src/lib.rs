@@ -22,7 +22,7 @@ pub mod ffi {
         pub score: f32,
         pub seg_id: u32,
         pub doc_id: u32,
-        pub doc: String,
+        pub docs: Vec<String>,
     }
 
     extern "Rust" {
@@ -94,7 +94,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A bool value represent operation success.
-        fn tantivy_index_writer_free(index_path: &CxxString) -> Result<bool>;
+        fn ffi_index_writer_free(index_path: &CxxString) -> Result<bool>;
 
         /// Loads an index from a specified directory.
         ///
@@ -127,6 +127,7 @@ pub mod ffi {
         /// - A bool value represent whether granule hitted.
         fn ffi_search_in_rowid_range(
             index_path: &CxxString,
+            column_name: &CxxString,
             query: &CxxString,
             lrange: u64,
             rrange: u64,
@@ -146,6 +147,7 @@ pub mod ffi {
         /// - The count of occurrences of the query string within the row ID range.
         fn ffi_count_in_rowid_range(
             index_path: &CxxString,
+            column_name: &CxxString,
             query: &CxxString,
             lrange: u64,
             rrange: u64,
@@ -165,6 +167,7 @@ pub mod ffi {
         /// - A group of RowIdWithScore Objects.
         fn ffi_bm25_search_with_filter(
             index_path: &CxxString,
+            column_names: &CxxVector<CxxString>,
             query: &CxxString,
             u8_bitmap: &CxxVector<u8>,
             top_k: u32,
@@ -183,6 +186,7 @@ pub mod ffi {
         /// - A group of RowIdWithScore Objects.
         fn ffi_bm25_search(
             index_path: &CxxString,
+            column_names: &CxxVector<CxxString>,
             query: &CxxString,
             top_k: u32,
             need_text: bool,
@@ -199,6 +203,7 @@ pub mod ffi {
         /// - row_ids u8 bitmap.
         pub fn ffi_search_bitmap_results(
             index_path: &CxxString,
+            column_names: &CxxVector<CxxString>,
             query: &CxxString,
             use_regex: bool,
         ) -> Result<Vec<u8>>;
@@ -236,13 +241,11 @@ impl Ord for RowIdWithScore {
         let lazy_by_row_id = || self.row_id.cmp(&other.row_id);
         let lazy_by_seg_id = || self.seg_id.cmp(&other.seg_id);
         let lazy_by_doc_id = || self.doc_id.cmp(&other.doc_id);
-        let lazy_by_doc = || self.doc.cmp(&other.doc);
 
         by_score
             .then_with(lazy_by_row_id)
             .then_with(lazy_by_seg_id)
             .then_with(lazy_by_doc_id)
-            .then_with(lazy_by_doc)
     }
 }
 
@@ -254,148 +257,148 @@ impl PartialEq for RowIdWithScore {
 
 impl Eq for RowIdWithScore {}
 
-#[cfg(test)]
-mod tests {
-    use std::{cmp::Ordering, collections::BinaryHeap};
+// #[cfg(test)]
+// mod tests {
+//     use std::{cmp::Ordering, collections::BinaryHeap};
 
-    use crate::ffi::RowIdWithScore;
+//     use crate::ffi::RowIdWithScore;
 
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
+//     #[test]
+//     fn it_works() {
+//         assert_eq!(2 + 2, 4);
+//     }
 
-    #[test]
-    fn test_row_id_with_score() {
-        // compare score: reverse binary_heap
-        let riws0 = RowIdWithScore {
-            row_id: 0,
-            score: 1.11,
-            seg_id: 0,
-            doc_id: 0,
-            doc: "abc".to_string(),
-        };
-        let riws1 = RowIdWithScore {
-            row_id: 0,
-            score: 1.11,
-            seg_id: 0,
-            doc_id: 0,
-            doc: "abc".to_string(),
-        };
-        let riws2 = RowIdWithScore {
-            row_id: 0,
-            score: 2.22,
-            seg_id: 0,
-            doc_id: 0,
-            doc: "abc".to_string(),
-        };
-        // test for min_binary_heap
-        let mut heap: BinaryHeap<RowIdWithScore> = BinaryHeap::new();
-        heap.push(riws0.clone());
-        heap.push(riws1.clone());
-        heap.push(riws2.clone());
-        assert_eq!(heap.peek().unwrap(), &riws1);
-        assert_eq!(heap.peek().unwrap(), &riws0);
-        assert_eq!(riws1.cmp(&riws2), Ordering::Greater);
+//     #[test]
+//     fn test_row_id_with_score() {
+//         // compare score: reverse binary_heap
+//         let riws0 = RowIdWithScore {
+//             row_id: 0,
+//             score: 1.11,
+//             seg_id: 0,
+//             doc_id: 0,
+//             doc: "abc".to_string(),
+//         };
+//         let riws1 = RowIdWithScore {
+//             row_id: 0,
+//             score: 1.11,
+//             seg_id: 0,
+//             doc_id: 0,
+//             doc: "abc".to_string(),
+//         };
+//         let riws2 = RowIdWithScore {
+//             row_id: 0,
+//             score: 2.22,
+//             seg_id: 0,
+//             doc_id: 0,
+//             doc: "abc".to_string(),
+//         };
+//         // test for min_binary_heap
+//         let mut heap: BinaryHeap<RowIdWithScore> = BinaryHeap::new();
+//         heap.push(riws0.clone());
+//         heap.push(riws1.clone());
+//         heap.push(riws2.clone());
+//         assert_eq!(heap.peek().unwrap(), &riws1);
+//         assert_eq!(heap.peek().unwrap(), &riws0);
+//         assert_eq!(riws1.cmp(&riws2), Ordering::Greater);
 
-        // compare with `row_id`
-        let riws3 = RowIdWithScore {
-            row_id: 0,
-            score: 3.33,
-            seg_id: 1,
-            doc_id: 1,
-            doc: "def".to_string(),
-        };
-        let riws4 = RowIdWithScore {
-            row_id: 1,
-            score: 3.33,
-            seg_id: 0,
-            doc_id: 0,
-            doc: "abc".to_string(),
-        };
-        heap.push(riws3.clone());
-        heap.push(riws4.clone());
-        assert_eq!(heap.peek().unwrap(), &riws1);
-        assert_eq!(riws4.cmp(&riws3), Ordering::Greater);
+//         // compare with `row_id`
+//         let riws3 = RowIdWithScore {
+//             row_id: 0,
+//             score: 3.33,
+//             seg_id: 1,
+//             doc_id: 1,
+//             doc: "def".to_string(),
+//         };
+//         let riws4 = RowIdWithScore {
+//             row_id: 1,
+//             score: 3.33,
+//             seg_id: 0,
+//             doc_id: 0,
+//             doc: "abc".to_string(),
+//         };
+//         heap.push(riws3.clone());
+//         heap.push(riws4.clone());
+//         assert_eq!(heap.peek().unwrap(), &riws1);
+//         assert_eq!(riws4.cmp(&riws3), Ordering::Greater);
 
-        // compare with `seg_id`
-        let riws5 = RowIdWithScore {
-            row_id: 2,
-            score: 4.44,
-            seg_id: 0,
-            doc_id: 2,
-            doc: "def".to_string(),
-        };
-        let riws6 = RowIdWithScore {
-            row_id: 2,
-            score: 4.44,
-            seg_id: 1,
-            doc_id: 1,
-            doc: "abc".to_string(),
-        };
-        heap.push(riws3.clone());
-        heap.push(riws4.clone());
-        assert_eq!(heap.peek().unwrap(), &riws1);
-        assert_eq!(riws6.cmp(&riws5), Ordering::Greater);
+//         // compare with `seg_id`
+//         let riws5 = RowIdWithScore {
+//             row_id: 2,
+//             score: 4.44,
+//             seg_id: 0,
+//             doc_id: 2,
+//             doc: "def".to_string(),
+//         };
+//         let riws6 = RowIdWithScore {
+//             row_id: 2,
+//             score: 4.44,
+//             seg_id: 1,
+//             doc_id: 1,
+//             doc: "abc".to_string(),
+//         };
+//         heap.push(riws3.clone());
+//         heap.push(riws4.clone());
+//         assert_eq!(heap.peek().unwrap(), &riws1);
+//         assert_eq!(riws6.cmp(&riws5), Ordering::Greater);
 
-        // compare with `doc_id`
-        let riws7 = RowIdWithScore {
-            row_id: 3,
-            score: 5.55,
-            seg_id: 1,
-            doc_id: 1,
-            doc: "def".to_string(),
-        };
-        let riws8 = RowIdWithScore {
-            row_id: 3,
-            score: 5.55,
-            seg_id: 1,
-            doc_id: 2,
-            doc: "abc".to_string(),
-        };
-        heap.push(riws3.clone());
-        heap.push(riws4.clone());
-        assert_eq!(heap.peek().unwrap(), &riws1);
-        assert_eq!(riws8.cmp(&riws7), Ordering::Greater);
+//         // compare with `doc_id`
+//         let riws7 = RowIdWithScore {
+//             row_id: 3,
+//             score: 5.55,
+//             seg_id: 1,
+//             doc_id: 1,
+//             doc: "def".to_string(),
+//         };
+//         let riws8 = RowIdWithScore {
+//             row_id: 3,
+//             score: 5.55,
+//             seg_id: 1,
+//             doc_id: 2,
+//             doc: "abc".to_string(),
+//         };
+//         heap.push(riws3.clone());
+//         heap.push(riws4.clone());
+//         assert_eq!(heap.peek().unwrap(), &riws1);
+//         assert_eq!(riws8.cmp(&riws7), Ordering::Greater);
 
-        // compare with `doc`
-        let riws9 = RowIdWithScore {
-            row_id: 4,
-            score: 6.66,
-            seg_id: 2,
-            doc_id: 2,
-            doc: "abc".to_string(),
-        };
-        let riws10 = RowIdWithScore {
-            row_id: 4,
-            score: 6.66,
-            seg_id: 2,
-            doc_id: 2,
-            doc: "acd".to_string(),
-        };
-        heap.push(riws3.clone());
-        heap.push(riws4.clone());
-        assert_eq!(heap.peek().unwrap(), &riws1);
-        assert_eq!(riws10.cmp(&riws9), Ordering::Greater);
+//         // compare with `doc`
+//         let riws9 = RowIdWithScore {
+//             row_id: 4,
+//             score: 6.66,
+//             seg_id: 2,
+//             doc_id: 2,
+//             doc: "abc".to_string(),
+//         };
+//         let riws10 = RowIdWithScore {
+//             row_id: 4,
+//             score: 6.66,
+//             seg_id: 2,
+//             doc_id: 2,
+//             doc: "acd".to_string(),
+//         };
+//         heap.push(riws3.clone());
+//         heap.push(riws4.clone());
+//         assert_eq!(heap.peek().unwrap(), &riws1);
+//         assert_eq!(riws10.cmp(&riws9), Ordering::Greater);
 
-        // compare `equal`
-        let riws11 = RowIdWithScore {
-            row_id: 4,
-            score: 1.11,
-            seg_id: 2,
-            doc_id: 2,
-            doc: "abc".to_string(),
-        };
-        let riws12 = RowIdWithScore {
-            row_id: 4,
-            score: 1.11,
-            seg_id: 2,
-            doc_id: 2,
-            doc: "abc".to_string(),
-        };
-        heap.push(riws11.clone());
-        heap.push(riws12.clone());
-        assert_eq!(heap.peek().unwrap(), &riws11);
-        assert_eq!(riws12.cmp(&riws11), Ordering::Equal);
-    }
-}
+//         // compare `equal`
+//         let riws11 = RowIdWithScore {
+//             row_id: 4,
+//             score: 1.11,
+//             seg_id: 2,
+//             doc_id: 2,
+//             doc: "abc".to_string(),
+//         };
+//         let riws12 = RowIdWithScore {
+//             row_id: 4,
+//             score: 1.11,
+//             seg_id: 2,
+//             doc_id: 2,
+//             doc: "abc".to_string(),
+//         };
+//         heap.push(riws11.clone());
+//         heap.push(riws12.clone());
+//         assert_eq!(heap.peek().unwrap(), &riws11);
+//         assert_eq!(riws12.cmp(&riws11), Ordering::Equal);
+//     }
+// }

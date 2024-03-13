@@ -1,12 +1,13 @@
 //! Definition of Tantivy's errors and results.
 
-use std::str::Utf8Error;
+use std::{num::TryFromIntError, str::Utf8Error};
 
+use serde_json::error;
 use tantivy::TantivyError;
 use thiserror::Error;
 
 #[derive(Debug, Clone, Error)]
-#[allow(dead_code)]
+// #[allow(dead_code)]
 pub enum TokenizerUtilsError {
     #[error("Failed to parse json str. '{0}'")]
     JsonParseError(String),
@@ -19,7 +20,7 @@ pub enum TokenizerUtilsError {
 }
 
 #[derive(Debug, Clone, Error)]
-#[allow(dead_code)]
+// #[allow(dead_code)]
 pub enum IndexUtilsError {
     #[error("Failed to convert cxx vector variable. '{0}'")]
     JsonParseError(String),
@@ -41,8 +42,36 @@ pub enum IndexUtilsError {
     #[error("Failed to write file. '{0}'")]
     WriteFileError(String),
 }
+
 #[derive(Debug, Clone, Error)]
-#[allow(dead_code)]
+// #[allow(dead_code)]
+pub enum IndexSearcherError {
+    #[error("Missing field/column in tantivy schema. '{0}'")]
+    MissingFieldError(String),
+    #[error("At least one field should be choosed.")]
+    EmptyFieldsError,
+
+    #[error("Unexpect behavior. '{0}'")]
+    InternalError(String),
+
+    #[error(transparent)]
+    TantivyError(#[from] TantivyError),
+
+    #[error("Failed to convert integer: {0}")]
+    TryFromIntError(#[from] TryFromIntError),
+
+    #[error("Bitmap may be overflow. '{0}'")]
+    BitmapOverflowError(String),
+
+    #[error("Query parse error. '{0}'")]
+    QueryParserError(String),
+}
+
+
+
+
+#[derive(Debug, Clone, Error)]
+// #[allow(dead_code)]
 pub enum CxxConvertError {
     #[error("Failed to convert cxx vector variable. '{0}'")]
     CxxVectorConvertError(String),
@@ -54,7 +83,7 @@ pub enum CxxConvertError {
 
 /// The library's error enum
 #[derive(Debug, Clone, Error)]
-#[allow(dead_code)]
+// #[allow(dead_code)]
 pub enum TantivySearchError {
     #[error(transparent)]
     CxxConvertError(#[from] CxxConvertError),
@@ -65,6 +94,9 @@ pub enum TantivySearchError {
     #[error(transparent)]
     TokenizerUtilsError(#[from] TokenizerUtilsError),
 
+    #[error(transparent)]
+    IndexSearcherError(#[from] IndexSearcherError),
+    
     #[error(transparent)]
     TantivyError(#[from] TantivyError),
 

@@ -1,11 +1,16 @@
+use crate::common::errors::IndexSearcherError;
 use crate::common::errors::TantivySearchError;
 use crate::logger::logger_bridge::TantivySearchLogger;
+use crate::search::bridge::index_reader_bridge;
 use crate::tokenizer::vo::tokenizers_vo::TokenizerConfig;
 use crate::utils::index_utils::IndexUtils;
 use crate::RowIdWithScore;
+use crate::DEBUG;
 use crate::FFI_INDEX_SEARCHER_CACHE;
 use crate::{common::constants::LOG_CALLBACK, ERROR, INFO};
 use roaring::RoaringBitmap;
+use tantivy::schema::Field;
+use tantivy::TantivyError;
 use std::{path::Path, sync::Arc};
 use tantivy::query::QueryParser;
 
@@ -47,6 +52,8 @@ pub fn load_index(index_path: &str) -> Result<bool, TantivySearchError> {
         }
     };
 
+    DEBUG!(function:"load_index", "parameter DTO is {:?}", index_parameter_dto);
+
     // Parse tokenizer map from local index parameter DTO.
     let col_tokenizer_map: HashMap<String, TokenizerConfig> =
         ToeknizerUtils::parse_tokenizer_json_to_config_map(
@@ -56,6 +63,8 @@ pub fn load_index(index_path: &str) -> Result<bool, TantivySearchError> {
             ERROR!("{}", e.to_string());
             TantivySearchError::TokenizerUtilsError(e)
         })?;
+
+    DEBUG!(function:"load_index", "col_tokenizer_map len is {:?}", col_tokenizer_map.len());
 
     // Register tokenizer config into `index`.
     for (column_name, tokenizer_config) in col_tokenizer_map.iter() {
@@ -116,14 +125,14 @@ pub fn load_index(index_path: &str) -> Result<bool, TantivySearchError> {
     };
 
     // Save IndexReaderBridge to cache.
-    let indexr = IndexReaderBridge {
+    let index_reader_bridge = IndexReaderBridge {
         index,
         reader,
         path: index_path.trim_end_matches('/').to_string(),
     };
 
     if let Err(e) =
-        FFI_INDEX_SEARCHER_CACHE.set_index_reader_bridge(index_path.to_string(), Arc::new(indexr))
+        FFI_INDEX_SEARCHER_CACHE.set_index_reader_bridge(index_path.to_string(), Arc::new(index_reader_bridge))
     {
         ERROR!("{}", e);
         return Err(TantivySearchError::InternalError(e));
@@ -155,6 +164,7 @@ pub fn free_reader(index_path: &str) -> Result<bool, TantivySearchError> {
 
 pub fn search_in_rowid_range(
     index_path: &str,
+    column_names: &Vec<String>,
     query: &str,
     lrange: u64,
     rrange: u64,
@@ -167,29 +177,26 @@ pub fn search_in_rowid_range(
         )));
     }
 
-    // get index reader from CACHE
-    let index_r = match FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path.to_string()) {
-        Ok(content) => content,
-        Err(e) => {
-            ERROR!("{}", e);
-            return Err(TantivySearchError::InternalError(e));
-        }
-    };
+    // get index_reader_bridge from CACHE
+    let index_reader_bridge = FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path.to_string()).map_err(|e|{
+        ERROR!(function:"search_in_rowid_range", "{}", e);
+        TantivySearchError::InternalError(e)
+    })?;
 
     match FFiIndexSearcherUtils::perform_search_with_range(
-        &index_r, query, lrange, rrange, use_regex,
+        &index_reader_bridge, &column_names, query, lrange, rrange, use_regex,
     ) {
         Ok(row_id_range) => Ok(!row_id_range.is_empty()),
         Err(e) => {
-            let error_info = format!("Error in search: {}", e);
-            ERROR!("{}", error_info);
-            return Err(TantivySearchError::InternalError(e));
+            ERROR!(function:"search_in_rowid_range", "{}", e);
+            return Err(TantivySearchError::IndexSearcherError(e));
         }
     }
 }
 
 pub fn count_in_rowid_range(
     index_path: &str,
+    column_names: &Vec<String>,
     query: &str,
     lrange: u64,
     rrange: u64,
@@ -201,29 +208,26 @@ pub fn count_in_rowid_range(
             lrange, rrange
         )));
     }
-    // get index reader from CACHE
-    let index_r = match FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path.to_string()) {
-        Ok(content) => content,
-        Err(e) => {
-            ERROR!("{}", e);
-            return Err(TantivySearchError::InternalError(e));
-        }
-    };
+    // get index_reader_bridge from CACHE
+    let index_reader_bridge = FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path.to_string()).map_err(|e|{
+        ERROR!(function:"count_in_rowid_range", "{}", e);
+        TantivySearchError::InternalError(e)
+    })?;
 
     match FFiIndexSearcherUtils::perform_search_with_range(
-        &index_r, query, lrange, rrange, use_regex,
+        &index_reader_bridge, column_names, query, lrange, rrange, use_regex,
     ) {
         Ok(row_id_range) => Ok(row_id_range.len() as u64),
         Err(e) => {
-            let error_info = format!("Error in search: {}", e);
-            ERROR!("{}", error_info);
-            return Err(TantivySearchError::InternalError(e));
+            ERROR!(function:"count_in_rowid_range", "{}", e);
+            return Err(TantivySearchError::IndexSearcherError(e));
         }
     }
 }
 
 pub fn bm25_search_with_filter(
     index_path: &str,
+    column_names: &Vec<String>,
     query: &str,
     u8_bitmap: &Vec<u8>,
     top_k: u32,
@@ -231,37 +235,51 @@ pub fn bm25_search_with_filter(
 ) -> Result<Vec<RowIdWithScore>, TantivySearchError> {
     let row_ids: Vec<u32> = ConvertUtils::u8_bitmap_to_row_ids(&u8_bitmap);
 
-    // INFO!("alive row_ids is: {:?}", row_ids);
-    // get index reader from CACHE
-    let index_r = match FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path.to_string()) {
-        Ok(content) => content,
-        Err(e) => {
-            ERROR!("{}", e);
-            return Err(TantivySearchError::InternalError(e));
-        }
-    };
+    // get index_reader_bridge from CACHE
+    let index_reader_bridge = FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path.to_string()).map_err(|e|{
+        ERROR!(function:"bm25_search_with_filter", "{}", e);
+        TantivySearchError::InternalError(e)
+    })?;
 
-    let schema = index_r.reader.searcher().index().schema();
-    let text = match schema.get_field("text") {
-        Ok(str) => str,
-        Err(_) => {
-            ERROR!("Missing text field.");
-            return Ok(Vec::new());
-        }
-    };
+    let schema = index_reader_bridge.reader.searcher().index().schema();
 
-    let is_stored = schema.get_field_entry(text).is_stored();
-    if !is_stored && need_text {
-        let error_info = format!("Can't search with origin text, index doesn't store it");
-        ERROR!("{}", error_info);
-        return Err(TantivySearchError::InternalError(error_info));
+    let fields: Result<Vec<Field>, TantivyError> = column_names.iter().map(|column_name|{
+        schema.get_field(column_name.as_str())
+    }).collect();
+
+    let mut fields: Vec<Field> = fields.map_err(|e|{
+        let error = TantivySearchError::TantivyError(e);
+        ERROR!(function:"bm25_search_with_filter", "{}", error);
+        error
+    })?;
+
+    if fields.len()==0 {
+        fields = schema.fields().filter(|(field,_)|{
+            schema.get_field_name(*field)!="row_id"
+        }).map(|(field, _)| field).collect();
     }
 
-    let searcher = index_r.reader.searcher();
+    if fields.len()==0 {
+        let error = IndexSearcherError::EmptyFieldsError;
+        ERROR!(function:"bm25_search_with_filter", "{}", error);
+        return Err(TantivySearchError::IndexSearcherError(error));
+    }
+
+    if need_text {
+        for field in fields.clone()  {
+            if !schema.get_field_entry(field).is_stored() {
+                let error = format!("Can't search with origin text, index doesn't store it");
+                ERROR!(function:"bm25_search_with_filter", "{}", error);
+                return Err(TantivySearchError::InternalError(error));
+            }
+        }        
+    }
+
+    let searcher = index_reader_bridge.reader.searcher();
 
     let mut top_docs_collector = TopDocsWithFilter::with_limit(top_k as usize)
         .with_searcher(searcher.clone())
-        .with_text_field(text)
+        .with_text_fields(fields.clone())
         .with_stored_text(need_text);
 
     let mut alive_bitmap = RoaringBitmap::new();
@@ -272,76 +290,61 @@ pub fn bm25_search_with_filter(
         top_docs_collector = top_docs_collector.with_alive(Arc::new(alive_bitmap));
     }
 
-    let query_parser = QueryParser::for_index(index_r.reader.searcher().index(), vec![text]);
-    let text_query = match query_parser.parse_query(query) {
-        Ok(parsed_query) => parsed_query,
-        Err(e) => {
-            let error_info = format!("Can't parse query: {}, due to: {}", query, e);
-            ERROR!("{}", error_info);
-            return Err(TantivySearchError::InternalError(error_info));
-        }
-    };
-    let searched_result = match searcher.search(&text_query, &top_docs_collector) {
-        Ok(result) => result,
-        Err(e) => {
-            let error_info = format!(
-                "Can't execute search in `tantivy_search_with_row_id_bitmap`: {}",
-                e
-            );
-            ERROR!("{}", error_info);
-            return Err(TantivySearchError::InternalError(error_info));
-        }
-    };
+    let query_parser = QueryParser::for_index(index_reader_bridge.reader.searcher().index(), fields);
+    let text_query = query_parser.parse_query(query).map_err(|e|{
+        let error = IndexSearcherError::QueryParserError(e.to_string());
+        ERROR!(function:"bm25_search_with_filter", "{}", error);
+        TantivySearchError::IndexSearcherError(error)
+    })?;
+
+    let searched_result = searcher.search(&text_query, &top_docs_collector).map_err(|e|{
+        ERROR!(function:"bm25_search_with_filter", "Error when execute query:{}. {}", query, e);
+        TantivySearchError::TantivyError(e)
+    })?;
 
     Ok(searched_result)
 }
 
 pub fn bm25_search(
     index_path: &str,
+    column_names: &Vec<String>,
     query: &str,
     top_k: u32,
     need_text: bool,
 ) -> Result<Vec<RowIdWithScore>, TantivySearchError> {
     let u8bitmap: Vec<u8> = vec![];
-    bm25_search_with_filter(index_path, query, &u8bitmap, top_k, need_text)
+    bm25_search_with_filter(index_path, column_names, query, &u8bitmap, top_k, need_text)
 }
 
 pub fn search_bitmap_results(
     index_path: &str,
+    column_names: &Vec<String>,
     query: &str,
     use_regex: bool,
 ) -> Result<Vec<u8>, TantivySearchError> {
-    // get index reader from CACHE
-    let index_r = match FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path.to_string()) {
-        Ok(content) => content,
-        Err(e) => {
-            ERROR!("{}", e);
-            return Err(TantivySearchError::InternalError(e));
-        }
-    };
+    // get index_reader_bridge from CACHE
+    let index_reader_bridge = FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path.to_string()).map_err(|e|{
+        ERROR!(function:"search_bitmap_results", "{}", e);
+        TantivySearchError::InternalError(e)
+    })?;
 
-    let row_ids_bitmap = match FFiIndexSearcherUtils::perform_search(&index_r, query, use_regex) {
-        Ok(content) => content,
-        Err(e) => {
-            let error_info = format!("Error in perform_search: {}", e);
-            ERROR!("{}", error_info);
-            return Err(TantivySearchError::InternalError(e));
-        }
-    };
+    let row_ids_bitmap = FFiIndexSearcherUtils::perform_search(&index_reader_bridge, &column_names, query, use_regex).map_err(|e|{
+        ERROR!(function:"search_bitmap_results", "{}", e);
+        TantivySearchError::IndexSearcherError(e)
+    })?;
+
     let row_ids_number: Vec<u32> = row_ids_bitmap.iter().collect();
     let u8_bitmap: Vec<u8> = ConvertUtils::row_ids_to_u8_bitmap(&row_ids_number);
     Ok(u8_bitmap)
 }
 
 pub fn indexed_doc_counts(index_path: &str) -> Result<u64, TantivySearchError> {
-    // get index writer from CACHE
-    let index_r = match FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path.to_string()) {
-        Ok(content) => content,
-        Err(e) => {
-            ERROR!(function: "tantivy_indexed_doc_counts", "Index reader already been removed: {}", e);
-            return Ok(0);
-        }
-    };
-    let num_docs = index_r.reader.searcher().num_docs();
+    // get index_reader_bridge from CACHE
+    let index_reader_bridge = FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path.to_string()).map_err(|e|{
+        ERROR!(function:"search_bitmap_results", "{}", e);
+        TantivySearchError::InternalError(e)
+    })?;
+
+    let num_docs = index_reader_bridge.reader.searcher().num_docs();
     Ok(num_docs)
 }

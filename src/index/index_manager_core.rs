@@ -49,6 +49,9 @@ pub fn create_index_with_parameter(
     let index_parameter_dto = IndexParameterDTO {
         tokenizers_json_parameter: index_json_parameter.to_string(),
     };
+
+    DEBUG!(function:"create_index_with_parameter", "parameter DTO:{:?}", index_parameter_dto);
+
     IndexUtils::save_custom_index_setting(index_files_directory, &index_parameter_dto)?;
 
     // Parse tokenizer map from local index parameter DTO.
@@ -60,6 +63,8 @@ pub fn create_index_with_parameter(
             ERROR!("{}", e.to_string());
             TantivySearchError::TokenizerUtilsError(e)
         })?;
+    
+    DEBUG!(function:"create_index_with_parameter", "col_tokenizer_map len is: {:?}", col_tokenizer_map.len());
 
     // Construct the schema for the index.
     let mut schema_builder = Schema::builder();
@@ -77,8 +82,10 @@ pub fn create_index_with_parameter(
                 text_options = text_options.set_stored();
             }
 
+            DEBUG!(function:"create_index_with_parameter", "column_name:{}, field_options name: {}", column_name, tokenizer_config.tokenizer_type.name());
             schema_builder.add_text_field(&column_name, text_options);
         } else {
+            DEBUG!(function:"create_index_with_parameter", "column_name:{}, field_options name: {}", column_name, "TEXT");
             schema_builder.add_text_field(&column_name, TEXT);
         }
     }
