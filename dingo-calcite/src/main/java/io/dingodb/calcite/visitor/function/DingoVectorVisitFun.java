@@ -27,6 +27,13 @@ import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.scalar.BooleanType;
+import io.dingodb.common.type.scalar.DecimalType;
+import io.dingodb.common.type.scalar.DoubleType;
+import io.dingodb.common.type.scalar.FloatType;
+import io.dingodb.common.type.scalar.IntegerType;
+import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
@@ -48,6 +55,7 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.serial.schema.IntegerSchema;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
@@ -88,7 +96,21 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_VECTOR;
 @Slf4j
 public final class DingoVectorVisitFun {
 
+    // tmp use
+    public static List<Object> pushDownSchemaList = new ArrayList<>();
+
+    static {
+        pushDownSchemaList.add(IntegerType.class);
+        pushDownSchemaList.add(LongType.class);
+        pushDownSchemaList.add(BooleanType.class);
+        pushDownSchemaList.add(FloatType.class);
+        pushDownSchemaList.add(DoubleType.class);
+        pushDownSchemaList.add(DecimalType.class);
+        pushDownSchemaList.add(StringType.class);
+    }
+
     private DingoVectorVisitFun() {
+
     }
 
     public static Collection<Vertex> visit(
@@ -377,11 +399,16 @@ public final class DingoVectorVisitFun {
             }
         };
         filter.accept(visitor);
-        List<Column> selectionName = inputRefList.stream()
+        List<Column> selectionColList = inputRefList.stream()
             .map(i -> table.getColumns().get(i))
             .filter(col -> !col.isPrimary())
             .collect(Collectors.toList());
-        if (selectionName.size() == 0) {
+        if (selectionColList.size() == 0) {
+            return false;
+        }
+        boolean recognizableTypes = selectionColList.stream()
+            .allMatch(column -> pushDownSchemaList.contains(column.type.getClass()));
+        if (!recognizableTypes) {
             return false;
         }
 
@@ -389,7 +416,7 @@ public final class DingoVectorVisitFun {
         List<Column> filterIndexCols = indexTable.getColumns().stream()
             .filter(col -> !col.isPrimary() && !(col.getType() instanceof ListType))
             .collect(Collectors.toList());
-        java.util.Optional<Column> optional = selectionName.stream()
+        java.util.Optional<Column> optional = selectionColList.stream()
             .filter(column -> !filterIndexCols.contains(column))
             .findFirst();
         return !optional.isPresent();

@@ -34,7 +34,7 @@ import static io.dingodb.exec.Services.CTRL_TAG;
 
 @Slf4j
 public class ReceiveEndpoint {
-    private static final int BUFFER_LENGTH = 65536 * 3;
+    private static final int BUFFER_LENGTH = 65536 * 9;
 
     private final String host;
     private final int port;
