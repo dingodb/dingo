@@ -34,12 +34,12 @@ rand = "0.8.4"
 clap = "2.33"
 regex = "1.10.2"
 rstest = "0.18.2"
-cxx = "1.0.111"
+cxx = "1.0.119"
 tempfile = "3.2.0"
 thiserror = "1.0.30"
 
 [build-dependencies]
-cxx-build = "1.0.111"
+cxx-build = "1.0.119"
 
 [features]
 use-flurry-cache = []
