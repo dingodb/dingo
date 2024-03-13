@@ -30,7 +30,12 @@ pub fn ffi_create_index_with_parameter(
         TantivySearchError::CxxConvertError(e).to_string()
     })?;
 
-    create_index_with_parameter(&index_path, &column_names, &index_json_parameter).map_err(|e|{e.to_string()})
+    create_index_with_parameter(&index_path, &column_names, &index_json_parameter).map_err(|e|{
+        println!("xxxx----");
+        println!("{}", e.to_string());
+        println!("xxxx----");
+        e.to_string()
+    })
 }
 
 /// 创建索引，不提供索引参数
