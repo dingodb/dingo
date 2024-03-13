@@ -719,7 +719,7 @@ struct RowIdWithScore final {
   float score;
   ::std::uint32_t seg_id;
   ::std::uint32_t doc_id;
-  ::rust::String doc;
+  ::rust::Vec<::rust::String> docs;
 
   using IsRelocatable = ::std::true_type;
 };
@@ -812,7 +812,7 @@ bool ffi_free_reader(::std::string const &index_path);
 //
 // Returns:
 // - A bool value represent whether granule hitted.
-bool ffi_search_in_rowid_range(::std::string const &index_path, ::std::string const &query, ::std::uint64_t lrange, ::std::uint64_t rrange, bool use_regex);
+bool ffi_search_in_rowid_range(::std::string const &index_path, ::std::string const &column_name, ::std::string const &query, ::std::uint64_t lrange, ::std::uint64_t rrange, bool use_regex);
 
 // Counts the occurrences of a query string within a specified row ID range.
 //
@@ -825,7 +825,7 @@ bool ffi_search_in_rowid_range(::std::string const &index_path, ::std::string co
 //
 // Returns:
 // - The count of occurrences of the query string within the row ID range.
-::std::uint64_t ffi_count_in_rowid_range(::std::string const &index_path, ::std::string const &query, ::std::uint64_t lrange, ::std::uint64_t rrange, bool use_regex);
+::std::uint64_t ffi_count_in_rowid_range(::std::string const &index_path, ::std::string const &column_name, ::std::string const &query, ::std::uint64_t lrange, ::std::uint64_t rrange, bool use_regex);
 
 // Execute bm25_search with filter row_ids.
 //
@@ -838,7 +838,7 @@ bool ffi_search_in_rowid_range(::std::string const &index_path, ::std::string co
 //
 // Returns:
 // - A group of RowIdWithScore Objects.
-::rust::Vec<::RowIdWithScore> ffi_bm25_search_with_filter(::std::string const &index_path, ::std::string const &query, ::std::vector<::std::uint8_t> const &u8_bitmap, ::std::uint32_t top_k, bool need_text);
+::rust::Vec<::RowIdWithScore> ffi_bm25_search_with_filter(::std::string const &index_path, ::std::vector<::std::string> const &column_names, ::std::string const &query, ::std::vector<::std::uint8_t> const &u8_bitmap, ::std::uint32_t top_k, bool need_text);
 
 // Execute bm25_search.
 //
@@ -850,7 +850,7 @@ bool ffi_search_in_rowid_range(::std::string const &index_path, ::std::string co
 //
 // Returns:
 // - A group of RowIdWithScore Objects.
-::rust::Vec<::RowIdWithScore> ffi_bm25_search(::std::string const &index_path, ::std::string const &query, ::std::uint32_t top_k, bool need_text);
+::rust::Vec<::RowIdWithScore> ffi_bm25_search(::std::string const &index_path, ::std::vector<::std::string> const &column_names, ::std::string const &query, ::std::uint32_t top_k, bool need_text);
 
 // Execute search with like pattern or not.
 //
@@ -861,7 +861,7 @@ bool ffi_search_in_rowid_range(::std::string const &index_path, ::std::string co
 //
 // Returns:
 // - row_ids u8 bitmap.
-::rust::Vec<::std::uint8_t> ffi_search_bitmap_results(::std::string const &index_path, ::std::string const &query, bool use_regex);
+::rust::Vec<::std::uint8_t> ffi_search_bitmap_results(::std::string const &index_path, ::std::vector<::std::string> const &column_names, ::std::string const &query, bool use_regex);
 
 // Get the number of documents stored in the index file.
 // In general, we can consider the number of stored documents as 'n',
