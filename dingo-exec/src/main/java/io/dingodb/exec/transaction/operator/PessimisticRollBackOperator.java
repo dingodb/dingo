@@ -91,6 +91,9 @@ public class PessimisticRollBackOperator extends TransactionOperator {
                 forUpdateTs = param.getForUpdateTs();
             }
             store.delete(lockKey);
+            // delete blockLock
+            lockKey[0] = (byte) CommonId.CommonType.TXN_CACHE_BLOCK_LOCK.getCode();
+            store.delete(lockKey);
             // first appearance
             if (op != Op.NONE.getCode()) {
                 // set oldKeyValue

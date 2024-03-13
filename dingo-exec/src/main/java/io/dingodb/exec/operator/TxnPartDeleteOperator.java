@@ -19,22 +19,17 @@ package io.dingodb.exec.operator;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnPartDeleteParam;
-import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
-import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
-import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -43,7 +38,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
-import static io.dingodb.exec.utils.ByteUtils.decodePessimisticKey;
 
 @Slf4j
 public class TxnPartDeleteOperator extends PartModifyOperator {
@@ -61,17 +55,12 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
         CommonId partId = context.getDistribution().getId();
         StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
         KeyValueCodec codec = param.getCodec();
-        boolean isVector = false;
         if (context.getIndexId() != null) {
             Table indexTable = MetaService.root().getTable(context.getIndexId());
             List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
                 .map(Column::getName)
                 .collect(Collectors.toList()));
             tableId = context.getIndexId();
-            IndexTable index = TransactionUtil.getIndexDefinitions(tableId);
-            if (index.indexType.isVector) {
-                isVector = true;
-            }
             if (!param.isPessimisticTxn()) {
                 Object[] finalTuple = tuple;
                 tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
@@ -79,26 +68,14 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
             localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
             codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
         }
-        StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
-
         byte[] keys = wrap(codec::encodeKey).apply(tuple);
         CodecService.getDefault().setId(keys, partId.domain);
-        byte[] vectorKey;
-        if (isVector) {
-            vectorKey = codec.encodeKeyPrefix(tuple, 1);
-            CodecService.getDefault().setId(vectorKey, partId.domain);
-        } else {
-            vectorKey = keys;
-        }
-        byte[] primaryLockKey = param.getPrimaryLockKey();
         byte[] txnIdBytes = vertex.getTask().getTxnId().encode();
         byte[] tableIdBytes = tableId.encode();
         byte[] partIdBytes = partId.encode();
         if (param.isPessimisticTxn()) {
             byte[] keyValueKey = keys;
             byte[] jobIdByte = vertex.getTask().getJobId().encode();
-            long forUpdateTs = vertex.getTask().getJobId().seq;
-            byte[] forUpdateTsByte = PrimitiveCodec.encodeLong(forUpdateTs);
             int len = txnIdBytes.length + tableIdBytes.length + partIdBytes.length;
             // dataKeyValue   [10_txnId_tableId_partId_a_delete, value]
             byte[] dataKey = ByteUtils.encode(
@@ -110,69 +87,79 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                 tableIdBytes,
                 partIdBytes
             );
-            KeyValue oldKeyValue = localStore.get(dataKey);
-            byte[] primaryLockKeyBytes = decodePessimisticKey(primaryLockKey);
-            if (!(ByteArrayUtils.compare(keyValueKey, primaryLockKeyBytes, 1) == 0)) {
-                // This key appears for the first time in the current transaction
-                if (oldKeyValue == null) {
-                    KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
-                    if (kvKeyValue == null || kvKeyValue.getValue() == null) {
-                        return true;
-                    }
-                    byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
-                    if (localStore.get(rollBackKey) != null) {
-                        localStore.deletePrefix(rollBackKey);
-                    }
-                    KeyValue kv = wrap(codec::encode).apply(tuple);
-                    CodecService.getDefault().setId(keys, partId.domain);
-                    // write data
-                    KeyValue dataKeyValue = new KeyValue(dataKey, kv.getValue());
-                    if (localStore.put(dataKeyValue)
-                        && context.getIndexId() == null
-                    ) {
-                        param.inc();
-                    }
+            byte[] insertKey = Arrays.copyOf(dataKey, dataKey.length);
+            insertKey[insertKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
+            byte[] updateKey = Arrays.copyOf(dataKey, dataKey.length);
+            updateKey[updateKey.length - 2] = (byte) Op.PUT.getCode();
+            List<byte[]> bytes = new ArrayList<>(3);
+            bytes.add(dataKey);
+            bytes.add(insertKey);
+            bytes.add(updateKey);
+            List<KeyValue> keyValues = localStore.get(bytes);
+            if (keyValues != null && keyValues.size() > 0) {
+                if (keyValues.size() > 1) {
+                    throw new RuntimeException(txnId + " PrimaryKey is not existed than two in local store");
+                }
+                KeyValue value = keyValues.get(0);
+                byte[] oldKey = value.getKey();
+                log.info("{}, repeat key :{}", txnId, Arrays.toString(oldKey));
+                if (oldKey[oldKey.length - 2] == Op.DELETE.getCode()) {
+                    return true;
+                }
+                localStore.delete(oldKey);
+                // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
+                byte[] extraKey = ByteUtils.encode(
+                    CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
+                    keyValueKey,
+                    oldKey[oldKey.length - 2],
+                    len,
+                    jobIdByte,
+                    tableIdBytes,
+                    partIdBytes
+                );
+                KeyValue extraKeyValue;
+                KeyValue dataKeyValue;
+                if (value.getValue() == null) {
+                    // delete
+                    extraKeyValue = new KeyValue(extraKey, null);
+                    dataKeyValue = new KeyValue(dataKey, null);
                 } else {
-                    // This key appears repeatedly in the current transaction
-                    repeatKey(
-                        param,
-                        txnId,
-                        localStore,
-                        dataKey,
-                        context
-                    );
+                    extraKeyValue = new KeyValue(extraKey, Arrays.copyOf(value.getValue(), value.getValue().length));
+                    dataKeyValue = new KeyValue(dataKey, Arrays.copyOf(value.getValue(), value.getValue().length));
+                }
+                localStore.put(extraKeyValue);
+                localStore.deletePrefix(insertKey);
+                localStore.deletePrefix(updateKey);
+                // write data
+                if (localStore.put(dataKeyValue) && context.getIndexId() == null) {
+                    param.inc();
                 }
             } else {
-                // primary lock not existed ：
-                // 1、first put primary lock
-                if (oldKeyValue == null) {
-                    byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
-                    if (localStore.get(rollBackKey) != null) {
-                        localStore.deletePrefix(rollBackKey);
-                    }
-                    KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
-                    if (kvKeyValue == null || kvKeyValue.getValue() == null) {
-                        // first put primary lock
-                        return true;
-                    }
+                byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
+                // first lock and kvGet is null
+                if (localStore.get(rollBackKey) != null) {
+                    return true;
+                } else {
                     KeyValue kv = wrap(codec::encode).apply(tuple);
-                    CodecService.getDefault().setId(keys, partId.domain);
-                    // first put primary lock
+                    CodecService.getDefault().setId(kv.getKey(), partId.domain);
+                    // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
+                    byte[] extraKey = ByteUtils.encode(
+                        CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
+                        keyValueKey,
+                        Op.NONE.getCode(),
+                        len,
+                        jobIdByte,
+                        tableIdBytes,
+                        partIdBytes
+                    );
+                    localStore.put(new KeyValue(extraKey, Arrays.copyOf(kv.getValue(), kv.getValue().length)));
                     // write data
-                    KeyValue dataKeyValue = new KeyValue(dataKey, kv.getValue());
-                    if (localStore.put(dataKeyValue)
+                    kv.setKey(dataKey);
+                    if (localStore.put(kv)
                         && context.getIndexId() == null
                     ) {
                         param.inc();
                     }
-                } else {
-                    // primary lock existed ：
-                    repeatKey(param,
-                        txnId,
-                        localStore,
-                        dataKey,
-                        context
-                    );
                 }
             }
         } else {
@@ -200,35 +187,6 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
         }
 
         return true;
-    }
-
-    private static void repeatKey(TxnPartDeleteParam param, CommonId txnId,
-                                  StoreInstance store, byte[] dataKey, Context context) {
-        // lock existed ：
-        // 1、multi sql
-        byte[] insertKey = Arrays.copyOf(dataKey, dataKey.length);
-        insertKey[insertKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
-        byte[] updateKey = Arrays.copyOf(dataKey, dataKey.length);
-        updateKey[updateKey.length - 2] = (byte) Op.PUT.getCode();
-        List<byte[]> bytes = new ArrayList<>(3);
-        bytes.add(dataKey);
-        bytes.add(insertKey);
-        bytes.add(updateKey);
-        List<KeyValue> keyValues = store.get(bytes);
-        if (keyValues != null && keyValues.size() > 0) {
-            if (keyValues.size() > 1) {
-                throw new RuntimeException(txnId + " PrimaryKey is not existed than two in local store");
-            }
-            // write data
-            KeyValue dataKeyValue = new KeyValue(dataKey, null);
-            store.deletePrefix(insertKey);
-            store.deletePrefix(updateKey);
-            if (store.put(dataKeyValue) && context.getIndexId() == null) {
-                param.inc();
-            }
-        } else {
-            throw new RuntimeException(txnId + " PrimaryKey is not existed local store");
-        }
     }
 
 }

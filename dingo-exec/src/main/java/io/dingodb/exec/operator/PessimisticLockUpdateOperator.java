@@ -183,23 +183,40 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                 if (log.isDebugEnabled()) {
                     log.info("{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, forUpdateTs, Arrays.toString(key));
                 }
-                TxnPessimisticLock txnPessimisticLock = TransactionUtil.pessimisticLock(
-                    param.getLockTimeOut(),
-                    txnId,
-                    tableId,
-                    partId,
-                    primaryLockKeyBytes,
-                    key,
-                    param.getStartTs(),
-                    forUpdateTs,
-                    param.getIsolationLevel()
-                );
-                long newForUpdateTs = txnPessimisticLock.getForUpdateTs();
-                if (newForUpdateTs != forUpdateTs) {
-                    forUpdateTsByte = PrimitiveCodec.encodeLong(newForUpdateTs);
-                }
-                if (log.isDebugEnabled()) {
-                    log.info("{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, newForUpdateTs, Arrays.toString(key));
+                try {
+                    TxnPessimisticLock txnPessimisticLock = TransactionUtil.pessimisticLock(
+                        param.getLockTimeOut(),
+                        txnId,
+                        tableId,
+                        partId,
+                        primaryLockKeyBytes,
+                        key,
+                        param.getStartTs(),
+                        forUpdateTs,
+                        param.getIsolationLevel()
+                    );
+                    long newForUpdateTs = txnPessimisticLock.getForUpdateTs();
+                    if (newForUpdateTs != forUpdateTs) {
+                        forUpdateTs = newForUpdateTs;
+                        forUpdateTsByte = PrimitiveCodec.encodeLong(newForUpdateTs);
+                    }
+                    if (log.isDebugEnabled()) {
+                        log.info("{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, newForUpdateTs, Arrays.toString(key));
+                    }
+                } catch (Throwable throwable) {
+                    log.error(throwable.getMessage(), throwable);
+                    TransactionUtil.resolvePessimisticLock(
+                        param.getIsolationLevel(),
+                        txnId,
+                        tableId,
+                        partId,
+                        deadLockKeyBytes,
+                        key,
+                        param.getStartTs(),
+                        forUpdateTs,
+                        true,
+                        throwable
+                    );
                 }
                 // get lock success, delete deadLockKey
                 localStore.delete(deadLockKeyBytes);
@@ -236,6 +253,8 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                     return true;
                 }
                 if (kvKeyValue == null || kvKeyValue.getValue() == null) {
+                    byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, deadLockKeyBytes);
+                    localStore.put(new KeyValue(rollBackKey, null));
                     @Nullable Object[] finalTuple1 = tuple;
                     vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple1));
                     return true;
