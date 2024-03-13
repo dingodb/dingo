@@ -42,6 +42,14 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
     @Setter
     private Integer[] types;
 
+    @Setter
+    @Getter
+    private boolean hasIncId;
+
+    @Setter
+    @Getter
+    private Long autoIncId;
+
     protected DingoPreparedStatement(
         DingoConnection connection,
         Meta.StatementHandle handle,

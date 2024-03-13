@@ -36,6 +36,7 @@ import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.exception.TaskFinException;
 import io.dingodb.exec.fin.ErrorType;
+import io.dingodb.exec.impl.JobIteratorImpl;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.meta.entity.Column;
@@ -459,6 +460,24 @@ public class DingoMeta extends MetaImpl {
                 for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
                     rows.add(dingoType.convertTo(iterator.next(), converter));
                 }
+                if (iterator instanceof JobIteratorImpl) {
+                    JobIteratorImpl jobIterator = (JobIteratorImpl) iterator;
+                    boolean hasIncId;
+                    Long autoIncId = null;
+                    if (jobIterator.getAutoIncId() == null) {
+                        hasIncId = false;
+                    } else {
+                        hasIncId = true;
+                        autoIncId = jobIterator.getAutoIncId();;
+                    }
+                    if (statement instanceof DingoStatement) {
+                        ((DingoStatement) statement).setHasIncId(hasIncId);
+                        ((DingoStatement) statement).setAutoIncId(autoIncId);
+                    } else if (statement instanceof DingoPreparedStatement) {
+                        ((DingoPreparedStatement) statement).setHasIncId(hasIncId);
+                        ((DingoPreparedStatement) statement).setAutoIncId(autoIncId);
+                    }
+                }
             } catch (Throwable e) {
                 log.error("run job exception:{}", e, e);
                 if (transaction != null && transaction.isPessimistic() && transaction.getPrimaryKeyLock() != null
@@ -610,6 +629,20 @@ public class DingoMeta extends MetaImpl {
                     sh.id,
                     ((Number) iterator.next()[0]).longValue()
                 );
+                if (iterator instanceof JobIteratorImpl) {
+                    iterator.hasNext();
+                    JobIteratorImpl jobIterator = (JobIteratorImpl) iterator;
+                    boolean hasIncId;
+                    Long autoIncId = null;
+                    if (jobIterator.getAutoIncId() == null) {
+                        hasIncId = false;
+                    } else {
+                        hasIncId = true;
+                        autoIncId = jobIterator.getAutoIncId();;
+                    }
+                    statement.setHasIncId(hasIncId);
+                    statement.setAutoIncId(autoIncId);
+                }
                 if (transaction != null) {
                     transaction.addSql(statement.getSql());
                     if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {

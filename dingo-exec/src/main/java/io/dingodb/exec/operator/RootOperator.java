@@ -24,10 +24,14 @@ import io.dingodb.exec.exception.TaskFinException;
 import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
+import io.dingodb.exec.fin.FinWithProfiles;
+import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.RootParam;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
+
+import java.util.List;
 
 @Slf4j
 public final class RootOperator extends SinkOperator {
@@ -66,6 +70,15 @@ public final class RootOperator extends SinkOperator {
             if (log.isDebugEnabled()) {
                 log.debug("Got FIN with detail:\n{}", fin.detail());
             }
+            if (fin instanceof FinWithProfiles) {
+                List<OperatorProfile> profiles = ((FinWithProfiles) fin).getProfiles();
+                if (profiles.size() > 0) {
+                    long autoIncId = profiles.get(0).getAutoIncId();
+                    if (autoIncId != 0) {
+                        param.setAutoIncId(autoIncId);
+                    }
+                }
+            }
         }
         param.forcePut(FIN);
     }
@@ -80,6 +93,11 @@ public final class RootOperator extends SinkOperator {
             return tuple1;
         }
         return tuple;
+    }
+
+    public Long popAutoIncId(Vertex vertex) {
+        RootParam param = vertex.getParam();
+        return param.getAutoIncId();
     }
 
     public void checkError(Vertex vertex) {

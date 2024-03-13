@@ -25,18 +25,33 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @JsonTypeName("insert")
 @JsonPropertyOrder({"table", "schema", "keyMapping"})
 public class PartInsertParam extends PartModifyParam {
 
+    @JsonProperty("hasAutoInc")
+    private final boolean hasAutoInc;
+
+    @JsonProperty("autoIncColIdx")
+    private final int autoIncColIdx;
+
+    private List<Long> autoIncList = new ArrayList<>();
+
     public PartInsertParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
-        Table table
+        Table table,
+        @JsonProperty("hasAutoInc") boolean hasAutoInc,
+        @JsonProperty("autoIncColIdx") int autoIncColIdx
     ) {
         super(tableId, schema, keyMapping, table);
+        this.hasAutoInc = hasAutoInc;
+        this.autoIncColIdx = autoIncColIdx;
 
     }
 

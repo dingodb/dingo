@@ -801,10 +801,12 @@ public class OperationServiceV2 {
                         transaction.getStartTs(),
                         pessimistic ? transaction.getForUpdateTs() : 0L,
                         transaction.getLockTimeOut(),
-                        td));
+                        td,
+                        false,
+                        0));
 
             } else {
-                vertex = new Vertex(PART_INSERT, new PartInsertParam(tableId, td.tupleType(), td.keyMapping(), td));
+                vertex = new Vertex(PART_INSERT, new PartInsertParam(tableId, td.tupleType(), td.keyMapping(), td, false, 0));
             }
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);

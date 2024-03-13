@@ -326,7 +326,7 @@ public final class DingoDriverParser extends DingoParser {
 
         final RelRoot relRoot = convert(sqlNode, false);
         final RelNode relNode = optimize(relRoot.rel);
-        extractAutoIncrement(relNode, jobIdPrefix);
+        markAutoIncForDml(relNode);
         Location currentLocation = MetaService.root().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
         Set<RelOptTable> tables = useTables(relNode, sqlNode);
@@ -465,7 +465,7 @@ public final class DingoDriverParser extends DingoParser {
         JavaTypeFactory typeFactory = connection.getTypeFactory();
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
         Meta.StatementType statementType = null;
-        extractAutoIncrement(relNode, jobIdPrefix);
+        markAutoIncForDml(relNode);
         Location currentLocation = MetaService.root().currentLocation();
         Set<RelOptTable> tables = useTables(relNode, sqlNode);
         switch (sqlNode.getKind()) {
@@ -621,35 +621,10 @@ public final class DingoDriverParser extends DingoParser {
         }
         return isTxn;
     }
-    /**
-     * Determine if it is an insert statement and if there is an autoincrement primary key in the table.
-     * @param relNode dingo relNode
-     * @param jobIdPrefix Used to distinguish between different SQL statements in the same session
-     */
-    private void extractAutoIncrement(RelNode relNode, String jobIdPrefix) {
+
+    private void markAutoIncForDml(RelNode relNode) {
         try {
-            RelNode relVal = relNode.accept(AutoIncrementShuttle.INSTANCE);
-            if (relVal instanceof DingoValues) {
-                DingoValues dingoValues = (DingoValues) relVal;
-                if (!dingoValues.isHasAutoIncrement()) {
-                    return;
-                }
-                if (dingoValues.getTuples().size() >= 1 &&
-                    dingoValues.getAutoIncrementColIndex() < dingoValues.getTuples().get(0).length) {
-                    List<Long> autoPriList = dingoValues.getTuples().stream()
-                        .map(tuple -> tuple[dingoValues.getAutoIncrementColIndex()])
-                        .filter(Objects::nonNull)
-                        .map(Object::toString)
-                        .map(Long::parseLong)
-                        .collect(Collectors.toList());
-                    Long maxAutoVal = Collections.max(autoPriList);
-                    String autoValStr = autoPriList.get(0).toString();
-                    connection.setClientInfo("last_insert_id", autoValStr);
-                    connection.setClientInfo(jobIdPrefix, autoValStr);
-                    MetaService metaService = MetaService.root();
-                    metaService.updateAutoIncrement(dingoValues.getCommonId(), maxAutoVal);
-                }
-            }
+            relNode.accept(AutoIncrementShuttle.INSTANCE);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
