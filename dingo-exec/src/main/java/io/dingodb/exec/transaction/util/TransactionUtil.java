@@ -271,4 +271,32 @@ public class TransactionUtil {
         return joinPrimaryKey(codec.decodeKeyPrefix(key), keyMapping);
     }
 
+
+    public static void resolvePessimisticLock(int isolationLevel, CommonId txnId, CommonId tableId,
+                                              CommonId partId, byte[] deadLockKeyBytes, byte[] primaryKey,
+                                              long startTs, long forUpdateTs,
+                                              boolean hasException, Throwable e) {
+        StoreInstance store;
+        try {
+            // primaryKeyLock rollback
+            TransactionUtil.pessimisticPrimaryLockRollBack(
+                txnId,
+                tableId,
+                partId,
+                isolationLevel,
+                startTs,
+                forUpdateTs,
+                primaryKey
+            );
+        } catch (Throwable throwable) {
+            log.error(e.getMessage(), e);
+            store = Services.LOCAL_STORE.getInstance(tableId, partId);
+            // delete deadLockKey
+            store.deletePrefix(deadLockKeyBytes);
+        }
+        if (hasException){
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
 }

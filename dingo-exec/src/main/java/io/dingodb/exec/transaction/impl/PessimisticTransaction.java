@@ -39,6 +39,7 @@ import io.dingodb.store.api.transaction.data.prewrite.ForUpdateTsCheck;
 import io.dingodb.store.api.transaction.data.prewrite.PessimisticCheck;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
+import io.dingodb.tso.TsoService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -248,7 +249,23 @@ public class PessimisticTransaction extends BaseTransaction {
                 newPartId), tableId, newPartId
             );
         } else {
-            throw new RuntimeException(txnId + " PrimaryKey is not existed local store");
+            StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, newPartId);
+            KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), key, getLockTimeOut());
+            if (kvKeyValue != null && kvKeyValue.getValue() != null) {
+                KeyValue keyValue = cache.get(primaryKeyLock);
+                Long forUpdateTs = PrimitiveCodec.decodeLong(keyValue.getValue());
+                log.info("{} kvGet key is {}", txnId, Arrays.toString(key));
+                return new CacheToObject(TransactionCacheToMutation.cacheToMutation(
+                    Op.PUT.getCode(),
+                    key,
+                    kvKeyValue.getValue(),
+                    forUpdateTs,
+                    tableId,
+                    newPartId), tableId, newPartId
+                );
+            } else {
+                throw new RuntimeException(txnId + " PrimaryKey is not existed local store");
+            }
         }
     }
     @Override

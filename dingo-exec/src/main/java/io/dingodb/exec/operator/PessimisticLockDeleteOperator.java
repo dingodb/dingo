@@ -28,8 +28,6 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PessimisticLockDeleteParam;
-import io.dingodb.exec.operator.params.PessimisticLockParam;
-import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.MetaService;
@@ -43,13 +41,11 @@ import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
-import static io.dingodb.exec.utils.ByteUtils.decode;
 import static io.dingodb.exec.utils.ByteUtils.decodePessimisticKey;
 import static io.dingodb.exec.utils.ByteUtils.encode;
 import static io.dingodb.exec.utils.ByteUtils.getKeyByOp;
@@ -133,23 +129,40 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
                 if (log.isDebugEnabled()) {
                     log.info("{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, forUpdateTs, Arrays.toString(key));
                 }
-                TxnPessimisticLock txnPessimisticLock = TransactionUtil.pessimisticLock(
-                    param.getLockTimeOut(),
-                    txnId,
-                    tableId,
-                    partId,
-                    primaryLockKeyBytes,
-                    key,
-                    param.getStartTs(),
-                    forUpdateTs,
-                    param.getIsolationLevel()
-                );
-                long newForUpdateTs = txnPessimisticLock.getForUpdateTs();
-                if (newForUpdateTs != forUpdateTs) {
-                    forUpdateTsByte = PrimitiveCodec.encodeLong(newForUpdateTs);
-                }
-                if (log.isDebugEnabled()) {
-                    log.info("{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, newForUpdateTs, Arrays.toString(key));
+                try {
+                    TxnPessimisticLock txnPessimisticLock = TransactionUtil.pessimisticLock(
+                        param.getLockTimeOut(),
+                        txnId,
+                        tableId,
+                        partId,
+                        primaryLockKeyBytes,
+                        key,
+                        param.getStartTs(),
+                        forUpdateTs,
+                        param.getIsolationLevel()
+                    );
+                    long newForUpdateTs = txnPessimisticLock.getForUpdateTs();
+                    if (newForUpdateTs != forUpdateTs) {
+                        forUpdateTs = newForUpdateTs;
+                        forUpdateTsByte = PrimitiveCodec.encodeLong(newForUpdateTs);
+                    }
+                    if (log.isDebugEnabled()) {
+                        log.info("{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, newForUpdateTs, Arrays.toString(key));
+                    }
+                } catch (Throwable throwable) {
+                    log.error(throwable.getMessage(), throwable);
+                    TransactionUtil.resolvePessimisticLock(
+                        param.getIsolationLevel(),
+                        txnId,
+                        tableId,
+                        partId,
+                        deadLockKeyBytes,
+                        key,
+                        param.getStartTs(),
+                        forUpdateTs,
+                        true,
+                        throwable
+                    );
                 }
                 // get lock success, delete deadLockKey
                 localStore.delete(deadLockKeyBytes);
@@ -181,6 +194,8 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
                     }
                 }
                 if (kvKeyValue == null || kvKeyValue.getValue() == null) {
+                    byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, deadLockKeyBytes);
+                    localStore.put(new KeyValue(rollBackKey, null));
                     @Nullable Object[] finalTuple1 = tuple;
                     vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple1));
                     return true;
@@ -190,67 +205,11 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
                 }
                 Object[] result = codec.decode(kvKeyValue);
                 vertex.getOutList().forEach(o -> o.transformToNext(context, result));
-                return true;
             } else {
-                byte[] dataKey = getKeyByOp(CommonId.CommonType.TXN_CACHE_DATA, Op.PUT, lockKeyBytes);
-                byte[] deleteKey = Arrays.copyOf(dataKey, dataKey.length);
-                deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
-                byte[] updateKey = Arrays.copyOf(dataKey, dataKey.length);
-                updateKey[updateKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
-                List<byte[]> bytes = new ArrayList<>(3);
-                bytes.add(dataKey);
-                bytes.add(deleteKey);
-                bytes.add(updateKey);
-                List<KeyValue> keyValues = localStore.get(bytes);
-                byte[] primaryLockKeyBytes = decodePessimisticKey(primaryLockKey);
-                if (keyValues != null && keyValues.size() > 0) {
-                    if (keyValues.size() > 1) {
-                        throw new RuntimeException(txnId + " Key is not existed than two in local localStore");
-                    }
-                    KeyValue value = keyValues.get(0);
-                    byte[] oldKey = value.getKey();
-                    log.info("{}, repeat key :{}", txnId, Arrays.toString(oldKey));
-                    localStore.delete(oldKey);
-                    // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
-                    byte[] extraKey = ByteUtils.encode(
-                        CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
-                        key,
-                        oldKey[oldKey.length - 2],
-                        len,
-                        jobIdByte,
-                        tableIdByte,
-                        partIdByte
-                    );
-                    KeyValue extraKeyValue;
-                    if (value.getValue() == null) {
-                        // delete
-                        extraKeyValue = new KeyValue(extraKey, null);
-                    } else {
-                        extraKeyValue = new KeyValue(extraKey, Arrays.copyOf(value.getValue(), value.getValue().length));
-                    }
-                    localStore.put(extraKeyValue);
-                    Object[] decode = decode(value);
-                    KeyValue keyValue = new KeyValue(((TxnLocalData) decode[0]).getKey(), value.getValue());
-                    Object[] result = codec.decode(keyValue);
-                    vertex.getOutList().forEach(o -> o.transformToNext(context, result));
-                    return true;
-                } else {
-                    KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
-                    if (kvKeyValue == null || kvKeyValue.getValue() == null) {
-                        log.info("{}, repeat primary key :{} keyValue is null", txnId, Arrays.toString(primaryLockKeyBytes));
-                        @Nullable Object[] finalTuple1 = tuple;
-                        vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple1));
-                        return true;
-                    }
-                    log.info("{}, repeat primary key :{} keyValue is not null", txnId, Arrays.toString(key));
-                    if (isVector) {
-                        kvKeyValue.setKey(codec.encodeKey(newTuple));
-                    }
-                    Object[] result = codec.decode(kvKeyValue);
-                    vertex.getOutList().forEach(o -> o.transformToNext(context, result));
-                    return true;
-                }
+                @Nullable Object[] finalTuple1 = tuple;
+                vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple1));
             }
+            return true;
         }
     }
 

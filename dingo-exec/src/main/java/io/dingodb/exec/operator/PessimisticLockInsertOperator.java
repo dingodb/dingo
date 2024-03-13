@@ -42,7 +42,6 @@ import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -133,37 +132,64 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                 if (log.isDebugEnabled()) {
                     log.info("{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, forUpdateTs, Arrays.toString(key));
                 }
-                TxnPessimisticLock txnPessimisticLock = TransactionUtil.pessimisticLock(
-                    param.getLockTimeOut(),
-                    txnId,
-                    tableId,
-                    partId,
-                    primaryLockKeyBytes,
-                    key,
-                    param.getStartTs(),
-                    forUpdateTs,
-                    param.getIsolationLevel()
-                );
-                long newForUpdateTs = txnPessimisticLock.getForUpdateTs();
-                if (newForUpdateTs != forUpdateTs) {
-                    forUpdateTsByte = PrimitiveCodec.encodeLong(newForUpdateTs);
-                }
-                if (log.isDebugEnabled()) {
-                    log.info("{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, newForUpdateTs, Arrays.toString(key));
+                try {
+                    TxnPessimisticLock txnPessimisticLock = TransactionUtil.pessimisticLock(
+                        param.getLockTimeOut(),
+                        txnId,
+                        tableId,
+                        partId,
+                        primaryLockKeyBytes,
+                        key,
+                        param.getStartTs(),
+                        forUpdateTs,
+                        param.getIsolationLevel()
+                    );
+                    long newForUpdateTs = txnPessimisticLock.getForUpdateTs();
+                    if (newForUpdateTs != forUpdateTs) {
+                        forUpdateTs = newForUpdateTs;
+                        forUpdateTsByte = PrimitiveCodec.encodeLong(newForUpdateTs);
+                    }
+                    if (log.isDebugEnabled()) {
+                        log.info("{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, newForUpdateTs, Arrays.toString(key));
+                    }
+                } catch (Throwable throwable) {
+                    log.error(throwable.getMessage(), throwable);
+                    TransactionUtil.resolvePessimisticLock(
+                        param.getIsolationLevel(),
+                        txnId,
+                        tableId,
+                        partId,
+                        deadLockKeyBytes,
+                        key,
+                        param.getStartTs(),
+                        forUpdateTs,
+                        true,
+                        throwable
+                    );
                 }
                 // get lock success, delete deadLockKey
                 localStore.delete(deadLockKeyBytes);
+                // index use keyPrefix
+                KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
+                if (kvKeyValue != null && kvKeyValue.getValue() != null) {
+                    TransactionUtil.resolvePessimisticLock(
+                        param.getIsolationLevel(),
+                        txnId,
+                        tableId,
+                        partId,
+                        deadLockKeyBytes,
+                        key,
+                        param.getStartTs(),
+                        forUpdateTs,
+                        true,
+                        new DuplicateEntryException("Duplicate entry " +
+                            TransactionUtil.duplicateEntryKey(CommonId.decode(tableIdByte), key) + " for key 'PRIMARY'")
+                    );
+                }
                 byte[] lockKey = getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, deadLockKeyBytes);
                 // lockKeyValue
                 KeyValue lockKeyValue = new KeyValue(lockKey, forUpdateTsByte);
                 localStore.put(lockKeyValue);
-                // index use keyPrefix
-//                KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
-//                if ((kvKeyValue == null || kvKeyValue.getValue() == null) && !param.isInsert()) {
-//                    @Nullable Object[] finalTuple1 = tuple;
-//                    vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple1));
-//                    return true;
-//                }
                 // extraKeyValue
                 KeyValue extraKeyValue = new KeyValue(
                     ByteUtils.encode(
@@ -177,75 +203,12 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                     keyValue.getValue()
                 );
                 localStore.put(extraKeyValue);
-//                Object[] result = codec.decode(keyValue);
                 vertex.getOutList().forEach(o -> o.transformToNext(context, newTuple));
-                return true;
             } else {
-                byte[] dataKey = getKeyByOp(CommonId.CommonType.TXN_CACHE_DATA, Op.PUT, lockKeyBytes);
-                byte[] deleteKey = Arrays.copyOf(dataKey, dataKey.length);
-                deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
-                byte[] updateKey = Arrays.copyOf(dataKey, dataKey.length);
-                updateKey[updateKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
-                List<byte[]> bytes = new ArrayList<>(3);
-                bytes.add(dataKey);
-                bytes.add(deleteKey);
-                bytes.add(updateKey);
-                List<KeyValue> keyValues = localStore.get(bytes);
-                byte[] primaryLockKeyBytes = decodePessimisticKey(primaryLockKey);
-                if (keyValues != null && keyValues.size() > 0) {
-                    if (keyValues.size() > 1) {
-                        throw new RuntimeException(txnId + " Key is not existed than two in local localStore");
-                    }
-                    KeyValue value = keyValues.get(0);
-                    byte[] oldKey = value.getKey();
-                    if (log.isDebugEnabled()) {
-                        log.info("{}, repeat key :{}", txnId, Arrays.toString(oldKey));
-                    }
-                    if (oldKey[oldKey.length - 2] == Op.PUTIFABSENT.getCode()
-                        || oldKey[oldKey.length - 2] == Op.PUT.getCode()) {
-                        throw new DuplicateEntryException("Duplicate entry " +
-                            TransactionUtil.duplicateEntryKey(tableId, key) + " for key 'PRIMARY'");
-                    }
-                    // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
-                    byte[] extraKey = ByteUtils.encode(
-                        CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
-                        key,
-                        oldKey[oldKey.length - 2],
-                        len,
-                        jobIdByte,
-                        tableIdByte,
-                        partIdByte
-                    );
-                    KeyValue extraKeyValue;
-                    if (value.getValue() == null) {
-                        // delete
-                        extraKeyValue = new KeyValue(extraKey, null);
-                    } else {
-                        extraKeyValue = new KeyValue(extraKey, Arrays.copyOf(value.getValue(), value.getValue().length));
-                    }
-                    localStore.put(extraKeyValue);
-//                    Object[] decode = decode(value);
-//                    keyValue = new KeyValue(((TxnLocalData) decode[0]).getKey(), value.getValue());
-//                    Object[] result = codec.decode(keyValue);
-                    vertex.getOutList().forEach(o -> o.transformToNext(context, newTuple));
-                    return true;
-                } else {
-                    KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
-                    if (kvKeyValue == null || kvKeyValue.getValue() == null) {
-                        log.info("{}, repeat primary key :{} keyValue is null", txnId, Arrays.toString(primaryLockKeyBytes));
-                        @Nullable Object[] finalTuple1 = tuple;
-                        vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple1));
-                        return true;
-                    }
-                    log.info("{}, repeat primary key :{} keyValue is not null", txnId, Arrays.toString(key));
-                    if (isVector) {
-                        kvKeyValue.setKey(codec.encodeKey(newTuple));
-                    }
-                    Object[] result = codec.decode(kvKeyValue);
-                    vertex.getOutList().forEach(o -> o.transformToNext(context, result));
-                    return true;
-                }
+                @Nullable Object[] finalTuple1 = tuple;
+                vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple1));
             }
+            return true;
         }
     }
 
