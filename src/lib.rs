@@ -29,7 +29,7 @@ pub mod ffi {
     extern "Rust" {
         pub fn ffi_varify_index_parameter(
             index_json_parameter: &CxxString,
-        ) -> Result<bool>;
+        ) -> bool;
         /// Creates an index using a specified tokenizer (e.g., Chinese, English, Japanese, etc.).
         ///
         /// Arguments:

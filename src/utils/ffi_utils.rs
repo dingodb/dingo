@@ -11,14 +11,20 @@ use super::index_utils::IndexUtils;
 pub fn ffi_varify_index_parameter(
     index_json_parameter: &CxxString,
     // TODO 其它的参数验证
-) -> Result<bool, String> {
-
-    let index_json_parameter: String = CXX_STRING_CONERTER.convert(index_json_parameter).map_err(|e|{
-        ERROR!(function: "ffi_varify_index_parameter", "Can't convert 'index_json_parameter', message: {}", e);
-        TantivySearchError::CxxConvertError(e).to_string()
-    })?;
-
-    ToeknizerUtils::varify_json_parameter(index_json_parameter.as_str()).map_err(|e|{
-        e.to_string()
-    })
+) -> bool {
+    match CXX_STRING_CONERTER.convert(index_json_parameter) {
+        Ok(json_parameter) => {
+            match ToeknizerUtils::varify_json_parameter(json_parameter.as_str()) {
+                Ok(valid) => valid,
+                Err(e) => {
+                    ERROR!(function: "ffi_varify_index_parameter", "{}", e);
+                    false
+                }
+            }
+        }
+        Err(e) => {
+            ERROR!(function: "ffi_varify_index_parameter", "{}", e);
+            false
+        }
+    }
 }
