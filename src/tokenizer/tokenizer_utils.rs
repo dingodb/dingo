@@ -321,4 +321,14 @@ impl ToeknizerUtils {
         }
         Ok(tokenizer_map)
     }
+
+    pub fn varify_json_parameter(
+        json_str: &str
+    ) -> Result<bool, TokenizerUtilsError> {
+        let _: crate::tokenizer::vo::tokenizer_json_vo::Config =
+        serde_json::from_str(json_str)
+            .map_err(|e| TokenizerUtilsError::JsonDeserializeError(e.to_string()))?;
+        Ok(true)
+    }
+
 }

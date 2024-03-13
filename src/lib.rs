@@ -10,6 +10,7 @@ mod utils;
 use common::constants::*;
 use index::ffi_index_manager::*;
 use search::ffi_index_searcher::*;
+use utils::ffi_utils::*;
 // re-export log ffi function.
 pub use logger::ffi_logger::*;
 
@@ -26,6 +27,9 @@ pub mod ffi {
     }
 
     extern "Rust" {
+        pub fn ffi_varify_index_parameter(
+            index_json_parameter: &CxxString,
+        ) -> Result<bool>;
         /// Creates an index using a specified tokenizer (e.g., Chinese, English, Japanese, etc.).
         ///
         /// Arguments:
