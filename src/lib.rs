@@ -30,6 +30,7 @@ pub mod ffi {
         pub fn ffi_varify_index_parameter(
             index_json_parameter: &CxxString,
         ) -> bool;
+
         /// Creates an index using a specified tokenizer (e.g., Chinese, English, Japanese, etc.).
         ///
         /// Arguments:
@@ -42,7 +43,7 @@ pub mod ffi {
             index_path: &CxxString,
             column_names: &CxxVector<CxxString>,
             index_json_parameter: &CxxString,
-        ) -> Result<bool>;
+        ) -> bool;
 
         /// Creates an index using the default tokenizer.
         ///
@@ -54,7 +55,7 @@ pub mod ffi {
         fn ffi_create_index(
             index_path: &CxxString,
             column_names: &CxxVector<CxxString>,
-        ) -> Result<bool>;
+        ) -> bool;
 
         /// Indexes a document.
         ///
@@ -70,7 +71,7 @@ pub mod ffi {
             row_id: u64,
             column_names: &CxxVector<CxxString>,
             column_docs: &CxxVector<CxxString>,
-        ) -> Result<bool>;
+        ) -> bool;
 
         /// Delete a group of row_ids.
         ///
@@ -80,7 +81,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A bool value represent operation success.
-        fn ffi_delete_row_ids(index_path: &CxxString, row_ids: &CxxVector<u32>) -> Result<bool>;
+        fn ffi_delete_row_ids(index_path: &CxxString, row_ids: &CxxVector<u32>) -> bool;
 
         /// Commits the changes to the index, writing it to the file system.
         ///
@@ -89,7 +90,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A bool value represent operation success.
-        fn ffi_index_writer_commit(index_path: &CxxString) -> Result<bool>;
+        fn ffi_index_writer_commit(index_path: &CxxString) -> bool;
 
         /// Frees the index writer and waits for all merging threads to complete.
         ///
@@ -98,7 +99,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A bool value represent operation success.
-        fn ffi_index_writer_free(index_path: &CxxString) -> Result<bool>;
+        fn ffi_index_writer_free(index_path: &CxxString) -> bool;
 
         /// Loads an index from a specified directory.
         ///
@@ -107,7 +108,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A bool value represent operation success.
-        fn ffi_load_index(index_path: &CxxString) -> Result<bool>;
+        fn ffi_load_index(index_path: &CxxString) -> bool;
 
         /// Frees the index reader.
         ///
@@ -116,7 +117,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - A bool value represent operation success.
-        fn ffi_free_reader(index_path: &CxxString) -> Result<bool>;
+        fn ffi_free_reader(index_path: &CxxString) -> bool;
 
         /// Determines if a query string appears within a specified row ID range.
         ///
@@ -136,7 +137,7 @@ pub mod ffi {
             lrange: u64,
             rrange: u64,
             use_regex: bool,
-        ) -> Result<bool>;
+        ) -> bool;
 
         /// Counts the occurrences of a query string within a specified row ID range.
         ///
@@ -156,7 +157,7 @@ pub mod ffi {
             lrange: u64,
             rrange: u64,
             use_regex: bool,
-        ) -> Result<u64>;
+        ) -> u64;
 
         /// Execute bm25_search with filter row_ids.
         ///
@@ -176,7 +177,7 @@ pub mod ffi {
             u8_bitmap: &CxxVector<u8>,
             top_k: u32,
             need_text: bool,
-        ) -> Result<Vec<RowIdWithScore>>;
+        ) -> Vec<RowIdWithScore>;
 
         /// Execute bm25_search.
         ///
@@ -194,7 +195,7 @@ pub mod ffi {
             query: &CxxString,
             top_k: u32,
             need_text: bool,
-        ) -> Result<Vec<RowIdWithScore>>;
+        ) -> Vec<RowIdWithScore>;
 
         /// Execute search with like pattern or not.
         ///
@@ -210,7 +211,7 @@ pub mod ffi {
             column_names: &CxxVector<CxxString>,
             query: &CxxString,
             use_regex: bool,
-        ) -> Result<Vec<u8>>;
+        ) -> Vec<u8>;
 
         /// Get the number of documents stored in the index file.
         /// In general, we can consider the number of stored documents as 'n',
@@ -220,7 +221,7 @@ pub mod ffi {
         ///
         /// Returns:
         /// - The count of documents stored in the index file.
-        fn ffi_indexed_doc_counts(index_path: &CxxString) -> Result<u64>;
+        fn ffi_indexed_doc_counts(index_path: &CxxString) -> u64;
 
     }
 }
