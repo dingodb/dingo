@@ -66,7 +66,7 @@ public class DingoVectorJoinRule extends RelRule<DingoVectorJoinRule.Config>  {
                 RexLiteral rexLiteral = rexBuilder.makeLiteral("1");
                 RexLiteral rexLiteral1 = rexBuilder.makeLiteral("1");
                 RexNode condition = rexBuilder.makeCall(SqlStdOperatorTable.EQUALS, rexLiteral, rexLiteral1);
-                RelNode left = getDingoGetVectorByDistance(condition, replaceVector);
+                RelNode left = getDingoGetVectorByDistance(condition, replaceVector, true);
                 newLogicalJoin.replaceInput(0, left);
                 call.transformTo(newLogicalJoin);
             }

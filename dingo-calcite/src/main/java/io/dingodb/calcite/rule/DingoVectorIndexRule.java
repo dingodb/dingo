@@ -74,12 +74,14 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
     @Override
     public void onMatch(RelOptRuleCall call) {
         DingoVector vector = call.rel(0);
-        RelNode relNode = getDingoGetVectorByDistance(vector.getFilter(), vector);
-        // pre filter
+        RelNode relNode = getDingoGetVectorByDistance(vector.getFilter(), vector, false);
+        if (relNode == null) {
+            return;
+        }
         call.transformTo(relNode);
     }
 
-    public static RelNode getDingoGetVectorByDistance(RexNode condition, LogicalDingoVector vector) {
+    public static RelNode getDingoGetVectorByDistance(RexNode condition, LogicalDingoVector vector, boolean forJoin) {
         DingoTable dingoTable = vector.getTable().unwrap(DingoTable.class);
         assert dingoTable != null;
         TupleMapping selection = getDefaultSelection(dingoTable);
@@ -93,11 +95,18 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         Pair<Integer, Integer> vectorIdPair = getVectorIndex(dingoTable, targetVector.size());
         assert vectorIdPair != null;
         RelTraitSet traitSet = vector.getTraitSet().replace(DingoRelStreaming.of(vector.getTable()));
+        boolean preFilter = vector.getHints() != null
+            && vector.getHints().size() > 0
+            && "vector_pre".equalsIgnoreCase(vector.getHints().get(0).hintName);
 
         // vector filter match primary point get
-        RelNode relNode = prePrimaryOrScalarPlan(condition, vector, vectorIdPair, traitSet, selection);
+        RelNode relNode = prePrimaryOrScalarPlan(condition, vector, vectorIdPair, traitSet, selection, preFilter);
         if (relNode != null) {
             return relNode;
+        }
+
+        if (!preFilter && !forJoin) {
+            return null;
         }
 
         // pre filtering
@@ -197,7 +206,8 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
                                           LogicalDingoVector vector,
                                           Pair<Integer, Integer> vectorIdPair,
                                           RelTraitSet traitSet,
-                                          TupleMapping selection) {
+                                          TupleMapping selection,
+                                          boolean preFilter) {
         if (condition == null) {
             return null;
         }
@@ -211,7 +221,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
 
         Set<Map<Integer, RexNode>> keyMapSet = filterIndices(indexValueMapSet, keyIndices, selection);
 
-        RelNode scan;
+        RelNode scan = null;
         if (keyMapSet != null) {
             scan = new DingoGetByKeys(
                 vector.getCluster(),
@@ -222,7 +232,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
                 selection,
                 keyMapSet
             );
-        } else {
+        } else if (preFilter) {
             scan = preScalarRelNode(vector, indexValueMapSet, td, selection, condition);
         }
 
@@ -262,13 +272,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         Config DEFAULT = ImmutableDingoVectorIndexRule.Config.builder()
             .description("DingoVectorIndexRule")
             .operandSupplier(b0 ->
-                b0.operand(DingoVector.class).predicate(rel -> {
-                    boolean condition1 = rel.getFilter() != null;
-                    boolean condition2 = rel.getHints() != null
-                        && rel.getHints().size() > 0
-                        && "vector_pre".equalsIgnoreCase(rel.getHints().get(0).hintName);
-                    return condition2 && condition1;
-                }).noInputs()
+                b0.operand(DingoVector.class).predicate(rel -> rel.getFilter() != null).noInputs()
             )
             .build();
 
