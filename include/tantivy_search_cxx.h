@@ -725,6 +725,8 @@ struct RowIdWithScore final {
 };
 #endif // CXXBRIDGE1_STRUCT_RowIdWithScore
 
+bool ffi_varify_index_parameter(::std::string const &index_json_parameter);
+
 // Creates an index using a specified tokenizer (e.g., Chinese, English, Japanese, etc.).
 //
 // Arguments:
