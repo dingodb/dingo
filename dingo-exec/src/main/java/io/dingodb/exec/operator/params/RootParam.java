@@ -48,6 +48,9 @@ public class RootParam extends AbstractParams {
     @Setter
     private transient long takeTtl;
 
+    @Setter
+    private transient Long autoIncId;
+
     public RootParam(DingoType schema, @Nullable TupleMapping selection) {
         this.schema = schema;
         this.selection = selection;

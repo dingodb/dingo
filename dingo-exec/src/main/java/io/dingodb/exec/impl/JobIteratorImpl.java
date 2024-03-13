@@ -21,10 +21,14 @@ import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobIterator;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.RootOperator;
+import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class JobIteratorImpl extends JobIterator {
     private final RootOperator operator;
+
+    @Getter
+    private Long autoIncId;
 
     private transient Object[] current;
     private final transient Vertex vertex;
@@ -42,6 +46,7 @@ public class JobIteratorImpl extends JobIterator {
             return true;
         }
         operator.checkError(vertex);
+        autoIncId = operator.popAutoIncId(vertex);
         return false;
     }
 

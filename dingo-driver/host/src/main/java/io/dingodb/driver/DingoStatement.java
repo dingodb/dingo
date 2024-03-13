@@ -24,6 +24,7 @@ import io.dingodb.common.mysql.constant.ServerStatus;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
+import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import org.apache.calcite.avatica.AvaticaStatement;
@@ -49,6 +50,14 @@ public class DingoStatement extends AvaticaStatement {
     @Setter
     private boolean transReadOnly;
     private String warning;
+
+    @Setter
+    @Getter
+    private boolean hasIncId;
+
+    @Setter
+    @Getter
+    private Long autoIncId;
 
     DingoStatement(
         DingoConnection connection,

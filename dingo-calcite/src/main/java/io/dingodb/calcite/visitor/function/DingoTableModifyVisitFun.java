@@ -128,7 +128,9 @@ public class DingoTableModifyVisitFun {
                                     transaction.getStartTs(),
                                     pessimisticTxn ? transaction.getForUpdateTs() : 0L,
                                     transaction.getLockTimeOut(),
-                                    td));
+                                    td,
+                                    rel.isHasAutoIncrement(),
+                                    rel.getAutoIncrementColIndex()));
                             insertVertex.setId(idGenerator.getOperatorId(task.getId()));
                             Edge lockEdge = new Edge(lockVertex, insertVertex);
                             lockVertex.addEdge(lockEdge);
@@ -150,7 +152,9 @@ public class DingoTableModifyVisitFun {
                                     transaction.getStartTs(),
                                     pessimisticTxn ? transaction.getForUpdateTs() : 0L,
                                     transaction.getLockTimeOut(),
-                                    td));
+                                    td,
+                                    rel.isHasAutoIncrement(),
+                                    rel.getAutoIncrementColIndex()));
                             vertex.setId(idGenerator.getOperatorId(task.getId()));
                             task.putVertex(vertex);
                             input.setPin(0);
@@ -165,7 +169,8 @@ public class DingoTableModifyVisitFun {
                     } else {
                         vertex = new Vertex(
                             PART_INSERT,
-                            new PartInsertParam(tableId, td.tupleType(), td.keyMapping(), td)
+                            new PartInsertParam(tableId, td.tupleType(), td.keyMapping(),
+                                td, rel.isHasAutoIncrement(), rel.getAutoIncrementColIndex())
                         );
                         vertex.setId(idGenerator.getOperatorId(task.getId()));
                         task.putVertex(vertex);

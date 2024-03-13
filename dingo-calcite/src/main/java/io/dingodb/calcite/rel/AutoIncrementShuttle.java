@@ -138,6 +138,8 @@ public class AutoIncrementShuttle implements RelShuttle {
                 }
                 if (hasAutoIncrement && other.getInputs().size() > 0) {
                     RelNode values = visitChildren(other);
+                    modify.setHasAutoIncrement(true);
+                    modify.setAutoIncrementColIndex(autoIncrementColIndex);
                     if (values instanceof DingoValues) {
                         DingoValues dingoValues = (DingoValues) values;
                         dingoValues.setHasAutoIncrement(true);
@@ -145,8 +147,6 @@ public class AutoIncrementShuttle implements RelShuttle {
                         dingoValues.setCommonId(table.getTableId());
                         return dingoValues;
                     }
-                    modify.setHasAutoIncrement(true);
-                    modify.setAutoIncrementColIndex(autoIncrementColIndex);
                 }
             }
             return null;

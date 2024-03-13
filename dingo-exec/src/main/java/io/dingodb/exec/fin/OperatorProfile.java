@@ -38,6 +38,9 @@ public class OperatorProfile {
     @JsonProperty("count")
     long processedTupleCount;
 
+    @JsonProperty("autoIncId")
+    long autoIncId;
+
     public String detail() {
         SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
         return "Operator " + operatorId + ":"

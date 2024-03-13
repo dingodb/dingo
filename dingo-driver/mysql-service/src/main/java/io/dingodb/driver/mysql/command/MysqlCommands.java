@@ -183,15 +183,12 @@ public class MysqlCommands {
                 int count = statement.getUpdateCount();
                 SQLWarning sqlWarning = statement.getWarnings();
                 DingoStatement dingoStatement = (DingoStatement) statement;
-                String jobIdPrefix = dingoStatement.handle.toString();
                 OKPacket okPacket;
                 int initServerStatus = dingoStatement.getServerStatus();
-                if (mysqlConnection.getConnection().getClientInfo().containsKey(jobIdPrefix)) {
-                    String lastInsertId = mysqlConnection.getConnection()
-                        .getClientInfo().getProperty(jobIdPrefix, "0");
+                if (dingoStatement.isHasIncId()) {
+                    Long lastInsertId = dingoStatement.getAutoIncId();
                     okPacket = MysqlPacketFactory.getInstance()
-                        .getOkPacket(count, packetId, initServerStatus, new BigInteger(lastInsertId), sqlWarning);
-                    mysqlConnection.getConnection().getClientInfo().remove(jobIdPrefix);
+                        .getOkPacket(count, packetId, initServerStatus, new BigInteger(String.valueOf(lastInsertId)), sqlWarning);
                 } else {
                     okPacket = MysqlPacketFactory.getInstance()
                         .getOkPacket(count, packetId, initServerStatus, BigInteger.ZERO, sqlWarning);
@@ -325,16 +322,14 @@ public class MysqlCommands {
             } else {
                 SQLWarning sqlWarning = preparedStatement.getWarnings();
                 int affected = preparedStatement.executeUpdate();
-                String jobIdPrefix = preparedStatement.handle.toString();
                 DingoConnection connection = (DingoConnection) mysqlConnection.getConnection();
                 int initServerStatus = getInitServerStatus(connection);
                 OKPacket okPacket;
-                if (mysqlConnection.getConnection().getClientInfo().containsKey(jobIdPrefix)) {
-                    String lastInsertId = mysqlConnection.getConnection()
-                        .getClientInfo().getProperty(jobIdPrefix, "0");
+                if (preparedStatement.isHasIncId()) {
+                    Long lastInsertId = preparedStatement.getAutoIncId();
                     okPacket = MysqlPacketFactory.getInstance()
-                        .getOkPacket(affected, packetId, initServerStatus, new BigInteger(lastInsertId), sqlWarning);
-                    mysqlConnection.getConnection().getClientInfo().remove(jobIdPrefix);
+                        .getOkPacket(affected, packetId, initServerStatus, new BigInteger(String.valueOf(lastInsertId)),
+                            sqlWarning);
                 } else {
                     okPacket = mysqlPacketFactory.getOkPacket(affected, packetId, sqlWarning);
                 }
