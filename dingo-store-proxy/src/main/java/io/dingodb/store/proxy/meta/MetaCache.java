@@ -236,7 +236,13 @@ public class MetaCache {
     private Table loadTable(CommonId tableId) {
         return Optional.ofNullable(metaService.getTable(
             tso(), GetTableRequest.builder().tableId(MAPPER.idTo(tableId)).build()
-        )).map(GetTableResponse::getTableDefinitionWithId)
+        )).map(getTableResponse -> {
+               if (getTableResponse.getTableDefinitionWithId() == null) {
+                   log.warn("getTableResponse responseInfo:" + getTableResponse.getResponseInfo() + ", error:" + getTableResponse.getError() + ", tableId" + tableId);
+               }
+               return getTableResponse;
+            })
+            .map(GetTableResponse::getTableDefinitionWithId)
             .ifAbsent(() -> log.warn("Table {} not found.", tableId))
             .map(tableWithId -> {
                 Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
