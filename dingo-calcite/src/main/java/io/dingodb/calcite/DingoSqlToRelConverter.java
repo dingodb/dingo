@@ -51,6 +51,7 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
     static final Config CONFIG = SqlToRelConverter.CONFIG
         .withTrimUnusedFields(true)
         .withExpand(false)
+        .withInSubQueryThreshold(1000)
         // Disable simplify to use Dingo's own expr evaluation.
         .addRelBuilderConfigTransform(c -> c.withSimplify(false));
 

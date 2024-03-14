@@ -20,6 +20,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.vector.TxnVectorSearchResponse;
@@ -37,8 +38,10 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import static io.dingodb.exec.fun.vector.VectorCosineDistanceFun.cosine;
 import static io.dingodb.exec.fun.vector.VectorIPDistanceFun.innerProduct;
@@ -69,8 +72,18 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
             param.getCoprocessor());
         List<Object[]> results = new ArrayList<>();
         if (param.isLookUp()) {
+            Map<Integer, Integer> vecPriIdxMapping = getVecPriIdxMapping(param);
             for (VectorSearchResponse response : searchResponseList) {
                 TxnVectorSearchResponse txnResponse = (TxnVectorSearchResponse) response;
+                KeyValue tableData = new KeyValue(txnResponse.getTableKey(), txnResponse.getTableVal());
+                Object[] vecTuples = tableCodec.decode(tableData);
+                StringBuilder tuplesStr = new StringBuilder();
+                for (Object obj : vecTuples) {
+                    if (obj != null) {
+                        tuplesStr.append(obj).append(".vector tuple terminated.");
+                    }
+                }
+                log.info("vector search tuple:" + tuplesStr + ", tableId:" + param.getTableId() + ", param:" + param.toString());
 
                 byte[] tmp1 = new byte[txnResponse.getKey().length];
                 System.arraycopy(txnResponse.getKey(), 0, tmp1, 0, txnResponse.getKey().length);
@@ -111,6 +124,13 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                                 objects[objects.length - 1] = 0.0;
                             }
                         }
+                        StringBuilder localTupleStr = new StringBuilder();
+                        for (Object obj : objects) {
+                            if (obj != null) {
+                                localTupleStr.append(obj).append(".vector tuple terminated.");
+                            }
+                        }
+                        log.info("local search tuple:" + localTupleStr + ", tableId:" + param.getTableId() + ", param:" + param);
                         results.add(objects);
                     }
                     continue;
@@ -123,8 +143,16 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                 }
                 Object[] decode = param.getCodec().decode(keyValue);
                 decode[decode.length - 1] = response.getDistance();
-
                 decode[vecIdx] = response.getFloatValues();
+
+                vecPriIdxMapping.forEach((key, value) -> decode[value] = vecTuples[key]);
+                StringBuilder storeTupleStr = new StringBuilder();
+                for (Object obj : decode) {
+                    if (obj != null) {
+                        storeTupleStr.append(obj).append(".vector tuple terminated.");
+                    }
+                }
+                log.info("store search tuple:" + storeTupleStr + ", tableId:" + param.getTableId() + ", param:" + param);
                 results.add(decode);
             }
         } else {
@@ -143,6 +171,19 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
             }
         }
         return results.iterator();
+    }
+
+    private static Map<Integer, Integer> getVecPriIdxMapping(TxnPartVectorParam param) {
+        int vecColSize = param.getTableDataColList().size();
+        Map<Integer, Integer> mapping = new HashMap<>();
+        for (int i = 0; i < vecColSize; i ++) {
+            Column column = param.getTableDataColList().get(i);
+            if (!column.isPrimary() && !(column.type instanceof ListType)) {
+                int ix1 = param.getTable().getColumns().indexOf(column);
+                mapping.put(i, ix1);
+            }
+        }
+        return mapping;
     }
 
     private static TupleMapping mapping2VecSelection(TxnPartVectorParam param) {
