@@ -334,6 +334,7 @@ pub fn search_bitmap_results(
     })?;
 
     let row_ids_number: Vec<u32> = row_ids_bitmap.iter().collect();
+    DEBUG!(function:"search_bitmap_results", "row_ids_number: {:?}", row_ids_number);
     let u8_bitmap: Vec<u8> = ConvertUtils::row_ids_to_u8_bitmap(&row_ids_number);
     Ok(u8_bitmap)
 }
