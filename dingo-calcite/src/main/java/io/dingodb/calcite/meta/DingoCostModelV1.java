@@ -125,7 +125,7 @@ public class DingoCostModelV1 extends DingoCostModel {
     public RelOptCost getDingoGetByKeys(DingoGetByKeys dingoGetByKeys, RelMetadataQuery mq) {
         double rowCount = dingoGetByKeys.estimateRowCount(mq);
         double rowSize = getScanAvgRowSize(dingoGetByKeys);
-        double indexNetCost = getNetCost(rowCount, rowSize);
+        double indexNetCost = getNetCost(rowCount, rowSize) / scanConcurrency;
 
         return DingoCost.FACTORY.makeCost(indexNetCost, 0, 0);
     }

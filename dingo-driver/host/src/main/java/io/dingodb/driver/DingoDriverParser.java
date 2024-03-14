@@ -435,14 +435,14 @@ public final class DingoDriverParser extends DingoParser {
             TableLockService.getDefault().lock(lock);
             int nextTtl = (start + ttl) - Utils.currentSecond();
             if (nextTtl < 0) {
-                throw new RuntimeException("Lock wait timeout exceeded.");
+                throw new RuntimeException(String.format("Lock wait timeout exceeded. tableId: %s.", lock.tableId.toString()));
             }
             try {
                 lockFuture.get(nextTtl, TimeUnit.SECONDS);
             } catch (TimeoutException e) {
                 lockFuture.cancel(true);
                 finishedFuture.complete(null);
-                throw new RuntimeException("Lock wait timeout exceeded.");
+                throw new RuntimeException(String.format("Lock wait timeout exceeded. tableId: %s.", lock.tableId.toString()));
             } catch (Exception e) {
                 lockFuture.cancel(true);
                 finishedFuture.complete(null);
