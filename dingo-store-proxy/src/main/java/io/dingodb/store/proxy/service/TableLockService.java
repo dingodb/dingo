@@ -128,6 +128,13 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
             return;
         }
         List<io.dingodb.transaction.api.TableLock> locks = this.locks.get(lock.tableId).locked;
+        if (locks.size() > 0) {
+            StringBuilder locksStr = new StringBuilder();
+            for (TableLock tableLock : locks) {
+                locksStr.append(tableLock.toString()).append(",lock terminated.");
+            }
+            log.info(String.format("tableId: %s, locked has: %s", tableId.toString(), locksStr));
+        }
         CompletableFuture<Boolean> future = lock.lockFuture;
         boolean locked = locks.isEmpty();
         if (!locked) {
