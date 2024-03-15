@@ -10,6 +10,7 @@ use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::search::collector::row_id_bitmap_collector::RowIdRoaringCollector;
 use crate::search::collector::top_dos_with_bitmap_collector::TopDocsWithFilter;
 use crate::search::utils::convert_utils::ConvertUtils;
+use crate::INFO;
 use crate::{common::errors::IndexSearcherError, ffi::RowIdWithScore, ERROR};
 use crate::common::constants::LOG_CALLBACK;
 
@@ -74,14 +75,17 @@ impl<'a> QueryStrategy<Arc<RoaringBitmap>> for SingleTermQueryStrategy<'a> {
         })?;
 
         let term: Term = Term::from_field_text(col_field, self.term);
+        INFO!(function:"SingleTermQueryStrategy", "query term is {}", self.term);
 
         let term_query: TermQuery = TermQuery::new(term, IndexRecordOption::WithFreqs);
         let row_id_collector: RowIdRoaringCollector = RowIdRoaringCollector::with_field("row_id".to_string());
         
-        searcher.search(&term_query, &row_id_collector).map_err(|e|{
+        let e = searcher.search(&term_query, &row_id_collector).map_err(|e|{
             ERROR!(function:"SingleTermQueryStrategy", "{}", e);
             IndexSearcherError::TantivyError(e)
-        })
+        });
+        INFO!(function:"SingleTermQueryStrategy", "return bitmap size is {}", e.clone().ok().unwrap().len());
+        e
     }
 }
 
