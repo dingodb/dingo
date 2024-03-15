@@ -2,12 +2,12 @@
 
 use std::{num::TryFromIntError, str::Utf8Error};
 
-use serde_json::error;
+// use serde_json::error;
 use tantivy::TantivyError;
 use thiserror::Error;
 
 #[derive(Debug, Clone, Error)]
-// #[allow(dead_code)]
+#[allow(dead_code)]
 pub enum TokenizerUtilsError {
     #[error("Failed to parse json str. '{0}'")]
     JsonParseError(String),
@@ -20,7 +20,7 @@ pub enum TokenizerUtilsError {
 }
 
 #[derive(Debug, Clone, Error)]
-// #[allow(dead_code)]
+#[allow(dead_code)]
 pub enum IndexUtilsError {
     #[error("Failed to convert cxx vector variable. '{0}'")]
     JsonParseError(String),
@@ -44,7 +44,7 @@ pub enum IndexUtilsError {
 }
 
 #[derive(Debug, Clone, Error)]
-// #[allow(dead_code)]
+#[allow(dead_code)]
 pub enum IndexSearcherError {
     #[error("Missing field/column in tantivy schema. '{0}'")]
     MissingFieldError(String),
@@ -71,7 +71,7 @@ pub enum IndexSearcherError {
 
 
 #[derive(Debug, Clone, Error)]
-// #[allow(dead_code)]
+#[allow(dead_code)]
 pub enum CxxConvertError {
     #[error("Failed to convert cxx vector variable. '{0}'")]
     CxxVectorConvertError(String),
@@ -83,7 +83,7 @@ pub enum CxxConvertError {
 
 /// The library's error enum
 #[derive(Debug, Clone, Error)]
-// #[allow(dead_code)]
+#[allow(dead_code)]
 pub enum TantivySearchError {
     #[error(transparent)]
     CxxConvertError(#[from] CxxConvertError),

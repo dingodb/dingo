@@ -1,17 +1,7 @@
 use roaring::RoaringBitmap;
-use tantivy::schema::{Field, Schema};
-use tantivy::{Searcher, TantivyError};
 use std::sync::Arc;
-use tantivy::query::{QueryParser, RegexQuery};
-
-use crate::search::bridge::index_reader_bridge::IndexReaderBridge;
-use crate::search::collector::row_id_bitmap_collector::RowIdRoaringCollector;
-// use crate::common::constants::CACHE_FOR_SKIP_INDEX;
 use crate::common::errors::IndexSearcherError;
-use crate::logger::logger_bridge::TantivySearchLogger;
-use crate::search::utils::convert_utils::ConvertUtils;
-use crate::INFO;
-use crate::{common::constants::LOG_CALLBACK, ERROR};
+
 
 pub struct FFiIndexSearcherUtils;
 

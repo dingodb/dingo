@@ -18,6 +18,7 @@ impl Drop for IndexReaderBridge {
 }
 
 impl IndexReaderBridge {
+    #[allow(dead_code)]
     pub fn reader_address(&self) -> usize {
         &self.reader as *const IndexReader as usize
     }
