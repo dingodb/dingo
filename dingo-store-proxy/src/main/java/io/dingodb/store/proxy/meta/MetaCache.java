@@ -58,6 +58,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -246,17 +247,26 @@ public class MetaCache {
     }
 
     private List<TableDefinitionWithId> getIndexes(TableDefinitionWithId tableWithId, DingoCommonId tableId) {
-        return metaService.getTables(tso(), GetTablesRequest.builder().tableId(tableId).build())
-            .getTableDefinitionWithIds().stream()
-            .filter($ -> !$.getTableDefinition().getName().equalsIgnoreCase(tableWithId.getTableDefinition().getName()))
-            .peek($ -> {
-                String name1 = $.getTableDefinition().getName();
-                String[] split = name1.split("\\.");
-                if (split.length > 1) {
-                    name1 = split[split.length - 1];
-                }
-                $.getTableDefinition().setName(name1);
-            }).collect(Collectors.toList());
+        try {
+            return metaService.getTables(tso(), GetTablesRequest.builder().tableId(tableId).build())
+                .getTableDefinitionWithIds().stream()
+                .filter($ -> !$.getTableDefinition().getName().equalsIgnoreCase(tableWithId.getTableDefinition().getName()))
+                .peek($ -> {
+                    String name1 = $.getTableDefinition().getName();
+                    String[] split = name1.split("\\.");
+                    if (split.length > 1) {
+                        name1 = split[split.length - 1];
+                    }
+                    $.getTableDefinition().setName(name1);
+                }).collect(Collectors.toList());
+        } catch (Exception e) {
+            if (tableWithId != null) {
+                log.error("getIndexes tableWithId:" + tableWithId);
+            } else {
+                log.error("getIndexes tableWithId is null");
+            }
+            throw e;
+        }
     }
 
     @SneakyThrows
@@ -318,9 +328,13 @@ public class MetaCache {
 
     public synchronized void refreshSchema(String schema) {
         log.info("Invalid schema {}", schema);
-        cache.compute(schema, (k, v) -> loadTables(metaService.getSchemaByName(
-            tso(), GetSchemaByNameRequest.builder().schemaName(schema).build()
-        ).getSchema()));
+        try {
+            cache.compute(schema, (k, v) -> loadTables(metaService.getSchemaByName(
+                tso(), GetSchemaByNameRequest.builder().schemaName(schema).build()
+            ).getSchema()));
+        } catch (Exception e) {
+            log.error("refresh schema error. " + e.getMessage(), e);
+        }
     }
 
     @SneakyThrows
