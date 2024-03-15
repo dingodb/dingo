@@ -320,7 +320,7 @@ public class LoadDataOperation implements DmlOperation {
         tuples = (Object[]) schema.convertFrom(tuples, new ImportFileConverter(escaped));
 
         if (isTxn) {
-            if (dataGenNum == 200) {
+            if (dataGenNum % 1000 == 0) {
                 refreshTxnId = true;
             }
             insertWithTxn(tuples);
@@ -423,8 +423,8 @@ public class LoadDataOperation implements DmlOperation {
             }
         }
 
-        long start = System.currentTimeMillis();
         if (refreshTxnId) {
+            long start = System.currentTimeMillis();
             try {
                 List<Object[]> tupleList = getCacheTupleList(caches, txnId);
                 TxnImportDataOperation txnImportDataOperation = new TxnImportDataOperation(
@@ -435,6 +435,10 @@ public class LoadDataOperation implements DmlOperation {
                 caches.clear();
             } finally {
                 ExecutionEnvironment.memoryCache.remove(statementId);
+            }
+            long end = System.currentTimeMillis();
+            if (log.isDebugEnabled()) {
+                log.debug("insert txn batch size:" + caches.size() + ", cost time:" + (end - start) + "ms");
             }
             refreshTxnId = false;
         }
