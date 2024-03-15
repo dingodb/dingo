@@ -16,8 +16,6 @@
 
 package io.dingodb.calcite.operation;
 
-import lombok.Getter;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -25,9 +23,9 @@ public class KillConnection implements DdlOperation{
 
     Connection connection;
 
-    private Integer threadId;
+    private String threadId;
 
-    public KillConnection(Integer threadId) {
+    public KillConnection(String threadId) {
         this.threadId = threadId;
     }
 

@@ -123,17 +123,17 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
             // select l2Distance(feature, array[1,2]) as store from table [ order by store limit 10]
             // feature is vector index
             // transform to post filtering
-            if (vectorSelected.size() > 0) {
-                LogicalProject logicalProject = getPostVectorFiltering(
-                    project,
-                    scan,
-                    vectorSelected,
-                    newProjectRexNodes);
-                if (logicalProject != null) {
-                    call.transformTo(logicalProject);
-                }
-                return;
-            }
+//            if (vectorSelected.size() > 0) {
+//                LogicalProject logicalProject = getPostVectorFiltering(
+//                    project,
+//                    scan,
+//                    vectorSelected,
+//                    newProjectRexNodes);
+//                if (logicalProject != null) {
+//                    call.transformTo(logicalProject);
+//                }
+//                return;
+//            }
             call.transformTo(
                 new LogicalProject(
                     project.getCluster(),

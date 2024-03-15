@@ -27,7 +27,7 @@ import java.util.List;
 public class SqlKill extends SqlDdl {
 
     @Getter
-    protected Integer threadId;
+    protected String threadId;
 
     /**
      * Creates a SqlDdl.
@@ -37,7 +37,10 @@ public class SqlKill extends SqlDdl {
      */
     public SqlKill(SqlOperator operator, SqlParserPos pos, String threadId) {
         super(operator, pos);
-        this.threadId = Integer.parseInt(threadId);
+        if (threadId.startsWith("'") && threadId.endsWith("'")) {
+            threadId = threadId.replace("'", "");
+        }
+        this.threadId = threadId;
     }
 
     @Override
