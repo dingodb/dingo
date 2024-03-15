@@ -113,4 +113,9 @@ public class DriverProxyServer extends LocalService implements DriverProxyApi, M
         ApiRegistry.getDefault().register(DriverProxyApi.class, null);
         ApiRegistry.getDefault().register(MetaApi.class, null);
     }
+
+    @Override
+    public void cancel(String connectionId, int id, Meta.Signature signature) {
+        ((ServerMeta)META).cancelStatement(connectionId, id, signature);
+    }
 }

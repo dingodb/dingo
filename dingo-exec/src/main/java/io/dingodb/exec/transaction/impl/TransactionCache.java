@@ -205,4 +205,30 @@ public class TransactionCache {
             return Iterators.transform(iterator, wrap(ByteUtils::decode)::apply);
         }
     }
+
+    public void checkCache() {
+        Iterator<KeyValue> iterator = cache.scan((byte[]) null);
+        Iterator<Object[]> transform = Iterators.transform(iterator, wrap(ByteUtils::decode)::apply);
+        while (transform.hasNext()) {
+            Object[] next = transform.next();
+            TxnLocalData txnLocalData = (TxnLocalData) next[0];
+            log.info("txnId:{} tableId:{} partId:{} Op:{} Key:{} ", txnLocalData.getTxnId(), txnLocalData.getTableId(),
+                txnLocalData.getPartId(), txnLocalData.getOp(), txnLocalData.getKey());
+        }
+    }
+
+    public void cleanCache() {
+        Iterator<KeyValue> iterator = cache.scan((byte[]) null);
+        Iterator<Object[]> transform = Iterators.transform(iterator, wrap(ByteUtils::decode)::apply);
+        while (transform.hasNext()) {
+            Object[] next = transform.next();
+            TxnLocalData txnLocalData = (TxnLocalData) next[0];
+            log.info("txnId:{} tableId:{} partId:{} Op:{} Key:{} ", txnLocalData.getTxnId(), txnLocalData.getTableId(),
+                txnLocalData.getPartId(), txnLocalData.getOp(), txnLocalData.getKey());
+        }
+        while (iterator.hasNext()) {
+            cache.delete(iterator.next().getKey());
+            log.info("key is {}", iterator.next().getKey());
+        }
+    }
 }
