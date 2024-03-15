@@ -16,12 +16,10 @@
 
 package io.dingodb.calcite.operation;
 
-import java.sql.Connection;
-
 public class KillQuery implements DdlOperation {
-    private int threadId;
+    private String threadId;
 
-    public KillQuery(int threadId) {
+    public KillQuery(String threadId) {
         this.threadId = threadId;
     }
 

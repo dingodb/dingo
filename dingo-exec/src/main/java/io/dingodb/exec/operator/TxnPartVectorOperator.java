@@ -77,13 +77,6 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                 TxnVectorSearchResponse txnResponse = (TxnVectorSearchResponse) response;
                 KeyValue tableData = new KeyValue(txnResponse.getTableKey(), txnResponse.getTableVal());
                 Object[] vecTuples = tableCodec.decode(tableData);
-                StringBuilder tuplesStr = new StringBuilder();
-                for (Object obj : vecTuples) {
-                    if (obj != null) {
-                        tuplesStr.append(obj).append(".vector tuple terminated.");
-                    }
-                }
-                log.info("vector search tuple:" + tuplesStr + ", tableId:" + param.getTableId() + ", param:" + param.toString());
 
                 byte[] tmp1 = new byte[txnResponse.getKey().length];
                 System.arraycopy(txnResponse.getKey(), 0, tmp1, 0, txnResponse.getKey().length);
@@ -124,13 +117,6 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                                 objects[objects.length - 1] = 0.0;
                             }
                         }
-                        StringBuilder localTupleStr = new StringBuilder();
-                        for (Object obj : objects) {
-                            if (obj != null) {
-                                localTupleStr.append(obj).append(".vector tuple terminated.");
-                            }
-                        }
-                        log.info("local search tuple:" + localTupleStr + ", tableId:" + param.getTableId() + ", param:" + param);
                         results.add(objects);
                     }
                     continue;
@@ -146,13 +132,6 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                 decode[vecIdx] = response.getFloatValues();
 
                 vecPriIdxMapping.forEach((key, value) -> decode[value] = vecTuples[key]);
-                StringBuilder storeTupleStr = new StringBuilder();
-                for (Object obj : decode) {
-                    if (obj != null) {
-                        storeTupleStr.append(obj).append(".vector tuple terminated.");
-                    }
-                }
-                log.info("store search tuple:" + storeTupleStr + ", tableId:" + param.getTableId() + ", param:" + param);
                 results.add(decode);
             }
         } else {
