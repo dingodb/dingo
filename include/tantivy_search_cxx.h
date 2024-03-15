@@ -725,152 +725,57 @@ struct RowIdWithScore final {
 };
 #endif // CXXBRIDGE1_STRUCT_RowIdWithScore
 
-bool ffi_varify_index_parameter(::std::string const &index_json_parameter);
+bool ffi_varify_index_parameter(::std::string const &index_json_parameter) noexcept;
 
-// Creates an index using a specified tokenizer (e.g., Chinese, English, Japanese, etc.).
-//
-// Arguments:
-// - `index_path`: The directory path for building the index.
-// - `tokenizer_with_parameter`: A str contains tokenizer name and parameters.
-//
-// Returns:
-// - A bool value represent operation success.
-bool ffi_create_index_with_parameter(::std::string const &index_path, ::std::vector<::std::string> const &column_names, ::std::string const &index_json_parameter);
+// 创建索引，提供索引参数
+bool ffi_create_index_with_parameter(::std::string const &index_path, ::std::vector<::std::string> const &column_names, ::std::string const &index_json_parameter) noexcept;
 
-// Creates an index using the default tokenizer.
-//
-// Arguments:
-// - `index_path`: The directory path for building the index.
-//
-// Returns:
-// - A bool value represent operation success.
-bool ffi_create_index(::std::string const &index_path, ::std::vector<::std::string> const &column_names);
+// 创建索引，不提供索引参数
+bool ffi_create_index(::std::string const &index_path, ::std::vector<::std::string> const &column_names) noexcept;
 
-// Indexes a document.
-//
-// Arguments:
-// - `index_path`: The directory path for building the index.
-// - `row_id`: Row ID associated with the document.
-// - `doc`: The text data of the document.
-//
-// Returns:
-// - A bool value represent operation success.        
-bool ffi_index_multi_column_docs(::std::string const &index_path, ::std::uint64_t row_id, ::std::vector<::std::string> const &column_names, ::std::vector<::std::string> const &column_docs);
+// 索引一组文档        
+bool ffi_index_multi_column_docs(::std::string const &index_path, ::std::uint64_t row_id, ::std::vector<::std::string> const &column_names, ::std::vector<::std::string> const &column_docs) noexcept;
 
-// Delete a group of row_ids.
-//
-// Arguments:
-// - `index_path`: The directory path for building the index.
-// - `row_ids`: a group of row_ids that needs to be deleted.
-//
-// Returns:
-// - A bool value represent operation success.
-bool ffi_delete_row_ids(::std::string const &index_path, ::std::vector<::std::uint32_t> const &row_ids);
+// 删除一组 row ids
+bool ffi_delete_row_ids(::std::string const &index_path, ::std::vector<::std::uint32_t> const &row_ids) noexcept;
 
-// Commits the changes to the index, writing it to the file system.
-//
-// Arguments:
-// - `index_path`: The directory path for building the index.
-//
-// Returns:
-// - A bool value represent operation success.
-bool ffi_index_writer_commit(::std::string const &index_path);
+// 提交索引修改
+bool ffi_index_writer_commit(::std::string const &index_path) noexcept;
 
-// Frees the index writer and waits for all merging threads to complete.
-//
-// Arguments:
-// - `index_path`: The directory path for building the index.
-//
-// Returns:
-// - A bool value represent operation success.
-bool ffi_index_writer_free(::std::string const &index_path);
+// 释放索引 writer
+bool ffi_free_index_writer(::std::string const &index_path) noexcept;
 
-// Loads an index from a specified directory.
-//
-// Arguments:
-// - `index_path`: The directory path for building the index.
-//
-// Returns:
-// - A bool value represent operation success.
-bool ffi_load_index(::std::string const &index_path);
+// 加载索引 reader
+bool ffi_load_index_reader(::std::string const &index_path) noexcept;
 
-// Frees the index reader.
-//
-// Arguments:
-// - `index_path`: The directory path for building the index.
-//
-// Returns:
-// - A bool value represent operation success.
-bool ffi_free_reader(::std::string const &index_path);
+// 释放索引 reader
+bool ffi_free_index_reader(::std::string const &index_path) noexcept;
 
-// Determines if a query string appears within a specified row ID range.
-//
-// Arguments:
-// - `index_path`: The directory path for building the index.
-// - `query`: Query string.
-// - `lrange`: The left (inclusive) boundary of the row ID range.
-// - `rrange`: The right (inclusive) boundary of the row ID range.
-// - `use_regex`: Whether use regex searcher.
-//
-// Returns:
-// - A bool value represent whether granule hitted.
-bool ffi_search_in_rowid_range(::std::string const &index_path, ::std::string const &column_name, ::std::string const &query, ::std::uint64_t lrange, ::std::uint64_t rrange, bool use_regex);
+// 获得索引的文档数量
+::std::uint64_t ffi_get_indexed_doc_counts(::std::string const &index_path) noexcept;
 
-// Counts the occurrences of a query string within a specified row ID range.
-//
-// Arguments:
-// - `index_path`: The directory path for building the index.
-// - `query`: Query string.
-// - `lrange`: The left (inclusive) boundary of the row ID range.
-// - `rrange`: The right (inclusive) boundary of the row ID range.
-// - `use_regex`: Whether use regex searcher.
-//
-// Returns:
-// - The count of occurrences of the query string within the row ID range.
-::std::uint64_t ffi_count_in_rowid_range(::std::string const &index_path, ::std::string const &column_name, ::std::string const &query, ::std::uint64_t lrange, ::std::uint64_t rrange, bool use_regex);
+// 执行 range 范围内单个 Term 查询
+bool ffi_query_term_with_range(::std::string const &index_path, ::std::string const &column_name, ::std::string const &term, ::std::uint64_t lrange, ::std::uint64_t rrange) noexcept;
 
-// Execute bm25_search with filter row_ids.
-//
-// Arguments:
-// - `index_path`: The directory path for building the index.
-// - `query`: Query string.
-// - `u8_bitmap`: A vector<u8> bitmap represent row_ids need to be filtered.
-// - `top_k`: Try to search `k` results.
-// - `need_text`: Whether need return origin doc content.
-//
-// Returns:
-// - A group of RowIdWithScore Objects.
-::rust::Vec<::RowIdWithScore> ffi_bm25_search_with_filter(::std::string const &index_path, ::std::vector<::std::string> const &column_names, ::std::string const &query, ::std::vector<::std::uint8_t> const &u8_bitmap, ::std::uint32_t top_k, bool need_text);
+// 执行 range 范围内多个 Terms 查询
+bool ffi_query_terms_with_range(::std::string const &index_path, ::std::string const &column_name, ::std::vector<::std::string> const &terms, ::std::uint64_t lrange, ::std::uint64_t rrange) noexcept;
 
-// Execute bm25_search.
-//
-// Arguments:
-// - `index_path`: The directory path for building the index.
-// - `query`: Query string.
-// - `top_k`: Try to search `k` results.
-// - `need_text`: Whether need return origin doc content.
-//
-// Returns:
-// - A group of RowIdWithScore Objects.
-::rust::Vec<::RowIdWithScore> ffi_bm25_search(::std::string const &index_path, ::std::vector<::std::string> const &column_names, ::std::string const &query, ::std::uint32_t top_k, bool need_text);
+// 执行 range 范围内句子 sentence 查询
+bool ffi_query_sentence_with_range(::std::string const &index_path, ::std::string const &column_name, ::std::string const &sentence, ::std::uint64_t lrange, ::std::uint64_t rrange) noexcept;
 
-// Execute search with like pattern or not.
-//
-// Arguments:
-// - `index_path`: The directory path for building the index.
-// - `query`: Query should be like pattern.
-// - `use_regex`: For like pattern, use_regex should be true.
-//
-// Returns:
-// - row_ids u8 bitmap.
-::rust::Vec<::std::uint8_t> ffi_search_bitmap_results(::std::string const &index_path, ::std::vector<::std::string> const &column_names, ::std::string const &query, bool use_regex);
+// 执行 range 范围内正则匹配 regex
+bool ffi_regex_term_with_range(::std::string const &index_path, ::std::string const &column_name, ::std::string const &pattern, ::std::uint64_t lrange, ::std::uint64_t rrange) noexcept;
 
-// Get the number of documents stored in the index file.
-// In general, we can consider the number of stored documents as 'n',
-// and the range of row_id is [0, n-1].
-// Arguments:
-// - `index_path`: The directory path for building the index.
-//
-// Returns:
-// - The count of documents stored in the index file.
-::std::uint64_t ffi_indexed_doc_counts(::std::string const &index_path);
+// 执行单个 Term 查询
+::rust::Vec<::std::uint8_t> ffi_query_term_bitmap(::std::string const &index_path, ::std::string const &column_name, ::std::string const &term) noexcept;
+
+// 执行多个 Terms 查询
+::rust::Vec<::std::uint8_t> ffi_query_terms_bitmap(::std::string const &index_path, ::std::string const &column_name, ::std::vector<::std::string> const &terms) noexcept;
+
+// 执行句子 sentence 查询
+::rust::Vec<::std::uint8_t> ffi_query_sentence_bitmap(::std::string const &index_path, ::std::string const &column_name, ::std::string const &sentence) noexcept;
+
+// 执行正则匹配 regex
+::rust::Vec<::std::uint8_t> ffi_regex_term_bitmap(::std::string const &index_path, ::std::string const &column_name, ::std::string const &pattern) noexcept;
+
+::rust::Vec<::RowIdWithScore> ffi_bm25_search(::std::string const &index_path, ::std::string const &sentence, ::std::uint32_t topk, ::std::vector<::std::uint8_t> const &u8_aived_bitmap, bool query_with_filter) noexcept;
