@@ -13,6 +13,10 @@ variable:
     autoIncrementCacheCount: 10000
     autoIncrementIncrement: 1
     autoIncrementOffset: 1
+store:
+  bufferSize: 8388608
+  bufferNumber: 2
+  fileSize: 2097152
 security:
     cipher:
         keyPath: /opt/dingo/conf/dingodb.jks

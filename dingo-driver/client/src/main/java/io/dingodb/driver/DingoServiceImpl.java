@@ -17,6 +17,7 @@
 package io.dingodb.driver;
 
 import io.dingodb.common.Location;
+import io.dingodb.common.util.Utils;
 import io.dingodb.driver.api.DriverProxyApi;
 import io.dingodb.net.api.ApiRegistry;
 import lombok.experimental.Delegate;
@@ -48,7 +49,8 @@ public class DingoServiceImpl implements Service {
             return this.proxy.apply(request);
         } catch (Exception e) {
             log.info(e.getMessage(), e);
-            if (((UndeclaredThrowableException) e).getUndeclaredThrowable() instanceof TimeoutException) {
+            Throwable throwable = Utils.extractThrowable(e);
+            if (throwable instanceof TimeoutException) {
                 driverProxyApi.cancel(
                     request.statementHandle.connectionId,
                     request.statementHandle.id,
@@ -64,7 +66,8 @@ public class DingoServiceImpl implements Service {
             return this.proxy.apply(request);
         } catch (Exception e) {
             log.info(e.getMessage(), e);
-            if (((UndeclaredThrowableException) e).getUndeclaredThrowable() instanceof TimeoutException) {
+            Throwable throwable = Utils.extractThrowable(e);
+            if (throwable instanceof TimeoutException) {
                 driverProxyApi.cancel(request.connectionId, request.statementId, null);
             }
             throw e;
@@ -76,7 +79,8 @@ public class DingoServiceImpl implements Service {
             return this.proxy.apply(request);
         } catch (Exception e) {
             log.info(e.getMessage(), e);
-            if (((UndeclaredThrowableException) e).getUndeclaredThrowable() instanceof TimeoutException) {
+            Throwable throwable = Utils.extractThrowable(e);
+            if (throwable instanceof TimeoutException) {
                 driverProxyApi.cancel(request.connectionId, request.statementId, null);
             }
             throw e;
@@ -88,7 +92,8 @@ public class DingoServiceImpl implements Service {
             return this.proxy.apply(request);
         } catch (Exception e) {
             log.info(e.getMessage(), e);
-            if (((UndeclaredThrowableException) e).getUndeclaredThrowable() instanceof TimeoutException) {
+            Throwable throwable = Utils.extractThrowable(e);
+            if (throwable instanceof TimeoutException) {
                 driverProxyApi.cancel(request.connectionId, request.statementId, null);
             }
             throw e;
@@ -100,7 +105,8 @@ public class DingoServiceImpl implements Service {
             return this.proxy.apply(request);
         } catch (Exception e) {
             log.info(e.getMessage(), e);
-            if (((UndeclaredThrowableException) e).getUndeclaredThrowable() instanceof TimeoutException) {
+            Throwable throwable = Utils.extractThrowable(e);
+            if (throwable instanceof TimeoutException) {
                 driverProxyApi.cancel(request.connectionId, request.statementId, null);
             }
             throw e;
@@ -112,7 +118,8 @@ public class DingoServiceImpl implements Service {
             return this.proxy.apply(request);
         } catch (Exception e) {
             log.info(e.getMessage(), e);
-            if (((UndeclaredThrowableException) e).getUndeclaredThrowable() instanceof TimeoutException) {
+            Throwable throwable = Utils.extractThrowable(e);
+            if (throwable instanceof TimeoutException) {
                 driverProxyApi.cancel(request.connectionId, request.statementId, null);
             }
             throw e;
