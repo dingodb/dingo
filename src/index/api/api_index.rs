@@ -1,13 +1,9 @@
-use crate::common::errors::TantivySearchError;
+use crate::index::implements::api_index_impl::*;
 use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::{common::constants::LOG_CALLBACK, ERROR};
 use crate::{cxx_vector_converter, CXX_STRING_CONERTER, CXX_VECTOR_STRING_CONERTER};
 use cxx::{CxxString, CxxVector};
 
-use super::index_manager_core::{
-    commit_index, create_index, create_index_with_parameter, delete_row_ids, free_index_writer,
-    index_multi_column_docs,
-};
 
 /// 创建索引，提供索引参数
 pub fn ffi_create_index_with_parameter(
@@ -168,11 +164,11 @@ pub fn ffi_index_writer_commit(index_path: &CxxString) -> bool {
 }
 
 /// 释放索引
-pub fn ffi_index_writer_free(index_path: &CxxString) -> bool {
+pub fn ffi_free_index_writer(index_path: &CxxString) -> bool {
     let index_path: String = match CXX_STRING_CONERTER.convert(index_path) {
         Ok(path) => path,
         Err(e) => {
-            ERROR!(function: "ffi_index_writer_free", "Can't convert 'index_path', message: {}", e);
+            ERROR!(function: "ffi_free_index_writer", "Can't convert 'index_path', message: {}", e);
             return false;
         }
     };
@@ -180,7 +176,7 @@ pub fn ffi_index_writer_free(index_path: &CxxString) -> bool {
     match free_index_writer(&index_path) {
         Ok(status) => status,
         Err(e) => {
-            ERROR!(function: "ffi_index_writer_free", "Error freeing index writer: {}", e);
+            ERROR!(function: "ffi_free_index_writer", "Error freeing index writer: {}", e);
             false
         }
     }

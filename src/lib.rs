@@ -8,9 +8,11 @@ mod search;
 mod tokenizer;
 mod utils;
 use common::constants::*;
-use index::ffi_index_manager::*;
-use search::ffi_index_searcher::*;
 use utils::ffi_utils::*;
+use index::api::api_index::*;
+use search::api::api_clickhouse::*;
+use search::api::api_common::*;
+use search::api::api_myscale::*;
 // re-export log ffi function.
 pub use logger::ffi_logger::*;
 
@@ -31,41 +33,20 @@ pub mod ffi {
             index_json_parameter: &CxxString,
         ) -> bool;
 
-        /// Creates an index using a specified tokenizer (e.g., Chinese, English, Japanese, etc.).
-        ///
-        /// Arguments:
-        /// - `index_path`: The directory path for building the index.
-        /// - `tokenizer_with_parameter`: A str contains tokenizer name and parameters.
-        ///
-        /// Returns:
-        /// - A bool value represent operation success.
+        /// 创建索引，提供索引参数
         fn ffi_create_index_with_parameter(
             index_path: &CxxString,
             column_names: &CxxVector<CxxString>,
             index_json_parameter: &CxxString,
         ) -> bool;
 
-        /// Creates an index using the default tokenizer.
-        ///
-        /// Arguments:
-        /// - `index_path`: The directory path for building the index.
-        ///
-        /// Returns:
-        /// - A bool value represent operation success.
+        /// 创建索引，不提供索引参数
         fn ffi_create_index(
             index_path: &CxxString,
             column_names: &CxxVector<CxxString>,
         ) -> bool;
 
-        /// Indexes a document.
-        ///
-        /// Arguments:
-        /// - `index_path`: The directory path for building the index.
-        /// - `row_id`: Row ID associated with the document.
-        /// - `doc`: The text data of the document.
-        ///
-        /// Returns:
-        /// - A bool value represent operation success.        
+        /// 索引一组文档        
         fn ffi_index_multi_column_docs(
             index_path: &CxxString,
             row_id: u64,
@@ -73,156 +54,96 @@ pub mod ffi {
             column_docs: &CxxVector<CxxString>,
         ) -> bool;
 
-        /// Delete a group of row_ids.
-        ///
-        /// Arguments:
-        /// - `index_path`: The directory path for building the index.
-        /// - `row_ids`: a group of row_ids that needs to be deleted.
-        ///
-        /// Returns:
-        /// - A bool value represent operation success.
+        /// 删除一组 row ids
         fn ffi_delete_row_ids(index_path: &CxxString, row_ids: &CxxVector<u32>) -> bool;
 
-        /// Commits the changes to the index, writing it to the file system.
-        ///
-        /// Arguments:
-        /// - `index_path`: The directory path for building the index.
-        ///
-        /// Returns:
-        /// - A bool value represent operation success.
+        /// 提交索引修改
         fn ffi_index_writer_commit(index_path: &CxxString) -> bool;
 
-        /// Frees the index writer and waits for all merging threads to complete.
-        ///
-        /// Arguments:
-        /// - `index_path`: The directory path for building the index.
-        ///
-        /// Returns:
-        /// - A bool value represent operation success.
-        fn ffi_index_writer_free(index_path: &CxxString) -> bool;
+        /// 释放索引 writer
+        fn ffi_free_index_writer(index_path: &CxxString) -> bool;
 
-        /// Loads an index from a specified directory.
-        ///
-        /// Arguments:
-        /// - `index_path`: The directory path for building the index.
-        ///
-        /// Returns:
-        /// - A bool value represent operation success.
-        fn ffi_load_index(index_path: &CxxString) -> bool;
+        /// 加载索引 reader
+        fn ffi_load_index_reader(index_path: &CxxString) -> bool;
 
-        /// Frees the index reader.
-        ///
-        /// Arguments:
-        /// - `index_path`: The directory path for building the index.
-        ///
-        /// Returns:
-        /// - A bool value represent operation success.
-        fn ffi_free_reader(index_path: &CxxString) -> bool;
+        /// 释放索引 reader
+        fn ffi_free_index_reader(index_path: &CxxString) -> bool;
 
-        /// Determines if a query string appears within a specified row ID range.
-        ///
-        /// Arguments:
-        /// - `index_path`: The directory path for building the index.
-        /// - `query`: Query string.
-        /// - `lrange`: The left (inclusive) boundary of the row ID range.
-        /// - `rrange`: The right (inclusive) boundary of the row ID range.
-        /// - `use_regex`: Whether use regex searcher.
-        ///
-        /// Returns:
-        /// - A bool value represent whether granule hitted.
-        fn ffi_search_in_rowid_range(
+        /// 获得索引的文档数量
+        fn ffi_get_indexed_doc_counts(index_path: &CxxString) -> u64;
+
+        /// 执行 range 范围内单个 Term 查询
+        fn ffi_query_term_with_range(
             index_path: &CxxString,
             column_name: &CxxString,
-            query: &CxxString,
+            term: &CxxString,
             lrange: u64,
             rrange: u64,
-            use_regex: bool,
         ) -> bool;
 
-        /// Counts the occurrences of a query string within a specified row ID range.
-        ///
-        /// Arguments:
-        /// - `index_path`: The directory path for building the index.
-        /// - `query`: Query string.
-        /// - `lrange`: The left (inclusive) boundary of the row ID range.
-        /// - `rrange`: The right (inclusive) boundary of the row ID range.
-        /// - `use_regex`: Whether use regex searcher.
-        ///
-        /// Returns:
-        /// - The count of occurrences of the query string within the row ID range.
-        fn ffi_count_in_rowid_range(
+        /// 执行 range 范围内多个 Terms 查询
+        fn ffi_query_terms_with_range(
             index_path: &CxxString,
             column_name: &CxxString,
-            query: &CxxString,
+            terms: &CxxVector<CxxString>,
             lrange: u64,
             rrange: u64,
-            use_regex: bool,
-        ) -> u64;
+        ) -> bool;
 
-        /// Execute bm25_search with filter row_ids.
-        ///
-        /// Arguments:
-        /// - `index_path`: The directory path for building the index.
-        /// - `query`: Query string.
-        /// - `u8_bitmap`: A vector<u8> bitmap represent row_ids need to be filtered.
-        /// - `top_k`: Try to search `k` results.
-        /// - `need_text`: Whether need return origin doc content.
-        ///
-        /// Returns:
-        /// - A group of RowIdWithScore Objects.
-        fn ffi_bm25_search_with_filter(
+        /// 执行 range 范围内句子 sentence 查询
+        fn ffi_query_sentence_with_range(
             index_path: &CxxString,
-            column_names: &CxxVector<CxxString>,
-            query: &CxxString,
-            u8_bitmap: &CxxVector<u8>,
-            top_k: u32,
-            need_text: bool,
-        ) -> Vec<RowIdWithScore>;
+            column_name: &CxxString,
+            sentence: &CxxString,
+            lrange: u64,
+            rrange: u64
+        ) -> bool;
 
-        /// Execute bm25_search.
-        ///
-        /// Arguments:
-        /// - `index_path`: The directory path for building the index.
-        /// - `query`: Query string.
-        /// - `top_k`: Try to search `k` results.
-        /// - `need_text`: Whether need return origin doc content.
-        ///
-        /// Returns:
-        /// - A group of RowIdWithScore Objects.
-        fn ffi_bm25_search(
+        /// 执行 range 范围内正则匹配 regex
+        fn ffi_regex_term_with_range(
             index_path: &CxxString,
-            column_names: &CxxVector<CxxString>,
-            query: &CxxString,
-            top_k: u32,
-            need_text: bool,
-        ) -> Vec<RowIdWithScore>;
+            column_name: &CxxString,
+            pattern: &CxxString,
+            lrange: u64,
+            rrange: u64,
+        ) -> bool;
 
-        /// Execute search with like pattern or not.
-        ///
-        /// Arguments:
-        /// - `index_path`: The directory path for building the index.
-        /// - `query`: Query should be like pattern.
-        /// - `use_regex`: For like pattern, use_regex should be true.
-        ///
-        /// Returns:
-        /// - row_ids u8 bitmap.
-        pub fn ffi_search_bitmap_results(
+        /// 执行单个 Term 查询
+        pub fn ffi_query_term_bitmap(
             index_path: &CxxString,
-            column_names: &CxxVector<CxxString>,
-            query: &CxxString,
-            use_regex: bool,
+            column_name: &CxxString,
+            term: &CxxString,
         ) -> Vec<u8>;
 
-        /// Get the number of documents stored in the index file.
-        /// In general, we can consider the number of stored documents as 'n',
-        /// and the range of row_id is [0, n-1].
-        /// Arguments:
-        /// - `index_path`: The directory path for building the index.
-        ///
-        /// Returns:
-        /// - The count of documents stored in the index file.
-        fn ffi_indexed_doc_counts(index_path: &CxxString) -> u64;
+        /// 执行多个 Terms 查询
+        pub fn ffi_query_terms_bitmap(
+            index_path: &CxxString,
+            column_name: &CxxString,
+            terms: &CxxVector<CxxString>,
+        ) -> Vec<u8>;
 
+        /// 执行句子 sentence 查询
+        pub fn ffi_query_sentence_bitmap(
+            index_path: &CxxString,
+            column_name: &CxxString,
+            sentence: &CxxString,
+        ) -> Vec<u8>;
+
+        /// 执行正则匹配 regex
+        pub fn ffi_regex_term_bitmap(
+            index_path: &CxxString,
+            column_name: &CxxString,
+            pattern: &CxxString,
+        ) -> Vec<u8>;
+
+        // 执行 BM25 search
+        pub fn ffi_bm25_search(
+            index_path: &CxxString,
+            sentence: &CxxString,
+            topk: u32,
+            u8_aived_bitmap: &CxxVector<u8>,
+            query_with_filter: bool,
+        ) -> Vec<RowIdWithScore>;
     }
 }
 
