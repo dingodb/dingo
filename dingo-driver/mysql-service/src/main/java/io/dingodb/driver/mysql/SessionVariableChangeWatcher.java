@@ -17,9 +17,12 @@
 package io.dingodb.driver.mysql;
 
 import io.dingodb.common.mysql.client.SessionVariableChange;
+import io.dingodb.driver.DingoConnection;
+import io.dingodb.driver.ServerMeta;
 import io.dingodb.driver.mysql.netty.MysqlNettyServer;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
@@ -50,16 +53,30 @@ public class SessionVariableChangeWatcher implements Observer {
             MysqlConnection connection = MysqlNettyServer.connections.get(sessionVariable.getId());
             connection.passwordExpire = false;
         } else if ("@connection_kill".equalsIgnoreCase(sessionVariable.getName())) {
-            Optional<String> matchMysqlConn = MysqlNettyServer.connections
-                .entrySet()
-                .stream()
-                .filter(entry -> entry.getValue().getThreadId() == Integer.parseInt(sessionVariable.getValue()))
-                .map(Map.Entry::getKey)
-                .findFirst();
-            if (matchMysqlConn.isPresent()) {
-                MysqlConnection connection = MysqlNettyServer.connections.get(matchMysqlConn.get());
-                if (connection != null) {
-                    connection.close();
+            boolean isNumeric = sessionVariable.getValue().matches("\\d+");
+            if (isNumeric) {
+                Optional<String> matchMysqlConn = MysqlNettyServer.connections
+                    .entrySet()
+                    .stream()
+                    .filter(entry -> entry.getValue().getThreadId() == Integer.parseInt(sessionVariable.getValue()))
+                    .map(Map.Entry::getKey)
+                    .findFirst();
+                if (matchMysqlConn.isPresent()) {
+                    MysqlConnection connection = MysqlNettyServer.connections.get(matchMysqlConn.get());
+                    if (connection != null) {
+                        connection.close();
+                    }
+                }
+            } else {
+                if (ServerMeta.getInstance().connectionMap.containsKey(sessionVariable.getValue())) {
+                    DingoConnection dingoConnection = ServerMeta.getInstance()
+                        .connectionMap.get(sessionVariable.getValue());
+                    try {
+                        dingoConnection.close();
+                        ServerMeta.getInstance().connectionMap.remove(sessionVariable.getValue());
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
         }
