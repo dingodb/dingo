@@ -20,6 +20,8 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.config.SecurityConfiguration;
 import io.dingodb.common.mysql.scope.ScopeVariables;
+import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.exec.transaction.base.TransactionStatus;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.verify.auth.IdentityAuthService;
 import lombok.SneakyThrows;
@@ -640,6 +642,33 @@ public class ServerMeta implements Meta {
         }
         log.warn("The connection (handle = {}) is not found.", sh.connectionId);
     }
+
+    public void cancelStatement(@NonNull String connectionId, int id, Meta.Signature signature) {
+        DingoConnection connection = connectionMap.get(connectionId);
+        StatementHandle newSh = new StatementHandle(connection.id, id, signature);
+        try {
+            log.info("statement handle = {}.", newSh);
+            AvaticaStatement statement = connection.getStatement(newSh);
+            statement.cancel();
+            ITransaction transaction = connection.getTransaction();
+            if (transaction != null) {
+                if (transaction.isAutoCommit()) {
+                    if (transaction.getStatus() == TransactionStatus.START) {
+                        log.info("cancelStatement, {} rollback ...", transaction.getTxnId());
+                        connection.rollback();
+                    } else {
+                        log.info("cancelStatement, cancel transaction {} ", transaction.getTxnId());
+                        transaction.cancel();
+                    }
+                }
+            }
+            return;
+        } catch (NoSuchStatementException | SQLException e) {
+            log.error("Failed to cancel statement: handle = {}.", newSh, e);
+        }
+        log.warn("The connection (handle = {}) is not found.", connectionId);
+    }
+
 
     // Here the local meta is created.
     @Override

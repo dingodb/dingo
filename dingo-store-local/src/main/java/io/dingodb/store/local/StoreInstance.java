@@ -121,12 +121,20 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         public KeyValueIterator(RocksIterator iterator, Range range) {
             this.iterator = iterator;
             this.range = range;
-            if (range.withStart) {
-                iterator.seek(range.start);
+            if (range.start == null) {
+                iterator.seekToFirst();
             } else {
-                iterator.seek(nextKey(range.start));
+                if (range.withStart) {
+                    iterator.seek(range.start);
+                } else {
+                    iterator.seek(nextKey(range.start));
+                }
             }
-            end = range.withEnd ? nextKey(range.end) : range.end;
+            if (range.end == null) {
+                end = ByteArrayUtils.MAX;
+            } else {
+                end = range.withEnd ? nextKey(range.end) : range.end;
+            }
         }
 
         @Override

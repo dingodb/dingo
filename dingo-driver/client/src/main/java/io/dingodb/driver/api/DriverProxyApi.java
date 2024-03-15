@@ -17,6 +17,7 @@
 package io.dingodb.driver.api;
 
 import io.dingodb.common.annotation.ApiDeclaration;
+import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.remote.Service;
 
 public interface DriverProxyApi {
@@ -83,4 +84,7 @@ public interface DriverProxyApi {
 
     @ApiDeclaration
     Service.ExecuteBatchResponse apply(Service.ExecuteBatchRequest request);
+
+    @ApiDeclaration
+    void cancel(String connectionId, int id, Meta.Signature signature);
 }

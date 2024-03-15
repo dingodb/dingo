@@ -64,6 +64,8 @@ public interface ITransaction {
 
     void close(JobManager jobManager);
 
+    void cancel();
+
     void addSql(String sql);
 
     List<String> getSqlList();

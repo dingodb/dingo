@@ -53,6 +53,7 @@ import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
@@ -79,6 +80,7 @@ public abstract class BaseTransaction implements ITransaction {
     protected TransactionConfig transactionConfig;
     protected Future commitFuture;
     protected CacheToObject cacheToObject;
+    protected AtomicBoolean cancel;
 
     protected CompletableFuture<Void> finishedFuture = new CompletableFuture<>();
 
@@ -88,6 +90,7 @@ public abstract class BaseTransaction implements ITransaction {
         this.startTs = txnId.seq;
         this.txnInstanceId = new CommonId(CommonId.CommonType.TXN_INSTANCE, txnId.seq, 0L);
         this.status = TransactionStatus.START;
+        this.cancel = new AtomicBoolean(false);
         this.channelMap = new ConcurrentHashMap<>();
         this.cache = new TransactionCache(txnId);
         this.sqlList = new ArrayList<>();
@@ -101,6 +104,7 @@ public abstract class BaseTransaction implements ITransaction {
         this.txnInstanceId = new CommonId(CommonId.CommonType.TXN_INSTANCE, startTs, 0L);
         this.txnId = new CommonId(CommonId.CommonType.TRANSACTION, TransactionManager.getServerId().seq, startTs);
         this.status = TransactionStatus.START;
+        this.cancel = new AtomicBoolean(false);
         this.channelMap = new ConcurrentHashMap<>();
         this.cache = new TransactionCache(txnId);
         this.sqlList = new ArrayList<>();
@@ -173,6 +177,19 @@ public abstract class BaseTransaction implements ITransaction {
         return "PessimisticTransaction";
     }
 
+    protected void checkContinue() {
+        if (cancel.get()) {
+            log.info("{} The current {} has been canceled", txnId, transactionOf());
+            throw new RuntimeException(txnId + "The transaction has been canceled");
+        }
+    }
+
+    @Override
+    public void cancel() {
+        cancel.compareAndSet(false, true);
+        log.info("{} The current {} cancel is set to true", txnId, transactionOf());
+    }
+
     @Override
     public synchronized void close(JobManager jobManager) {
         cleanUp(jobManager);
@@ -191,33 +208,38 @@ public abstract class BaseTransaction implements ITransaction {
 
     @Override
     public boolean commitPrimaryKey(CacheToObject cacheToObject) {
-        // 1、call sdk commitPrimaryKey
-        long start = System.currentTimeMillis();
-        while (true) {
-            TxnCommit commitRequest = TxnCommit.builder()
-                .isolationLevel(IsolationLevel.of(isolationLevel))
-                .startTs(startTs)
-                .commitTs(commitTs)
-                .keys(Collections.singletonList(primaryKey))
-                .build();
-            try {
-                StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
-                return store.txnCommit(commitRequest);
-            } catch (RegionSplitException e) {
-                log.error(e.getMessage(), e);
-                // 2、regin split
-                CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, primaryKey);
-                StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
-                return store.txnCommit(commitRequest);
-            } catch (CommitTsExpiredException e) {
-                log.error(e.getMessage(), e);
-                this.commitTs = TransactionManager.getCommitTs();
+        try {
+            // 1、call sdk commitPrimaryKey
+            long start = System.currentTimeMillis();
+            while (true) {
+                TxnCommit commitRequest = TxnCommit.builder()
+                    .isolationLevel(IsolationLevel.of(isolationLevel))
+                    .startTs(startTs)
+                    .commitTs(commitTs)
+                    .keys(Collections.singletonList(primaryKey))
+                    .build();
+                try {
+                    StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
+                    return store.txnCommit(commitRequest);
+                } catch (RegionSplitException e) {
+                    log.error(e.getMessage(), e);
+                    // 2、regin split
+                    CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, primaryKey);
+                    StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
+                    return store.txnCommit(commitRequest);
+                } catch (CommitTsExpiredException e) {
+                    log.error(e.getMessage(), e);
+                    this.commitTs = TransactionManager.getCommitTs();
+                }
+                long elapsed = System.currentTimeMillis() - start;
+                if (elapsed > getLockTimeOut()) {
+                    return false;
+                }
             }
-            long elapsed = System.currentTimeMillis() - start;
-            if (elapsed > getLockTimeOut()) {
-                return false;
-            }
+        } catch (Throwable throwable) {
+            log.error(throwable.getMessage(), throwable);
         }
+        return false;
     }
 
     @Override
@@ -232,8 +254,9 @@ public abstract class BaseTransaction implements ITransaction {
         if (getType() == TransactionType.NONE) {
             return;
         }
+        checkContinue();
         if (getSqlList().size() == 0 || !cache.checkContinue()) {
-            log.warn("{} The current {} has no data to commit",txnId, transactionOf());
+            log.warn("{} The current {} has no data to commit", txnId, transactionOf());
             if (isPessimistic()) {
                 // PessimisticRollback
                 rollBackResidualPessimisticLock(jobManager);
@@ -246,12 +269,14 @@ public abstract class BaseTransaction implements ITransaction {
         this.status = TransactionStatus.PRE_WRITE_START;
         try {
             log.info("{} {} Start PreWritePrimaryKey", txnId, transactionOf());
+            checkContinue();
             // 1、PreWritePrimaryKey 、heartBeat
             preWritePrimaryKey();
             if (cacheToObject.getMutation().getOp() == Op.CheckNotExists) {
                 log.info("{} {} PreWritePrimaryKey Op is CheckNotExists", txnId, transactionOf());
                 return;
             }
+            checkContinue();
             // 2、generator job、task、PreWriteOperator
             long jobSeqId = TransactionManager.nextTimestamp();
             job = jobManager.createJob(startTs, jobSeqId, txnId, null);
@@ -298,6 +323,9 @@ public abstract class BaseTransaction implements ITransaction {
             rollback(jobManager);
             throw new RuntimeException(t);
         } finally {
+            if (cancel.get()) {
+                this.status = TransactionStatus.CANCEL;
+            }
             log.info("{} {} PreWrite End Status:{}, Cost:{}ms", txnId, transactionOf(),
                 status, (System.currentTimeMillis() - preWriteStart));
             jobManager.removeJob(jobId.get());
@@ -309,6 +337,11 @@ public abstract class BaseTransaction implements ITransaction {
         }
 
         try {
+            if (cancel.get()) {
+                log.info("{} The current {} has been canceled", txnId, transactionOf());
+                rollback(jobManager);
+                throw new RuntimeException(txnId + "The transaction has been canceled");
+            }
             log.info("{} {} Start CommitPrimaryKey", txnId, transactionOf());
             // 4、get commit_ts 、CommitPrimaryKey
             this.commitTs = TransactionManager.getCommitTs();
@@ -328,17 +361,24 @@ public abstract class BaseTransaction implements ITransaction {
                 }
             );
             commitFuture = commit_future;
-            commit_future.get();
+            if (!cancel.get()) {
+                commit_future.get();
+            }
             this.status = TransactionStatus.COMMIT;
         } catch (Throwable t) {
             log.info(t.getMessage(), t);
             this.status = TransactionStatus.COMMIT_FAIL;
             throw new RuntimeException(t);
         } finally {
+            if (cancel.get()) {
+                this.status = TransactionStatus.CANCEL;
+            }
             log.info("{} {} Commit End Status:{}, Cost:{}ms", txnId, transactionOf(),
                 status, (System.currentTimeMillis() - preWriteStart));
             jobManager.removeJob(jobId.get());
-            commitFuture = null;
+            if (!cancel.get()) {
+                commitFuture = null;
+            }
 //            cleanUp();
         }
     }
