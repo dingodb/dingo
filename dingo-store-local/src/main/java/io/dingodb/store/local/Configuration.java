@@ -41,10 +41,9 @@ public class Configuration {
 
     private String path;
 
-    private int bufferSize;
-    private int bufferNumber;
-    private int fileSize;
-
+    private int bufferSize = 8388608;
+    private int bufferNumber = 2;
+    private int fileSize = 2097152;
     public static String path() {
         return INSTANCE.path;
     }

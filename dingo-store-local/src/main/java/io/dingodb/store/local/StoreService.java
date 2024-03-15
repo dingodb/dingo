@@ -53,7 +53,7 @@ public class StoreService implements io.dingodb.store.api.StoreService {
             options.setWriteBufferSize(Configuration.instance().getBufferSize());
             options.setMaxWriteBufferNumber(Configuration.instance().getBufferNumber());
             options.setTargetFileSizeBase(Configuration.instance().getFileSize());
-            rocksdb = RocksDB.open(path);
+            rocksdb = RocksDB.open(options, path);
         } catch (Exception e) {
             log.info("No local db.", e);
         }
