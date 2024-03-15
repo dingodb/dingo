@@ -75,7 +75,7 @@ impl<'a> QueryStrategy<Arc<RoaringBitmap>> for SingleTermQueryStrategy<'a> {
         })?;
 
         let term: Term = Term::from_field_text(col_field, self.term);
-        INFO!(function:"SingleTermQueryStrategy", "query term is {}", self.term);
+        INFO!(function:"SingleTermQueryStrategy", "column_name is {}, query term is {}",self.column_name, self.term);
         INFO!(function:"SingleTermQueryStrategy", "index files count is {}", searcher.num_docs());
         
         let term_query: TermQuery = TermQuery::new(term, IndexRecordOption::WithFreqs);

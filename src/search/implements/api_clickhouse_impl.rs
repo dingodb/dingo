@@ -173,11 +173,11 @@ pub fn query_term_bitmap(
     })?;
 
     // Choose query strategy to construct query executor.
-    let sentence_query: SingleTermQueryStrategy<'_> = SingleTermQueryStrategy {
+    let term_query: SingleTermQueryStrategy<'_> = SingleTermQueryStrategy {
         column_name,
         term,
     };
-    let query_executor: QueryExecutor<'_, Arc<RoaringBitmap>> = QueryExecutor::new(&sentence_query);
+    let query_executor: QueryExecutor<'_, Arc<RoaringBitmap>> = QueryExecutor::new(&term_query);
 
     // Compute query results.
     let result: Arc<RoaringBitmap> = query_executor.execute(&index_reader_bridge.reader.searcher()).map_err(|e|{
