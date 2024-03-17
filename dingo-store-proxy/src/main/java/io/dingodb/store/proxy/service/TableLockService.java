@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -94,8 +95,13 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
             .collect(Collectors.toList());
     }
 
+    @Override
     public void lock(TableLock lock) {
-        doLock(lock);
+        if (MetaServiceApiImpl.INSTANCE.isReady()) {
+            doLock(lock);
+            return;
+        }
+        throw new RuntimeException("Offline, please wait and retry.");
     }
 
     public void doLock(TableLock lock) {
@@ -128,12 +134,10 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
             return;
         }
         List<io.dingodb.transaction.api.TableLock> locks = this.locks.get(lock.tableId).locked;
-        if (locks.size() > 0) {
-            StringBuilder locksStr = new StringBuilder();
-            for (TableLock tableLock : locks) {
-                locksStr.append(tableLock.toString()).append(",lock terminated.");
-            }
-            log.info(String.format("tableId: %s, locked has: %s", tableId.toString(), locksStr));
+        if (locks.size() > 0 && log.isDebugEnabled()) {
+            StringJoiner lockJoiner = new StringJoiner(",\n\t");
+            locks.forEach($ -> lockJoiner.add($.serverId + "|" + $.type + "|" + $.lockTs + "|" + $.currentTs));
+            log.debug("{} lock not empty, locks: [\n\t{}\n]", tableId, lockJoiner);
         }
         CompletableFuture<Boolean> future = lock.lockFuture;
         boolean locked = locks.isEmpty();

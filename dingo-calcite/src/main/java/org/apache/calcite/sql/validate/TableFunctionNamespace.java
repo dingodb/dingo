@@ -16,10 +16,13 @@
 
 package org.apache.calcite.sql.validate;
 
+import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
+import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.type.scalar.FloatType;
+import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
@@ -54,8 +57,13 @@ public class TableFunctionNamespace extends AbstractNamespace {
         super(validator, enclosingNode);
         assert enclosingNode != null;
         this.function = enclosingNode;
-        table = (DingoRelOptTable) Objects.requireNonNull(
-            validator.catalogReader.getTable(((SqlIdentifier) this.function.operand(0)).names)
+        ImmutableList<String> tableNames = ((SqlIdentifier) this.function.operand(0)).names;
+        if (tableNames.size() < 1) {
+            throw DingoResource.DINGO_RESOURCE.invalidTableName("unknown").ex();
+        }
+        table = (DingoRelOptTable) Parameters.nonNull(
+            validator.catalogReader.getTable(tableNames),
+            () -> DingoResource.DINGO_RESOURCE.unknownTable(tableNames.get(tableNames.size() - 1)).ex()
         );
     }
 

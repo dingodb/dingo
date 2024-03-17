@@ -599,6 +599,9 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
             List<VectorSearchResponse> vectorSearchResponseList = new ArrayList<>();
             // Add all keys and distances
+            if (results == null) {
+                return vectorSearchResponseList;
+            }
             for (VectorWithDistanceResult vectorWithDistanceResult : results) {
                 if (vectorWithDistanceResult == null) {
                     continue;

@@ -330,6 +330,7 @@ public final class DingoDriverParser extends DingoParser {
         Location currentLocation = MetaService.root().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
         Set<RelOptTable> tables = useTables(relNode, sqlNode);
+
         boolean isTxn = checkEngine(relNode, sqlNode, tables, connection.getAutoCommit(), connection.getTransaction());
         // get startTs for jobSeqId, if transaction is not null ,transaction startTs is jobDomainId
         long startTs = 0L;
