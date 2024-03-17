@@ -104,11 +104,13 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.VALUES;
 
 @Slf4j
 public class OperationServiceV2 {
+
     private final MetaService metaService;
     private JobManagerImpl jobManager;
 
     public OperationServiceV2(String coordinatorSvr) {
         DingoConfiguration.instance().getConfigMap("store").put("coordinators", coordinatorSvr);
+        DingoConfiguration.instance().setServerId(new CommonId(CommonId.CommonType.SDK, 1, 1));
         metaService = MetaService.root();
         jobManager = JobManagerImpl.INSTANCE;
     }

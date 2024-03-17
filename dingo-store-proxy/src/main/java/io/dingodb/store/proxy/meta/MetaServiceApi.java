@@ -36,19 +36,13 @@ public interface MetaServiceApi {
     void connect(Channel channel, CommonId serverId, Location location) throws Exception;
 
     @ApiDeclaration
-    void getLockChannel(Channel channel, TableLock lock) throws Exception;
-
-    @ApiDeclaration
     void lockTable(long requestId, TableLock lock) throws Exception;
 
     @ApiDeclaration
     Location getLocation(CommonId serverId) throws Exception;
 
     @ApiDeclaration
-    void syncLock(Channel channel, CommonId serverId) throws Exception;
-
-    @ApiDeclaration
-    void lockTable(Channel ch, long requestId, TableLock lock, Location location) throws Exception;
+    void syncTableLock(TableLock lock) throws Exception;
 
     @ApiDeclaration
     void createTables(long requestId, String schema, String table, CreateTablesRequest request) throws Exception;

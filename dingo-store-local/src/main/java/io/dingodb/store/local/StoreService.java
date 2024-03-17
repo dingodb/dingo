@@ -18,17 +18,14 @@ package io.dingodb.store.local;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.FileUtils;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreServiceProvider;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 

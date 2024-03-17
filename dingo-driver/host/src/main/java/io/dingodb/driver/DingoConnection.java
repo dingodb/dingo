@@ -158,6 +158,16 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             this.lockTables = tableIds;
             this.unlockFuture = unlockFuture;
         }
+        unlockFuture.whenComplete((r, e) -> {
+            if (e != null) {
+                log.error("Lose table lock, will close connection.", e);
+                try {
+                    close();
+                } catch (SQLException ex) {
+                    log.error("Lose table lock, close connection error.", e);
+                }
+            }
+        });
     }
 
     public void unlockTables() {

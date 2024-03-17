@@ -184,6 +184,9 @@ public class Channel implements io.dingodb.net.Channel {
 
     @Override
     public Channel cloneChannel() {
+        if (isClosed()) {
+            throw new RuntimeException("Channel closed.");
+        }
         return connection.newChannel();
     }
 
