@@ -36,15 +36,19 @@ public final class CacheOpOperator extends SoleOutOperator {
     public void fin(int pin, Fin fin, @NonNull Vertex vertex) {
         final Edge edge = vertex.getSoleEdge();
         CacheOp relOp = (CacheOp) ((RelOpParam) vertex.getParam()).getRelOp();
-        RelOpUtils.forwardCacheOpResults(relOp, edge);
-        edge.fin(fin);
-        relOp.clear();
+        synchronized (relOp) {
+            RelOpUtils.forwardCacheOpResults(relOp, edge);
+            edge.fin(fin);
+            relOp.clear();
+        }
     }
 
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, @NonNull Vertex vertex) {
         CacheOp relOp = (CacheOp) ((RelOpParam) vertex.getParam()).getRelOp();
-        relOp.put(tuple);
+        synchronized (relOp) {
+            relOp.put(tuple);
+        }
         return true;
     }
 }

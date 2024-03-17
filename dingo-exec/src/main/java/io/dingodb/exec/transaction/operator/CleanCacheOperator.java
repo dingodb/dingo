@@ -32,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
+import java.util.Iterator;
 
 import static io.dingodb.store.api.transaction.data.Op.DELETE;
 
@@ -49,9 +50,15 @@ public class CleanCacheOperator extends TransactionOperator {
             StoreInstance store = Services.LOCAL_STORE.getInstance(null, null);
             KeyValue keyValue = (KeyValue) tuple[0];
             if (param.getTransactionType() == TransactionType.OPTIMISTIC) {
-                byte[] key = keyValue.getKey();
-                store.deletePrefix(key);
-                store.deletePrefix(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, key));
+                Iterator<KeyValue> iterator = store.scan(keyValue.getKey());
+                iterator.forEachRemaining(keyValue1 -> store.delete(keyValue1.getKey()));
+
+                byte[] key1 = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, keyValue.getKey());
+                Iterator<KeyValue> iterator1 = store.scan(key1);
+                iterator1.forEachRemaining(keyValue1 -> store.delete(keyValue1.getKey()));
+                //byte[] key = keyValue.getKey();
+                //store.deletePrefix(key);
+                //store.deletePrefix(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, key));
             } else {
                 byte[] lockKey = keyValue.getKey();
                 long forUpdateTs = ByteUtils.decodePessimisticLockValue(keyValue);

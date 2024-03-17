@@ -211,7 +211,7 @@ public class DingoGetByIndexRule extends ConverterRule {
                 scan.getHints(),
                 scan.getTable(),
                 scan.getFilter(),
-                scan.getSelection(),
+                scan.getRealSelection(),
                 false,
                 indexSetMap,
                 indexTdMap
