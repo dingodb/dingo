@@ -28,6 +28,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 impl<K, V, S> FlurryCache<K, V, S>
 where
     K: 'static + Hash + Ord + Clone + Send + Sync,
