@@ -136,6 +136,14 @@ public abstract class BaseTransaction implements ITransaction {
         return false;
     }
 
+    protected void sleep() {
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
     public void cleanUp(JobManager jobManager) {
         if (future != null) {
             future.cancel(true);
@@ -225,8 +233,8 @@ public abstract class BaseTransaction implements ITransaction {
                     log.error(e.getMessage(), e);
                     // 2、regin split
                     CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, primaryKey);
-                    StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
-                    return store.txnCommit(commitRequest);
+                    cacheToObject.setPartId(regionId);
+                    sleep();
                 } catch (CommitTsExpiredException e) {
                     log.error(e.getMessage(), e);
                     this.commitTs = TransactionManager.getCommitTs();

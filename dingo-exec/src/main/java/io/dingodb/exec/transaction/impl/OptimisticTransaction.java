@@ -18,6 +18,8 @@ package io.dingodb.exec.transaction.impl;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
@@ -125,30 +127,34 @@ public class OptimisticTransaction extends BaseTransaction {
     }
 
     private void txnPreWritePrimaryKey(CacheToObject cacheToObject) {
-        // 2、call sdk preWritePrimaryKey
-        TxnPreWrite txnPreWrite = TxnPreWrite.builder()
-            .isolationLevel(IsolationLevel.of(
-                isolationLevel
-            ))
-            .mutations(Collections.singletonList(cacheToObject.getMutation()))
-            .primaryLock(primaryKey)
-            .startTs(startTs)
-            .lockTtl(TransactionManager.lockTtlTm())
-            .txnSize(1L)
-            .tryOnePc(false)
-            .maxCommitTs(0L)
-            .lockExtraDatas(TransactionUtil.toLockExtraDataList(cacheToObject.getTableId(), cacheToObject.getPartId(), txnId,
-                TransactionType.OPTIMISTIC.getCode(), 1))
-            .build();
         Future future = null;
-        try {
-            StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
-            future = store.txnPreWritePrimaryKey(txnPreWrite, getLockTimeOut());
-        } catch (RegionSplitException e) {
-            log.error(e.getMessage(), e);
-            CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, cacheToObject.getMutation().getKey());
-            StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
-            future = store.txnPreWritePrimaryKey(txnPreWrite ,getLockTimeOut());
+        Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
+        while (retry-- > 0) {
+            // 2、call sdk preWritePrimaryKey
+            TxnPreWrite txnPreWrite = TxnPreWrite.builder()
+                .isolationLevel(IsolationLevel.of(
+                    isolationLevel
+                ))
+                .mutations(Collections.singletonList(cacheToObject.getMutation()))
+                .primaryLock(primaryKey)
+                .startTs(startTs)
+                .lockTtl(TransactionManager.lockTtlTm())
+                .txnSize(1L)
+                .tryOnePc(false)
+                .maxCommitTs(0L)
+                .lockExtraDatas(TransactionUtil.toLockExtraDataList(cacheToObject.getTableId(), cacheToObject.getPartId(), txnId,
+                    TransactionType.OPTIMISTIC.getCode(), 1))
+                .build();
+            try {
+                StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
+                future = store.txnPreWritePrimaryKey(txnPreWrite, getLockTimeOut());
+                break;
+            } catch (RegionSplitException e) {
+                log.error(e.getMessage(), e);
+                CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, cacheToObject.getMutation().getKey());
+                cacheToObject.setPartId(regionId);
+                sleep();
+            }
         }
         if (future == null) {
             throw new RuntimeException(txnId + " future is null " + cacheToObject.getPartId() + ",preWritePrimaryKey false,PrimaryKey:" + primaryKey);

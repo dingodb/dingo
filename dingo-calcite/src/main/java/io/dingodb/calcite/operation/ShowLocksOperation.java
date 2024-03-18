@@ -33,9 +33,11 @@ import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.transaction.api.TableLock;
 import io.dingodb.transaction.api.TableLockService;
 import io.dingodb.tso.TsoService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -50,6 +52,7 @@ import static io.dingodb.exec.Services.LOCAL_STORE;
 import static io.dingodb.transaction.api.LockType.ROW;
 import static io.dingodb.transaction.api.LockType.TABLE;
 
+@Slf4j
 public class ShowLocksOperation implements QueryOperation {
 
     /**
@@ -116,7 +119,15 @@ public class ShowLocksOperation implements QueryOperation {
         long tso = tsoService.tso();
         List<String[]> locks = locations.stream()
             .map($ -> ApiRegistry.getDefault().proxy(Api.class, $))
-            .flatMap($ -> $.txnLocks(tso).stream())
+            .flatMap($ -> {
+                try {
+                    return $.txnLocks(tso).stream();
+                } catch (Throwable throwable) {
+                    Throwable extractThrowable = Utils.extractThrowable(throwable);
+                    log.error(extractThrowable.getMessage(), extractThrowable);
+                    throw new RuntimeException($.toString() + " connection refused, retry in 20 seconds.");
+                }
+            })
             .collect(Collectors.toCollection(ArrayList::new));
         addTxnBlock(tso, locks);
         addTxnLocked(tso, locks);
@@ -198,7 +209,15 @@ public class ShowLocksOperation implements QueryOperation {
         locations.remove(DingoConfiguration.location());
         tableLocks.addAll(locations.stream()
             .map($ -> ApiRegistry.getDefault().proxy(Api.class, $))
-            .flatMap($ -> $.tableLocks().stream())
+            .flatMap($ -> {
+                    try {
+                        return $.tableLocks().stream();
+                    } catch (Throwable throwable) {
+                        Throwable extractThrowable = Utils.extractThrowable(throwable);
+                        log.error(extractThrowable.getMessage(), extractThrowable);
+                        throw new RuntimeException($.toString() + " connection refused, retry in 20 seconds.");
+                    }
+                })
             .filter($ -> $.getType() == ROW)
             .collect(Collectors.toCollection(ArrayList::new)));
         tableLocks.stream().distinct().forEach(tableLock -> {

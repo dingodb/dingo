@@ -148,8 +148,8 @@ public class TransactionCache {
         return cache.get(keys);
     }
 
-    public void deletePrefix(byte[] key) {
-        cache.deletePrefix(key);
+    public void deleteKey(byte[] key) {
+        cache.delete(key);
     }
 
     public byte[] getScanPrefix(CommonId.CommonType type, CommonId commonId) {

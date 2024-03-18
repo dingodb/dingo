@@ -363,7 +363,19 @@ public final class DingoDriverParser extends DingoParser {
                 currentLocation, DefinitionMapper.mapToDingoType(parasType));
             jobSeqId = transaction.getForUpdateTs();
         }
-        lockTables(tables, startTs, jobSeqId, transaction.getFinishedFuture());
+        try {
+            lockTables(tables, startTs, jobSeqId, transaction.getFinishedFuture());
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            if (transaction != null && transaction.isAutoCommit()) {
+                try {
+                    connection.cleanTransaction();
+                } catch (SQLException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+            throw e;
+        }
         String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
         maxExecutionTimeStr = maxExecutionTimeStr == null ? "0" : maxExecutionTimeStr;
         long maxTimeOut = Long.parseLong(maxExecutionTimeStr);

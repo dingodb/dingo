@@ -128,8 +128,8 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                     dataKeyValue = new KeyValue(dataKey, Arrays.copyOf(value.getValue(), value.getValue().length));
                 }
                 localStore.put(extraKeyValue);
-                localStore.deletePrefix(insertKey);
-                localStore.deletePrefix(updateKey);
+                localStore.delete(insertKey);
+                localStore.delete(updateKey);
                 // write data
                 if (localStore.put(dataKeyValue) && context.getIndexId() == null) {
                     param.inc();
@@ -177,9 +177,9 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
             KeyValue keyValue = new KeyValue(resultKeys, kv.getValue());
             byte[] insertKey = Arrays.copyOf(keyValue.getKey(), keyValue.getKey().length);
             insertKey[insertKey.length - 2] = (byte) Op.PUT.getCode();
-            localStore.deletePrefix(insertKey);
+            localStore.delete(insertKey);
             insertKey[insertKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
-            localStore.deletePrefix(insertKey);
+            localStore.delete(insertKey);
             if (localStore.put(keyValue) && context.getIndexId() == null) {
                 param.inc();
                 context.addKeyState(true);

@@ -19,7 +19,9 @@ package io.dingodb.exec.transaction.impl;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.transaction.base.BaseTransaction;
@@ -140,7 +142,7 @@ public class PessimisticTransaction extends BaseTransaction {
                 CommonId tableId = txnLocalData.getTableId();
                 CommonId newPartId = txnLocalData.getPartId();
                 byte[] key = txnLocalData.getKey();
-                cache.deletePrefix(primaryKeyLock);
+                cache.deleteKey(primaryKeyLock);
                 log.info("{} pessimisticPrimaryLockRollBack key:{}", txnId, Arrays.toString(key));
                 TransactionUtil.pessimisticPrimaryLockRollBack(
                     txnId,
@@ -232,7 +234,7 @@ public class PessimisticTransaction extends BaseTransaction {
         bytes.add(updateKey);
         bytes.add(noneKey);
         List<KeyValue> keyValues = cache.getKeys(bytes);
-        cache.deletePrefix(noneKey);
+        cache.deleteKey(noneKey);
         if (keyValues != null && keyValues.size() > 0) {
             if (keyValues.size() > 1) {
                 throw new RuntimeException(txnId + " PrimaryKey is not existed than two in local store");
@@ -273,52 +275,52 @@ public class PessimisticTransaction extends BaseTransaction {
         // 1、get first key from cache
         cacheToObject = primaryLockTo();
         primaryKey = cacheToObject.getMutation().getKey();
-        // 2、call sdk preWritePrimaryKey
-        TxnPreWrite txnPreWrite = TxnPreWrite.builder()
-            .isolationLevel(IsolationLevel.of(
-                isolationLevel
-            ))
-            .mutations(Collections.singletonList(cacheToObject.getMutation()))
-            .primaryLock(primaryKey)
-            .startTs(startTs)
-            .lockTtl(TransactionManager.lockTtlTm())
-            .txnSize(1L)
-            .tryOnePc(false)
-            .maxCommitTs(0L)
-            .pessimisticChecks(Collections.singletonList(PessimisticCheck.DO_PESSIMISTIC_CHECK))
-            .forUpdateTsChecks(Collections.singletonList(new ForUpdateTsCheck(0,
-                cacheToObject.getMutation().getForUpdateTs())
-            ))
-            .lockExtraDatas(
-                TransactionUtil.toLockExtraDataList(
-                cacheToObject.getTableId(),
-                cacheToObject.getPartId(),
-                txnId,
-                TransactionType.PESSIMISTIC.getCode(),
-                1))
-            .build();
-        try {
-            StoreInstance store = Services.KV_STORE.getInstance(
-                cacheToObject.getTableId(),
-                cacheToObject.getPartId()
-            );
-            boolean result = store.txnPreWrite(txnPreWrite, getLockTimeOut());
-            if (!result) {
-                throw new RuntimeException(txnId + " " + cacheToObject.getPartId()
-                    + ",preWritePrimaryKey false,PrimaryKey:" + primaryKey.toString());
-            }
-        } catch (RegionSplitException e) {
-            log.error(e.getMessage(), e);
-            CommonId regionId = TransactionUtil.singleKeySplitRegionId(
-                cacheToObject.getTableId(),
-                txnId,
-                cacheToObject.getMutation().getKey()
-            );
-            StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
-            boolean result = store.txnPreWrite(txnPreWrite, getLockTimeOut());
-            if (!result) {
-                throw new RuntimeException(txnId + " " + regionId + ",preWritePrimaryKey false,PrimaryKey:"
-                    + primaryKey.toString());
+        Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
+        while (retry-- > 0) {
+            // 2、call sdk preWritePrimaryKey
+            TxnPreWrite txnPreWrite = TxnPreWrite.builder()
+                .isolationLevel(IsolationLevel.of(
+                    isolationLevel
+                ))
+                .mutations(Collections.singletonList(cacheToObject.getMutation()))
+                .primaryLock(primaryKey)
+                .startTs(startTs)
+                .lockTtl(TransactionManager.lockTtlTm())
+                .txnSize(1L)
+                .tryOnePc(false)
+                .maxCommitTs(0L)
+                .pessimisticChecks(Collections.singletonList(PessimisticCheck.DO_PESSIMISTIC_CHECK))
+                .forUpdateTsChecks(Collections.singletonList(new ForUpdateTsCheck(0,
+                    cacheToObject.getMutation().getForUpdateTs())
+                ))
+                .lockExtraDatas(
+                    TransactionUtil.toLockExtraDataList(
+                        cacheToObject.getTableId(),
+                        cacheToObject.getPartId(),
+                        txnId,
+                        TransactionType.PESSIMISTIC.getCode(),
+                        1))
+                .build();
+            try {
+                StoreInstance store = Services.KV_STORE.getInstance(
+                    cacheToObject.getTableId(),
+                    cacheToObject.getPartId()
+                );
+                boolean result = store.txnPreWrite(txnPreWrite, getLockTimeOut());
+                if (!result) {
+                    throw new RuntimeException(txnId + " " + cacheToObject.getPartId()
+                        + ",preWritePrimaryKey false,PrimaryKey:" + primaryKey.toString());
+                }
+                break;
+            } catch (RegionSplitException e) {
+                log.error(e.getMessage(), e);
+                CommonId regionId = TransactionUtil.singleKeySplitRegionId(
+                    cacheToObject.getTableId(),
+                    txnId,
+                    cacheToObject.getMutation().getKey()
+                );
+                cacheToObject.setPartId(regionId);
+                sleep();
             }
         }
     }

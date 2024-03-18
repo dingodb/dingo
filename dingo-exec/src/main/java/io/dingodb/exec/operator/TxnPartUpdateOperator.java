@@ -167,10 +167,10 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
                     // write data
                     keyValue.setKey(dataKey);
-                    localStore.deletePrefix(deleteKey);
-                    localStore.deletePrefix(insertKey);
+                    localStore.delete(deleteKey);
+                    localStore.delete(insertKey);
                     if (updated) {
-                        localStore.deletePrefix(dataKey);
+                        localStore.delete(dataKey);
                         if (localStore.put(keyValue) && context.getIndexId() == null) {
                             param.inc();
                         }
