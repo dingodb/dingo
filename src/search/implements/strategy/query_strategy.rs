@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use roaring::RoaringBitmap;
 use tantivy::query::{Query, QueryParser, QueryParserError, RegexQuery, TermQuery, TermSetQuery};
-use tantivy::schema::{Field, IndexRecordOption};
+use tantivy::schema::{Field, FieldType, IndexRecordOption, TextFieldIndexing};
+use tantivy::tokenizer::{BoxTokenStream, TextAnalyzer};
 use tantivy::{TantivyError, Term};
 use tantivy::{schema::Schema, Searcher};
 
@@ -10,7 +11,6 @@ use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::search::collector::row_id_bitmap_collector::RowIdRoaringCollector;
 use crate::search::collector::top_dos_with_bitmap_collector::TopDocsWithFilter;
 use crate::search::utils::convert_utils::ConvertUtils;
-use crate::INFO;
 use crate::{common::errors::IndexSearcherError, ffi::RowIdWithScore, ERROR};
 use crate::common::constants::LOG_CALLBACK;
 
@@ -39,15 +39,42 @@ impl<'a> QueryStrategy<Arc<RoaringBitmap>> for TermSetQueryStrategy<'a> {
             error
         })?;
 
-        let terms: Vec<Term> = self.terms.iter().map(|term|{
-            Term::from_field_text(col_field, &term)
-        }).collect();
+        let field_type: &FieldType = schema.get_field_entry(col_field).field_type();
+        if !field_type.is_indexed() {
+            let error_msg: String = format!("column field:{} not indexed.", self.column_name);
+            ERROR!(function:"TermSetQueryStrategy", "{}", error_msg);
+            return Err(IndexSearcherError::InternalError(error_msg))
+        }
+
+        let mut terms: Vec<Term> = Vec::new();
+
+        if let FieldType::Str(ref str_options) = field_type {
+            let indexing_options: &TextFieldIndexing = str_options.get_indexing_options().ok_or_else(|| {
+                let error_msg: String = format!("column field:{} not indexed, but this error msg shouldn't display", self.column_name);
+                ERROR!(function:"TermSetQueryStrategy", "{}", error_msg);
+                IndexSearcherError::InternalError(error_msg)
+            })?;
+            let mut text_analyzer: TextAnalyzer = searcher.index().tokenizers()
+                .get(indexing_options.tokenizer()).unwrap();
+
+            for term in self.terms {
+                let mut token_stream: BoxTokenStream<'_> = text_analyzer.token_stream(term);
+                token_stream.process(&mut |token| {
+                    terms.push(Term::from_field_text(col_field, &token.text));
+                });
+            }
+        } else {
+            // Not Expected.
+            for term in self.terms  {
+                terms.push(Term::from_field_text(col_field, &term));
+            }
+        }
 
         let ter_set_query: TermSetQuery = TermSetQuery::new(terms);
         let row_id_collector: RowIdRoaringCollector = RowIdRoaringCollector::with_field("row_id".to_string());
         
         searcher.search(&ter_set_query, &row_id_collector).map_err(|e|{
-            ERROR!(function:"TermSetQueryStrategy", "{}", e);
+            ERROR!(function:"SingleTermQueryStrategy", "{}", e);
             IndexSearcherError::TantivyError(e)
         })
     }
@@ -74,19 +101,46 @@ impl<'a> QueryStrategy<Arc<RoaringBitmap>> for SingleTermQueryStrategy<'a> {
             error
         })?;
 
-        let term: Term = Term::from_field_text(col_field, self.term);
-        INFO!(function:"SingleTermQueryStrategy", "column_name is {}, query term is {}",self.column_name, self.term);
-        INFO!(function:"SingleTermQueryStrategy", "index files count is {}", searcher.num_docs());
-        
-        let term_query: TermQuery = TermQuery::new(term, IndexRecordOption::WithFreqs);
-        let row_id_collector: RowIdRoaringCollector = RowIdRoaringCollector::with_field("row_id".to_string());
-        
-        let e = searcher.search(&term_query, &row_id_collector).map_err(|e|{
-            ERROR!(function:"SingleTermQueryStrategy", "{}", e);
-            IndexSearcherError::TantivyError(e)
-        });
-        INFO!(function:"SingleTermQueryStrategy", "return bitmap size is {}", e.clone().ok().unwrap().len());
-        e
+        let field_type: &FieldType = schema.get_field_entry(col_field).field_type();
+        if !field_type.is_indexed() {
+            let error_msg: String = format!("column field:{} not indexed.", self.column_name);
+            ERROR!(function:"SingleTermQueryStrategy", "{}", error_msg);
+            return Err(IndexSearcherError::InternalError(error_msg))
+        }
+
+        if let FieldType::Str(ref str_options) = field_type {
+            let indexing_options: &TextFieldIndexing = str_options.get_indexing_options().ok_or_else(|| {
+                let error_msg: String = format!("column field:{} not indexed, but this error msg shouldn't display", self.column_name);
+                ERROR!(function:"SingleTermQueryStrategy", "{}", error_msg);
+                IndexSearcherError::InternalError(error_msg)
+            })?;
+            let mut terms: Vec<Term> = Vec::new();
+            let mut text_analyzer: TextAnalyzer = searcher.index().tokenizers()
+                .get(indexing_options.tokenizer()).unwrap();
+            let mut token_stream: BoxTokenStream<'_> = text_analyzer.token_stream(self.term);
+            token_stream.process(&mut |token| {
+                let term: Term = Term::from_field_text(col_field, &token.text);
+                terms.push(term);
+            });
+
+            let ter_set_query: TermSetQuery = TermSetQuery::new(terms);
+            let row_id_collector: RowIdRoaringCollector = RowIdRoaringCollector::with_field("row_id".to_string());
+            
+            searcher.search(&ter_set_query, &row_id_collector).map_err(|e|{
+                ERROR!(function:"SingleTermQueryStrategy", "{}", e);
+                IndexSearcherError::TantivyError(e)
+            })
+        } else {
+            // Not Expected.
+            let term: Term = Term::from_field_text(col_field, self.term);
+            let term_query: TermQuery = TermQuery::new(term, IndexRecordOption::WithFreqs);
+            let row_id_collector: RowIdRoaringCollector = RowIdRoaringCollector::with_field("row_id".to_string());
+            println!("for not str");
+            searcher.search(&term_query, &row_id_collector).map_err(|e|{
+                ERROR!(function:"SingleTermQueryStrategy", "{}", e);
+                IndexSearcherError::TantivyError(e)
+            })
+        }
     }
 }
 
