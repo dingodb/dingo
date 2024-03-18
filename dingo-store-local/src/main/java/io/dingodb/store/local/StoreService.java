@@ -25,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBatch;
+import org.rocksdb.WriteOptions;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -37,7 +39,7 @@ public class StoreService implements io.dingodb.store.api.StoreService {
     static {
         String path = Configuration.path();
         if (path == null) {
-            path = "/tmp/dingodb/store";
+            path = System.getProperty("user.dir");
         }
         RocksDB rocksdb = null;
         try {
@@ -47,10 +49,15 @@ public class StoreService implements io.dingodb.store.api.StoreService {
             Options options = new Options();
             options.setNumLevels(1);
             options.setCreateIfMissing(true);
+            options.setDisableAutoCompactions(true);
             options.setWriteBufferSize(Configuration.instance().getBufferSize());
             options.setMaxWriteBufferNumber(Configuration.instance().getBufferNumber());
             options.setTargetFileSizeBase(Configuration.instance().getFileSize());
+            WriteOptions writeOptions = new WriteOptions();
+            writeOptions.setDisableWAL(true);
             rocksdb = RocksDB.open(options, path);
+            WriteBatch batch = new WriteBatch();
+            rocksdb.write(writeOptions, batch) ;
         } catch (Exception e) {
             log.info("No local db.", e);
         }

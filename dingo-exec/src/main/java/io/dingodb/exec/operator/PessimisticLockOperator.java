@@ -232,7 +232,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
                     log.info("{}, forUpdateTs:{} txnPessimisticLock :{} end", txnId, forUpdateTs, Arrays.toString(primaryKey));
                 }
                 // get lock success, delete deadLockKey
-                localStore.deletePrefix(deadLockKeyBytes);
+                localStore.delete(deadLockKeyBytes);
                 // lockKeyValue  [11_txnId_tableId_partId_a_lock, forUpdateTs1]
                 byte[] primaryKeyLock = getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, deadLockKeyBytes);
                 transaction.setPrimaryKeyLock(primaryKeyLock);

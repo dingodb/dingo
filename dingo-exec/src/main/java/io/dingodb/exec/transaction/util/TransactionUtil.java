@@ -292,7 +292,7 @@ public class TransactionUtil {
             log.error(e.getMessage(), e);
             store = Services.LOCAL_STORE.getInstance(tableId, partId);
             // delete deadLockKey
-            store.deletePrefix(deadLockKeyBytes);
+            store.delete(deadLockKeyBytes);
         }
         if (hasException){
             throw new RuntimeException(e.getMessage());

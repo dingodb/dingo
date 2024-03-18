@@ -146,7 +146,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     dataKey[dataKey.length - 2] = (byte) Op.PUT.getCode();
                     // write data
                     keyValue.setKey(dataKey);
-                    localStore.deletePrefix(deleteKey);
+                    localStore.delete(deleteKey);
                     if (localStore.put(keyValue) && context.getIndexId() == null) {
                         param.inc();
                     }
@@ -154,7 +154,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             } else {
                 byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
                 if (localStore.get(rollBackKey) != null) {
-                    localStore.deletePrefix(rollBackKey);
+                    localStore.delete(rollBackKey);
                 }
                 // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
                 byte[] extraKey = ByteUtils.encode(

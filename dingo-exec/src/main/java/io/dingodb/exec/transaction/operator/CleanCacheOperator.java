@@ -50,15 +50,9 @@ public class CleanCacheOperator extends TransactionOperator {
             StoreInstance store = Services.LOCAL_STORE.getInstance(null, null);
             KeyValue keyValue = (KeyValue) tuple[0];
             if (param.getTransactionType() == TransactionType.OPTIMISTIC) {
-                Iterator<KeyValue> iterator = store.scan(keyValue.getKey());
-                iterator.forEachRemaining(keyValue1 -> store.delete(keyValue1.getKey()));
-
-                byte[] key1 = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, keyValue.getKey());
-                Iterator<KeyValue> iterator1 = store.scan(key1);
-                iterator1.forEachRemaining(keyValue1 -> store.delete(keyValue1.getKey()));
-                //byte[] key = keyValue.getKey();
-                //store.deletePrefix(key);
-                //store.deletePrefix(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, key));
+                byte[] key = keyValue.getKey();
+                store.delete(key);
+                store.delete(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, key));
             } else {
                 byte[] lockKey = keyValue.getKey();
                 long forUpdateTs = ByteUtils.decodePessimisticLockValue(keyValue);
@@ -66,25 +60,25 @@ public class CleanCacheOperator extends TransactionOperator {
                 dataKey[0] = (byte) CommonId.CommonType.TXN_CACHE_DATA.getCode();
                 dataKey[dataKey.length - 2] = (byte) DELETE.getCode();
                 // delete dataKey
-                store.deletePrefix(dataKey);
+                store.delete(dataKey);
                 dataKey[dataKey.length - 2] = (byte) Op.PUT.getCode();
                 // delete dataKey
-                store.deletePrefix(dataKey);
+                store.delete(dataKey);
                 dataKey[dataKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
                 // delete dataKey
-                store.deletePrefix(dataKey);
+                store.delete(dataKey);
                 byte[] jobIdBytes = new CommonId(CommonId.CommonType.JOB, param.getStartTs(), forUpdateTs).encode();
                 byte[] txnIdBytes = vertex.getTask().getTxnId().encode();
                 // delete extraData
                 byte[] extraData = new byte[CommonId.TYPE_LEN + jobIdBytes.length];
                 extraData[0] = (byte) CommonId.CommonType.TXN_CACHE_EXTRA_DATA.getCode();
                 System.arraycopy(txnIdBytes, 0, extraData, CommonId.TYPE_LEN, jobIdBytes.length);
-                store.deletePrefix(extraData);
+                store.delete(extraData);
                 // delete lockData
-                store.deletePrefix(lockKey);
+                store.delete(lockKey);
                 // delete blockLock
                 lockKey[0] = (byte) CommonId.CommonType.TXN_CACHE_BLOCK_LOCK.getCode();
-                store.deletePrefix(lockKey);
+                store.delete(lockKey);
             }
             return true;
         }
