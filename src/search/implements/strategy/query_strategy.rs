@@ -204,7 +204,6 @@ impl<'a> QueryStrategy<Arc<RoaringBitmap>> for ParserQueryStrategy<'a>  {
         let row_id_collector: RowIdRoaringCollector = RowIdRoaringCollector::with_field("row_id".to_string());
         let query_parser: QueryParser = QueryParser::for_index(searcher.index(), [col_field].to_vec());
 
-        INFO!(function:"ParserQueryStrategy", "col is:{}, sentence is:{}", self.column_name, self.column_name);
         let text_query = query_parser.parse_query(self.sentence).map_err(|e|{
             ERROR!(function:"ParserQueryStrategy", "Error when parse: {}. {}", self.sentence, e);
             IndexSearcherError::QueryParserError(e.to_string())
