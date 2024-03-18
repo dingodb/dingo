@@ -154,13 +154,25 @@ public class TxnImportDataOperation {
             this.future = store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
         } catch (RegionSplitException e) {
             log.error(e.getMessage(), e);
-            CommonId regionId = TransactionUtil.singleKeySplitRegionId(
-                cacheToObject.getTableId(),
-                txnId,
-                cacheToObject.getMutation().getKey()
-            );
-            StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
-            this.future = store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
+
+            boolean prewriteResult = false;
+            int i = 0;
+            while (!prewriteResult) {
+                i ++;
+                try {
+                    CommonId regionId = TransactionUtil.singleKeySplitRegionId(
+                        cacheToObject.getTableId(),
+                        txnId,
+                        cacheToObject.getMutation().getKey()
+                    );
+                    StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
+                    this.future = store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
+                    prewriteResult = true;
+                } catch (RegionSplitException e1) {
+                    lookSleep();
+                    log.error("prewrite primary region split, retry count:" + i);
+                }
+            }
         }
         if (this.future == null) {
             throw new RuntimeException(txnId + " future is null "
@@ -190,18 +202,31 @@ public class TxnImportDataOperation {
         } catch (RegionSplitException e) {
             log.error(e.getMessage(), e);
             // 2、regin split
-            Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(tableId, txnId,
-                TransactionUtil.mutationToKey(param.getMutations()));
-            for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
-                CommonId regionId = entry.getKey();
-                List<byte[]> value = entry.getValue();
-                StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
-                txnPreWrite.setMutations(TransactionUtil.keyToMutation(value, param.getMutations()));
-                boolean result = store.txnPreWrite(txnPreWrite ,param.getTimeOut());
-                if (!result) {
-                    return false;
+
+            boolean prewriteSecondResult = false;
+            int i = 0;
+            while (!prewriteSecondResult) {
+                i ++;
+                try {
+                    Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(tableId, txnId,
+                        TransactionUtil.mutationToKey(param.getMutations()));
+                    for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
+                        CommonId regionId = entry.getKey();
+                        List<byte[]> value = entry.getValue();
+                        StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
+                        txnPreWrite.setMutations(TransactionUtil.keyToMutation(value, param.getMutations()));
+                        boolean result = store.txnPreWrite(txnPreWrite ,param.getTimeOut());
+                        if (!result) {
+                            return false;
+                        }
+                    }
+                    prewriteSecondResult = true;
+                } catch (RegionSplitException e1) {
+                    lookSleep();
+                    log.error("prewrite second region split, retry count:" + i);
                 }
             }
+
             return true;
         }
     }
@@ -273,9 +298,23 @@ public class TxnImportDataOperation {
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             // 2、regin split
-            CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, primaryKey);
-            StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
-            return store.txnCommit(commitRequest);
+            boolean commitResult = false;
+            int i = 0;
+            while (!commitResult) {
+                i ++;
+                try {
+                    CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, primaryKey);
+                    StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
+                    commitResult = store.txnCommit(commitRequest);
+                } catch (RegionSplitException e1) {
+                    lookSleep();
+                    log.error("commit primary region split, retry count:" + i);
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return false;
         }
     }
 
@@ -352,23 +391,43 @@ public class TxnImportDataOperation {
             return store.txnCommit(commitRequest);
         } catch (RegionSplitException e) {
             log.error(e.getMessage(), e);
-            // 2、regin split
-            Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(
-                tableId,
-                txnId,
-                param.getKeys()
-            );
-            for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
-                CommonId regionId = entry.getKey();
-                List<byte[]> value = entry.getValue();
-                StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
-                commitRequest.setKeys(value);
-                boolean result = store.txnCommit(commitRequest);
-                if (!result) {
-                    return false;
+
+            boolean commitSecondResult = false;
+            int i = 0;
+            while (!commitSecondResult) {
+                try {
+                    i ++;
+                    Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(
+                        tableId,
+                        txnId,
+                        param.getKeys()
+                    );
+                    for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
+                        CommonId regionId = entry.getKey();
+                        List<byte[]> value = entry.getValue();
+                        StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
+                        commitRequest.setKeys(value);
+                        boolean result = store.txnCommit(commitRequest);
+                        if (!result) {
+                            return false;
+                        }
+                    }
+                    commitSecondResult = true;
+                } catch (RegionSplitException e1) {
+                    lookSleep();
+                    log.error("commit second region split, retry count:" + i);
                 }
             }
+
             return true;
+        }
+    }
+
+    private static void lookSleep() {
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
         }
     }
 
