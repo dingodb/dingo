@@ -425,6 +425,7 @@ public class LoadDataOperation implements DmlOperation {
 
         if (refreshTxnId) {
             long start = System.currentTimeMillis();
+            int cacheSize = 0;
             try {
                 List<Object[]> tupleList = getCacheTupleList(caches, txnId);
                 TxnImportDataOperation txnImportDataOperation = new TxnImportDataOperation(
@@ -432,13 +433,14 @@ public class LoadDataOperation implements DmlOperation {
                 );
                 int result = txnImportDataOperation.insertByTxn(tupleList);
                 count.addAndGet(result);
+                cacheSize = caches.size();
                 caches.clear();
             } finally {
                 ExecutionEnvironment.memoryCache.remove(statementId);
             }
             long end = System.currentTimeMillis();
             if (log.isDebugEnabled()) {
-                log.debug("insert txn batch size:" + caches.size() + ", cost time:" + (end - start) + "ms");
+                log.debug("insert txn batch size:" + cacheSize + ", cost time:" + (end - start) + "ms");
             }
             refreshTxnId = false;
         }

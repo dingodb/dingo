@@ -61,6 +61,22 @@ public class DingoGetByIndexMerge extends DingoGetByIndex implements DingoRel {
         this.selection = selection;
     }
 
+    public DingoGetByIndexMerge(RelOptCluster cluster,
+                                RelTraitSet traitSet,
+                                List<RelHint> hints,
+                                RelOptTable table,
+                                RexNode filter,
+                                @Nullable TupleMapping selection,
+                                boolean isUnique,
+                                Map<CommonId, Set> indexSetMap,
+                                Map<CommonId, Table> indexTdMap,
+                                TupleMapping keyMapping,
+                                boolean forDml) {
+        super(cluster, traitSet, hints, table, filter, selection, isUnique, indexSetMap, indexTdMap, forDml);
+        this.keyMapping = keyMapping;
+        this.selection = selection;
+    }
+
     @Override
     public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);

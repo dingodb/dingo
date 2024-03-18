@@ -202,7 +202,8 @@ public class DingoGetByIndexRule extends ConverterRule {
                 false,
                 indexSetMap,
                 indexTdMap,
-                table.keyMapping()
+                table.keyMapping(),
+                scan.isForDml()
             );
         } else {
             return new DingoGetByIndex(
@@ -214,7 +215,8 @@ public class DingoGetByIndexRule extends ConverterRule {
                 scan.getRealSelection(),
                 false,
                 indexSetMap,
-                indexTdMap
+                indexTdMap,
+                scan.isForDml()
             );
         }
     }

@@ -62,6 +62,24 @@ public class DingoGetByIndex extends LogicalDingoTableScan implements DingoRel {
         this.isUnique = isUnique;
     }
 
+    public DingoGetByIndex(
+        RelOptCluster cluster,
+        RelTraitSet traitSet,
+        List<RelHint> hints,
+        RelOptTable table,
+        RexNode filter,
+        @Nullable TupleMapping selection,
+        boolean isUnique,
+        Map<CommonId, Set> indexSetMap,
+        Map<CommonId, Table> indexTdMap,
+        boolean forDml
+    ) {
+        super(cluster, traitSet, hints, table, filter, selection, null, null, null, false, forDml);
+        this.indexSetMap = indexSetMap;
+        this.indexTdMap = indexTdMap;
+        this.isUnique = isUnique;
+    }
+
     @Override
     public @NonNull RelWriter explainTerms(@NonNull RelWriter pw) {
         super.explainTerms(pw);
