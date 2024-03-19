@@ -37,6 +37,8 @@ import io.dingodb.sdk.service.entity.meta.EntityType;
 import io.dingodb.sdk.service.entity.meta.GetIndexRangeRequest;
 import io.dingodb.sdk.service.entity.meta.GetSchemaByNameRequest;
 import io.dingodb.sdk.service.entity.meta.GetSchemasRequest;
+import io.dingodb.sdk.service.entity.meta.GetTableByNameRequest;
+import io.dingodb.sdk.service.entity.meta.GetTableByNameResponse;
 import io.dingodb.sdk.service.entity.meta.GetTableRangeRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableResponse;
@@ -66,6 +68,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -236,14 +239,21 @@ public class MetaCache {
 
     private Table loadTable(CommonId tableId) {
         return Optional.ofNullable(metaService.getTable(
-            tso(), GetTableRequest.builder().tableId(MAPPER.idTo(tableId)).build()
-        )).map(GetTableResponse::getTableDefinitionWithId)
+                tso(), GetTableRequest.builder().tableId(MAPPER.idTo(tableId)).build()
+            )).map(GetTableResponse::getTableDefinitionWithId)
             .ifAbsent(() -> log.warn("Table {} not found.", tableId))
+            .filter(Objects::nonNull)
             .map(tableWithId -> {
-                Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
-                table.indexes.forEach($ -> tableIdCache.put($.getTableId(), $));
-                return table;
-            }).orNull();
+                try {
+                    Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
+                    table.indexes.forEach($ -> tableIdCache.put($.getTableId(), $));
+                    return table;
+                } catch (Exception e) {
+                    log.warn("load table and indexes error:" + tableId);
+                    return null;
+                }
+            }).filter(Objects::nonNull)
+            .orNull();
     }
 
     private List<TableDefinitionWithId> getIndexes(TableDefinitionWithId tableWithId, DingoCommonId tableId) {
@@ -344,7 +354,28 @@ public class MetaCache {
             if (cache.get(schema) == null) {
                 refreshSchema(schema);
             }
-            return cache.get(schema).get(table.toUpperCase());
+            Schema schema1 = metaService.getSchemaByName(
+                tso(), GetSchemaByNameRequest.builder().schemaName(schema).build()
+            ).getSchema();
+            if (schema1 == null) {
+                return null;
+            }
+            Table table1 = cache.get(schema).get(table.toUpperCase());
+            if (table1 == null) {
+                GetTableByNameResponse getTableByNameResponse
+                    = metaService.getTableByName(tso(), GetTableByNameRequest.builder().schemaId(schema1.getId()).tableName(table.toUpperCase()).build());
+                if (getTableByNameResponse == null) {
+                    return null;
+                }
+                Table table2 = MAPPER.tableFrom(getTableByNameResponse.getTableDefinitionWithId(),
+                    getIndexes(getTableByNameResponse.getTableDefinitionWithId(), getTableByNameResponse.getTableDefinitionWithId().getTableId()));
+                table2.indexes.forEach($ -> tableIdCache.put($.getTableId(), $));
+                cache.get(schema).put(table.toUpperCase(), table2);
+                return table2;
+            } else {
+                return table1;
+            }
+
         }
         return null;
     }
