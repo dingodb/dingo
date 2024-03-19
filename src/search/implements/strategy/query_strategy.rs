@@ -11,7 +11,6 @@ use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::search::collector::row_id_bitmap_collector::RowIdRoaringCollector;
 use crate::search::collector::top_dos_with_bitmap_collector::TopDocsWithFilter;
 use crate::search::utils::convert_utils::ConvertUtils;
-use crate::INFO;
 use crate::{common::errors::IndexSearcherError, ffi::RowIdWithScore, ERROR};
 use crate::common::constants::LOG_CALLBACK;
 
