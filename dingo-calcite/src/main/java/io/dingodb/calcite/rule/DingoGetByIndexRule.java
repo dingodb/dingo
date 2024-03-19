@@ -198,12 +198,12 @@ public class DingoGetByIndexRule extends ConverterRule {
                 scan.getHints(),
                 scan.getTable(),
                 scan.getFilter(),
-                scan.getSelection(),
+                scan.getRealSelection(),
                 false,
                 indexSetMap,
                 indexTdMap,
                 table.keyMapping(),
-                scan.isForDml()
+                true
             );
         } else {
             return new DingoGetByIndex(
