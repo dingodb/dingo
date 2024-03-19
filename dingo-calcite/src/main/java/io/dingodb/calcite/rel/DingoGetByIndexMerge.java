@@ -42,10 +42,6 @@ public class DingoGetByIndexMerge extends DingoGetByIndex implements DingoRel {
     @Getter
     private TupleMapping keyMapping;
 
-    @Getter
-    protected final TupleMapping selection;
-
-
     public DingoGetByIndexMerge(RelOptCluster cluster,
                                 RelTraitSet traitSet,
                                 List<RelHint> hints,
@@ -58,7 +54,6 @@ public class DingoGetByIndexMerge extends DingoGetByIndex implements DingoRel {
                                 TupleMapping keyMapping) {
         super(cluster, traitSet, hints, table, filter, selection, isUnique, indexSetMap, indexTdMap);
         this.keyMapping = keyMapping;
-        this.selection = selection;
     }
 
     public DingoGetByIndexMerge(RelOptCluster cluster,
@@ -74,36 +69,11 @@ public class DingoGetByIndexMerge extends DingoGetByIndex implements DingoRel {
                                 boolean forDml) {
         super(cluster, traitSet, hints, table, filter, selection, isUnique, indexSetMap, indexTdMap, forDml);
         this.keyMapping = keyMapping;
-        this.selection = selection;
     }
 
     @Override
     public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
-    }
-
-    @Override
-    public RelDataType deriveRowType() {
-        RelDataType selected = getSelectedType();
-        if (aggCalls != null) {
-            return Aggregate.deriveRowType(
-                getCluster().getTypeFactory(),
-                selected,
-                false,
-                groupSet,
-                groupSets,
-                aggCalls
-            );
-        }
-        return selected;
-    }
-
-    public RelDataType getSelectedType() {
-        return RelDataTypeUtils.mapType(
-            getCluster().getTypeFactory(),
-            getTableType(),
-            selection
-        );
     }
 
 }

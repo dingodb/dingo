@@ -156,7 +156,7 @@ public final class DingoGetByIndexMergeVisitFun {
                         tableInfo.getId(),
                         tupleMapping,
                         SqlExprUtils.toSqlExpr(rel.getFilter()),
-                        rel.getSelection(),
+                        rel.getRealSelection(),
                         rel.isUnique(),
                         indexTd,
                         td,
