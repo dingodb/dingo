@@ -110,14 +110,14 @@ impl TopDocsWithFilter {
                     doc_id: doc,
                 }) {
                     if let Some(text_fields) = &self.text_fields {
-                        for text_field in text_fields  {
+                        for text_field in text_fields {
                             if let Some(field_value) = document.get_first(*text_field) {
                                 if let Some(text_value) = field_value.as_text() {
                                     doc_texts.push(text_value.to_string());
-                                }else {
+                                } else {
                                     doc_texts.push("".to_string())
                                 }
-                            }   
+                            }
                         }
                     }
                 }
@@ -261,4 +261,3 @@ impl SegmentCollector for TopScoreSegmentCollector {
         vec![]
     }
 }
-

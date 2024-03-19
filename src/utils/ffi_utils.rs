@@ -1,9 +1,8 @@
 use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::tokenizer::tokenizer_utils::ToeknizerUtils;
-use crate::{common::constants::LOG_CALLBACK, ERROR};
 use crate::CXX_STRING_CONERTER;
+use crate::{common::constants::LOG_CALLBACK, ERROR};
 use cxx::CxxString;
-
 
 pub fn ffi_varify_index_parameter(
     index_json_parameter: &CxxString,

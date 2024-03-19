@@ -1,2 +1,2 @@
-pub mod index_utils;
 pub mod ffi_utils;
+pub mod index_utils;

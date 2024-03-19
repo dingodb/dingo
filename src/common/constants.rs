@@ -53,15 +53,16 @@ pub static FFI_INDEX_WRITER_CACHE: Lazy<IndexWriterBridgeCache> =
 pub static FFI_INDEX_SEARCHER_CACHE: Lazy<IndexReaderBridgeCache> =
     Lazy::new(|| IndexReaderBridgeCache::new());
 
-// Cache Cxx Converter.
-// 转换 CxxString 到 String 类型
+/// Convert 'CxxString' to 'String'
 pub static CXX_STRING_CONERTER: Lazy<Converter<CxxString, String, CxxElementStrategy>> =
     Lazy::new(|| Converter::new(CxxElementStrategy));
 
+/// Convert 'CxxVector<CxxString>' to 'Vec<String>'
 pub static CXX_VECTOR_STRING_CONERTER: Lazy<
     Converter<CxxVector<CxxString>, Vec<String>, CxxVectorStringStrategy>,
 > = Lazy::new(|| Converter::new(CxxVectorStringStrategy));
 
+/// Convert 'CxxVector<T> to Vec<T>'
 pub fn cxx_vector_converter<T>() -> Converter<CxxVector<T>, Vec<T>, CxxVectorStrategy<T>>
 where
     T: Clone + VectorElement,

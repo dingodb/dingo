@@ -4,8 +4,6 @@ use crate::{common::constants::LOG_CALLBACK, ERROR};
 use crate::{cxx_vector_converter, CXX_STRING_CONERTER, CXX_VECTOR_STRING_CONERTER};
 use cxx::{CxxString, CxxVector};
 
-
-/// 创建索引，提供索引参数
 pub fn ffi_create_index_with_parameter(
     index_path: &CxxString,
     column_names: &CxxVector<CxxString>,
@@ -44,11 +42,7 @@ pub fn ffi_create_index_with_parameter(
     }
 }
 
-/// 创建索引，不提供索引参数
-pub fn ffi_create_index(
-    index_path: &CxxString,
-    column_names: &CxxVector<CxxString>,
-) -> bool {
+pub fn ffi_create_index(index_path: &CxxString, column_names: &CxxVector<CxxString>) -> bool {
     let index_path: String = match CXX_STRING_CONERTER.convert(index_path) {
         Ok(path) => path,
         Err(e) => {
@@ -74,7 +68,6 @@ pub fn ffi_create_index(
     }
 }
 
-/// 索引一组文档
 pub fn ffi_index_multi_column_docs(
     index_path: &CxxString,
     row_id: u64,
@@ -114,11 +107,7 @@ pub fn ffi_index_multi_column_docs(
     }
 }
 
-/// 删除一组 row ids
-pub fn ffi_delete_row_ids(
-    index_path: &CxxString,
-    row_ids: &CxxVector<u32>,
-) -> bool {
+pub fn ffi_delete_row_ids(index_path: &CxxString, row_ids: &CxxVector<u32>) -> bool {
     let index_path: String = match CXX_STRING_CONERTER.convert(index_path) {
         Ok(path) => path,
         Err(e) => {
@@ -127,7 +116,7 @@ pub fn ffi_delete_row_ids(
         }
     };
 
-    let row_ids: Vec<u32> = match cxx_vector_converter::<u32>().convert(row_ids){
+    let row_ids: Vec<u32> = match cxx_vector_converter::<u32>().convert(row_ids) {
         Ok(ids) => ids,
         Err(e) => {
             ERROR!(function: "ffi_delete_row_ids", "Can't convert 'row_ids', message: {}", e);
@@ -144,7 +133,6 @@ pub fn ffi_delete_row_ids(
     }
 }
 
-/// 提交索引修改
 pub fn ffi_index_writer_commit(index_path: &CxxString) -> bool {
     let index_path: String = match CXX_STRING_CONERTER.convert(index_path) {
         Ok(path) => path,
@@ -163,7 +151,6 @@ pub fn ffi_index_writer_commit(index_path: &CxxString) -> bool {
     }
 }
 
-/// 释放索引
 pub fn ffi_free_index_writer(index_path: &CxxString) -> bool {
     let index_path: String = match CXX_STRING_CONERTER.convert(index_path) {
         Ok(path) => path,
@@ -181,4 +168,3 @@ pub fn ffi_free_index_writer(index_path: &CxxString) -> bool {
         }
     }
 }
-

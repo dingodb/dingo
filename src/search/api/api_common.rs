@@ -6,8 +6,6 @@ use crate::CXX_STRING_CONERTER;
 use crate::{common::constants::LOG_CALLBACK, ERROR};
 use cxx::CxxString;
 
-
-
 pub fn ffi_load_index_reader(index_path: &CxxString) -> bool {
     let index_path: String = match CXX_STRING_CONERTER.convert(index_path) {
         Ok(path) => path,
@@ -26,7 +24,6 @@ pub fn ffi_load_index_reader(index_path: &CxxString) -> bool {
     }
 }
 
-
 pub fn ffi_free_index_reader(index_path: &CxxString) -> bool {
     let index_path: String = match CXX_STRING_CONERTER.convert(index_path) {
         Ok(path) => path,
@@ -44,7 +41,6 @@ pub fn ffi_free_index_reader(index_path: &CxxString) -> bool {
         }
     }
 }
-
 
 pub fn ffi_get_indexed_doc_counts(index_path: &CxxString) -> u64 {
     let index_path: String = match CXX_STRING_CONERTER.convert(index_path) {

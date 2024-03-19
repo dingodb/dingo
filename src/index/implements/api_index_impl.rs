@@ -63,14 +63,15 @@ pub fn create_index_with_parameter(
             ERROR!("{}", e.to_string());
             TantivySearchError::TokenizerUtilsError(e)
         })?;
-    
+
     // Construct the schema for the index.
     let mut schema_builder = Schema::builder();
     schema_builder.add_u64_field("row_id", FAST | INDEXED);
 
     for column_name in column_names {
         if let Some(tokenizer_config) = col_tokenizer_map.get(column_name) {
-            let tokenizer_name = format!("{}_{}", column_name, tokenizer_config.tokenizer_type.name());
+            let tokenizer_name =
+                format!("{}_{}", column_name, tokenizer_config.tokenizer_type.name());
             let mut text_options = TextOptions::default().set_indexing_options(
                 TextFieldIndexing::default()
                     .set_tokenizer(&tokenizer_name)
@@ -99,7 +100,7 @@ pub fn create_index_with_parameter(
     );
 
     // Create the index in the specified directory.
-    let mut index = Index::create_in_dir(index_files_directory, schema).map_err(|e|{
+    let mut index = Index::create_in_dir(index_files_directory, schema).map_err(|e| {
         let error_info = format!(
             "Failed to create index in directory:{}; exception:{}",
             index_path,
@@ -144,10 +145,12 @@ pub fn create_index_with_parameter(
         writer: Mutex::new(Some(writer)),
     };
 
-    FFI_INDEX_WRITER_CACHE.set_index_writer_bridge(index_path.to_string(), Arc::new(index_writer_bridge)).map_err(|e|{
-        ERROR!(function:"create_index_with_parameter", "{}", e);
-        TantivySearchError::InternalError(e)
-    })?;
+    FFI_INDEX_WRITER_CACHE
+        .set_index_writer_bridge(index_path.to_string(), Arc::new(index_writer_bridge))
+        .map_err(|e| {
+            ERROR!(function:"create_index_with_parameter", "{}", e);
+            TantivySearchError::InternalError(e)
+        })?;
 
     Ok(true)
 }
@@ -226,12 +229,12 @@ pub fn delete_row_ids(index_path: &str, row_ids: &Vec<u32>) -> Result<bool, Tant
         .collect();
 
     // Delete row_id terms.
-    index_writer_bridge.delete_terms(terms).map_err(|e|{
+    index_writer_bridge.delete_terms(terms).map_err(|e| {
         ERROR!(function: "delete_row_ids", "{}", e);
         TantivySearchError::InternalError(e)
     })?;
     // After delete_term, need commit index writer.
-    index_writer_bridge.commit().map_err(|e|{
+    index_writer_bridge.commit().map_err(|e| {
         let error_info = format!("Failed to commit index writer: {}", e.to_string());
         ERROR!(function: "delete_row_ids", "{}", error_info);
         TantivySearchError::InternalError(error_info)
@@ -257,12 +260,14 @@ pub fn delete_row_ids(index_path: &str, row_ids: &Vec<u32>) -> Result<bool, Tant
 
 pub fn commit_index(index_path: &str) -> Result<bool, TantivySearchError> {
     // get index writer bridge from CACHE
-    let index_writer_bridge: Arc<IndexWriterBridge> = FFI_INDEX_WRITER_CACHE.get_index_writer_bridge(index_path.to_string()).map_err(|e|{
+    let index_writer_bridge: Arc<IndexWriterBridge> = FFI_INDEX_WRITER_CACHE
+        .get_index_writer_bridge(index_path.to_string())
+        .map_err(|e| {
             ERROR!(function: "commit_index", "{}", e);
             TantivySearchError::InternalError(e)
         })?;
 
-    index_writer_bridge.commit().map_err(|e|{
+    index_writer_bridge.commit().map_err(|e| {
         let error_info = format!("Failed to commit index writer: {}", e.to_string());
         ERROR!(function: "commit_index", "{}", error_info);
         TantivySearchError::InternalError(e)
@@ -273,24 +278,27 @@ pub fn commit_index(index_path: &str) -> Result<bool, TantivySearchError> {
 
 pub fn free_index_writer(index_path: &str) -> Result<bool, TantivySearchError> {
     // get index writer bridge from CACHE
-    let index_writer_bridge: Arc<IndexWriterBridge> = match FFI_INDEX_WRITER_CACHE.get_index_writer_bridge(index_path.to_string()) {
-        Ok(content) => content,
-        Err(e) => {
-            DEBUG!(function: "free_index_writer", "Index writer already been removed: {}", e);
-            return Ok(false);
-        }
-    };
-    index_writer_bridge.wait_merging_threads().map_err(|e|{
+    let index_writer_bridge: Arc<IndexWriterBridge> =
+        match FFI_INDEX_WRITER_CACHE.get_index_writer_bridge(index_path.to_string()) {
+            Ok(content) => content,
+            Err(e) => {
+                DEBUG!(function: "free_index_writer", "Index writer already been removed: {}", e);
+                return Ok(false);
+            }
+        };
+    index_writer_bridge.wait_merging_threads().map_err(|e| {
         let error_info = format!("Can't wait merging threads, exception: {}", e);
         ERROR!(function: "free_index_writer", "{}", error_info);
         TantivySearchError::InternalError(error_info)
     })?;
 
     // Remove index writer from CACHE
-    FFI_INDEX_WRITER_CACHE.remove_index_writer_bridge(index_path.to_string()).map_err(|e|{
-        ERROR!(function: "free_index_writer", "{}", e);
-        TantivySearchError::InternalError(e)
-    })?;
+    FFI_INDEX_WRITER_CACHE
+        .remove_index_writer_bridge(index_path.to_string())
+        .map_err(|e| {
+            ERROR!(function: "free_index_writer", "{}", e);
+            TantivySearchError::InternalError(e)
+        })?;
 
     DEBUG!(function: "free_index_writer", "Index writer has been freed:[{}]", index_path);
     Ok(true)

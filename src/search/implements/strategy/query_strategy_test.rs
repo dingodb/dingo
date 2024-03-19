@@ -1,19 +1,20 @@
-
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
 
     use roaring::RoaringBitmap;
     use tantivy::{
-        merge_policy::LogMergePolicy, schema::{Schema, FAST, INDEXED, STORED, TEXT}, Document, Index, IndexReader, IndexWriter, ReloadPolicy,
+        merge_policy::LogMergePolicy,
+        schema::{Schema, FAST, INDEXED, STORED, TEXT},
+        Document, Index, IndexReader, IndexWriter, ReloadPolicy,
     };
     use tempfile::TempDir;
 
-    use crate::search::implements::strategy::query_strategy::{QueryExecutor, TermSetQueryStrategy};
+    use crate::search::implements::strategy::query_strategy::{
+        QueryExecutor, TermSetQueryStrategy,
+    };
 
-    fn index_some_docs_in_temp_directory(
-        index_directory_str: &str,
-    ) -> (IndexReader, IndexWriter) {
+    fn index_some_docs_in_temp_directory(index_directory_str: &str) -> (IndexReader, IndexWriter) {
         // Construct the schema for the index.
         let mut schema_builder = Schema::builder();
         schema_builder.add_u64_field("row_id", FAST | INDEXED);
@@ -52,8 +53,6 @@ mod tests {
         (reader, writer)
     }
 
-
-
     #[test]
     fn test_term_set_query_strategy() {
         let temp_directory = TempDir::new().expect("Can't create temp directory");
@@ -61,17 +60,14 @@ mod tests {
             .path()
             .to_str()
             .expect("Can't get temp directory str");
-        let (index_reader, _) =
-            index_some_docs_in_temp_directory(temp_directory_str);
+        let (index_reader, _) = index_some_docs_in_temp_directory(temp_directory_str);
         // Choose query strategy to construct query executor.
         let terms_query: TermSetQueryStrategy<'_> = TermSetQueryStrategy {
-            terms: &[
-                "ancient".to_string(),
-                "balance".to_string()
-                ].to_vec(),
+            terms: &["ancient".to_string(), "balance".to_string()].to_vec(),
             column_name: "text",
         };
-        let query_executor: QueryExecutor<'_, Arc<RoaringBitmap>> = QueryExecutor::new(&terms_query);
+        let query_executor: QueryExecutor<'_, Arc<RoaringBitmap>> =
+            QueryExecutor::new(&terms_query);
         // Compute query results.
         let result: Arc<RoaringBitmap> = query_executor.execute(&index_reader.searcher()).unwrap();
         assert_eq!(result.len(), 3);

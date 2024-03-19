@@ -7,7 +7,6 @@ use crate::{common::constants::LOG_CALLBACK, ERROR};
 use cxx::CxxString;
 use cxx::CxxVector;
 
-
 pub fn ffi_bm25_search(
     index_path: &CxxString,
     sentence: &CxxString,
@@ -39,7 +38,13 @@ pub fn ffi_bm25_search(
         }
     };
 
-    match bm25_search(&index_path, &sentence, topk, &u8_aived_bitmap, query_with_filter) {
+    match bm25_search(
+        &index_path,
+        &sentence,
+        topk,
+        &u8_aived_bitmap,
+        query_with_filter,
+    ) {
         Ok(results) => results,
         Err(e) => {
             ERROR!(function: "ffi_bm25_search", "Error performing BM25 search with filter: {}", e);
@@ -47,4 +52,3 @@ pub fn ffi_bm25_search(
         }
     }
 }
-

@@ -67,9 +67,6 @@ pub enum IndexSearcherError {
     QueryParserError(String),
 }
 
-
-
-
 #[derive(Debug, Clone, Error)]
 #[allow(dead_code)]
 pub enum CxxConvertError {
@@ -96,7 +93,7 @@ pub enum TantivySearchError {
 
     #[error(transparent)]
     IndexSearcherError(#[from] IndexSearcherError),
-    
+
     #[error(transparent)]
     TantivyError(#[from] TantivyError),
 
@@ -111,9 +108,3 @@ pub enum TantivySearchError {
     #[error("An invalid argument was passed: '{0}'")]
     InvalidArgument(String),
 }
-
-// impl From<CxxConvertError> for TantivySearchError {
-//     fn from(cxx_convert_error: CxxConvertError) -> TantivySearchError {
-//         TantivySearchError::InvalidArgument(format!("Query is invalid. {cxx_convert_error:?}"))
-//     }
-// }

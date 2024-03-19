@@ -8,11 +8,11 @@ mod search;
 mod tokenizer;
 mod utils;
 use common::constants::*;
-use utils::ffi_utils::*;
 use index::api::api_index::*;
 use search::api::api_clickhouse::*;
 use search::api::api_common::*;
 use search::api::api_myscale::*;
+use utils::ffi_utils::*;
 // re-export log ffi function.
 pub use logger::ffi_logger::*;
 
@@ -29,9 +29,7 @@ pub mod ffi {
     }
 
     extern "Rust" {
-        pub fn ffi_varify_index_parameter(
-            index_json_parameter: &CxxString,
-        ) -> bool;
+        pub fn ffi_varify_index_parameter(index_json_parameter: &CxxString) -> bool;
 
         /// 创建索引，提供索引参数
         fn ffi_create_index_with_parameter(
@@ -41,10 +39,7 @@ pub mod ffi {
         ) -> bool;
 
         /// 创建索引，不提供索引参数
-        fn ffi_create_index(
-            index_path: &CxxString,
-            column_names: &CxxVector<CxxString>,
-        ) -> bool;
+        fn ffi_create_index(index_path: &CxxString, column_names: &CxxVector<CxxString>) -> bool;
 
         /// 索引一组文档        
         fn ffi_index_multi_column_docs(
@@ -96,7 +91,7 @@ pub mod ffi {
             column_name: &CxxString,
             sentence: &CxxString,
             lrange: u64,
-            rrange: u64
+            rrange: u64,
         ) -> bool;
 
         /// 执行 range 范围内正则匹配 regex

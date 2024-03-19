@@ -9,15 +9,12 @@ use crate::{common::constants::LOG_CALLBACK, ERROR};
 
 use std::{path::Path, sync::Arc};
 
-
 use crate::search::bridge::index_reader_bridge::IndexReaderBridge;
 use crate::tokenizer::tokenizer_utils::ToeknizerUtils;
 use std::collections::HashMap;
 use tantivy::IndexReader;
 use tantivy::{Index, ReloadPolicy};
 
-
-// 加载索引 reader
 pub fn load_index_reader(index_path: &str) -> Result<bool, TantivySearchError> {
     // Verify index files directory.
     let index_files_directory = Path::new(index_path);
@@ -29,25 +26,30 @@ pub fn load_index_reader(index_path: &str) -> Result<bool, TantivySearchError> {
     }
 
     // Load tantivy index with given directory.
-    let mut index: Index = Index::open_in_dir(index_files_directory).map_err(|e|{
-        let error: TantivySearchError = TantivySearchError::TantivyError(e); 
+    let mut index: Index = Index::open_in_dir(index_files_directory).map_err(|e| {
+        let error: TantivySearchError = TantivySearchError::TantivyError(e);
         ERROR!(function:"load_index_reader", "{}", error.to_string());
         error
     })?;
 
     // Load index parameter DTO from local index files.
-    let index_parameter_dto: IndexParameterDTO = IndexUtils::load_custom_index_setting(index_files_directory).map_err(|e|{
-        ERROR!(function:"load_index_reader", "{}", e);
-        TantivySearchError::IndexUtilsError(e)
-    })?;
+    let index_parameter_dto: IndexParameterDTO =
+        IndexUtils::load_custom_index_setting(index_files_directory).map_err(|e| {
+            ERROR!(function:"load_index_reader", "{}", e);
+            TantivySearchError::IndexUtilsError(e)
+        })?;
 
     DEBUG!(function:"load_index_reader", "parameter DTO is {:?}", index_parameter_dto);
 
     // Parse tokenizer map from local index parameter DTO.
-    let col_tokenizer_map: HashMap<String, TokenizerConfig> = ToeknizerUtils::parse_tokenizer_json_to_config_map(&index_parameter_dto.tokenizers_json_parameter).map_err(|e| {
-        ERROR!(function:"load_index_reader", "{}", e);
-        TantivySearchError::TokenizerUtilsError(e)
-    })?;
+    let col_tokenizer_map: HashMap<String, TokenizerConfig> =
+        ToeknizerUtils::parse_tokenizer_json_to_config_map(
+            &index_parameter_dto.tokenizers_json_parameter,
+        )
+        .map_err(|e| {
+            ERROR!(function:"load_index_reader", "{}", e);
+            TantivySearchError::TokenizerUtilsError(e)
+        })?;
 
     // Register tokenizer config into `index`.
     for (column_name, tokenizer_config) in col_tokenizer_map.iter() {
@@ -95,7 +97,8 @@ pub fn load_index_reader(index_path: &str) -> Result<bool, TantivySearchError> {
     let reader: IndexReader = index
         .reader_builder()
         .reload_policy(ReloadPolicy::OnCommit)
-        .try_into().map_err(|e|{
+        .try_into()
+        .map_err(|e| {
             ERROR!(function:"load_index_reader", "Failed to create tantivy index reader: {}", e);
             TantivySearchError::TantivyError(e)
         })?;
@@ -107,15 +110,16 @@ pub fn load_index_reader(index_path: &str) -> Result<bool, TantivySearchError> {
         path: index_path.trim_end_matches('/').to_string(),
     };
 
-    FFI_INDEX_SEARCHER_CACHE.set_index_reader_bridge(index_path.to_string(), Arc::new(index_reader_bridge)).map_err(|e|{
-        ERROR!(function:"load_index_reader", "{}", e);
-        TantivySearchError::InternalError(e)
-    })?;
+    FFI_INDEX_SEARCHER_CACHE
+        .set_index_reader_bridge(index_path.to_string(), Arc::new(index_reader_bridge))
+        .map_err(|e| {
+            ERROR!(function:"load_index_reader", "{}", e);
+            TantivySearchError::InternalError(e)
+        })?;
 
     Ok(true)
 }
 
-// 释放索引 reader
 pub fn free_index_reader(index_path: &str) -> Result<bool, TantivySearchError> {
     // remove bitmap cache
     #[cfg(feature = "use-flurry-cache")]
@@ -137,17 +141,15 @@ pub fn free_index_reader(index_path: &str) -> Result<bool, TantivySearchError> {
     Ok(true)
 }
 
-// 获取已经索引的文本数量
 pub fn get_indexed_doc_counts(index_path: &str) -> Result<u64, TantivySearchError> {
     // get index_reader_bridge from CACHE
-    let index_reader_bridge: Arc<IndexReaderBridge> = FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path.to_string()).map_err(|e|{
-        ERROR!(function:"get_indexed_doc_counts", "{}", e);
-        TantivySearchError::InternalError(e)
-    })?;
+    let index_reader_bridge: Arc<IndexReaderBridge> = FFI_INDEX_SEARCHER_CACHE
+        .get_index_reader_bridge(index_path.to_string())
+        .map_err(|e| {
+            ERROR!(function:"get_indexed_doc_counts", "{}", e);
+            TantivySearchError::InternalError(e)
+        })?;
 
     let num_docs: u64 = index_reader_bridge.reader.searcher().num_docs();
     Ok(num_docs)
 }
-
-
-

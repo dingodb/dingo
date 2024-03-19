@@ -8,7 +8,7 @@ pub trait ConvertStrategy<T, U> {
     fn convert(&self, item: &T) -> Result<U, CxxConvertError>;
 }
 
-// 策略 1. u8->u8, u32->u32
+// u8->u8, u32->u32
 pub struct CxxElementStrategy;
 
 impl<T> ConvertStrategy<T, T> for CxxElementStrategy
@@ -27,7 +27,7 @@ impl ConvertStrategy<CxxString, String> for CxxElementStrategy {
     }
 }
 
-// 策略 2. CxxVector -> Vec
+// CxxVector -> Vec
 pub struct CxxVectorStrategy<T>
 where
     T: Clone + VectorElement,
@@ -54,7 +54,7 @@ where
     }
 }
 
-// 策略 3. CxxVector<String> 转换为 Vec<String>
+// CxxVector<String> 转换为 Vec<String>
 pub struct CxxVectorStringStrategy;
 
 impl ConvertStrategy<CxxVector<CxxString>, Vec<String>> for CxxVectorStringStrategy {

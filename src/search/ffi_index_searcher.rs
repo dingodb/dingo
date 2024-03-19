@@ -85,7 +85,6 @@
 //     }
 // }
 
-
 // pub fn ffi_count_in_rowid_range(
 //     index_path: &CxxString,
 //     column_name: &CxxString,
@@ -126,7 +125,6 @@
 //         }
 //     }
 // }
-
 
 // pub fn ffi_bm25_search_with_filter(
 //     index_path: &CxxString,
@@ -176,7 +174,6 @@
 //         }
 //     }
 // }
-
 
 // pub fn ffi_bm25_search(
 //     index_path: &CxxString,
