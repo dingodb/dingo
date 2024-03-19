@@ -28,6 +28,7 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -39,7 +40,7 @@ public class StoreService implements io.dingodb.store.api.StoreService {
     static {
         String path = Configuration.path();
         if (path == null) {
-            path = System.getProperty("user.dir");
+            path = System.getProperty("user.dir") + File.separator + "localStore";
         }
         RocksDB rocksdb = null;
         try {
