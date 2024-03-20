@@ -25,6 +25,7 @@
    As a distributed storage engine, DingoDB has the capacity to store vast amounts of data. It allows for easy horizontal scaling operations on clusters as data scale increases.
 5. High Data Reliability and Recovery:
    Designed based on Raft, DingoDB provides a multi-replicated management mechanism, ensuring extraordinarily high data reliability. It can maintain high data consistency even in the event of disk or machine failures and offers a swift automatic recovery mechanism.
+6. Supports multiple vector search requirements and has the capability for joint retrieval of structured and unstructured data, comprehensively enhancing users' data analysis and retrieval capabilities.   
 
 ## Related Projects about DingoDB
 
