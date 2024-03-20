@@ -18,6 +18,7 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
@@ -25,6 +26,10 @@ import io.dingodb.exec.operator.params.GetDistributionParam;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
+
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.stream.IntStream;
 
 public class GetDistributionOperator extends SourceOperator {
     public static final GetDistributionOperator INSTANCE = new GetDistributionOperator();
@@ -41,6 +46,11 @@ public class GetDistributionOperator extends SourceOperator {
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
 
         for (Object[] keyTuple : param.getKeyTuples()) {
+            TupleMapping keyMapping = param.getKeyMapping();
+            boolean allMatch = keyMapping.stream().allMatch(i -> Objects.isNull(keyTuple[i]));
+            if (allMatch) {
+                return false;
+            }
             CommonId partId = ps.calcPartId(param.getCodec().encodeKey(keyTuple), param.getDistributions());
             RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
             context.setDistribution(distribution);
