@@ -87,6 +87,7 @@ public final class DingoGetByIndexMergeVisitFun {
         MetaService metaService = MetaServiceUtils.getMetaService(rel.getTable());
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         Map<CommonId, Set> indexSetMap = rel.getIndexSetMap();
+        TupleMapping lookupKeyMapping = null;
         final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
         boolean needLookup = true;
         for (Map.Entry<CommonId, Set> indexValSet : indexSetMap.entrySet()) {
@@ -134,7 +135,7 @@ public final class DingoGetByIndexMergeVisitFun {
                 TupleMapping tupleMapping = TupleMapping.of(
                     columnNames.stream().map(td.columns::indexOf).collect(Collectors.toList())
                 );
-                TupleMapping lookupKeyMapping = indexMergeMapping(td.keyMapping(), rel.getSelection());
+                lookupKeyMapping = indexMergeMapping(td.keyMapping(), rel.getSelection());
 
                 long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
                 // Use current read
@@ -156,7 +157,7 @@ public final class DingoGetByIndexMergeVisitFun {
                         tableInfo.getId(),
                         tupleMapping,
                         SqlExprUtils.toSqlExpr(rel.getFilter()),
-                        rel.getRealSelection(),
+                        lookupKeyMapping,
                         rel.isUnique(),
                         indexTd,
                         td,
@@ -189,17 +190,28 @@ public final class DingoGetByIndexMergeVisitFun {
         }
 
         List<Vertex> inputs = DingoCoalesce.coalesce(idGenerator, outputs);
-        return DingoBridge.bridge(idGenerator, inputs, new DingoGetByIndexMergeVisitFun.OperatorSupplier(rel));
+        return DingoBridge.bridge(idGenerator, inputs, new DingoGetByIndexMergeVisitFun.OperatorSupplier(rel, lookupKeyMapping));
     }
 
     @AllArgsConstructor
     static class OperatorSupplier implements Supplier<Vertex> {
 
         final DingoGetByIndexMerge relNode;
+        final TupleMapping lookupKeyMapping;
 
         @Override
         public Vertex get() {
-            IndexMergeParam params = new IndexMergeParam(relNode.getKeyMapping(), relNode.getSelection());
+            int[] keyIx = relNode.getKeyMapping().getMappings();
+            int[] newKeyIndex = new int[keyIx.length];
+            for (int i = 0; i < keyIx.length; i ++) {
+                int keyIdx = keyIx[i];
+                int ix = lookupKeyMapping.findIdx(keyIdx);
+                if (ix >= 0) {
+                    newKeyIndex[i] = ix;
+                }
+            }
+            TupleMapping newKeyMapping = TupleMapping.of(newKeyIndex);
+            IndexMergeParam params = new IndexMergeParam(newKeyMapping, relNode.getSelection());
             return new Vertex(INDEX_MERGE, params);
         }
     }

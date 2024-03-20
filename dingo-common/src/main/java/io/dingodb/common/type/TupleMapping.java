@@ -104,6 +104,15 @@ public final class TupleMapping {
         return -1;
     }
 
+    public int findIdx(int index) {
+        for (int i = 0; i < mappings.length; ++i) {
+            if (mappings[i] == index) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     public @NonNull TupleMapping inverse(int num) {
         int[] result = new int[num - mappings.length];
         int j = 0;
