@@ -22,6 +22,7 @@ import io.dingodb.common.util.ByteArrayUtils;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.rocksdb.RocksIterator;
+import org.rocksdb.WriteOptions;
 
 import java.util.Iterator;
 import java.util.List;
@@ -37,6 +38,7 @@ import static io.dingodb.common.util.Parameters.nonNull;
 public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
     public final CommonId regionId;
+    private static final WriteOptions writeOptions = new WriteOptions().setDisableWAL(true);
 
     @Override
     public CommonId id() {
@@ -50,21 +52,21 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
         if (StoreService.db.get(row.getKey()) != null) {
             return false;
         }
-        StoreService.db.put(nonNull(row.getKey(), "key"), cleanNull(row.getValue(), ByteArrayUtils.EMPTY_BYTES));
+        StoreService.db.put(writeOptions, nonNull(row.getKey(), "key"), cleanNull(row.getValue(), ByteArrayUtils.EMPTY_BYTES));
         return true;
     }
 
     @Override
     @SneakyThrows
     public boolean delete(byte[] key) {
-        StoreService.db.delete(key);
+        StoreService.db.delete(writeOptions, key);
         return true;
     }
 
     @Override
     @SneakyThrows
     public void deletePrefix(byte[] prefix) {
-        StoreService.db.deleteRange(prefix, nextKey(prefix));
+        StoreService.db.deleteRange(writeOptions, prefix, nextKey(prefix));
     }
 
     @Override

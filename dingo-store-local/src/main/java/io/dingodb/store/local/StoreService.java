@@ -48,17 +48,11 @@ public class StoreService implements io.dingodb.store.api.StoreService {
             FileUtils.deleteIfExists(dbPath);
             FileUtils.createDirectories(dbPath);
             Options options = new Options();
-            options.setNumLevels(1);
             options.setCreateIfMissing(true);
-            options.setDisableAutoCompactions(true);
             options.setWriteBufferSize(Configuration.instance().getBufferSize());
             options.setMaxWriteBufferNumber(Configuration.instance().getBufferNumber());
             options.setTargetFileSizeBase(Configuration.instance().getFileSize());
-            WriteOptions writeOptions = new WriteOptions();
-            writeOptions.setDisableWAL(true);
             rocksdb = RocksDB.open(options, path);
-            WriteBatch batch = new WriteBatch();
-            rocksdb.write(writeOptions, batch) ;
         } catch (Exception e) {
             log.info("No local db.", e);
         }
