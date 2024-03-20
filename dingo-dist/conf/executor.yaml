@@ -14,9 +14,9 @@ variable:
     autoIncrementIncrement: 1
     autoIncrementOffset: 1
 store:
-  bufferSize: 8388608
+  bufferSize: 67108864
   bufferNumber: 2
-  fileSize: 2097152
+  fileSize: 67108864
 security:
     cipher:
         keyPath: /opt/dingo/conf/dingodb.jks
