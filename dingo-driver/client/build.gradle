@@ -46,7 +46,7 @@ tasks.register('sourcesJar', Jar) {
 }
 
 tasks.register('fatJar', Jar) {
-    classifier 'all'
+    // classifier 'all'
     from(
             configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
     )
