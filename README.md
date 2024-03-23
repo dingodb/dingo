@@ -17,15 +17,16 @@
 
 1. MySQL Compatibility
    Built upon the acclaimed [Apache Calcite](https://calcite.apache.org/) SQL engine, DingoDB is capable of parsing, optimizing, and executing standard SQL statements, and can handle parts of TPC-H and TPC-DS(See [TPC](http://www.tpc.org/)) queries. Compliant with MySQL Shell and MySQL-JDBC-Driver Client, it offers seamless integration with web services, BI tools, and more.
-2. Supports High Frequency Write Operations:
-   With the use of [RAFT](https://raft.github.io/) and the log-structured key-value storage [RocksDB](https://rocksdb.org/)., DingoDB can handle high-frequency INSERT, UPDATE, DELETE, and short-QUERY operations while maintaining strong data consistency.
+2. Supports High Frequency Write Operations
+   With the use of [RAFT](https://raft.github.io/) and the log-structured key-value storage [RocksDB](https://rocksdb.org/)., DingoDB can handle high-frequency INSERT, UPDATE, DELETE, and Short-QUERY operations while maintaining strong data consistency.
 3. Facilitates Point Queries and Multi-dimensional Analysis Simultaneously:
    DingoDB can push down expressions to accelerate queries and quickly carry out multi-dimensional analysis with low latency.
 4. Distributed Storage Capabilities
-   As a distributed storage engine, DingoDB has the capacity to store vast amounts of data. It allows for easy horizontal scaling operations on clusters as data scale increases.
-5. High Data Reliability and Recovery:
-   Designed based on Raft, DingoDB provides a multi-replicated management mechanism, ensuring extraordinarily high data reliability. It can maintain high data consistency even in the event of disk or machine failures and offers a swift automatic recovery mechanism.
-6. Supports multiple vector search requirements and has the capability for joint retrieval of structured and unstructured data, comprehensively enhancing users' data analysis and retrieval capabilities.   
+   As a distributed storage engine, DingoDB has the capacity to store vast amounts of data. It allows for easy horizontal scaling operations on clusters as data scale increases, and implemented using [dingo-store](https://github.com/dingodb/dingo-store).
+5. High Data Reliability and Recovery
+   Based on the [Raft](https://raft.github.io/) distributed consensus protocol, DingoDB can ensure data reliability and recovery in the event of machine or disk failures and offers a swift automatic recovery mechanism.
+6. Supports Multiple Vector Searches
+   DingoDB supports vector searches, which are queries that involve vector data types, such as vectors of integers or vectors of floating-point numbers.
 
 ## Related Projects about DingoDB
 
