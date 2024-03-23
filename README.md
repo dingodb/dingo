@@ -18,7 +18,7 @@
 1. MySQL Compatibility
    Built upon the acclaimed [Apache Calcite](https://calcite.apache.org/) SQL engine, DingoDB is capable of parsing, optimizing, and executing standard SQL statements, and can handle parts of TPC-H and TPC-DS(See [TPC](http://www.tpc.org/)) queries. Compliant with MySQL Shell and MySQL-JDBC-Driver Client, it offers seamless integration with web services, BI tools, and more.
 2. Supports High Frequency Write Operations
-   With the use of [RAFT](https://raft.github.io/) and the log-structured key-value storage [RocksDB](https://rocksdb.org/)., DingoDB can handle high-frequency INSERT, UPDATE, DELETE, and Short-QUERY operations while maintaining strong data consistency.
+   DingoDB is designed to handle high-frequency write operations, such as INSERT, UPDATE, and DELETE, while maintaining strong data consistency using the [RAFT](https://raft.github.io/) consensus protocol. In the short future, it will also support Redis protocol, You can use redis-cli to access DingoDB RawKV.
 3. Facilitates Point Queries and Multi-dimensional Analysis Simultaneously:
    DingoDB can push down expressions to accelerate queries and quickly carry out multi-dimensional analysis with low latency.
 4. Distributed Storage Capabilities
