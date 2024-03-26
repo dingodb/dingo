@@ -29,11 +29,11 @@ class SkipIndex : public benchmark::Fixture {
 public:
     void SetUp(const ::benchmark::State& state) override {
         InitializeResourcesOnce();
-        tantivy_load_index(this->indexDirectory);
+        ffi_load_index_reader(this->indexDirectory);
     }
 
     void TearDown(const ::benchmark::State& state) override {
-        tantivy_reader_free(this->indexDirectory);
+        ffi_free_index_reader(this->indexDirectory);
     }
 
     void PerformSearch(benchmark::State& state, size_t granuleSize) {
@@ -64,12 +64,12 @@ private:
             for (size_t i = 0; i < 1000; i++)
             {
                 for (const auto& range : rowIdRanges) {
-                    tantivy_search_in_rowid_range(
+                    ffi_query_term_with_range(
                         this->indexDirectory,
+                        "text",
                         this->queryTerms[ (i+queries)%queryTerms.size() ], 
                         range, 
-                        range + granuleSize, 
-                        false
+                        range + granuleSize
                     );
                 }
             }

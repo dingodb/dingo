@@ -98,6 +98,16 @@ pub fn ffi_index_multi_column_docs(
         }
     };
 
+    if column_names.len()!=column_docs.len() {
+        ERROR!(function: "ffi_index_multi_column_docs", "column_names size doesn't match column_docs size");
+        return false;
+    }
+
+    if column_names.len()==0 || column_docs.len()==0 {
+        ERROR!(function: "ffi_index_multi_column_docs", "column_names and column_docs can't be empty");
+        return false;
+    }
+
     match index_multi_column_docs(&index_path, row_id, &column_names, &column_docs) {
         Ok(status) => status,
         Err(e) => {

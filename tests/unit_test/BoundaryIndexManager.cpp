@@ -25,6 +25,7 @@ class BoundaryTantivyCreateIndexWithTokenizerTest : public ::testing::Test {
 protected:
     const string indexDirectory = "./temp";
     const string logPath = "./log";
+    const vector<string> column_names = {"col1", "col2", "col3"};
     void SetUp() override {
         ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", true, false, false));
     }
@@ -35,12 +36,45 @@ protected:
     vector<string> generateTokenizerWithParameters(bool valid) {
         if (valid) {
             vector<string> validTokenizers = {
-                "{}"
+                // "{}",
+                // default tokenizer
+                "{\"col1\":{\"tokenizer\":{\"type\":\"default\"}}}",
+                "{\"col2\":{\"tokenizer\":{\"type\":\"default\",\"store_doc\":true}}}",
+                "{\"col3\":{\"tokenizer\":{\"type\":\"default\",\"store_doc\":false}}}",
+                // raw tokenizer
+                "{\"col1\":{\"tokenizer\":{\"type\":\"raw\",\"store_doc\":false}}}",
+                "{\"col2\":{\"tokenizer\":{\"type\":\"raw\",\"store_doc\":true}}}",
+                "{\"col3\":{\"tokenizer\":{\"type\":\"raw\",\"store_doc\":true}}, \"col2\":{\"tokenizer\":{\"type\":\"raw\",\"store_doc\":false}}}",
+                // simple tokenizer
+                "{\"col1\":{\"tokenizer\":{\"type\":\"simple\",\"stop_word_filters\":[\"english\"],\"store_doc\":true,\"length_limit\":50,\"case_sensitive\":false}}}",
+                // stem tokenizer
+                "{\"col2\":{\"tokenizer\":{\"type\":\"stem\",\"stop_word_filters\":[\"english\",\"french\"],\"stem_languages\":[\"english\",\"french\"],\"store_doc\":true,\"length_limit\":60,\"case_sensitive\":true}}}",
+                // whitespace tokenizer
+                "{\"col3\":{\"tokenizer\":{\"type\":\"whitespace\",\"stop_word_filters\":[],\"store_doc\":false,\"length_limit\":30,\"case_sensitive\":false}}}",
+                // ngram tokenizer
+                "{\"col1\":{\"tokenizer\":{\"type\":\"ngram\",\"min_gram\":1,\"max_gram\":4,\"prefix_only\":false,\"stop_word_filters\":[\"english\"],\"store_doc\":true,\"length_limit\":40,\"case_sensitive\":true}}}",
+                // chinese tokenizer
+                "{\"col2\":{\"tokenizer\":{\"type\":\"chinese\",\"jieba\":\"default\",\"mode\":\"search\",\"hnm\":false,\"store_doc\":true}}}"
             };
             return validTokenizers;
         } else {
             vector<string> invalidTokenizers = {
-                "{nothing}",
+                // unknown
+                "{\"col1\":{\"tokenizer\":{\"type\":\"invalid_type\"}}}",
+                // lack necessary
+                "{\"col2\":{\"tokenizer\":{\"store_doc\":true}}}",
+                // invalid stop_word_filters value
+                "{\"col3\":{\"tokenizer\":{\"type\":\"simple\",\"stop_word_filters\":[\"invalid_language\"]}}}",
+                // invalid stem_languages value
+                "{\"col1\":{\"tokenizer\":{\"type\":\"stem\",\"stem_languages\":[\"unsupported_language\"]}}}",
+                // invalid jieba value
+                "{\"col2\":{\"tokenizer\":{\"type\":\"chinese\",\"jieba\":\"invalid_value\"}}}",
+                // invalid mode value
+                "{\"col3\":{\"tokenizer\":{\"type\":\"chinese\",\"mode\":\"invalid_mode\"}}}",
+                // min_gram > max_gram
+                "{\"col1\":{\"tokenizer\":{\"type\":\"ngram\",\"min_gram\":4,\"max_gram\":2}}}",
+                // just invalid
+                "hadjopew099-1ej1"
             };
             return invalidTokenizers;
         }
@@ -54,7 +88,7 @@ TEST_F(BoundaryTantivyCreateIndexWithTokenizerTest, ValidTokenizerPrameter) {
     {
         try
         {
-            ASSERT_TRUE(ffi_create_index_with_parameter(indexDirectory, validTokenizers[i]));
+            ASSERT_TRUE(ffi_create_index_with_parameter(indexDirectory, column_names, validTokenizers[i]));
             ASSERT_TRUE(ffi_free_index_writer(indexDirectory));
         }
         catch(const std::exception& e)
@@ -71,7 +105,7 @@ TEST_F(BoundaryTantivyCreateIndexWithTokenizerTest, InvalidTokenizerPrameter) {
     {
         try
         {
-            ASSERT_FALSE(ffi_create_index_with_parameter(indexDirectory, invalidTokenizers[i], false));
+            ASSERT_FALSE(ffi_create_index_with_parameter(indexDirectory, column_names, invalidTokenizers[i]));
             ASSERT_FALSE(ffi_free_index_writer(indexDirectory));
         }
         catch(const std::exception& e)
@@ -83,10 +117,10 @@ TEST_F(BoundaryTantivyCreateIndexWithTokenizerTest, InvalidTokenizerPrameter) {
 }
 
 TEST_F(BoundaryTantivyCreateIndexWithTokenizerTest, nullptrParameter) {
-    ASSERT_ANY_THROW(ffi_create_index_with_parameter(indexDirectory, nullptr));
+    ASSERT_ANY_THROW(ffi_create_index_with_parameter(indexDirectory, column_names, nullptr));
     ASSERT_FALSE(ffi_free_index_writer(indexDirectory));
-    ASSERT_ANY_THROW(ffi_create_index_with_parameter(nullptr, "{}"));
-    ASSERT_ANY_THROW(ffi_create_index_with_parameter(nullptr, nullptr));
+    ASSERT_ANY_THROW(ffi_create_index_with_parameter(nullptr, column_names, "{}"));
+    ASSERT_ANY_THROW(ffi_create_index_with_parameter(nullptr, {}, nullptr));
 }
 
 
@@ -94,10 +128,12 @@ class BoundaryTantivyIndexDocTest : public ::testing::Test, public BoundaryUnitT
 protected:
     const string indexDirectory = "./temp";
     const string logPath = "./log";
+    const vector<string> column_names = {"col1", "col2", "col3"};
+
 
     void SetUp() {
         ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", true, false, false));
-        ASSERT_TRUE(ffi_create_index(indexDirectory));
+        ASSERT_TRUE(ffi_create_index(indexDirectory, column_names));
     }
 
     void TearDown() {
@@ -110,36 +146,35 @@ protected:
 TEST_F(BoundaryTantivyIndexDocTest, index1wDocsWithDocLength100) {
     for (size_t i = 0; i < 10000; i++)
     {
-        ASSERT_TRUE(ffi_index_multi_column_docs(indexDirectory, i, generateRandomString(100)));
+        ASSERT_TRUE(ffi_index_multi_column_docs(indexDirectory, i, column_names, {generateRandomString(100), generateRandomString(100), generateRandomString(100)}));
     }
-    ASSERT_TRUE(tantivy_writer_commit(indexDirectory));
+    ASSERT_TRUE(ffi_index_writer_commit(indexDirectory));
 }
 
 TEST_F(BoundaryTantivyIndexDocTest, index1wDocsWithDocLength1k) {
     for (size_t i = 0; i < 10000; i++)
     {
-        ASSERT_TRUE(ffi_index_multi_column_docs(indexDirectory, i, generateRandomString(1000)));
+        ASSERT_TRUE(ffi_index_multi_column_docs(indexDirectory, i, column_names, {generateRandomString(100), generateRandomString(100), generateRandomString(100)}));
     }
-    ASSERT_TRUE(tantivy_writer_commit(indexDirectory));
+    ASSERT_TRUE(ffi_index_writer_commit(indexDirectory));
 }
 
 TEST_F(BoundaryTantivyIndexDocTest, index1wDocsWithDocLength1kStoredDoc) {
-    ASSERT_TRUE(tantivy_create_index(indexDirectory, true));
+    ASSERT_TRUE(ffi_create_index(indexDirectory, column_names));
     for (size_t i = 0; i < 10000; i++)
     {
-        ASSERT_TRUE(ffi_index_multi_column_docs(indexDirectory, i, generateRandomString(1000)));
+        ASSERT_TRUE(ffi_index_multi_column_docs(indexDirectory, i, column_names, {generateRandomString(100), generateRandomString(100), generateRandomString(100)}));
     }
-    ASSERT_TRUE(tantivy_writer_commit(indexDirectory));
+    ASSERT_TRUE(ffi_index_writer_commit(indexDirectory));
 }
 
 TEST_F(BoundaryTantivyIndexDocTest, nullptrParameter) {
     for (size_t i = 0; i < 10000; i++)
     {
-        ASSERT_ANY_THROW(ffi_index_multi_column_docs(indexDirectory, i, nullptr));
-        ASSERT_ANY_THROW(ffi_index_multi_column_docs(nullptr, i, generateRandomString(100)));
-        ASSERT_ANY_THROW(ffi_index_multi_column_docs(nullptr, i, nullptr));
+        ASSERT_ANY_THROW(ffi_index_multi_column_docs(indexDirectory, i, {nullptr, nullptr}, {nullptr}));
+        ASSERT_ANY_THROW(ffi_index_multi_column_docs(nullptr, i, {}, {}));
+        ASSERT_ANY_THROW(ffi_index_multi_column_docs(nullptr, i, {nullptr}, {nullptr}));
     }
-    ASSERT_TRUE(tantivy_writer_commit(indexDirectory));
 }
 
 
@@ -150,12 +185,13 @@ protected:
     const string indexEmptyDirectory= "./temp3";
     const string logPath = "./log";
     const size_t totalDocNums = 10000;
+    const vector<string> column_names = {"col1", "col2", "col3"};
 
     void SetUp() override {
         ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "trace", true, false, false));
-        ASSERT_TRUE(tantivy_create_index(indexDirectory, false));
+        ASSERT_TRUE(ffi_create_index(indexDirectory, column_names));
         IndexDocuments(indexDirectory, totalDocNums);
-        ASSERT_TRUE(tantivy_create_index(indexEmptyDirectory, false));
+        ASSERT_TRUE(ffi_create_index(indexEmptyDirectory, column_names));
     }
 
     void TearDown() override {
@@ -168,7 +204,7 @@ protected:
     void IndexDocuments(const string& _indexDirectory, size_t totalDocNums) {
         for (size_t i = 0; i < totalDocNums; i++) {
             string doc = generateRandomString(i % (totalDocNums / 100));
-            ASSERT_TRUE(ffi_index_multi_column_docs(_indexDirectory, i, doc));
+            ASSERT_TRUE(ffi_index_multi_column_docs(_indexDirectory, i, column_names, {doc, doc, doc}));
         }
     }
 
@@ -193,35 +229,37 @@ protected:
 
 TEST_F(BoundaryTantivyDeleteRowIdsTest, Delete1kRowIds) {
     auto rowIdsFirstDelete = GenerateRowIdsToDelete(totalDocNums, true);
-    ASSERT_TRUE(tantivy_delete_row_ids(indexDirectory, rowIdsFirstDelete));
+    ASSERT_TRUE(ffi_delete_row_ids(indexDirectory, rowIdsFirstDelete));
     auto rowIdsSecondDelete = GenerateRowIdsToDelete(totalDocNums, false);
-    ASSERT_TRUE(tantivy_delete_row_ids(indexDirectory, rowIdsSecondDelete));
+    ASSERT_TRUE(ffi_delete_row_ids(indexDirectory, rowIdsSecondDelete));
     ASSERT_FALSE(ffi_free_index_reader(indexDirectory));
 }
 
 TEST_F(BoundaryTantivyDeleteRowIdsTest, Delete1kRowIdsWithReader) {
-    ASSERT_TRUE(tantivy_load_index(indexDirectory));
+    ASSERT_TRUE(ffi_load_index_reader(indexDirectory));
     auto rowIdsFirstDelete = GenerateRowIdsToDelete(totalDocNums, true);
-    ASSERT_TRUE(tantivy_delete_row_ids(indexDirectory, rowIdsFirstDelete));
+    ASSERT_TRUE(ffi_delete_row_ids(indexDirectory, rowIdsFirstDelete));
     auto rowIdsSecondDelete = GenerateRowIdsToDelete(totalDocNums, false);
-    ASSERT_TRUE(tantivy_delete_row_ids(indexDirectory, rowIdsSecondDelete));
+    ASSERT_TRUE(ffi_delete_row_ids(indexDirectory, rowIdsSecondDelete));
     ASSERT_TRUE(ffi_free_index_reader(indexDirectory));
 }
 
 TEST_F(BoundaryTantivyDeleteRowIdsTest, Delete1kRowIdsWithEmptyIndex) {
     auto rowIdsDelete = GenerateRowIdsToDelete(10000, true);
-    ASSERT_TRUE(tantivy_delete_row_ids(indexEmptyDirectory, rowIdsDelete));
+    ASSERT_TRUE(ffi_delete_row_ids(indexEmptyDirectory, rowIdsDelete));
 }
 
 TEST_F(BoundaryTantivyDeleteRowIdsTest, Delete1kRowIdsWithoutIndex) {
     auto rowIdsDelete = GenerateRowIdsToDelete(10000, true);
-    ASSERT_ANY_THROW(tantivy_delete_row_ids(indexDirectoryNotExists, rowIdsDelete));
+    ASSERT_FALSE(ffi_delete_row_ids(indexDirectoryNotExists, rowIdsDelete));
 }
 
 
 class BoundaryTantivyCreateAndFreeIndexTest : public ::testing::Test, public BoundaryUnitTestUtils {
 protected:
     const string logPath = "./log";
+    const vector<string> column_names = {"col1", "col2", "col3"};
+
     void SetUp() {
         ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", true, false, true));
     }
@@ -232,40 +270,45 @@ protected:
 
 TEST_F(BoundaryTantivyCreateAndFreeIndexTest, writerCreateAndFree) {
     for (size_t i = 0; i < 100; i++) {
-        ASSERT_TRUE(tantivy_create_index("./temp//", false));
-        ASSERT_TRUE(tantivy_writer_commit("./temp"));
-        ASSERT_TRUE(tantivy_create_index("./temp", true));
-        ASSERT_TRUE(tantivy_writer_commit("./temp"));
-        ASSERT_TRUE(tantivy_create_index("./temp////", false));
-        ASSERT_TRUE(tantivy_writer_commit("./temp"));
+        ASSERT_TRUE(ffi_create_index("./temp//", column_names));
+        ASSERT_TRUE(ffi_index_writer_commit("./temp"));
+        ASSERT_TRUE(ffi_create_index("./temp", column_names));
+        ASSERT_TRUE(ffi_index_writer_commit("./temp"));
+        ASSERT_TRUE(ffi_create_index("./temp///", column_names));
+        ASSERT_TRUE(ffi_index_writer_commit("./temp"));
         ASSERT_TRUE(ffi_free_index_writer("./temp///"));
         ASSERT_FALSE(ffi_free_index_writer("./temp///"));
         ASSERT_FALSE(ffi_free_index_writer("./temp"));
         ASSERT_FALSE(ffi_free_index_writer("./abcd"));
     }
+    fs::remove_all("./temp");
 }
 
 TEST_F(BoundaryTantivyCreateAndFreeIndexTest, writerAndReaderCreateAndFree) {
     for (size_t i = 0; i < 100; i++) {
         // Build index.
-        ASSERT_TRUE(tantivy_create_index("./temp//", false));
+        ASSERT_TRUE(ffi_create_index("./temp//", column_names));
         for (size_t i = 0; i < 1000; i++)
         {
-            ASSERT_TRUE(ffi_index_multi_column_docs("./temp///", i, generateRandomString(100)));
+            ASSERT_TRUE(ffi_index_multi_column_docs("./temp///", i, column_names, {generateRandomString(100),generateRandomString(100),generateRandomString(100)}));
         }
-        ASSERT_TRUE(tantivy_writer_commit("./temp"));
+        ASSERT_TRUE(ffi_index_writer_commit("./temp"));
+        // Stop merge.
+        ASSERT_TRUE(ffi_free_index_writer("./temp///"));
         // Load index.
-        ASSERT_TRUE(tantivy_load_index("./temp/////"));
-        // No need to manually free readers and writers anymore.
+        ASSERT_TRUE(ffi_load_index_reader("./temp///"));
+        // Free reader
+        ASSERT_TRUE(ffi_free_index_reader("./temp///"));
     }
+    fs::remove_all("./temp");
 }
 
 TEST_F(BoundaryTantivyCreateAndFreeIndexTest, nullptrParameter) {
-    ASSERT_ANY_THROW(tantivy_create_index(nullptr, false));
-    ASSERT_ANY_THROW(ffi_index_multi_column_docs("./temp///", 0, nullptr));
-    ASSERT_ANY_THROW(ffi_index_multi_column_docs(nullptr, 1, nullptr));
-    ASSERT_ANY_THROW(tantivy_writer_commit(nullptr));
-    ASSERT_ANY_THROW(tantivy_load_index(nullptr));
+    ASSERT_ANY_THROW(ffi_create_index(nullptr, column_names));
+    ASSERT_ANY_THROW(ffi_index_multi_column_docs("./temp///", 0, {nullptr}, {nullptr}));
+    ASSERT_ANY_THROW(ffi_index_multi_column_docs(nullptr, 1, {nullptr}, {nullptr}));
+    ASSERT_ANY_THROW(ffi_index_writer_commit(nullptr));
+    ASSERT_ANY_THROW(ffi_load_index_reader(nullptr));
 }
 
 
@@ -274,9 +317,11 @@ protected:
     const string logPath = "./log";
     const string indexDirectory = "./temp";
     const string indexDirectoryNotExists = "./temp2";
+    const vector<string> column_names = {"col1", "col2", "col3"};
+
     void SetUp() {
         ASSERT_TRUE(tantivy_search_log4rs_initialize(logPath.c_str(), "info", true, false, true));
-        ASSERT_TRUE(tantivy_create_index(indexDirectory, false));
+        ASSERT_TRUE(ffi_create_index(indexDirectory, column_names));
     }
     void TearDown() {
         ASSERT_TRUE(ffi_free_index_writer(indexDirectory));
@@ -289,14 +334,14 @@ protected:
 TEST_F(BoundaryTantivyCommitTest, commitNotExist) {
     for (size_t i = 0; i < 1000; i++)
     {
-        ASSERT_TRUE(ffi_index_multi_column_docs(indexDirectory, i, generateRandomString(100)));
+        ASSERT_TRUE(ffi_index_multi_column_docs(indexDirectory, i, column_names, {generateRandomString(100), generateRandomString(100), generateRandomString(100)}));
     }
-    ASSERT_TRUE(tantivy_writer_commit(indexDirectory));
-    ASSERT_ANY_THROW(tantivy_writer_commit(indexDirectoryNotExists));
+    ASSERT_TRUE(ffi_index_writer_commit(indexDirectory));
+    ASSERT_FALSE(ffi_index_writer_commit(indexDirectoryNotExists));
 }
 
 TEST_F(BoundaryTantivyCommitTest, nullptrParameter) {
-    ASSERT_ANY_THROW(ffi_index_multi_column_docs(nullptr, 0, nullptr));
-    ASSERT_ANY_THROW(ffi_index_multi_column_docs(indexDirectory, 1, nullptr));
-    ASSERT_ANY_THROW(tantivy_writer_commit(nullptr));
+    ASSERT_ANY_THROW(ffi_index_multi_column_docs(nullptr, 0, {nullptr}, {nullptr}));
+    ASSERT_ANY_THROW(ffi_index_multi_column_docs(indexDirectory, 1, {nullptr}, {nullptr}));
+    ASSERT_ANY_THROW(ffi_index_writer_commit(nullptr));
 }

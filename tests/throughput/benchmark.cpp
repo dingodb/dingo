@@ -65,18 +65,18 @@ size_t index_docs_from_json(const std::string &json_file_path, const std::string
     LOG(INFO) << "Cooling 10s, and then create/build index.";
     sleep(10);
 
-    tantivy_create_index(index_path, false);
+    ffi_create_index(index_path, {"text"});
 
     // index all docs
     size_t row_id = 0;
     for (const auto &doc : docs)
     {
-        tantivy_index_doc(index_path, row_id, doc.body.c_str());
+        ffi_index_multi_column_docs(index_path, row_id, {"text"}, {doc.body.c_str()});
         row_id += 1;
     }
-    tantivy_writer_commit(index_path);
+    ffi_index_writer_commit(index_path);
     if(!use_delete){
-        tantivy_writer_free(index_path);
+        ffi_free_index_writer(index_path);
     }
     return row_id;
 }
@@ -165,19 +165,19 @@ void run_benchmark(size_t idx,                               // iter id
                     if(only_random_delete){
                         // just delete random row ids.
                         std::vector<u_int32_t> delete_row_ids = randomExtractK<size_t, u_int32_t>(row_id_range, bm25_search_topk);
-                        tantivy_delete_row_ids(index_path, delete_row_ids);
+                        ffi_delete_row_ids(index_path, delete_row_ids);
                     }else{
                         // Step1. first bm25 search.
-                        rust::cxxbridge1::Vec<RowIdWithScore> result = tantivy_bm25_search(index_path, term, bm25_search_topk, false);
+                        rust::cxxbridge1::Vec<RowIdWithScore> result = ffi_bm25_search(index_path, term, bm25_search_topk, {}, false);
                         std::vector<uint32_t> row_ids;
                         for (size_t i = 0; i < result.size(); i++)
                             row_ids.push_back(static_cast<uint32_t>(result[i].row_id));
                         if(use_topk_delete){
                             // Step2. delete row_ids in first step.
-                            tantivy_delete_row_ids(index_path, row_ids);
+                            ffi_delete_row_ids(index_path, row_ids);
                             if(verify_delete_correct){
                                 // Step3. research for verify result.
-                                rust::cxxbridge1::Vec<RowIdWithScore> result_after_delete = tantivy_bm25_search(index_path, term, bm25_search_topk, false);
+                                rust::cxxbridge1::Vec<RowIdWithScore> result_after_delete = ffi_bm25_search(index_path, term, bm25_search_topk, {}, false);
                                 std::vector<uint32_t> row_ids_after_delete;
                                 for (size_t i = 0; i < result_after_delete.size(); i++)
                                     row_ids_after_delete.push_back(static_cast<uint32_t>(result_after_delete[i].row_id));
@@ -192,7 +192,7 @@ void run_benchmark(size_t idx,                               // iter id
                 } else {
                     // for skip-index test.
                     for (size_t j = 0; j < row_id_range.size(); j++) {
-                        tantivy_search_in_rowid_range(index_path, term, row_id_range[j], row_id_range[j] + row_id_step, false);
+                        ffi_query_term_with_range(index_path, "text", term, row_id_range[j], row_id_range[j] + row_id_step);
                     }
                 }
                 query_count++;
@@ -349,7 +349,7 @@ int main(int argc, char* argv[])
         sleep(each_free_wait);
         setBenchmarking(true);
         reporter_start = std::chrono::high_resolution_clock::now();
-        tantivy_load_index(index_path);
+        ffi_load_index_reader(index_path);
         if (!skip_benchmark){
             run_benchmark(
                 i, 
@@ -376,7 +376,7 @@ int main(int argc, char* argv[])
             sleep(2);
         }
         LOG(INFO) << "[iter-"<<i<<"] Trying free index reader; benchmark pool["<<pool.getTaskQueueSize()<<"] # ["<<finished_tasks<<"/"<<enqueue_tasks_count<<"]";
-        tantivy_reader_free(index_path);
+        ffi_free_index_reader(index_path);
         clear_millis_latency();
         setBenchmarking(false);
     }

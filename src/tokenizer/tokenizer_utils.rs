@@ -287,7 +287,7 @@ impl ToeknizerUtils {
                     mode,
                     hnm,
                     store_doc,
-                    length_limit,
+                    // length_limit,
                 } => {
                     let jieba_mode: Jieba = match jieba.as_str() {
                         "default" => Jieba::default(),
@@ -303,12 +303,12 @@ impl ToeknizerUtils {
                         _ => TokenizerOption::Unicode, // default option
                     };
 
-                    let mut builder = TextAnalyzer::builder(CangJieTokenizer {
+                    let builder = TextAnalyzer::builder(CangJieTokenizer {
                         worker: Arc::new(jieba_mode),
                         option: tokenizer_option,
                     })
                     .dynamic();
-                    builder = builder.filter_dynamic(RemoveLongFilter::limit(*length_limit));
+                    // builder = builder.filter_dynamic(RemoveLongFilter::limit(*length_limit));
 
                     let tokenizer_config = TokenizerConfig::new(
                         TokenizerType::Chinese("chinese".to_string()),

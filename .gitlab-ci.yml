@@ -3,63 +3,63 @@ stages:
   - Test
   - Profiling
 
-# RelWithDebInfo:
-#   stage: BuildPackage
-#   image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.8
-#   cache:
-#     key: ${CI_JOB_NAME}-cargo
-#     paths:
-#       - cargo_cache/registry/
-#     policy: pull-push
-#   before_script:
-#     - mkdir -p cargo_cache/registry/
-#     - du -h -d 0 cargo_cache/registry/
-#     - rsync -a --ignore-existing cargo_cache/registry/ /root/.cargo/registry/
-#     - mkdir -p build_packages
-#     - mkdir -p packages
-#   script:
-#     - git submodule update --init --recursive
-#     - >
-#       cmake --no-warn-unused-cli
-#       -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
-#       -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE
-#       -DCMAKE_C_COMPILER:FILEPATH=$(command -v clang-15)
-#       -DCMAKE_CXX_COMPILER:FILEPATH=$(command -v clang++-15)
-#       -S. -B./build_packages -G Ninja
-#     - cmake --build ./build_packages --config RelWithDebInfo --target all
-#     - cp ./build_packages/benchmark/tantivy_search_benchmark ./packages
-#     - cp ./build_packages/libtantivy_search.a ./packages
-#     - cp ./build_packages/tests/throughput/throughput_test ./packages
-#     - cp ./build_packages/tests/unit_test/unit_tests ./packages
-#     - tar -czf packages.tar.gz ./packages
-#     - md5sum ./packages/*
-#     - md5sum packages.tar.gz
-#     - ls -lh packages.tar.gz ./packages/*
-#   after_script:
-#     - rsync -a --ignore-existing /root/.cargo/registry/ cargo_cache/registry/ 
-#     - du -h -d 0 cargo_cache/registry/
-#   artifacts:
-#     name: "packages"
-#     expire_in: 2 week
-#     paths:
-#       - packages.tar.gz
+RelWithDebInfo:
+  stage: BuildPackage
+  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.8
+  cache:
+    key: ${CI_JOB_NAME}-cargo
+    paths:
+      - cargo_cache/registry/
+    policy: pull-push
+  before_script:
+    - mkdir -p cargo_cache/registry/
+    - du -h -d 0 cargo_cache/registry/
+    - rsync -a --ignore-existing cargo_cache/registry/ /root/.cargo/registry/
+    - mkdir -p build_packages
+    - mkdir -p packages
+  script:
+    - git submodule update --init --recursive
+    - >
+      cmake --no-warn-unused-cli
+      -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
+      -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE
+      -DCMAKE_C_COMPILER:FILEPATH=$(command -v clang-15)
+      -DCMAKE_CXX_COMPILER:FILEPATH=$(command -v clang++-15)
+      -S. -B./build_packages -G Ninja
+    - cmake --build ./build_packages --config RelWithDebInfo --target all
+    - cp ./build_packages/benchmark/tantivy_search_benchmark ./packages
+    - cp ./build_packages/libtantivy_search.a ./packages
+    - cp ./build_packages/tests/throughput/throughput_test ./packages
+    - cp ./build_packages/tests/unit_test/unit_tests ./packages
+    - tar -czf packages.tar.gz ./packages
+    - md5sum ./packages/*
+    - md5sum packages.tar.gz
+    - ls -lh packages.tar.gz ./packages/*
+  after_script:
+    - rsync -a --ignore-existing /root/.cargo/registry/ cargo_cache/registry/ 
+    - du -h -d 0 cargo_cache/registry/
+  artifacts:
+    name: "packages"
+    expire_in: 2 week
+    paths:
+      - packages.tar.gz
 
 
-# UnitTest:
-#   stage: Test
-#   needs:
-#     - job: RelWithDebInfo
-#       artifacts: true
-#   image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.8
-#   script:
-#     - tar -zxf packages.tar.gz
-#     - ./packages/unit_tests --gtest_output=xml:unit_test.xml
-#   artifacts:
-#     when: always
-#     paths:
-#       - unit_test.xml
-#     reports:
-#       junit: unit_test.xml
+UnitTest:
+  stage: Test
+  needs:
+    - job: RelWithDebInfo
+      artifacts: true
+  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.8
+  script:
+    - tar -zxf packages.tar.gz
+    - ./packages/unit_tests --gtest_output=xml:unit_test.xml
+  artifacts:
+    when: always
+    paths:
+      - unit_test.xml
+    reports:
+      junit: unit_test.xml
   
 CodeCoverage:
   stage: Test
@@ -100,29 +100,29 @@ CodeCoverage:
       cobertura: cobertura.xml
 
 
-# GoogleBenchmark:
-#   stage: Profiling
-#   needs:
-#     - job: UnitTest
-#       artifacts: false
-#     - job: RelWithDebInfo
-#       artifacts: true
-#   image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.8
-#   script:
-#     - if [ ! -f scripts/query_terms.json ] || [ ! -f scripts/wiki_560w.json ]; then bash scripts/download_datasets.sh; fi
-#     - tar -zxvf packages.tar.gz
-#     - ./packages/tantivy_search_benchmark --qtp=scripts/query_terms.json --dp=scripts/wiki_560w.json --ip=./temp --sbi=false | tee GoogleBenchmark.txt
-#     - md5sum GoogleBenchmark.txt
-#   cache:
-#     key: ${CI_JOB_NAME}-datasets
-#     paths:
-#       - scripts/query_terms.json
-#       - scripts/wiki_560w.json
-#     policy: pull-push
-#   artifacts:
-#     name: "GoogleBenchmark"
-#     expire_in: 2 week
-#     paths:
-#       - GoogleBenchmark.txt
+GoogleBenchmark:
+  stage: Profiling
+  needs:
+    - job: UnitTest
+      artifacts: false
+    - job: RelWithDebInfo
+      artifacts: true
+  image: harbor.internal.moqi.ai/mochix/ubuntu22.04_base:0.0.8
+  script:
+    - if [ ! -f scripts/query_terms.json ] || [ ! -f scripts/wiki_560w.json ]; then bash scripts/download_datasets.sh; fi
+    - tar -zxvf packages.tar.gz
+    - ./packages/tantivy_search_benchmark --qtp=scripts/query_terms.json --dp=scripts/wiki_560w.json --ip=./temp --sbi=false | tee GoogleBenchmark.txt
+    - md5sum GoogleBenchmark.txt
+  cache:
+    key: ${CI_JOB_NAME}-datasets
+    paths:
+      - scripts/query_terms.json
+      - scripts/wiki_560w.json
+    policy: pull-push
+  artifacts:
+    name: "GoogleBenchmark"
+    expire_in: 2 week
+    paths:
+      - GoogleBenchmark.txt
 
   

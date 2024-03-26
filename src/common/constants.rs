@@ -1,7 +1,7 @@
-use crate::common::flurry_cache::FlurryCache;
 use crate::index::bridge::index_writer_bridge_cache::IndexWriterBridgeCache;
 use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::search::bridge::index_reader_bridge_cache::IndexReaderBridgeCache;
+use crate::common::cache::flurry_cache::FlurryCache;
 use cxx::vector::VectorElement;
 use cxx::CxxString;
 use cxx::CxxVector;
@@ -76,48 +76,6 @@ where
 #[allow(dead_code)]
 pub static TEST_MUTEX: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
-// pub fn convert_cxx_string(
-//     function: &str,
-//     parameter: &str,
-//     cxx_string: &CxxString,
-// ) -> Result<String, Utf8Error> {
-//     let result: Result<String, Utf8Error> = cxx_string.to_str().map(|t| t.to_string());
-//     // exception handle
-//     if result.is_err() {
-//         let exp = format!(
-//             "Can't convert `{}`: &CxxString to rust String, exception: {}",
-//             parameter,
-//             result.err().unwrap()
-//         );
-//         ERROR!(function: function, "{}", exp);
-//     }
-//     result
-// }
-
-// pub fn convert_cxx_string_vector_to_string_collection<C>(
-//     function: &str,
-//     parameter: &str,
-//     value: &CxxVector<CxxString>,
-// ) -> Result<C, Utf8Error>
-// where
-//     C: FromIterator<String>,
-// {
-//     let result: Result<_, Utf8Error> = value
-//         .iter()
-//         .map(|s| s.to_str().map(|t| t.to_string()))
-//         .collect();
-//     // exception handle
-//     if result.is_err() {
-//         let exp = format!(
-//             "Can't convert `{}`: &CxxVector<CxxString> to rust collector, exception: {}",
-//             parameter,
-//             result.err().unwrap()
-//         );
-//         ERROR!(function: function, "{}", exp);
-//     }
-//     result
-// }
-
 #[allow(dead_code)]
 pub fn update_logger_for_test(level: LevelFilter) {
     let stdout_appender = ConsoleAppender::builder()
@@ -132,20 +90,4 @@ pub fn update_logger_for_test(level: LevelFilter) {
     // assert!(LOG4RS_HANDLE.get().is_none());
     let result = TantivySearchLogger::update_log4rs_handler(&LOG4RS_HANDLE, log_config_info);
     assert!(result.is_ok());
-}
-
-#[cfg(test)]
-mod tests {
-    // use super::*;
-    // use cxx::{let_cxx_string, CxxString};
-
-    // #[test]
-    // fn test_convert_cxx_string_success() {
-    //     let function_name = "test_function";
-    //     let parameter_name = "test_param";
-    //     let_cxx_string!(content = "Hello, world!");
-    //     let content_cxx: &CxxString = content.as_ref().get_ref();
-    //     let result = convert_cxx_string(function_name, parameter_name, &content_cxx);
-    //     assert_eq!(result, Ok(content.to_string()));
-    // }
 }

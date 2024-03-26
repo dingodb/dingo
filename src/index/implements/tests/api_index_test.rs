@@ -1,138 +1,17 @@
 #[cfg(test)]
 mod tests {
     use std::cmp::min;
-    use std::sync::Arc;
     use tantivy::collector::Count;
     use tantivy::query::QueryParser;
-    use tantivy::Document;
     use tempfile::TempDir;
 
-    use crate::index::bridge::index_writer_bridge::IndexWriterBridge;
+    use crate::common::tests::{get_mocked_docs, index_3column_docs_with_index_writer_bridge, search_with_index_writer_bridge};
     use crate::index::implements::api_index_impl::{
         commit_index, create_index, create_index_with_parameter, delete_row_ids, free_index_writer,
         index_multi_column_docs,
     };
     use crate::{FFI_INDEX_WRITER_CACHE, TEST_MUTEX};
 
-    fn get_mocked_docs() -> (Vec<String>, Vec<String>, Vec<String>) {
-        let col1_docs: Vec<String> = vec![
-            "Ancient empires rise and fall, shaping history's course.".to_string(),
-            "Artistic expressions reflect diverse cultural heritages.".to_string(),
-            "Social movements transform societies, forging new paths.".to_string(),
-            "Strategic military campaigns alter the balance of power.".to_string(),
-            "Ancient philosophies provide wisdom for modern dilemmas.".to_string(),
-        ];
-        let col2_docs: Vec<String> = vec![
-            "Brave explorers venture into uncharted territories, expanding horizons.".to_string(),
-            "Brilliant minds unravel nature's mysteries through scientific inquiry.".to_string(),
-            "Economic systems evolve, influencing global trade and prosperity.".to_string(),
-            "Environmental challenges demand innovative solutions for sustainability.".to_string(),
-            "Ethical dilemmas test the boundaries of moral reasoning and judgment.".to_string(),
-        ];
-
-        let col3_docs: Vec<String> = vec![
-            "Groundbreaking inventions revolutionize industries and daily life.".to_string(),
-            "Iconic leaders inspire generations with their vision and charisma.".to_string(),
-            "Literary masterpieces capture the essence of the human experience.".to_string(),
-            "Majestic natural wonders showcase the breathtaking beauty of Earth.".to_string(),
-            "Philosophical debates shape our understanding of reality and existence.".to_string(),
-        ];
-        return (col1_docs, col2_docs, col3_docs);
-    }
-
-    fn do_some_mocked_search(index_writer_bridge: Arc<IndexWriterBridge>) {
-        // Get fields from `schema`.
-        let col1_field = index_writer_bridge
-            .index
-            .schema()
-            .get_field("col1")
-            .expect("Can't get col1 filed");
-        let col2_field = index_writer_bridge
-            .index
-            .schema()
-            .get_field("col2")
-            .expect("Can't get col2 filed");
-        let col3_field = index_writer_bridge
-            .index
-            .schema()
-            .get_field("col3")
-            .expect("Can't get col3 filed");
-        let parser_col1 = QueryParser::for_index(&index_writer_bridge.index, vec![col1_field]);
-        let parser_col2 = QueryParser::for_index(&index_writer_bridge.index, vec![col2_field]);
-        let parser_col3 = QueryParser::for_index(&index_writer_bridge.index, vec![col3_field]);
-        let parser_all = QueryParser::for_index(
-            &index_writer_bridge.index,
-            vec![col1_field, col2_field, col3_field],
-        );
-
-        let text_query_in_col1 = parser_col1.parse_query("of").unwrap();
-        let text_query_in_col2 = parser_col2.parse_query("of").unwrap();
-        let text_query_in_col3 = parser_col3.parse_query("of").unwrap();
-        let text_query_in_all = parser_all.parse_query("of").unwrap();
-
-        // Test whether index can be use.
-        let searcher = index_writer_bridge.index.reader().unwrap().searcher();
-        let count_1 = searcher.search(&text_query_in_col1, &Count).unwrap();
-        let count_2 = searcher.search(&text_query_in_col2, &Count).unwrap();
-        let count_3 = searcher.search(&text_query_in_col3, &Count).unwrap();
-        let count_a = searcher.search(&text_query_in_all, &Count).unwrap();
-
-        assert_eq!(count_1, 1);
-        assert_eq!(count_2, 1);
-        assert_eq!(count_3, 3);
-        assert_eq!(count_a, 3);
-    }
-
-    fn index_three_column_docs(
-        index_directory: String,
-        waiting_merging_threads_finished: bool,
-    ) -> Arc<IndexWriterBridge> {
-        // Get index writer from CACHE
-        let index_writer_bridge = FFI_INDEX_WRITER_CACHE
-            .get_index_writer_bridge(index_directory)
-            .unwrap();
-
-        // Get fields from `schema`.
-        let row_id_field = index_writer_bridge
-            .index
-            .schema()
-            .get_field("row_id")
-            .expect("Can't get row_id filed");
-        let col1_field = index_writer_bridge
-            .index
-            .schema()
-            .get_field("col1")
-            .expect("Can't get col1 filed");
-        let col2_field = index_writer_bridge
-            .index
-            .schema()
-            .get_field("col2")
-            .expect("Can't get col2 filed");
-        let col3_field = index_writer_bridge
-            .index
-            .schema()
-            .get_field("col3")
-            .expect("Can't get col3 filed");
-
-        // Index some documents.
-        let (col1_docs, col2_docs, col3_docs) = get_mocked_docs();
-
-        for row_id in 0..5 {
-            let mut doc = Document::default();
-            doc.add_u64(row_id_field, row_id as u64);
-            doc.add_text(col1_field, &col1_docs[row_id]);
-            doc.add_text(col2_field, &col2_docs[row_id]);
-            doc.add_text(col3_field, &col3_docs[row_id]);
-            let result = index_writer_bridge.add_document(doc);
-            assert!(result.is_ok());
-        }
-        assert!(index_writer_bridge.commit().is_ok());
-        if waiting_merging_threads_finished {
-            assert!(index_writer_bridge.wait_merging_threads().is_ok());
-        }
-
-        index_writer_bridge
-    }
 
     #[test]
     pub fn test_create_index_with_valid_tokenizer() {
@@ -148,9 +27,9 @@ mod tests {
         );
         assert!(result.is_ok());
 
-        let index_writer_bridge = index_three_column_docs(temp_directory_str.to_string(), true);
+        let index_writer_bridge = index_3column_docs_with_index_writer_bridge(temp_directory_str, true);
 
-        do_some_mocked_search(index_writer_bridge)
+        search_with_index_writer_bridge(index_writer_bridge)
     }
 
     #[test]
@@ -244,7 +123,7 @@ mod tests {
             .get_index_writer_bridge(temp_directory_str.to_string())
             .unwrap();
 
-        do_some_mocked_search(index_writer_bridge)
+        search_with_index_writer_bridge(index_writer_bridge)
     }
 
     #[test]
@@ -296,7 +175,7 @@ mod tests {
         assert!(create_index(temp_directory_str, &column_names).is_ok());
 
         // Index and commit some documents
-        let index_writer_bridge = index_three_column_docs(temp_directory_str.to_string(), false);
+        let index_writer_bridge = index_3column_docs_with_index_writer_bridge(temp_directory_str, false);
 
         // Init some necessary variables for search.
         let col1_field = index_writer_bridge

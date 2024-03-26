@@ -89,8 +89,6 @@ pub enum ColumnTokenizer {
         hnm: bool,
         #[serde(default)]
         store_doc: bool,
-        #[serde(default = "default_length_limit")]
-        length_limit: usize,
     },
 }
 

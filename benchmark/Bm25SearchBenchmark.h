@@ -26,11 +26,11 @@ class BM25 : public benchmark::Fixture {
 public:
     void SetUp(const ::benchmark::State& state) override {
         InitializeResources();
-        tantivy_load_index(this->indexDirectory);
+        ffi_load_index_reader(this->indexDirectory);
     }
 
     void TearDown(const ::benchmark::State& state) override {
-        tantivy_reader_free(this->indexDirectory);
+        ffi_free_index_reader(this->indexDirectory);
     }
 
     void PerformSearch(benchmark::State& state, size_t topK) {
@@ -55,7 +55,7 @@ private:
         for (auto _ : state) {
             for (size_t i = 0; i < 1000; i++)
             {
-                tantivy_bm25_search(this->indexDirectory, this->queryTerms[ (i+queries)%queryTerms.size() ], topK, false);
+                ffi_bm25_search(this->indexDirectory, this->queryTerms[ (i+queries)%queryTerms.size() ], topK, {}, false);
             }
             queries += 1000;
         }

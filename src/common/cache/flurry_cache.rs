@@ -104,7 +104,8 @@ mod tests {
     use roaring::RoaringBitmap;
     use std::sync::Arc;
 
-    use crate::common::flurry_cache::FlurryCache;
+    use crate::common::cache::flurry_cache::FlurryCache;
+
 
     #[derive(Debug, PartialEq)]
     struct TestData {

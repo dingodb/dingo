@@ -1,87 +1,85 @@
 #[cfg(test)]
 mod tests {
-    use tantivy::merge_policy::LogMergePolicy;
-    use tantivy::schema::{Schema, FAST, INDEXED, TEXT};
-    use tantivy::{Document, Index};
     use tempfile::TempDir;
 
+    use crate::common::tests::index_3column_docs_with_threads_merge;
     use crate::search::implements::api_clickhouse_impl::{
-        query_sentence_bitmap, query_term_bitmap, query_terms_bitmap, regex_term_bitmap,
+        query_sentence_bitmap, query_sentence_with_range, query_term_bitmap, query_term_with_range, query_terms_bitmap, query_terms_with_range, regex_term_bitmap, regex_term_with_range
     };
     use crate::search::implements::api_common_impl::load_index_reader;
-    use crate::TEST_MUTEX;
 
-    fn get_mocked_docs() -> (Vec<String>, Vec<String>, Vec<String>) {
-        let col1_docs: Vec<String> = vec![
-            "Ancient empires rise and fall, shaping history's course.".to_string(),
-            "Artistic expressions reflect diverse cultural heritages.".to_string(),
-            "Social movements transform societies, forging new paths.".to_string(),
-            "Strategic military campaigns alter the balance of power.".to_string(),
-            "Ancient philosophies provide wisdom for modern dilemmas.".to_string(),
-        ];
-        let col2_docs: Vec<String> = vec![
-            "Brave explorers venture into uncharted territories, expanding horizons.".to_string(),
-            "Brilliant minds unravel nature's mysteries through scientific inquiry.".to_string(),
-            "Economic systems evolve, influencing global trade and prosperity.".to_string(),
-            "Environmental challenges demand innovative solutions for sustainability.".to_string(),
-            "Ethical dilemmas test the boundaries of moral reasoning and judgment.".to_string(),
-        ];
+    #[test]
+    pub fn test_query_term_with_range() {
+        let temp_directory = TempDir::new().unwrap();
+        let temp_directory_str = temp_directory.path().to_str().unwrap();
 
-        let col3_docs: Vec<String> = vec![
-            "Groundbreaking inventions revolutionize industries and daily life.".to_string(),
-            "Iconic leaders inspire generations with their vision and charisma.".to_string(),
-            "Literary masterpieces capture the essence of the human experience.".to_string(),
-            "Majestic natural wonders showcase the breathtaking beauty of Earth.".to_string(),
-            "Philosophical debates shape our understanding of reality and existence.".to_string(),
-        ];
-        return (col1_docs, col2_docs, col3_docs);
+        index_3column_docs_with_threads_merge(temp_directory_str);
+        assert!(load_index_reader(temp_directory_str).is_ok());
+
+        let res = query_term_with_range(temp_directory_str, "col1", "Ancient", 0, 1);
+
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), true);
     }
 
-    fn index_three_column_docs(index_directory: &str) {
-        // Construct the schema for the index.
-        let mut schema_builder = Schema::builder();
-        schema_builder.add_u64_field("row_id", FAST | INDEXED);
-        schema_builder.add_text_field("col1", TEXT);
-        schema_builder.add_text_field("col2", TEXT);
-        schema_builder.add_text_field("col3", TEXT);
-        let schema = schema_builder.build();
+    #[test]
+    pub fn test_query_terms_with_range() {
+        let temp_directory = TempDir::new().unwrap();
+        let temp_directory_str = temp_directory.path().to_str().unwrap();
 
-        // Create the index in the specified directory.
-        let index = Index::create_in_dir(index_directory, schema.clone()).unwrap();
-        // Create the writer with a specified buffer size (e.g., 64 MB).
-        let mut writer = index.writer_with_num_threads(2, 1024 * 1024 * 64).unwrap(); // Configure default merge policy.
-        writer.set_merge_policy(Box::new(LogMergePolicy::default()));
+        index_3column_docs_with_threads_merge(temp_directory_str);
+        assert!(load_index_reader(temp_directory_str).is_ok());
 
-        // Get fields from `schema`.
-        let row_id_field = index.schema().get_field("row_id").unwrap();
-        let col1_field = index.schema().get_field("col1").unwrap();
-        let col2_field = index.schema().get_field("col2").unwrap();
-        let col3_field = index.schema().get_field("col3").unwrap();
+        let res = query_terms_with_range(
+            temp_directory_str,
+            "col1",
+            &vec!["Ancient".to_string(), "Social".to_string()],
+            1, 1
+        );
 
-        // Index some documents.
-        let (col1_docs, col2_docs, col3_docs) = get_mocked_docs();
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), false)
+    }
 
-        for row_id in 0..5 {
-            let mut doc = Document::default();
-            doc.add_u64(row_id_field, row_id as u64);
-            doc.add_text(col1_field, &col1_docs[row_id]);
-            doc.add_text(col2_field, &col2_docs[row_id]);
-            doc.add_text(col3_field, &col3_docs[row_id]);
-            let result = writer.add_document(doc);
-            assert!(result.is_ok());
-        }
-        assert!(writer.commit().is_ok());
-        assert!(writer.wait_merging_threads().is_ok())
+    #[test]
+    pub fn test_query_sentence_with_range() {
+        let temp_directory = TempDir::new().unwrap();
+        let temp_directory_str = temp_directory.path().to_str().unwrap();
+
+        index_3column_docs_with_threads_merge(temp_directory_str);
+        assert!(load_index_reader(temp_directory_str).is_ok());
+
+        let res = query_sentence_with_range(
+            temp_directory_str,
+            "col1",
+            "Artistic expressions reflect diverse cultural heritages.",
+            1, 1
+        );
+
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), true);
+    }
+
+    #[test]
+    pub fn test_regex_term_with_range() {
+        let temp_directory = TempDir::new().unwrap();
+        let temp_directory_str = temp_directory.path().to_str().unwrap();
+
+        index_3column_docs_with_threads_merge(temp_directory_str);
+        assert!(load_index_reader(temp_directory_str).is_ok());
+
+        let res = regex_term_with_range(temp_directory_str, "col1", "%pressio%", 1, 1);
+
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), true);
     }
 
     #[test]
     pub fn test_query_term_bitmap() {
-        let _guard = TEST_MUTEX.lock().unwrap();
-
         let temp_directory = TempDir::new().unwrap();
         let temp_directory_str = temp_directory.path().to_str().unwrap();
 
-        index_three_column_docs(temp_directory_str);
+        index_3column_docs_with_threads_merge(temp_directory_str);
         assert!(load_index_reader(temp_directory_str).is_ok());
 
         let res = query_term_bitmap(temp_directory_str, "col1", "Ancient");
@@ -93,12 +91,10 @@ mod tests {
 
     #[test]
     pub fn test_query_terms_bitmap() {
-        let _guard = TEST_MUTEX.lock().unwrap();
-
         let temp_directory = TempDir::new().unwrap();
         let temp_directory_str = temp_directory.path().to_str().unwrap();
 
-        index_three_column_docs(temp_directory_str);
+        index_3column_docs_with_threads_merge(temp_directory_str);
         assert!(load_index_reader(temp_directory_str).is_ok());
 
         let res = query_terms_bitmap(
@@ -115,12 +111,10 @@ mod tests {
 
     #[test]
     pub fn test_query_sentence_bitmap() {
-        let _guard = TEST_MUTEX.lock().unwrap();
-
         let temp_directory = TempDir::new().unwrap();
         let temp_directory_str = temp_directory.path().to_str().unwrap();
 
-        index_three_column_docs(temp_directory_str);
+        index_3column_docs_with_threads_merge(temp_directory_str);
         assert!(load_index_reader(temp_directory_str).is_ok());
 
         let res = query_sentence_bitmap(
@@ -137,19 +131,17 @@ mod tests {
 
     #[test]
     pub fn test_regex_term_bitmap() {
-        let _guard = TEST_MUTEX.lock().unwrap();
-
         let temp_directory = TempDir::new().unwrap();
         let temp_directory_str = temp_directory.path().to_str().unwrap();
 
-        index_three_column_docs(temp_directory_str);
+        index_3column_docs_with_threads_merge(temp_directory_str);
         assert!(load_index_reader(temp_directory_str).is_ok());
 
         let res = regex_term_bitmap(temp_directory_str, "col1", "%pressio%");
 
-        // println!("{:?}", res);
         assert!(res.is_ok());
         assert_eq!(res.clone().unwrap().len(), 1);
         assert_eq!(res.unwrap()[0], 2);
     }
+
 }

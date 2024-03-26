@@ -3,73 +3,112 @@ mod tests {
     use std::sync::Arc;
 
     use roaring::RoaringBitmap;
-    use tantivy::{
-        merge_policy::LogMergePolicy,
-        schema::{Schema, FAST, INDEXED, STORED, TEXT},
-        Document, Index, IndexReader, IndexWriter, ReloadPolicy,
-    };
+    
     use tempfile::TempDir;
 
-    use crate::search::implements::strategy::query_strategy::{
-        QueryExecutor, TermSetQueryStrategy,
-    };
-
-    fn index_some_docs_in_temp_directory(index_directory_str: &str) -> (IndexReader, IndexWriter) {
-        // Construct the schema for the index.
-        let mut schema_builder = Schema::builder();
-        schema_builder.add_u64_field("row_id", FAST | INDEXED);
-        schema_builder.add_text_field("text", TEXT | STORED);
-        let schema = schema_builder.build();
-        // Create the index in the specified directory.
-        let index = Index::create_in_dir(index_directory_str.to_string(), schema.clone())
-            .expect("Can't create index");
-        // Create the writer with a specified buffer size (e.g., 64 MB).
-        let mut writer = index
-            .writer_with_num_threads(2, 1024 * 1024 * 64)
-            .expect("Can't create index writer");
-        // Configure default merge policy.
-        writer.set_merge_policy(Box::new(LogMergePolicy::default()));
-        // Index some docs.
-        let docs: Vec<String> = vec![
-            "Ancient empires rise and fall, shaping history's course.".to_string(),
-            "Artistic expressions reflect diverse cultural heritages.".to_string(),
-            "Social movements transform societies, forging new paths.".to_string(),
-            "Strategic military campaigns alter the balance of power.".to_string(),
-            "Ancient philosophies provide wisdom for modern dilemmas.".to_string(),
-        ];
-        for row_id in 0..docs.len() {
-            let mut doc = Document::default();
-            doc.add_u64(schema.get_field("row_id").unwrap(), row_id as u64);
-            doc.add_text(schema.get_field("text").unwrap(), &docs[row_id]);
-            assert!(writer.add_document(doc).is_ok());
-        }
-        assert!(writer.commit().is_ok());
-
-        let reader = index
-            .reader_builder()
-            .reload_policy(ReloadPolicy::Manual)
-            .try_into()
-            .expect("Can't set reload policy");
-        (reader, writer)
-    }
+    use crate::{common::tests::index_3column_docs_with_threads_merge, ffi::RowIdWithScore, search::implements::strategy::query_strategy::{
+        BM25QueryStrategy, ParserQueryStrategy, QueryExecutor, RegexQueryStrategy, SingleTermQueryStrategy, TermSetQueryStrategy
+    }};
 
     #[test]
     fn test_term_set_query_strategy() {
-        let temp_directory = TempDir::new().expect("Can't create temp directory");
-        let temp_directory_str = temp_directory
-            .path()
-            .to_str()
-            .expect("Can't get temp directory str");
-        let (index_reader, _) = index_some_docs_in_temp_directory(temp_directory_str);
+        let temp_directory: TempDir = TempDir::new().unwrap();
+        let temp_directory_str: &str = temp_directory.path().to_str().unwrap();
+        let (index_reader, _) = index_3column_docs_with_threads_merge(temp_directory_str);
+
         // Choose query strategy to construct query executor.
         let terms_query: TermSetQueryStrategy<'_> = TermSetQueryStrategy {
             terms: &["ancient".to_string(), "balance".to_string()].to_vec(),
-            column_name: "text",
+            column_name: "col1",
         };
         let query_executor: QueryExecutor<'_, Arc<RoaringBitmap>> =
             QueryExecutor::new(&terms_query);
+
+            // Compute query results.
+        let result: Arc<RoaringBitmap> = query_executor.execute(&index_reader.searcher()).unwrap();
+        assert_eq!(result.len(), 3);
+    }
+
+
+    #[test]
+    fn test_single_term_query_strategy() {
+        let temp_directory: TempDir = TempDir::new().unwrap();
+        let temp_directory_str: &str = temp_directory.path().to_str().unwrap();
+        let (index_reader, _) = index_3column_docs_with_threads_merge(temp_directory_str);
+
+        // Choose query strategy to construct query executor.
+        let term_query: SingleTermQueryStrategy<'_> = SingleTermQueryStrategy {
+            term: "judgment",
+            column_name: "col2",
+        };
+        let query_executor: QueryExecutor<'_, Arc<RoaringBitmap>> =
+            QueryExecutor::new(&term_query);
+
+        // Compute query results.
+        let result: Arc<RoaringBitmap> = query_executor.execute(&index_reader.searcher()).unwrap();
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn test_regex_query_strategy() {
+        let temp_directory: TempDir = TempDir::new().unwrap();
+        let temp_directory_str: &str = temp_directory.path().to_str().unwrap();
+        let (index_reader, _) = index_3column_docs_with_threads_merge(temp_directory_str);
+
+        // Choose query strategy to construct query executor.
+        let regex_query: RegexQueryStrategy<'_> = RegexQueryStrategy {
+            column_name: "col2",
+            pattern: "%dgmen%",
+        };
+        let query_executor: QueryExecutor<'_, Arc<RoaringBitmap>> =
+            QueryExecutor::new(&regex_query);
+
+        // Compute query results.
+        let result: Arc<RoaringBitmap> = query_executor.execute(&index_reader.searcher()).unwrap();
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn test_parser_query_strategy() {
+        let temp_directory: TempDir = TempDir::new().unwrap();
+        let temp_directory_str: &str = temp_directory.path().to_str().unwrap();
+        let (index_reader, _) = index_3column_docs_with_threads_merge(temp_directory_str);
+
+        // Choose query strategy to construct query executor.
+        let regex_query: ParserQueryStrategy<'_> = ParserQueryStrategy {
+            column_name: "col3",
+            sentence: "Literary inventions capture philosophical masterpieces.",
+        };
+        let query_executor: QueryExecutor<'_, Arc<RoaringBitmap>> =
+            QueryExecutor::new(&regex_query);
+
         // Compute query results.
         let result: Arc<RoaringBitmap> = query_executor.execute(&index_reader.searcher()).unwrap();
         assert_eq!(result.len(), 3);
+    }
+
+    #[test]
+    fn test_bm25_query_strategy() {
+        let temp_directory: TempDir = TempDir::new().unwrap();
+        let temp_directory_str: &str = temp_directory.path().to_str().unwrap();
+        let (index_reader, _) = index_3column_docs_with_threads_merge(temp_directory_str);
+
+        // Choose query strategy to construct query executor.
+        let bm25_strategy: BM25QueryStrategy<'_> = BM25QueryStrategy {
+            sentence: "Literary inventions capture philosophical masterpieces.",
+            topk: &10,
+            query_with_filter: &false,
+            u8_aived_bitmap: &vec![]
+        };
+        let query_executor: QueryExecutor<'_, Vec<RowIdWithScore>> =
+            QueryExecutor::new(&bm25_strategy);
+
+        // Compute query results.
+        let result: Vec<RowIdWithScore> = query_executor.execute(&index_reader.searcher()).unwrap();
+
+        assert_eq!(result[0].row_id, 2);
+        assert!(result[0].score>=4.0);
+        assert_eq!(result[1].row_id, 0);
+        assert!(result[1].score<=1.6);
     }
 }

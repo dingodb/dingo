@@ -31,17 +31,17 @@ size_t index_docs_from_json(const std::string &raw_docs_file_path, const std::st
     }
     // load docs
     std::vector<Doc> docs = WikiDatasetLoader::getInstance().loadDocs(raw_docs_file_path);
-    tantivy_create_index(index_files_directory, false);
+    ffi_create_index(index_files_directory, {"text"});
 
     // index all docs
     size_t row_id = 0;
     for (const auto &doc : docs)
     {
-        tantivy_index_doc(index_files_directory, row_id, doc.body.c_str());
+        ffi_index_multi_column_docs(index_files_directory, row_id,  {"text"}, {doc.body.c_str()});
         row_id += 1;
     }
-    tantivy_writer_commit(index_files_directory);
-    tantivy_writer_free(index_files_directory);
+    ffi_index_writer_commit(index_files_directory);
+    ffi_free_index_writer(index_files_directory);
     return row_id;
 }
 
