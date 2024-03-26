@@ -2,6 +2,7 @@
 
 [![coverage](https://git.moqi.ai/mqdb/tantivy-search/badges/tantivy_0.21.1/coverage.svg?job=CodeCoverage)]()
 [![pipeline status](https://git.moqi.ai/mqdb/tantivy-search/badges/tantivy_0.21.1/pipeline.svg)](https://git.moqi.ai/mqdb/tantivy-search/-/pipelines?page=1&scope=all&ref=tantivy_0.21.1)
+[![codecov](https://codecov.io/gh/MochiXu/tantivy-search/graph/badge.svg?token=DRUQZXPYRP)](https://codecov.io/gh/MochiXu/tantivy-search)
 
 
 
