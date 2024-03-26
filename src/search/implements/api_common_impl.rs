@@ -122,15 +122,15 @@ pub fn load_index_reader(index_path: &str) -> Result<bool, TantivySearchError> {
 
 pub fn free_index_reader(index_path: &str) -> Result<bool, TantivySearchError> {
     // remove bitmap cache
-    #[cfg(feature = "use-flurry-cache")]
-    {
-        let all_keys = CACHE_FOR_SKIP_INDEX.all_keys();
-        let keys_need_remove: Vec<_> = all_keys
-            .into_iter()
-            .filter(|(_, _, ref element, _)| element == &index_path)
-            .collect();
-        CACHE_FOR_SKIP_INDEX.remove_keys(keys_need_remove);
-    }
+    // #[cfg(feature = "use-flurry-cache")]
+    // {
+    //     let all_keys = CACHE_FOR_SKIP_INDEX.all_keys();
+    //     let keys_need_remove: Vec<_> = all_keys
+    //         .into_iter()
+    //         .filter(|(_, _, ref element, _)| element == &index_path)
+    //         .collect();
+    //     CACHE_FOR_SKIP_INDEX.remove_keys(keys_need_remove);
+    // }
 
     // remove index reader from Reader Cache
     if let Err(_) = FFI_INDEX_SEARCHER_CACHE.remove_index_reader_bridge(index_path.to_string()) {
