@@ -14,6 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive  # 添加此行以递归检出子模块
+      - name: Update submodules  # 添加此步骤以更新子模块
+        run: |
+          git submodule sync --recursive
+          git submodule update --init --recursive
       - name: Install Rust
         run: rustup toolchain install nightly-2023-12-02 --profile minimal --component llvm-tools-preview
       - uses: Swatinem/rust-cache@v2
