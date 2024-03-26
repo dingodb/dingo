@@ -97,7 +97,7 @@ mod tests {
     use tantivy::{
         merge_policy::LogMergePolicy,
         schema::{Schema, FAST, INDEXED, STORED, TEXT},
-        Document, Index,
+        TantivyDocument, Index,
     };
     use tempfile::TempDir;
 
@@ -129,7 +129,7 @@ mod tests {
             "Ancient philosophies provide wisdom for modern dilemmas.".to_string(),
         ];
         for row_id in 0..docs.len() {
-            let mut doc = Document::default();
+            let mut doc = TantivyDocument::default();
             doc.add_u64(schema.get_field("row_id").unwrap(), row_id as u64);
             doc.add_text(schema.get_field("text").unwrap(), &docs[row_id]);
             let result = writer.add_document(doc);

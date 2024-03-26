@@ -56,22 +56,22 @@ private:
     }
 
     void Search1KImpl(benchmark::State& state, size_t granuleSize) {
-        auto rowIdRanges = WikiDatasetLoader::getInstance().getRowIdRanges(granuleSize);
+        // auto rowIdRanges = WikiDatasetLoader::getInstance().getRowIdRanges(granuleSize);
         // `queries` records the total number of iterations conducted with `table` as the unit of traversal.
         uint64_t queries = 0;
 
         for (auto _ : state) {
             for (size_t i = 0; i < 1000; i++)
             {
-                for (const auto& range : rowIdRanges) {
-                    ffi_query_term_with_range(
-                        this->indexDirectory,
-                        "text",
-                        this->queryTerms[ (i+queries)%queryTerms.size() ], 
-                        range, 
-                        range + granuleSize
+                // for (const auto& range : rowIdRanges) {
+                ffi_query_term_bitmap(
+                    this->indexDirectory,
+                    "text",
+                    this->queryTerms[ (i+queries)%queryTerms.size() ]
+                    // range, 
+                    // range + granuleSize
                     );
-                }
+                // }
             }
             queries += 1000;
         }

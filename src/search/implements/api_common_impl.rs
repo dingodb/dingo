@@ -96,7 +96,7 @@ pub fn load_index_reader(index_path: &str) -> Result<bool, TantivySearchError> {
     // OnCommit: reload when commit; Manual: developer need call IndexReader::reload() to reload.
     let reader: IndexReader = index
         .reader_builder()
-        .reload_policy(ReloadPolicy::OnCommit)
+        .reload_policy(ReloadPolicy::OnCommitWithDelay)
         .try_into()
         .map_err(|e| {
             ERROR!(function:"load_index_reader", "Failed to create tantivy index reader: {}", e);

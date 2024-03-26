@@ -10,8 +10,8 @@ use crate::{common::constants::LOG_CALLBACK, ERROR};
 use roaring::RoaringBitmap;
 use std::sync::Arc;
 
-use super::strategy::query_strategy::ParserQueryStrategy;
 use super::strategy::query_strategy::RegexQueryStrategy;
+use super::strategy::query_strategy::SentenceQueryStrategy;
 use super::strategy::query_strategy::TermSetQueryStrategy;
 
 /// Execute Term Query in specific rowid range.
@@ -105,7 +105,7 @@ pub fn query_sentence_with_range(
         })?;
 
     // Choose query strategy to construct query executor.
-    let sentence_query: ParserQueryStrategy<'_> = ParserQueryStrategy {
+    let sentence_query: SentenceQueryStrategy<'_> = SentenceQueryStrategy {
         column_name,
         sentence,
     };
@@ -249,7 +249,7 @@ pub fn query_sentence_bitmap(
         })?;
 
     // Choose query strategy to construct query executor.
-    let sentence_query: ParserQueryStrategy<'_> = ParserQueryStrategy {
+    let sentence_query: SentenceQueryStrategy<'_> = SentenceQueryStrategy {
         column_name,
         sentence,
     };

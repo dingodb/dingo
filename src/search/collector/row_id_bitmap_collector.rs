@@ -119,7 +119,7 @@ mod tests {
     use tantivy::merge_policy::LogMergePolicy;
     use tantivy::query::QueryParser;
     use tantivy::schema::{Schema, FAST, INDEXED, STORED, TEXT};
-    use tantivy::{Document, Index, IndexReader, ReloadPolicy};
+    use tantivy::{TantivyDocument, Index, IndexReader, ReloadPolicy};
     use tempfile::TempDir;
 
     fn get_reader_from_index_path(index_directory_str: &str) -> IndexReader {
@@ -146,7 +146,7 @@ mod tests {
             "Ancient philosophies provide wisdom for modern dilemmas.".to_string(),
         ];
         for row_id in 0..docs.len() {
-            let mut doc = Document::default();
+            let mut doc = TantivyDocument::default();
             doc.add_u64(schema.get_field("row_id").unwrap(), row_id as u64);
             doc.add_text(schema.get_field("text").unwrap(), &docs[row_id]);
             assert!(writer.add_document(doc).is_ok());
@@ -155,7 +155,7 @@ mod tests {
 
         let reader = index
             .reader_builder()
-            .reload_policy(ReloadPolicy::OnCommit)
+            .reload_policy(ReloadPolicy::OnCommitWithDelay)
             .try_into()
             .expect("Can't set reload policy");
 

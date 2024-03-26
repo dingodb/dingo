@@ -1,6 +1,6 @@
 use std::{cmp::min, sync::Arc};
 
-use tantivy::{collector::Count, merge_policy::LogMergePolicy, query::QueryParser, schema::{Schema, FAST, INDEXED, TEXT}, Document, Index, IndexReader, IndexWriter};
+use tantivy::{collector::Count, merge_policy::LogMergePolicy, query::QueryParser, schema::{Schema, FAST, INDEXED, TEXT}, Index, IndexReader, IndexWriter, TantivyDocument};
 
 use crate::{index::bridge::index_writer_bridge::IndexWriterBridge, FFI_INDEX_WRITER_CACHE};
 
@@ -61,7 +61,7 @@ fn index_documents(writer: &mut IndexWriter, schema: &Schema, col1_docs: &[Strin
 
     // Index some documents.
     for row_id in 0..min(min(col1_docs.len(), col2_docs.len()), col3_docs.len()) {
-        let mut doc = Document::default();
+        let mut doc = TantivyDocument::default();
         doc.add_u64(row_id_field, row_id as u64);
         doc.add_text(col1_field, &col1_docs[row_id]);
         doc.add_text(col2_field, &col2_docs[row_id]);
@@ -125,7 +125,7 @@ pub fn index_3column_docs_with_index_writer_bridge(index_directory: &str, waitin
 
 
     for row_id in 0..min(min(col1_docs.len(), col2_docs.len()), col3_docs.len()) {
-        let mut doc = Document::default();
+        let mut doc = TantivyDocument::default();
         doc.add_u64(row_id_field, row_id as u64);
         doc.add_text(col1_field, &col1_docs[row_id]);
         doc.add_text(col2_field, &col2_docs[row_id]);

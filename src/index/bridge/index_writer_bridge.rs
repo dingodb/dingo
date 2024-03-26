@@ -1,7 +1,7 @@
 use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::{common::constants::LOG_CALLBACK, INFO};
 use std::sync::Mutex;
-use tantivy::{Document, Index, IndexWriter, Opstamp, Term};
+use tantivy::{TantivyDocument, Index, IndexWriter, Opstamp, Term};
 
 pub struct IndexWriterBridge {
     pub path: String,
@@ -25,7 +25,7 @@ impl IndexWriterBridge {
     }
 
     // wrapper for IndexWriter.add_document()
-    pub fn add_document(&self, document: Document) -> Result<Opstamp, String> {
+    pub fn add_document(&self, document: TantivyDocument) -> Result<Opstamp, String> {
         match self.writer.lock() {
             Ok(mut writer) => {
                 if let Some(writer) = writer.as_mut() {
@@ -98,10 +98,7 @@ mod tests {
     use crate::search::collector::row_id_bitmap_collector::RowIdRoaringCollector;
     use std::sync::Mutex;
     use tantivy::{
-        merge_policy::LogMergePolicy,
-        query::QueryParser,
-        schema::{Schema, FAST, INDEXED, STORED, TEXT},
-        Document, Index, Term,
+        merge_policy::LogMergePolicy, query::QueryParser, schema::{Schema, FAST, INDEXED, STORED, TEXT}, TantivyDocument, Index, Term
     };
     use tempfile::TempDir;
 
@@ -151,7 +148,7 @@ mod tests {
             "Ancient philosophies provide wisdom for modern dilemmas.".to_string(),
         ];
         for row_id in 0..docs.len() {
-            let mut doc = Document::default();
+            let mut doc = TantivyDocument::default();
             doc.add_u64(row_id_field, row_id as u64);
             doc.add_text(text_field, &docs[row_id]);
             let result = index_writer_bridge.add_document(doc);

@@ -5,8 +5,8 @@ use std::{cmp, fmt};
 use roaring::RoaringBitmap;
 use tantivy::collector::{Collector, SegmentCollector};
 use tantivy::query::Weight;
-use tantivy::schema::Field;
-use tantivy::{DocAddress, DocId, Score, Searcher, SegmentOrdinal, SegmentReader};
+use tantivy::schema::{Field, Value};
+use tantivy::{DocAddress, DocId, Score, Searcher, SegmentOrdinal, SegmentReader, TantivyDocument};
 
 use crate::RowIdWithScore;
 
@@ -105,14 +105,14 @@ impl TopDocsWithFilter {
         let mut doc_texts: Vec<String> = vec![];
         if self.need_text {
             if let Some(searcher) = &self.searcher {
-                if let Ok(document) = searcher.doc(DocAddress {
+                if let Ok(document) = searcher.doc::<TantivyDocument>(DocAddress {
                     segment_ord,
                     doc_id: doc,
                 }) {
                     if let Some(text_fields) = &self.text_fields {
                         for text_field in text_fields {
                             if let Some(field_value) = document.get_first(*text_field) {
-                                if let Some(text_value) = field_value.as_text() {
+                                if let Some(text_value) = field_value.as_str() {
                                     doc_texts.push(text_value.to_string());
                                 } else {
                                     doc_texts.push("".to_string())

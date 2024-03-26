@@ -4,7 +4,7 @@ mod tests {
     use tantivy::merge_policy::LogMergePolicy;
     use tantivy::query::{Query, QueryParser};
     use tantivy::schema::{Schema, FAST, INDEXED, STORED, TEXT};
-    use tantivy::{Document, Index, IndexReader, IndexWriter, ReloadPolicy, Term};
+    use tantivy::{TantivyDocument, Index, IndexReader, IndexWriter, ReloadPolicy, Term};
     use tempfile::TempDir;
 
     fn get_reader_and_writer_from_index_path(
@@ -33,7 +33,7 @@ mod tests {
             "Ancient philosophies provide wisdom for modern dilemmas.".to_string(),
         ];
         for row_id in 0..docs.len() {
-            let mut doc = Document::default();
+            let mut doc = TantivyDocument::default();
             doc.add_u64(schema.get_field("row_id").unwrap(), row_id as u64);
             doc.add_text(schema.get_field("text").unwrap(), &docs[row_id]);
             assert!(writer.add_document(doc).is_ok());

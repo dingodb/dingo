@@ -20,7 +20,7 @@ use crate::utils::index_utils::IndexUtils;
 use crate::{common::constants::LOG_CALLBACK, DEBUG, ERROR, INFO, WARNING};
 use crate::{FFI_INDEX_SEARCHER_CACHE, FFI_INDEX_WRITER_CACHE};
 
-use tantivy::{Document, Index, Term};
+use tantivy::{TantivyDocument, Index, Term};
 
 pub fn create_index_with_parameter(
     index_path: &str,
@@ -183,7 +183,7 @@ pub fn index_multi_column_docs(
         TantivySearchError::TantivyError(e)
     })?;
 
-    let mut doc = Document::default();
+    let mut doc = TantivyDocument::default();
     doc.add_u64(row_id_field, row_id);
 
     let mut column_idx = 0;
