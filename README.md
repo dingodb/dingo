@@ -21,7 +21,7 @@ If developers do not add, delete, or modify the names of FFI functions, there is
 ## Work in progress
 
 - [x] Added unit tests in C++ to test Rust FFI functions.
-- [ ] Add additional unit tests within Rust FFI functions.
+- [x] Add additional unit tests within Rust FFI functions.
 - [ ] Refactor the `tantivy_search` code using object-oriented principles.
 
 ## How to build?

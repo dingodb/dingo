@@ -13,7 +13,6 @@ use crate::{common::constants::LOG_CALLBACK, ERROR};
 use cxx::CxxString;
 use cxx::CxxVector;
 
-/// 执行 range 范围内单个 Term 查询
 pub fn ffi_query_term_with_range(
     index_path: &CxxString,
     column_name: &CxxString,
@@ -56,7 +55,6 @@ pub fn ffi_query_term_with_range(
     }
 }
 
-/// 执行 range 范围内多个 Terms 查询
 pub fn ffi_query_terms_with_range(
     index_path: &CxxString,
     column_name: &CxxString,
@@ -99,7 +97,6 @@ pub fn ffi_query_terms_with_range(
     }
 }
 
-/// 执行 range 范围内句子 sentence 查询
 pub fn ffi_query_sentence_with_range(
     index_path: &CxxString,
     column_name: &CxxString,
@@ -142,7 +139,6 @@ pub fn ffi_query_sentence_with_range(
     }
 }
 
-/// 执行 range 范围内正则匹配 regex
 pub fn ffi_regex_term_with_range(
     index_path: &CxxString,
     column_name: &CxxString,
@@ -185,7 +181,6 @@ pub fn ffi_regex_term_with_range(
     }
 }
 
-/// 执行单个 Term 查询
 pub fn ffi_query_term_bitmap(
     index_path: &CxxString,
     column_name: &CxxString,
@@ -222,7 +217,6 @@ pub fn ffi_query_term_bitmap(
     }
 }
 
-/// 执行多个 Terms 查询
 pub fn ffi_query_terms_bitmap(
     index_path: &CxxString,
     column_name: &CxxString,
@@ -259,7 +253,6 @@ pub fn ffi_query_terms_bitmap(
     }
 }
 
-/// 执行句子 sentence 查询
 pub fn ffi_query_sentence_bitmap(
     index_path: &CxxString,
     column_name: &CxxString,
@@ -296,7 +289,6 @@ pub fn ffi_query_sentence_bitmap(
     }
 }
 
-/// 执行正则匹配 regex
 pub fn ffi_regex_term_bitmap(
     index_path: &CxxString,
     column_name: &CxxString,

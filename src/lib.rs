@@ -31,17 +31,29 @@ pub mod ffi {
     extern "Rust" {
         pub fn ffi_varify_index_parameter(index_json_parameter: &CxxString) -> bool;
 
-        /// 创建索引，提供索引参数
+        /// Create tantivy index.
+        /// arguments:
+        /// - `index_path`: index directory.
+        /// - `column_names`: which columns will be used to build index.
+        /// - `index_json_parameter`: config index with json.
         fn ffi_create_index_with_parameter(
             index_path: &CxxString,
             column_names: &CxxVector<CxxString>,
             index_json_parameter: &CxxString,
         ) -> bool;
 
-        /// 创建索引，不提供索引参数
+        /// Create tantivy index by default.
+        /// argements:
+        /// - `index_path`: index directory.
+        /// - `column_names`: which columns will be used to build index.
         fn ffi_create_index(index_path: &CxxString, column_names: &CxxVector<CxxString>) -> bool;
 
-        /// 索引一组文档        
+        /// Index multi column docs with given rowId.
+        /// arguments:
+        /// - `index_path`: index directory.
+        /// - `row_id`: row_id given by ClickHouse.
+        /// - `column_names`: align with column_docs.
+        /// - `column_docs`: align with column_names.
         fn ffi_index_multi_column_docs(
             index_path: &CxxString,
             row_id: u64,
@@ -49,25 +61,44 @@ pub mod ffi {
             column_docs: &CxxVector<CxxString>,
         ) -> bool;
 
-        /// 删除一组 row ids
+        /// Delete a group of rowIds.
+        /// arguments:
+        /// - `index_path`: index directory.
+        /// - `row_ids`: a group of rowIds need be deleted.
         fn ffi_delete_row_ids(index_path: &CxxString, row_ids: &CxxVector<u32>) -> bool;
 
-        /// 提交索引修改
+        /// Commit index writer
+        /// arguments:
+        /// - `index_path`: index directory.
         fn ffi_index_writer_commit(index_path: &CxxString) -> bool;
 
-        /// 释放索引 writer
+        /// Free index writer
+        /// arguments:
+        /// - `index_path`: index directory.
         fn ffi_free_index_writer(index_path: &CxxString) -> bool;
 
-        /// 加载索引 reader
+        /// Load index reader
+        /// arguments:
+        /// - `index_path`: index directory.
         fn ffi_load_index_reader(index_path: &CxxString) -> bool;
 
-        /// 释放索引 reader
+        /// Free index reader
+        /// arguments:
+        /// - `index_path`: index directory.
         fn ffi_free_index_reader(index_path: &CxxString) -> bool;
 
-        /// 获得索引的文档数量
+        /// Get indexed docs numbers.
+        /// arguments:
+        /// - `index_path`: index directory.
         fn ffi_get_indexed_doc_counts(index_path: &CxxString) -> u64;
 
-        /// 执行 range 范围内单个 Term 查询
+        /// Execute single term query with given rowId range.
+        /// arguments:
+        /// - `index_path`: index directory.
+        /// - `column_name`: which column will execute search.
+        /// - `term`: term needs to be searched.
+        /// - `lrange`: rowId left begin.
+        /// - `rrange`: rowId right end.
         fn ffi_query_term_with_range(
             index_path: &CxxString,
             column_name: &CxxString,
@@ -76,7 +107,13 @@ pub mod ffi {
             rrange: u64,
         ) -> bool;
 
-        /// 执行 range 范围内多个 Terms 查询
+        /// Execute a group of terms query with given rowId range.
+        /// arguments:
+        /// - `index_path`: index directory.
+        /// - `column_name`: which column will execute search.
+        /// - `terms`: a group of terms need to be searched.
+        /// - `lrange`: rowId left begin.
+        /// - `rrange`: rowId right end.
         fn ffi_query_terms_with_range(
             index_path: &CxxString,
             column_name: &CxxString,
@@ -85,7 +122,13 @@ pub mod ffi {
             rrange: u64,
         ) -> bool;
 
-        /// 执行 range 范围内句子 sentence 查询
+        /// Execute a sentence query with given rowId range.
+        /// arguments:
+        /// - `index_path`: index directory.
+        /// - `column_name`: which column will execute search.
+        /// - `sentence`: sentence needs to be searched.
+        /// - `lrange`: rowId left begin.
+        /// - `rrange`: rowId right end.
         fn ffi_query_sentence_with_range(
             index_path: &CxxString,
             column_name: &CxxString,
@@ -94,7 +137,13 @@ pub mod ffi {
             rrange: u64,
         ) -> bool;
 
-        /// 执行 range 范围内正则匹配 regex
+        /// Execute a regex query with given rowId range.
+        /// arguments:
+        /// - `index_path`: index directory.
+        /// - `column_name`: which column will execute search.
+        /// - `pattern`: pattern should be given by ClickHouse.
+        /// - `lrange`: rowId left begin.
+        /// - `rrange`: rowId right end.
         fn ffi_regex_term_with_range(
             index_path: &CxxString,
             column_name: &CxxString,
@@ -103,35 +152,57 @@ pub mod ffi {
             rrange: u64,
         ) -> bool;
 
-        /// 执行单个 Term 查询
+        /// Execute a term query and return rowIds u8 bitmap.
+        /// arguments:
+        /// - `index_path`: index directory.
+        /// - `column_name`: which column will execute search.
+        /// - `term`: term needs to be searched.
         pub fn ffi_query_term_bitmap(
             index_path: &CxxString,
             column_name: &CxxString,
             term: &CxxString,
         ) -> Vec<u8>;
 
-        /// 执行多个 Terms 查询
+        /// Execute a group of terms query and return rowIds u8 bitmap.
+        /// arguments:
+        /// - `index_path`: index directory.
+        /// - `column_name`: which column will execute search.
+        /// - `terms`: terms need to be searched.
         pub fn ffi_query_terms_bitmap(
             index_path: &CxxString,
             column_name: &CxxString,
             terms: &CxxVector<CxxString>,
         ) -> Vec<u8>;
 
-        /// 执行句子 sentence 查询
+        /// Execute a sentence query and return rowIds u8 bitmap.
+        /// arguments:
+        /// - `index_path`: index directory.
+        /// - `column_name`: which column will execute search.
+        /// - `sentence`: sentence needs to be searched.
         pub fn ffi_query_sentence_bitmap(
             index_path: &CxxString,
             column_name: &CxxString,
             sentence: &CxxString,
         ) -> Vec<u8>;
 
-        /// 执行正则匹配 regex
+        /// Execute a regex query and return rowIds u8 bitmap.
+        /// arguments:
+        /// - `index_path`: index directory.
+        /// - `column_name`: which column will execute search.
+        /// - `pattern`: pattern should be given by ClickHouse.
         pub fn ffi_regex_term_bitmap(
             index_path: &CxxString,
             column_name: &CxxString,
             pattern: &CxxString,
         ) -> Vec<u8>;
 
-        // 执行 BM25 search
+        /// Execute a regex query and return rowIds u8 bitmap.
+        /// arguments:
+        /// - `index_path`: index directory.
+        /// - `sentence`: from ClickHouse TextSearch function.
+        /// - `topk`: only return top k related results.
+        /// - `u8_aived_bitmap`: alived rowIds given by u8 bitmap.
+        /// - `query_with_filter`: whether use alived_bitmap or not.
         pub fn ffi_bm25_search(
             index_path: &CxxString,
             sentence: &CxxString,
