@@ -106,7 +106,6 @@ mod tests {
 
     use crate::common::cache::flurry_cache::FlurryCache;
 
-
     #[derive(Debug, PartialEq)]
     struct TestData {
         value: String,

@@ -3,12 +3,17 @@ mod tests {
     use std::sync::Arc;
 
     use roaring::RoaringBitmap;
-    
+
     use tempfile::TempDir;
 
-    use crate::{common::tests::index_3column_docs_with_threads_merge, ffi::RowIdWithScore, search::implements::strategy::query_strategy::{
-        BM25QueryStrategy, ParserQueryStrategy, QueryExecutor, RegexQueryStrategy, SingleTermQueryStrategy, TermSetQueryStrategy
-    }};
+    use crate::{
+        common::tests::index_3column_docs_with_threads_merge,
+        ffi::RowIdWithScore,
+        search::implements::strategy::query_strategy::{
+            BM25QueryStrategy, ParserQueryStrategy, QueryExecutor, RegexQueryStrategy,
+            SingleTermQueryStrategy, TermSetQueryStrategy,
+        },
+    };
 
     #[test]
     fn test_term_set_query_strategy() {
@@ -24,11 +29,10 @@ mod tests {
         let query_executor: QueryExecutor<'_, Arc<RoaringBitmap>> =
             QueryExecutor::new(&terms_query);
 
-            // Compute query results.
+        // Compute query results.
         let result: Arc<RoaringBitmap> = query_executor.execute(&index_reader.searcher()).unwrap();
         assert_eq!(result.len(), 3);
     }
-
 
     #[test]
     fn test_single_term_query_strategy() {
@@ -41,8 +45,7 @@ mod tests {
             term: "judgment",
             column_name: "col2",
         };
-        let query_executor: QueryExecutor<'_, Arc<RoaringBitmap>> =
-            QueryExecutor::new(&term_query);
+        let query_executor: QueryExecutor<'_, Arc<RoaringBitmap>> = QueryExecutor::new(&term_query);
 
         // Compute query results.
         let result: Arc<RoaringBitmap> = query_executor.execute(&index_reader.searcher()).unwrap();
@@ -98,7 +101,7 @@ mod tests {
             sentence: "Literary inventions capture philosophical masterpieces.",
             topk: &10,
             query_with_filter: &false,
-            u8_aived_bitmap: &vec![]
+            u8_aived_bitmap: &vec![],
         };
         let query_executor: QueryExecutor<'_, Vec<RowIdWithScore>> =
             QueryExecutor::new(&bm25_strategy);
@@ -107,8 +110,8 @@ mod tests {
         let result: Vec<RowIdWithScore> = query_executor.execute(&index_reader.searcher()).unwrap();
 
         assert_eq!(result[0].row_id, 2);
-        assert!(result[0].score>=4.0);
+        assert!(result[0].score >= 4.0);
         assert_eq!(result[1].row_id, 0);
-        assert!(result[1].score<=1.6);
+        assert!(result[1].score <= 1.6);
     }
 }

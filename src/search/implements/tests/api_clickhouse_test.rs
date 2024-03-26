@@ -4,7 +4,8 @@ mod tests {
 
     use crate::common::tests::index_3column_docs_with_threads_merge;
     use crate::search::implements::api_clickhouse_impl::{
-        query_sentence_bitmap, query_sentence_with_range, query_term_bitmap, query_term_with_range, query_terms_bitmap, query_terms_with_range, regex_term_bitmap, regex_term_with_range
+        query_sentence_bitmap, query_sentence_with_range, query_term_bitmap, query_term_with_range,
+        query_terms_bitmap, query_terms_with_range, regex_term_bitmap, regex_term_with_range,
     };
     use crate::search::implements::api_common_impl::load_index_reader;
 
@@ -34,7 +35,8 @@ mod tests {
             temp_directory_str,
             "col1",
             &vec!["Ancient".to_string(), "Social".to_string()],
-            1, 1
+            1,
+            1,
         );
 
         assert!(res.is_ok());
@@ -53,7 +55,8 @@ mod tests {
             temp_directory_str,
             "col1",
             "Artistic expressions reflect diverse cultural heritages.",
-            1, 1
+            1,
+            1,
         );
 
         assert!(res.is_ok());
@@ -143,5 +146,4 @@ mod tests {
         assert_eq!(res.clone().unwrap().len(), 1);
         assert_eq!(res.unwrap()[0], 2);
     }
-
 }

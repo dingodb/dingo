@@ -1,7 +1,7 @@
 use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::{common::constants::LOG_CALLBACK, INFO};
 use std::sync::Mutex;
-use tantivy::{TantivyDocument, Index, IndexWriter, Opstamp, Term};
+use tantivy::{Index, IndexWriter, Opstamp, TantivyDocument, Term};
 
 pub struct IndexWriterBridge {
     pub path: String,
@@ -98,7 +98,10 @@ mod tests {
     use crate::search::collector::row_id_bitmap_collector::RowIdRoaringCollector;
     use std::sync::Mutex;
     use tantivy::{
-        merge_policy::LogMergePolicy, query::QueryParser, schema::{Schema, FAST, INDEXED, STORED, TEXT}, TantivyDocument, Index, Term
+        merge_policy::LogMergePolicy,
+        query::QueryParser,
+        schema::{Schema, FAST, INDEXED, STORED, TEXT},
+        Index, TantivyDocument, Term,
     };
     use tempfile::TempDir;
 

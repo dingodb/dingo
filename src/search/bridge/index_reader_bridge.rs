@@ -33,7 +33,7 @@ mod tests {
         merge_policy::LogMergePolicy,
         query::QueryParser,
         schema::{Schema, FAST, INDEXED, STORED, TEXT},
-        TantivyDocument, Index, IndexWriter, ReloadPolicy, Term,
+        Index, IndexWriter, ReloadPolicy, TantivyDocument, Term,
     };
     use tempfile::TempDir;
 

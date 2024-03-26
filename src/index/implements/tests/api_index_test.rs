@@ -5,13 +5,15 @@ mod tests {
     use tantivy::query::QueryParser;
     use tempfile::TempDir;
 
-    use crate::common::tests::{get_mocked_docs, index_3column_docs_with_index_writer_bridge, search_with_index_writer_bridge};
+    use crate::common::tests::{
+        get_mocked_docs, index_3column_docs_with_index_writer_bridge,
+        search_with_index_writer_bridge,
+    };
     use crate::index::implements::api_index_impl::{
         commit_index, create_index, create_index_with_parameter, delete_row_ids, free_index_writer,
         index_multi_column_docs,
     };
     use crate::{FFI_INDEX_WRITER_CACHE, TEST_MUTEX};
-
 
     #[test]
     pub fn test_create_index_with_valid_tokenizer() {
@@ -27,7 +29,8 @@ mod tests {
         );
         assert!(result.is_ok());
 
-        let index_writer_bridge = index_3column_docs_with_index_writer_bridge(temp_directory_str, true);
+        let index_writer_bridge =
+            index_3column_docs_with_index_writer_bridge(temp_directory_str, true);
 
         search_with_index_writer_bridge(index_writer_bridge)
     }
@@ -175,7 +178,8 @@ mod tests {
         assert!(create_index(temp_directory_str, &column_names).is_ok());
 
         // Index and commit some documents
-        let index_writer_bridge = index_3column_docs_with_index_writer_bridge(temp_directory_str, false);
+        let index_writer_bridge =
+            index_3column_docs_with_index_writer_bridge(temp_directory_str, false);
 
         // Init some necessary variables for search.
         let col1_field = index_writer_bridge

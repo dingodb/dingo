@@ -119,7 +119,7 @@ mod tests {
     use tantivy::merge_policy::LogMergePolicy;
     use tantivy::query::QueryParser;
     use tantivy::schema::{Schema, FAST, INDEXED, STORED, TEXT};
-    use tantivy::{TantivyDocument, Index, IndexReader, ReloadPolicy};
+    use tantivy::{Index, IndexReader, ReloadPolicy, TantivyDocument};
     use tempfile::TempDir;
 
     fn get_reader_from_index_path(index_directory_str: &str) -> IndexReader {

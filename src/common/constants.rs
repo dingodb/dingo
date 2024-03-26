@@ -1,7 +1,7 @@
+use crate::common::cache::flurry_cache::FlurryCache;
 use crate::index::bridge::index_writer_bridge_cache::IndexWriterBridgeCache;
 use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::search::bridge::index_reader_bridge_cache::IndexReaderBridgeCache;
-use crate::common::cache::flurry_cache::FlurryCache;
 use cxx::vector::VectorElement;
 use cxx::CxxString;
 use cxx::CxxVector;

@@ -132,7 +132,7 @@ TEST_F(FunctionalFFITest, FFIQueryTermsBitmap) {
 
 TEST_F(FunctionalFFITest, FFIQuerySentenceBitmap) {
     ASSERT_NO_THROW({
-        indexSomeEnglishDocs("{\"col1\":{\"tokenizer\":{\"type\":\"stem\"}}, \"col2\":{\"tokenizer\":{\"type\":\"stem\"}}}");
+        indexSomeEnglishDocs("{\"col1\":{\"tokenizer\":{\"type\":\"whitespace\"}}, \"col2\":{\"tokenizer\":{\"type\":\"stem\"}}}");
         ASSERT_FALSE(ffi_query_sentence_bitmap(indexDirectory, column_names[1], "Environmental conservation efforts protect Earth's biodiversity.").size()==0);
         ASSERT_TRUE(ffi_query_sentence_bitmap(indexDirectory, column_names[0], "Environmental conservation efforts protect Earth's biodiversity.").size()==0);
     });

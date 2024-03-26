@@ -97,7 +97,7 @@ mod tests {
     use tantivy::{
         merge_policy::LogMergePolicy,
         schema::{Schema, FAST, INDEXED, STORED, TEXT},
-        TantivyDocument, Index,
+        Index, TantivyDocument,
     };
     use tempfile::TempDir;
 

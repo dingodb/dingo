@@ -20,7 +20,7 @@ use crate::utils::index_utils::IndexUtils;
 use crate::{common::constants::LOG_CALLBACK, DEBUG, ERROR, INFO, WARNING};
 use crate::{FFI_INDEX_SEARCHER_CACHE, FFI_INDEX_WRITER_CACHE};
 
-use tantivy::{TantivyDocument, Index, Term};
+use tantivy::{Index, TantivyDocument, Term};
 
 pub fn create_index_with_parameter(
     index_path: &str,

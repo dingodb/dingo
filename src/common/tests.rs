@@ -1,6 +1,12 @@
 use std::{cmp::min, sync::Arc};
 
-use tantivy::{collector::Count, merge_policy::LogMergePolicy, query::QueryParser, schema::{Schema, FAST, INDEXED, TEXT}, Index, IndexReader, IndexWriter, TantivyDocument};
+use tantivy::{
+    collector::Count,
+    merge_policy::LogMergePolicy,
+    query::QueryParser,
+    schema::{Schema, FAST, INDEXED, TEXT},
+    Index, IndexReader, IndexWriter, TantivyDocument,
+};
 
 use crate::{index::bridge::index_writer_bridge::IndexWriterBridge, FFI_INDEX_WRITER_CACHE};
 
@@ -52,7 +58,13 @@ fn create_3column_index(index_directory: &str) -> (Index, Schema) {
 }
 
 #[allow(dead_code)]
-fn index_documents(writer: &mut IndexWriter, schema: &Schema, col1_docs: &[String], col2_docs: &[String], col3_docs: &[String]) {
+fn index_documents(
+    writer: &mut IndexWriter,
+    schema: &Schema,
+    col1_docs: &[String],
+    col2_docs: &[String],
+    col3_docs: &[String],
+) {
     // Get fields from `schema`.
     let row_id_field = schema.get_field("row_id").unwrap();
     let col1_field = schema.get_field("col1").unwrap();
@@ -91,7 +103,9 @@ pub fn index_3column_docs_with_threads_merge(index_directory: &str) -> (IndexRea
 }
 
 #[allow(dead_code)]
-pub fn index_3column_docs_without_threads_merge(index_directory: &str) -> (IndexWriter, IndexReader, Schema) {
+pub fn index_3column_docs_without_threads_merge(
+    index_directory: &str,
+) -> (IndexWriter, IndexReader, Schema) {
     let (index, schema) = create_3column_index(index_directory);
 
     // Create the writer with a specified buffer size (e.g., 64 MB).
@@ -109,11 +123,14 @@ pub fn index_3column_docs_without_threads_merge(index_directory: &str) -> (Index
 }
 
 #[allow(dead_code)]
-pub fn index_3column_docs_with_index_writer_bridge(index_directory: &str, waiting_merging_threads_finished: bool) -> Arc<IndexWriterBridge> {
+pub fn index_3column_docs_with_index_writer_bridge(
+    index_directory: &str,
+    waiting_merging_threads_finished: bool,
+) -> Arc<IndexWriterBridge> {
     // Get index writer from CACHE
     let index_writer_bridge = FFI_INDEX_WRITER_CACHE
-            .get_index_writer_bridge(index_directory.to_string())
-            .unwrap();
+        .get_index_writer_bridge(index_directory.to_string())
+        .unwrap();
     let (col1_docs, col2_docs, col3_docs) = get_mocked_docs();
     let schema = create_3column_schema();
 
@@ -122,7 +139,6 @@ pub fn index_3column_docs_with_index_writer_bridge(index_directory: &str, waitin
     let col1_field = schema.get_field("col1").unwrap();
     let col2_field = schema.get_field("col2").unwrap();
     let col3_field = schema.get_field("col3").unwrap();
-
 
     for row_id in 0..min(min(col1_docs.len(), col2_docs.len()), col3_docs.len()) {
         let mut doc = TantivyDocument::default();

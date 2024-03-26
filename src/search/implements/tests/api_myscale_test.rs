@@ -8,7 +8,6 @@ mod tests {
 
     #[test]
     pub fn test_bm25_search() {
-
         let temp_directory = TempDir::new().unwrap();
         let temp_directory_str = temp_directory.path().to_str().unwrap();
 
@@ -21,7 +20,7 @@ mod tests {
         assert_eq!(res.clone().unwrap().len(), 2);
         assert_eq!(res.clone().unwrap()[0].row_id, 4);
         assert_eq!(res.clone().unwrap()[1].row_id, 0);
-        assert!(res.clone().unwrap()[0].score>=0.85);
-        assert!(res.clone().unwrap()[1].score<=0.81);
+        assert!(res.clone().unwrap()[0].score >= 0.85);
+        assert!(res.clone().unwrap()[1].score <= 0.81);
     }
 }
