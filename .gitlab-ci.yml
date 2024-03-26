@@ -18,6 +18,7 @@ RelWithDebInfo:
     - mkdir -p build_packages
     - mkdir -p packages
   script:
+    - git submodule sync
     - git submodule update --init --recursive
     - >
       cmake --no-warn-unused-cli
