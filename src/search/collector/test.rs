@@ -1,10 +1,14 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::sync::Arc;
+
+    use crate::search::collector::top_dos_with_bitmap_collector::TopDocsWithFilter;
+
+    use roaring::RoaringBitmap;
     use tantivy::merge_policy::LogMergePolicy;
     use tantivy::query::{Query, QueryParser};
-    use tantivy::schema::{Schema, FAST, INDEXED, STORED, TEXT};
-    use tantivy::{TantivyDocument, Index, IndexReader, IndexWriter, ReloadPolicy, Term};
+    use tantivy::schema::{Field, Schema, FAST, INDEXED, STORED, TEXT};
+    use tantivy::{Index, IndexReader, IndexWriter, ReloadPolicy, Searcher, TantivyDocument, Term};
     use tempfile::TempDir;
 
     fn get_reader_and_writer_from_index_path(
@@ -42,7 +46,7 @@ mod tests {
 
         let reader = index
             .reader_builder()
-            .reload_policy(ReloadPolicy::OnCommit)
+            .reload_policy(ReloadPolicy::OnCommitWithDelay)
             .try_into()
             .expect("Can't set reload policy");
 
@@ -83,7 +87,7 @@ mod tests {
 
         let mut top_docs_collector = TopDocsWithFilter::with_limit(10)
             .with_searcher(index_searcher.clone())
-            .with_text_field(text_field)
+            .with_text_fields(vec![text_field])
             .with_stored_text(false);
 
         let mut alive_bitmap = RoaringBitmap::new();
@@ -124,7 +128,7 @@ mod tests {
 
         let top_docs_collector = TopDocsWithFilter::with_limit(10)
             .with_searcher(index_searcher.clone())
-            .with_text_field(text_field)
+            .with_text_fields(vec![text_field])
             .with_stored_text(false);
 
         let searched_results = index_searcher
@@ -147,31 +151,31 @@ mod tests {
         // Use searcher.
         let top_docs_collector = TopDocsWithFilter::with_limit(10)
             .with_searcher(index_searcher.clone())
-            .with_text_field(text_field)
+            .with_text_fields(vec![text_field])
             .with_stored_text(true);
         let searched_results = index_searcher
             .search(&text_query, &top_docs_collector)
             .expect("Can't execute search.");
         assert_eq!(searched_results.len(), 2);
         assert_eq!(
-            searched_results[0].doc,
+            searched_results[0].docs[0],
             "Ancient philosophies provide wisdom for modern dilemmas."
         );
         assert_eq!(
-            searched_results[1].doc,
+            searched_results[1].docs[0],
             "Ancient empires rise and fall, shaping history's course."
         );
 
         // Not use searcher.
         let top_docs_collector = TopDocsWithFilter::with_limit(10)
-            .with_text_field(text_field)
+            .with_text_fields(vec![text_field])
             .with_stored_text(true);
         let searched_results = index_searcher
             .search(&text_query, &top_docs_collector)
             .expect("Can't execute search.");
         assert_eq!(searched_results.len(), 2);
-        assert_eq!(searched_results[0].doc, "");
-        assert_eq!(searched_results[1].doc, "");
+        assert_eq!(searched_results[0].docs.len(), 0);
+        assert_eq!(searched_results[1].docs.len(), 0);
     }
 
     #[test]
@@ -188,32 +192,32 @@ mod tests {
         // Need stored text.
         let top_docs_collector = TopDocsWithFilter::with_limit(10)
             .with_searcher(index_searcher.clone())
-            .with_text_field(text_field)
+            .with_text_fields(vec![text_field])
             .with_stored_text(true);
         let searched_results = index_searcher
             .search(&text_query, &top_docs_collector)
             .expect("Can't execute search.");
         assert_eq!(searched_results.len(), 2);
         assert_eq!(
-            searched_results[0].doc,
+            searched_results[0].docs[0],
             "Ancient philosophies provide wisdom for modern dilemmas."
         );
         assert_eq!(
-            searched_results[1].doc,
+            searched_results[1].docs[0],
             "Ancient empires rise and fall, shaping history's course."
         );
 
         // Not need stored text.
         let top_docs_collector = TopDocsWithFilter::with_limit(10)
             .with_searcher(index_searcher.clone())
-            .with_text_field(text_field)
+            .with_text_fields(vec![text_field])
             .with_stored_text(false);
         let searched_results = index_searcher
             .search(&text_query, &top_docs_collector)
             .expect("Can't execute search.");
         assert_eq!(searched_results.len(), 2);
-        assert_eq!(searched_results[0].doc, "");
-        assert_eq!(searched_results[1].doc, "");
+        assert_eq!(searched_results[0].docs.len(), 0);
+        assert_eq!(searched_results[1].docs.len(), 0);
     }
 
     #[test]
@@ -230,18 +234,18 @@ mod tests {
         // With `text_field`.
         let top_docs_collector = TopDocsWithFilter::with_limit(10)
             .with_searcher(index_searcher.clone())
-            .with_text_field(text_field)
+            .with_text_fields(vec![text_field])
             .with_stored_text(true);
         let searched_results = index_searcher
             .search(&text_query, &top_docs_collector)
             .expect("Can't execute search.");
         assert_eq!(searched_results.len(), 2);
         assert_eq!(
-            searched_results[0].doc,
+            searched_results[0].docs[0],
             "Ancient philosophies provide wisdom for modern dilemmas."
         );
         assert_eq!(
-            searched_results[1].doc,
+            searched_results[1].docs[0],
             "Ancient empires rise and fall, shaping history's course."
         );
 
@@ -253,8 +257,8 @@ mod tests {
             .search(&text_query, &top_docs_collector)
             .expect("Can't execute search.");
         assert_eq!(searched_results.len(), 2);
-        assert_eq!(searched_results[0].doc, "");
-        assert_eq!(searched_results[1].doc, "");
+        assert_eq!(searched_results[0].docs.len(), 0);
+        assert_eq!(searched_results[1].docs.len(), 0);
     }
 
     #[test]
@@ -271,38 +275,38 @@ mod tests {
         // limit size = 3.
         let top_docs_collector = TopDocsWithFilter::with_limit(3)
             .with_searcher(index_searcher.clone())
-            .with_text_field(text_field)
+            .with_text_fields(vec![text_field])
             .with_stored_text(true);
         let searched_results = index_searcher
             .search(&text_query, &top_docs_collector)
             .expect("Can't execute search.");
         assert_eq!(searched_results.len(), 2);
         assert_eq!(
-            searched_results[0].doc,
+            searched_results[0].docs[0],
             "Ancient philosophies provide wisdom for modern dilemmas."
         );
         assert_eq!(
-            searched_results[1].doc,
+            searched_results[1].docs[0],
             "Ancient empires rise and fall, shaping history's course."
         );
         // limit size = 1.
         let top_docs_collector = TopDocsWithFilter::with_limit(1)
             .with_searcher(index_searcher.clone())
-            .with_text_field(text_field)
+            .with_text_fields(vec![text_field])
             .with_stored_text(true);
         let searched_results = index_searcher
             .search(&text_query, &top_docs_collector)
             .expect("Can't execute search.");
         assert_eq!(searched_results.len(), 1);
         assert_eq!(
-            searched_results[0].doc,
+            searched_results[0].docs[0],
             "Ancient philosophies provide wisdom for modern dilemmas."
         );
 
         // limit size = 0.
         let top_docs_collector = TopDocsWithFilter::with_limit(0)
             .with_searcher(index_searcher.clone())
-            .with_text_field(text_field)
+            .with_text_fields(vec![text_field])
             .with_stored_text(false);
         let searched_results = index_searcher
             .search(&text_query, &top_docs_collector)

@@ -273,6 +273,14 @@ pub fn commit_index(index_path: &str) -> Result<bool, TantivySearchError> {
         TantivySearchError::InternalError(e)
     })?;
 
+    // get index writer bridge from CACHE
+    match FFI_INDEX_SEARCHER_CACHE.get_index_reader_bridge(index_path.to_string()) {
+        Ok(index_reader_bridge) => {
+            let _ = index_reader_bridge.reader.reload();
+        }
+        Err(_) => {}
+    }
+
     Ok(true)
 }
 
