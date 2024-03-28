@@ -51,9 +51,6 @@ public final class TxnGetByKeysOperator extends FilterProjectOperator {
         TxnGetByKeysParam param = vertex.getParam();
         param.setContext(context);
         byte[] keys = param.getCodec().encodeKey(tuple);
-        if (vertex.getTask().getTransactionType() == TransactionType.PESSIMISTIC && !param.isSelect()) {
-            return Collections.singletonList(tuple).iterator();
-        }
         CommonId tableId = param.getTableId();
         CommonId txnId = vertex.getTask().getTxnId();
         CommonId partId = context.getDistribution().getId();
@@ -72,7 +69,11 @@ public final class TxnGetByKeysOperator extends FilterProjectOperator {
         store = Services.KV_STORE.getInstance(tableId, partId);
         KeyValue keyValue = store.txnGet(param.getScanTs(), keys, param.getTimeOut());
         if (keyValue == null || keyValue.getValue() == null) {
-            return Collections.emptyIterator();
+            if (vertex.getTask().getTransactionType() == TransactionType.PESSIMISTIC && !param.isSelect()) {
+                return Collections.singletonList(tuple).iterator();
+            } else {
+                return Collections.emptyIterator();
+            }
         }
         Object[] result = param.getCodec().decode(keyValue);
         return Collections.singletonList(result).iterator();
