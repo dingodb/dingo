@@ -167,6 +167,10 @@ public class ShowLocksOperation implements QueryOperation {
             TxnLocalData txnLocalData = (TxnLocalData) lockKeyTuple[0];
             CommonId txnId = txnLocalData.getTxnId();
             CommonId tableId = txnLocalData.getTableId();
+            Table table = MetaService.root().getTable(tableId);
+            if (table == null) {
+                return;
+            }
             String[] lock = new String[COLUMNS.size()];
             lock[SERVER_INDEX] = DingoConfiguration.serverId().toString();
             lock[TABLE_INDEX] = MetaService.root().getTable(tableId).name;
@@ -191,6 +195,10 @@ public class ShowLocksOperation implements QueryOperation {
             String[] lock = new String[COLUMNS.size()];
             CommonId txnId = txnLocalData.getTxnId();
             CommonId tableId = txnLocalData.getTableId();
+            Table table = MetaService.root().getTable(tableId);
+            if (table == null) {
+                continue;
+            }
             lock[SERVER_INDEX] = DingoConfiguration.serverId().toString();
             lock[TXN_INDEX] = txnId.toString();
             lock[TABLE_INDEX] = MetaService.root().getTable(tableId).name;
@@ -229,6 +237,10 @@ public class ShowLocksOperation implements QueryOperation {
             String[] lock = new String[COLUMNS.size()];
             CommonId txnId = new CommonId(TRANSACTION, tableLock.lockTs, tableLock.currentTs);
             CommonId tableId = tableLock.tableId;
+            Table table = MetaService.root().getTable(tableId);
+            if (table == null) {
+                return;
+            }
             lock[SERVER_INDEX] = tableLock.getServerId().toString();
             lock[TXN_INDEX] = txnId.toString();
             lock[TABLE_INDEX] = MetaService.root().getTable(tableId).name;
