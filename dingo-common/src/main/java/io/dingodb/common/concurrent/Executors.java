@@ -97,7 +97,7 @@ public final class Executors {
     public static ScheduledFuture<?> scheduleWithFixedDelay(
         String name, Runnable command, long initialDelay, long period, TimeUnit unit
     ) {
-        return GLOBAL_SCHEDULE_POOL.scheduleWithFixedDelay(wrap(name, command), initialDelay, period, unit);
+        return GLOBAL_SCHEDULE_POOL.scheduleWithFixedDelay(wrap(name, command, true), initialDelay, period, unit);
     }
 
     public static ScheduledFuture<?> scheduleWithFixedDelayAsync(
