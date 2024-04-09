@@ -75,6 +75,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 @Slf4j
 public final class SafePointUpdateTask {
 
+    private static final int PHYSICAL_SHIFT = 18;
+
     private static final String lockKeyStr =  "safe_point_update";
 
     private static final String enableKeyStr = GLOBAL_VAR_PREFIX_BEGIN + "enable_safe_point_update";
@@ -97,7 +99,8 @@ public final class SafePointUpdateTask {
     public static void run() {
         Executors.execute("safe-point-update", () -> {
             try {
-                LockService.Lock lock = lockService.newLock();
+                String value = DingoConfiguration.serverId() + "#" + DingoConfiguration.location();
+                LockService.Lock lock = lockService.newLock(value);
                 lock.lock();
                 log.info("Start safe point update task.");
                 ScheduledFuture<?> future = Executors.scheduleWithFixedDelay(
@@ -212,7 +215,7 @@ public final class SafePointUpdateTask {
             .map($ -> $.get(0)).map(Kv::getKv)
             .map(KeyValue::getValue).map(String::new)
             .map(Long::parseLong)
-            .map($ -> requestId - TimeUnit.SECONDS.toMillis($))
+            .map($ -> requestId - (TimeUnit.SECONDS.toMillis($) << PHYSICAL_SHIFT))
             .orElseGet(() -> requestId);
         long minLockTs = Stream.concat(
                 TableLockService.getDefault().allTableLocks().stream(),
