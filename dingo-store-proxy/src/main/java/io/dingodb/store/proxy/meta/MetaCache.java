@@ -360,7 +360,12 @@ public class MetaCache {
             if (schema1 == null) {
                 return null;
             }
-            Table table1 = cache.get(schema).get(table.toUpperCase());
+            Map<String, Table> tableMap = cache.get(schema);
+            if (tableMap == null) {
+                log.error("get schema map error, name:" + schema + ", cache:" + cache);
+                return null;
+            }
+            Table table1 = tableMap.get(table.toUpperCase());
             if (table1 == null) {
                 GetTableByNameResponse getTableByNameResponse
                     = metaService.getTableByName(tso(), GetTableByNameRequest.builder().schemaId(schema1.getId()).tableName(table.toUpperCase()).build());

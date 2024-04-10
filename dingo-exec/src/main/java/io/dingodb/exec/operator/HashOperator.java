@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.HashParam;
@@ -29,7 +30,11 @@ public class HashOperator extends FanOutOperator {
     @Override
     protected int calcOutputIndex(Context context, Object @NonNull [] tuple, Vertex vertex) {
         HashParam param = vertex.getParam();
-        return param.getStrategy().selectOutput(param.getKeyMapping().revMap(tuple));
+        OperatorProfile profile = param.getProfile("hash");
+        long start = System.currentTimeMillis();
+        int index = param.getStrategy().selectOutput(param.getKeyMapping().revMap(tuple));
+        profile.time(start);
+        return index;
     }
 
 }

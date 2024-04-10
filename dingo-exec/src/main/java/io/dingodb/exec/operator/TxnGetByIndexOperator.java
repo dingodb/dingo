@@ -21,6 +21,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -63,6 +64,8 @@ public final class TxnGetByIndexOperator extends FilterProjectOperator {
     @Override
     protected @NonNull Iterator<Object[]> createSourceIterator(Context context, Object[] tuple, Vertex vertex) {
         TxnGetByIndexParam param = vertex.getParam();
+        OperatorProfile profile = (OperatorProfile) param.getProfile("getByIndex");
+        long start = System.currentTimeMillis();
         byte[] keys = param.getCodec().encodeKeyPrefix(tuple, calculatePrefixCount(tuple));
         Iterator<KeyValue> localIterator = createScanLocalIterator(
             vertex.getTask().getTxnId(),
@@ -88,7 +91,7 @@ public final class TxnGetByIndexOperator extends FilterProjectOperator {
                 objectList.add(transformTuple(objects, param));
             }
         }
-
+        profile.time(start);
         return objectList.iterator();
     }
 

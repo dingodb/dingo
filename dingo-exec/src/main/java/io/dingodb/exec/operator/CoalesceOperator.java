@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
@@ -48,6 +49,8 @@ public final class CoalesceOperator extends SoleOutOperator {
     public void fin(int pin, Fin fin, Vertex vertex) {
         synchronized (vertex) {
             CoalesceParam param = vertex.getParam();
+            OperatorProfile profile = param.getProfile("coalesce");
+            long start = System.currentTimeMillis();
             if (log.isDebugEnabled()) {
                 log.debug("Got FIN from pin {}.", pin);
             }
@@ -57,8 +60,13 @@ public final class CoalesceOperator extends SoleOutOperator {
                 return;
             }
             setFin(pin, fin, param);
+            profile.time(start);
             if (isAllFin(param)) {
-                edge.fin(new FinWithProfiles(param.getProfiles()));
+                if (fin instanceof FinWithProfiles) {
+                    FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+                    finWithProfiles.addProfile(vertex);
+                }
+                edge.fin(fin);
                 param.clear();
             }
         }
@@ -69,9 +77,6 @@ public final class CoalesceOperator extends SoleOutOperator {
         assert pin < inputNum : "Pin no is greater than the max (" + inputNum + ").";
         assert !param.getFinFlags()[pin] : "Input on pin (" + pin + ") is already finished.";
         param.setFinFlags(pin);
-        if (fin instanceof FinWithProfiles) {
-            param.addProfiles(((FinWithProfiles) fin).getProfiles());
-        }
     }
 
     private boolean isAllFin(CoalesceParam param) {

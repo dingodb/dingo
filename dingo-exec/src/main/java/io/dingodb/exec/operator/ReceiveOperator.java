@@ -17,11 +17,11 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
-import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.ReceiveParam;
 import io.dingodb.exec.tuple.TupleId;
@@ -48,6 +48,8 @@ public final class ReceiveOperator extends SourceOperator {
         if (finObj instanceof FinWithException) {
             super.fin(pin, finObj, vertex);
         } else {
+            FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+            finWithProfiles.addProfile(vertex);
             super.fin(pin, fin, vertex);
         }
     }
@@ -57,8 +59,8 @@ public final class ReceiveOperator extends SourceOperator {
         ReceiveParam param = vertex.getParam();
 
         long count = 0;
-        OperatorProfile profile = param.getProfile(vertex.getId());
-        profile.setStartTimeStamp(System.currentTimeMillis());
+        OperatorProfile profile = param.getProfile("receive");
+        profile.start();
         while (true) {
             TupleId tupleId = QueueUtils.forceTake(param.getTupleQueue());
             Object[] tuple = tupleId.getTuple();
@@ -86,11 +88,11 @@ public final class ReceiveOperator extends SourceOperator {
                 if (log.isDebugEnabled()) {
                     log.debug("(tag = {}) Take out FIN.", param.getTag());
                 }
-                profile.setEndTimeStamp(System.currentTimeMillis());
-                profile.setProcessedTupleCount(count);
+                profile.setCount(count);
                 Fin fin = (Fin) tuple[0];
                 if (fin instanceof FinWithProfiles) {
-                    param.addAll(((FinWithProfiles) fin).getProfiles());
+                    FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+                    finWithProfiles.addProfile(profile);
                 } else if (fin instanceof FinWithException) {
                     param.setFinObj(fin);
                 }

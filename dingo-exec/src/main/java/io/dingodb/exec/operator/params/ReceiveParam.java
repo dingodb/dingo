@@ -19,13 +19,14 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.channel.ReceiveEndpoint;
 import io.dingodb.exec.codec.TxRxCodec;
 import io.dingodb.exec.codec.TxRxCodecImpl;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.tuple.TupleId;
 import io.dingodb.exec.utils.QueueUtils;
 import io.dingodb.exec.utils.TagUtils;
@@ -91,10 +92,6 @@ public class ReceiveParam extends SourceParam {
         if (log.isDebugEnabled()) {
             log.debug("ReceiveOperator initialized with host={} port={} tag={}", host, port, tag);
         }
-    }
-
-    public void addAll(List<OperatorProfile> profiles) {
-        getProfiles().addAll(profiles);
     }
 
     @Override

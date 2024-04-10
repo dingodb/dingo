@@ -104,6 +104,7 @@ public final class MysqlInit {
         initTableByTemplate(INFORMATION_SCHEMA, "KEY_COLUMN_USAGE", SYSTEM_VIEW, LSM, FIXED);
         initTableByTemplate(INFORMATION_SCHEMA, "SCHEMATA", SYSTEM_VIEW, LSM, FIXED);
         initTableByTemplate(INFORMATION_SCHEMA, "TABLES", SYSTEM_VIEW, LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "STATEMENTS_SUMMARY", SYSTEM_VIEW, LSM, FIXED);
         initTableByTemplate(MYSQL, "ANALYZE_TASK", BASE_TABLE, LSM, DYNAMIC);
         initTableByTemplate(MYSQL, "CM_SKETCH", BASE_TABLE, LSM, DYNAMIC);
         initTableByTemplate(MYSQL, "TABLE_STATS", BASE_TABLE, LSM, DYNAMIC);
@@ -286,6 +287,10 @@ public final class MysqlInit {
         values.add(new Object[]{"txn_retry_cnt", "0"});
         values.add(new Object[]{"enable_safe_point_update", "1"});
         values.add(new Object[]{"txn_history_duration", String.valueOf(60 * 60 * 24 * 7)});
+        values.add(new Object[]{"show_query_enable", "on"});
+        values.add(new Object[]{"show_query_threshold", "5000"});
+        values.add(new Object[]{"sql_profile_enable", "on"});
+        values.add(new Object[]{"metric_log_enable", "on"});
         return values;
     }
 
@@ -361,6 +366,9 @@ public final class MysqlInit {
                 break;
             case "TABLE_STATS":
                 jsonFile = "/mysql-tableStats.json";
+                break;
+            case "STATEMENTS_SUMMARY":
+                jsonFile = "/information_stmtSummary.json";
                 break;
             default:
                 throw new RuntimeException("table not found");

@@ -20,6 +20,7 @@ import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
+import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PartModifyParam;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -42,6 +43,10 @@ public abstract class PartModifyOperator extends SoleOutOperator {
             Edge edge = vertex.getSoleEdge();
             if (!(fin instanceof FinWithException)) {
                 edge.transformToNext(new Object[]{param.getCount()});
+            }
+            if (fin instanceof FinWithProfiles) {
+                FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+                finWithProfiles.addProfile(vertex);
             }
             edge.fin(fin);
             // Reset

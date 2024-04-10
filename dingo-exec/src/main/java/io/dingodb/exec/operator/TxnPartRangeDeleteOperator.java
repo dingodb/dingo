@@ -18,6 +18,7 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
@@ -40,6 +41,8 @@ public final class TxnPartRangeDeleteOperator extends SoleOutOperator {
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         RangeDistribution distribution = context.getDistribution();
         TxnPartRangeDeleteParam param = vertex.getParam();
+        OperatorProfile profile = (OperatorProfile) param.getProfile("rangeDelete");
+        long start = System.currentTimeMillis();
         CommonId txnId = vertex.getTask().getTxnId();
         CommonId tableId = param.getTableId();
         CommonId partId = distribution.getId();
@@ -78,6 +81,7 @@ public final class TxnPartRangeDeleteOperator extends SoleOutOperator {
             log.debug("Delete data by range, delete count: {}, cost: {} ms.",
                 count, System.currentTimeMillis() - startTime);
         }
+        profile.time(start);
         return false;
     }
 

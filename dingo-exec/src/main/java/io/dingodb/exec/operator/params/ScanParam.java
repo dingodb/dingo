@@ -24,10 +24,15 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @JsonTypeName("scan0")
 @JsonPropertyOrder({
@@ -48,6 +53,9 @@ public class ScanParam extends AbstractParams {
     @JsonProperty("keyMapping")
     protected final TupleMapping keyMapping;
 
+    @Getter
+    protected List<Profile> profileList;
+
     public ScanParam(
         CommonId tableId,
         @NonNull DingoType schema,
@@ -61,5 +69,15 @@ public class ScanParam extends AbstractParams {
 
     public KeyValueCodec getCodec() {
         return CodecService.getDefault().createKeyValueCodec(schema, keyMapping);
+    }
+
+    public synchronized OperatorProfile getProfile(String type) {
+        if (profileList == null) {
+            profileList = new ArrayList<>();
+        }
+        OperatorProfile profile1 = new OperatorProfile(type);
+        profile1.start();
+        profileList.add(profile1);
+        return profile1;
     }
 }

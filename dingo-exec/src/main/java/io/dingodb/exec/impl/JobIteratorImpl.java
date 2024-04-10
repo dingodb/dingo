@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.impl;
 
+import io.dingodb.common.profile.ExecProfile;
 import io.dingodb.exec.OperatorFactory;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobIterator;
@@ -29,9 +30,12 @@ public class JobIteratorImpl extends JobIterator {
 
     @Getter
     private Long autoIncId;
-
+    private transient Object[] prev;
     private transient Object[] current;
     private final transient Vertex vertex;
+
+    @Getter
+    private ExecProfile execProfile;
 
     JobIteratorImpl(Job job, @NonNull Vertex vertex) {
         super(job);
@@ -47,13 +51,15 @@ public class JobIteratorImpl extends JobIterator {
         }
         operator.checkError(vertex);
         autoIncId = operator.popAutoIncId(vertex);
+        execProfile = operator.popExecProfile(vertex);
+        execProfile.setLastTuple(prev);
         return false;
     }
 
     @Override
     public Object[] next() {
-        Object[] result = current;
+        prev = current;
         current = operator.popValue(vertex);
-        return result;
+        return prev;
     }
 }

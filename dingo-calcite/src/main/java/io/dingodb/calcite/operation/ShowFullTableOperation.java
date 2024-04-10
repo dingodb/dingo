@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ShowFullTableOperation implements QueryOperation {
+public class ShowFullTableOperation extends QueryOperation {
     private String schemaName;
     private String sqlLikePattern;
     private SqlNode condition;

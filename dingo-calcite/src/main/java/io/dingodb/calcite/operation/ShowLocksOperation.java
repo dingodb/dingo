@@ -37,7 +37,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 
-import java.lang.reflect.UndeclaredThrowableException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -53,7 +52,7 @@ import static io.dingodb.transaction.api.LockType.ROW;
 import static io.dingodb.transaction.api.LockType.TABLE;
 
 @Slf4j
-public class ShowLocksOperation implements QueryOperation {
+public class ShowLocksOperation extends QueryOperation {
 
     /**
      * TODO Use job/task implement.

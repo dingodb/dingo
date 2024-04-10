@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class ShowCallsOperation implements QueryOperation {
+public class ShowCallsOperation extends QueryOperation {
 
     private final List<SqlShowCall> sqlShowCallList;
 

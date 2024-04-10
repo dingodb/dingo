@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.Services;
@@ -28,9 +29,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
-import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.operator.data.Context;
-import io.dingodb.exec.operator.params.PartModifyParam;
 import io.dingodb.exec.operator.params.TxnPartInsertParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
@@ -59,6 +58,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
     @Override
     protected boolean pushTuple(Context context, Object[] tuple, Vertex vertex) {
         TxnPartInsertParam param = vertex.getParam();
+        OperatorProfile profile = param.getProfile("partInsert");
+        long start = System.currentTimeMillis();
         if (param.isHasAutoInc() && param.getAutoIncColIdx() < tuple.length) {
             long autoIncVal = Long.parseLong(tuple[param.getAutoIncColIdx()].toString());
             MetaService metaService = MetaService.root();
@@ -222,6 +223,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 context.addKeyState(true);
             }
         }
+        profile.time(start);
         return true;
     }
 
@@ -235,17 +237,12 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 edge.transformToNext(new Object[]{param.getCount()});
             }
             if (fin instanceof FinWithProfiles) {
-                Long autoIncId = param.getAutoIncList().size() > 0 ? param.getAutoIncList().get(0) : null;
+                FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+                finWithProfiles.addProfile(vertex);
+                Long autoIncId = !param.getAutoIncList().isEmpty() ? param.getAutoIncList().get(0) : null;
                 if (autoIncId != null) {
-                    List<OperatorProfile> profiles = ((FinWithProfiles) fin).getProfiles();
-                    if (profiles.size() == 0) {
-                        OperatorProfile profile = new OperatorProfile();
-                        profile.setOperatorId(vertex.getId());
-                        profile.setAutoIncId(autoIncId);
-                        profiles.add(profile);
-                    } else {
-                        profiles.get(0).setAutoIncId(autoIncId);
-                    }
+                    finWithProfiles.getProfile().setAutoIncId(autoIncId);
+                    finWithProfiles.getProfile().setHasAutoInc(true);
                     param.getAutoIncList().remove(0);
                 }
             }

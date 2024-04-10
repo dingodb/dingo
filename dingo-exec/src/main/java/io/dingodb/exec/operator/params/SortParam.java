@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.SortCollation;
 import lombok.Getter;
@@ -80,5 +81,9 @@ public class SortParam extends AbstractParams {
 
     public void clear() {
         cache.clear();
+    }
+
+    public OperatorProfile getProfile() {
+        return new OperatorProfile("sort");
     }
 }

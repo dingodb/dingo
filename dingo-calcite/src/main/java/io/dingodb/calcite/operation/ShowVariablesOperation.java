@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-public class ShowVariablesOperation implements QueryOperation {
+public class ShowVariablesOperation extends QueryOperation {
 
     private final String sqlLikePattern;
 

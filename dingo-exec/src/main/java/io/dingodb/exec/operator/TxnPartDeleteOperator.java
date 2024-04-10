@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
@@ -49,6 +50,8 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
     @Override
     protected boolean pushTuple(Context context, Object[] tuple, Vertex vertex) {
         TxnPartDeleteParam param = vertex.getParam();
+        OperatorProfile profile = (OperatorProfile) param.getProfile("partDelete");
+        long start = System.currentTimeMillis();
         param.setContext(context);
         CommonId txnId = vertex.getTask().getTxnId();
         CommonId tableId = param.getTableId();
@@ -104,6 +107,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                 byte[] oldKey = value.getKey();
                 log.info("{}, repeat key :{}", txnId, Arrays.toString(oldKey));
                 if (oldKey[oldKey.length - 2] == Op.DELETE.getCode()) {
+                    profile.time(start);
                     return true;
                 }
                 localStore.delete(oldKey);
@@ -138,6 +142,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                 byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
                 // first lock and kvGet is null
                 if (localStore.get(rollBackKey) != null) {
+                    profile.time(start);
                     return true;
                 } else {
                     KeyValue kv = wrap(codec::encode).apply(tuple);
@@ -185,7 +190,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                 context.addKeyState(true);
             }
         }
-
+        profile.time(start);
         return true;
     }
 

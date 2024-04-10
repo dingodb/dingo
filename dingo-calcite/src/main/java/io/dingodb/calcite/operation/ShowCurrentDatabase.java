@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ShowCurrentDatabase implements QueryOperation {
+public class ShowCurrentDatabase extends QueryOperation {
 
     DingoParserContext context;
 

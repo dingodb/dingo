@@ -22,6 +22,7 @@ import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.mysql.client.SessionVariableChange;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
+import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.transaction.base.ITransaction;
@@ -92,6 +93,9 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     @Setter
     @Getter
     private ITransaction transaction;
+
+    @Getter
+    private CommitProfile commitProfile;
 
     protected DingoConnection(
         DingoDriver driver,
@@ -201,6 +205,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
 
     public synchronized void cleanTransaction() throws SQLException {
         if (transaction != null) {
+            this.commitProfile = transaction.getCommitProfile();
             transaction = null;
             oneTimeTxIsolation = null;
         }

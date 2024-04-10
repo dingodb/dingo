@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.profile.StmtSummaryMap;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.InfoSchemaScanParam;
 import io.dingodb.meta.InfoSchemaService;
@@ -64,6 +65,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             case "ROUTINES":
             case "KEY_COLUMN_USAGE":
                 return getEmpty();
+            case "STATEMENTS_SUMMARY":
+                return StmtSummaryMap.iterator();
             default:
                 throw new RuntimeException("no source");
         }
@@ -266,4 +269,5 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             .collect(Collectors.toList());
         return tuples.iterator();
     }
+
 }

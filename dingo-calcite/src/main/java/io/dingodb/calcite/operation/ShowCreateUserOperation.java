@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ShowCreateUserOperation implements QueryOperation {
+public class ShowCreateUserOperation extends QueryOperation {
 
     static UserService userService = UserServiceProvider.getRoot();
 

@@ -16,10 +16,14 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.profile.Profile;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.operator.params.AbstractParams;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -40,9 +44,18 @@ public abstract class FanOutOperator extends AbstractOperator {
     }
 
     @Override
-    public  void fin(int pin, Fin fin, Vertex vertex) {
+    public void fin(int pin, Fin fin, Vertex vertex) {
         if (log.isDebugEnabled()) {
             log.debug("Got FIN, push it to {} outputs", vertex.getOutList().size());
+        }
+        if (fin instanceof FinWithProfiles) {
+            AbstractParams param = vertex.getParam();
+            Profile profile = param.getProfile();
+            if (profile == null) {
+                profile = new OperatorProfile("fanOut");
+            }
+            FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+            finWithProfiles.addProfile(profile);
         }
         for (Edge edge : vertex.getOutList()) {
             edge.fin(fin);

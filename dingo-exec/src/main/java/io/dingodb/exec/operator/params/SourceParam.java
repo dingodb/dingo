@@ -18,17 +18,9 @@ package io.dingodb.exec.operator.params;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.table.Part;
-import lombok.Getter;
-
-import java.util.LinkedList;
-import java.util.List;
 
 public abstract class SourceParam extends AbstractParams {
-
-    @Getter
-    protected transient List<OperatorProfile> profiles;
 
     public SourceParam() {
     }
@@ -40,22 +32,10 @@ public abstract class SourceParam extends AbstractParams {
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
-        profiles = new LinkedList<>();
     }
 
     public void clear() {
-        if (profiles != null) {
-            profiles.clear();
-        }
+
     }
 
-    public synchronized OperatorProfile getProfile(CommonId id) {
-        if (profiles == null) {
-            profiles = new LinkedList<>();
-        }
-        OperatorProfile profile = new OperatorProfile();
-        profile.setOperatorId(id);
-        profiles.add(profile);
-        return profile;
-    }
 }

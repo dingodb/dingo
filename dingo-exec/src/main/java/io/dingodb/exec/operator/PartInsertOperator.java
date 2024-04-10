@@ -17,6 +17,8 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
@@ -25,7 +27,6 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
-import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PartInsertParam;
 import io.dingodb.meta.MetaService;
@@ -80,10 +81,9 @@ public final class PartInsertOperator extends PartModifyOperator {
             if (fin instanceof FinWithProfiles) {
                 Long autoIncId = param.getAutoIncList().size() > 0 ? param.getAutoIncList().get(0) : null;
                 if (autoIncId != null) {
-                    List<OperatorProfile> profiles = ((FinWithProfiles) fin).getProfiles();
+                    List<Profile> profiles = ((FinWithProfiles) fin).getProfiles();
                     if (profiles.size() == 0) {
-                        OperatorProfile profile = new OperatorProfile();
-                        profile.setOperatorId(vertex.getId());
+                        OperatorProfile profile = new OperatorProfile("partInsert");
                         profile.setAutoIncId(autoIncId);
                         profiles.add(profile);
                     } else {

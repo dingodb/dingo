@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ShowCharsetOperation implements QueryOperation {
+public class ShowCharsetOperation extends QueryOperation {
 
     private String sqlLikePattern;
 

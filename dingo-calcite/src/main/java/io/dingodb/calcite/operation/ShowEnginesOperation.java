@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ShowEnginesOperation implements QueryOperation {
+public class ShowEnginesOperation extends QueryOperation {
 
     private String sqlLikePattern;
 

@@ -44,7 +44,7 @@ import java.util.stream.Stream;
 import static io.dingodb.common.util.PrivilegeUtils.getRealAddress;
 
 @Slf4j
-public class ShowGrantsOperation implements QueryOperation {
+public class ShowGrantsOperation extends QueryOperation {
     @Setter
     public SqlNode sqlNode;
     static UserService userService = UserServiceProvider.getRoot();

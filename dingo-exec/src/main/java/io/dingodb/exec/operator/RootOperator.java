@@ -16,7 +16,11 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.profile.ExecProfile;
+import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.Pair;
 import io.dingodb.exec.base.Status;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
@@ -25,13 +29,10 @@ import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
-import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.RootParam;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
-
-import java.util.List;
 
 @Slf4j
 public final class RootOperator extends SinkOperator {
@@ -46,6 +47,8 @@ public final class RootOperator extends SinkOperator {
     public boolean push(Context context, Object[] tuple, Vertex vertex) {
         synchronized (vertex) {
             RootParam param = vertex.getParam();
+            OperatorProfile profile = param.getProfile("root");
+            long start = System.currentTimeMillis();
             if (vertex.getTask().getStatus() != Status.RUNNING) {
                 return false;
             }
@@ -55,7 +58,9 @@ public final class RootOperator extends SinkOperator {
                     log.debug("Put tuple {} into root queue.", param.getSchema().format(tuple));
                 }
             }
+            param.getExecProfile().increment();
             param.forcePut(tuple);
+            profile.time(start);
             return true;
         }
     }
@@ -71,16 +76,48 @@ public final class RootOperator extends SinkOperator {
                 log.debug("Got FIN with detail:\n{}", fin.detail());
             }
             if (fin instanceof FinWithProfiles) {
-                List<OperatorProfile> profiles = ((FinWithProfiles) fin).getProfiles();
-                if (profiles.size() > 0) {
-                    long autoIncId = profiles.get(0).getAutoIncId();
-                    if (autoIncId != 0) {
-                        param.setAutoIncId(autoIncId);
+                Profile rootProfile = param.getProfile();
+                if (rootProfile == null) {
+                    rootProfile = param.getProfile("root");
+                }
+                FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+                finWithProfiles.addProfile(rootProfile);
+
+                Profile profile = finWithProfiles.getProfile();
+                if (profile != null) {
+                    Pair<Boolean, Long> autoIncR = autoInc(profile);
+                    if (autoIncR.getKey() && autoIncR.getValue() != null) {
+                        param.setAutoIncId(autoIncR.getValue());
                     }
+                    param.getExecProfile().end();
+                    param.getExecProfile().setProfile(profile);
+                    param.setExecProfile(param.getExecProfile());
                 }
             }
         }
         param.forcePut(FIN);
+    }
+
+    private static Pair<Boolean, Long> autoInc(Profile profile) {
+        if (profile == null) {
+            return Pair.of(false, 0L);
+        }
+        boolean autoIncId = profile.isHasAutoInc();
+        if (!autoIncId) {
+            if (!profile.getChildren().isEmpty()) {
+                for (Profile profile1 : profile.getChildren()) {
+                    Pair<Boolean, Long> tmp = autoInc(profile1);
+                    if (tmp.getKey()) {
+                        return tmp;
+                    }
+                }
+            } else {
+                return Pair.of(false, 0L);
+            }
+        } else {
+            return Pair.of(true, profile.getAutoIncId());
+        }
+        return Pair.of(false, 0L);
     }
 
     public Object @NonNull [] popValue(Vertex vertex) {
@@ -98,6 +135,11 @@ public final class RootOperator extends SinkOperator {
     public Long popAutoIncId(Vertex vertex) {
         RootParam param = vertex.getParam();
         return param.getAutoIncId();
+    }
+
+    public ExecProfile popExecProfile(Vertex vertex) {
+        RootParam param = vertex.getParam();
+        return param.getExecProfile();
     }
 
     public void checkError(Vertex vertex) {

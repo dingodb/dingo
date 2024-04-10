@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class SqlCallGetClientInfoOperation implements QueryOperation {
+public class SqlCallGetClientInfoOperation extends QueryOperation {
     private final Connection connection;
     private String key = "";
 

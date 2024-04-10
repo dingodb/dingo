@@ -18,7 +18,9 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.operator.params.ScanParam;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,18 +38,19 @@ public abstract class ScanOperatorBase extends SoleOutOperator {
 
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        long startTime = System.currentTimeMillis();
         Iterator<Object[]> iterator = createIterator(context, vertex);
-        long count = getScanner(context, vertex).apply(context, vertex, iterator);
-        if (log.isDebugEnabled()) {
-            log.debug("count: {}, cost: {}ms.", count, System.currentTimeMillis() - startTime);
-        }
+        getScanner(context, vertex).apply(context, vertex, iterator);
         // Scan operator is not source operator, so may be push multiple times.
         return true;
     }
 
     @Override
     public void fin(int pin, @Nullable Fin fin, @NonNull Vertex vertex) {
+        if (fin instanceof FinWithProfiles) {
+            ScanParam param = vertex.getParam();
+            FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+            finWithProfiles.addProfileList(param.getProfileList());
+        }
         vertex.getSoleEdge().fin(fin);
     }
 

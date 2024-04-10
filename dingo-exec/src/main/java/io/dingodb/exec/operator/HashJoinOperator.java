@@ -16,11 +16,13 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
+import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.data.TupleWithJoinFlag;
 import io.dingodb.exec.operator.params.HashJoinParam;
@@ -42,6 +44,8 @@ public class HashJoinOperator extends SoleOutOperator {
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         Edge edge = vertex.getSoleEdge();
         HashJoinParam param = vertex.getParam();
+        OperatorProfile profile = param.getProfile("hashJoin");
+        long start = System.currentTimeMillis();
         TupleMapping leftMapping = param.getLeftMapping();
         TupleMapping rightMapping = param.getRightMapping();
         int leftLength = param.getLeftLength();
@@ -59,12 +63,14 @@ public class HashJoinOperator extends SoleOutOperator {
                     System.arraycopy(t.getTuple(), 0, newTuple, leftLength, rightLength);
                     t.setJoined(true);
                     if (!edge.transformToNext(context, newTuple)) {
+                        profile.time(start);
                         return false;
                     }
                 }
             } else if (leftRequired) {
                 Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
                 Arrays.fill(newTuple, leftLength, leftLength + rightLength, null);
+                profile.time(start);
                 return edge.transformToNext(context, newTuple);
             }
         } else if (pin == 1) { //right
@@ -73,6 +79,7 @@ public class HashJoinOperator extends SoleOutOperator {
                 .computeIfAbsent(rightKey, k -> Collections.synchronizedList(new LinkedList<>()));
             list.add(new TupleWithJoinFlag(tuple));
         }
+        profile.time(start);
         return true;
     }
 
@@ -104,6 +111,10 @@ public class HashJoinOperator extends SoleOutOperator {
                         }
                     }
                 }
+            }
+            if (fin instanceof FinWithProfiles) {
+                FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+                finWithProfiles.addProfile(vertex);
             }
             edge.fin(fin);
             // Reset

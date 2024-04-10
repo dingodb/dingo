@@ -55,6 +55,9 @@ public final class VariableValidator {
             || name.equalsIgnoreCase("transaction_read_only")
             || name.equalsIgnoreCase("txn_inert_check")
             || name.equalsIgnoreCase("txn_retry")
+            || name.equalsIgnoreCase("sql_profile_enable")
+            || name.equalsIgnoreCase("slow_query_enable")
+            || name.equalsIgnoreCase("metric_log_enable")
         ) {
             value = value.toLowerCase();
             if (!SWITCH.contains(value)) {

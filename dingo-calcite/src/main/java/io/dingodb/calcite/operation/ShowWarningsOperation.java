@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite.operation;
 
-import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
 
 import java.sql.SQLWarning;
@@ -25,7 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ShowWarningsOperation implements QueryOperation {
+public class ShowWarningsOperation extends QueryOperation {
     private DingoParserContext context;
 
     public ShowWarningsOperation(DingoParserContext context) {
