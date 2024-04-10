@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.operation;
 
+import io.dingodb.common.profile.Profile;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
@@ -29,6 +30,13 @@ import java.util.List;
 
 
 public interface DmlOperation extends Operation {
+
+    default boolean doExecute(Profile profile) {
+        boolean result = execute();
+        profile.end();
+        return result;
+    }
+
     boolean execute();
 
     default List<ColumnMetaData> columns(JavaTypeFactory typeFactory) {

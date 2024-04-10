@@ -16,6 +16,8 @@
 
 package io.dingodb.driver;
 
+import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.profile.SqlProfile;
 import io.dingodb.driver.type.converter.TypedValueConverter;
 import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Job;
@@ -24,13 +26,11 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.avatica.AvaticaPreparedStatement;
 import org.apache.calcite.avatica.Meta;
-import org.apache.calcite.avatica.proto.Common;
 import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.avatica.util.ByteString;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.sql.Blob;
 import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.List;
@@ -50,6 +50,10 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
     @Getter
     private Long autoIncId;
 
+    @Getter
+    @Setter
+    private SqlProfile sqlProfile;
+
     protected DingoPreparedStatement(
         DingoConnection connection,
         Meta.StatementHandle handle,
@@ -66,6 +70,14 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
             resultSetConcurrency,
             resultSetHoldability
         );
+        sqlProfile = new SqlProfile("executePrepare", true);
+        sqlProfile.setSql(getSql());
+        sqlProfile.setStatementType(signature.statementType.toString().toLowerCase());
+        sqlProfile.setSchema(connection.getContext().getUsedSchema().getName());
+        String user = connection.getContext().getOption("user");
+        String host = connection.getContext().getOption("host");
+        sqlProfile.setSimpleUser(user + "@" + host);
+        sqlProfile.setInstance(DingoConfiguration.location().toString());
     }
 
     void setParameterValues(@NonNull List<TypedValue> parameterValues) {

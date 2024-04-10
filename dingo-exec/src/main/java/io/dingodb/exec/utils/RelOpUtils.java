@@ -16,16 +16,20 @@
 
 package io.dingodb.exec.utils;
 
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.operator.params.ScanParam;
 import io.dingodb.exec.operator.params.ScanWithRelOpParam;
 import io.dingodb.expr.rel.CacheOp;
 import io.dingodb.expr.rel.PipeOp;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Iterator;
 
+@Slf4j
 public final class RelOpUtils {
     private RelOpUtils() {
     }
@@ -54,14 +58,19 @@ public final class RelOpUtils {
         @NonNull Vertex vertex,
         @NonNull Iterator<Object[]> iterator
     ) {
+        ScanParam param = vertex.getParam();
+        OperatorProfile profile = param.getProfile("doScan");
         long count = 0;
+        long tmp = System.currentTimeMillis();
         while (iterator.hasNext()) {
+            profile.time(tmp);
             Object[] tuple = iterator.next();
-            ++count;
             if (!vertex.getSoleEdge().transformToNext(context, tuple)) {
                 break;
             }
+            tmp = System.currentTimeMillis();
         }
+        profile.end();
         return count;
     }
 
@@ -70,15 +79,20 @@ public final class RelOpUtils {
         @NonNull Vertex vertex,
         @NonNull Iterator<Object[]> sourceIterator
     ) {
+        ScanParam param = vertex.getParam();
+        OperatorProfile profile = param.getProfile("doScanWithPipeOp");
         PipeOp relOp = (PipeOp) ((ScanWithRelOpParam) vertex.getParam()).getRelOp();
         Edge edge = vertex.getSoleEdge();
         long count = 0;
+        long tmp = System.currentTimeMillis();
         while (sourceIterator.hasNext()) {
+            profile.time(tmp);
             Object[] tuple = sourceIterator.next();
             ++count;
             if (!processWithPipeOp(relOp, tuple, edge, context)) {
                 break;
             }
+            tmp = System.currentTimeMillis();
         }
         return count;
     }
@@ -88,12 +102,17 @@ public final class RelOpUtils {
         @NonNull Vertex vertex,
         @NonNull Iterator<Object[]> sourceIterator
     ) {
+        ScanParam param = vertex.getParam();
+        OperatorProfile profile = param.getProfile("doScanWithCacheOp");
         CacheOp relOp = (CacheOp) ((ScanWithRelOpParam) vertex.getParam()).getRelOp();
         long count = 0;
+        long tmp = System.currentTimeMillis();
         while (sourceIterator.hasNext()) {
+            profile.time(tmp);
             Object[] tuple = sourceIterator.next();
             ++count;
             relOp.put(tuple);
+            tmp = System.currentTimeMillis();
         }
         forwardCacheOpResults(relOp, vertex.getSoleEdge());
         relOp.clear();

@@ -17,9 +17,7 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.operator.data.Context;
-import io.dingodb.exec.operator.params.EmptySourceParam;
 
 public class EmptySourceOperator extends SourceOperator {
     public static final EmptySourceOperator INSTANCE = new EmptySourceOperator();
@@ -29,11 +27,6 @@ public class EmptySourceOperator extends SourceOperator {
 
     @Override
     public boolean push(Context context, Vertex vertex) {
-        EmptySourceParam param = vertex.getParam();
-        OperatorProfile profile = param.getProfile(vertex.getId());
-        profile.setStartTimeStamp(System.currentTimeMillis());
-        profile.setProcessedTupleCount(0);
-        profile.setEndTimeStamp(System.currentTimeMillis());
         return false;
     }
 }

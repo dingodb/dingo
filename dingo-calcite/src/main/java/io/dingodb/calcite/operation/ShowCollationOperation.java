@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ShowCollationOperation implements QueryOperation {
+public class ShowCollationOperation extends QueryOperation {
 
     private String sqlLikePattern;
 

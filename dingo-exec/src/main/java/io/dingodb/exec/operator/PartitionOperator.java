@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PartitionParam;
@@ -31,7 +32,11 @@ public final class PartitionOperator extends FanOutOperator {
     @Override
     protected int calcOutputIndex(Context context, Object @NonNull [] tuple, Vertex vertex) {
         PartitionParam param = vertex.getParam();
-        return param.getPartIndices().get(context.getDistribution().getId().domain);
+        OperatorProfile profile = param.getProfile("partition");
+        long start = System.currentTimeMillis();
+        int index = param.getPartIndices().get(context.getDistribution().getId().domain);
+        profile.time(start);
+        return index;
     }
 
 }

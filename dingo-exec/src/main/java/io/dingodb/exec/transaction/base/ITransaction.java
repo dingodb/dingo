@@ -17,6 +17,7 @@
 package io.dingodb.exec.transaction.base;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.transaction.impl.TransactionCache;
@@ -95,4 +96,6 @@ public interface ITransaction {
     long getLockTimeOut();
 
     CompletableFuture<Void> getFinishedFuture();
+
+    CommitProfile getCommitProfile();
 }

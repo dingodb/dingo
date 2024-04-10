@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class ShowProcessListOperation implements QueryOperation {
+public class ShowProcessListOperation extends QueryOperation {
 
     private String sqlLikePattern;
 

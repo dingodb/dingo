@@ -18,6 +18,7 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
@@ -35,6 +36,8 @@ public class VectorPartitionOperator extends FanOutOperator {
     @Override
     protected int calcOutputIndex(Context context, Object @NonNull [] tuple, Vertex vertex) {
         VectorPartitionParam param = vertex.getParam();
+        OperatorProfile profile = (OperatorProfile) param.getProfile("vectorPart");
+        long start = System.currentTimeMillis();
         // extract vector id from tuple
         Long vectorId = (Long) tuple[param.getIndex()];
         Object[] record = new Object[] {vectorId};
@@ -45,7 +48,7 @@ public class VectorPartitionOperator extends FanOutOperator {
                 Optional.ofNullable(param.getTable().getPartitionStrategy())
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
             .calcPartId(key, param.getDistributions());
-
+        profile.time(start);
         return param.getPartIndices().get(partId);
     }
 }

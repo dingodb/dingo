@@ -44,7 +44,7 @@ public abstract class SourceOperator extends SoleOutOperator {
         if (fin instanceof FinWithException) {
             vertex.getOutList().forEach(e -> e.fin(fin));
         } else {
-            vertex.getOutList().forEach(e -> e.fin(new FinWithProfiles(param.getProfiles())));
+            vertex.getOutList().forEach(e -> e.fin(FinWithProfiles.of(param.getProfile())));
         }
         param.clear();
     }

@@ -17,9 +17,9 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.fin.OperatorProfile;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.SourceParam;
 import lombok.extern.slf4j.Slf4j;
@@ -31,13 +31,13 @@ import java.util.Iterator;
 public abstract class IteratorSourceOperator extends SourceOperator {
     @Override
     public boolean push(Context context, Vertex vertex) {
-        long count = 0;
-        long startTime = System.currentTimeMillis();
         SourceParam param = vertex.getParam();
-        OperatorProfile profile = param.getProfile(vertex.getId());
-        profile.setStartTimeStamp(startTime);
+        OperatorProfile profile = param.getProfile("iteratorSource");
+        profile.start();
         Iterator<Object[]> iterator = createIterator(vertex);
+        long tmp = System.currentTimeMillis();
         while (iterator.hasNext()) {
+            profile.time(tmp);
             Object[] tuple = iterator.next();
             if (tuple[0] instanceof RangeDistribution) {
                 context.setDistribution((RangeDistribution) tuple[0]);
@@ -45,19 +45,18 @@ public abstract class IteratorSourceOperator extends SourceOperator {
                     tuple = (Object[]) tuple[1];
                 }
             }
-            ++count;
             for (Edge edge : vertex.getOutList()) {
                 if (!edge.transformToNext(context, tuple)) {
                     break;
                 }
             }
+            tmp = System.currentTimeMillis();
         }
+        profile.end();
         if (log.isDebugEnabled()) {
-            log.debug("IteratorSourceOperator push,  count: {}, cost: {}ms.", count,
-                System.currentTimeMillis() - startTime);
+            log.debug("IteratorSourceOperator push,  count: {}, cost: {}ms.", profile.getCount(),
+                profile.getDuration());
         }
-        profile.setProcessedTupleCount(count);
-        profile.setEndTimeStamp(System.currentTimeMillis());
         return false;
     }
 

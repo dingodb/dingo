@@ -19,6 +19,7 @@ package io.dingodb.exec.transaction.base;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
@@ -81,6 +82,7 @@ public abstract class BaseTransaction implements ITransaction {
     protected Future commitFuture;
     protected CacheToObject cacheToObject;
     protected AtomicBoolean cancel;
+    protected CommitProfile commitProfile;
 
     protected CompletableFuture<Void> finishedFuture = new CompletableFuture<>();
 
@@ -96,6 +98,7 @@ public abstract class BaseTransaction implements ITransaction {
         this.sqlList = new ArrayList<>();
         this.transactionConfig = new TransactionConfig();
         TransactionManager.register(txnId, this);
+        commitProfile = new CommitProfile();
     }
 
     public BaseTransaction(long startTs, int isolationLevel) {
@@ -110,6 +113,7 @@ public abstract class BaseTransaction implements ITransaction {
         this.sqlList = new ArrayList<>();
         this.transactionConfig = new TransactionConfig();
         TransactionManager.register(txnId, this);
+        commitProfile = new CommitProfile();
     }
 
     @Override
@@ -203,6 +207,9 @@ public abstract class BaseTransaction implements ITransaction {
         cleanUp(jobManager);
         TransactionManager.unregister(txnId);
         this.closed = true;
+        if (commitProfile != null) {
+            commitProfile.endClean();
+        }
         this.status = TransactionStatus.CLOSE;
     }
 
@@ -256,6 +263,7 @@ public abstract class BaseTransaction implements ITransaction {
         // nothing
         // commit
         log.info("{} {} Start commit", txnId, transactionOf());
+        commitProfile.start();
         if (status != TransactionStatus.START) {
             throw new RuntimeException(txnId + ":" + transactionOf() + " unavailable status is " + status);
         }
@@ -280,6 +288,7 @@ public abstract class BaseTransaction implements ITransaction {
             checkContinue();
             // 1、PreWritePrimaryKey 、heartBeat
             preWritePrimaryKey();
+            commitProfile.endPreWritePrimary();
             if (cacheToObject.getMutation().getOp() == Op.CheckNotExists) {
                 log.info("{} {} PreWritePrimaryKey Op is CheckNotExists", txnId, transactionOf());
                 return;
@@ -295,6 +304,7 @@ public abstract class BaseTransaction implements ITransaction {
             while (iterator.hasNext()) {
                 Object[] next = iterator.next();
             }
+            commitProfile.endPreWriteSecond();
             this.status = TransactionStatus.PRE_WRITE;
         } catch (WriteConflictException e) {
             log.info(e.getMessage(), e);
@@ -354,6 +364,7 @@ public abstract class BaseTransaction implements ITransaction {
             // 4、get commit_ts 、CommitPrimaryKey
             this.commitTs = TransactionManager.getCommitTs();
             boolean result = commitPrimaryKey(cacheToObject);
+            commitProfile.endCommitPrimary();
             if (!result) {
                 rollback(jobManager);
                 throw new RuntimeException(txnId + " " + cacheToObject.getPartId()
@@ -372,6 +383,7 @@ public abstract class BaseTransaction implements ITransaction {
             if (!cancel.get()) {
                 commit_future.get();
             }
+            commitProfile.endCommitSecond();
             this.status = TransactionStatus.COMMIT;
         } catch (Throwable t) {
             log.info(t.getMessage(), t);

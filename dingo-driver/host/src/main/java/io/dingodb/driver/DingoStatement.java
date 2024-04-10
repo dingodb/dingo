@@ -20,6 +20,8 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.operation.DmlOperation;
 import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.QueryOperation;
+import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.profile.SqlProfile;
 import io.dingodb.common.mysql.constant.ServerStatus;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.Job;
@@ -55,6 +57,10 @@ public class DingoStatement extends AvaticaStatement {
     @Getter
     private boolean hasIncId;
 
+    @Getter
+    @Setter
+    private SqlProfile sqlProfile;
+
     @Setter
     @Getter
     private Long autoIncId;
@@ -73,6 +79,12 @@ public class DingoStatement extends AvaticaStatement {
             resultSetConcurrency,
             resultSetHoldability
         );
+        sqlProfile = new SqlProfile("statement", false);
+        sqlProfile.setSchema(connection.getContext().getUsedSchema().getName());
+        String user = connection.getContext().getOption("user");
+        String host = connection.getContext().getOption("host");
+        sqlProfile.setSimpleUser(user + "@" + host);
+        sqlProfile.setInstance(DingoConfiguration.location().toString());
     }
 
     @Override
@@ -120,7 +132,7 @@ public class DingoStatement extends AvaticaStatement {
         } else if (signature instanceof MysqlSignature) {
             Operation operation = ((MysqlSignature) signature).getOperation();
             if (operation instanceof QueryOperation) {
-                return ((QueryOperation) operation).getIterator();
+                return ((QueryOperation) operation).iterator();
             } else {
                 DmlOperation dmlOperation = (DmlOperation) operation;
                 Iterator<Object[]> iterator = dmlOperation.getIterator();
@@ -158,4 +170,5 @@ public class DingoStatement extends AvaticaStatement {
         }
         return initServerStatus;
     }
+
 }

@@ -22,6 +22,7 @@ import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
+import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.operation.DdlOperation;
 import io.dingodb.calcite.operation.DmlOperation;
 import io.dingodb.calcite.operation.KillConnection;
@@ -29,13 +30,15 @@ import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.QueryOperation;
 import io.dingodb.calcite.operation.ShowProcessListOperation;
 import io.dingodb.calcite.rel.AutoIncrementShuttle;
-import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.ProcessInfo;
+import io.dingodb.common.profile.CommitProfile;
+import io.dingodb.common.profile.ExecProfile;
+import io.dingodb.common.profile.PlanProfile;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
@@ -102,10 +105,17 @@ public final class DingoDriverParser extends DingoParser {
     private final DingoConnection connection;
     @Getter
     private boolean inTransaction;
+    @Getter
+    private final PlanProfile planProfile;
+    @Getter
+    private ExecProfile execProfile;
+    @Getter
+    private CommitProfile commitProfile;
 
     public DingoDriverParser(@NonNull DingoConnection connection) {
         super(connection.getContext());
         this.connection = connection;
+        this.planProfile = new PlanProfile();
     }
 
     private static RelDataType makeStruct(RelDataTypeFactory typeFactory, @NonNull RelDataType type) {
@@ -221,7 +231,6 @@ public final class DingoDriverParser extends DingoParser {
     @Nonnull
     public Meta.Signature parseQuery(
         JobManager jobManager,
-        String jobIdPrefix,
         String sql
     ) {
         SqlNode sqlNode;
@@ -233,58 +242,22 @@ public final class DingoDriverParser extends DingoParser {
         } catch (SqlParseException e) {
             throw ExceptionUtils.toRuntime(e);
         }
-
+        planProfile.endParse();
         JavaTypeFactory typeFactory = connection.getTypeFactory();
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
+        planProfile.setStmtType(sqlNode.getKind().lowerName);
         // for compatible mysql protocol
-        if (compatibleMysql(sqlNode)) {
-            DingoDdlVerify.verify(sqlNode, connection);
-            Operation operation = convertToOperation(sqlNode, connection, connection.getContext());
-            Meta.StatementType statementType;
-            List<ColumnMetaData> columns = new ArrayList<>();
-            if (sqlNode.getKind() == SqlKind.SELECT || sqlNode.getKind() == SqlKind.ORDER_BY) {
-                QueryOperation queryOperation = (QueryOperation) operation;
-                columns = queryOperation.columns().stream().map(column -> metaData(typeFactory, 0, column,
-                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null))
-                    .collect(Collectors.toList());
-                statementType = Meta.StatementType.SELECT;
-                if (queryOperation instanceof ShowProcessListOperation) {
-                    ShowProcessListOperation processListOperation = (ShowProcessListOperation) queryOperation;
-                    processListOperation.init(getProcessInfoList(ServerMeta.getInstance().connectionMap));
-                }
-            } else if (sqlNode.getKind() == SqlKind.INSERT) {
-                columns = ((DmlOperation)operation).columns(typeFactory);
-                statementType = Meta.StatementType.IS_DML;
-                ((DmlOperation) operation).execute();
-            } else {
-                if (operation instanceof KillConnection) {
-                    KillConnection killConnection = (KillConnection) operation;
-                    String threadId = killConnection.getThreadId();
-                    if (ServerMeta.getInstance().connectionMap.containsKey(threadId)) {
-                        killConnection.initConnection(ServerMeta.getInstance().connectionMap.get(threadId));
-                    } else if (ServerMeta.getInstance().connectionMap.containsKey(killConnection.getMysqlThreadId())) {
-                        killConnection.initConnection(
-                            ServerMeta.getInstance().connectionMap.get(killConnection.getMysqlThreadId())
-                        );
-                    }
-                }
-                ((DdlOperation)operation).execute();
-                statementType = Meta.StatementType.OTHER_DDL;
-            }
-
-            return new MysqlSignature(columns,
-                sql,
-                new ArrayList<>(),
-                null,
-                cursorFactory,
-                statementType,
-                operation);
+        MysqlSignature mysqlSignature = getMysqlSignature(sql, sqlNode, typeFactory, cursorFactory);
+        if (mysqlSignature != null) {
+            return mysqlSignature;
         }
 
         if (sqlNode.getKind().belongsTo(SqlKind.DDL)) {
             DingoDdlVerify.verify(sqlNode, connection);
+            execProfile = new ExecProfile("DDL");
             final DdlExecutor ddlExecutor = PARSER_CONFIG.parserFactory().getDdlExecutor();
             ddlExecutor.executeDdl(connection, sqlNode);
+            execProfile.end();
             return new DingoSignature(
                 ImmutableList.of(),
                 sql,
@@ -306,6 +279,7 @@ public final class DingoDriverParser extends DingoParser {
             log.error("Parse and validate error, sql: <[{}]>.", sql, e);
             throw ExceptionUtils.toRuntime(e);
         }
+        planProfile.endValidator();
         Meta.StatementType statementType;
         RelDataType type;
         switch (sqlNode.getKind()) {
@@ -326,6 +300,7 @@ public final class DingoDriverParser extends DingoParser {
 
         final RelRoot relRoot = convert(sqlNode, false);
         final RelNode relNode = optimize(relRoot.rel);
+        planProfile.endOptimize();
         markAutoIncForDml(relNode);
         Location currentLocation = MetaService.root().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
@@ -408,6 +383,7 @@ public final class DingoDriverParser extends DingoParser {
                 job
             );
         }
+        planProfile.endLock();
         return new DingoSignature(
             columns,
             sql,
@@ -420,6 +396,65 @@ public final class DingoDriverParser extends DingoParser {
             relNode,
             parasType
         );
+    }
+
+    @Nullable
+    private MysqlSignature getMysqlSignature(String sql,
+            SqlNode sqlNode,
+            JavaTypeFactory typeFactory, Meta.CursorFactory cursorFactory) {
+        if (compatibleMysql(sqlNode)) {
+            planProfile.end();
+            DingoDdlVerify.verify(sqlNode, connection);
+            Operation operation = convertToOperation(sqlNode, connection, connection.getContext());
+            Meta.StatementType statementType;
+            List<ColumnMetaData> columns = new ArrayList<>();
+            if (sqlNode.getKind() == SqlKind.SELECT || sqlNode.getKind() == SqlKind.ORDER_BY) {
+                this.execProfile = new ExecProfile("exec");
+                QueryOperation queryOperation = (QueryOperation) operation;
+                queryOperation.initExecProfile(execProfile);
+                columns = queryOperation.columns().stream().map(column -> metaData(typeFactory, 0, column,
+                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null))
+                    .collect(Collectors.toList());
+                statementType = Meta.StatementType.SELECT;
+                if (queryOperation instanceof ShowProcessListOperation) {
+                    ShowProcessListOperation processListOperation = (ShowProcessListOperation) queryOperation;
+                    processListOperation.init(getProcessInfoList(ServerMeta.getInstance().connectionMap));
+                }
+            } else if (sqlNode.getKind() == SqlKind.INSERT) {
+                columns = ((DmlOperation)operation).columns(typeFactory);
+                statementType = Meta.StatementType.IS_DML;
+                this.execProfile = new ExecProfile("dml");
+                ((DmlOperation) operation).doExecute(execProfile);
+            } else {
+                if (operation instanceof KillConnection) {
+                    KillConnection killConnection = (KillConnection) operation;
+                    String threadId = killConnection.getThreadId();
+                    if (ServerMeta.getInstance().connectionMap.containsKey(threadId)) {
+                        killConnection.initConnection(ServerMeta.getInstance().connectionMap.get(threadId));
+                    } else if (ServerMeta.getInstance().connectionMap.containsKey(killConnection.getMysqlThreadId())) {
+                        killConnection.initConnection(
+                            ServerMeta.getInstance().connectionMap.get(killConnection.getMysqlThreadId())
+                        );
+                    }
+                }
+                if (sqlNode instanceof SqlCommit) {
+                    ((DdlOperation)operation).execute();
+                    this.commitProfile = connection.getCommitProfile();
+                } else {
+                    this.execProfile = new ExecProfile("other_ddl");
+                    ((DdlOperation)operation).doExecute(this.execProfile);
+                }
+                statementType = Meta.StatementType.OTHER_DDL;
+            }
+            return new MysqlSignature(columns,
+                sql,
+                new ArrayList<>(),
+                null,
+                cursorFactory,
+                statementType,
+                operation);
+        }
+        return null;
     }
 
     private void lockTables(

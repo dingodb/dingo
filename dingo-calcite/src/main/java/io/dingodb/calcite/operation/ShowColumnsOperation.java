@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ShowColumnsOperation implements QueryOperation {
+public class ShowColumnsOperation extends QueryOperation {
 
     @Setter
     public SqlNode sqlNode;

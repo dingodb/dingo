@@ -19,8 +19,8 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.profile.Profile;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.fin.OperatorProfile;
 import lombok.Getter;
 
 import java.util.Arrays;
@@ -36,7 +36,7 @@ public class CoalesceParam extends AbstractParams {
     private final int inputNum;
 
     private transient boolean[] finFlags;
-    private transient List<OperatorProfile> profiles;
+    private transient List<Profile> profiles;
 
     public CoalesceParam(int inputNum) {
         this.inputNum = inputNum;
@@ -54,7 +54,7 @@ public class CoalesceParam extends AbstractParams {
         super.setParas(paras);
     }
 
-    public synchronized void addProfiles(List<OperatorProfile> profiles) {
+    public synchronized void addProfiles(List<Profile> profiles) {
         if (this.profiles == null) {
             this.profiles = new LinkedList<>();
         }

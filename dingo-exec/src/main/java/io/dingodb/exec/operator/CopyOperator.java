@@ -16,8 +16,10 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.operator.params.AbstractParams;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -29,7 +31,11 @@ public class CopyOperator extends FanOutOperator {
 
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
+        AbstractParams param = vertex.getParam();
+        OperatorProfile profile = param.getProfile("copy");
+        long start = System.currentTimeMillis();
         vertex.getOutList().forEach(o -> o.transformToNext(context, tuple));
+        profile.time(start);
         return true;
     }
 

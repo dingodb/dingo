@@ -16,6 +16,13 @@
 
 package io.dingodb.calcite.operation;
 
+import io.dingodb.common.profile.Profile;
+
 public interface DdlOperation extends Operation {
+    default void doExecute(Profile profile) {
+        execute();
+        profile.end();
+    }
+
     void execute();
 }

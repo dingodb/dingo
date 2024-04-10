@@ -16,11 +16,26 @@
 
 package io.dingodb.calcite.operation;
 
+import io.dingodb.common.profile.ExecProfile;
+
 import java.util.Iterator;
 import java.util.List;
 
-public interface QueryOperation extends Operation {
-    Iterator<Object[]> getIterator();
+public abstract class QueryOperation implements Operation {
 
-    List<String> columns();
+    public ExecProfile execProfile;
+
+    public Iterator<Object[]> iterator() {
+        Iterator<Object[]> iterator = getIterator();
+        this.execProfile.end();
+        return iterator;
+    }
+
+    abstract Iterator<Object[]> getIterator();
+
+    public abstract List<String> columns();
+
+    public void initExecProfile(ExecProfile execProfile) {
+        this.execProfile = execProfile;
+    }
 }

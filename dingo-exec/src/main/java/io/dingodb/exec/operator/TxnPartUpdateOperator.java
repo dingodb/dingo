@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -58,6 +59,8 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
     @Override
     protected boolean pushTuple(Context context, Object[] tuple, Vertex vertex) {
         TxnPartUpdateParam param = vertex.getParam();
+        OperatorProfile profile = (OperatorProfile) param.getProfile("partUpdate");
+        long start = System.currentTimeMillis();
         param.setContext(context);
         DingoType schema = param.getSchema();
         TupleMapping mapping = param.getMapping();
@@ -256,6 +259,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             log.error(ex.getMessage(), ex);
             throw new RuntimeException(ex);
         }
+        profile.time(start);
         return true;
     }
 

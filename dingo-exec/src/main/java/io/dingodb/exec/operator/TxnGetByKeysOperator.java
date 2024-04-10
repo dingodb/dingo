@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
@@ -49,6 +50,8 @@ public final class TxnGetByKeysOperator extends FilterProjectOperator {
     @Override
     protected @NonNull Iterator<Object[]> createSourceIterator(Context context, Object[] tuple, Vertex vertex) {
         TxnGetByKeysParam param = vertex.getParam();
+        OperatorProfile profile = (OperatorProfile) param.getProfile("getByKeys");
+        long start = System.currentTimeMillis();
         param.setContext(context);
         byte[] keys = param.getCodec().encodeKey(tuple);
         CommonId tableId = param.getTableId();
@@ -64,11 +67,15 @@ public final class TxnGetByKeysOperator extends FilterProjectOperator {
             txnId,
             partIdByte,
             vertex.getTask().getTransactionType());
-        if (local != null) return local;
+        if (local != null) {
+            profile.time(start);
+            return local;
+        }
         StoreInstance store;
         store = Services.KV_STORE.getInstance(tableId, partId);
         KeyValue keyValue = store.txnGet(param.getScanTs(), keys, param.getTimeOut());
         if (keyValue == null || keyValue.getValue() == null) {
+            profile.time(start);
             if (vertex.getTask().getTransactionType() == TransactionType.PESSIMISTIC && !param.isSelect()) {
                 return Collections.singletonList(tuple).iterator();
             } else {
@@ -76,6 +83,7 @@ public final class TxnGetByKeysOperator extends FilterProjectOperator {
             }
         }
         Object[] result = param.getCodec().decode(keyValue);
+        profile.time(start);
         return Collections.singletonList(result).iterator();
     }
 

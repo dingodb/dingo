@@ -18,7 +18,9 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.operator.params.AbstractParams;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -47,6 +49,10 @@ public abstract class IteratorOperator extends SoleOutOperator {
 
     @Override
     public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
+        if (fin instanceof FinWithProfiles) {
+            FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+            finWithProfiles.addProfile(vertex);
+        }
         vertex.getSoleEdge().fin(fin);
     }
 

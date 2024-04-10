@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ShowCreateTableOperation implements QueryOperation {
+public class ShowCreateTableOperation extends QueryOperation {
 
     @Setter
     public SqlNode sqlNode;

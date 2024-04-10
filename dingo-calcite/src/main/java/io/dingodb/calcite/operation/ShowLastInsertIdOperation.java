@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ShowLastInsertIdOperation implements QueryOperation {
+public class ShowLastInsertIdOperation extends QueryOperation {
     Connection connection;
 
     public ShowLastInsertIdOperation(Connection connection) {

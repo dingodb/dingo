@@ -23,6 +23,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.profile.Profile;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.table.Part;
@@ -122,6 +124,8 @@ public abstract class AbstractParams {
     @Setter
     protected transient Context context;
 
+    protected transient Profile profile;
+
     public AbstractParams() {
     }
 
@@ -143,5 +147,13 @@ public abstract class AbstractParams {
 
     public void destroy() {
 
+    }
+
+    public synchronized OperatorProfile getProfile(String type) {
+        if (profile == null) {
+            profile = new OperatorProfile(type);
+            profile.start();
+        }
+        return (OperatorProfile) profile;
     }
 }

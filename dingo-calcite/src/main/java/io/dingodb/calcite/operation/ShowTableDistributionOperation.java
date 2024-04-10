@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.Utils.buildKeyStr;
 
-public class ShowTableDistributionOperation implements QueryOperation {
+public class ShowTableDistributionOperation extends QueryOperation {
 
     private final String usedSchemaName;
 

@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.TupleMapping;
@@ -56,6 +57,8 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
     @Override
     protected @NonNull Iterator<Object[]> createSourceIterator(Vertex vertex) {
         TxnPartVectorParam param = vertex.getParam();
+        OperatorProfile profile = param.getProfile("partVector");
+        long start = System.currentTimeMillis();
         int vecIdx = param.getVectorIndex();
         String distanceType = param.getDistanceType();
         KeyValueCodec tableCodec;
@@ -149,6 +152,7 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                 results.add(priTuples);
             }
         }
+        profile.time(start);
         return results.iterator();
     }
 

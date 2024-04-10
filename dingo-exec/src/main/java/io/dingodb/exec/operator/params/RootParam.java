@@ -19,6 +19,7 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.profile.ExecProfile;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
@@ -49,6 +50,9 @@ public class RootParam extends AbstractParams {
     private transient long takeTtl;
 
     @Setter
+    private transient ExecProfile execProfile;
+
+    @Setter
     private transient Long autoIncId;
 
     public RootParam(DingoType schema, @Nullable TupleMapping selection) {
@@ -59,6 +63,7 @@ public class RootParam extends AbstractParams {
     @Override
     public void init(Vertex vertex) {
         tupleQueue = new LinkedBlockingDeque<>(TUPLE_QUEUE_SIZE);
+        execProfile = new ExecProfile("job");
     }
 
     public void forcePut(Object[] tuple) {

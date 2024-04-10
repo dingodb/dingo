@@ -19,6 +19,10 @@ package io.dingodb.exec.fin;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.profile.Profile;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.params.AbstractParams;
 import io.dingodb.expr.json.runtime.Parser;
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -32,11 +36,15 @@ import java.util.List;
 public class FinWithProfiles implements Fin {
     public static final Parser PARSER = Parser.JSON;
 
+    private int dagLevel = 0;
     @JsonValue
-    List<OperatorProfile> profiles;
+    List<Profile> profiles;
+
+    @Getter
+    Profile profile;
 
     @JsonCreator
-    public FinWithProfiles(List<OperatorProfile> profiles) {
+    public FinWithProfiles(List<Profile> profiles) {
         this.profiles = profiles;
     }
 
@@ -44,13 +52,15 @@ public class FinWithProfiles implements Fin {
         return PARSER.parse(is, FinWithProfiles.class);
     }
 
-    public static @NonNull FinWithProfiles of(OperatorProfile profile) {
-        List<OperatorProfile> profiles = new LinkedList<>();
-        profiles.add(profile);
+    public static @NonNull FinWithProfiles of(Profile profile) {
+        List<Profile> profiles = new LinkedList<>();
+        if (profile != null) {
+            profiles.add(profile);
+        }
         return new FinWithProfiles(profiles);
     }
 
-    public synchronized List<OperatorProfile> getProfiles() {
+    public synchronized List<Profile> getProfiles() {
         if (profiles == null) {
             profiles = new LinkedList<>();
         }
@@ -68,7 +78,7 @@ public class FinWithProfiles implements Fin {
             profiles = new LinkedList<>();
         }
         StringBuilder builder = new StringBuilder();
-        for (OperatorProfile profile : profiles) {
+        for (Profile profile : profiles) {
             builder.append(profile.detail()).append("\n");
         }
         return builder.toString();
@@ -81,5 +91,47 @@ public class FinWithProfiles implements Fin {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public synchronized void addProfileList(List<Profile> profileList) {
+        profileList.forEach(profile -> profile.setDagLevel(dagLevel));
+        getProfiles().addAll(profileList);
+        dagLevel ++;
+    }
+
+    public synchronized void addProfile(Profile profile) {
+        if (profile != null) {
+            if (profile.getEnd() == 0) {
+                profile.end();
+            }
+            profile.setDagLevel(dagLevel);
+            dagLevel ++;
+
+            profile.getChildren().addAll(getProfiles());
+            if (profile.getChildren().isEmpty() && this.profile != null) {
+                if (profile.getType().equalsIgnoreCase(this.profile.getType())) {
+                    OperatorProfile serial = new OperatorProfile(profile.getType());
+                    serial.getChildren().add(profile);
+
+                    boolean r = this.profile.getChildren().stream()
+                     .allMatch(p -> p.getType().equalsIgnoreCase(this.profile.getType()));
+                    if (!r) {
+                        serial.getChildren().add(this.profile);
+                    } else {
+                        serial.getChildren().addAll(this.profile.getChildren());
+                    }
+                    profile = serial;
+                } else {
+                    profile.getChildren().add(this.profile);
+                }
+            }
+            this.profile = profile;
+            profiles.clear();
+        }
+    }
+
+    public synchronized void addProfile(Vertex vertex) {
+        AbstractParams param = vertex.getParam();
+        addProfile(param.getProfile());
     }
 }
