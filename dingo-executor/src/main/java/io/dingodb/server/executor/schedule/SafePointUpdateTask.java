@@ -165,10 +165,11 @@ public final class SafePointUpdateTask {
                 Services.coordinatorService(coordinators).updateGCSafePoint(
                     reqTs, UpdateGCSafePointRequest.builder().gcFlag(GcFlagType.GC_STOP).build()
                 );
+            } else {
+                Services.coordinatorService(coordinators).updateGCSafePoint(
+                    reqTs, UpdateGCSafePointRequest.builder().gcFlag(GcFlagType.GC_START).safePoint(safeTs - 1).build()
+                );
             }
-            Services.coordinatorService(coordinators).updateGCSafePoint(
-                reqTs, UpdateGCSafePointRequest.builder().gcFlag(GcFlagType.GC_START).safePoint(safeTs - 1).build()
-            );
         } catch (Exception e) {
             log.error("Update safe point error, skip this run.", e);
             throw e;
