@@ -29,6 +29,7 @@ import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.Location;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -229,7 +230,13 @@ public class DingoStreamingConverterVisitFun {
             Vertex vertex = new Vertex(HASH, param);
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             OutputHint hint = new OutputHint();
-            hint.setLocation(locations.get(0));
+            Location location;
+            if (locations.size() == 0) {
+                location = DingoConfiguration.location();
+            } else {
+                location = locations.get(0);
+            }
+            hint.setLocation(location);
             vertex.setHint(hint);
             Edge edge = new Edge(input, vertex);
             vertex.addIn(edge);
