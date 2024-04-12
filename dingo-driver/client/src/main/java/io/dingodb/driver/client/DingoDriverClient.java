@@ -113,6 +113,7 @@ public class DingoDriverClient extends Driver {
             try {
                 return super.connect(url, info);
             } catch (Throwable e) {
+                log.error(e.getMessage(), e);
                 throw Helper.INSTANCE.createException("connect failed");
             }
         }
