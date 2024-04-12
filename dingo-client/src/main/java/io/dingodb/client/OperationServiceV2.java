@@ -26,6 +26,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.scalar.LongType;
@@ -72,6 +73,7 @@ import io.dingodb.store.proxy.service.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -110,18 +112,23 @@ public class OperationServiceV2 {
 
     public OperationServiceV2(String coordinatorSvr) {
         DingoConfiguration.instance().getConfigMap("store").put("coordinators", coordinatorSvr);
-        DingoConfiguration.instance().setServerId(new CommonId(CommonId.CommonType.SDK, 1, 1));
+        DingoConfiguration.instance().setServerId(new CommonId(CommonId.CommonType.SDK, 1, tso()));
         metaService = MetaService.root();
         jobManager = JobManagerImpl.INSTANCE;
     }
 
     public void close() {
-
+        jobManager.close();
     }
 
     public MetaService getSubMetaService(String schemaName) {
         schemaName = schemaName.toUpperCase();
         return Parameters.nonNull(metaService.getSubMetaService(schemaName), "Schema not found: " + schemaName);
+    }
+
+    public boolean createTable(String schema, TableDefinition tableDefinition) {
+        getSubMetaService(schema).createTables(tableDefinition, Collections.emptyList());
+        return true;
     }
 
     public Table getTable(String schema, String table) {
@@ -277,7 +284,10 @@ public class OperationServiceV2 {
                 task.run(null);
             }
             Task rootTask = job.getRoot();
-            // Iterator<Object[]> iterator = new JobIteratorImpl(job, rootTask.getRoot());
+            Iterator<Object[]> iterator = new JobIteratorImpl(job, rootTask.getRoot());
+            while (iterator.hasNext()) {
+                iterator.next();
+            }
             Boolean[] keyState = task.getContext().getKeyState();
             if (transaction != null) {
                 transaction.addSql("insert");
@@ -343,7 +353,10 @@ public class OperationServiceV2 {
                 task.run(null);
             }
             Task rootTask = job.getRoot();
-            // Iterator<Object[]> iterator = new JobIteratorImpl(job, rootTask.getRoot());
+            Iterator<Object[]> iterator = new JobIteratorImpl(job, rootTask.getRoot());
+            while (iterator.hasNext()) {
+                iterator.next();
+            }
             Boolean[] keyState = task.getContext().getKeyState();
             if (transaction != null) {
                 transaction.addSql("insert");

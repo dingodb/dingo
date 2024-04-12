@@ -20,6 +20,7 @@ import io.dingodb.client.common.Key;
 import io.dingodb.client.common.Record;
 import io.dingodb.client.operation.impl.DeleteRangeResult;
 import io.dingodb.client.operation.impl.OpKeyRange;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.common.utils.Parameters;
@@ -52,8 +53,16 @@ public class DingoClientV2 {
         this.operationService = operationService;
     }
 
-    public Table getTable(String schema, String tableName) {
-        return operationService.getTable(schema, schema);
+    public boolean createTable(TableDefinition tableDefinition) {
+        return createTable(schema, tableDefinition);
+    }
+
+    public boolean createTable(String schema, TableDefinition tableDefinition) {
+        return operationService.createTable(schema, tableDefinition);
+    }
+
+    public Table getTable(String schema, String table) {
+        return operationService.getTable(schema, table);
     }
 
     public boolean upsert(String tableName, Record record) {

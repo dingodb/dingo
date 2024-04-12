@@ -37,7 +37,7 @@ public class JobIteratorImpl extends JobIterator {
     @Getter
     private ExecProfile execProfile;
 
-    JobIteratorImpl(Job job, @NonNull Vertex vertex) {
+    public JobIteratorImpl(Job job, @NonNull Vertex vertex) {
         super(job);
         this.operator = (RootOperator) OperatorFactory.getInstance(vertex.getOp());
         this.vertex = vertex;
