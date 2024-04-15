@@ -185,6 +185,9 @@ public class Histogram implements Cloneable, CalculateStatistic {
     public void merge(Histogram histogram) {
         this.totalCount += histogram.totalCount;
         this.nullCount += histogram.nullCount;
+        if (buckets == null) {
+            return;
+        }
         for (int i = 0; i < buckets.length; i ++) {
             buckets[i] += histogram.buckets[i];
         }

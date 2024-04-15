@@ -87,10 +87,15 @@ public class SqlProfile extends Profile {
 
         StringBuilder dag = new StringBuilder();
         dag.append("\r\n").append(this).append("\r\n");
+        long planEndTime = 0;
         if (planProfile != null) {
+            planEndTime = planProfile.end;
             dag.append(termStr).append(planProfile.dumpTree(prefix)).append("\r\n");
         }
         if (execProfile != null) {
+            if (planEndTime > 0) {
+                dag.append(termStr).append("schedule job:").append(execProfile.start - planEndTime).append("\r\n");
+            }
             dag.append(termStr).append(execProfile.dumpTree(prefix)).append("\r\n");
         }
         if (commitProfile != null) {

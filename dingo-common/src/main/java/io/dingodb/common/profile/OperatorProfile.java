@@ -16,23 +16,17 @@
 
 package io.dingodb.common.profile;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.dingodb.common.CommonId;
+import io.dingodb.common.config.DingoConfiguration;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class OperatorProfile extends Profile {
-    @JsonProperty("id")
-    @JsonSerialize(using = CommonId.JacksonSerializer.class)
-    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    CommonId operatorId;
 
     public OperatorProfile(String type) {
         super(type);
+        this.location = DingoConfiguration.location().url();
     }
 
     @Override
@@ -67,8 +61,7 @@ public class OperatorProfile extends Profile {
             ", max=" + max +
             ", min=" + min +
             ", avg=" + avg +
-            ", level=" + dagLevel +
-            ", children=" + children +
+//            ", children=" + children +
             '}';
     }
 }

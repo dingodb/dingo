@@ -17,35 +17,42 @@
 package io.dingodb.exec.fin;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.AbstractParams;
 import io.dingodb.expr.json.runtime.Parser;
-import lombok.Getter;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.LinkedList;
 import java.util.List;
 
+@Slf4j
+@Data
 public class FinWithProfiles implements Fin {
     public static final Parser PARSER = Parser.JSON;
 
-    private int dagLevel = 0;
-    @JsonValue
-    List<Profile> profiles;
-
-    @Getter
+    @JsonProperty("profile")
     Profile profile;
 
-    @JsonCreator
-    public FinWithProfiles(List<Profile> profiles) {
-        this.profiles = profiles;
+    public FinWithProfiles() {
+
+    }
+
+    public FinWithProfiles(Profile profile) {
+        if (profile != null) {
+            this.profile = profile;
+        } else {
+            this.profile = new Profile("base");
+        }
     }
 
     public static FinWithProfiles deserialize(ByteArrayInputStream is) throws IOException {
@@ -53,18 +60,11 @@ public class FinWithProfiles implements Fin {
     }
 
     public static @NonNull FinWithProfiles of(Profile profile) {
-        List<Profile> profiles = new LinkedList<>();
-        if (profile != null) {
-            profiles.add(profile);
-        }
-        return new FinWithProfiles(profiles);
+        return new FinWithProfiles(profile);
     }
 
     public synchronized List<Profile> getProfiles() {
-        if (profiles == null) {
-            profiles = new LinkedList<>();
-        }
-        return profiles;
+        return profile.getChildren();
     }
 
     @Override
@@ -74,14 +74,7 @@ public class FinWithProfiles implements Fin {
 
     @Override
     public String detail() {
-        if (profiles == null) {
-            profiles = new LinkedList<>();
-        }
-        StringBuilder builder = new StringBuilder();
-        for (Profile profile : profiles) {
-            builder.append(profile.detail()).append("\n");
-        }
-        return builder.toString();
+        return "";
     }
 
     @Override
@@ -94,9 +87,7 @@ public class FinWithProfiles implements Fin {
     }
 
     public synchronized void addProfileList(List<Profile> profileList) {
-        profileList.forEach(profile -> profile.setDagLevel(dagLevel));
-        getProfiles().addAll(profileList);
-        dagLevel ++;
+        profile.getChildren().addAll(profileList);
     }
 
     public synchronized void addProfile(Profile profile) {
@@ -104,10 +95,8 @@ public class FinWithProfiles implements Fin {
             if (profile.getEnd() == 0) {
                 profile.end();
             }
-            profile.setDagLevel(dagLevel);
-            dagLevel ++;
 
-            profile.getChildren().addAll(getProfiles());
+            //profile.getChildren().addAll(getProfiles());
             if (profile.getChildren().isEmpty() && this.profile != null) {
                 if (profile.getType().equalsIgnoreCase(this.profile.getType())) {
                     OperatorProfile serial = new OperatorProfile(profile.getType());
@@ -126,12 +115,15 @@ public class FinWithProfiles implements Fin {
                 }
             }
             this.profile = profile;
-            profiles.clear();
         }
     }
 
     public synchronized void addProfile(Vertex vertex) {
         AbstractParams param = vertex.getParam();
         addProfile(param.getProfile());
+    }
+
+    public void setProfile(Profile profile) {
+        this.profile = profile;
     }
 }

@@ -48,8 +48,10 @@ public final class ReceiveOperator extends SourceOperator {
         if (finObj instanceof FinWithException) {
             super.fin(pin, finObj, vertex);
         } else {
-            FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
-            finWithProfiles.addProfile(vertex);
+            if (fin instanceof FinWithProfiles) {
+                FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+                finWithProfiles.addProfile(vertex);
+            }
             super.fin(pin, fin, vertex);
         }
     }

@@ -16,29 +16,51 @@
 
 package io.dingodb.common.profile;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.dingodb.common.Location;
 import io.dingodb.common.util.ByteUtils;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Data
 public class Profile {
+    @JsonProperty("type")
     String type;
+    @JsonProperty("start")
     long start;
+    @JsonProperty("end")
     long end;
+    @JsonProperty("count")
     long count;
+    @JsonProperty("duration")
     long duration;
+    @JsonProperty("max")
     long max;
+    @JsonProperty("min")
     long min;
+    @JsonProperty("avg")
     long avg;
-    int dagLevel;
+
+    @JsonProperty("children")
     List<Profile> children;
+    @JsonProperty("autoIncId")
     long autoIncId;
+    @JsonProperty("hasAutoInc")
     boolean hasAutoInc;
+
+    @JsonProperty("location")
+    String location = "";
+    @JsonIgnore
     StringBuilder dagText;
+    @JsonIgnore
     final byte[] terminated = ByteUtils.hexStringToByteArray("a9b8a9a4");
+    @JsonIgnore
     final byte[] space = new byte[]{0x20, 0x20};
 
     public Profile() {
@@ -72,14 +94,21 @@ public class Profile {
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
-        dagText.append(node).append("operator:").append(profile.type)
-            .append(",duration:").append(profile.duration)
-            .append(",count:").append(profile.count).append("\r\n");
+        if (!"base".equals(profile.type)) {
+            dagText.append(node).append(profile.type)
+                .append(",duration:").append(profile.duration)
+                .append(",count:").append(profile.count)
+                .append("  ").append(profile.location).append("\r\n");
+        }
         for (Profile child : profile.children) {
             byte[] prefix1 = new byte[prefix.length + 2];
             System.arraycopy(space, 0, prefix1, 0, 2);
             System.arraycopy(prefix, 0, prefix1, 2, prefix.length);
-            dumpTree(child, prefix1);
+            if (child != null) {
+                dumpTree(child, prefix1);
+            } else {
+                log.info("child is null:" + profile);
+            }
         }
 
         return dagText.toString();
@@ -92,4 +121,5 @@ public class Profile {
             + " Duration: " + duration + "ms"
             + " Count: " + count;
     }
+
 }

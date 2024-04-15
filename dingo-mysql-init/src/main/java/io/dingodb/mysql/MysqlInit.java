@@ -287,8 +287,8 @@ public final class MysqlInit {
         values.add(new Object[]{"txn_retry_cnt", "0"});
         values.add(new Object[]{"enable_safe_point_update", "1"});
         values.add(new Object[]{"txn_history_duration", String.valueOf(60 * 60 * 24 * 7)});
-        values.add(new Object[]{"show_query_enable", "on"});
-        values.add(new Object[]{"show_query_threshold", "5000"});
+        values.add(new Object[]{"slow_query_enable", "on"});
+        values.add(new Object[]{"slow_query_threshold", "5000"});
         values.add(new Object[]{"sql_profile_enable", "on"});
         values.add(new Object[]{"metric_log_enable", "on"});
         return values;

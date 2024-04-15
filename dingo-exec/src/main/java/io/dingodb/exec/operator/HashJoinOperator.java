@@ -17,6 +17,7 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
@@ -27,6 +28,7 @@ import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.data.TupleWithJoinFlag;
 import io.dingodb.exec.operator.params.HashJoinParam;
 import io.dingodb.exec.tuple.TupleKey;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
@@ -34,6 +36,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+@Slf4j
 public class HashJoinOperator extends SoleOutOperator {
     public static final HashJoinOperator INSTANCE = new HashJoinOperator();
 
@@ -114,7 +117,11 @@ public class HashJoinOperator extends SoleOutOperator {
             }
             if (fin instanceof FinWithProfiles) {
                 FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
-                finWithProfiles.addProfile(vertex);
+                param.setProfileLeft(finWithProfiles.getProfile());
+                Profile profile = param.getProfile();
+                profile.getChildren().add(param.profileLeft);
+                profile.getChildren().add(param.profileRight);
+                finWithProfiles.setProfile(profile);
             }
             edge.fin(fin);
             // Reset
@@ -122,10 +129,15 @@ public class HashJoinOperator extends SoleOutOperator {
         } else if (pin == 1) { //right
             param.setRightFinFlag(true);
             param.getFuture().complete(null);
+
+            if (fin instanceof FinWithProfiles) {
+                FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+                param.setProfileRight(finWithProfiles.getProfile());
+            }
         }
     }
 
-    private void waitRightFinFlag(HashJoinParam param) {
+    private static void waitRightFinFlag(HashJoinParam param) {
         param.getFuture().join();
         if (!param.isRightFinFlag()) {
             throw new RuntimeException();
