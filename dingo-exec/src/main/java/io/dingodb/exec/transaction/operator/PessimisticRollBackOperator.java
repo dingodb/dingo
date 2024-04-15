@@ -18,6 +18,7 @@ package io.dingodb.exec.transaction.operator;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
@@ -146,7 +147,7 @@ public class PessimisticRollBackOperator extends TransactionOperator {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
             return store.txnPessimisticLockRollback(pessimisticRollBack);
         } catch (RegionSplitException e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             // 2、regin split
             Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(tableId, txnId, param.getKeys());
             for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {

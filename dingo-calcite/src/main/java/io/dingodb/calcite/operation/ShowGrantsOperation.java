@@ -18,6 +18,7 @@ package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.privilege.PrivilegeDict;
 import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.PrivilegeList;
@@ -126,7 +127,7 @@ public class ShowGrantsOperation extends QueryOperation {
                 new ArrayList<>());
             SqlGrant sqlGrant = new SqlGrant(pos, isAllPrivilege, privileges, subject,
                 dingoSqlShowGrants.user, dingoSqlShowGrants.host, withGrantOption);
-            log.info("user sqlGrant:" + sqlGrant);
+            LogUtils.debug(log, "user sqlGrant:" + sqlGrant);
             return sqlGrant;
         }
         return null;
@@ -162,7 +163,7 @@ public class ShowGrantsOperation extends QueryOperation {
                     new ArrayList<>());
                 SqlGrant sqlGrant = new SqlGrant(sqlParserPos, isAllPrivilege, privileges, subject,
                     sqlShowGrants.user, sqlShowGrants.host, withGrantOption);
-                log.info("schema sqlGrant:" + sqlGrant);
+                LogUtils.debug(log, "schema sqlGrant:" + sqlGrant);
                 sqlGrants.add(sqlGrant);
             }
         }
@@ -202,7 +203,7 @@ public class ShowGrantsOperation extends QueryOperation {
                     new ArrayList<>());
                 SqlGrant sqlGrant = new SqlGrant(sqlParserPos, isAllPrivilege, privileges, subject,
                     sqlShowGrants.user, sqlShowGrants.host, withGrantOption);
-                log.info("table sqlGrant:" + sqlGrant);
+                LogUtils.debug(log, "table sqlGrant:" + sqlGrant);
                 sqlGrants.add(sqlGrant);
             }
         }

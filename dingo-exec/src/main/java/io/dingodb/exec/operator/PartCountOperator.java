@@ -17,6 +17,7 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
@@ -38,10 +39,8 @@ public final class PartCountOperator extends SourceOperator {
         profile.start();
         long count = 0; // todo count must have range, delete this class?;
         edge.transformToNext(new Object[]{count});
-        if (log.isDebugEnabled()) {
-            log.debug("Count table by partition, get count: {}, cost: {} ms.",
-                count, System.currentTimeMillis() - profile.getStart());
-        }
+        LogUtils.debug(log, "Count table by partition, get count: {}, cost: {} ms.",
+            count, System.currentTimeMillis() - profile.getStart());
         profile.setCount(count);
         profile.end();
         return false;

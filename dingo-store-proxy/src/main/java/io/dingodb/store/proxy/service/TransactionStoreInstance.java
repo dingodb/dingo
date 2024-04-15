@@ -21,6 +21,7 @@ import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
@@ -109,9 +110,9 @@ public class TransactionStoreInstance {
             .adviseLockTtl(TsoService.INSTANCE.timestamp() + SECONDS.toMillis(5))
             .build();
         if (indexService != null) {
-            indexService.txnHeartBeat(request);
+            indexService.txnHeartBeat(request.getStartTs(), request);
         } else {
-            storeService.txnHeartBeat(request);
+            storeService.txnHeartBeat(request.getStartTs(), request);
         }
     }
 
@@ -122,9 +123,9 @@ public class TransactionStoreInstance {
             .adviseLockTtl(TsoService.INSTANCE.timestamp() + SECONDS.toMillis(5))
             .build();
         if (indexService != null) {
-            indexService.txnHeartBeat(request);
+            indexService.txnHeartBeat(request.getStartTs(), request);
         } else {
-            storeService.txnHeartBeat(request);
+            storeService.txnHeartBeat(request.getStartTs(), request);
         }
     }
 
@@ -137,9 +138,9 @@ public class TransactionStoreInstance {
             TxnPrewriteRequest request = MAPPER.preWriteTo(txnPreWrite);
             TxnPrewriteResponse response;
             if (request.getMutations().get(0).getVector() == null) {
-                response = storeService.txnPrewrite(request);
+                response = storeService.txnPrewrite(txnPreWrite.getStartTs(), request);
             } else {
-                response = indexService.txnPrewrite(request);
+                response = indexService.txnPrewrite(txnPreWrite.getStartTs(), request);
             }
             if (response.getKeysAlreadyExist() != null && response.getKeysAlreadyExist().size() > 0) {
                 getJoinedPrimaryKey(txnPreWrite, response.getKeysAlreadyExist());
@@ -166,7 +167,7 @@ public class TransactionStoreInstance {
                     Thread.sleep(lockTtl);
                     n++;
                     timeOut -= lockTtl;
-                    log.info("txnPreWrite lockInfo wait {} ms end.", lockTtl);
+                    LogUtils.info(log, "txnPreWrite lockInfo wait {} ms end.", lockTtl);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -232,9 +233,9 @@ public class TransactionStoreInstance {
         txnCommit.getKeys().stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
         TxnCommitResponse response;
         if (indexService != null) {
-            response = indexService.txnCommit(MAPPER.commitTo(txnCommit));
+            response = indexService.txnCommit(txnCommit.getStartTs(), MAPPER.commitTo(txnCommit));
         } else {
-            response = storeService.txnCommit(MAPPER.commitTo(txnCommit));
+            response = storeService.txnCommit(txnCommit.getStartTs(), MAPPER.commitTo(txnCommit));
         }
         if (response.getTxnResult() != null && response.getTxnResult().getCommitTsExpired() != null) {
             throw new CommitTsExpiredException(response.getTxnResult().getCommitTsExpired().toString());
@@ -258,9 +259,9 @@ public class TransactionStoreInstance {
             TxnPessimisticLockResponse response;
             if (indexService != null) {
                 txnPessimisticLock.getMutations().stream().forEach( $ -> $.setKey(Arrays.copyOf($.getKey(), VectorKeyLen)));
-                response = indexService.txnPessimisticLock(MAPPER.pessimisticLockTo(txnPessimisticLock));
+                response = indexService.txnPessimisticLock(txnPessimisticLock.getStartTs(), MAPPER.pessimisticLockTo(txnPessimisticLock));
             } else {
-                response = storeService.txnPessimisticLock(MAPPER.pessimisticLockTo(txnPessimisticLock));
+                response = storeService.txnPessimisticLock(txnPessimisticLock.getStartTs(), MAPPER.pessimisticLockTo(txnPessimisticLock));
             }
             if (response.getTxnResult() == null || response.getTxnResult().isEmpty()) {
                 return true;
@@ -284,7 +285,7 @@ public class TransactionStoreInstance {
                     Thread.sleep(lockTtl);
                     n++;
                     timeOut -= lockTtl;
-                    log.info("txnPessimisticLock lockInfo wait {} ms end.", lockTtl);
+                    LogUtils.info(log, "txnPessimisticLock lockInfo wait {} ms end.", lockTtl);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -305,9 +306,9 @@ public class TransactionStoreInstance {
                     byte[] newKey = Arrays.copyOf(key, VectorKeyLen);
                     keys.set(i, newKey);
                 });
-            response = indexService.txnPessimisticRollback(MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
+            response = indexService.txnPessimisticRollback(txnPessimisticRollBack.getStartTs(), MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
         } else {
-            response = storeService.txnPessimisticRollback(MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
+            response = storeService.txnPessimisticRollback(txnPessimisticRollBack.getStartTs(), MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
         }
         List<Long> resolvedLocks = new ArrayList<>();
         if (response.getTxnResult() != null && response.getTxnResult().size() > 0) {
@@ -347,7 +348,7 @@ public class TransactionStoreInstance {
             TxnBatchGetResponse response;
             if (indexService != null) {
                 txnBatchGetRequest.getKeys().stream().forEach( $ -> Arrays.copyOf($, VectorKeyLen));
-                response = indexService.txnBatchGet(txnBatchGetRequest);
+                response = indexService.txnBatchGet(startTs, txnBatchGetRequest);
                 if (response.getTxnResult() == null) {
                     return response.getVectors().stream()
                         .map(vectorWithId -> vectorWithId != null ?
@@ -356,7 +357,7 @@ public class TransactionStoreInstance {
                         .collect(Collectors.toList());
                 }
             } else {
-                response = storeService.txnBatchGet(txnBatchGetRequest);
+                response = storeService.txnBatchGet(startTs, txnBatchGetRequest);
                 if (response.getTxnResult() == null) {
                     return response.getKvs().stream().map(MAPPER::kvFrom).collect(Collectors.toList());
                 }
@@ -380,7 +381,7 @@ public class TransactionStoreInstance {
                     Thread.sleep(lockTtl);
                     n++;
                     timeOut -= lockTtl;
-                    log.info("txnBatchGet lockInfo wait {} ms end.", lockTtl);
+                    LogUtils.info(log, "txnBatchGet lockInfo wait {} ms end.", lockTtl);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -393,9 +394,9 @@ public class TransactionStoreInstance {
         TxnBatchRollbackResponse response;
         if (indexService != null) {
             txnBatchRollBack.getKeys().stream().forEach( $ -> Arrays.copyOf($, VectorKeyLen));
-            response = indexService.txnBatchRollback(MAPPER.rollbackTo(txnBatchRollBack));
+            response = indexService.txnBatchRollback(txnBatchRollBack.getStartTs(), MAPPER.rollbackTo(txnBatchRollBack));
         } else {
-            response = storeService.txnBatchRollback(MAPPER.rollbackTo(txnBatchRollBack));
+            response = storeService.txnBatchRollback(txnBatchRollBack.getStartTs(), MAPPER.rollbackTo(txnBatchRollBack));
         }
         return response.getTxnResult() == null;
     }
@@ -403,25 +404,25 @@ public class TransactionStoreInstance {
     public TxnCheckTxnStatusResponse txnCheckTxnStatus(TxnCheckStatus txnCheckStatus) {
         byte[] primaryKey = txnCheckStatus.getPrimaryKey();
         StoreService storeService = Services.storeRegionService(Configuration.coordinatorSet(), primaryKey, 30);
-        return storeService.txnCheckTxnStatus(MAPPER.checkTxnTo(txnCheckStatus));
+        return storeService.txnCheckTxnStatus(txnCheckStatus.getCallerStartTs(), MAPPER.checkTxnTo(txnCheckStatus));
     }
 
     public TxnResolveLockResponse txnResolveLock(TxnResolveLock txnResolveLock) {
         if (indexService != null) {
-            return indexService.txnResolveLock(MAPPER.resolveTxnTo(txnResolveLock));
+            return indexService.txnResolveLock(txnResolveLock.getStartTs(), MAPPER.resolveTxnTo(txnResolveLock));
         }
-        return storeService.txnResolveLock(MAPPER.resolveTxnTo(txnResolveLock));
+        return storeService.txnResolveLock(txnResolveLock.getStartTs(), MAPPER.resolveTxnTo(txnResolveLock));
     }
 
     private ResolveLockStatus writeResolveConflict(List<TxnResultInfo> txnResult, int isolationLevel,
                                                    long startTs, List<Long> resolvedLocks, String funName) {
         ResolveLockStatus resolveLockStatus = ResolveLockStatus.NONE;
         for (TxnResultInfo txnResultInfo : txnResult) {
-            log.info("{} txnResultInfo : {}", funName, txnResultInfo);
+            LogUtils.info(log, "{} txnResultInfo : {}", funName, txnResultInfo);
             LockInfo lockInfo = txnResultInfo.getLocked();
             if (lockInfo != null) {
                 // CheckTxnStatus
-                log.info("{} lockInfo : {}", funName, lockInfo);
+                LogUtils.info(log, "{} lockInfo : {}", funName, lockInfo);
                 long currentTs = TsoService.INSTANCE.tso();
                 TxnCheckStatus txnCheckStatus = TxnCheckStatus.builder().
                     isolationLevel(IsolationLevel.of(isolationLevel)).
@@ -431,7 +432,7 @@ public class TransactionStoreInstance {
                     currentTs(currentTs).
                     build();
                 TxnCheckTxnStatusResponse statusResponse = txnCheckTxnStatus(txnCheckStatus);
-                log.info("{} txnCheckStatus : {}", funName, statusResponse);
+                LogUtils.info(log, "{} txnCheckStatus : {}", funName, statusResponse);
                 TxnResultInfo resultInfo = statusResponse.getTxnResult();
                 // success
                 Action action = statusResponse.getAction();
@@ -463,7 +464,7 @@ public class TransactionStoreInstance {
                             keys(singletonList(lockInfo.getKey())).
                             build();
                         TxnResolveLockResponse txnResolveLockRes = txnResolveLock(resolveLockRequest);
-                        log.info("{} txnResolveLockResponse: {}", funName, txnResolveLockRes);
+                        LogUtils.info(log, "{} txnResolveLockResponse: {}", funName, txnResolveLockRes);
                         resolveLockStatus = ResolveLockStatus.COMMIT;
                     } else if (lockTtl == 0 && commitTs == 0) {
                         // resolveLock store rollback
@@ -474,7 +475,7 @@ public class TransactionStoreInstance {
                             keys(singletonList(lockInfo.getKey())).
                             build();
                         TxnResolveLockResponse txnResolveLockRes = txnResolveLock(resolveLockRequest);
-                        log.info("{} txnResolveLockResponse: {}", funName, txnResolveLockRes);
+                        LogUtils.info(log, "{} txnResolveLockResponse: {}", funName, txnResolveLockRes);
                         resolveLockStatus = ResolveLockStatus.ROLLBACK;
                     }
                 } else {
@@ -510,7 +511,7 @@ public class TransactionStoreInstance {
                 }
             } else {
                 WriteConflict writeConflict = txnResultInfo.getWriteConflict();
-                log.info("{} writeConflict : {}", funName, writeConflict);
+                LogUtils.info(log, "{} writeConflict : {}", funName, writeConflict);
                 if (writeConflict != null) {
                     //  write column exist and commit_ts > for_update_ts
                     if (funName.equalsIgnoreCase("txnPessimisticLock")) {
@@ -527,11 +528,11 @@ public class TransactionStoreInstance {
                                                   long startTs, List<Long> resolvedLocks, String funName) {
         ResolveLockStatus resolveLockStatus = ResolveLockStatus.NONE;
         for (TxnResultInfo txnResultInfo : txnResult) {
-            log.info("{} txnResultInfo : {}", funName, txnResultInfo);
+            LogUtils.info(log, "{} txnResultInfo : {}", funName, txnResultInfo);
             LockInfo lockInfo = txnResultInfo.getLocked();
             if (lockInfo != null) {
                 // CheckTxnStatus
-                log.info("{} lockInfo : {}", funName, lockInfo);
+                LogUtils.info(log, "{} lockInfo : {}", funName, lockInfo);
                 long currentTs = TsoService.INSTANCE.tso();
                 TxnCheckStatus txnCheckStatus = TxnCheckStatus.builder().
                     isolationLevel(IsolationLevel.of(isolationLevel)).
@@ -541,7 +542,7 @@ public class TransactionStoreInstance {
                     currentTs(currentTs).
                     build();
                 TxnCheckTxnStatusResponse statusResponse = txnCheckTxnStatus(txnCheckStatus);
-                log.info("{} txnCheckStatus : {}", funName, statusResponse);
+                LogUtils.info(log, "{} txnCheckStatus : {}", funName, statusResponse);
                 TxnResultInfo resultInfo = statusResponse.getTxnResult();
                 if (resultInfo == null) {
                     Action action = statusResponse.getAction();
@@ -584,7 +585,7 @@ public class TransactionStoreInstance {
                             keys(singletonList(lockInfo.getKey())).
                             build();
                         TxnResolveLockResponse txnResolveLockRes = txnResolveLock(resolveLockRequest);
-                        log.info("{} txnResolveLockResponse: {}", funName, txnResolveLockRes);
+                        LogUtils.info(log, "{} txnResolveLockResponse: {}", funName, txnResolveLockRes);
                         resolveLockStatus = ResolveLockStatus.COMMIT;
                     } else if (lockTtl == 0 && commitTs == 0) {
                         // resolveLock store rollback
@@ -595,7 +596,7 @@ public class TransactionStoreInstance {
                             keys(singletonList(lockInfo.getKey())).
                             build();
                         TxnResolveLockResponse txnResolveLockRes = txnResolveLock(resolveLockRequest);
-                        log.info("{} txnResolveLockResponse: {}", funName, txnResolveLockRes);
+                        LogUtils.info(log, "{} txnResolveLockResponse: {}", funName, txnResolveLockRes);
                         resolveLockStatus = ResolveLockStatus.ROLLBACK;
                     }
                 } else {
@@ -640,7 +641,7 @@ public class TransactionStoreInstance {
                 }
             } else {
                 WriteConflict writeConflict = txnResultInfo.getWriteConflict();
-                log.info("{} writeConflict : {}", funName, writeConflict);
+                LogUtils.info(log, "{} writeConflict : {}", funName, writeConflict);
                 if (writeConflict != null) {
                     throw new WriteConflictException(writeConflict.toString());
                 }
@@ -694,9 +695,9 @@ public class TransactionStoreInstance {
                 txnScanRequest.setCoprocessor(coprocessor);
                 TxnScanResponse txnScanResponse;
                 if (indexService != null) {
-                    txnScanResponse = indexService.txnScan(TsoService.INSTANCE.tso(), txnScanRequest);
+                    txnScanResponse = indexService.txnScan(startTs, txnScanRequest);
                 } else {
-                    txnScanResponse = storeService.txnScan(TsoService.INSTANCE.tso(), txnScanRequest);
+                    txnScanResponse = storeService.txnScan(startTs, txnScanRequest);
                 }
                 if (txnScanResponse.getTxnResult() != null) {
                     ResolveLockStatus resolveLockStatus = readResolveConflict(
@@ -718,7 +719,7 @@ public class TransactionStoreInstance {
                             Thread.sleep(lockTtl);
                             n++;
                             scanTimeOut -= lockTtl;
-                            log.info("txnScan lockInfo wait {} ms end.", lockTtl);
+                            LogUtils.info(log, "txnScan lockInfo wait {} ms end.", lockTtl);
                         } catch (InterruptedException e) {
                             throw new RuntimeException(e);
                         }

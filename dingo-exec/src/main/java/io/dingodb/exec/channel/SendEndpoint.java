@@ -17,6 +17,7 @@
 package io.dingodb.exec.channel;
 
 import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.Services;
 import io.dingodb.net.BufferOutputStream;
 import io.dingodb.net.Channel;
@@ -48,9 +49,7 @@ public class SendEndpoint {
         EndpointManager.INSTANCE.registerSendEndpoint(this);
         // This may block.
         channel = Services.openNewChannel(host, port);
-        if (log.isDebugEnabled()) {
-            log.debug("(tag = {}) Opened channel to {}:{}.", tag, host, port);
-        }
+        LogUtils.debug(log, "(tag = {}) Opened channel to {}:{}.", tag, host, port);
     }
 
     synchronized void wakeUp() {
@@ -71,7 +70,7 @@ public class SendEndpoint {
                 try {
                     wait();
                 } catch (InterruptedException e) {
-                    log.warn("Catch (tag = {}) Interrupted while waiting for channel to be ready.", tag);
+                    LogUtils.warn(log, "Catch (tag = {}) Interrupted while waiting for channel to be ready.", tag);
                 }
             }
         }
@@ -93,9 +92,7 @@ public class SendEndpoint {
     public void close() {
         EndpointManager.INSTANCE.unregisterSendEndpoint(this);
         channel.close();
-        if (log.isDebugEnabled()) {
-            log.debug("(tag = {}) Closed channel to {}:{}.", tag, host, port);
-        }
+        LogUtils.debug(log, "(tag = {}) Closed channel to {}:{}.", tag, host, port);
     }
 
     public BufferOutputStream getOutputStream(int size) throws IOException {

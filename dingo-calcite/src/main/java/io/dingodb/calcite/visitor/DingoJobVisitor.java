@@ -71,6 +71,7 @@ import io.dingodb.calcite.visitor.function.DingoValuesVisitFun;
 import io.dingodb.calcite.visitor.function.DingoVectorStreamingVisitFun;
 import io.dingodb.calcite.visitor.function.DingoVectorVisitFun;
 import io.dingodb.common.Location;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.dag.Vertex;
@@ -122,10 +123,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
             transaction.setJob(job);
         }
 
-        // todo
-//        if (log.isDebugEnabled()) {
-        log.info("job = {}", job);
-//        }
+        LogUtils.debug(log, "job = {}", job);
     }
 
     @Override

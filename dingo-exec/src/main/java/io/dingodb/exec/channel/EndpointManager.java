@@ -17,6 +17,7 @@
 package io.dingodb.exec.channel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.channel.message.Control;
 import io.dingodb.exec.channel.message.IncreaseBuffer;
 import io.dingodb.exec.channel.message.StopTx;
@@ -45,12 +46,10 @@ public final class EndpointManager {
         try {
             msg = Control.fromMessage(message);
         } catch (JsonProcessingException e) {
-            log.error("Failed to parse control message", e);
+            LogUtils.error(log, "Failed to parse control message", e);
             throw new RuntimeException("Deserializing control message failed.");
         }
-        if (log.isDebugEnabled()) {
-            log.debug("Received control message {}.", msg);
-        }
+        LogUtils.debug(log, "Received control message {}.", msg);
         String tag = msg.getTag();
         AtomicInteger bufferCount = getBufferCount(tag);
         if (msg instanceof StopTx) {

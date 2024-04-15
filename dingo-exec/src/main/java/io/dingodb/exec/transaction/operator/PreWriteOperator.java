@@ -17,9 +17,9 @@
 package io.dingodb.exec.transaction.operator;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.DebugLog;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
@@ -108,7 +108,7 @@ public final class PreWriteOperator extends TransactionOperator {
             }
             // cache to mutations
             Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, forUpdateTs, tableId, newPartId);
-            DebugLog.debugDelegate(log, "{} mutation: {}", txnId, mutation);
+            LogUtils.debug(log, "mutation: {}", mutation);
             CommonId partId = param.getPartId();
             if (partId == null) {
                 partId = newPartId;
@@ -187,7 +187,7 @@ public final class PreWriteOperator extends TransactionOperator {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
             return store.txnPreWrite(txnPreWrite, param.getTimeOut());
         } catch (RegionSplitException e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             // 2、regin split
             Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(
                 tableId,

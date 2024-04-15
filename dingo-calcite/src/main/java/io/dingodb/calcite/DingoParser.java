@@ -49,6 +49,8 @@ import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.traits.DingoRelStreamingDef;
 import io.dingodb.common.error.DingoError;
 import io.dingodb.common.error.DingoException;
+import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.log.SqlLogUtils;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -198,10 +200,8 @@ public class DingoParser {
         sql = processKeyWords(sql);
         SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
         SqlNode sqlNode = parser.parseQuery();
-        if (log.isDebugEnabled()) {
-            log.debug("==DINGO==>:[Input Query]: {}", sql);
-            log.debug("==DINGO==>:[Parsed Query]: {}", sqlNode.toString());
-        }
+        SqlLogUtils.info("Input Query: {}", sql);
+        LogUtils.trace(log, "==DINGO==>:[Parsed Query]: {}", sqlNode.toString());
         return sqlNode;
     }
 

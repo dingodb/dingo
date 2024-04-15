@@ -20,6 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.concurrent.LinkedRunner;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.DebugLog;
 import io.dingodb.net.api.ApiRegistry;
@@ -115,15 +116,14 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
             });
             tableLocks.runner.forceFollow(() -> lock(lock.tableId));
         });
+        LogUtils.debug(log, "doLock end table:{}", lock.toString());
     }
 
     public void unlock(io.dingodb.transaction.api.TableLock lock) {
         runner.forceFollow(() -> {
             locks.get(lock.getTableId()).runner.forceFollow(() -> {
                 locks.get(lock.tableId).locked.remove(lock);
-                if (log.isDebugEnabled()) {
-                    log.debug("Unlocked: {}", lock);
-                }
+                LogUtils.debug(log, "Unlocked: {}", lock);
             });
         });
     }
@@ -135,14 +135,14 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
         TableLocks tableLocks = this.locks.get(tableId);
         io.dingodb.transaction.api.TableLock lock = tableLocks.lockQueue.first();
         if (lock == null) {
-            log.error("Poll {} first wait lock null.", tableId);
+            LogUtils.error(log, "Poll {} first wait lock null.", tableId);
             return;
         }
         List<io.dingodb.transaction.api.TableLock> locks = this.locks.get(lock.tableId).locked;
         if (locks.size() > 0 && log.isDebugEnabled()) {
             StringJoiner lockJoiner = new StringJoiner(",\n\t");
             locks.forEach($ -> lockJoiner.add($.serverId + "|" + $.type + "|" + $.lockTs + "|" + $.currentTs));
-            log.debug("{} lock not empty, locks: [\n\t{}\n]", tableId, lockJoiner);
+            LogUtils.debug(log, "{} lock not empty, locks: [\n\t{}\n]", tableId, lockJoiner);
         }
         CompletableFuture<Boolean> future = lock.lockFuture;
         boolean locked = locks.isEmpty();
@@ -179,9 +179,9 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
                     MetaServiceApiImpl.INSTANCE.lockTable(lock.lockTs, lock);
                 } catch (Exception e) {
                     if (e instanceof TimeoutException) {
-                        DebugLog.trace(log, "Lock table {} error.", tableId, e);
+                        LogUtils.trace(log, "Lock table {} error.", tableId, e);
                     } else {
-                        log.error("Lock table {} error.", tableId, e);
+                        LogUtils.error(log, "Lock table {} error.", tableId, e);
                     }
                     locked = false;
                 }
@@ -193,22 +193,16 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
             tableLocks.lockQueue.pollFirst();
             waitLocks.remove(lock);
             lock.unlockFuture.whenCompleteAsync((v, e) -> unlock(lock), Executors.COMPLETABLE_FUTURE_POOL);
-            if (log.isDebugEnabled()) {
-                log.debug("Locked {}", lock);
-            }
+            LogUtils.debug(log, "Locked {}", lock);
         } else {
             if (lock.lockFuture.isCancelled()) {
                 tableLocks.lockQueue.pollFirst();
-                if (log.isDebugEnabled()) {
-                    log.debug("Lock cancel {}", lock);
-                }
+                LogUtils.debug(log, "Lock cancel {}", lock);
                 return;
             }
             if (lock.lockFuture.isCompletedExceptionally()) {
                 tableLocks.lockQueue.pollFirst();
-                if (log.isDebugEnabled()) {
-                    log.debug("Lock error {}", lock);
-                }
+                LogUtils.debug(log, "Lock error {}", lock);
                 return;
             }
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));

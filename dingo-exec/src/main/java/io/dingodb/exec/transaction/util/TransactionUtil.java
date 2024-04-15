@@ -19,6 +19,7 @@ package io.dingodb.exec.transaction.util;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -98,7 +99,7 @@ public class TransactionUtil {
                 Optional.ofNullable(table.getPartitionStrategy())
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
             .calcPartId(key, rangeDistribution);
-        log.info("{} regin split retry tableId:{} regionId:{}", txnId, tableId, regionId);
+        LogUtils.debug(log, "{} regin split retry tableId:{} regionId:{}", txnId, tableId, regionId);
         return regionId;
     }
 
@@ -116,7 +117,7 @@ public class TransactionUtil {
             keys.forEach( k -> CodecService.getDefault().setId(k, 0L));
         }
         Map<CommonId, List<byte[]>> partMap = ps.partKeys(keys, rangeDistribution);
-        log.info("{} regin split retry tableId:{}", txnId, tableId);
+        LogUtils.debug(log, "{} regin split retry tableId:{}", txnId, tableId);
         return partMap;
     }
 
@@ -212,7 +213,7 @@ public class TransactionUtil {
                     + txnPessimisticLock.toString());
             }
         } catch (RegionSplitException e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             CommonId regionId = singleKeySplitRegionId(tableId, txnId, key);
             StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
             boolean result = store.txnPessimisticLock(txnPessimisticLock, timeOut);
@@ -238,7 +239,7 @@ public class TransactionUtil {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
             return store.txnPessimisticLockRollback(pessimisticRollBack);
         } catch (RegionSplitException e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             // 2、regin split
             CommonId regionId = TransactionUtil.singleKeySplitRegionId(tableId, txnId, primaryKey);
             StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
@@ -289,7 +290,7 @@ public class TransactionUtil {
                 primaryKey
             );
         } catch (Throwable throwable) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             store = Services.LOCAL_STORE.getInstance(tableId, partId);
             // delete deadLockKey
             store.delete(deadLockKeyBytes);

@@ -19,6 +19,7 @@ package io.dingodb.driver.mysql;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
 import io.dingodb.exec.Services;
 import io.dingodb.net.MysqlNetService;
@@ -56,7 +57,7 @@ public class Starter {
         }
         DingoConfiguration.parse(this.config);
         NetService netService = ServiceLoader.load(NetServiceProvider.class).iterator().next().get();
-        log.info("Listen exchange port {}.", listenRandomPort(netService));
+        LogUtils.info(log, "Listen exchange port {}.", listenRandomPort(netService));
         Services.initControlMsgService();
         MysqlNetService mysqlNetService = ServiceLoader.load(MysqlNetServiceProvider.class)
             .iterator().next().get();
@@ -75,7 +76,7 @@ public class Starter {
                 datagramSocket.close();
                 return datagramSocket.getLocalPort();
             } catch (Exception e) {
-                log.error("Listen port error.", e);
+                LogUtils.error(log, "Listen port error.", e);
             }
         }
         throw new RuntimeException("Listen port failed.");

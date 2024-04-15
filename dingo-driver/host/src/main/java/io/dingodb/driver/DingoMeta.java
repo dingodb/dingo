@@ -26,6 +26,9 @@ import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.exception.DingoSqlException;
+import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.log.MdcUtils;
+import io.dingodb.common.log.SqlLogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.profile.ExecProfile;
 import io.dingodb.common.profile.SqlProfile;
@@ -45,6 +48,7 @@ import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
+import io.dingodb.tso.TsoService;
 import io.dingodb.verify.privilege.PrivilegeVerify;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -234,7 +238,10 @@ public class DingoMeta extends MetaImpl {
         DingoConnection dingoConnection = (DingoConnection) connection;
         initProfile(sqlProfile, dingoConnection);
         DingoDriverParser parser = new DingoDriverParser(dingoConnection);
-        sh.signature = parser.parseQuery(jobManager, sql);
+        long jobSeqId = TsoService.getDefault().tso();
+        String stmtId = "Stmt_" + sh.toString() + "_" + jobSeqId;
+        MdcUtils.setStmtId(stmtId);
+        sh.signature = parser.parseQuery(jobManager, sh.toString(), jobSeqId, sql);
         sqlProfile(sql, sqlProfile, parser);
         addSqlProfile(sqlProfile, connection);
         return sh;
@@ -262,11 +269,14 @@ public class DingoMeta extends MetaImpl {
         final long startTime = System.currentTimeMillis();
         DingoConnection dingoConnection = (DingoConnection) connection;
         DingoDriverParser parser = new DingoDriverParser(dingoConnection);
+        long jobSeqId = TsoService.getDefault().tso();
+        String stmtId = "Stmt_" + sh.toString() + "_" + jobSeqId;
+        MdcUtils.setStmtId(stmtId);
         try {
             DingoStatement statement = (DingoStatement) dingoConnection.getStatement(sh);
             statement.removeJob(jobManager);
             final Timer.Context timeCtx = DingoMetrics.getTimeContext("parse_query");
-            Signature signature = parser.parseQuery(jobManager, sql);
+            Signature signature = parser.parseQuery(jobManager, sh.toString(), jobSeqId, sql);
             // add profile
             sqlProfile(sql, statement.getSqlProfile(), parser);
             // for mysql protocol start
@@ -291,12 +301,14 @@ public class DingoMeta extends MetaImpl {
             );
             return new ExecuteResult(ImmutableList.of(metaResultSet));
         } catch (Throwable e) {
-            log.error("Prepare and execute error, sql: <[{}]>.", sql, e);
+            LogUtils.error(log, "Prepare and execute error, sql: <[{}]>.", sql, e);
             throw ExceptionUtils.toRuntime(e);
         } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("DingoMeta prepareAndExecute total cost: {}ms.", System.currentTimeMillis() - startTime);
+            if (MdcUtils.getStmtId() == null) {
+                MdcUtils.setStmtId(stmtId);
             }
+            SqlLogUtils.info("DingoMeta prepareAndExecute, total cost: {}ms.", System.currentTimeMillis() - startTime);
+            MdcUtils.removeStmtId();
         }
     }
 
@@ -388,7 +400,7 @@ public class DingoMeta extends MetaImpl {
                 updateCounts.add(updateCount);
             }
         } catch (Throwable throwable) {
-            log.error("run job exception:{}", throwable, throwable);
+            LogUtils.error(log, "run job exception:{}", throwable, throwable);
             if (transaction != null && transaction.isPessimistic()
                 && transaction.getPrimaryKeyLock() != null
                 && statement.isDml()) {
@@ -441,6 +453,10 @@ public class DingoMeta extends MetaImpl {
                 throw new MissingResultsException(sh);
             }
             Signature signature = resultSet.getSignature();
+            if (signature instanceof  DingoSignature) {
+                final long jobSeqId = ((DingoSignature) signature).getJobId().seq;
+                MdcUtils.setStmtId("Stmt_" + sh.toString() + "_" + jobSeqId);
+            }
             Iterator<Object[]> iterator = resultSet.getIterator();
             ITransaction transaction = ((DingoConnection) connection).getTransaction();
             final List rows = new ArrayList(fetchMaxRowCount);
@@ -457,7 +473,7 @@ public class DingoMeta extends MetaImpl {
                 }
                 sqlProfile = getProfile(iterator, statement);
             } catch (Throwable e) {
-                log.error("run job exception:{}", e, e);
+                LogUtils.error(log, "run job exception:{}", e, e);
                 if (transaction != null && transaction.isPessimistic() && transaction.getPrimaryKeyLock() != null
                     && (sh.signature.statementType == StatementType.DELETE
                     || sh.signature.statementType == StatementType.INSERT
@@ -487,14 +503,14 @@ public class DingoMeta extends MetaImpl {
             }
             done = fetchMaxRowCount == 0 || !iterator.hasNext();
             if (transaction != null) {
-                log.info("{} sql:{} , txnAutoCommit:{}, txnType:{} ", transaction.getTxnId(),
+                LogUtils.info(log, "{} sql:{} , txnAutoCommit:{}, txnType:{} ", transaction.getTxnId(),
                     signature.sql, transaction.isAutoCommit(), transaction.getType());
                 transaction.addSql(signature.sql);
                 if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
                     try {
                         connection.commit();
                     } catch (TaskFinException e1) {
-                        log.info(e1.getMessage(), e1);
+                        LogUtils.info(log, e1.getMessage(), e1);
                         if (e1.getErrorType().equals(ErrorType.WriteConflict)) {
                             return requireNonNull(
                                 resolveWriteConflict(
@@ -530,14 +546,13 @@ public class DingoMeta extends MetaImpl {
             }
             return new Frame(offset, done, rows) ;
         } catch (Throwable e) {
-            log.error("Fetch catch exception:{}", e, e);
+            LogUtils.error(log, "Fetch catch exception:{}", e, e);
             throw ExceptionUtils.toRuntime(e);
         } finally {
             ((DingoConnection) connection).setCommandStartTime(0);
             addSqlProfile(sqlProfile, connection);
-            if (log.isDebugEnabled()) {
-                log.debug("DingoMeta fetch, cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
+            SqlLogUtils.info("DingoMeta fetch, cost: {}ms.", System.currentTimeMillis() - startTime);
+            MdcUtils.removeStmtId();
         }
     }
 
@@ -583,7 +598,7 @@ public class DingoMeta extends MetaImpl {
                                        Signature signature, ITransaction transaction,
                                        RuntimeException exception) throws SQLException, NoSuchStatementException {
         int txnRetryLimit = getTxnRetryLimit();
-        log.info("retry txnRetryLimit is {} txnAutoRetry is {}", txnRetryLimit, isDisableTxnRetry());
+        LogUtils.info(log, "retry txnRetryLimit is {} txnAutoRetry is {}", txnRetryLimit, isDisableTxnRetry());
         RuntimeException conflictException = exception;
         while (isDisableTxnRetry() && (txnRetryLimit-- > 0) && !transaction.isPessimistic()) {
             ((DingoStatement) statement).removeJob(jobManager);
@@ -637,6 +652,10 @@ public class DingoMeta extends MetaImpl {
         // In a non-batch prepared statement call, the parameter values are already set, but we set here to make this
         // function reusable for batch call.
         statement.setParameterValues(parameterValues);
+        if (sh.signature instanceof  DingoSignature) {
+            final long jobSeqId = ((DingoSignature) sh.signature).getJobId().seq;
+            MdcUtils.setStmtId("Stmt_" + sh.toString() + "_" + jobSeqId);
+        }
         ITransaction transaction = ((DingoConnection) connection).getTransaction();
         if (transaction == null) {
             transaction = prepareJobAndTxn(sh, statement);
@@ -679,7 +698,7 @@ public class DingoMeta extends MetaImpl {
             }
             return new ExecuteResult(ImmutableList.of(metaResultSet));
         } catch (Throwable throwable) {
-            log.error("run job exception:{}", throwable, throwable);
+            LogUtils.error(log, "run job exception:{}", throwable, throwable);
             if (transaction != null && transaction.isPessimistic()
                 && transaction.getPrimaryKeyLock() != null
                 && statement.isDml()) {
@@ -712,11 +731,15 @@ public class DingoMeta extends MetaImpl {
                     true
                 );
                 statement.setTxnId(jobManager, transaction.getTxnId());
+                MdcUtils.setStmtId("Stmt_" + sh.toString() + "_" + job.getJobId().seq);
             } else {
                 jobManager.removeJob(statement.getJobId(jobManager));
                 DingoConnection dingoConnection = (DingoConnection) connection;
                 DingoDriverParser parser = new DingoDriverParser(dingoConnection);
-                sh.signature = parser.parseQuery(jobManager, statement.getSql());
+                long jobSeqId = TsoService.getDefault().tso();
+                String stmtId = "Stmt_" + sh.toString() + "_" + jobSeqId;
+                MdcUtils.setStmtId(stmtId);
+                sh.signature = parser.parseQuery(jobManager, sh.toString(), jobSeqId, statement.getSql());
             }
         }
         return transaction;
@@ -755,6 +778,7 @@ public class DingoMeta extends MetaImpl {
         } else if (statement instanceof DingoPreparedStatement) {
             ((DingoPreparedStatement) statement).removeJob(jobManager);
         }
+        MdcUtils.removeStmtId();
     }
 
     @Override
@@ -773,7 +797,7 @@ public class DingoMeta extends MetaImpl {
                 transaction.close(jobManager);
             }
         } catch (Throwable e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             throw e;
         } finally {
             ((DingoConnection) connection).cleanTransaction();
@@ -793,7 +817,7 @@ public class DingoMeta extends MetaImpl {
                 transaction.commit(jobManager);
             }
         } catch (Throwable e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             throw e;
         } finally {
             cleanTransaction();
@@ -809,7 +833,7 @@ public class DingoMeta extends MetaImpl {
                 transaction.rollback(jobManager);
             }
         } catch (Throwable e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             throw e;
         } finally {
             cleanTransaction();
@@ -1101,7 +1125,7 @@ public class DingoMeta extends MetaImpl {
                 }
             }
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
         }
 
         return connProps;

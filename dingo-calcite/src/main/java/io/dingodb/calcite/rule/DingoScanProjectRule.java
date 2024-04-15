@@ -21,6 +21,7 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.grammar.SqlUserDefinedOperators;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoVector;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.scalar.FloatType;
 import io.dingodb.meta.entity.Column;
@@ -201,7 +202,7 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
         try {
             useIndex = getVectorIndexTable(dingoTable.getTable(), col);
         } catch (Exception e) {
-            log.info(col + " vector index not found");
+            LogUtils.error(log, col + " vector index not found");
             return null;
         }
 

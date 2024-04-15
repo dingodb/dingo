@@ -39,6 +39,7 @@ import io.dingodb.common.ProcessInfo;
 import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.common.profile.ExecProfile;
 import io.dingodb.common.profile.PlanProfile;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
@@ -231,9 +232,12 @@ public final class DingoDriverParser extends DingoParser {
     @Nonnull
     public Meta.Signature parseQuery(
         JobManager jobManager,
+        String jobIdPrefix,
+        long jobSeqId,
         String sql
     ) {
         SqlNode sqlNode;
+        final long start = System.currentTimeMillis();
         try {
             sqlNode = parse(sql);
             if (sqlNode instanceof DingoSqlCreateTable) {
@@ -243,6 +247,8 @@ public final class DingoDriverParser extends DingoParser {
             throw ExceptionUtils.toRuntime(e);
         }
         planProfile.endParse();
+        final long parseEnd = System.currentTimeMillis();
+        LogUtils.debug(log, "parse sql:<[{}]> cost {} ms", sql, (parseEnd - start));
         JavaTypeFactory typeFactory = connection.getTypeFactory();
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
         planProfile.setStmtType(sqlNode.getKind().lowerName);
@@ -276,10 +282,12 @@ public final class DingoDriverParser extends DingoParser {
         try {
             sqlNode = validator.validate(sqlNode);
         } catch (CalciteContextException e) {
-            log.error("Parse and validate error, sql: <[{}]>.", sql, e);
+            LogUtils.error(log, "Parse and validate error, sql: <[{}]>.", sql, e);
             throw ExceptionUtils.toRuntime(e);
         }
         planProfile.endValidator();
+        final long validatorEnd = System.currentTimeMillis();
+        LogUtils.debug(log, "validator sql cost {} ms", (validatorEnd - parseEnd));
         Meta.StatementType statementType;
         RelDataType type;
         switch (sqlNode.getKind()) {
@@ -299,8 +307,13 @@ public final class DingoDriverParser extends DingoParser {
         final List<ColumnMetaData> columns = getColumnMetaDataList(typeFactory, jdbcType, originList);
 
         final RelRoot relRoot = convert(sqlNode, false);
+
+        final long convertEnd = System.currentTimeMillis();
+        LogUtils.debug(log, "convert sql cost {} ms", (convertEnd - validatorEnd));
         final RelNode relNode = optimize(relRoot.rel);
         planProfile.endOptimize();
+        final long optimizeEnd = System.currentTimeMillis();
+        LogUtils.debug(log, "optimize sql cost {} ms", (optimizeEnd - convertEnd));
         markAutoIncForDml(relNode);
         Location currentLocation = MetaService.root().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
@@ -309,7 +322,6 @@ public final class DingoDriverParser extends DingoParser {
         boolean isTxn = checkEngine(relNode, sqlNode, tables, connection.getAutoCommit(), connection.getTransaction());
         // get startTs for jobSeqId, if transaction is not null ,transaction startTs is jobDomainId
         long startTs = 0L;
-        long jobSeqId = TsoService.getDefault().tso();
         CommonId txn_Id;
         boolean pessimisticTxn;
         ITransaction transaction;
@@ -341,7 +353,7 @@ public final class DingoDriverParser extends DingoParser {
         try {
             lockTables(tables, startTs, jobSeqId, transaction.getFinishedFuture());
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             if (transaction != null && transaction.isAutoCommit()) {
                 try {
                     connection.cleanTransaction();
@@ -384,6 +396,9 @@ public final class DingoDriverParser extends DingoParser {
             );
         }
         planProfile.endLock();
+        final long renderJobEnd = System.currentTimeMillis();
+        LogUtils.debug(log, "render job cost {} ms", (renderJobEnd - optimizeEnd));
+        markAutoIncForDml(relNode);
         return new DingoSignature(
             columns,
             sql,
@@ -579,7 +594,7 @@ public final class DingoDriverParser extends DingoParser {
                 Object[] next = iterator.next();
             }
         } catch (Throwable throwable) {
-            log.error(throwable.getMessage(), throwable);
+            LogUtils.error(log, throwable.getMessage(), throwable);
             transaction.rollBackPessimisticPrimaryLock(jobManager);
             throw ExceptionUtils.toRuntime(throwable);
         } finally {
@@ -674,7 +689,7 @@ public final class DingoDriverParser extends DingoParser {
         try {
             relNode.accept(AutoIncrementShuttle.INSTANCE);
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
         }
     }
 

@@ -20,6 +20,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.Services;
@@ -149,9 +150,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
                 // add
                 byte[] primaryKey = Arrays.copyOf(key, key.length);
                 long startTs = param.getStartTs();
-                if (log.isDebugEnabled()) {
-                    log.info("{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, jobId.seq, Arrays.toString(primaryKey));
-                }
+                LogUtils.debug(log, "{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, jobId.seq, Arrays.toString(primaryKey));
                 Future future = null;
                 TxnPessimisticLock txnPessimisticLock = TxnPessimisticLock.builder().
                     isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
@@ -173,12 +172,12 @@ public class PessimisticLockOperator extends SoleOutOperator {
                 try {
                     future = kvStore.txnPessimisticLockPrimaryKey(txnPessimisticLock, param.getLockTimeOut());
                 } catch (RegionSplitException e) {
-                    log.error(e.getMessage(), e);
+                    LogUtils.error(log, e.getMessage(), e);
                     CommonId regionId = TransactionUtil.singleKeySplitRegionId(tableId, txnId, primaryKey);
                     kvStore = Services.KV_STORE.getInstance(tableId, regionId);
                     future = kvStore.txnPessimisticLockPrimaryKey(txnPessimisticLock, param.getLockTimeOut());
                 } catch (Throwable e) {
-                    log.error(e.getMessage(), e);
+                    LogUtils.error(log, e.getMessage(), e);
                     TransactionUtil.resolvePessimisticLock(
                         param.getIsolationLevel(),
                         txnId,
@@ -228,9 +227,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
                     }
                 }
                 long forUpdateTs = txnPessimisticLock.getForUpdateTs();
-                if (log.isDebugEnabled()) {
-                    log.info("{}, forUpdateTs:{} txnPessimisticLock :{} end", txnId, forUpdateTs, Arrays.toString(primaryKey));
-                }
+                LogUtils.debug(log, "{}, forUpdateTs:{} txnPessimisticLock :{} end", txnId, forUpdateTs, Arrays.toString(primaryKey));
                 // get lock success, delete deadLockKey
                 localStore.delete(deadLockKeyBytes);
                 // lockKeyValue  [11_txnId_tableId_partId_a_lock, forUpdateTs1]
@@ -297,7 +294,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
                 localStore.put(lockKeyValue);
                 return false;
             } else {
-                log.warn("{}, key exist in localStore :{} ", txnId, Arrays.toString(key));
+                LogUtils.warn(log, "{}, key exist in localStore :{} ", txnId, Arrays.toString(key));
             }
             return true;
         }

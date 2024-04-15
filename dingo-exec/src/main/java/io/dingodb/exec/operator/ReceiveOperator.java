@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.dag.Vertex;
@@ -75,21 +76,17 @@ public final class ReceiveOperator extends SourceOperator {
                     context.setIndexId(tupleId.getIndexId());
                 }
                 ++count;
-                if (log.isDebugEnabled()) {
-                    log.debug("(tag = {}) Take out tuple {} from receiving queue.",
-                        param.getTag(),
-                        param.getSchema().format(tuple)
-                    );
-                }
+                LogUtils.debug(log, "(tag = {}) Take out tuple {} from receiving queue.",
+                    param.getTag(),
+                    param.getSchema().format(tuple)
+                );
                 context.setDistribution(distribution);
                 if (!vertex.getSoleEdge().transformToNext(context, tuple)) {
                     param.getEndpoint().stop();
                     // Stay in loop to receive FIN.
                 }
             } else {
-                if (log.isDebugEnabled()) {
-                    log.debug("(tag = {}) Take out FIN.", param.getTag());
-                }
+                LogUtils.debug(log, "(tag = {}) Take out FIN.", param.getTag());
                 profile.setCount(count);
                 Fin fin = (Fin) tuple[0];
                 if (fin instanceof FinWithProfiles) {

@@ -18,6 +18,7 @@ package io.dingodb.driver.mysql.netty;
 
 import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.common.environment.ExecutionEnvironment;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.MysqlMessage;
 import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.Versions;
@@ -126,9 +127,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
                     String ip = ctx.channel().remoteAddress().toString()
                         .replace("/", "").split(":")[0];
-                    if (log.isDebugEnabled()) {
-                        log.debug("client ip:" + ip);
-                    }
+                    LogUtils.debug(log, "client ip:" + ip);
                     UserDefinition userDefinition = userService.getUserDefinition(user, ip);
                     boolean isUserExists = true;
                     String dbPwd = "";
@@ -236,13 +235,9 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
             }
             ctx.channel().pipeline().remove(this);
 
-            if (log.isDebugEnabled()) {
-                log.debug("SSLHandler add complete");
-            }
+            LogUtils.debug(log, "SSLHandler add complete");
         } else {
-            if (log.isDebugEnabled()) {
-                log.debug("handshake handler removed");
-            }
+            LogUtils.debug(log, "handshake handler removed");
             ctx.channel().pipeline().remove(this);
         }
     }

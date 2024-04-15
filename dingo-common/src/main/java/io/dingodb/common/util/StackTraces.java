@@ -29,6 +29,8 @@ public final class StackTraces {
 
     public static final int CURRENT_STACK = 1;
 
+    public static final int MAX_PACKAGE_NAME_LEN = 36;
+
     private StackTraces() {
     }
 
@@ -64,6 +66,18 @@ public final class StackTraces {
         return Thread.currentThread().getStackTrace()[CURRENT_STACK + stack].getClassName();
     }
 
+    public static String className(int stack, int maxPackageSegments) {
+        String fullClassName = Thread.currentThread().getStackTrace()[CURRENT_STACK + stack].getClassName();
+        String[] packageSegments = fullClassName.split("\\.");
+        int startIndex = Math.max(packageSegments.length - maxPackageSegments, 0);
+        StringBuilder shortenedName = new StringBuilder();
+        for (int i = startIndex; i < packageSegments.length - 1; i++) {
+            shortenedName.append(packageSegments[i].charAt(0)).append(".");
+        }
+        shortenedName.append(packageSegments[packageSegments.length - 1]);
+        return shortenedName.toString();
+    }
+
     public static String fileName() {
         return fileName(CURRENT_STACK + 1);
     }
@@ -87,6 +101,10 @@ public final class StackTraces {
 
     public static String stack(int stack) {
         return String.format("%s.%s:%s", className(stack + 1), methodName(stack + 1), lineNumber(stack + 1));
+    }
+
+    public static String stack(int stack, int packageNameMaxLen) {
+        return String.format("[%s:%s]", className(stack + 1, packageNameMaxLen), lineNumber(stack + 1));
     }
 
     public static String stackTrace() {

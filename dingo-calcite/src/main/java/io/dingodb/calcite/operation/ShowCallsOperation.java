@@ -18,6 +18,7 @@ package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.grammar.dql.SqlShowCall;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlNode;
@@ -73,13 +74,13 @@ public class ShowCallsOperation extends QueryOperation {
                         }
                         value = connection.getClientInfo(variableName);
                     } catch (SQLException e) {
-                        log.error(e.getMessage(), e);
+                        LogUtils.error(log, e.getMessage(), e);
                     }
                 } else {
                     try {
                         value = connection.getClientInfo(variableName);
                     } catch (SQLException e) {
-                        log.error(e.getMessage(), e);
+                        LogUtils.error(log, e.getMessage(), e);
                     }
                 }
                 if (value == null) {

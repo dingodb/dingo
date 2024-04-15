@@ -20,6 +20,7 @@ import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.Services;
@@ -76,9 +77,7 @@ public final class JobManagerImpl implements JobManager {
         Job job = new JobImpl(idGenerator.getJobId(startTs, jobSeqId), txnId, parasType, maxExecutionTime, isSelect);
         CommonId jobId = job.getJobId();
         jobMap.put(jobId, job);
-        if (log.isDebugEnabled()) {
-            log.debug("Created job \"{}\". # of jobs: {}.", jobId, jobMap.size());
-        }
+        LogUtils.debug(log, "Created job \"{}\". # of jobs: {}.", jobId, jobMap.size());
         return job;
     }
 
@@ -90,9 +89,7 @@ public final class JobManagerImpl implements JobManager {
     @Override
     public void removeJob(CommonId jobId) {
         Job job = jobMap.remove(jobId);
-        if (log.isDebugEnabled()) {
-            log.debug("Removed job \"{}\". # of jobs: {}.", jobId, jobMap.size());
-        }
+        LogUtils.debug(log, "Removed job \"{}\". # of jobs: {}.", jobId, jobMap.size());
         if (job != null) {
             for (Task task : job.getTasks().values()) {
                 if (task.getRoot() != null) {
@@ -144,8 +141,8 @@ public final class JobManagerImpl implements JobManager {
             try {
                 sendTaskMessage(task, new Message(TASK_TAG, new CreateTaskMessage(task).toBytes()));
             } catch (Exception e) {
-                log.error("Error to distribute tasks.", e);
-                throw new RuntimeException("Error to distribute tasks.", e);
+                LogUtils.error(log, "jobId:{}, Error to distribute tasks.",job.getJobId(), e);
+                throw new RuntimeException("jobId:" + job.getJobId() + "taskId:" + task.getId() + ", Error to distribute tasks.", e);
             }
         }
     }
@@ -208,9 +205,7 @@ public final class JobManagerImpl implements JobManager {
             taskManager.addTask(task);
         } finally {
             final long cost = System.currentTimeMillis() - startTime;
-            if (log.isDebugEnabled()) {
-                log.debug("Time cost: {}ms.", cost);
-            }
+            LogUtils.debug(log, "jobTime cost: {}ms.", cost);
             DingoMetrics.latency("on_task_message", cost);
         }
     }

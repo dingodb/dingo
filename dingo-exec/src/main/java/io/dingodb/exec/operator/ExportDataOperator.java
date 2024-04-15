@@ -18,6 +18,7 @@ package io.dingodb.exec.operator;
 
 import com.google.common.primitives.Bytes;
 import io.dingodb.common.exception.DingoSqlException;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
@@ -159,7 +160,7 @@ public class ExportDataOperator extends SoleOutOperator {
                 fileMap.remove(param.getId());
             }
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
         } finally {
             edge.fin(fin);
         }
@@ -215,7 +216,7 @@ public class ExportDataOperator extends SoleOutOperator {
                 outputStream.write(preBytes);
             }
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
         }
 
         return outputStream.toByteArray();

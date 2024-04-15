@@ -17,6 +17,7 @@
 package io.dingodb.exec.transaction.operator;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
@@ -73,7 +74,7 @@ public class PessimisticResidualLockOperator extends TransactionOperator {
             if (keyValue != null && keyValue.getValue() != null) {
                 store.delete(key);
                 long forUpdateTs = ByteUtils.decodePessimisticLockValue(keyValue);
-                log.info("{}, PessimisticResidualLockOperator residual key is:{}, forUpdateTs is {}",
+                LogUtils.info(log, "{}, PessimisticResidualLockOperator residual key is:{}, forUpdateTs is {}",
                     txnId, Arrays.toString(key), forUpdateTs);
                 TransactionUtil.pessimisticPrimaryLockRollBack(
                     txnId,
@@ -85,7 +86,7 @@ public class PessimisticResidualLockOperator extends TransactionOperator {
                     key
                 );
             } else {
-                log.warn("{}, PessimisticResidualLockOperator residual key is:{}, but lock keyValue is null {}",
+                LogUtils.warn(log, "{}, PessimisticResidualLockOperator residual key is:{}, but lock keyValue is null {}",
                     txnId, Arrays.toString(key), lockKey);
             }
             return true;

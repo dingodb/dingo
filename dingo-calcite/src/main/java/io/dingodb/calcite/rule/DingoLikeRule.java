@@ -23,6 +23,7 @@ import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
@@ -85,7 +86,7 @@ public class DingoLikeRule extends RelRule<DingoLikeRule.Config> {
         RexLiteral rexLiteral = (RexLiteral) filter.operands.get(1);
         RexLiteral prefix = getPrefix(rexLiteral);
         if (prefix == null) {
-            log.warn("The prefix is empty, original filter string is {}", rexLiteral);
+            LogUtils.warn(log, "The prefix is empty, original filter string is {}", rexLiteral);
             return;
         }
 
@@ -94,14 +95,14 @@ public class DingoLikeRule extends RelRule<DingoLikeRule.Config> {
             RexInputRef rexInputRef = (RexInputRef) rexNode;
             int index = rexInputRef.getIndex();
             if (index != firstPrimaryColumnIndex) {
-                log.warn("The current field is not the primary key of the first column, "
+                LogUtils.warn(log, "The current field is not the primary key of the first column, "
                     + "first primary column is {}, current column is {}", firstPrimaryColumnIndex, index);
                 return;
             }
         } else {
             RexCall castNode = (RexCall) rexNode;
             RexInputRef rexInputRef = (RexInputRef) castNode.operands.get(0);
-            log.warn("The current column [{}] type is not string", rexInputRef.getIndex());
+            LogUtils.warn(log, "The current column [{}] type is not string", rexInputRef.getIndex());
             return;
         }
 

@@ -19,6 +19,7 @@ package io.dingodb.store.proxy.service;
 
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.ChannelProvider;
 import io.dingodb.sdk.service.StoreService;
@@ -109,10 +110,8 @@ public class ScanIterator implements Iterator<KeyValue>, AutoCloseable {
                     this.storeService = createStoreService(channel);
                     return res.getScanId();
                 }
-                if (log.isDebugEnabled()) {
-
-                }
             } catch (Exception ignored) {
+                LogUtils.error(log, ignored.getMessage(), ignored);
             }
             channelProvider.refresh(channel, requestTs);
             LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));

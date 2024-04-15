@@ -15,33 +15,510 @@
   ~ limitations under the License.
   -->
 
-<configuration>
-    <property name="LOG_HOME" value="/opt/dingo/log/"/>
-    <property name="LOG_FILE" value="executor.log"/>
-    <property name="ERROR_LOG_FILE" value="executor-error.log"/>
+<configuration scan="true" scanPeriod="60 seconds" debug="false">
+    <!-- Define global parameter constants -->
+    <!-- Log level all<trace<debug<info<warn<error<off -->
+    <!-- Control the Executor module public log level -->
+    <property name="log.level" value="info"/>
+    <!-- Control the RPC module public log level -->
+    <property name="rpcLog.level" value="debug"/>
+    <!-- Maximum time for log storage -->
+    <property name="log.maxHistory" value="7"/>
+    <!-- Log storage location -->
+    <property name="log.filePath" value="${user.dir}"/>
+    <!-- Display format of log -->
+    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}:%line] - %msg%n"/>
+    <!-- Maximum size of log file -->
+    <property name="log.file.max" value="256MB"/>
+    <!-- Maximum total size of log files -->
+    <property name="log.file.total" value="5GB"/>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %class{36} [%L] [%M] - %msg%xEx%n</pattern>
-            <charset>UTF-8</charset>
-        </encoder>
-    </appender>
-    <appender name="ALL_LOG_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_HOME}/${LOG_FILE}</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_HOME}/${LOG_FILE}.%d{yyyy-MM-dd}.%i</fileNamePattern>
-            <maxHistory>7</maxHistory>
-            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>150MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
-        </rollingPolicy>
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %class{36} [%L] [%M] - %msg%xEx%n</pattern>
+            <pattern>${log.pattern}</pattern>
             <charset>UTF-8</charset>
         </encoder>
     </appender>
 
+    <appender name="Executor" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/executor.log</file>
+        <!-- Log rolling strategy -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/logs/executor.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log.file.max}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}:%line] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="Calcite" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/calcite.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/logs/calcite.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log.file.max}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{stmtId}] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="Job" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/job.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/logs/job.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log.file.max}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="Txn" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/txn.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/logs/txn.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log.file.max}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{txnId}] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="Ddl" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/ddl.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/logs/ddl.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log.file.max}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{stmtId}] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="Sql" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/sql.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/logs/sql.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log.file.max}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{stmtId}] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="Profile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/profile.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/logs/profile.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log.file.max}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{stmtId}] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="StoreProxy" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/storeProxy.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/logs/storeProxy.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log.file.max}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="META_EVENT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/metaEvent.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/logs/metaEvent.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log.file.max}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="STORE_RPC" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/storeRpc.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/logs/storeRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log.file.max}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}:%line] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${rpcLog.level}</level>
+        </filter>
+    </appender>
+    <appender name="INDEX_RPC" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/indexRpc.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/logs/indexRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log.file.max}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}:%line] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${rpcLog.level}</level>
+        </filter>
+    </appender>
+    <appender name="COORDINATOR_RPC" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/coordinatorRpc.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/logs/coordinatorRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log.file.max}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}:%line] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${rpcLog.level}</level>
+        </filter>
+    </appender>
+    <appender name="META_RPC" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/metaRpc.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/logs/metaRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log.file.max}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}:%line] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${rpcLog.level}</level>
+        </filter>
+    </appender>
+    <appender name="VERSION_RPC" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/versionRpc.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/logs/versionRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log.file.max}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}:%line] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${rpcLog.level}</level>
+        </filter>
+    </appender>
+
+    <appender name="TXN_RPC" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/txnRpc.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/logs/txnRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log.file.max}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}:%line] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${rpcLog.level}</level>
+        </filter>
+    </appender>
+
+    <!-- The logger tag is used to bind to the appender and
+    tell logback which package (name attribute) log information needs to be recorded -->
+    <!--logger will inherit the root tag. After adding the additivity="true" attribute,
+    the level in the root tag will be overwritten by the logger's level-->
+    <appender name="ASYNC-Calcite" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="Calcite" />
+    </appender>
+    <logger name="io.dingodb.driver" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Calcite"/>
+    </logger>
+    <logger name="io.dingodb.calcite" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Calcite"/>
+    </logger>
+
+    <appender name="ASYNC-Txn" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="Txn" />
+    </appender>
+
+    <logger name="io.dingodb.exec.transaction" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Txn"/>
+    </logger>
+    <logger name="io.dingodb.transaction" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Txn"/>
+    </logger>
+    <logger name="io.dingodb.store.proxy.service.TransactionStoreInstance" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Txn"/>
+    </logger>
+
+    <appender name="ASYNC-Job" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="Job" />
+    </appender>
+    <logger name="io.dingodb.exec" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Job"/>
+    </logger>
+
+    <appender name="ASYNC-Executor" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="Executor" />
+    </appender>
+    <logger name="io.dingodb" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Executor"/>
+    </logger>
+
+    <appender name="ASYNC-Ddl" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="Ddl" />
+    </appender>
+    <logger name="io.dingodb.calcite.DingoDdlExecutor" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Ddl"/>
+    </logger>
+
+    <appender name="ASYNC-Sql" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="Sql" />
+    </appender>
+    <logger name="io.dingodb.common.log.SqlLogUtils" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Sql"/>
+    </logger>
+
+    <appender name="ASYNC-Profile" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="Profile" />
+    </appender>
+    <logger name="io.dingodb.common.log.ProfileLogUtils" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Profile"/>
+    </logger>
+
+    <appender name="ASYNC-StoreProxy" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="StoreProxy" />
+    </appender>
+    <logger name="io.dingodb.store" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-StoreProxy"/>
+    </logger>
+
+    <appender name="ASYNC-META_EVENT" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="META_EVENT" />
+    </appender>
+    <logger name="io.dingodb.store.proxy.meta.MetaCache" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-META_EVENT"/>
+    </logger>
+
+    <!-- Control RPC module log -->
+    <!--Phase, RAfter is the stage name, supports all stages that can be monitored-->
+    <logger name="io.dingodb.sdk.service.ServiceCallCycles$RAfter" level="${rpcLog.level}"/>
+    <logger name="io.dingodb.sdk.service.ServiceCallCycles$RBefore" level="${rpcLog.level}"/>
+    <logger name="io.dingodb.sdk.service.ServiceCallCycles$RError" level="${rpcLog.level}"/>
+    <logger name="io.dingodb.sdk.service.ServiceCallCycles$Before" level="off"/>
+    <logger name="io.dingodb.sdk.service.ServiceCallCycles$After" level="off"/>
+    <logger name="io.dingodb.sdk.service.ServiceCallCycles$OnErrRes" level="${rpcLog.level}"/>
+    <logger name="io.dingodb.sdk.service.ServiceCallCycles$OnRetry" level="${rpcLog.level}"/>
+    <logger name="io.dingodb.sdk.service.ServiceCallCycles$OnIgnore" level="${rpcLog.level}"/>
+    <logger name="io.dingodb.sdk.service.ServiceCallCycles$OnFailed" level="${rpcLog.level}"/>
+    <logger name="io.dingodb.sdk.service.ServiceCallCycles$OnException" level="${rpcLog.level}"/>
+    <logger name="io.dingodb.sdk.service.ServiceCallCycles$OnThrow" level="${rpcLog.level}"/>
+    <logger name="io.dingodb.sdk.service.ServiceCallCycles$OnNonConnection" level="${rpcLog.level}"/>
+
+    <appender name="ASYNC-STORE_RPC" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="STORE_RPC" />
+    </appender>
+    <!--Only write the package name of the service, not the interface name, and it will take effect on all interfaces of the service-->
+    <logger name="io.dingodb.sdk.service.desc.store" level="${rpcLog.level}" additivity="false">
+        <appender-ref ref="ASYNC-STORE_RPC"/>
+    </logger>
+    <logger name="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnScanLock" level="off" additivity="false">
+        <appender-ref ref="ASYNC-STORE_RPC"/>
+    </logger>
+    <logger name="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$KvGet" level="off" additivity="false">
+        <appender-ref ref="ASYNC-STORE_RPC"/>
+    </logger>
+    <logger name="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$KvScanBegin" level="off" additivity="false">
+        <appender-ref ref="ASYNC-STORE_RPC"/>
+    </logger>
+    <logger name="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$KvScanContinue" level="off" additivity="false">
+        <appender-ref ref="ASYNC-STORE_RPC"/>
+    </logger>
+    <logger name="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$KvScanRelease" level="off" additivity="false">
+        <appender-ref ref="ASYNC-STORE_RPC"/>
+    </logger>
+
+    <appender name="ASYNC-INDEX_RPC" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="INDEX_RPC" />
+    </appender>
+    <logger name="io.dingodb.sdk.service.desc.index" level="${rpcLog.level}" additivity="false">
+        <appender-ref ref="ASYNC-INDEX_RPC"/>
+    </logger>
+    <logger name="io.dingodb.sdk.service.desc.index.IndexServiceDescriptors$TxnScanLock" level="off" additivity="false">
+        <appender-ref ref="ASYNC-INDEX_RPC"/>
+    </logger>
+
+    <appender name="ASYNC-META_RPC" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="META_RPC" />
+    </appender>
+    <logger name="io.dingodb.sdk.service.desc.meta" level="off" additivity="false">
+        <appender-ref ref="ASYNC-META_RPC"/>
+    </logger>
+    <logger name="io.dingodb.sdk.service.desc.meta.MetaServiceDescriptors$TsoService" level="off"/>
+
+    <appender name="ASYNC-COORDINATOR_RPC" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="COORDINATOR_RPC" />
+    </appender>
+    <logger name="io.dingodb.sdk.service.desc.coordinator" level="off" additivity="false">
+        <appender-ref ref="ASYNC-COORDINATOR_RPC"/>
+    </logger>
+
+    <appender name="ASYNC-VERSION_RPC" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="VERSION_RPC" />
+    </appender>
+    <logger name="io.dingodb.sdk.service.desc.version" level="off" additivity="false">
+        <appender-ref ref="ASYNC-VERSION_RPC"/>
+    </logger>
+    <logger name="io.dingodb.sdk.service.desc.version.VersionServiceDescriptors$LeaseRenew" level="off"/>
+
+    <appender name="ASYNC-TXN_RPC" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="TXN_RPC" />
+    </appender>
+    <!--The interface StoreServiceDescriptors is the service where the interface is located, and TxnCommit is the interface name-->
+    <logger name="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnCommit" level="${rpcLog.level}" additivity="false">
+        <appender-ref ref="ASYNC-TXN_RPC"/>
+    </logger>
+    <logger name ="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnScan"  level="${rpcLog.level}" additivity="false">
+        <appender-ref ref="ASYNC-TXN_RPC"/>
+    </logger>
+    <logger name ="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnPrewrite"  level="${rpcLog.level}" additivity="false">
+        <appender-ref ref="ASYNC-TXN_RPC"/>
+    </logger>
+    <logger name ="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnCheckTxnStatus"  level="${rpcLog.level}" additivity="false">
+        <appender-ref ref="ASYNC-TXN_RPC"/>
+    </logger>
+    <logger name ="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnPessimisticLock"  level="${rpcLog.level}" additivity="false">
+        <appender-ref ref="ASYNC-TXN_RPC"/>
+    </logger>
+
+    <!-- Frequently printed logs need to be turned off -->
+    <logger name="io.grpc.netty.shaded.io.grpc.netty.NettyClientHandler" additivity="false">
+    </logger>
+    <logger name="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$ExecutorHeartbeat" additivity="false">
+    </logger>
+    <logger name="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnHeartbeat" additivity="false">
+    </logger>
+    <logger name="io.dingodb.sdk.service.desc.store.CoordinatorServiceDescriptors$ExecutorHeartbeat" additivity="false">
+    </logger>
+
     <root level="info">
-        <appender-ref ref="ALL_LOG_FILE"/>
+        <appender-ref ref="STDOUT" />
     </root>
 </configuration>

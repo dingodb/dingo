@@ -24,6 +24,7 @@ import io.dingodb.calcite.stats.TableStats;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
@@ -101,7 +102,7 @@ public class CollectStatsTask implements Callable<TableStats> {
 
     @Override
     public TableStats call() {
-        log.info("collect iterator start");
+        LogUtils.info(log, "collect iterator start");
         while (tupleIterator.hasNext()) {
             Object[] tuples = tupleIterator.next();
             if (columnHistogramList.size() > 0) {
@@ -119,7 +120,7 @@ public class CollectStatsTask implements Callable<TableStats> {
                 });
             }
         }
-        log.info("collect iterator end...");
+        LogUtils.info(log, "collect iterator end...");
         return new TableStats(minSketchList, columnHistogramList,
             new ArrayList<>(statsNormalMap.values()));
     }

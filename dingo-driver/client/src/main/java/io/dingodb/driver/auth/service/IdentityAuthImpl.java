@@ -66,6 +66,5 @@ public class IdentityAuthImpl implements IdentityAuth {
         PrivilegeGather privilegeGather = userService.getPrivilegeDef(user, host);
         env.getPrivilegeGatherMap().put(privilegeGather.key(),
             privilegeGather);
-        log.info("cache privileges:" + env.getPrivilegeGatherMap());
     }
 }

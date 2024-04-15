@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.dag.Edge;
@@ -53,10 +54,8 @@ public abstract class IteratorSourceOperator extends SourceOperator {
             tmp = System.currentTimeMillis();
         }
         profile.end();
-        if (log.isDebugEnabled()) {
-            log.debug("IteratorSourceOperator push,  count: {}, cost: {}ms.", profile.getCount(),
-                profile.getDuration());
-        }
+        LogUtils.debug(log, "IteratorSourceOperator push,  count: {}, cost: {}ms.", profile.getCount(),
+            profile.getDuration());
         return false;
     }
 

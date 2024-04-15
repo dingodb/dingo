@@ -26,7 +26,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.util.DebugLog;
 import io.dingodb.exec.OperatorFactory;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Status;
@@ -191,8 +193,8 @@ public final class TaskImpl implements Task {
             try {
                 vertex.init();
             } catch (Exception ex) {
-                log.error("Init operator:{} in task:{} failed catch exception:{}",
-                    vertex.getOp(), this.id.toString(), ex, ex);
+                LogUtils.error(log, "Init operator:{} in jobId:{} task:{} failed catch exception:{}",
+                    vertex.getOp(), jobId.toString(), this.id.toString(), ex, ex);
                 statusErrMsg = ex.toString();
                 isStatusOK = false;
             }
@@ -209,7 +211,8 @@ public final class TaskImpl implements Task {
     @Override
     public void run(Object @Nullable [] paras) {
         if (status.get() == Status.BORN) {
-            log.error("Run task but check task has init failed: {}", taskInitStatus);
+            LogUtils.error(log, "jobId:{}, taskId:{}, Run task but check task has init failed: {}",
+                jobId.toString(), id.toString(), taskInitStatus);
             Vertex vertex = vertexes.get(runList.get(0));
             // Try to propagate error by any operator, may not succeed because task init failed.
             // operator.fin(0, FinWithException.of(taskInitStatus));
@@ -226,9 +229,7 @@ public final class TaskImpl implements Task {
         if (!status.compareAndSet(Status.READY, Status.RUNNING)) {
             throw new RuntimeException("Status should be READY.");
         }
-        if (log.isDebugEnabled()) {
-            log.debug("Task {}-{} is starting at {}...", jobId, id, location);
-        }
+        LogUtils.debug(log, "Task is starting at {}...", location);
         activeThreads = new CountDownLatch(runList.size());
         setParas(paras);
         if (bachTask) {
@@ -243,11 +244,11 @@ public final class TaskImpl implements Task {
                 final long startTime = System.currentTimeMillis();
                 try {
                     while (operator.push(getContext().copy(), null, vertex)) {
-                        log.info("Operator {} need another pushing.", vertex.getId());
+                        LogUtils.info(log, "Operator {} need another pushing.", vertex.getId());
                     }
                     operator.fin(0, null, vertex);
                 } catch (RuntimeException e) {
-                    log.error("Run Task:{} catch operator:{} run Exception:{}",
+                    LogUtils.error(log, "Run Task:{} catch operator:{} run Exception:{}",
                         getId().toString(), vertex.getId(), e, e);
                     TaskStatus taskStatus = new TaskStatus();
                     taskStatus.setStatus(false);
@@ -262,9 +263,7 @@ public final class TaskImpl implements Task {
                     }
                     operator.fin(0, FinWithException.of(taskStatus), vertex);
                 } finally {
-                    if (log.isDebugEnabled()) {
-                        log.debug("TaskImpl run cost: {}ms.", System.currentTimeMillis() - startTime);
-                    }
+                    LogUtils.debug(log, "TaskImpl run cost: {}ms.", System.currentTimeMillis() - startTime);
                     activeThreads.countDown();
                 }
             });

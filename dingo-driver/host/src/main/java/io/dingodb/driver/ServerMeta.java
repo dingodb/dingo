@@ -19,6 +19,7 @@ package io.dingodb.driver;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.common.auth.Authentication;
 import io.dingodb.common.config.SecurityConfiguration;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionStatus;
@@ -201,10 +202,8 @@ public class ServerMeta implements Meta {
         int scope,
         boolean nullable
     ) {
-        if (log.isDebugEnabled()) {
-            log.debug("connection handle = {}, catalog = {}, schema = {}, table = {}, scope = {}, nullable = {}",
-                ch, catalog, schema, table, scope, nullable);
-        }
+        LogUtils.debug(log, "connection handle = {}, catalog = {}, schema = {}, table = {}, scope = {}, nullable = {}",
+            ch, catalog, schema, table, scope, nullable);
         return mapMetaResultSet(
             ch.id,
             getConnectionMeta(ch).getBestRowIdentifier(ch, catalog, schema, table, scope, nullable)
@@ -231,9 +230,7 @@ public class ServerMeta implements Meta {
         String schema,
         String table
     ) {
-        if (log.isDebugEnabled()) {
-            log.debug("connection handle = {}, catalog = {}, schema = {}, table = {}.", ch, catalog, schema, table);
-        }
+        LogUtils.debug(log, "connection handle = {}, catalog = {}, schema = {}, table = {}.", ch, catalog, schema, table);
         return mapMetaResultSet(
             ch.id,
             getConnectionMeta(ch).getPrimaryKeys(ch, catalog, schema, table)
@@ -449,9 +446,7 @@ public class ServerMeta implements Meta {
     @Override
     @SneakyThrows
     public StatementHandle prepare(@NonNull ConnectionHandle ch, String sql, long maxRowCount) {
-        if (log.isDebugEnabled()) {
-            log.debug("connection handle = {}, sql = {}, maxRowCount = {}.", ch, sql, maxRowCount);
-        }
+        LogUtils.debug(log, "connection handle = {}, sql = {}, maxRowCount = {}.", ch, sql, maxRowCount);
         DingoConnection connection = connectionMap.get(ch.id);
         DingoPreparedStatement prepareStatement = (DingoPreparedStatement) connection.prepareStatement(sql);
         StatementHandle handle = prepareStatement.handle;
@@ -478,10 +473,8 @@ public class ServerMeta implements Meta {
         int maxRowsInFirstFrame,
         PrepareCallback callback // This callback does nothing
     ) throws NoSuchStatementException {
-        if (log.isDebugEnabled()) {
-            log.debug("statement handle = {}, sql = {}, maxRowCount = {}, maxRowsInFirstFrame = {}.",
-                sh, sql, maxRowCount, maxRowsInFirstFrame);
-        }
+        LogUtils.debug(log, "statement handle = {}, sql = {}, maxRowCount = {}, maxRowsInFirstFrame = {}.",
+            sh, sql, maxRowCount, maxRowsInFirstFrame);
         final String connectionId = sh.connectionId;
         DingoConnection connection = connectionMap.get(connectionId);
         StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
@@ -547,9 +540,7 @@ public class ServerMeta implements Meta {
         long offset,
         int fetchMaxRowCount
     ) throws NoSuchStatementException {
-        if (log.isDebugEnabled()) {
-            log.debug("statement handle = {}, offset = {}, fetchMaxRowCount = {}.", sh, offset, fetchMaxRowCount);
-        }
+        LogUtils.debug(log, "statement handle = {}, offset = {}, fetchMaxRowCount = {}.", sh, offset, fetchMaxRowCount);
         DingoConnection connection = connectionMap.get(sh.connectionId);
         StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
         Frame frame = connection.getMeta().fetch(newSh, offset, fetchMaxRowCount);
@@ -573,15 +564,13 @@ public class ServerMeta implements Meta {
         List<TypedValue> parameterValues,
         int maxRowsInFirstFrame
     ) throws NoSuchStatementException {
-        if (log.isDebugEnabled()) {
-            log.debug("statement handle = {}, parameterValues = {}, maxRowInFirstFrame = {}.",
-                sh,
-                TypedValue.values(parameterValues).stream()
-                    .map(Objects::toString)
-                    .collect(Collectors.joining(", ")),
-                maxRowsInFirstFrame
-            );
-        }
+        LogUtils.debug(log, "statement handle = {}, parameterValues = {}, maxRowInFirstFrame = {}.",
+            sh,
+            TypedValue.values(parameterValues).stream()
+                .map(Objects::toString)
+                .collect(Collectors.joining(", ")),
+            maxRowsInFirstFrame
+        );
         final String connectionId = sh.connectionId;
         DingoConnection connection = connectionMap.get(connectionId);
         // `sh.signature` may be `null` for the client is trying to save ser-des cost.
@@ -610,15 +599,11 @@ public class ServerMeta implements Meta {
 
     @Override
     public StatementHandle createStatement(@NonNull ConnectionHandle ch) {
-        if (log.isDebugEnabled()) {
-            log.debug("connection handle = {}.", ch);
-        }
+        LogUtils.debug(log, "connection handle = {}.", ch);
         DingoConnection connection = connectionMap.get(ch.id);
         try {
             AvaticaStatement statement = connection.createStatement();
-            if (log.isDebugEnabled()) {
-                log.debug("Statement created, handle = {}.", statement.handle);
-            }
+            LogUtils.debug(log, "Statement created, handle = {}.", statement.handle);
             StatementHandle handle = statement.handle;
             return new StatementHandle(ch.id, handle.id, handle.signature);
         } catch (SQLException e) {
@@ -628,9 +613,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public void closeStatement(@NonNull StatementHandle sh) {
-        if (log.isDebugEnabled()) {
-            log.debug("statement handle = {}.", sh);
-        }
+        LogUtils.debug(log, "statement handle = {}.", sh);
         DingoConnection connection = connectionMap.get(sh.connectionId);
         StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
         try {
@@ -638,44 +621,42 @@ public class ServerMeta implements Meta {
             statement.close();
             return;
         } catch (NoSuchStatementException | SQLException e) {
-            log.error("Failed to close statement: handle = {}.", sh, e);
+            LogUtils.error(log, "Failed to close statement: handle = {}.", sh, e);
         }
-        log.warn("The connection (handle = {}) is not found.", sh.connectionId);
+        LogUtils.warn(log, "The connection (handle = {}) is not found.", sh.connectionId);
     }
 
     public void cancelStatement(@NonNull String connectionId, int id, Meta.Signature signature) {
         DingoConnection connection = connectionMap.get(connectionId);
         StatementHandle newSh = new StatementHandle(connection.id, id, signature);
         try {
-            log.info("statement handle = {}.", newSh);
+            LogUtils.debug(log, "statement handle = {}.", newSh);
             AvaticaStatement statement = connection.getStatement(newSh);
             statement.cancel();
             ITransaction transaction = connection.getTransaction();
             if (transaction != null) {
                 if (transaction.isAutoCommit()) {
                     if (transaction.getStatus() == TransactionStatus.START) {
-                        log.info("cancelStatement, {} rollback ...", transaction.getTxnId());
+                        LogUtils.debug(log, "cancelStatement, {} rollback ...", transaction.getTxnId());
                         connection.rollback();
                     } else {
-                        log.info("cancelStatement, cancel transaction {} ", transaction.getTxnId());
+                        LogUtils.debug(log, "cancelStatement, cancel transaction {} ", transaction.getTxnId());
                         transaction.cancel();
                     }
                 }
             }
             return;
         } catch (NoSuchStatementException | SQLException e) {
-            log.error("Failed to cancel statement: handle = {}.", newSh, e);
+            LogUtils.error(log, "Failed to cancel statement: handle = {}.", newSh, e);
         }
-        log.warn("The connection (handle = {}) is not found.", connectionId);
+        LogUtils.warn(log, "The connection (handle = {}) is not found.", connectionId);
     }
 
 
     // Here the local meta is created.
     @Override
     public void openConnection(@NonNull ConnectionHandle ch, Map<String, String> info) {
-        if (log.isDebugEnabled()) {
-            log.debug("connection handle = {}, info = {}.", ch, info);
-        }
+        LogUtils.debug(log, "connection handle = {}, info = {}.", ch, info);
         Properties properties = new Properties();
         properties.putAll(info);
         DingoConnection connection = DingoDriver.INSTANCE.createConnection(null, properties);
@@ -711,9 +692,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public void closeConnection(@NonNull ConnectionHandle ch) {
-        if (log.isDebugEnabled()) {
-            log.debug("connection handle = {}.", ch);
-        }
+        LogUtils.debug(log, "connection handle = {}.", ch);
         DingoConnection connection = connectionMap.remove(ch.id);
         if (connection != null) {
             try {
@@ -723,7 +702,7 @@ public class ServerMeta implements Meta {
                 throw new RuntimeException(e);
             }
         }
-        log.warn("The connection (handle = {}) is not found.", ch);
+        LogUtils.warn(log, "The connection (handle = {}) is not found.", ch);
     }
 
     @Override

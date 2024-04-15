@@ -31,6 +31,7 @@ import io.dingodb.common.AggregationOperator;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
@@ -120,7 +121,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             // histogram equ-width need max, min
             buildHistogram(histogramList, rangeDistributions, tableId, td);
 
-            log.info("collect stats start");
+            LogUtils.info(log, "collect stats start");
             List<TableStats> statsList = null;
             try {
                 List<CompletableFuture<TableStats>> futureList = getCompletableFutures(td, tableId, rangeDistributions,
@@ -131,13 +132,13 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                         statsList.add(completableFuture.get());
                     } catch (InterruptedException | ExecutionException e) {
                         failReason = e.getMessage();
-                        log.error(e.getMessage(), e);
+                        LogUtils.error(log, e.getMessage(), e);
                         break;
                     }
                 }
             } catch (Exception e) {
                 failReason = e.getMessage();
-                log.error(e.getMessage(), e);
+                LogUtils.error(log, e.getMessage(), e);
             }
             // merge regions stats
             if (statsList == null) {
@@ -153,10 +154,10 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             // update analyze job status
             cache(tableStats);
             rowCount = tableStats.getRowCount();
-            log.info("stats collect done");
+            LogUtils.info(log, "stats collect done");
         } catch (Exception e) {
             failReason = e.getMessage();
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
         }
         endAnalyzeTask(failReason, rowCount);
     }
@@ -324,7 +325,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             try {
                 commitCount = MetaService.root().getTableCommitCount().getOrDefault(tableId, 0L);
             } catch (Exception e) {
-                log.error(e.getMessage(), e);
+                LogUtils.error(log, e.getMessage(), e);
             }
             long totalCount = 0;
             if (commitCount > totalCount) {
@@ -340,14 +341,14 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
         try {
             upsert(analyzeTaskStore, analyzeTaskCodec, Collections.singletonList(values));
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
         }
     }
 
     private void endAnalyzeTask(String failReason, long rowCount) {
         Object[] values = get(analyzeTaskStore, analyzeTaskCodec, getAnalyzeTaskKeys(schemaName, tableName));
         if (values == null) {
-            log.error("analyze task is null");
+            LogUtils.error(log, "analyze task is null");
             return;
         }
         Timestamp current = new Timestamp(System.currentTimeMillis());
@@ -369,7 +370,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
         try {
             return objectMapper.writeValueAsString(analyzeInfo);
         } catch (JsonProcessingException e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             return "";
         }
     }

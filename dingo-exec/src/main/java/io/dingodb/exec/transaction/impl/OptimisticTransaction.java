@@ -19,6 +19,7 @@ package io.dingodb.exec.transaction.impl;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Job;
@@ -150,7 +151,7 @@ public class OptimisticTransaction extends BaseTransaction {
                 future = store.txnPreWritePrimaryKey(txnPreWrite, getLockTimeOut());
                 break;
             } catch (RegionSplitException e) {
-                log.error(e.getMessage(), e);
+                LogUtils.error(log, e.getMessage(), e);
                 CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, cacheToObject.getMutation().getKey());
                 cacheToObject.setPartId(regionId);
                 sleep();
