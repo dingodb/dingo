@@ -18,6 +18,7 @@ package io.dingodb.exec.transaction.impl;
 
 import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.DebugLog;
 import io.dingodb.exec.Services;
@@ -212,7 +213,7 @@ public class TransactionCache {
         while (transform.hasNext()) {
             Object[] next = transform.next();
             TxnLocalData txnLocalData = (TxnLocalData) next[0];
-            log.info("txnId:{} tableId:{} partId:{} Op:{} Key:{} ", txnLocalData.getTxnId(), txnLocalData.getTableId(),
+            LogUtils.info(log, "txnId:{} tableId:{} partId:{} Op:{} Key:{} ", txnLocalData.getTxnId(), txnLocalData.getTableId(),
                 txnLocalData.getPartId(), txnLocalData.getOp(), txnLocalData.getKey());
         }
     }
@@ -223,12 +224,12 @@ public class TransactionCache {
         while (transform.hasNext()) {
             Object[] next = transform.next();
             TxnLocalData txnLocalData = (TxnLocalData) next[0];
-            log.info("txnId:{} tableId:{} partId:{} Op:{} Key:{} ", txnLocalData.getTxnId(), txnLocalData.getTableId(),
+            LogUtils.info(log, "txnId:{} tableId:{} partId:{} Op:{} Key:{} ", txnLocalData.getTxnId(), txnLocalData.getTableId(),
                 txnLocalData.getPartId(), txnLocalData.getOp(), txnLocalData.getKey());
         }
         while (iterator.hasNext()) {
             cache.delete(iterator.next().getKey());
-            log.info("key is {}", iterator.next().getKey());
+            LogUtils.info(log, "key is {}", iterator.next().getKey());
         }
     }
 }

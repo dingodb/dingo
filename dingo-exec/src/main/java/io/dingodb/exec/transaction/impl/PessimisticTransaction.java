@@ -20,6 +20,8 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.log.MdcUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
@@ -44,6 +46,7 @@ import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.tso.TsoService;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -82,13 +85,14 @@ public class PessimisticTransaction extends BaseTransaction {
 
     @Override
     public synchronized void rollBackPessimisticLock(JobManager jobManager) {
+        MdcUtils.setTxnId(txnId.toString());
         long rollBackStart = System.currentTimeMillis();
         cache.setJobId(job.getJobId());
         if(!cache.checkPessimisticLockContinue()) {
-            log.warn("{} The current {} has no data to rollBackPessimisticLock",txnId, transactionOf());
+            LogUtils.warn(log, "The current {} has no data to rollBackPessimisticLock", transactionOf());
             return;
         }
-        log.info("{} {} RollBackPessimisticLock Start", txnId, transactionOf());
+        LogUtils.info(log, "{} RollBackPessimisticLock Start", transactionOf());
         Location currentLocation = MetaService.root().currentLocation();
         CommonId jobId = CommonId.EMPTY_JOB;
         // for_update_ts
@@ -108,15 +112,16 @@ public class PessimisticTransaction extends BaseTransaction {
             }
             this.status = TransactionStatus.ROLLBACK_PESSIMISTIC_LOCK;
         } catch (Throwable t) {
-            log.info(t.getMessage(), t);
+            LogUtils.error(log, t.getMessage(), t);
             this.status = TransactionStatus.ROLLBACK_PESSIMISTIC_LOCK_FAIL;
             throw new RuntimeException(t);
         } finally {
             this.status = TransactionStatus.START;
-            log.info("{} {}  RollBackPessimisticLock End Status:{}, Cost:{}ms",
-                txnId, transactionOf(), status, (System.currentTimeMillis() - rollBackStart));
+            LogUtils.info(log, "{}  RollBackPessimisticLock End Status:{}, Cost:{}ms",
+                transactionOf(), status, (System.currentTimeMillis() - rollBackStart));
             jobManager.removeJob(jobId);
             cleanPessimisticPrimaryLock();
+            MdcUtils.removeTxnId();
         }
     }
 
@@ -133,6 +138,7 @@ public class PessimisticTransaction extends BaseTransaction {
     @Override
     public void rollBackPessimisticPrimaryLock(JobManager jobManager) {
         try {
+            MdcUtils.setTxnId(txnId.toString());
             if (future != null) {
                 future.cancel(true);
             }
@@ -143,7 +149,7 @@ public class PessimisticTransaction extends BaseTransaction {
                 CommonId newPartId = txnLocalData.getPartId();
                 byte[] key = txnLocalData.getKey();
                 cache.deleteKey(primaryKeyLock);
-                log.info("{} pessimisticPrimaryLockRollBack key:{}", txnId, Arrays.toString(key));
+                LogUtils.info(log, "pessimisticPrimaryLockRollBack key:{}", Arrays.toString(key));
                 TransactionUtil.pessimisticPrimaryLockRollBack(
                     txnId,
                     tableId,
@@ -155,11 +161,12 @@ public class PessimisticTransaction extends BaseTransaction {
                 );
             }
         } catch (Throwable throwable) {
-            log.error("rollBackPessimisticPrimaryLock exception:{}", throwable, throwable);
+            LogUtils.error(log, "rollBackPessimisticPrimaryLock exception:{}", throwable, throwable);
         } finally {
             future = null;
             primaryKeyLock = null;
             forUpdateTs = 0L;
+            MdcUtils.removeTxnId();
         }
     }
 
@@ -178,10 +185,10 @@ public class PessimisticTransaction extends BaseTransaction {
     public void rollBackResidualPessimisticLock(JobManager jobManager) {
         long rollBackStart = System.currentTimeMillis();
         if(!cache.checkResidualPessimisticLockContinue()) {
-            log.warn("{} The current {} has no data to rollBackResidualPessimisticLock",txnId, transactionOf());
+            LogUtils.warn(log, "The current {} has no data to rollBackResidualPessimisticLock", transactionOf());
             return;
         }
-        log.info("{} {} rollBackResidualPessimisticLock Start", txnId, transactionOf());
+        LogUtils.info(log, "{} rollBackResidualPessimisticLock Start", transactionOf());
         Location currentLocation = MetaService.root().currentLocation();
         CommonId jobId = CommonId.EMPTY_JOB;
         try {
@@ -198,12 +205,12 @@ public class PessimisticTransaction extends BaseTransaction {
             }
             this.status = TransactionStatus.ROLLBACK_RESIDUAL_PESSIMISTIC_LOCK;
         } catch (Throwable t) {
-            log.info(t.getMessage(), t);
+            LogUtils.error(log, t.getMessage(), t);
             this.status = TransactionStatus.ROLLBACK_RESIDUAL_PESSIMISTIC_LOCK_FAIL;
             throw new RuntimeException(t);
         } finally {
-            log.info("{} {}  RollBackResidualPessimisticLock End Status:{}, Cost:{}ms",
-                txnId, transactionOf(), status, (System.currentTimeMillis() - rollBackStart));
+            LogUtils.info(log, "{}  RollBackResidualPessimisticLock End Status:{}, Cost:{}ms",
+                transactionOf(), status, (System.currentTimeMillis() - rollBackStart));
             jobManager.removeJob(jobId);
         }
     }
@@ -256,7 +263,7 @@ public class PessimisticTransaction extends BaseTransaction {
             if (kvKeyValue != null && kvKeyValue.getValue() != null) {
                 KeyValue keyValue = cache.get(primaryKeyLock);
                 Long forUpdateTs = PrimitiveCodec.decodeLong(keyValue.getValue());
-                log.info("{} kvGet key is {}", txnId, Arrays.toString(key));
+                LogUtils.info(log, "kvGet key is {}", Arrays.toString(key));
                 return new CacheToObject(TransactionCacheToMutation.cacheToMutation(
                     Op.PUT.getCode(),
                     key,
@@ -275,6 +282,7 @@ public class PessimisticTransaction extends BaseTransaction {
         // 1、get first key from cache
         cacheToObject = primaryLockTo();
         primaryKey = cacheToObject.getMutation().getKey();
+        Future future = null;
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         while (retry-- > 0) {
             // 2、call sdk preWritePrimaryKey
@@ -306,14 +314,10 @@ public class PessimisticTransaction extends BaseTransaction {
                     cacheToObject.getTableId(),
                     cacheToObject.getPartId()
                 );
-                boolean result = store.txnPreWrite(txnPreWrite, getLockTimeOut());
-                if (!result) {
-                    throw new RuntimeException(txnId + " " + cacheToObject.getPartId()
-                        + ",preWritePrimaryKey false,PrimaryKey:" + primaryKey.toString());
-                }
+                future = store.txnPreWritePrimaryKey(txnPreWrite, getLockTimeOut());
                 break;
             } catch (RegionSplitException e) {
-                log.error(e.getMessage(), e);
+                LogUtils.error(log, e.getMessage(), e);
                 CommonId regionId = TransactionUtil.singleKeySplitRegionId(
                     cacheToObject.getTableId(),
                     txnId,
@@ -322,6 +326,10 @@ public class PessimisticTransaction extends BaseTransaction {
                 cacheToObject.setPartId(regionId);
                 sleep();
             }
+            if (future == null) {
+                throw new RuntimeException(txnId + " future is null " + cacheToObject.getPartId() + ",preWritePrimaryKey false,PrimaryKey:" + primaryKey);
+            }
+            this.future = future;
         }
     }
 
@@ -333,16 +341,17 @@ public class PessimisticTransaction extends BaseTransaction {
 
     @Override
     public synchronized void rollback(JobManager jobManager) {
+        MdcUtils.setTxnId(txnId.toString());
         // PessimisticRollback
         rollBackResidualPessimisticLock(jobManager);
         if (getSqlList().size() == 0 || !cache.checkContinue()) {
-            log.warn("{} The current {} has no data to rollback",txnId, transactionOf());
+            LogUtils.warn(log, "The current {} has no data to rollback", transactionOf());
             return;
         }
         // first rollback primaryKey
         rollbackPrimaryKeyLock();
         long rollBackStart = System.currentTimeMillis();
-        log.info("{} {} RollBack Start", txnId, transactionOf());
+        LogUtils.info(log, "{} RollBack Start", transactionOf());
         Location currentLocation = MetaService.root().currentLocation();
         CommonId jobId = CommonId.EMPTY_JOB;
         try {
@@ -356,11 +365,11 @@ public class PessimisticTransaction extends BaseTransaction {
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
             this.status = TransactionStatus.ROLLBACK;
         } catch (Throwable t) {
-            log.info(t.getMessage(), t);
+            LogUtils.error(log, t.getMessage(), t);
             this.status = TransactionStatus.ROLLBACK_FAIL;
             throw new RuntimeException(t);
         } finally {
-            log.info("{} {} RollBack End Status:{}, Cost:{}ms", txnId, transactionOf(),
+            LogUtils.info(log, "{} RollBack End Status:{}, Cost:{}ms", transactionOf(),
                 status, (System.currentTimeMillis() - rollBackStart));
             jobManager.removeJob(jobId);
         }
@@ -370,7 +379,7 @@ public class PessimisticTransaction extends BaseTransaction {
         if (cacheToObject == null) {
             cacheToObject = primaryLockTo();
             primaryKey = cacheToObject.getMutation().getKey();
-            log.info("{} rollbackPrimaryKeyLock key:{}", txnId, Arrays.toString(primaryKey));
+            LogUtils.info(log, "rollbackPrimaryKeyLock key:{}", Arrays.toString(primaryKey));
         }
         TransactionUtil.pessimisticPrimaryLockRollBack(
             txnId,

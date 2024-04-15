@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithProfiles;

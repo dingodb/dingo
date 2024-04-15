@@ -19,6 +19,7 @@ package io.dingodb.exec.table;
 import com.google.common.collect.Iterators;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.Coprocessor;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.Optional;
 import io.dingodb.store.api.StoreInstance;
@@ -52,9 +53,7 @@ public final class PartInKvStore implements Part {
                 wrap(codec::decode)::apply
             );
         } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
+            LogUtils.debug(log, "PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
         }
     }
 
@@ -77,9 +76,7 @@ public final class PartInKvStore implements Part {
         try {
             return store.delete(new StoreInstance.Range(start, end, withStart, withEnd));
         } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
+            LogUtils.debug(log, "PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
         }
     }
 
@@ -99,9 +96,7 @@ public final class PartInKvStore implements Part {
         try {
             return store.insert(keyValue);
         } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
+            LogUtils.debug(log, "PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
         }
     }
 
@@ -132,9 +127,7 @@ public final class PartInKvStore implements Part {
         try {
             return store.update(newKeyValue, oldKeyValue);
         } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore update cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
+            LogUtils.debug(log, "PartInKvStore update cost: {}ms.", System.currentTimeMillis() - startTime);
         }
     }
 
@@ -152,9 +145,7 @@ public final class PartInKvStore implements Part {
         try {
             return store.delete(key);
         } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
+            LogUtils.debug(log, "PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
         }
     }
 
@@ -164,9 +155,7 @@ public final class PartInKvStore implements Part {
         try {
             return store.count(new StoreInstance.Range(start, end, withStart, withEnd));
         } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
+            LogUtils.debug(log, "PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
         }
     }
 
@@ -181,9 +170,7 @@ public final class PartInKvStore implements Part {
         try {
             return Optional.mapOrNull(store.get(key), wrap(codec::decode));
         } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
+            LogUtils.debug(log, "PartInKvStore insert cost: {}ms.", System.currentTimeMillis() - startTime);
         }
     }
 
@@ -192,9 +179,7 @@ public final class PartInKvStore implements Part {
         try {
             return store.txnPreWrite(txnPreWrite, timeOut);
         } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore txnPreWrite cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
+            LogUtils.debug(log, "PartInKvStore txnPreWrite cost: {}ms.", System.currentTimeMillis() - startTime);
         }
     }
 
@@ -204,9 +189,7 @@ public final class PartInKvStore implements Part {
         try {
             return store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
         } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore txnPreWritePrimaryKey cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
+            LogUtils.debug(log, "PartInKvStore txnPreWritePrimaryKey cost: {}ms.", System.currentTimeMillis() - startTime);
         }
     }
 
@@ -216,9 +199,7 @@ public final class PartInKvStore implements Part {
         try {
             return store.txnCommit(commitRequest);
         } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore txnCommit cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
+            LogUtils.debug(log, "PartInKvStore txnCommit cost: {}ms.", System.currentTimeMillis() - startTime);
         }
     }
 
@@ -228,9 +209,7 @@ public final class PartInKvStore implements Part {
         try {
             return store.txnBatchRollback(rollBackRequest);
         } finally {
-            if (log.isDebugEnabled()) {
-                log.debug("PartInKvStore txnBatchRollback cost: {}ms.", System.currentTimeMillis() - startTime);
-            }
+            LogUtils.debug(log, "PartInKvStore txnBatchRollback cost: {}ms.", System.currentTimeMillis() - startTime);
         }
     }
 

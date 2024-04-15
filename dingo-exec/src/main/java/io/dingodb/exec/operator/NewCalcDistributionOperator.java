@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.dag.Vertex;
@@ -43,17 +44,15 @@ public class NewCalcDistributionOperator extends SourceOperator {
         PartitionService ps = param.getPs();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
             = param.getRangeDistribution();
-        if (log.isTraceEnabled()) {
-            log.trace(
-                "start = {}, end = {}, PartitionService = {}, RangeDistribution = {}",
-                Arrays.toString(param.getStartKey()),
-                Arrays.toString(param.getEndKey()),
-                ps.getClass().getCanonicalName(),
-                rangeDistribution.entrySet().stream()
-                    .map(e -> e.getKey().encodeToString()+": "+e.getValue())
-                    .collect(Collectors.joining("\n"))
-            );
-        }
+        LogUtils.trace(log,
+            "start = {}, end = {}, PartitionService = {}, RangeDistribution = {}",
+            Arrays.toString(param.getStartKey()),
+            Arrays.toString(param.getEndKey()),
+            ps.getClass().getCanonicalName(),
+            rangeDistribution.entrySet().stream()
+                .map(e -> e.getKey().encodeToString()+": "+e.getValue())
+                .collect(Collectors.joining("\n"))
+        );
         return ps.calcPartitionRange(
             param.getStartKey(),
             param.getEndKey(),

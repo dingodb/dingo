@@ -17,6 +17,7 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
@@ -38,9 +39,7 @@ public final class CoalesceOperator extends SoleOutOperator {
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         synchronized (vertex) {
-            if (log.isDebugEnabled()) {
-                log.debug("Got tuple from pin {}.", context.getPin());
-            }
+            LogUtils.debug(log, "Got tuple from pin {}.", context.getPin());
             return vertex.getSoleEdge().transformToNext(context, tuple);
         }
     }
@@ -51,9 +50,7 @@ public final class CoalesceOperator extends SoleOutOperator {
             CoalesceParam param = vertex.getParam();
             OperatorProfile profile = param.getProfile("coalesce");
             long start = System.currentTimeMillis();
-            if (log.isDebugEnabled()) {
-                log.debug("Got FIN from pin {}.", pin);
-            }
+            LogUtils.debug(log, "Got FIN from pin {}.", pin);
             Edge edge = vertex.getSoleEdge();
             if (fin instanceof FinWithException) {
                 edge.fin(fin);

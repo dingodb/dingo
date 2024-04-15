@@ -17,6 +17,7 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.profile.StmtSummaryMap;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.InfoSchemaScanParam;
 import io.dingodb.meta.InfoSchemaService;
@@ -138,7 +139,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             .stream()
             .flatMap(table -> {
                 if (table.partitions == null || table.getPartitions().isEmpty()) {
-                    log.warn("The table {} not have partition, please check meta.", table.name);
+                    LogUtils.warn(log, "The table {} not have partition, please check meta.", table.name);
                     return Stream.<Object[]>of(getPartitionDetail(schema.getKey(), table, null));
                 } else {
                     return table.getPartitions()

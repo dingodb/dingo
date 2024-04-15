@@ -36,6 +36,7 @@ import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
 import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.privilege.PrivilegeDefinition;
@@ -412,6 +413,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(SqlCreateSchema schema, CalcitePrepare.Context context) {
+        LogUtils.info(log, "DDL execute: {}", schema);
         DingoRootSchema rootSchema = (DingoRootSchema) context.getMutableRootSchema().schema;
         String schemaName = schema.name.names.get(0).toUpperCase();
         if (rootSchema.getSubSchema(schemaName) == null) {
@@ -425,6 +427,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(SqlDropSchema schema, CalcitePrepare.Context context) {
+        LogUtils.info(log, "DDL execute: {}", schema);
         DingoRootSchema rootSchema = (DingoRootSchema) context.getMutableRootSchema().schema;
         String schemaName = schema.name.names.get(0).toUpperCase();
         if (schemaName.equalsIgnoreCase(context.getDefaultSchemaPath().get(0))) {
@@ -451,7 +454,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     @SuppressWarnings({"unused"})
     public void execute(SqlCreateTable createT, CalcitePrepare.Context context) {
         DingoSqlCreateTable create = (DingoSqlCreateTable) createT;
-        log.info("DDL execute: {}", create);
+        LogUtils.info(log, "DDL execute: {}", create);
         DingoSchema schema = getSchema(create.name, context, false);
         SqlNodeList columnList = create.columnList;
         if (columnList == null) {
@@ -567,7 +570,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     @SuppressWarnings({"unused", "MethodMayBeStatic"})
     public void execute(SqlDropTable drop, CalcitePrepare.Context context) throws Exception {
-        log.info("DDL execute: {}", drop);
+        LogUtils.info(log, "DDL execute: {}", drop);
         final DingoSchema schema = getSchema(drop.name, context, drop.ifExists);
         if (schema == null) {
             return;
@@ -613,6 +616,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(@NonNull SqlTruncate truncate, CalcitePrepare.Context context) throws Exception {
+        LogUtils.info(log, "DDL execute: {}", truncate);
         SqlIdentifier name = (SqlIdentifier) truncate.getOperandList().get(0);
         final Pair<DingoSchema, String> schemaTableName
             = getSchemaAndTableName(name, context);
@@ -657,7 +661,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
 
     public void execute(@NonNull SqlGrant sqlGrant, CalcitePrepare.Context context) {
-        log.info("DDL execute: {}", sqlGrant);
+        LogUtils.info(log, "DDL execute: {}", sqlGrant);
         if (!"*".equals(sqlGrant.table)) {
             SqlIdentifier name = sqlGrant.tableIdentifier;
             final Pair<DingoSchema, String> schemaTableName
@@ -686,7 +690,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(@NonNull SqlRevoke sqlRevoke, CalcitePrepare.Context context) {
-        log.info("DDL execute: {}", sqlRevoke);
+        LogUtils.info(log, "DDL execute: {}", sqlRevoke);
         sqlRevoke.host = getRealAddress(sqlRevoke.host);
         if (userService.existsUser(UserDefinition.builder().user(sqlRevoke.user)
             .host(sqlRevoke.host).build())) {
@@ -698,7 +702,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(@NonNull SqlCreateUser sqlCreateUser, CalcitePrepare.Context context) {
-        log.info("DDL execute: {}", sqlCreateUser);
+        LogUtils.info(log, "DDL execute: {}", sqlCreateUser);
         UserDefinition userDefinition = UserDefinition.builder().user(sqlCreateUser.user)
             .host(getRealAddress(sqlCreateUser.host)).build();
         if (userService.existsUser(userDefinition)) {
@@ -715,7 +719,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(@NonNull SqlDropUser sqlDropUser, CalcitePrepare.Context context) {
-        log.info("DDL execute: {}", sqlDropUser);
+        LogUtils.info(log, "DDL execute: {}", sqlDropUser);
         UserDefinition userDefinition = UserDefinition.builder().user(sqlDropUser.name)
             .host(getRealAddress(sqlDropUser.host)).build();
         if (!userService.existsUser(userDefinition) && !sqlDropUser.ifExists) {
@@ -742,7 +746,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(@NonNull SqlAlterTableDistribution sqlAlterTableDistribution, CalcitePrepare.Context context) {
-        log.info("DDL execute: {}", sqlAlterTableDistribution);
         final Pair<DingoSchema, String> schemaTableName
             = getSchemaAndTableName(sqlAlterTableDistribution.table, context);
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
@@ -759,6 +762,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             keyColumns.stream().map(Column::getType).collect(Collectors.toList()),
             Collections.singletonList(detail.getOperand())
         );
+        LogUtils.info(log, "DDL execute SqlAlterTableDistribution tableName: {}, partitionDefinition: {}", tableName, detail);
         schema.addDistribution(tableName, sqlAlterTableDistribution.getPartitionDefinition());
     }
 
@@ -789,6 +793,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(@NonNull SqlAlterUser sqlAlterUser, CalcitePrepare.Context context) {
+        LogUtils.info(log, "DDL execute: {}", sqlAlterUser);
         UserDefinition userDefinition = UserDefinition.builder()
             .user(sqlAlterUser.user)
             .host(getRealAddress(sqlAlterUser.host))
@@ -841,6 +846,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     private static PrivilegeDefinition getPrivilegeDefinition(
         @NonNull SqlGrant sqlGrant, CalcitePrepare.@NonNull Context context
     ) {
+        LogUtils.info(log, "DDL execute: {}", sqlGrant);
         String tableName = sqlGrant.table;
         String schemaName = sqlGrant.schema;
         PrivilegeDefinition privilegeDefinition;

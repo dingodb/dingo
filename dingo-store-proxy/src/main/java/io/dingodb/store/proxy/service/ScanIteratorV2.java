@@ -17,6 +17,7 @@
 package io.dingodb.store.proxy.service;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.ChannelProvider;
 import io.dingodb.sdk.service.StoreService;
@@ -92,9 +93,7 @@ public class ScanIteratorV2 implements Iterator<KeyValue>, AutoCloseable {
                     .range(range)
                     .build();
                 channelProvider.before(request);
-                if (log.isDebugEnabled()) {
-                    log.debug("Emit ScanBeginV2: scanId = {}, request ts = {}", scanId, requestTs);
-                }
+                LogUtils.debug(log, "Emit ScanBeginV2: scanId = {}, request ts = {}", scanId, requestTs);
                 KvScanBeginResponseV2 res = RpcCaller.call(
                     StoreServiceDescriptors.kvScanBeginV2,
                     request,
@@ -128,9 +127,7 @@ public class ScanIteratorV2 implements Iterator<KeyValue>, AutoCloseable {
     }
 
     public synchronized void scanContinue() {
-        if (log.isDebugEnabled()) {
-            log.debug("Emit ScanContinueV2: scanId = {}", scanId);
-        }
+        LogUtils.debug(log, "Emit ScanContinueV2: scanId = {}", scanId);
         KvScanContinueRequestV2 request = KvScanContinueRequestV2.builder()
             .scanId(scanId)
             .maxFetchCnt(1000)
@@ -151,9 +148,7 @@ public class ScanIteratorV2 implements Iterator<KeyValue>, AutoCloseable {
     }
 
     public void scanRelease() {
-        if (log.isDebugEnabled()) {
-            log.debug("Emit ScanReleaseV2: scanId = {}", scanId);
-        }
+        LogUtils.debug(log, "Emit ScanReleaseV2: scanId = {}", scanId);
         KvScanReleaseRequestV2 request = KvScanReleaseRequestV2.builder().scanId(scanId).build();
         channelProvider.before(request);
         KvScanReleaseResponseV2 response = storeService.kvScanReleaseV2(requestTs, request);

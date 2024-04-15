@@ -23,6 +23,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
@@ -117,7 +118,7 @@ public class MetaCache {
                 try {
                     watch();
                 } catch (Exception e) {
-                    log.error("Watch meta error, restart watch.", e);
+                    LogUtils.error(log, "Watch meta error, restart watch.", e);
                 }
             }
         });
@@ -148,7 +149,7 @@ public class MetaCache {
                 WatchRequest.builder().requestUnion(ProgressRequest.builder().watchId(watchId).build()).build()
             );
             if (revision > 0 && revision < response.getCompactRevision()) {
-                log.info(
+                LogUtils.info(log,
                     "Watch id {} out, revision {}, compact revision {}, restart watch.",
                     watchId, revision, response.getCompactRevision()
                 );
@@ -158,7 +159,7 @@ public class MetaCache {
                 continue;
             }
             for (MetaEvent event : response.getEvents()) {
-                log.info("Receive meta event: {}", event);
+                LogUtils.info(log, "Receive meta event: {}", event);
                 switch (event.getEventType()) {
                     case META_EVENT_NONE:
                         break;
@@ -241,7 +242,7 @@ public class MetaCache {
         return Optional.ofNullable(metaService.getTable(
                 tso(), GetTableRequest.builder().tableId(MAPPER.idTo(tableId)).build()
             )).map(GetTableResponse::getTableDefinitionWithId)
-            .ifAbsent(() -> log.warn("Table {} not found.", tableId))
+            .ifAbsent(() -> LogUtils.warn(log, "Table {} not found.", tableId))
             .filter(Objects::nonNull)
             .map(tableWithId -> {
                 try {
@@ -249,7 +250,7 @@ public class MetaCache {
                     table.indexes.forEach($ -> tableIdCache.put($.getTableId(), $));
                     return table;
                 } catch (Exception e) {
-                    log.warn("load table and indexes error:" + tableId);
+                    LogUtils.warn(log, "load table and indexes error:" + tableId);
                     return null;
                 }
             }).filter(Objects::nonNull)
@@ -271,9 +272,9 @@ public class MetaCache {
                 }).collect(Collectors.toList());
         } catch (Exception e) {
             if (tableWithId != null) {
-                log.error("getIndexes tableWithId:" + tableWithId);
+                LogUtils.error(log, "getIndexes tableWithId:" + tableWithId);
             } else {
-                log.error("getIndexes tableWithId is null");
+                LogUtils.error(log, "getIndexes tableWithId is null");
             }
             throw e;
         }
@@ -319,31 +320,31 @@ public class MetaCache {
     }
 
     public void invalidateTable(long schema, long table) {
-        log.info("Invalid table {}.{}", schema, table);
+        LogUtils.info(log, "Invalid table {}.{}", schema, table);
         tableIdCache.remove(new CommonId(TABLE, schema, table));
         tableIdCache.remove(new CommonId(INDEX, schema, table));
     }
 
     public void invalidateDistribution(MetaEventRegion metaEventRegion) {
         RegionDefinition definition = metaEventRegion.getDefinition();
-        log.info("Invalid table distribution {}", definition);
+        LogUtils.info(log, "Invalid table distribution {}", definition);
         distributionCache.invalidate(new CommonId(TABLE, definition.getSchemaId(), definition.getTableId()));
         distributionCache.invalidate(new CommonId(INDEX, definition.getSchemaId(), definition.getTableId()));
     }
 
     public void invalidateMetaServices() {
-        log.info("Invalid meta services");
+        LogUtils.info(log, "Invalid meta services");
         metaServices = null;
     }
 
     public synchronized void refreshSchema(String schema) {
-        log.info("Invalid schema {}", schema);
+        LogUtils.info(log, "Invalid schema {}", schema);
         try {
             cache.compute(schema, (k, v) -> loadTables(metaService.getSchemaByName(
                 tso(), GetSchemaByNameRequest.builder().schemaName(schema).build()
             ).getSchema()));
         } catch (Exception e) {
-            log.error("refresh schema error. " + e.getMessage(), e);
+            LogUtils.error(log, "refresh schema error. " + e.getMessage(), e);
         }
     }
 

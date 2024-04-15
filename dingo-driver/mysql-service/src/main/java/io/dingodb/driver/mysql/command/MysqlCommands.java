@@ -16,6 +16,7 @@
 
 package io.dingodb.driver.mysql.command;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.MysqlByteUtil;
 import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.common.mysql.constant.ServerStatus;
@@ -87,9 +88,7 @@ public class MysqlCommands {
             throw new RuntimeException(e);
         }
         AtomicLong packetId = new AtomicLong(queryPacket.packetId + 1);
-        if (log.isDebugEnabled()) {
-            log.debug("receive sql:" + sql);
-        }
+        LogUtils.debug(log, "receive sql:" + sql);
         if (mysqlConnection.passwordExpire && !doExpire(mysqlConnection, sql, packetId)) {
             MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE);
             return;
@@ -158,7 +157,7 @@ public class MysqlCommands {
                 .build();
             MysqlResponseHandler.responsePrepare(preparePacket, mysqlConnection.channel);
         } catch (SQLException e) {
-            log.info(e.getMessage(), e);
+            LogUtils.info(log, e.getMessage(), e);
             MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
         }
     }
@@ -196,11 +195,11 @@ public class MysqlCommands {
                 MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
             }
         } catch (SQLException sqlException) {
-            log.error("sql exception sqlstate:" + sqlException.getSQLState() + ", code:" + sqlException.getErrorCode()
+            LogUtils.error(log, "sql exception sqlstate:" + sqlException.getSQLState() + ", code:" + sqlException.getErrorCode()
                 + ", message:" + sqlException.getMessage());
             MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, sqlException);
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             //MysqlResponseHandler.responseError(bakPacketId, mysqlConnection.channel, ErrorCode.ER_UNKNOWN_ERROR, "");
             throw e;
         } finally {
@@ -209,7 +208,7 @@ public class MysqlCommands {
                     statement.close();
                 }
             } catch (SQLException e) {
-                log.error(e.getMessage(), e);
+                LogUtils.error(log, e.getMessage(), e);
             }
         }
     }
@@ -316,7 +315,7 @@ public class MysqlCommands {
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
                     MysqlResponseHandler.responsePrepareExecute(resultSet, packetId, mysqlConnection);
                 } catch (SQLException e) {
-                    log.error(e.getMessage(), e);
+                    LogUtils.error(log, e.getMessage(), e);
                     MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
                 }
             } else {
@@ -339,7 +338,7 @@ public class MysqlCommands {
             MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
         } catch (Exception e) {
             MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_UNKNOWN_ERROR, "");
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
         }
     }
 

@@ -23,6 +23,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.transaction.base.TxnLocalData;
@@ -123,7 +124,7 @@ public class ShowLocksOperation extends QueryOperation {
                     return $.txnLocks(tso).stream();
                 } catch (Throwable throwable) {
                     Throwable extractThrowable = Utils.extractThrowable(throwable);
-                    log.error(extractThrowable.getMessage(), extractThrowable);
+                    LogUtils.error(log, extractThrowable.getMessage(), extractThrowable);
                     throw new RuntimeException($.toString() + " connection refused, retry in 20 seconds.");
                 }
             })
@@ -221,7 +222,7 @@ public class ShowLocksOperation extends QueryOperation {
                         return $.tableLocks().stream();
                     } catch (Throwable throwable) {
                         Throwable extractThrowable = Utils.extractThrowable(throwable);
-                        log.error(extractThrowable.getMessage(), extractThrowable);
+                        LogUtils.error(log, extractThrowable.getMessage(), extractThrowable);
                         throw new RuntimeException($.toString() + " connection refused, retry in 20 seconds.");
                     }
                 })

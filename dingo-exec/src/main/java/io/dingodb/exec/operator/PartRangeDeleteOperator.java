@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
@@ -42,10 +43,8 @@ public final class PartRangeDeleteOperator extends SoleOutOperator {
         long count = store.delete(new StoreInstance.Range(distribution.getStartKey(), distribution.getEndKey(),
             distribution.isWithStart(), distribution.isWithEnd()));
         vertex.getSoleEdge().transformToNext(context, new Object[]{count});
-        if (log.isDebugEnabled()) {
-            log.debug("Delete data by range, delete count: {}, cost: {} ms.",
-                count, System.currentTimeMillis() - startTime);
-        }
+        LogUtils.debug(log, "Delete data by range, delete count: {}, cost: {} ms.",
+            count, System.currentTimeMillis() - startTime);
         return false;
     }
 

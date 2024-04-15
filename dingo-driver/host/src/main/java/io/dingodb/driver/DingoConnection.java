@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.client.SessionVariableChange;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
 import io.dingodb.common.profile.CommitProfile;
@@ -108,9 +109,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         if (defaultSchema == null) {
             defaultSchema = DingoRootSchema.DEFAULT_SCHEMA_NAME;
         }
-        if (log.isInfoEnabled()) {
-            log.info("Connection url = {}, properties = {}, default schema = {}.", url, info, defaultSchema);
-        }
+        LogUtils.trace(log, "Connection url = {}, properties = {}, default schema = {}.", url, info, defaultSchema);
         context = new DingoParserContext(defaultSchema, info);
         sessionVariables = new Properties();
     }
@@ -164,11 +163,11 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         }
         unlockFuture.whenComplete((r, e) -> {
             if (e != null) {
-                log.error("Lose table lock, will close connection.", e);
+                LogUtils.error(log, "Lose table lock, will close connection.", e);
                 try {
                     close();
                 } catch (SQLException ex) {
-                    log.error("Lose table lock, close connection error.", e);
+                    LogUtils.error(log, "Lose table lock, close connection error.", e);
                 }
             }
         });
@@ -195,6 +194,8 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 throw new RuntimeException("Optimistic transaction only support" +
                     " read committed transaction isolation level");
             }
+            LogUtils.info(log, "create transaction, startTs:{}, type:{}, txIsolation:{}, autoCommit:{}",
+                startTs, type, txIsolation, autoCommit);
             this.transaction = TransactionManager.createTransaction(type, startTs,
                 TransactionUtil.convertIsolationLevel(txIsolation));
             transaction.setTransactionConfig(sessionVariables);
@@ -218,11 +219,12 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 this.transaction.commit(getMeta().getJobManager());
             }
         } catch (Exception e) {
-            log.info(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             throw new SQLException(e);
         } finally {
             getMeta().cleanTransaction();
         }
+        LogUtils.debug(log, "begin transaction...");
         createTransaction(pessimistic ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC, false);
     }
 
@@ -241,7 +243,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 this.transaction.commit(getMeta().getJobManager());
             }
         } catch (Exception e) {
-            log.info(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             throw new SQLException(e);
         } finally {
             getMeta().cleanTransaction();

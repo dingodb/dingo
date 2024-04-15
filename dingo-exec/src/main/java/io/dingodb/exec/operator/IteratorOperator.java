@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithProfiles;
@@ -41,9 +42,7 @@ public abstract class IteratorOperator extends SoleOutOperator {
                 break;
             }
         }
-        if (log.isDebugEnabled()) {
-            log.debug("IteratorOperator push, count:{}, cost:{}ms.", count, System.currentTimeMillis() - startTime);
-        }
+        LogUtils.debug(log, "IteratorOperator push, count:{}, cost:{}ms.", count, System.currentTimeMillis() - startTime);
         return false;
     }
 

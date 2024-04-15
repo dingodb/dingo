@@ -19,6 +19,7 @@ package io.dingodb.calcite.operation;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
@@ -89,11 +90,11 @@ public class TxnImportDataOperation {
             secondList = tupleList.subList(1, tupleList.size());
             preWriteSecondKey(secondList);
         } catch (WriteConflictException e) {
-            log.info(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             // rollback or retry
             resolveWriteConflict(e, secondList, tupleList);
         } catch (DuplicateEntryException e) {
-            log.info(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             // rollback
             rollback(tupleList);
             throw e;
@@ -153,7 +154,7 @@ public class TxnImportDataOperation {
             StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
             this.future = store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
         } catch (RegionSplitException e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
 
             boolean prewriteResult = false;
             int i = 0;
@@ -170,7 +171,7 @@ public class TxnImportDataOperation {
                     prewriteResult = true;
                 } catch (RegionSplitException e1) {
                     lookSleep();
-                    log.error("prewrite primary region split, retry count:" + i);
+                    LogUtils.error(log, "prewrite primary region split, retry count:" + i);
                 }
             }
         }
@@ -200,7 +201,7 @@ public class TxnImportDataOperation {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
             return store.txnPreWrite(txnPreWrite, param.getTimeOut());
         } catch (RegionSplitException e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             // 2、regin split
 
             boolean prewriteSecondResult = false;
@@ -223,7 +224,7 @@ public class TxnImportDataOperation {
                     prewriteSecondResult = true;
                 } catch (RegionSplitException e1) {
                     lookSleep();
-                    log.error("prewrite second region split, retry count:" + i);
+                    LogUtils.error(log, "prewrite second region split, retry count:" + i);
                 }
             }
 
@@ -296,7 +297,7 @@ public class TxnImportDataOperation {
             StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
             return store.txnCommit(commitRequest);
         } catch (RuntimeException e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             // 2、regin split
             boolean commitResult = false;
             int i = 0;
@@ -308,12 +309,12 @@ public class TxnImportDataOperation {
                     commitResult = store.txnCommit(commitRequest);
                 } catch (RegionSplitException e1) {
                     lookSleep();
-                    log.error("commit primary region split, retry count:" + i);
+                    LogUtils.error(log, "commit primary region split, retry count:" + i);
                 }
             }
             return true;
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             return false;
         }
     }
@@ -390,7 +391,7 @@ public class TxnImportDataOperation {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
             return store.txnCommit(commitRequest);
         } catch (RegionSplitException e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
 
             boolean commitSecondResult = false;
             int i = 0;
@@ -415,7 +416,7 @@ public class TxnImportDataOperation {
                     commitSecondResult = true;
                 } catch (RegionSplitException e1) {
                     lookSleep();
-                    log.error("commit second region split, retry count:" + i);
+                    LogUtils.error(log, "commit second region split, retry count:" + i);
                 }
             }
 
@@ -443,11 +444,11 @@ public class TxnImportDataOperation {
                 break;
             } catch (WriteConflictException e1) {
                 conflictException = e1;
-                log.info(e1.getMessage(), e1);
+                LogUtils.error(log, e1.getMessage(), e1);
                 rollback(tupleList);
             } catch (RuntimeException e2) {
                 conflictException = e2;
-                log.error(e2.getMessage(), e2);
+                LogUtils.error(log, e2.getMessage(), e2);
                 break;
             }
         }
@@ -525,7 +526,7 @@ public class TxnImportDataOperation {
                 param.getKeys().clear();
             }
         } catch (Throwable t) {
-            log.info(t.getMessage(), t);
+            LogUtils.error(log, t.getMessage(), t);
             throw new RuntimeException(t);
         } finally {
             if (future != null) {
@@ -545,7 +546,7 @@ public class TxnImportDataOperation {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
             return store.txnBatchRollback(rollBackRequest);
         } catch (RuntimeException e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             // 2、regin split
             Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(
                 tableId,

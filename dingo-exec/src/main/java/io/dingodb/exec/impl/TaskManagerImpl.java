@@ -17,6 +17,7 @@
 package io.dingodb.exec.impl;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.base.TaskManager;
 import lombok.extern.slf4j.Slf4j;
@@ -45,9 +46,7 @@ public final class TaskManagerImpl implements TaskManager {
         String taskFullId = taskFullId(jobId, id);
         task.init();
         taskMap.put(id, task);
-        if (log.isDebugEnabled()) {
-            log.debug("Added task \"{}\". # of job:tasks: {}.", taskFullId, taskMap.size());
-        }
+        LogUtils.debug(log, "Added task \"{}\". # of job:tasks: {}.", taskFullId, taskMap.size());
     }
 
     @Override
@@ -64,9 +63,7 @@ public final class TaskManagerImpl implements TaskManager {
     public void removeTask(CommonId jobId, CommonId taskId) {
         String taskFullId = taskFullId(jobId, taskId);
         Task task = taskMap.remove(taskId);
-        if (log.isDebugEnabled()) {
-            log.debug("Removed task \"{}\". # of job:tasks: {}.", taskFullId, taskMap.size());
-        }
+        LogUtils.debug(log, "Removed task \"{}\". # of job:tasks: {}.", taskFullId, taskMap.size());
         if (task != null) {
             task.destroy();
         }

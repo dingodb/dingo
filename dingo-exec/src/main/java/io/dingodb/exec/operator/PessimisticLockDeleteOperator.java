@@ -20,6 +20,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.Services;
@@ -126,9 +127,7 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
                 byte[] primaryLockKeyBytes = decodePessimisticKey(primaryLockKey);
                 long forUpdateTs = vertex.getTask().getJobId().seq;
                 byte[] forUpdateTsByte = PrimitiveCodec.encodeLong(forUpdateTs);
-                if (log.isDebugEnabled()) {
-                    log.info("{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, forUpdateTs, Arrays.toString(key));
-                }
+                LogUtils.debug(log, "{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, forUpdateTs, Arrays.toString(key));
                 try {
                     TxnPessimisticLock txnPessimisticLock = TransactionUtil.pessimisticLock(
                         param.getLockTimeOut(),
@@ -146,11 +145,9 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
                         forUpdateTs = newForUpdateTs;
                         forUpdateTsByte = PrimitiveCodec.encodeLong(newForUpdateTs);
                     }
-                    if (log.isDebugEnabled()) {
-                        log.info("{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, newForUpdateTs, Arrays.toString(key));
-                    }
+                    LogUtils.debug(log, "{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, newForUpdateTs, Arrays.toString(key));
                 } catch (Throwable throwable) {
-                    log.error(throwable.getMessage(), throwable);
+                    LogUtils.error(log, throwable.getMessage(), throwable);
                     TransactionUtil.resolvePessimisticLock(
                         param.getIsolationLevel(),
                         txnId,

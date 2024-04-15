@@ -17,6 +17,7 @@
 package io.dingodb.exec.channel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.channel.message.Control;
 import io.dingodb.exec.channel.message.IncreaseBuffer;
@@ -56,9 +57,7 @@ public class ReceiveEndpoint {
 
     public void init() {
         channel = Services.openNewSysChannel(host, port);
-        if (log.isDebugEnabled()) {
-            log.debug("(tag = {}) Opened channel to {}:{}.", tag, host, port);
-        }
+        LogUtils.debug(log, "(tag = {}) Opened channel to {}:{}.", tag, host, port);
         messageListener = new ReceiveMessageListener();
         Services.NET.registerTagMessageListener(tag, messageListener);
         stopped = false;
@@ -73,9 +72,7 @@ public class ReceiveEndpoint {
     public void close() {
         Services.NET.unregisterTagMessageListener(tag, messageListener);
         channel.close();
-        if (log.isDebugEnabled()) {
-            log.debug("(tag = {}) Closed channel to {}:{}.", tag, host, port);
-        }
+        LogUtils.debug(log, "(tag = {}) Closed channel to {}:{}.", tag, host, port);
     }
 
     private void sendStopTx() {
@@ -93,13 +90,11 @@ public class ReceiveEndpoint {
         try {
             content = control.toBytes();
         } catch (JsonProcessingException e) {
-            log.error("Failed to serialize control message: {}", control);
+            LogUtils.error(log, "Failed to serialize control message: {}", control);
             throw new RuntimeException("Failed to serialize control message.", e);
         }
         channel.send(new Message(CTRL_TAG, content), false);
-        if (log.isDebugEnabled()) {
-            log.debug("(tag = {}) Sent control message \"{}\".", tag, control);
-        }
+        LogUtils.debug(log, "(tag = {}) Sent control message \"{}\".", tag, control);
     }
 
     private class ReceiveMessageListener implements MessageListener {

@@ -263,7 +263,7 @@ public interface StoreInstance {
 
     @Deprecated
     default Future txnPreWritePrimaryKey(TxnPreWrite txnPreWrite, long timeOut) {
-        return txnPreWritePrimaryKey(System.identityHashCode(txnPreWrite), txnPreWrite, timeOut);
+        return txnPreWritePrimaryKey(txnPreWrite.getStartTs(), txnPreWrite, timeOut);
     }
 
     default Future txnPreWritePrimaryKey(long requestTs, TxnPreWrite txnPreWrite, long timeOut) {
@@ -272,7 +272,7 @@ public interface StoreInstance {
 
     @Deprecated
     default boolean txnCommit(TxnCommit txnCommit) {
-        throw new UnsupportedOperationException();
+        return txnCommit(txnCommit.getStartTs(), txnCommit);
     }
 
     default boolean txnCommit(long requestTs, TxnCommit txnCommit) {
@@ -280,19 +280,31 @@ public interface StoreInstance {
     }
 
     default Future txnPessimisticLockPrimaryKey(TxnPessimisticLock txnPessimisticLock, long timeOut) {
+        return txnPessimisticLockPrimaryKey(txnPessimisticLock.getStartTs(), txnPessimisticLock, timeOut);
+    }
+
+    default Future txnPessimisticLockPrimaryKey(long requestTs, TxnPessimisticLock txnPessimisticLock, long timeOut) {
         throw new UnsupportedOperationException();
     }
 
     default boolean txnPessimisticLock(TxnPessimisticLock txnPessimisticLock, long timeOut) {
+        return txnPessimisticLock(txnPessimisticLock.getStartTs(), txnPessimisticLock, timeOut);
+    }
+
+    default boolean txnPessimisticLock(long requestTs, TxnPessimisticLock txnPessimisticLock, long timeOut) {
         throw new UnsupportedOperationException();
     }
 
     default boolean txnPessimisticLockRollback(TxnPessimisticRollBack txnPessimisticRollBack) {
+        return txnPessimisticLockRollback(txnPessimisticRollBack.getStartTs(), txnPessimisticRollBack);
+    }
+
+    default boolean txnPessimisticLockRollback(long requestTs, TxnPessimisticRollBack txnPessimisticRollBack) {
         throw new UnsupportedOperationException();
     }
 
     default boolean txnBatchRollback(TxnBatchRollBack txnBatchRollBack) {
-        throw new UnsupportedOperationException();
+        return txnBatchRollback(txnBatchRollBack.getStartTs(), txnBatchRollBack);
     }
 
     default boolean txnBatchRollback(long requestTs, TxnBatchRollBack txnBatchRollBack) {

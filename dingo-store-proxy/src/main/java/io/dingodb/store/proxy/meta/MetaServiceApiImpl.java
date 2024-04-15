@@ -22,6 +22,7 @@ import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
@@ -114,7 +115,7 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         if (!needLock) {
             return;
         }
-        log.info("Meta lock start...");
+        LogUtils.info(log, "Meta lock start...");
         leaderId = null;
         leaderChannel = null;
         try {
@@ -124,7 +125,7 @@ public class MetaServiceApiImpl implements MetaServiceApi {
                 CommonId leaderId = CommonId.parse(ss[0]);
                 Location leaderLocation = Location.parseUrl(ss[1]);
                 if (ID.equals(leaderId) || leaderLocation.equals(DingoConfiguration.location())) {
-                    log.info(
+                    LogUtils.info(log,
                         "Old leader location equals current location, but id not equals, old id: {}, current id: {}.",
                         ID, leaderId
                     );
@@ -138,18 +139,18 @@ public class MetaServiceApiImpl implements MetaServiceApi {
                 scanTableLock();
                 lockService.watchLock(currentLock, this::retryLock);
                 this.leaderId = leaderId;
-                log.info("Current {}, leader: {}.", ID, leaderId);
+                LogUtils.info(log, "Current {}, leader: {}.", ID, leaderId);
                 needLock = false;
             } else {
                 scanTableLock();
-                log.info("Become leader, id {}.", ID);
+                LogUtils.info(log, "Become leader, id {}.", ID);
                 lock.watchDestroy().thenRun(this::retryLock);
             }
         } catch (Exception e) {
             if (leaderChannel != null) {
                 leaderChannel.close();
             }
-            log.error("Meta lock error, will retry.", e);
+            LogUtils.error(log, "Meta lock error, will retry.", e);
             LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
             retryLock();
         }
@@ -185,10 +186,10 @@ public class MetaServiceApiImpl implements MetaServiceApi {
             .ifPresent(Channel::close);
         participantChannels.put(serverId, channel);
         participantLocations.put(serverId, location);
-        log.info("Participant {} join.", serverId);
+        LogUtils.info(log, "Participant {} join.", serverId);
         channel.setCloseListener(ch -> {
             participantChannels.remove(serverId);
-            log.info("Participant {} leave.", serverId);
+            LogUtils.info(log, "Participant {} leave.", serverId);
         });
         participantJoinListener.accept(new Message(serverId.encode()));
     }
@@ -240,24 +241,18 @@ public class MetaServiceApiImpl implements MetaServiceApi {
 
     private void pubTableLock(TableLock lock) {
         String key = "Lock" + "|" + lock.tableId + "|" + lock.serverId + "|" + lock.lockTs + "|" + lock.currentTs;
-        if (log.isDebugEnabled()) {
-            log.debug("Pub table lock [{}].", key);
-        }
+        LogUtils.debug(log, "Pub table lock [{}].", key);
         lockService.put(lock.lockTs, key, null);
-        if (log.isDebugEnabled()) {
-            log.debug("Pub table lock [{}] success, add lock watch.", key);
-        }
+        LogUtils.debug(log, "Pub table lock [{}] success, add lock watch.", key);
         lock.unlockFuture.thenRunAsync(() -> {
             lockService.delete(lock.lockTs, key);
-            if (log.isDebugEnabled()) {
-                log.debug("Unlock table lock [{}] success.", key);
-            }
+            LogUtils.debug(log, "Unlock table lock [{}] success.", key);
         });
         lockService.watchLock(
             Kv.builder().kv(KeyValue.builder().key(key.getBytes(UTF_8)).build()).build(),
             () -> {
                 if (!lock.unlockFuture.isDone()) {
-                    log.warn("Lose table lock {}.", key);
+                    LogUtils.warn(log, "Lose table lock {}.", key);
                     lock.unlockFuture.completeExceptionally(new UnknownError("Lose table lock key " + key));
                 }
             }
@@ -266,13 +261,9 @@ public class MetaServiceApiImpl implements MetaServiceApi {
 
     private synchronized boolean subTableLock(TableLock lock) {
         String key = "Lock" + "|" + lock.tableId + "|" + lock.serverId + "|" + lock.lockTs + "|" + lock.currentTs;
-        if (log.isDebugEnabled()) {
-            log.debug("Sub table lock [{}] success, add lock watch.", key);
-        }
+        LogUtils.debug(log, "Sub table lock [{}] success, add lock watch.", key);
         if (tableLocks.containsKey(key)) {
-            if (log.isDebugEnabled()) {
-                log.debug("Table lock {} exist, skip subscribe.", key);
-            }
+            LogUtils.debug(log, "Table lock {} exist, skip subscribe.", key);
             return false;
         }
         lockService.watchLock(
@@ -282,9 +273,7 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         tableLocks.put(key, lock);
         lock.unlockFuture.thenRun(() -> {
             tableLocks.remove(key);
-            if (log.isDebugEnabled()) {
-                log.debug("Table lock {} unlock.", key);
-            }
+            LogUtils.debug(log, "Table lock {} unlock.", key);
         });
         return true;
     }
@@ -312,7 +301,7 @@ public class MetaServiceApiImpl implements MetaServiceApi {
             throw new RuntimeException("Supported only table and range.");
         }
         if (lock.serverId.equals(ID)) {
-            log.warn("Remote lock request, but server equals current server id, lock: {}.", lock);
+            LogUtils.warn(log, "Remote lock request, but server equals current server id, lock: {}.", lock);
             return;
         }
         CompletableFuture<Boolean> lockFuture = new CompletableFuture<>();

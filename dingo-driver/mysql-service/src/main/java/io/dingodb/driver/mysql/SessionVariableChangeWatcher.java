@@ -16,6 +16,7 @@
 
 package io.dingodb.driver.mysql;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.client.SessionVariableChange;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.ServerMeta;
@@ -40,14 +41,14 @@ public class SessionVariableChangeWatcher implements Observer {
             if (connection != null && !connection.authPacket.interActive) {
                 connection.mysqlIdleStateHandler.setIdleTimeout(Long.parseLong(sessionVariable.getValue()),
                     TimeUnit.SECONDS);
-                log.info("update connection idle time:" + sessionVariable);
+                LogUtils.info(log, "update connection idle time:" + sessionVariable);
             }
         } else if ("interactive_timeout".equalsIgnoreCase(sessionVariable.getName())) {
             MysqlConnection connection = MysqlNettyServer.connections.get(sessionVariable.getId());
             if (connection != null && connection.authPacket.interActive) {
                 connection.mysqlIdleStateHandler.setIdleTimeout(Long.parseLong(sessionVariable.getValue()),
                     TimeUnit.SECONDS);
-                log.info("update interactive connection idle time:" + sessionVariable);
+                LogUtils.info(log, "update interactive connection idle time:" + sessionVariable);
             }
         } else if ("@password_reset".equalsIgnoreCase(sessionVariable.getName())) {
             MysqlConnection connection = MysqlNettyServer.connections.get(sessionVariable.getId());

@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.common.profile.ExecProfile;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.Pair;
 import io.dingodb.exec.base.Status;
@@ -55,7 +56,7 @@ public final class RootOperator extends SinkOperator {
             if (log.isDebugEnabled()) {
                 // if table has hide primary key then field count > tuple
                 if (param.getSchema().fieldCount() == tuple.length) {
-                    log.debug("Put tuple {} into root queue.", param.getSchema().format(tuple));
+                    LogUtils.debug(log, "Put tuple {} into root queue.", param.getSchema().format(tuple));
                 }
             }
             param.getExecProfile().increment();
@@ -70,11 +71,11 @@ public final class RootOperator extends SinkOperator {
         RootParam param = vertex.getParam();
         if (fin instanceof FinWithException) {
             param.setErrorFin(fin);
-            log.warn("Got FIN with exception: {}", fin.detail());
+            LogUtils.warn(log, "jobId:{}, taskId:{}, Got FIN with exception: {}",
+                vertex.getTask().getJobId(), vertex.getTask().getId(), fin.detail());
         } else {
-            if (log.isDebugEnabled()) {
-                log.debug("Got FIN with detail:\n{}", fin.detail());
-            }
+            LogUtils.debug(log, "jobId:{}, taskId:{}, Got FIN with detail:\n{}",
+                vertex.getTask().getJobId(), vertex.getTask().getId(), fin.detail());
             if (fin instanceof FinWithProfiles) {
                 Profile rootProfile = param.getProfile();
                 if (rootProfile == null) {

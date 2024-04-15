@@ -107,8 +107,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
     public void createUser(UserDefinition userDefinition) {
         Object[] userRow = createUserRow(userDefinition);
         userStore.insert(userCodec.encode(userRow));
-        log.info("create user: {}", userDefinition);
-
+        log.debug("create user: {}", userDefinition);
     }
 
     @Override

@@ -20,6 +20,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
@@ -84,7 +85,7 @@ public class DistributeOperator extends SoleOutOperator {
 
                 return vertex.getSoleEdge().transformToNext(context, tuple);
             } catch (RegionSplitException e) {
-                log.error(e.getMessage());
+                LogUtils.error(log, e.getMessage());
                 NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions =
                     MetaService.root().getRangeDistribution(param.getTableId());
                 param.setDistributions(distributions);

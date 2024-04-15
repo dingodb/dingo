@@ -17,6 +17,7 @@
 package io.dingodb.store.service;
 
 import com.google.auto.service.AutoService;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.meta.InfoSchemaServiceProvider;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.VersionService;
@@ -76,7 +77,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             }
             return variableMap;
         } catch (Exception e) {
-            log.info(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
         }
         return variableMap;
     }

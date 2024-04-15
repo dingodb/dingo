@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.channel.SendEndpoint;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
@@ -70,12 +71,10 @@ public final class SendOperator extends SinkOperator {
             if (!(fin instanceof FinWithException)) {
                 sendTupleList(param);
             }
-            if (log.isDebugEnabled()) {
-                log.debug("Send FIN with detail:\n{}", fin.detail());
-            }
+            LogUtils.debug(log, "Send FIN with detail:\n{}", fin.detail());
             endpoint.send(bos, true);
         } catch (IOException e) {
-            log.error("Encode FIN failed. fin = {}", fin, e);
+            LogUtils.error(log, "Encode FIN failed. fin = {}", fin, e);
         }
     }
 

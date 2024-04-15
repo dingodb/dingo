@@ -17,6 +17,7 @@
 package io.dingodb.exec.transaction.visitor;
 
 import io.dingodb.common.Location;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.dag.Vertex;
@@ -96,9 +97,7 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
         if (checkRoot && outputs.size() > 0) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
-//        if (log.isDebugEnabled()) {
-        log.info("job = {}", job);
-//        }
+        LogUtils.debug(log, "job = {}", job);
     }
 
     public static void renderCommitJob(Job job, Location currentLocation,
@@ -120,9 +119,7 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
         if (checkRoot && outputs.size() > 0) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
-//        if (log.isDebugEnabled()) {
-            log.info("job = {}", job);
-//        }
+        LogUtils.debug(log, "job = {}", job);
     }
 
     public static void renderRollBackJob(Job job, Location currentLocation,
@@ -144,9 +141,7 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
         if (checkRoot && outputs.size() > 0) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
-        if (log.isDebugEnabled()) {
-            log.info("job = {}", job);
-        }
+        LogUtils.debug(log, "job = {}", job);
     }
 
     public static void renderRollBackPessimisticLockJob(Job job, Location currentLocation,
@@ -168,9 +163,7 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
         if (checkRoot && outputs.size() > 0) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
-        if (log.isDebugEnabled()) {
-            log.info("job = {}", job);
-        }
+        LogUtils.debug(log, "job = {}", job);
     }
 
     public static void renderRollBackResidualPessimisticLockJob(Job job, Location currentLocation,
@@ -192,9 +185,7 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
         if (checkRoot && outputs.size() > 0) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
-        if (log.isDebugEnabled()) {
-            log.info("job = {}", job);
-        }
+        LogUtils.debug(log, "job = {}", job);
     }
 
     public static void renderCleanCacheJob(Job job, Location currentLocation,
@@ -216,9 +207,7 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
         if (checkRoot && outputs.size() > 0) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
-        if (log.isDebugEnabled()) {
-            log.info("job = {}", job);
-        }
+        LogUtils.debug(log, "job = {}", job);
     }
 
     @Override

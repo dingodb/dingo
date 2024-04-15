@@ -18,6 +18,7 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
@@ -45,9 +46,7 @@ public abstract class FanOutOperator extends AbstractOperator {
 
     @Override
     public void fin(int pin, Fin fin, Vertex vertex) {
-        if (log.isDebugEnabled()) {
-            log.debug("Got FIN, push it to {} outputs", vertex.getOutList().size());
-        }
+        LogUtils.debug(log, "Got FIN, push it to {} outputs", vertex.getOutList().size());
         if (fin instanceof FinWithProfiles) {
             AbstractParams param = vertex.getParam();
             Profile profile = param.getProfile();

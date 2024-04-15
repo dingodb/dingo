@@ -17,6 +17,7 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.Services;
@@ -77,10 +78,8 @@ public final class TxnPartRangeDeleteOperator extends SoleOutOperator {
         kvStore.delete(new StoreInstance.Range(encodeStart, encodeEnd, withStart, withEnd));
 
         vertex.getSoleEdge().transformToNext(context, new Object[]{count});
-        if (log.isDebugEnabled()) {
-            log.debug("Delete data by range, delete count: {}, cost: {} ms.",
-                count, System.currentTimeMillis() - startTime);
-        }
+        LogUtils.debug(log, "Delete data by range, delete count: {}, cost: {} ms.",
+            count, System.currentTimeMillis() - startTime);
         profile.time(start);
         return false;
     }

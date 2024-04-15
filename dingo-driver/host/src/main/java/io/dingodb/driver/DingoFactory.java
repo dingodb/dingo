@@ -16,6 +16,7 @@
 
 package io.dingodb.driver;
 
+import io.dingodb.common.log.LogUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.AvaticaDatabaseMetaData;
@@ -70,9 +71,7 @@ public class DingoFactory implements AvaticaFactory {
         int resultSetConcurrency,
         int resultSetHoldability
     ) {
-        if (log.isDebugEnabled()) {
-            log.debug("connection handle = {}, statement handle = {}.", connection.handle, handle);
-        }
+        LogUtils.debug(log, "connection handle = {}, statement handle = {}.", connection.handle, handle);
         return new DingoStatement(
             (DingoConnection) connection,
             handle,
@@ -91,9 +90,7 @@ public class DingoFactory implements AvaticaFactory {
         int resultSetConcurrency,
         int resultSetHoldability
     ) throws SQLException {
-        if (log.isDebugEnabled()) {
-            log.debug("connection handle = {}, statement handle = {}.", connection.handle, handle);
-        }
+        LogUtils.debug(log, "connection handle = {}, statement handle = {}.", connection.handle, handle);
         return new DingoPreparedStatement(
             (DingoConnection) connection,
             handle,

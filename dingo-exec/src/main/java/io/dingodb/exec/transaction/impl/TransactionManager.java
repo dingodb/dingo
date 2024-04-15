@@ -18,6 +18,7 @@ package io.dingodb.exec.transaction.impl;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
@@ -64,7 +65,7 @@ public class TransactionManager {
                 tran = new NoneTransaction(startTs, isolationLevel);
                 break;
             default:
-                log.info("startTs:" + startTs + ", TransactionType: " + trxType.name() + " not supported");
+                LogUtils.error(log, "startTs:" + startTs + ", TransactionType: " + trxType.name() + " not supported");
                 throw new ArithmeticException("TransactionType: " + trxType.name() + " not supported");
         }
         return tran;
@@ -83,7 +84,7 @@ public class TransactionManager {
                 tran = new NoneTransaction(txnId, isolationLevel);
                 break;
             default:
-                log.info("txnId:" + txnId + ", TransactionType: " + trxType.name() + " not supported");
+                LogUtils.error(log, "txnId:" + txnId + ", TransactionType: " + trxType.name() + " not supported");
                 throw new ArithmeticException("TransactionType: " + trxType.name() + " not supported");
         }
         return tran;

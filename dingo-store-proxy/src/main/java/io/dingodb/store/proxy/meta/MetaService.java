@@ -19,6 +19,7 @@ package io.dingodb.store.proxy.meta;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.TableDefinition;
@@ -154,7 +155,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     private String cleanName(String name, String source) {
         if (warnPattern.matcher(name).matches()) {
-            log.warn("{} name currently only supports uppercase letters, LowerCase -> UpperCase", source);
+            LogUtils.warn(log, "{} name currently only supports uppercase letters, LowerCase -> UpperCase", source);
             name = name.toUpperCase();
         }
         if (!pattern.matcher(name).matches()) {
@@ -441,7 +442,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         if (checkSplitFinish(comparableKey, table)) {
             return;
         }
-        log.warn("Add distribution wait timeout, refresh distributions run in the background.");
+        LogUtils.warn(log, "Add distribution wait timeout, refresh distributions run in the background.");
         Executors.execute("wait-split", () -> {
             Utils.loop(() -> !checkSplitFinish(comparableKey, table), TimeUnit.SECONDS.toNanos(1));
         });

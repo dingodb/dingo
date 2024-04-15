@@ -16,6 +16,7 @@
 
 package io.dingodb.driver.mysql;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.ServerMeta;
 import io.dingodb.driver.mysql.netty.MysqlIdleStateHandler;
@@ -82,6 +83,6 @@ public class MysqlConnection {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        log.info("mysql connections count:" + MysqlNettyServer.connections.size());
+        LogUtils.info(log, "mysql connections count:" + MysqlNettyServer.connections.size());
     }
 }

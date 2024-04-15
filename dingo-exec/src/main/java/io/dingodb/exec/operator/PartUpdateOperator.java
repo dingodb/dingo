@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -84,7 +85,7 @@ public final class PartUpdateOperator extends PartModifyOperator {
                 context.addKeyState(false);
             }
         } catch (Exception ex) {
-            log.error("update operator with exprs: {}", updates, ex);
+            LogUtils.error(log, "update operator with exprs: {}", updates, ex);
             throw new RuntimeException("Update Operator catch Exception");
         }
         return true;

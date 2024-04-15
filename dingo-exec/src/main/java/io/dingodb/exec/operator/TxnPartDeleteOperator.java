@@ -20,6 +20,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
@@ -105,7 +106,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                 }
                 KeyValue value = keyValues.get(0);
                 byte[] oldKey = value.getKey();
-                log.info("{}, repeat key :{}", txnId, Arrays.toString(oldKey));
+                LogUtils.info(log, "{}, repeat key :{}", txnId, Arrays.toString(oldKey));
                 if (oldKey[oldKey.length - 2] == Op.DELETE.getCode()) {
                     profile.time(start);
                     return true;

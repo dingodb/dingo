@@ -26,6 +26,7 @@ import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.utils.IndexValueMapSet;
 import io.dingodb.calcite.utils.IndexValueMapSetVisitor;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
@@ -174,9 +175,7 @@ public class DingoGetByIndexRule extends ConverterRule {
         // new DingoGetIndex
         Map<CommonId, Table> indexTdMap = getScalaIndices(scan.getTable());
 
-        if (log.isDebugEnabled()) {
-            log.debug("Definition of table = {}", table);
-        }
+        LogUtils.debug(log, "Definition of table = {}", table);
         if (indexTdMap.isEmpty()) {
             return null;
         }

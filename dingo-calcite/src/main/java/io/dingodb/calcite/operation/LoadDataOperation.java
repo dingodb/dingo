@@ -23,6 +23,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.environment.ExecutionEnvironment;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
@@ -184,7 +185,7 @@ public class LoadDataOperation implements DmlOperation {
                 } catch (DuplicateEntryException e1) {
                     errMessage = "Duplicate entry for key 'PRIMARY'";
                 } catch (Exception e2) {
-                    log.error(e2.getMessage(), e2);
+                    LogUtils.error(log, e2.getMessage(), e2);
                     errMessage = e2.getMessage();
                 } finally {
                     TransactionService.getDefault().unlockTable(connection);
@@ -348,7 +349,7 @@ public class LoadDataOperation implements DmlOperation {
             }
             exceptionRetries = 0;
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             if (e.getMessage().contains("epoch is not match, region_epoch")
                 || e.getMessage().contains("Key out of range")
                 || e instanceof RegionSplitException) {
@@ -439,9 +440,7 @@ public class LoadDataOperation implements DmlOperation {
                 ExecutionEnvironment.memoryCache.remove(statementId);
             }
             long end = System.currentTimeMillis();
-            if (log.isDebugEnabled()) {
-                log.debug("insert txn batch size:" + cacheSize + ", cost time:" + (end - start) + "ms");
-            }
+            LogUtils.debug(log, "insert txn batch size:" + cacheSize + ", cost time:" + (end - start) + "ms");
             refreshTxnId = false;
         }
     }
@@ -486,9 +485,7 @@ public class LoadDataOperation implements DmlOperation {
             ExecutionEnvironment.memoryCache.remove(statementId);
         }
         long end = System.currentTimeMillis();
-        if (log.isDebugEnabled()) {
-            log.debug("insert txn end batch, cost time:" + (end - start) + "ms");
-        }
+        LogUtils.debug(log, "insert txn end batch, cost time:" + (end - start) + "ms");
     }
 
     public List<Object[]> getCacheTupleList(Map<String, KeyValue> keyValueMap, CommonId txnId) {

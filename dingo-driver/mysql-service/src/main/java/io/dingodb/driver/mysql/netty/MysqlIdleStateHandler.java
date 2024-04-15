@@ -16,6 +16,7 @@
 
 package io.dingodb.driver.mysql.netty;
 
+import io.dingodb.common.log.LogUtils;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -89,7 +90,7 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
             idleTimeNanos = idleTimeNanosTmp;
             if (idleTimeNanos > 0) {
                 idleTimeoutFuture = schedule(command, interval, TimeUnit.SECONDS);
-                log.info("modify idleTimeNanos:" + idleTimeNanos);
+                LogUtils.info(log, "modify idleTimeNanos:" + idleTimeNanos);
             }
         }
     }
@@ -204,7 +205,7 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
             command = new MysqlIdleStateHandler.IdleTimeoutTask(ctx);
             idleTimeoutFuture = schedule(command,
                 interval, TimeUnit.SECONDS);
-            log.info("init idleTimeout task: " + idleTimeNanos);
+            LogUtils.info(log, "init idleTimeout task: " + idleTimeNanos);
         }
     }
 
@@ -265,7 +266,7 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
             if (!reading) {
                 nextDelay -= ticksInNanos() - Math.max(lastReadTime, lastWriteTime);
             }
-            log.info("nextDelay:" + nextDelay + ", idleTimeNanos:" + idleTimeNanos);
+            LogUtils.info(log, "nextDelay:" + nextDelay + ", idleTimeNanos:" + idleTimeNanos);
             if (nextDelay <= 0) {
                 try {
                     if (service != null && !service.isShutdown()) {
@@ -276,7 +277,7 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
                     }
                     service = null;
                     idleTimeoutFuture = null;
-                    log.info("this channel will close, mysql connection current count:"
+                    LogUtils.info(log, "this channel will close, mysql connection current count:"
                         + MysqlNettyServer.connections.size());
                     ctx.channel().close();
                 } catch (Throwable t) {
