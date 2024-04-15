@@ -692,6 +692,7 @@ public class ServerMeta implements Meta {
             try {
                 IdentityAuthService.INSTANCE.validate(authentication);
             } catch (Exception e) {
+                log.error(e.getMessage(), e);
                 throw new RuntimeException(e);
             }
         }

@@ -19,6 +19,7 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.TupleWithJoinFlag;
@@ -54,6 +55,13 @@ public class HashJoinParam extends AbstractParams {
     private transient ConcurrentHashMap<TupleKey, List<TupleWithJoinFlag>> hashMap;
     @Setter
     private transient CompletableFuture<Void> future;
+
+    @Getter
+    @Setter
+    public Profile profileLeft;
+    @Getter
+    @Setter
+    public Profile profileRight;
 
     public HashJoinParam(
         TupleMapping leftMapping,

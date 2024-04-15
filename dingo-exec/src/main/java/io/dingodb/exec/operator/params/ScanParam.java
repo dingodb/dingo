@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.DingoType;
@@ -76,6 +77,7 @@ public class ScanParam extends AbstractParams {
             profileList = new ArrayList<>();
         }
         OperatorProfile profile1 = new OperatorProfile(type);
+        profile1.setLocation(DingoConfiguration.location().url());
         profile1.start();
         profileList.add(profile1);
         return profile1;
