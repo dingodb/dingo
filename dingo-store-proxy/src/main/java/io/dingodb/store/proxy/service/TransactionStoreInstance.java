@@ -131,7 +131,6 @@ public class TransactionStoreInstance {
     public boolean txnPreWrite(TxnPreWrite txnPreWrite, long timeOut) {
         txnPreWrite.getMutations().stream().peek($ -> $.setKey(setId($.getKey()))).forEach($ -> $.getKey()[0] = 't');
         int n = 1;
-        long start = System.currentTimeMillis();
         IsolationLevel isolationLevel = txnPreWrite.getIsolationLevel();
         List<Long> resolvedLocks = new ArrayList<>();
         while (true) {
@@ -148,10 +147,6 @@ public class TransactionStoreInstance {
             if (response.getTxnResult() == null || response.getTxnResult().isEmpty()) {
                 return true;
             }
-            long elapsed = System.currentTimeMillis() - start;
-            if (elapsed > timeOut) {
-                throw new RuntimeException("startTs:" + txnPreWrite.getStartTs() + " resolve lock timeout");
-            }
             ResolveLockStatus resolveLockStatus = writeResolveConflict(
                 response.getTxnResult(),
                 isolationLevel.getCode(),
@@ -160,6 +155,9 @@ public class TransactionStoreInstance {
                 "txnPreWrite"
             );
             if (resolveLockStatus == ResolveLockStatus.LOCK_TTL) {
+                if (timeOut < 0) {
+                    throw new RuntimeException("startTs:" + txnPreWrite.getStartTs() + " resolve lock timeout");
+                }
                 try {
                     long lockTtl = TxnVariables.WaitFixTime;
                     if (n < TxnVariables.WaitFixNum) {
@@ -167,6 +165,7 @@ public class TransactionStoreInstance {
                     }
                     Thread.sleep(lockTtl);
                     n++;
+                    timeOut -= lockTtl;
                     log.info("txnPreWrite lockInfo wait {} ms end.", lockTtl);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -254,7 +253,6 @@ public class TransactionStoreInstance {
         txnPessimisticLock.getMutations().stream().peek($ -> $.setKey(setId($.getKey()))).forEach($ -> $.getKey()[0] = 't');
         IsolationLevel isolationLevel = txnPessimisticLock.getIsolationLevel();
         int n = 1;
-        long start = System.currentTimeMillis();
         List<Long> resolvedLocks = new ArrayList<>();
         while (true) {
             TxnPessimisticLockResponse response;
@@ -267,10 +265,6 @@ public class TransactionStoreInstance {
             if (response.getTxnResult() == null || response.getTxnResult().isEmpty()) {
                 return true;
             }
-            long elapsed = System.currentTimeMillis() - start;
-            if (elapsed > timeOut) {
-                throw new RuntimeException("Lock wait timeout exceeded; try restarting transaction");
-            }
             ResolveLockStatus resolveLockStatus = writeResolveConflict(
                 response.getTxnResult(),
                 isolationLevel.getCode(),
@@ -279,6 +273,9 @@ public class TransactionStoreInstance {
                 "txnPessimisticLock"
             );
             if (resolveLockStatus == ResolveLockStatus.LOCK_TTL) {
+                if (timeOut < 0) {
+                    throw new RuntimeException("Lock wait timeout exceeded; try restarting transaction");
+                }
                 try {
                     long lockTtl = TxnVariables.WaitFixTime;
                     if (n < TxnVariables.WaitFixNum) {
@@ -286,6 +283,7 @@ public class TransactionStoreInstance {
                     }
                     Thread.sleep(lockTtl);
                     n++;
+                    timeOut -= lockTtl;
                     log.info("txnPessimisticLock lockInfo wait {} ms end.", lockTtl);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -342,7 +340,6 @@ public class TransactionStoreInstance {
     public List<io.dingodb.common.store.KeyValue> txnGet(long startTs, List<byte[]> keys, long timeOut) {
         keys.stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
         int n = 1;
-        long start = System.currentTimeMillis();
         List<Long> resolvedLocks = new ArrayList<>();
         while (true) {
             TxnBatchGetRequest txnBatchGetRequest = MAPPER.batchGetTo(startTs, IsolationLevel.SnapshotIsolation, keys);
@@ -364,10 +361,6 @@ public class TransactionStoreInstance {
                     return response.getKvs().stream().map(MAPPER::kvFrom).collect(Collectors.toList());
                 }
             }
-            long elapsed = System.currentTimeMillis() - start;
-            if (elapsed > timeOut) {
-                throw new RuntimeException("startTs:" + start + " resolve lock timeout");
-            }
             ResolveLockStatus resolveLockStatus = readResolveConflict(
                 singletonList(response.getTxnResult()),
                 IsolationLevel.SnapshotIsolation.getCode(),
@@ -376,6 +369,9 @@ public class TransactionStoreInstance {
                 "txnScan"
             );
             if (resolveLockStatus == ResolveLockStatus.LOCK_TTL) {
+                if (timeOut < 0) {
+                    throw new RuntimeException("startTs:" + startTs + " resolve lock timeout");
+                }
                 try {
                     long lockTtl = TxnVariables.WaitFixTime;
                     if (n < TxnVariables.WaitFixNum) {
@@ -383,6 +379,7 @@ public class TransactionStoreInstance {
                     }
                     Thread.sleep(lockTtl);
                     n++;
+                    timeOut -= lockTtl;
                     log.info("txnBatchGet lockInfo wait {} ms end.", lockTtl);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -687,8 +684,8 @@ public class TransactionStoreInstance {
             if (!hasMore) {
                 return;
             }
+            long scanTimeOut = timeOut;
             int n = 1;
-            long start = System.currentTimeMillis();
             List<Long> resolvedLocks = new ArrayList<>();
             while (true) {
                 TxnScanRequest txnScanRequest = MAPPER.scanTo(startTs, IsolationLevel.SnapshotIsolation, current);
@@ -702,10 +699,6 @@ public class TransactionStoreInstance {
                     txnScanResponse = storeService.txnScan(TsoService.INSTANCE.tso(), txnScanRequest);
                 }
                 if (txnScanResponse.getTxnResult() != null) {
-                    long elapsed = System.currentTimeMillis() - start;
-                    if (elapsed > timeOut) {
-                        throw new RuntimeException("startTs:" + txnScanRequest.getStartTs() + " resolve lock timeout");
-                    }
                     ResolveLockStatus resolveLockStatus = readResolveConflict(
                         singletonList(txnScanResponse.getTxnResult()),
                         IsolationLevel.SnapshotIsolation.getCode(),
@@ -714,6 +707,9 @@ public class TransactionStoreInstance {
                         "txnScan"
                     );
                     if (resolveLockStatus == ResolveLockStatus.LOCK_TTL) {
+                        if (scanTimeOut < 0) {
+                            throw new RuntimeException("startTs:" + txnScanRequest.getStartTs() + " resolve lock timeout");
+                        }
                         try {
                             long lockTtl = TxnVariables.WaitFixTime;
                             if (n < TxnVariables.WaitFixNum) {
@@ -721,6 +717,7 @@ public class TransactionStoreInstance {
                             }
                             Thread.sleep(lockTtl);
                             n++;
+                            scanTimeOut -= lockTtl;
                             log.info("txnScan lockInfo wait {} ms end.", lockTtl);
                         } catch (InterruptedException e) {
                             throw new RuntimeException(e);
