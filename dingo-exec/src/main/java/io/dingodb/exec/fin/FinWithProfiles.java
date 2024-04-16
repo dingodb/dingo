@@ -96,7 +96,6 @@ public class FinWithProfiles implements Fin {
                 profile.end();
             }
 
-            //profile.getChildren().addAll(getProfiles());
             if (profile.getChildren().isEmpty() && this.profile != null) {
                 if (profile.getType().equalsIgnoreCase(this.profile.getType())) {
                     OperatorProfile serial = new OperatorProfile(profile.getType());

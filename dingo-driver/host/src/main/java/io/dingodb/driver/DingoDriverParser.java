@@ -232,12 +232,10 @@ public final class DingoDriverParser extends DingoParser {
     @Nonnull
     public Meta.Signature parseQuery(
         JobManager jobManager,
-        String jobIdPrefix,
         long jobSeqId,
         String sql
     ) {
         SqlNode sqlNode;
-        final long start = System.currentTimeMillis();
         try {
             sqlNode = parse(sql);
             if (sqlNode instanceof DingoSqlCreateTable) {
@@ -247,8 +245,6 @@ public final class DingoDriverParser extends DingoParser {
             throw ExceptionUtils.toRuntime(e);
         }
         planProfile.endParse();
-        final long parseEnd = System.currentTimeMillis();
-        LogUtils.debug(log, "parse sql:<[{}]> cost {} ms", sql, (parseEnd - start));
         JavaTypeFactory typeFactory = connection.getTypeFactory();
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
         planProfile.setStmtType(sqlNode.getKind().lowerName);
@@ -286,8 +282,6 @@ public final class DingoDriverParser extends DingoParser {
             throw ExceptionUtils.toRuntime(e);
         }
         planProfile.endValidator();
-        final long validatorEnd = System.currentTimeMillis();
-        LogUtils.debug(log, "validator sql cost {} ms", (validatorEnd - parseEnd));
         Meta.StatementType statementType;
         RelDataType type;
         switch (sqlNode.getKind()) {
@@ -308,12 +302,8 @@ public final class DingoDriverParser extends DingoParser {
 
         final RelRoot relRoot = convert(sqlNode, false);
 
-        final long convertEnd = System.currentTimeMillis();
-        LogUtils.debug(log, "convert sql cost {} ms", (convertEnd - validatorEnd));
         final RelNode relNode = optimize(relRoot.rel);
         planProfile.endOptimize();
-        final long optimizeEnd = System.currentTimeMillis();
-        LogUtils.debug(log, "optimize sql cost {} ms", (optimizeEnd - convertEnd));
         markAutoIncForDml(relNode);
         Location currentLocation = MetaService.root().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
@@ -396,9 +386,6 @@ public final class DingoDriverParser extends DingoParser {
             );
         }
         planProfile.endLock();
-        final long renderJobEnd = System.currentTimeMillis();
-        LogUtils.debug(log, "render job cost {} ms", (renderJobEnd - optimizeEnd));
-        markAutoIncForDml(relNode);
         return new DingoSignature(
             columns,
             sql,
@@ -518,7 +505,6 @@ public final class DingoDriverParser extends DingoParser {
     @Nonnull
     public Meta.Signature retryQuery(
         JobManager jobManager,
-        String jobIdPrefix,
         String sql,
         SqlNode sqlNode,
         RelNode relNode,
