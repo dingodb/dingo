@@ -329,6 +329,7 @@ pub struct BM25QueryStrategy<'a> {
     pub topk: &'a u32,
     pub u8_aived_bitmap: &'a Vec<u8>,
     pub query_with_filter: &'a bool,
+    pub need_doc: &'a bool,
 }
 
 impl<'a> QueryStrategy<Vec<RowIdWithScore>> for BM25QueryStrategy<'a> {
@@ -345,7 +346,7 @@ impl<'a> QueryStrategy<Vec<RowIdWithScore>> for BM25QueryStrategy<'a> {
             TopDocsWithFilter::with_limit(*self.topk as usize)
                 .with_searcher(searcher.clone())
                 .with_text_fields(fields.clone())
-                .with_stored_text(false);
+                .with_stored_text(*self.need_doc);
 
         // If query_with_filter is false, we regards that don't use alive_bitmap.
         if *self.query_with_filter {

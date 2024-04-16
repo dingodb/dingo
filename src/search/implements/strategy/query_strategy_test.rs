@@ -102,6 +102,7 @@ mod tests {
             topk: &10,
             query_with_filter: &false,
             u8_aived_bitmap: &vec![],
+            need_doc: &false,
         };
         let query_executor: QueryExecutor<'_, Vec<RowIdWithScore>> =
             QueryExecutor::new(&bm25_strategy);

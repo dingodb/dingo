@@ -4,6 +4,16 @@ use once_cell::sync::OnceCell;
 use std::ffi::{c_int, CString};
 use std::thread;
 
+fn to_cstring(s: String) -> CString {
+    match CString::new(s) {
+        Ok(cstr) => cstr,
+        Err(e) => {
+            eprintln!("Failed to create CString: {}", e);
+            CString::new("").unwrap()
+        }
+    }
+}
+
 pub struct TantivySearchLogger;
 
 impl TantivySearchLogger {
@@ -44,6 +54,9 @@ impl TantivySearchLogger {
     }
 
     pub fn trigger_logger_callback(level: i8, message: String, callback: LogCallback) {
+        if LOG_CALLBACK.get().is_none() {
+            return;
+        }
         let thread_id: String = Self::get_thread_id();
         let thread_name: String = thread::current().name().unwrap_or("none").to_string();
 
@@ -53,17 +66,8 @@ impl TantivySearchLogger {
             format!("[{}] {}", thread_id, thread_name)
         };
 
-        let thread_info_c = match CString::new(thread_info) {
-            Ok(cstr) => cstr,
-            Err(_) => CString::new("none").expect("Failed to create CString from thread_info."),
-        };
-
-        let c_message = match CString::new(message) {
-            Ok(cstr) => cstr,
-            Err(_) => {
-                CString::new("unknown_error").expect("Failed to create CString from message.")
-            }
-        };
+        let thread_info_c = to_cstring(thread_info);
+        let c_message = to_cstring(message);
 
         callback(level as c_int, thread_info_c.as_ptr(), c_message.as_ptr());
     }

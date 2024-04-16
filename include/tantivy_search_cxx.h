@@ -711,6 +711,9 @@ std::size_t align_of() {
 } // namespace rust
 
 struct RowIdWithScore;
+struct DocWithFreq;
+struct FieldTokenNums;
+struct Statistics;
 
 #ifndef CXXBRIDGE1_STRUCT_RowIdWithScore
 #define CXXBRIDGE1_STRUCT_RowIdWithScore
@@ -724,6 +727,42 @@ struct RowIdWithScore final {
   using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_RowIdWithScore
+
+#ifndef CXXBRIDGE1_STRUCT_DocWithFreq
+#define CXXBRIDGE1_STRUCT_DocWithFreq
+struct DocWithFreq final {
+  ::rust::String term_str;
+  ::std::uint32_t field_id;
+  ::std::uint64_t doc_freq;
+
+  bool operator==(DocWithFreq const &) const noexcept;
+  bool operator!=(DocWithFreq const &) const noexcept;
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_DocWithFreq
+
+#ifndef CXXBRIDGE1_STRUCT_FieldTokenNums
+#define CXXBRIDGE1_STRUCT_FieldTokenNums
+struct FieldTokenNums final {
+  ::std::uint32_t field_id;
+  ::std::uint64_t field_total_tokens;
+
+  bool operator==(FieldTokenNums const &) const noexcept;
+  bool operator!=(FieldTokenNums const &) const noexcept;
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_FieldTokenNums
+
+#ifndef CXXBRIDGE1_STRUCT_Statistics
+#define CXXBRIDGE1_STRUCT_Statistics
+struct Statistics final {
+  ::rust::Vec<::DocWithFreq> docs_freq;
+  ::std::uint64_t total_num_tokens;
+  ::std::uint64_t total_num_docs;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_Statistics
 
 bool ffi_varify_index_parameter(::std::string const &index_json_parameter) noexcept;
 
@@ -850,4 +889,21 @@ bool ffi_regex_term_with_range(::std::string const &index_path, ::std::string co
 // - `topk`: only return top k related results.
 // - `u8_aived_bitmap`: alived rowIds given by u8 bitmap.
 // - `query_with_filter`: whether use alived_bitmap or not.
-::rust::Vec<::RowIdWithScore> ffi_bm25_search(::std::string const &index_path, ::std::string const &sentence, ::std::uint32_t topk, ::std::vector<::std::uint8_t> const &u8_aived_bitmap, bool query_with_filter) noexcept;
+// - `statistics`: for multi parts bm25 statistics info.
+::rust::Vec<::RowIdWithScore> ffi_bm25_search(::std::string const &index_path, ::std::string const &sentence, ::std::uint32_t topk, ::std::vector<::std::uint8_t> const &u8_aived_bitmap, bool query_with_filter, ::Statistics const &statistics) noexcept;
+
+// Get doc freq for current part.
+// arguments:
+// - `index_path`: index directory.
+// - `sentence`: query_str.
+::rust::Vec<::DocWithFreq> ffi_get_doc_freq(::std::string const &index_path, ::std::string const &sentence) noexcept;
+
+// Get total num docs for current part.
+// arguments:
+// - `index_path`: index directory.
+::std::uint64_t ffi_get_total_num_docs(::std::string const &index_path) noexcept;
+
+// Get total num tokens for current part.
+// arguments:
+// - `index_path`: index directory.
+::std::uint64_t ffi_get_total_num_tokens(::std::string const &index_path) noexcept;
