@@ -26,6 +26,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlNode;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -49,7 +50,7 @@ public final class DingoSignature extends Meta.Signature {
         Meta.StatementType statementType,
         @Nullable CommonId jobId
     ) {
-        this(columns, sql, null, null, cursorFactory, statementType,
+        this(columns, sql, new ArrayList<>(), null, cursorFactory, statementType,
             jobId, null, null, null);
     }
 

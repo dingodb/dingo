@@ -20,7 +20,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.UnsupportedEncodingException;
-import java.util.Arrays;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -90,18 +89,25 @@ public class SqlProfile extends Profile {
         long planEndTime = 0;
         if (planProfile != null) {
             planEndTime = planProfile.end;
-            dag.append(termStr).append(planProfile.dumpTree(prefix)).append("\r\n");
+            dag.append(termStr).append(planProfile.dumpTree(prefix));
         }
         if (execProfile != null) {
             if (planEndTime > 0) {
                 dag.append(termStr).append("schedule job:").append(execProfile.start - planEndTime).append("\r\n");
             }
-            dag.append(termStr).append(execProfile.dumpTree(prefix)).append("\r\n");
+            dag.append(termStr).append(execProfile.dumpTree(prefix));
         }
         if (commitProfile != null) {
-            dag.append(termStr).append(commitProfile.dumpTree(prefix)).append("\r\n");
+            dag.append(termStr).append(commitProfile.dumpTree(prefix));
         }
         return dag.toString();
+    }
+
+    public void clear() {
+        super.clear();
+        if (this.execProfile != null) {
+            this.execProfile.clear();
+        }
     }
 
     @Override

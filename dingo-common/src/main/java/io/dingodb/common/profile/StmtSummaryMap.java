@@ -26,9 +26,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
@@ -36,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 public final class StmtSummaryMap {
     static BlockingQueue<SqlProfile> profileQueue;
     private static LoadingCache<String, StmtSummary> stmtSummaryMap;
-    private static Map<String, StmtSummary> stmtSummaryHisMap = new ConcurrentHashMap<String, StmtSummary>();
+//    private static Map<String, StmtSummary> stmtSummaryHisMap = new ConcurrentHashMap<String, StmtSummary>();
 
     private StmtSummaryMap() {
     }
@@ -54,9 +52,9 @@ public final class StmtSummaryMap {
             .maximumSize(4096)
             .expireAfterAccess(10, TimeUnit.HOURS)
             .expireAfterWrite(10, TimeUnit.HOURS)
-            .removalListener(t -> {
-                stmtSummaryHisMap.put((String) t.getKey(), (StmtSummary) t.getValue());
-            })
+//            .removalListener(t -> {
+//                stmtSummaryHisMap.put((String) t.getKey(), (StmtSummary) t.getValue());
+//            })
             .build(new CacheLoader<String, StmtSummary>() {
                 @Override
                 public @NonNull StmtSummary load(@NonNull String summaryKey) {
@@ -112,6 +110,7 @@ public final class StmtSummaryMap {
         }
         try {
             profileQueue.add(sqlProfile);
+            sqlProfile.clear();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }

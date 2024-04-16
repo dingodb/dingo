@@ -62,10 +62,13 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         OperatorProfile profile = param.getProfile("partInsert");
         long start = System.currentTimeMillis();
         if (param.isHasAutoInc() && param.getAutoIncColIdx() < tuple.length) {
-            long autoIncVal = Long.parseLong(tuple[param.getAutoIncColIdx()].toString());
-            MetaService metaService = MetaService.root();
-            metaService.updateAutoIncrement(param.getTableId(), autoIncVal);
-            param.getAutoIncList().add(autoIncVal);
+            Object tmp = tuple[param.getAutoIncColIdx()];
+            if (tmp instanceof Long || tmp instanceof Integer) {
+                long autoIncVal = Long.parseLong(tmp.toString());
+                MetaService metaService = MetaService.root();
+                metaService.updateAutoIncrement(param.getTableId(), autoIncVal);
+                param.getAutoIncList().add(autoIncVal);
+            }
         }
         param.setContext(context);
         CommonId tableId = param.getTableId();

@@ -46,11 +46,16 @@ public final class PartInsertOperator extends PartModifyOperator {
     @Override
     public boolean pushTuple(Context context, Object[] tuple, Vertex vertex) {
         PartInsertParam param = vertex.getParam();
+        OperatorProfile profile = param.getProfile("partInsert");
+        long start = System.currentTimeMillis();
         if (param.isHasAutoInc() && param.getAutoIncColIdx() < tuple.length) {
-            long autoIncVal = Long.parseLong(tuple[param.getAutoIncColIdx()].toString());
-            MetaService metaService = MetaService.root();
-            metaService.updateAutoIncrement(param.getTableId(), autoIncVal);
-            param.getAutoIncList().add(autoIncVal);
+            Object tmp = tuple[param.getAutoIncColIdx()];
+            if (tmp instanceof Long || tmp instanceof Integer) {
+                long autoIncVal = Long.parseLong(tuple[param.getAutoIncColIdx()].toString());
+                MetaService metaService = MetaService.root();
+                metaService.updateAutoIncrement(param.getTableId(), autoIncVal);
+                param.getAutoIncList().add(autoIncVal);
+            }
         }
         RangeDistribution distribution = context.getDistribution();
         DingoType schema = param.getSchema();
@@ -67,6 +72,7 @@ public final class PartInsertOperator extends PartModifyOperator {
         } else {
             context.addKeyState(false);
         }
+        profile.time(start);
         return true;
     }
 
@@ -79,16 +85,12 @@ public final class PartInsertOperator extends PartModifyOperator {
                 edge.transformToNext(new Object[]{param.getCount()});
             }
             if (fin instanceof FinWithProfiles) {
-                Long autoIncId = param.getAutoIncList().size() > 0 ? param.getAutoIncList().get(0) : null;
+                FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+                finWithProfiles.addProfile(vertex);
+                Long autoIncId = !param.getAutoIncList().isEmpty() ? param.getAutoIncList().get(0) : null;
                 if (autoIncId != null) {
-                    List<Profile> profiles = ((FinWithProfiles) fin).getProfiles();
-                    if (profiles.size() == 0) {
-                        OperatorProfile profile = new OperatorProfile("partInsert");
-                        profile.setAutoIncId(autoIncId);
-                        profiles.add(profile);
-                    } else {
-                        profiles.get(0).setAutoIncId(autoIncId);
-                    }
+                    finWithProfiles.getProfile().setAutoIncId(autoIncId);
+                    finWithProfiles.getProfile().setHasAutoInc(true);
                     param.getAutoIncList().remove(0);
                 }
             }

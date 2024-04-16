@@ -19,10 +19,6 @@ package io.dingodb.common.profile;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.List;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ExecProfile extends Profile {
@@ -58,5 +54,12 @@ public class ExecProfile extends Profile {
             ", start=" + start +
             ", end=" + end +
             '}';
+    }
+
+    public void clear() {
+        super.clear();
+        if (this.profile != null) {
+            this.profile.clear();
+        }
     }
 }

@@ -18,7 +18,6 @@ package io.dingodb.common.profile;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.dingodb.common.Location;
 import io.dingodb.common.util.ByteUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -120,6 +119,24 @@ public class Profile {
            // + " End: " + dateFormat.format(new Date(end))
             + " Duration: " + duration + "ms"
             + " Count: " + count;
+    }
+
+    public void clear() {
+        this.dagText = new StringBuilder();
+        this.count = 0;
+        if (this.children != null) {
+            this.children.clear();
+        }
+        this.start = System.currentTimeMillis();
+        this.end = 0;
+        this.count = 0;
+        this.duration = 0;
+        this.max = 0;
+        this.min = 0;
+        this.avg = 0;
+        this.hasAutoInc = false;
+        this.autoIncId = 0;
+        this.location = "";
     }
 
 }

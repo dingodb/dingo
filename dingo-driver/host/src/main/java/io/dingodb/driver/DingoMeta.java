@@ -241,7 +241,7 @@ public class DingoMeta extends MetaImpl {
         long jobSeqId = TsoService.getDefault().tso();
         String stmtId = "Stmt_" + sh.toString() + "_" + jobSeqId;
         MdcUtils.setStmtId(stmtId);
-        sh.signature = parser.parseQuery(jobManager, sh.toString(), jobSeqId, sql);
+        sh.signature = parser.parseQuery(jobManager, jobSeqId, sql);
         sqlProfile(sql, sqlProfile, parser);
         addSqlProfile(sqlProfile, connection);
         return sh;
@@ -276,7 +276,7 @@ public class DingoMeta extends MetaImpl {
             DingoStatement statement = (DingoStatement) dingoConnection.getStatement(sh);
             statement.removeJob(jobManager);
             final Timer.Context timeCtx = DingoMetrics.getTimeContext("parse_query");
-            Signature signature = parser.parseQuery(jobManager, sh.toString(), jobSeqId, sql);
+            Signature signature = parser.parseQuery(jobManager, jobSeqId, sql);
             // add profile
             sqlProfile(sql, statement.getSqlProfile(), parser);
             // for mysql protocol start
@@ -307,7 +307,6 @@ public class DingoMeta extends MetaImpl {
             if (MdcUtils.getStmtId() == null) {
                 MdcUtils.setStmtId(stmtId);
             }
-            SqlLogUtils.info("DingoMeta prepareAndExecute, total cost: {}ms.", System.currentTimeMillis() - startTime);
             MdcUtils.removeStmtId();
         }
     }
@@ -603,7 +602,7 @@ public class DingoMeta extends MetaImpl {
         while (isDisableTxnRetry() && (txnRetryLimit-- > 0) && !transaction.isPessimistic()) {
             ((DingoStatement) statement).removeJob(jobManager);
             DingoDriverParser parser = new DingoDriverParser((DingoConnection) connection);
-            Signature signature1 = parser.retryQuery(jobManager, sh.toString(), sh.signature.sql,
+            Signature signature1 = parser.retryQuery(jobManager, sh.signature.sql,
                 ((DingoSignature) sh.signature).getSqlNode(), ((DingoSignature) sh.signature).getRelNode(),
                 ((DingoSignature) sh.signature).getParasType(),
                 signature.columns);
@@ -739,7 +738,7 @@ public class DingoMeta extends MetaImpl {
                 long jobSeqId = TsoService.getDefault().tso();
                 String stmtId = "Stmt_" + sh.toString() + "_" + jobSeqId;
                 MdcUtils.setStmtId(stmtId);
-                sh.signature = parser.parseQuery(jobManager, sh.toString(), jobSeqId, statement.getSql());
+                sh.signature = parser.parseQuery(jobManager, jobSeqId, statement.getSql());
             }
         }
         return transaction;

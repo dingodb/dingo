@@ -137,10 +137,10 @@
         </encoder>
     </appender>
 
-    <appender name="Profile" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${log.filePath}/log/profile.log</file>
+    <appender name="SlowQuery" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/slow_query.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.filePath}/logs/profile.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${log.filePath}/logs/slow_query.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${log.file.max}</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -369,14 +369,14 @@
         <appender-ref ref="ASYNC-Sql"/>
     </logger>
 
-    <appender name="ASYNC-Profile" class="ch.qos.logback.classic.AsyncAppender">
+    <appender name="ASYNC-SlowQuery" class="ch.qos.logback.classic.AsyncAppender">
         <includeCallerData>true</includeCallerData>
         <discardingThreshold>0</discardingThreshold>
         <queueSize>512</queueSize>
-        <appender-ref ref="Profile" />
+        <appender-ref ref="SlowQuery" />
     </appender>
-    <logger name="io.dingodb.common.log.ProfileLogUtils" level="${log.level}" additivity="false">
-        <appender-ref ref="ASYNC-Profile"/>
+    <logger name="io.dingodb.common.profile.StmtSummaryMap" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-SlowQuery"/>
     </logger>
 
     <appender name="ASYNC-StoreProxy" class="ch.qos.logback.classic.AsyncAppender">
