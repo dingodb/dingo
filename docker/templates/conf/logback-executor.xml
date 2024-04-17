@@ -44,7 +44,7 @@
         <file>${log.filePath}/log/executor.log</file>
         <!-- Log rolling strategy -->
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.filePath}/logs/executor.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/executor.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${log.file.max}</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -60,7 +60,7 @@
     <appender name="Calcite" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.filePath}/log/calcite.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.filePath}/logs/calcite.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/calcite.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${log.file.max}</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -76,7 +76,7 @@
     <appender name="Job" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.filePath}/log/job.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.filePath}/logs/job.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/job.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${log.file.max}</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -92,7 +92,7 @@
     <appender name="Txn" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.filePath}/log/txn.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.filePath}/logs/txn.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/txn.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${log.file.max}</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -108,7 +108,7 @@
     <appender name="Ddl" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.filePath}/log/ddl.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.filePath}/logs/ddl.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/ddl.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${log.file.max}</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -124,7 +124,7 @@
     <appender name="Sql" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.filePath}/log/sql.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.filePath}/logs/sql.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/sql.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${log.file.max}</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -140,7 +140,7 @@
     <appender name="SlowQuery" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.filePath}/log/slow_query.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.filePath}/logs/slow_query.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/slow_query.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${log.file.max}</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -156,7 +156,7 @@
     <appender name="StoreProxy" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.filePath}/log/storeProxy.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.filePath}/logs/storeProxy.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/storeProxy.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${log.file.max}</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -172,7 +172,7 @@
     <appender name="META_EVENT" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.filePath}/log/metaEvent.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.filePath}/logs/metaEvent.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/metaEvent.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${log.file.max}</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -188,7 +188,7 @@
     <appender name="STORE_RPC" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.filePath}/log/storeRpc.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.filePath}/logs/storeRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/storeRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${log.file.max}</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -206,7 +206,7 @@
     <appender name="INDEX_RPC" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.filePath}/log/indexRpc.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.filePath}/logs/indexRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/indexRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${log.file.max}</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -224,7 +224,7 @@
     <appender name="COORDINATOR_RPC" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.filePath}/log/coordinatorRpc.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.filePath}/logs/coordinatorRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/coordinatorRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${log.file.max}</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -242,7 +242,7 @@
     <appender name="META_RPC" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.filePath}/log/metaRpc.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.filePath}/logs/metaRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/metaRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${log.file.max}</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -260,7 +260,7 @@
     <appender name="VERSION_RPC" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.filePath}/log/versionRpc.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.filePath}/logs/versionRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/versionRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${log.file.max}</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -279,7 +279,7 @@
     <appender name="TXN_RPC" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.filePath}/log/txnRpc.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.filePath}/logs/txnRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/txnRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>${log.file.max}</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
@@ -439,6 +439,21 @@
     <logger name="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$KvScanRelease" level="off" additivity="false">
         <appender-ref ref="ASYNC-STORE_RPC"/>
     </logger>
+    <logger name="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$KvPutIfAbsent" level="off" additivity="false">
+        <appender-ref ref="ASYNC-STORE_RPC"/>
+    </logger>
+    <logger name="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$KvScanBeginV2" level="off" additivity="false">
+        <appender-ref ref="ASYNC-STORE_RPC"/>
+    </logger>
+    <logger name="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$KvScanContinueV2" level="off" additivity="false">
+        <appender-ref ref="ASYNC-STORE_RPC"/>
+    </logger>
+    <logger name="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$KvScanReleaseV2" level="off" additivity="false">
+        <appender-ref ref="ASYNC-STORE_RPC"/>
+    </logger>
+    <logger name="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnHeartbeat" level="off"  additivity="false">
+        <appender-ref ref="ASYNC-STORE_RPC"/>
+    </logger>
 
     <appender name="ASYNC-INDEX_RPC" class="ch.qos.logback.classic.AsyncAppender">
         <includeCallerData>true</includeCallerData>
@@ -505,6 +520,27 @@
         <appender-ref ref="ASYNC-TXN_RPC"/>
     </logger>
     <logger name ="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnPessimisticLock"  level="${rpcLog.level}" additivity="false">
+        <appender-ref ref="ASYNC-TXN_RPC"/>
+    </logger>
+    <logger name ="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnPessimisticRollback"  level="${rpcLog.level}" additivity="false">
+        <appender-ref ref="ASYNC-TXN_RPC"/>
+    </logger>
+    <logger name ="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnResolveLock"  level="${rpcLog.level}" additivity="false">
+        <appender-ref ref="ASYNC-TXN_RPC"/>
+    </logger>
+    <logger name ="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnBatchRollback"  level="${rpcLog.level}" additivity="false">
+        <appender-ref ref="ASYNC-TXN_RPC"/>
+    </logger>
+    <logger name ="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnScanLock"  level="${rpcLog.level}" additivity="false">
+        <appender-ref ref="ASYNC-TXN_RPC"/>
+    </logger>
+    <logger name ="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnDeleteRange"  level="${rpcLog.level}" additivity="false">
+        <appender-ref ref="ASYNC-TXN_RPC"/>
+    </logger>
+    <logger name ="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnBatchGet"  level="${rpcLog.level}" additivity="false">
+        <appender-ref ref="ASYNC-TXN_RPC"/>
+    </logger>
+    <logger name ="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnGet"  level="${rpcLog.level}" additivity="false">
         <appender-ref ref="ASYNC-TXN_RPC"/>
     </logger>
 

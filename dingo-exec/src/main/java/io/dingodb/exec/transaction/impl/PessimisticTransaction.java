@@ -131,6 +131,9 @@ public class PessimisticTransaction extends BaseTransaction {
             if (keyValue == null || keyValue.getValue() == null) {
                 primaryKeyLock = null;
                 forUpdateTs = 0L;
+                if (future != null) {
+                    future.cancel(true);
+                }
             }
         }
     }
@@ -282,7 +285,6 @@ public class PessimisticTransaction extends BaseTransaction {
         // 1、get first key from cache
         cacheToObject = primaryLockTo();
         primaryKey = cacheToObject.getMutation().getKey();
-        Future future = null;
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         while (retry-- > 0) {
             // 2、call sdk preWritePrimaryKey
@@ -314,7 +316,11 @@ public class PessimisticTransaction extends BaseTransaction {
                     cacheToObject.getTableId(),
                     cacheToObject.getPartId()
                 );
-                future = store.txnPreWritePrimaryKey(txnPreWrite, getLockTimeOut());
+                boolean result = store.txnPreWrite(txnPreWrite, getLockTimeOut());
+                if (!result) {
+                    throw new RuntimeException(txnId + " " + cacheToObject.getPartId()
+                        + ",preWritePrimaryKey false,PrimaryKey:" + primaryKey.toString());
+                }
                 break;
             } catch (RegionSplitException e) {
                 LogUtils.error(log, e.getMessage(), e);
@@ -326,10 +332,6 @@ public class PessimisticTransaction extends BaseTransaction {
                 cacheToObject.setPartId(regionId);
                 sleep();
             }
-            if (future == null) {
-                throw new RuntimeException(txnId + " future is null " + cacheToObject.getPartId() + ",preWritePrimaryKey false,PrimaryKey:" + primaryKey);
-            }
-            this.future = future;
         }
     }
 
