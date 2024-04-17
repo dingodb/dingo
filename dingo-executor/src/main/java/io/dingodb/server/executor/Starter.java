@@ -31,6 +31,7 @@ import io.dingodb.net.MysqlNetServiceProvider;
 import io.dingodb.net.NetService;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.scheduler.SchedulerService;
+import io.dingodb.sdk.service.JsonMessageUtils;
 import io.dingodb.server.executor.schedule.SafePointUpdateTask;
 import io.dingodb.server.executor.service.ClusterService;
 import io.dingodb.store.proxy.service.AutoIncrementService;
@@ -77,7 +78,7 @@ public class Starter {
         driverProxyServer.start();
         // Register cluster heartbeat.
         ClusterService.DEFAULT_INSTANCE.register();
-
+        log.info("Executor Configuration:{}", DingoConfiguration.instance());
         Services.initControlMsgService();
         Services.initNetService();
         MysqlNetService mysqlNetService = ServiceLoader.load(MysqlNetServiceProvider.class).iterator().next().get();

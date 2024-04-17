@@ -129,7 +129,7 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
     }
 
     private void lock(CommonId tableId) {
-        log.info("lock completableFuture thread pool active count: {}, fork pool size:{}"
+        LogUtils.info(log, "lock completableFuture thread pool active count: {}, fork pool size:{}"
             , Executors.COMPLETABLE_FUTURE_POOL.getActiveCount(),
             ForkJoinPool.commonPool() != null ? ForkJoinPool.commonPool().getActiveThreadCount() : 0);
         TableLocks tableLocks = this.locks.get(tableId);

@@ -154,6 +154,7 @@ public abstract class BaseTransaction implements ITransaction {
         MdcUtils.setTxnId(txnId.toString());
         if (future != null) {
             future.cancel(true);
+            LogUtils.info(log, "CleanUp future cancel is {}, the current {} ", future.isCancelled(), transactionOf());
         }
         finishedFuture.complete(null);
         LogUtils.info(log, "CleanUp finishedFuture the current {} end", transactionOf());

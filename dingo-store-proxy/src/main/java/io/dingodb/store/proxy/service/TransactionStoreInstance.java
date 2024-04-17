@@ -224,7 +224,8 @@ public class TransactionStoreInstance {
 
     public Future txnPreWritePrimaryKey(TxnPreWrite txnPreWrite, long timeOut) {
         if (txnPreWrite(txnPreWrite, timeOut)) {
-            return Executors.scheduleWithFixedDelayAsync("txn-heartbeat", () -> heartbeat(txnPreWrite), 1, 1, SECONDS);
+            LogUtils.info(log, "txn heartbeat, startTs:{}", txnPreWrite.getStartTs());
+            return Executors.scheduleWithFixedDelayAsync("txn-heartbeat-" + txnPreWrite.getStartTs(), () -> heartbeat(txnPreWrite), 1, 1, SECONDS);
         }
         throw new WriteConflictException();
     }
@@ -245,7 +246,8 @@ public class TransactionStoreInstance {
 
     public Future txnPessimisticLockPrimaryKey(TxnPessimisticLock txnPessimisticLock, long timeOut) {
         if (txnPessimisticLock(txnPessimisticLock, timeOut)) {
-            return Executors.scheduleWithFixedDelayAsync("txn-pessimistic-heartbeat", () -> heartbeat(txnPessimisticLock), 1, 1, SECONDS);
+            LogUtils.info(log, "txn pessimistic heartbeat, startTs:{}", txnPessimisticLock.getStartTs());
+            return Executors.scheduleWithFixedDelayAsync("txn-pessimistic-heartbeat-" + txnPessimisticLock.getStartTs(), () -> heartbeat(txnPessimisticLock), 1, 1, SECONDS);
         }
         throw new WriteConflictException();
     }

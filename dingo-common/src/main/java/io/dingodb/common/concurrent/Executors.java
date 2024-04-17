@@ -65,7 +65,7 @@ public final class Executors {
     private static final ScheduledThreadPoolExecutor GLOBAL_SCHEDULE_POOL = new ThreadPoolBuilder()
         .name(GLOBAL_SCHEDULE_NAME)
         .daemon(true)
-        .coreThreads(1)
+        .coreThreads(0)
         .group(new ThreadGroup(GLOBAL_SCHEDULE_NAME))
         .buildSchedule();
 

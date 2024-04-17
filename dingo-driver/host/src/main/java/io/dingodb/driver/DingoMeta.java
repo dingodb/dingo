@@ -301,12 +301,12 @@ public class DingoMeta extends MetaImpl {
             );
             return new ExecuteResult(ImmutableList.of(metaResultSet));
         } catch (Throwable e) {
-            LogUtils.error(log, "Prepare and execute error, sql: <[{}]>.", sql, e);
-            throw ExceptionUtils.toRuntime(e);
-        } finally {
             if (MdcUtils.getStmtId() == null) {
                 MdcUtils.setStmtId(stmtId);
             }
+            LogUtils.error(log, "Prepare and execute error, sql: <[{}]>.", sql, e);
+            throw ExceptionUtils.toRuntime(e);
+        } finally {
             MdcUtils.removeStmtId();
         }
     }
