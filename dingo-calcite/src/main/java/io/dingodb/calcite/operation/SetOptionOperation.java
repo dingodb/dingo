@@ -95,7 +95,7 @@ public class SetOptionOperation implements DdlOperation {
                 }
             } else if ("SYSTEM".equals(scope)) {
                 putGlobalVariable(name, value);
-                ScopeVariables.globalVariables.put(name, value);
+                ScopeVariables.setGlobalVariable(name, value);
             } else {
                 if (name.equals("transaction_isolation")) {
                     connection.setClientInfo("onetime_transaction_isolation", value);

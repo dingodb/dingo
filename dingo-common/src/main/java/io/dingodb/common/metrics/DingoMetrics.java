@@ -16,27 +16,82 @@
 
 package io.dingodb.common.metrics;
 
+import com.codahale.metrics.CachedGauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.Timer;
-import com.codahale.metrics.jmx.JmxReporter;
+import io.dingodb.common.concurrent.Executors;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
-public class DingoMetrics {
+public final class DingoMetrics {
     private static final MetricRegistry metricRegistry = new MetricRegistry();
 
+    public static AtomicLong activeTaskCount = new AtomicLong(0);
+    private static final LoggerReporter slf4jReporter = LoggerReporter.forRegistry(metricRegistry).build();
+
     static {
-        JmxReporter jmxReporter = JmxReporter.forRegistry(metricRegistry).build();
-        jmxReporter.start();
+        slf4jReporter.start(60000, TimeUnit.MILLISECONDS);
+        metricRegistry.register("forkCommonPool", new CachedGauge<Integer>(5, TimeUnit.MINUTES) {
+            @Override
+            protected Integer loadValue() {
+                return ForkJoinPool.commonPool().getActiveThreadCount();
+            }
+        });
+        metricRegistry.register("job_task_count", new CachedGauge<Integer>(5, TimeUnit.MINUTES) {
+            @Override
+            protected Integer loadValue() {
+                return activeTaskCount.intValue();
+            }
+        });
+        metricRegistry.register("globalSchedulerPool", new CachedGauge<Integer>(5, TimeUnit.MINUTES) {
+            @Override
+            protected Integer loadValue() {
+                return Executors.getGlobalSchedulerPoolSize();
+            }
+        });
+        metricRegistry.register("globalPool", new CachedGauge<Integer>(5, TimeUnit.MINUTES) {
+            @Override
+            protected Integer loadValue() {
+                return Executors.getGlobalPoolSize();
+            }
+        });
+        metricRegistry.register("lockPool", new CachedGauge<Integer>(5, TimeUnit.MINUTES) {
+            @Override
+            protected Integer loadValue() {
+                return Executors.getLockPoolSize();
+            }
+        });
+        metricRegistry.register("threadCount", new CachedGauge<Integer>(5, TimeUnit.MINUTES) {
+            @Override
+            protected Integer loadValue() {
+                return Thread.activeCount();
+            }
+        });
+        metricRegistry.register("heapUsage", new CachedGauge<Double>(5, TimeUnit.MINUTES) {
+            @Override
+            protected Double loadValue() {
+                Runtime runtime = Runtime.getRuntime();
+                long totalMemory = runtime.totalMemory();
+                long freeMemory = runtime.freeMemory();
+                return  (double) (totalMemory - freeMemory) / totalMemory * 100;
+            }
+        });
+
+    }
+
+    private DingoMetrics() {
     }
 
     public static Meter meter(final @NonNull String name) {
         return metricRegistry.meter(name);
     }
 
-    private static Timer timer(final @NonNull String name) {
+    public static Timer timer(final @NonNull String name) {
         return metricRegistry.timer(name);
     }
 
@@ -50,5 +105,13 @@ public class DingoMetrics {
 
     public static void histogram(final @NonNull String name, final long size) {
         metricRegistry.histogram(name).update(size);
+    }
+
+    public static void startReporter() {
+        slf4jReporter.setMetricLogEnable(true);
+    }
+
+    public static void stopReporter() {
+        slf4jReporter.setMetricLogEnable(false);
     }
 }

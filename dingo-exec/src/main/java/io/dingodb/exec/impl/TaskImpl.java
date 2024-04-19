@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.dingodb.common.metrics.DingoMetrics.activeTaskCount;
 import static io.dingodb.exec.utils.OperatorCodeUtils.ROOT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SOURCE;
 
@@ -242,6 +243,7 @@ public final class TaskImpl implements Task {
                 : "Operators in run list must be source operator.";
             Executors.execute("operator-" + jobId + "-" + id + "-" + operatorId, () -> {
                 final long startTime = System.currentTimeMillis();
+                activeTaskCount.incrementAndGet();
                 try {
                     while (operator.push(getContext().copy(), null, vertex)) {
                         LogUtils.info(log, "Operator {} need another pushing.", vertex.getId());
@@ -263,6 +265,7 @@ public final class TaskImpl implements Task {
                     }
                     operator.fin(0, FinWithException.of(taskStatus), vertex);
                 } finally {
+                    activeTaskCount.decrementAndGet();
                     LogUtils.debug(log, "TaskImpl run cost: {}ms.", System.currentTimeMillis() - startTime);
                     activeThreads.countDown();
                 }

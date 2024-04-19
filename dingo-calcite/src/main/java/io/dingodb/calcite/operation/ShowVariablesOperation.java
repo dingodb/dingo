@@ -46,12 +46,12 @@ public class ShowVariablesOperation extends QueryOperation {
     public Iterator getIterator() {
         Properties variables;
         if (isGlobal) {
-            variables = ScopeVariables.globalVariables;
+            variables = ScopeVariables.getGlobalVariables();
         } else {
             try {
                 variables = connection.getClientInfo();
-                if (variables.size() == 0) {
-                    connection.setClientInfo(ScopeVariables.globalVariables);
+                if (variables.isEmpty()) {
+                    connection.setClientInfo(ScopeVariables.getGlobalVariables());
                     variables = connection.getClientInfo();
                 }
             } catch (SQLException e) {

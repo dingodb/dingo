@@ -14,22 +14,15 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.stats;
+package io.dingodb.common.profile;
 
-public enum StatsTaskState {
-    INIT("INIT"),
-    PENDING("PENDING"),
-    RUNNING("RUNNING"),
-    SUCCESS("SUCCESS"),
-    FAIL("FAIL");
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
-    StatsTaskState(String state) {
-        this.state = state;
-    }
-
-    private String state;
-
-    public String getState() {
-        return state;
-    }
+@Data
+@AllArgsConstructor
+public class AnalyzeEvent {
+    String schemaName;
+    String tableName;
+    Long modify;
 }

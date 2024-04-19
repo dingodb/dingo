@@ -16,15 +16,34 @@
 
 package io.dingodb.calcite.operation;
 
+import org.apache.calcite.avatica.AvaticaConnection;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Map;
+
 public class KillQuery implements DdlOperation {
     private String threadId;
+    private Map<String, Connection> connectionMap;
 
     public KillQuery(String threadId) {
         this.threadId = threadId;
     }
 
+    public void init(Object connectionMap) {
+        this.connectionMap = (Map<String, Connection>) connectionMap;
+    }
+
     @Override
     public void execute() {
-        // todo
+        Connection connection = connectionMap.get(threadId);
+        AvaticaConnection avaticaConnection = (AvaticaConnection) connection;
+        avaticaConnection.statementMap.forEach((k, v) -> {
+            try {
+                v.cancel();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 }

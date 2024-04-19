@@ -248,54 +248,6 @@
     "nullable": false
   },
   {
-    "name": "SUM_KV_LATENCY",
-    "type": "bigint",
-    "precision": -1,
-    "scale": -2147483648,
-    "primary": -1,
-    "nullable": false
-  },
-  {
-    "name": "MAX_KV_LATENCY",
-    "type": "bigint",
-    "precision": -1,
-    "scale": -2147483648,
-    "primary": -1,
-    "nullable": false
-  },
-  {
-    "name": "AVG_KV_LATENCY",
-    "type": "bigint",
-    "precision": -1,
-    "scale": -2147483648,
-    "primary": -1,
-    "nullable": false
-  },
-  {
-    "name": "SUM_OP_LATENCY",
-    "type": "bigint",
-    "precision": -1,
-    "scale": -2147483648,
-    "primary": -1,
-    "nullable": false
-  },
-  {
-    "name": "MAX_OP_LATENCY",
-    "type": "bigint",
-    "precision": -1,
-    "scale": -2147483648,
-    "primary": -1,
-    "nullable": false
-  },
-  {
-    "name": "AVG_OP_LATENCY",
-    "type": "bigint",
-    "precision": -1,
-    "scale": -2147483648,
-    "primary": -1,
-    "nullable": false
-  },
-  {
     "name": "SUM_COMMIT_LATENCY",
     "type": "bigint",
     "precision": -1,
@@ -419,14 +371,6 @@
     "name": "PLAN_IN_CACHE",
     "type": "bigint",
     "precision": -1,
-    "scale": -2147483648,
-    "primary": -1,
-    "nullable": false
-  },
-  {
-    "name": "PLAN",
-    "type": "VARCHAR",
-    "precision": 5000,
     "scale": -2147483648,
     "primary": -1,
     "nullable": false

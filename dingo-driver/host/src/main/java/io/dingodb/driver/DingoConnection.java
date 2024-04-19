@@ -390,6 +390,9 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
 
     @Override
     public void setClientInfo(String name, String value) throws SQLClientInfoException {
+        if ("metric_log_enable".equalsIgnoreCase(name)) {
+            return;
+        }
         if (name.equalsIgnoreCase("transaction_isolation")
             || name.equalsIgnoreCase("onetime_transaction_isolation")) {
             if (transaction != null) {
@@ -427,6 +430,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     @Override
     public void setClientInfo(Properties properties) {
         sessionVariables.putAll(properties);
+        sessionVariables.remove("metric_log_enable");
         autoCommit = !("off".equalsIgnoreCase(getClientInfo("autocommit")));
         if (properties.containsKey("wait_timeout")) {
             String value = (String) properties.get("wait_timeout");

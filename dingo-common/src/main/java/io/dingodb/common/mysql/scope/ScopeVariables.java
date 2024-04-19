@@ -16,13 +16,20 @@
 
 package io.dingodb.common.mysql.scope;
 
+import io.dingodb.common.metrics.DingoMetrics;
+import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
-public class ScopeVariables {
+public final class ScopeVariables {
     // load from store
-    public static Properties globalVariables = new Properties();
+    @Getter
+    private static Properties globalVariables = new Properties();
 
     public static final List<String> immutableVariables = new ArrayList<>();
 
@@ -46,5 +53,49 @@ public class ScopeVariables {
         characterSet.add("utf-8");
         characterSet.add("gbk");
         characterSet.add("latin1");
+    }
+
+    private ScopeVariables() {
+    }
+
+    public static boolean globalVarEmpty() {
+        return globalVariables.isEmpty();
+    }
+
+    public static synchronized void setGlobalVariable(String key, Object value) {
+        if (StringUtils.isBlank(key)) {
+            return;
+        }
+        if ("metric_log_enable".equalsIgnoreCase(key)) {
+            if (value == null) {
+                return;
+            }
+            metricReporter(value.toString());
+        }
+        globalVariables.put(key, value);
+    }
+
+    public static synchronized String getGlobalVar(String key, String defaultVal) {
+        return globalVariables.getProperty(key, defaultVal);
+    }
+
+    public static synchronized void putAllGlobalVar(Map<String, String> globalVariableMap) {
+        if (globalVariableMap.containsKey("metric_log_enable")) {
+            String metricLogEnable = globalVariableMap.get("metric_log_enable");
+            metricReporter(metricLogEnable);
+        }
+        globalVariables.putAll(globalVariableMap);
+    }
+
+    private static synchronized void metricReporter(String metricLogEnable) {
+        if ("on".equalsIgnoreCase(metricLogEnable)) {
+            DingoMetrics.startReporter();
+        } else if ("off".equalsIgnoreCase(metricLogEnable)) {
+            DingoMetrics.stopReporter();
+        }
+    }
+
+    public static synchronized boolean containsGlobalVarKey(String key) {
+        return globalVariables.containsKey(key);
     }
 }

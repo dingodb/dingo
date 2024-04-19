@@ -59,7 +59,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
     @Override
     protected boolean pushTuple(Context context, Object[] tuple, Vertex vertex) {
         TxnPartUpdateParam param = vertex.getParam();
-        OperatorProfile profile = (OperatorProfile) param.getProfile("partUpdate");
+        OperatorProfile profile = param.getProfile("partUpdate");
         long start = System.currentTimeMillis();
         param.setContext(context);
         DingoType schema = param.getSchema();

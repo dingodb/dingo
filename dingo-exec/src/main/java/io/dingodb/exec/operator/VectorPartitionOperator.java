@@ -36,7 +36,7 @@ public class VectorPartitionOperator extends FanOutOperator {
     @Override
     protected int calcOutputIndex(Context context, Object @NonNull [] tuple, Vertex vertex) {
         VectorPartitionParam param = vertex.getParam();
-        OperatorProfile profile = (OperatorProfile) param.getProfile("vectorPart");
+        OperatorProfile profile = param.getProfile("vectorPart");
         long start = System.currentTimeMillis();
         // extract vector id from tuple
         Long vectorId = (Long) tuple[param.getIndex()];

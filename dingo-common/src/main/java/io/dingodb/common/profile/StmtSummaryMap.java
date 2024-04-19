@@ -20,6 +20,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.metrics.DingoMetrics;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -28,13 +29,12 @@ import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public final class StmtSummaryMap {
     static BlockingQueue<SqlProfile> profileQueue;
-    private static LoadingCache<String, StmtSummary> stmtSummaryMap;
-//    private static Map<String, StmtSummary> stmtSummaryHisMap = new ConcurrentHashMap<String, StmtSummary>();
+    private static final LoadingCache<String, StmtSummary> stmtSummaryMap;
+    private static BlockingQueue<AnalyzeEvent> analyzeQueue;
 
     private StmtSummaryMap() {
     }
@@ -50,11 +50,6 @@ public final class StmtSummaryMap {
    static {
         stmtSummaryMap = CacheBuilder.newBuilder()
             .maximumSize(4096)
-            .expireAfterAccess(10, TimeUnit.HOURS)
-            .expireAfterWrite(10, TimeUnit.HOURS)
-//            .removalListener(t -> {
-//                stmtSummaryHisMap.put((String) t.getKey(), (StmtSummary) t.getValue());
-//            })
             .build(new CacheLoader<String, StmtSummary>() {
                 @Override
                 public @NonNull StmtSummary load(@NonNull String summaryKey) {
@@ -63,6 +58,7 @@ public final class StmtSummaryMap {
             });
         profileQueue = new LinkedBlockingDeque<>();
         Executors.execute("stmtSummary", StmtSummaryMap::handleProfile);
+        analyzeQueue = new LinkedBlockingDeque<>();
     }
 
     private static void handleProfile() {
@@ -105,14 +101,31 @@ public final class StmtSummaryMap {
             return;
         }
         sqlProfile.end();
-        if (slowQueryEnabled && sqlProfile.getDuration() > slowQueryThreshold) {
-            log.info("slow query:" + sqlProfile.dumpTree());
+        if (slowQueryEnabled) {
+            log.info(sqlProfile.dumpTree());
         }
         try {
+            if (sqlProfile.getStatementType() != null) {
+                DingoMetrics.latency(sqlProfile.getStatementType(), sqlProfile.duration);
+            }
             profileQueue.add(sqlProfile);
             sqlProfile.clear();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+        }
+    }
+
+    public static void addAnalyzeEvent(String schemaName, String tableName, long modify) {
+        AnalyzeEvent analyzeEvent = new AnalyzeEvent(schemaName, tableName, modify);
+        analyzeQueue.add(analyzeEvent);
+    }
+
+    public static AnalyzeEvent getAnalyzeEvent() {
+        while (true) {
+            try {
+                return analyzeQueue.take();
+            } catch (InterruptedException ignored) {
+            }
         }
     }
 

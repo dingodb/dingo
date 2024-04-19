@@ -37,6 +37,11 @@ dependencies {
     implementation project(':dingo-transaction-api')
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
     implementation group: 'net.agkn', name: 'hll', version: 'hll'.v()
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-coding', version: 'dingo-expr'.v()
+
+    api group: 'io.dingodb.expr', name: 'dingo-expr-parser', version: 'dingo-expr'.v()
+    api group: 'io.dingodb.expr', name: 'dingo-expr-rel', version: 'dingo-expr'.v()
+
     testAnnotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     testCompileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     testImplementation group: 'org.mockito', name: 'mockito-core', version: 'mockito'.v()

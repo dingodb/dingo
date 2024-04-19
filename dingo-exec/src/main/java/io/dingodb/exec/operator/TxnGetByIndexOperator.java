@@ -64,7 +64,7 @@ public final class TxnGetByIndexOperator extends FilterProjectOperator {
     @Override
     protected @NonNull Iterator<Object[]> createSourceIterator(Context context, Object[] tuple, Vertex vertex) {
         TxnGetByIndexParam param = vertex.getParam();
-        OperatorProfile profile = (OperatorProfile) param.getProfile("getByIndex");
+        OperatorProfile profile = param.getProfile("getByIndex");
         long start = System.currentTimeMillis();
         byte[] keys = param.getCodec().encodeKeyPrefix(tuple, calculatePrefixCount(tuple));
         Iterator<KeyValue> localIterator = createScanLocalIterator(

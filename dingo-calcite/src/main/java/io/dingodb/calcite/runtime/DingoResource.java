@@ -113,4 +113,7 @@ public interface DingoResource {
 
     @BaseMessage("Error 1083(42000): Field/Line separator argument is not what is expected; check the manual")
     ExInst<DingoSqlException> fieldSeparatorError();
+
+    @BaseMessage("Error 1146(42S02): Table ''{0}'' does not exist")
+    ExInst<DingoSqlException> tableNotExists(String a0);
 }

@@ -51,7 +51,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
     @Override
     protected boolean pushTuple(Context context, Object[] tuple, Vertex vertex) {
         TxnPartDeleteParam param = vertex.getParam();
-        OperatorProfile profile = (OperatorProfile) param.getProfile("partDelete");
+        OperatorProfile profile = param.getProfile("partDelete");
         long start = System.currentTimeMillis();
         param.setContext(context);
         CommonId txnId = vertex.getTask().getTxnId();

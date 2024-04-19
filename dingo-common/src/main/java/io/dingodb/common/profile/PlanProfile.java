@@ -20,6 +20,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -39,6 +40,7 @@ public class PlanProfile extends Profile {
     private long lock;
     private long lockTime;
     private boolean hitCache;
+    private List<String> tableList;
 
     public void endParse() {
         this.parseTime = System.currentTimeMillis();
@@ -86,10 +88,6 @@ public class PlanProfile extends Profile {
             "duration=" + duration +
             ", start=" + start +
             ", end=" + end +
-//            ", parse=" + parse +
-//            ", validate=" + validate +
-//            ", optimize=" + optimize +
-//            ", lock=" + lock +
             '}';
     }
 }

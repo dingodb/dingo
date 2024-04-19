@@ -26,6 +26,7 @@ import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.operation.DdlOperation;
 import io.dingodb.calcite.operation.DmlOperation;
 import io.dingodb.calcite.operation.KillConnection;
+import io.dingodb.calcite.operation.KillQuery;
 import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.QueryOperation;
 import io.dingodb.calcite.operation.ShowProcessListOperation;
@@ -48,6 +49,7 @@ import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.transaction.api.LockType;
 import io.dingodb.transaction.api.TableLock;
 import io.dingodb.transaction.api.TableLockService;
@@ -265,6 +267,7 @@ public final class DingoDriverParser extends DingoParser {
                 sql,
                 Meta.CursorFactory.OBJECT,
                 Meta.StatementType.OTHER_DDL,
+                null,
                 null
             );
         }
@@ -309,7 +312,7 @@ public final class DingoDriverParser extends DingoParser {
         RelDataType parasType = validator.getParameterRowType(sqlNode);
         Set<RelOptTable> tables = useTables(relNode, sqlNode);
 
-        boolean isTxn = checkEngine(relNode, sqlNode, tables, connection.getAutoCommit(), connection.getTransaction());
+        boolean isTxn = checkEngine(sqlNode, tables, connection.getTransaction(), planProfile);
         // get startTs for jobSeqId, if transaction is not null ,transaction startTs is jobDomainId
         long startTs = 0L;
         CommonId txn_Id;
@@ -396,7 +399,8 @@ public final class DingoDriverParser extends DingoParser {
             job.getJobId(),
             sqlNode,
             relNode,
-            parasType
+            parasType,
+            planProfile.getTableList()
         );
     }
 
@@ -438,6 +442,9 @@ public final class DingoDriverParser extends DingoParser {
                             ServerMeta.getInstance().connectionMap.get(killConnection.getMysqlThreadId())
                         );
                     }
+                } else if (operation instanceof KillQuery) {
+                    KillQuery killQuery = (KillQuery) operation;
+                    killQuery.init(ServerMeta.getInstance().connectionMap);
                 }
                 if (sqlNode instanceof SqlCommit) {
                     ((DdlOperation)operation).execute();
@@ -511,9 +518,8 @@ public final class DingoDriverParser extends DingoParser {
         RelDataType parasType,
         List<ColumnMetaData> columns
     ) {
-        JavaTypeFactory typeFactory = connection.getTypeFactory();
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
-        Meta.StatementType statementType = null;
+        Meta.StatementType statementType;
         markAutoIncForDml(relNode);
         Location currentLocation = MetaService.root().currentLocation();
         Set<RelOptTable> tables = useTables(relNode, sqlNode);
@@ -560,7 +566,8 @@ public final class DingoDriverParser extends DingoParser {
             job.getJobId(),
             sqlNode,
             relNode,
-            parasType
+            parasType,
+            null
         );
     }
     private void runPessimisticPrimaryKeyJob(
@@ -642,19 +649,34 @@ public final class DingoDriverParser extends DingoParser {
         return null;
     }
 
-    private boolean checkEngine(RelNode relNode, SqlNode sqlNode, Set<RelOptTable> tables, boolean isAutoCommit, ITransaction transaction) {
+    private static boolean checkEngine(SqlNode sqlNode,
+                                       Set<RelOptTable> tables,
+                                       ITransaction transaction,
+                                       PlanProfile planProfile) {
         boolean isTxn = false;
         boolean isNotTransactionTable = false;
         // for UT test
         if ((sqlNode.getKind() == SqlKind.SELECT || sqlNode.getKind() == SqlKind.DELETE) && tables.size() == 0) {
             return false;
         }
+        List<String> tableList = new ArrayList<>();
+        planProfile.setTableList(tableList);
         for (RelOptTable table : tables) {
             String engine = null;
+            Table tableTarget;
             if (table instanceof RelOptTableImpl) {
-                engine = ((DingoTable) ((RelOptTableImpl) table).table()).getTable().getEngine();
+                RelOptTableImpl relOptTable = (RelOptTableImpl) table;
+                tableTarget = ((DingoTable) relOptTable.table()).getTable();
+                engine = tableTarget.getEngine();
+                List<String> fullName = relOptTable.getQualifiedName();
+                if (fullName.size() == 3) {
+                    tableList.add(fullName.get(1) + "." + fullName.get(2));
+                }
             } else if (table instanceof DingoRelOptTable) {
-                engine = ((DingoTable) ((DingoRelOptTable) table).table()).getTable().getEngine();
+                DingoRelOptTable dingoRelOptTable = (DingoRelOptTable) table;
+                tableTarget = ((DingoTable) dingoRelOptTable.table()).getTable();
+                engine = tableTarget.getEngine();
+                tableList.add(dingoRelOptTable.getSchemaName() + "." + dingoRelOptTable.getTableName());
             }
             if (engine == null || !engine.contains("TXN")) {
                 isNotTransactionTable = true;

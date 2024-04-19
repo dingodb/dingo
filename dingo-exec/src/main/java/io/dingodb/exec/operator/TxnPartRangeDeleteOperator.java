@@ -42,7 +42,7 @@ public final class TxnPartRangeDeleteOperator extends SoleOutOperator {
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         RangeDistribution distribution = context.getDistribution();
         TxnPartRangeDeleteParam param = vertex.getParam();
-        OperatorProfile profile = (OperatorProfile) param.getProfile("rangeDelete");
+        OperatorProfile profile = param.getProfile("rangeDelete");
         long start = System.currentTimeMillis();
         CommonId txnId = vertex.getTask().getTxnId();
         CommonId tableId = param.getTableId();

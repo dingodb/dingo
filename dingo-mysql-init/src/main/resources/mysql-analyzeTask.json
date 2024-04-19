@@ -79,5 +79,41 @@
       "scale": -2147483648,
       "primary": -1,
       "nullable": true
+    },
+    {
+      "name": "modify_total_count",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "default": 0,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "last_duration",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "default": 0,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "exec_count",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "default": 0,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "exec_time",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "default": 0,
+      "primary": -1,
+      "nullable": true
     }
-  ]
+ ]

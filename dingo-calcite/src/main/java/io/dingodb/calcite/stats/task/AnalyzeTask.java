@@ -18,6 +18,7 @@ package io.dingodb.calcite.stats.task;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Iterators;
 import io.dingodb.calcite.stats.AnalyzeInfo;
 import io.dingodb.calcite.stats.CountMinSketch;
 import io.dingodb.calcite.stats.Histogram;
@@ -27,12 +28,12 @@ import io.dingodb.calcite.stats.StatsOperator;
 import io.dingodb.calcite.stats.StatsTaskState;
 import io.dingodb.calcite.stats.TableStats;
 import io.dingodb.codec.CodecService;
-import io.dingodb.common.AggregationOperator;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.Coprocessor;
+import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
@@ -46,13 +47,18 @@ import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.exec.Services;
-import io.dingodb.exec.aggregate.Agg;
-import io.dingodb.exec.aggregate.MaxAgg;
-import io.dingodb.exec.aggregate.MinAgg;
-import io.dingodb.exec.table.Part;
-import io.dingodb.exec.table.PartInKvStore;
+import io.dingodb.exec.expr.DingoCompileContext;
+import io.dingodb.exec.expr.DingoRelConfig;
 import io.dingodb.exec.utils.SchemaWrapperUtils;
+import io.dingodb.expr.rel.RelOp;
+import io.dingodb.expr.rel.op.RelOpBuilder;
+import io.dingodb.expr.runtime.expr.Expr;
+import io.dingodb.expr.runtime.expr.Exprs;
+import io.dingodb.expr.runtime.type.TupleType;
+import io.dingodb.expr.coding.CodingFlag;
+import io.dingodb.expr.coding.RelOpCoder;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.tso.TsoService;
@@ -61,6 +67,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -73,6 +80,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 @Builder
 @Slf4j
@@ -103,7 +112,13 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             // get table info
             MetaService metaService = MetaService.root();
             metaService = metaService.getSubMetaService(schemaName);
+            if (metaService == null) {
+                return;
+            }
             Table td = metaService.getTable(tableName);
+            if (td == null) {
+                return;
+            }
             CommonId tableId = td.getTableId();
 
             startAnalyzeTask(tableId);
@@ -198,7 +213,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
         AtomicInteger index = new AtomicInteger();
         td.getColumns().forEach(columnDefinition -> {
             index.incrementAndGet();
-            if (columnList != null && columnList.size() > 0 && !columnList.contains(columnDefinition.getName())) {
+            if (columnList != null && !columnList.isEmpty() && !columnList.contains(columnDefinition.getName())) {
                 return;
             }
             boolean allowStats = false;
@@ -233,7 +248,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
         List<Object[]> paramList = histogramList.stream().map(histogram -> {
             String histogramDetail = histogram.serialize();
             return new Object[] {histogram.getSchemaName(), histogram.getTableName(), histogram.getColumnName(),
-                histogramDetail};
+                histogramDetail, new Timestamp(System.currentTimeMillis())};
         }).collect(Collectors.toList());
         upsert(bucketsStore, bucketsCodec, paramList);
     }
@@ -243,7 +258,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             String cmSketch = countMinSketch.serialize();
             return new Object[] {countMinSketch.getSchemaName(), countMinSketch.getTableName(),
                 countMinSketch.getColumnName(), cmSketch, countMinSketch.getNullCount(),
-                countMinSketch.getTotalCount(), countMinSketch.getIndex()
+                countMinSketch.getTotalCount(), countMinSketch.getIndex(), new Timestamp(System.currentTimeMillis())
             };
         }).collect(Collectors.toList());
         upsert(cmSketchStore, cmSketchCodec, paramList);
@@ -252,7 +267,9 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
     private void addStatsNormal(List<StatsNormal> statsNormals) {
         List<Object[]> paramList = statsNormals.stream().map(statsNormal ->
             new Object[] {schemaName, tableName, statsNormal.getColumnName(), statsNormal.getNdv(),
-                statsNormal.getNumNull(), statsNormal.getAvgColSize(), statsNormal.getTotalCount()}
+                statsNormal.getNumNull(), statsNormal.getAvgColSize(), statsNormal.getTotalCount(),
+                new Timestamp(System.currentTimeMillis())
+            }
         ).collect(Collectors.toList());
         upsert(statsStore, statsCodec, paramList);
     }
@@ -266,47 +283,39 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                                 List<RangeDistribution> rangeDistributions,
                                 CommonId tableId,
                                 Table td) {
-        if (histogramList.size() > 0) {
+        if (!histogramList.isEmpty()) {
             List<Iterator<Object[]>> iteratorList = rangeDistributions.stream().map(region -> {
+                DingoType outputSchema = DingoTypeFactory.tuple(
+                    histogramList.stream().flatMap(histogram ->
+                        Arrays.stream(new DingoType[]{histogram.getDingoType(),
+                            histogram.getDingoType()})).toArray(DingoType[]::new));
                 TupleMapping outputKeyMapping = TupleMapping.of(
                     IntStream.range(0, 0).boxed().collect(Collectors.toList())
                 );
-                DingoType outputSchema = DingoTypeFactory.tuple(
-                    histogramList.stream().flatMap(intHistogram ->
-                        Arrays.stream(new DingoType[]{intHistogram.getDingoType(),
-                            intHistogram.getDingoType()})).toArray(DingoType[]::new));
-                AtomicInteger index = new AtomicInteger(0);
-                List<Agg> aggList = histogramList.stream().flatMap(intHistogram -> {
-                    MaxAgg maxAgg = new MaxAgg(index.get(), intHistogram.getDingoType());
-                    MinAgg minAgg = new MinAgg(index.get(), intHistogram.getDingoType());
-                    index.incrementAndGet();
-                    return Arrays.stream(new Agg[]{maxAgg, minAgg});
-                }).collect(Collectors.toList());
-                Coprocessor.CoprocessorBuilder builder = Coprocessor.builder();
-                builder.selection(histogramList.stream().map(Histogram::getIndex).collect(Collectors.toList()));
-                builder.aggregations(aggList.stream().map(
-                    agg -> {
-                        AggregationOperator.AggregationOperatorBuilder operatorBuilder = AggregationOperator.builder();
-                        operatorBuilder.operation(agg.getAggregationType());
-                        operatorBuilder.indexOfColumn(agg.getIndex());
-                        return operatorBuilder.build();
-                    }
-                ).collect(Collectors.toList()));
-                builder.originalSchema(SchemaWrapperUtils.buildSchemaWrapper(
-                    td.tupleType(), td.keyMapping(), tableId.seq));
-                builder.resultSchema(SchemaWrapperUtils.buildSchemaWrapper(
-                    outputSchema, outputKeyMapping, tableId.seq
-                ));
-                Coprocessor coprocessor = builder.build();
-
+                CoprocessorV2 coprocessor = getCoprocessor(td, histogramList, outputSchema);
+                if (coprocessor == null) {
+                    return null;
+                }
+                byte[] startKey = region.getStartKey();
+                byte[] endKey = region.getEndKey();
+                CodecService.getDefault().setId(startKey, region.getId().domain);
+                CodecService.getDefault().setId(endKey, region.getId().domain);
                 StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, region.getId());
-                Part part = new PartInKvStore(kvStore,
-                    CodecService.getDefault().createKeyValueCodec(tableId, outputSchema, outputKeyMapping));
-                return part.scan(region.getStartKey(), region.getEndKey(),
-                    region.isWithStart(), true, coprocessor);
+
+                Iterator<KeyValue> iterator = kvStore.txnScan(
+                    TsoService.getDefault().tso(),
+                    new StoreInstance.Range(startKey, endKey,
+                       true, true),
+                    30000,
+                    coprocessor
+                );
+                return Iterators.transform(iterator, wrap(CodecService.getDefault().createKeyValueCodec(outputSchema, outputKeyMapping)::decode)::apply);
             }).collect(Collectors.toList());
             for (Iterator<Object[]> iterator : iteratorList) {
-                if (iterator.hasNext()) {
+                if (iterator == null) {
+                    continue;
+                }
+                while (iterator.hasNext()) {
                     Object[] tuples = iterator.next();
                     for (int i = 0; i < histogramList.size(); i ++) {
                         histogramList.get(i).setRegionMax(tuples[2 * i]);
@@ -351,16 +360,38 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             LogUtils.error(log, "analyze task is null");
             return;
         }
-        Timestamp current = new Timestamp(System.currentTimeMillis());
+        long now = System.currentTimeMillis();
+        Timestamp current = new Timestamp(now);
+        Long modify = 0L;
+        Long execCount = (Long) values[13];
+        long totalExecCount = execCount + 1;
+        values[13] = totalExecCount;
         if (StringUtils.isBlank(failReason)) {
-            values[6] = StatsTaskState.SUCCESS.getState();
+            modify = (Long) values[9];
+            if (rowCount == 0) {
+                if (totalExecCount < 20) {
+                    values[6] = StatsTaskState.PENDING.getState();
+                } else {
+                    delStats(analyzeTaskStore, analyzeTaskCodec, values);
+                }
+            } else {
+                values[6] = StatsTaskState.SUCCESS.getState();
+            }
         } else {
             values[6] = StatsTaskState.FAIL.getState();
             values[7] = failReason;
         }
+        Timestamp startTime = (Timestamp) values[4];
         values[5] = current;
+        values[9] = 0L;
         values[10] = current;
         values[3] = rowCount;
+        Long lastModifyCount = (Long) values[11];
+        values[11] = lastModifyCount + modify;
+        long duration = now - startTime.getTime();
+        values[12] = duration;
+        long lastExecTime = (long) values[14];
+        values[14] = lastExecTime + duration;
         upsert(analyzeTaskStore, analyzeTaskCodec, Collections.singletonList(values));
     }
 
@@ -373,5 +404,51 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             LogUtils.error(log, e.getMessage(), e);
             return "";
         }
+    }
+
+    public static CoprocessorV2 getCoprocessor(Table table, List<Histogram> histograms, DingoType outputSchema) {
+        CommonId tableId = table.tableId;
+        List<DingoType> dingoTypes = table.getColumns().stream().map(Column::getType).collect(Collectors.toList());
+        DingoType schema = DingoTypeFactory.tuple(dingoTypes.toArray(new DingoType[]{}));
+
+        DingoRelConfig config = new DingoRelConfig();
+        Expr[] exprs = histograms.stream()
+            .flatMap(histogram ->
+                Arrays.stream(new Expr[]{makeMaxAgg(histogram.getIndex()), makeMinAgg(histogram.getIndex())})
+            ).toArray(Expr[]::new);
+        RelOp relOp = RelOpBuilder.builder().agg(exprs).build();
+
+        relOp = relOp.compile(new DingoCompileContext(
+            (TupleType) schema.getType(),
+            (TupleType) DingoTypeFactory.tuple(new DingoType[0]).getType()
+        ), config);
+
+        CoprocessorV2 coprocessor;
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        if (RelOpCoder.INSTANCE.visit(relOp, os) == CodingFlag.OK) {
+            List<Integer> selection = IntStream.range(0, schema.fieldCount())
+                .boxed()
+                .collect(Collectors.toList());
+            TupleMapping outputKeyMapping = TupleMapping.of(new int[]{});
+            coprocessor = CoprocessorV2.builder()
+                .originalSchema(SchemaWrapperUtils.buildSchemaWrapper(schema, table.keyMapping(), tableId.seq))
+                .resultSchema(SchemaWrapperUtils.buildSchemaWrapper(outputSchema, outputKeyMapping, tableId.seq))
+                .selection(selection)
+                .relExpr(os.toByteArray())
+                .schemaVersion(table.getVersion())
+                .build();
+            return coprocessor;
+        }
+        return null;
+    }
+
+    private static Expr makeMaxAgg(int index) {
+        Expr var = DingoCompileContext.createTupleVar(index);
+        return Exprs.op(Exprs.MAX_AGG, var);
+    }
+
+    private static Expr makeMinAgg(int index) {
+        Expr var = DingoCompileContext.createTupleVar(index);
+        return Exprs.op(Exprs.MIN_AGG, var);
     }
 }

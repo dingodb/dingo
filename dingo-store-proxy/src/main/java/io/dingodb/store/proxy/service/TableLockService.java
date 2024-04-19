@@ -22,7 +22,6 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.DebugLog;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.store.proxy.meta.MetaServiceApiImpl;
 import io.dingodb.transaction.api.LockType;
@@ -41,7 +40,6 @@ import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
@@ -129,9 +127,6 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
     }
 
     private void lock(CommonId tableId) {
-        LogUtils.info(log, "lock completableFuture thread pool active count: {}, fork pool size:{}"
-            , Executors.COMPLETABLE_FUTURE_POOL.getActiveCount(),
-            ForkJoinPool.commonPool() != null ? ForkJoinPool.commonPool().getActiveThreadCount() : 0);
         TableLocks tableLocks = this.locks.get(tableId);
         io.dingodb.transaction.api.TableLock lock = tableLocks.lockQueue.first();
         if (lock == null) {
@@ -174,7 +169,7 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
         if (locked) {
             if (lock.type == TABLE || lock.type == RANGE) {
                 this.tableLocks.put(tableId, lock);
-                lock.unlockFuture.whenCompleteAsync((v, r) -> this.tableLocks.remove(tableId), Executors.COMPLETABLE_FUTURE_POOL);
+                lock.unlockFuture.whenCompleteAsync((v, r) -> this.tableLocks.remove(tableId), Executors.LOCK_FUTURE_POOL);
                 try {
                     MetaServiceApiImpl.INSTANCE.lockTable(lock.lockTs, lock);
                 } catch (Exception e) {
@@ -192,7 +187,7 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
             locks.add(lock);
             tableLocks.lockQueue.pollFirst();
             waitLocks.remove(lock);
-            lock.unlockFuture.whenCompleteAsync((v, e) -> unlock(lock), Executors.COMPLETABLE_FUTURE_POOL);
+            lock.unlockFuture.whenCompleteAsync((v, e) -> unlock(lock), Executors.LOCK_FUTURE_POOL);
             LogUtils.debug(log, "Locked {}", lock);
         } else {
             if (lock.lockFuture.isCancelled()) {

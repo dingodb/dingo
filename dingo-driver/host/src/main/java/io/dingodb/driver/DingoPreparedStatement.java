@@ -78,6 +78,12 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
         String host = connection.getContext().getOption("host");
         sqlProfile.setSimpleUser(user + "@" + host);
         sqlProfile.setInstance(DingoConfiguration.location().toString());
+        if (signature instanceof DingoSignature) {
+            DingoSignature dingoSignature = (DingoSignature) signature;
+            if (dingoSignature.getFullyTableList() != null) {
+                sqlProfile.setFullyTableList(dingoSignature.getFullyTableList());
+            }
+        }
     }
 
     void setParameterValues(@NonNull List<TypedValue> parameterValues) {

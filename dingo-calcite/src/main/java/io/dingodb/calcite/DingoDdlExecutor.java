@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite;
 
+import com.codahale.metrics.Timer;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterConvertCharset;
@@ -35,8 +36,10 @@ import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
 import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.calcite.schema.DingoSchema;
+import io.dingodb.calcite.stats.StatsOperator;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.privilege.PrivilegeDefinition;
@@ -44,6 +47,7 @@ import io.dingodb.common.privilege.PrivilegeType;
 import io.dingodb.common.privilege.SchemaPrivDefinition;
 import io.dingodb.common.privilege.TablePrivDefinition;
 import io.dingodb.common.privilege.UserDefinition;
+import io.dingodb.common.profile.StmtSummaryMap;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
@@ -86,7 +90,6 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.Pair;
-import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -106,7 +109,6 @@ import java.util.stream.Collectors;
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
 import static io.dingodb.common.util.Optional.mapOrNull;
 import static io.dingodb.common.util.PrivilegeUtils.getRealAddress;
-import static io.dingodb.common.util.Utils.calculatePrefixCount;
 import static org.apache.calcite.util.Static.RESOURCE;
 
 @Slf4j
@@ -413,6 +415,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(SqlCreateSchema schema, CalcitePrepare.Context context) {
+        final Timer.Context timeCtx = DingoMetrics.getTimeContext("createSchema");
         LogUtils.info(log, "DDL execute: {}", schema);
         DingoRootSchema rootSchema = (DingoRootSchema) context.getMutableRootSchema().schema;
         String schemaName = schema.name.names.get(0).toUpperCase();
@@ -424,9 +427,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 RESOURCE.schemaExists(schemaName)
             );
         }
+        timeCtx.stop();
     }
 
     public void execute(SqlDropSchema schema, CalcitePrepare.Context context) {
+        final Timer.Context timeCtx = DingoMetrics.getTimeContext("dropSchema");
         LogUtils.info(log, "DDL execute: {}", schema);
         DingoRootSchema rootSchema = (DingoRootSchema) context.getMutableRootSchema().schema;
         String schemaName = schema.name.names.get(0).toUpperCase();
@@ -449,10 +454,12 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else {
             throw new RuntimeException("Schema not empty.");
         }
+        timeCtx.stop();
     }
 
     @SuppressWarnings({"unused"})
     public void execute(SqlCreateTable createT, CalcitePrepare.Context context) {
+        final Timer.Context timeCtx = DingoMetrics.getTimeContext("createTable");
         DingoSqlCreateTable create = (DingoSqlCreateTable) createT;
         LogUtils.info(log, "DDL execute: {}", create);
         DingoSchema schema = getSchema(create.name, context, false);
@@ -562,6 +569,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
 
         schema.createTables(tableDefinition, indexTableDefinitions);
+        timeCtx.stop();
     }
 
     private boolean isNotTxnEngine(String engine) {
@@ -570,6 +578,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     @SuppressWarnings({"unused", "MethodMayBeStatic"})
     public void execute(SqlDropTable drop, CalcitePrepare.Context context) throws Exception {
+        final Timer.Context timeCtx = DingoMetrics.getTimeContext("dropTable");
         LogUtils.info(log, "DDL execute: {}", drop);
         final DingoSchema schema = getSchema(drop.name, context, drop.ifExists);
         if (schema == null) {
@@ -603,7 +612,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             future.get(ttl, TimeUnit.SECONDS);
             schema.dropTable(tableName);
             userService.dropTablePrivilege(schema.name(), tableName);
-            //StatsOperator.delStats(schema.name(), tableName);
+            StatsOperator.delStats(schema.name(), tableName);
         } catch (TimeoutException e) {
             future.cancel(true);
             throw new RuntimeException("Lock wait timeout exceeded.");
@@ -613,9 +622,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } finally {
             unlockFuture.complete(null);
         }
+        timeCtx.stop();
     }
 
     public void execute(@NonNull SqlTruncate truncate, CalcitePrepare.Context context) throws Exception {
+        final Timer.Context timeCtx = DingoMetrics.getTimeContext("truncateTable");
         LogUtils.info(log, "DDL execute: {}", truncate);
         SqlIdentifier name = (SqlIdentifier) truncate.getOperandList().get(0);
         final Pair<DingoSchema, String> schemaTableName
@@ -623,6 +634,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         String tableName = Parameters.nonNull(schemaTableName.right, "table name").toUpperCase();
         long tso = TsoService.getDefault().tso();
+        Table table = schema.getMetaService().getTable(tableName);
+        if (table == null) {
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        }
         CommonId tableId = schema.getMetaService().getTable(tableName).getTableId();
         int ttl = Optional.mapOrGet(
             ((Connection) context).getClientInfo("lock_wait_timeout"), Integer::parseInt, () -> 50
@@ -641,6 +656,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         try {
             future.get(ttl, TimeUnit.SECONDS);
             schema.getMetaService().truncateTable(tableName);
+            StatsOperator.delStats(schema.name(), tableName);
         } catch (TimeoutException e) {
             future.cancel(true);
             throw new RuntimeException("Lock wait timeout exceeded.");
@@ -650,15 +666,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } finally {
             unlockFuture.complete(null);
         }
+        timeCtx.stop();
     }
-
-    private static void transformOperand(PartitionDetailDefinition detail) {
-        int i = calculatePrefixCount(detail.getOperand());
-        Object[] val = new Object[i];
-        System.arraycopy(detail.getOperand(), 0, val, 0, i);
-        detail.setOperand(val);
-    }
-
 
     public void execute(@NonNull SqlGrant sqlGrant, CalcitePrepare.Context context) {
         LogUtils.info(log, "DDL execute: {}", sqlGrant);
@@ -746,6 +755,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(@NonNull SqlAlterTableDistribution sqlAlterTableDistribution, CalcitePrepare.Context context) {
+        final Timer.Context timeCtx = DingoMetrics.getTimeContext("alter_table_distribution");
         final Pair<DingoSchema, String> schemaTableName
             = getSchemaAndTableName(sqlAlterTableDistribution.table, context);
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
@@ -764,6 +774,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         );
         LogUtils.info(log, "DDL execute SqlAlterTableDistribution tableName: {}, partitionDefinition: {}", tableName, detail);
         schema.addDistribution(tableName, sqlAlterTableDistribution.getPartitionDefinition());
+        timeCtx.stop();
     }
 
     public void execute(@NonNull SqlAlterAddIndex sqlAlterAddIndex, CalcitePrepare.Context context) {
@@ -793,6 +804,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(@NonNull SqlAlterUser sqlAlterUser, CalcitePrepare.Context context) {
+        final Timer.Context timeCtx = DingoMetrics.getTimeContext("alterUser");
         LogUtils.info(log, "DDL execute: {}", sqlAlterUser);
         UserDefinition userDefinition = UserDefinition.builder()
             .user(sqlAlterUser.user)
@@ -807,6 +819,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else {
             throw DINGO_RESOURCE.alterUserFailed(sqlAlterUser.user, sqlAlterUser.host).ex();
         }
+        timeCtx.stop();
     }
 
     public void execute(SqlAlterConvertCharset sqlAlterConvert, CalcitePrepare.Context context) {
