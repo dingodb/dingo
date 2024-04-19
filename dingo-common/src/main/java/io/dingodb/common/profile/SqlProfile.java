@@ -20,6 +20,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -31,6 +32,8 @@ public class SqlProfile extends Profile {
     private String simpleUser;
     private boolean prepared;
     private String statementType;
+    private boolean autoCommit;
+    private List<String> fullyTableList;
 
     private PlanProfile planProfile;
 
@@ -104,9 +107,11 @@ public class SqlProfile extends Profile {
     }
 
     public void clear() {
-        super.clear();
-        if (this.execProfile != null) {
-            this.execProfile.clear();
+        if (isPrepared()) {
+            super.clear();
+            if (this.execProfile != null) {
+                this.execProfile.clear();
+            }
         }
     }
 
@@ -118,9 +123,6 @@ public class SqlProfile extends Profile {
             ", duration=" + duration +
             ", start=" + start +
             ", end=" + end +
-//            ", planningProfile=" + planProfile +
-//            ", execProfile=" + execProfile +
-//            ", commitProfile=" + commitProfile +
             '}';
     }
 }

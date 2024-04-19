@@ -18,6 +18,7 @@ package io.dingodb.driver;
 
 import io.dingodb.common.CommonId;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
@@ -43,15 +44,20 @@ public final class DingoSignature extends Meta.Signature {
     private final RelNode relNode;
     @Getter
     private final RelDataType parasType;
+    @Getter
+    @Setter
+    private List<String> fullyTableList;
+
     public DingoSignature(
         List<ColumnMetaData> columns,
         String sql,
         Meta.CursorFactory cursorFactory,
         Meta.StatementType statementType,
-        @Nullable CommonId jobId
+        @Nullable CommonId jobId,
+        List<String> fullyTableList
     ) {
         this(columns, sql, new ArrayList<>(), null, cursorFactory, statementType,
-            jobId, null, null, null);
+            jobId, null, null, null, fullyTableList);
     }
 
     public DingoSignature(
@@ -64,12 +70,14 @@ public final class DingoSignature extends Meta.Signature {
         @Nullable CommonId jobId,
         SqlNode sqlNode,
         RelNode relNode,
-        RelDataType parasType
+        RelDataType parasType,
+        List<String> fullyTableList
     ) {
         super(columns, sql, parameters, internalParameters, cursorFactory, statementType);
         this.jobId = jobId;
         this.sqlNode = sqlNode;
         this.relNode = relNode;
         this.parasType = parasType;
+        this.fullyTableList = fullyTableList;
     }
 }

@@ -63,7 +63,7 @@ public class ShowCallsOperation extends QueryOperation {
 
                 if (variableName.startsWith("global.")) {
                     variableName = variableName.substring(7);
-                    value = ScopeVariables.globalVariables.getOrDefault(variableName, "").toString();
+                    value = ScopeVariables.getGlobalVar(variableName, "");
                 } else if (variableName.startsWith("session.")) {
                     variableName = variableName.substring(8);
                     try {

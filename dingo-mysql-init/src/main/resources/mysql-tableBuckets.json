@@ -26,5 +26,12 @@
       "scale": -2147483648,
       "primary": -1,
       "nullable": false
+    },
+    {
+     "name": "update_time",
+     "type": "timestamp",
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
     }
   ]

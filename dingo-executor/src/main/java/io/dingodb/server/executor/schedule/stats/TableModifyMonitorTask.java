@@ -17,7 +17,10 @@
 package io.dingodb.server.executor.schedule.stats;
 
 import io.dingodb.calcite.stats.StatsOperator;
+import io.dingodb.calcite.stats.StatsTaskState;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
@@ -73,39 +76,86 @@ public class TableModifyMonitorTask extends StatsOperator implements Runnable {
 
     /**
      * auto analyze trigger policy.
-     * 1. count > 1000
-     * 2. (this table commit - last table commit) > 1000
      * @param schemaName schema custom
      * @param tableName table
      * @param commitCount update,delete,insert
      * @return auto analyze flag
      */
-    private boolean autoAnalyzeTriggerPolicy(String schemaName, String tableName, long commitCount) {
-        long lastCommit = 0;
+    protected boolean autoAnalyzeTriggerPolicy(String schemaName, String tableName, long commitCount) {
         long processRows = 0;
+        KeyValue old = null;
+        Object[] oldValues = null;
         try {
-            Object[] values = get(analyzeTaskStore, analyzeTaskCodec, getAnalyzeTaskKeys(schemaName, tableName));
-            if (values != null) {
-                if (values[9] != null) {
-                    lastCommit = (long) values[9];
+            Object[] keys = getAnalyzeTaskKeys(schemaName, tableName);
+            old = analyzeTaskStore.get(analyzeTaskCodec.encodeKey(keys));
+            if (!(old.getValue() == null || old.getValue().length == 0)) {
+                oldValues = analyzeTaskCodec.decode(old);
+            }
+            if (oldValues != null) {
+                if (oldValues[3] != null) {
+                    processRows = (long) oldValues[3];
                 }
-                if (values[3] != null) {
-                    processRows = (long) values[3];
+                if (oldValues[6] != null) {
+                    String state = (String) oldValues[6];
+                    if (StatsTaskState.PENDING.getState().equalsIgnoreCase(state)
+                     || StatsTaskState.RUNNING.getState().equalsIgnoreCase(state)) {
+                        return false;
+                    } else if (StatsTaskState.INIT.getState().equalsIgnoreCase(state)) {
+                        if (oldValues[9] != null) {
+                            long modify = (long) oldValues[9];
+                            commitCount += modify;
+                        }
+                    }
                 }
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
-        commitCount -= lastCommit;
-        if (processRows == 0 && commitCount > 1000) {
-            return true;
-        } else if (processRows > 1000) {
+        boolean res = false;
+        if (processRows == 0 && commitCount > 10000) {
+            res = true;
+        } else if (commitCount > 10000 && processRows > 10000) {
             BigDecimal modify = new BigDecimal(commitCount);
             BigDecimal count = new BigDecimal(processRows);
-            BigDecimal rate = modify.divide(count, RoundingMode.HALF_UP);
-            return rate.compareTo(MODIFY_COMMIT_RATE) > 0;
+            BigDecimal rate = modify.divide(count, 2, RoundingMode.HALF_UP);
+            res = rate.compareTo(MODIFY_COMMIT_RATE) > 0;
         }
-        return false;
+        if (!res && oldValues != null) {
+            Object[] row = generateAnalyzeTask(schemaName, tableName, 0, commitCount);
+            row[6] = StatsTaskState.INIT.getState();
+            mergeAnalyzeRecord(old, oldValues, row);
+        } else {
+            if (!res) {
+                return false;
+            }
+            Object[] row = generateAnalyzeTask(schemaName, tableName, 0, commitCount);
+            LogUtils.info(log, "{}.{} auto analyze start, modify:{}",
+                schemaName, tableName, commitCount);
+            if (oldValues == null) {
+                analyzeTaskStore.insert(analyzeTaskCodec.encode(row));
+            } else {
+                mergeAnalyzeRecord(old, oldValues, row);
+            }
+        }
+        return res;
+    }
+
+    private static void mergeAnalyzeRecord(KeyValue old, Object[] oldValues, Object[] row) {
+        row[11] = oldValues[11];
+        row[12] = oldValues[12];
+        row[13] = oldValues[13];
+        row[14] = oldValues[14];
+        row[3] = oldValues[3];
+        row[2] = oldValues[2];
+        String state = null;
+        if (oldValues[6] != null) {
+            state = (String) oldValues[6];
+        }
+        long rowsCount = (long) oldValues[3];
+        if (rowsCount > 500000 && StatsTaskState.PENDING.getState().equalsIgnoreCase(state)) {
+            return;
+        }
+        analyzeTaskStore.update(analyzeTaskCodec.encode(row), old);
     }
 
 }

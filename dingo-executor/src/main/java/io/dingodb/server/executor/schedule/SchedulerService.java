@@ -22,6 +22,7 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.scheduler.SchedulerServiceProvider;
 import io.dingodb.sdk.service.LockService;
 import io.dingodb.server.executor.Configuration;
+import io.dingodb.server.executor.schedule.stats.AnalyzeProfileTask;
 import io.dingodb.server.executor.schedule.stats.AnalyzeScanTask;
 import io.dingodb.server.executor.schedule.stats.TableModifyMonitorTask;
 import lombok.extern.slf4j.Slf4j;
@@ -120,10 +121,10 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
     }
 
     public void init() {
-        this.add("monitorTableModify", "0 0 0/1 * * ?", new TableModifyMonitorTask());
         this.add("analyzeTable", "0 0 0/1 * * ?", new AnalyzeScanTask());
         Executors.scheduleWithFixedDelayAsync("refreshStat", new RefreshStatsTask(),
             10, 3600, TimeUnit.SECONDS);
+        new Thread(new AnalyzeProfileTask()).start();
     }
 
 }

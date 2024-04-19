@@ -46,14 +46,14 @@ public class AutoIncrementService {
         Integer increment = Optional.ofNullable(DingoConfiguration.instance().getVariable())
             .map(VariableConfiguration::getAutoIncrementIncrement)
             .ifAbsentSet(
-                () -> Integer.valueOf(ScopeVariables.globalVariables.getProperty("auto_increment_increment", "1")))
+                () -> Integer.valueOf(ScopeVariables.getGlobalVar("auto_increment_increment", "1")))
             .filter(v -> v > 0)
             .orElseThrow("The config autoIncrementIncrement must be a positive integer greater than 0.");
 
         Integer offset = Optional.ofNullable(DingoConfiguration.instance().getVariable())
             .map(VariableConfiguration::getAutoIncrementOffset)
             .ifAbsentSet(
-                () -> Integer.valueOf(ScopeVariables.globalVariables.getProperty("auto_increment_offset", "1")))
+                () -> Integer.valueOf(ScopeVariables.getGlobalVar("auto_increment_offset", "1")))
             .filter(v -> v > 0)
             .orElseThrow("The config autoIncrementOffset must be a positive integer greater than 0.");
 

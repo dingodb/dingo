@@ -148,7 +148,23 @@
             <totalSizeCap>${log.file.total}</totalSizeCap>
         </rollingPolicy>
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{stmtId}] - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="Metric" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/metric.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/metric.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log.file.max}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} - %msg%n</pattern>
             <charset>UTF-8</charset>
         </encoder>
     </appender>
@@ -379,6 +395,16 @@
         <appender-ref ref="ASYNC-SlowQuery"/>
     </logger>
 
+    <appender name="ASYNC-Metric" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="Metric" />
+    </appender>
+    <logger name="metrics" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Metric"/>
+    </logger>
+
     <appender name="ASYNC-StoreProxy" class="ch.qos.logback.classic.AsyncAppender">
         <includeCallerData>true</includeCallerData>
         <discardingThreshold>0</discardingThreshold>
@@ -422,9 +448,6 @@
     </appender>
     <!--Only write the package name of the service, not the interface name, and it will take effect on all interfaces of the service-->
     <logger name="io.dingodb.sdk.service.desc.store" level="${rpcLog.level}" additivity="false">
-        <appender-ref ref="ASYNC-STORE_RPC"/>
-    </logger>
-    <logger name="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnScanLock" level="off" additivity="false">
         <appender-ref ref="ASYNC-STORE_RPC"/>
     </logger>
     <logger name="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$KvGet" level="off" additivity="false">

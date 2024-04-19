@@ -119,6 +119,9 @@ public class HashJoinOperator extends SoleOutOperator {
                 FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
                 param.setProfileLeft(finWithProfiles.getProfile());
                 Profile profile = param.getProfile();
+                if (profile == null) {
+                    profile = param.getProfile("hashJoin");
+                }
                 profile.getChildren().add(param.profileLeft);
                 profile.getChildren().add(param.profileRight);
                 finWithProfiles.setProfile(profile);

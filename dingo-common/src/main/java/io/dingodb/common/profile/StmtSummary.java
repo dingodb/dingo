@@ -16,16 +16,22 @@
 
 package io.dingodb.common.profile;
 
+import io.dingodb.common.metrics.DingoMetrics;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Slf4j
 public class StmtSummary {
     public final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    @Getter
+    private List<String> tableList;
     private String instance;
     private String schema;
     private String sql;
@@ -57,12 +63,6 @@ public class StmtSummary {
     private long sumJobLatency;
     private long maxJobLatency;
     private long avgJobLatency;
-    private long sumKvLatency;
-    private long maxKvLatency;
-    private long avgKvLatency;
-    private long sumOperatorLatency;
-    private long maxOperatorLatency;
-    private long avgOperatorLatency;
     private long sumCommitLatency;
     private long maxCommitLatency;
     private long avgCommitLatency;
@@ -80,8 +80,9 @@ public class StmtSummary {
     private long maxAffectedRows;
     private long avgAffectedRows;
     private long planInCache;
-    private String plan;
     private boolean prepared;
+
+    private long analyzeInc;
 
     public StmtSummary(String stmtSummaryKey) {
         this.firstSeen = System.currentTimeMillis();
@@ -101,6 +102,7 @@ public class StmtSummary {
             }
             this.sql = stmtSummaryKey.substring(sqlPos + 1);
         }
+        tableList = new ArrayList<>();
     }
 
     public void addSqlProfile(SqlProfile profile) {
@@ -153,6 +155,9 @@ public class StmtSummary {
                 this.planInCache++;
             }
         }
+        if (tableList.isEmpty() && profile.getFullyTableList() != null) {
+            tableList.addAll(profile.getFullyTableList());
+        }
         this.statementType = profile.getStatementType();
 
         ExecProfile jobProfile = profile.getExecProfile();
@@ -183,6 +188,10 @@ public class StmtSummary {
                     && jobProfile.getLastTuple()[0] instanceof Long) {
                     long affectRows = (long) jobProfile.getLastTuple()[0];
                     this.sumAffectedRows += affectRows;
+                    if (profile.isAutoCommit()) {
+                        this.analyzeInc += affectRows;
+                        autoAnalyze();
+                    }
                     if (this.maxAffectedRows < affectRows) {
                         this.maxAffectedRows = affectRows;
                     }
@@ -222,6 +231,16 @@ public class StmtSummary {
         lock.writeLock().unlock();
     }
 
+    public void autoAnalyze() {
+        if (analyzeInc > 10000 && tableList != null && tableList.size() == 1 && tableList.get(0) != null) {
+            String[] fullTables = tableList.get(0).split("\\.");
+            String schemaName = fullTables[0];
+            String tableName = fullTables[1];
+            StmtSummaryMap.addAnalyzeEvent(schemaName, tableName, analyzeInc);
+            analyzeInc = 0;
+        }
+    }
+
     public Object[] getTuple() {
         try {
             lock.readLock().lock();
@@ -231,13 +250,12 @@ public class StmtSummary {
                 sumParseLatency,
                 maxParseLatency, avgParseLatency, sumValidateLatency, maxValidateLatency, avgValidateLatency,
                 sumOptimizeLatency, maxOptimizeLatency, avgOptimizeLatency, sumLockLatency, maxLockLatency,
-                avgLockLatency, sumJobLatency, maxJobLatency, avgJobLatency, sumKvLatency, maxKvLatency,
-                avgKvLatency, sumOperatorLatency, maxOperatorLatency, avgOperatorLatency, sumCommitLatency,
+                avgLockLatency, sumJobLatency, maxJobLatency, avgJobLatency, sumCommitLatency,
                 maxCommitLatency, avgCommitLatency, sumPreWriteLatency, maxPreWriteLatency, avgPreWriteLatency,
                 sumCleanLatency, maxCleanLatency, avgCleanLatency, sumResultCount, maxResultCount,
                 avgResultCount, sumAffectedRows, maxAffectedRows,
                 avgAffectedRows, planInCache,
-                plan, prepared};
+                prepared};
         } finally {
             lock.readLock().unlock();
         }

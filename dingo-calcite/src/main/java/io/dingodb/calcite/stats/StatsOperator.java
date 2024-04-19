@@ -40,39 +40,62 @@ import static io.dingodb.common.util.Utils.calculatePrefixCount;
 
 @Slf4j
 public abstract class StatsOperator {
-    public static StoreService storeService = StoreService.getDefault();
-    public static MetaService metaService = MetaService.root().getSubMetaService("MYSQL");
+    public static StoreService storeService;
+    public static MetaService metaService;
 
     public static final String ANALYZE_TASK = "analyze_task";
     public static final String TABLE_BUCKETS = "table_buckets";
     public static final String TABLE_STATS = "table_stats";
     public static final String CM_SKETCH = "cm_sketch";
 
-    public static final Table analyzeTaskTable = metaService.getTable(ANALYZE_TASK);
-    public static final Table bucketsTable = metaService.getTable(TABLE_BUCKETS);
-    public static final Table statsTable = metaService.getTable(TABLE_STATS);
-    public static final Table cmSketchTable = metaService.getTable(CM_SKETCH);
+    public static Table analyzeTaskTable;
+    public static Table bucketsTable;
+    public static Table statsTable;
+    public static Table cmSketchTable;
+    public static CommonId analyzeTaskTblId;
+    public static CommonId bucketsTblId;
+    public static CommonId statsTblId;
+    public static CommonId cmSketchTblId;
 
-    public static CommonId analyzeTaskTblId = analyzeTaskTable.tableId;
-    public static CommonId bucketsTblId = bucketsTable.tableId;
-    public static CommonId statsTblId = statsTable.tableId;
-    public static CommonId cmSketchTblId = cmSketchTable.tableId;
+    public static KeyValueCodec analyzeTaskCodec;
+    public static KeyValueCodec bucketsCodec;
+    public static KeyValueCodec statsCodec;
+    public static KeyValueCodec cmSketchCodec;
 
-    public static final KeyValueCodec analyzeTaskCodec = CodecService.getDefault()
-        .createKeyValueCodec(analyzeTaskTable.tupleType(), analyzeTaskTable.keyMapping());
-    public static final KeyValueCodec bucketsCodec = CodecService.getDefault()
-        .createKeyValueCodec(bucketsTable.tupleType(), bucketsTable.keyMapping());
-    public static final KeyValueCodec statsCodec = CodecService.getDefault()
-        .createKeyValueCodec(statsTable.tupleType(), statsTable.keyMapping());
-    public static final KeyValueCodec cmSketchCodec = CodecService.getDefault()
-        .createKeyValueCodec(cmSketchTable.tupleType(), cmSketchTable.keyMapping());
+    public static StoreInstance analyzeTaskStore;
+    public static StoreInstance bucketsStore;
+    public static StoreInstance statsStore;
+    public static StoreInstance cmSketchStore;
 
-    public static final StoreInstance analyzeTaskStore = storeService.getInstance(analyzeTaskTblId,
-        getRegionId(analyzeTaskTblId));
-    public static final StoreInstance bucketsStore = storeService.getInstance(bucketsTblId, getRegionId(bucketsTblId));
-    public static final StoreInstance statsStore = storeService.getInstance(statsTblId, getRegionId(statsTblId));
-    public static final StoreInstance cmSketchStore = storeService
-        .getInstance(cmSketchTblId, getRegionId(cmSketchTblId));
+    static {
+        try {
+            storeService = StoreService.getDefault();
+            metaService = MetaService.root().getSubMetaService("MYSQL");
+            analyzeTaskTable = metaService.getTable(ANALYZE_TASK);
+            bucketsTable = metaService.getTable(TABLE_BUCKETS);
+            statsTable = metaService.getTable(TABLE_STATS);
+            cmSketchTable = metaService.getTable(CM_SKETCH);
+            analyzeTaskTblId = analyzeTaskTable.tableId;
+            bucketsTblId = bucketsTable.tableId;
+            statsTblId = statsTable.tableId;
+            cmSketchTblId = cmSketchTable.tableId;
+            analyzeTaskCodec = CodecService.getDefault()
+                .createKeyValueCodec(analyzeTaskTable.tupleType(), analyzeTaskTable.keyMapping());
+            bucketsCodec = CodecService.getDefault()
+                .createKeyValueCodec(bucketsTable.tupleType(), bucketsTable.keyMapping());
+            statsCodec = CodecService.getDefault()
+                .createKeyValueCodec(statsTable.tupleType(), statsTable.keyMapping());
+            cmSketchCodec = CodecService.getDefault()
+                .createKeyValueCodec(cmSketchTable.tupleType(), cmSketchTable.keyMapping());
+            analyzeTaskStore = storeService.getInstance(analyzeTaskTblId,
+                getRegionId(analyzeTaskTblId));
+            bucketsStore = storeService.getInstance(bucketsTblId, getRegionId(bucketsTblId));
+            statsStore = storeService.getInstance(statsTblId, getRegionId(statsTblId));
+            cmSketchStore = storeService
+                .getInstance(cmSketchTblId, getRegionId(cmSketchTblId));
+        } catch (Exception e) {
+        }
+    }
 
     public static CommonId getRegionId(CommonId tableId) {
         return Optional.ofNullable(metaService.getRangeDistribution(tableId))
@@ -96,13 +119,20 @@ public abstract class StatsOperator {
 
     public static void delStats(String schemaName, String tableName) {
         try {
-            Object[] tuple = new Object[2];
+            Object[] tuple = new Object[15];
             tuple[0] = schemaName;
             tuple[1] = tableName;
-
             delStats(analyzeTaskStore, analyzeTaskCodec, tuple);
+
+            tuple = new Object[8];
+            tuple[0] = schemaName;
+            tuple[1] = tableName;
             delStats(cmSketchStore, cmSketchCodec, tuple);
             delStats(statsStore, statsCodec, tuple);
+
+            tuple = new Object[5];
+            tuple[0] = schemaName;
+            tuple[1] = tableName;
             delStats(bucketsStore, bucketsCodec, tuple);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -110,7 +140,8 @@ public abstract class StatsOperator {
     }
 
     public static void delStats(StoreInstance store, KeyValueCodec codec, Object[] tuples) {
-        store.deletePrefix(codec.encodeKeyPrefix(tuples, calculatePrefixCount(tuples)));
+        byte[] prefix = codec.encodeKeyPrefix(tuples, calculatePrefixCount(tuples));
+        store.delete(new StoreInstance.Range(prefix, prefix, true, true));
     }
 
     public List<Object[]> scan(StoreInstance store, KeyValueCodec codec, RangeDistribution rangeDistribution) {
@@ -150,11 +181,11 @@ public abstract class StatsOperator {
 
     public Object[] generateAnalyzeTask(String schemaName,
                                         String tableName,
-                                        Long totalCount,
+                                        long totalCount,
                                         long modifyCount) {
         return new Object[] {schemaName, tableName, "", totalCount, null, null,
             StatsTaskState.PENDING.getState(), null, DingoConfiguration.host(), modifyCount,
-            new Timestamp(System.currentTimeMillis())};
+            new Timestamp(System.currentTimeMillis()), 0, 0, 0, 0};
     }
 
 }

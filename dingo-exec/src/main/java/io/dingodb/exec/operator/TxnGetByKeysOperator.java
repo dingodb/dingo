@@ -50,7 +50,7 @@ public final class TxnGetByKeysOperator extends FilterProjectOperator {
     @Override
     protected @NonNull Iterator<Object[]> createSourceIterator(Context context, Object[] tuple, Vertex vertex) {
         TxnGetByKeysParam param = vertex.getParam();
-        OperatorProfile profile = (OperatorProfile) param.getProfile("getByKeys");
+        OperatorProfile profile = param.getProfile("getByKeys");
         long start = System.currentTimeMillis();
         param.setContext(context);
         byte[] keys = param.getCodec().encodeKey(tuple);

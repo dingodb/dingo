@@ -39,7 +39,7 @@ public final class Executors {
 
     public static final String GLOBAL_NAME = "GLOBAL";
 
-    public static final String COMPLETABLE_FUTURE = "COMPLETABLE_FUTURE";
+    public static final String LOCK_COMPLETABLE_FUTURE = "LOCK_COMPLETABLE_FUTURE";
     public static final String GLOBAL_SCHEDULE_NAME = "GLOBAL_SCHEDULE";
 
     private static final ThreadPoolExecutor GLOBAL_POOL = new ThreadPoolBuilder()
@@ -52,14 +52,14 @@ public final class Executors {
         .group(new ThreadGroup(GLOBAL_NAME))
         .build();
 
-    public static final ThreadPoolExecutor COMPLETABLE_FUTURE_POOL = new ThreadPoolBuilder()
-        .name(COMPLETABLE_FUTURE)
+    public static final ThreadPoolExecutor LOCK_FUTURE_POOL = new ThreadPoolBuilder()
+        .name(LOCK_COMPLETABLE_FUTURE)
         .coreThreads(0)
         .maximumThreads(Integer.MAX_VALUE)
         .keepAliveSeconds(TimeUnit.MINUTES.toSeconds(1))
         .workQueue(new SynchronousQueue<>())
         .daemon(true)
-        .group(new ThreadGroup(COMPLETABLE_FUTURE))
+        .group(new ThreadGroup(LOCK_COMPLETABLE_FUTURE))
         .build();
 
     private static final ScheduledThreadPoolExecutor GLOBAL_SCHEDULE_POOL = new ThreadPoolBuilder()
@@ -237,6 +237,18 @@ public final class Executors {
             }
             contexts.put(thread, new Context());
         }
+    }
+
+    public static Integer getGlobalSchedulerPoolSize() {
+        return GLOBAL_SCHEDULE_POOL.getActiveCount();
+    }
+
+    public static Integer getGlobalPoolSize() {
+        return GLOBAL_POOL.getActiveCount();
+    }
+
+    public static Integer getLockPoolSize() {
+        return LOCK_FUTURE_POOL.getActiveCount();
     }
 
 }

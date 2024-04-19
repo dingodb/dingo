@@ -16,7 +16,6 @@
 
 package io.dingodb.driver;
 
-import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Longs;
 import io.dingodb.calcite.DingoParserContext;
@@ -29,7 +28,6 @@ import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.MdcUtils;
 import io.dingodb.common.log.SqlLogUtils;
-import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.profile.ExecProfile;
 import io.dingodb.common.profile.SqlProfile;
 import io.dingodb.common.table.IndexScan;
@@ -266,23 +264,20 @@ public class DingoMeta extends MetaImpl {
         int maxRowsInFirstFrame,
         @NonNull PrepareCallback callback
     ) {
-        final long startTime = System.currentTimeMillis();
         DingoConnection dingoConnection = (DingoConnection) connection;
         DingoDriverParser parser = new DingoDriverParser(dingoConnection);
         long jobSeqId = TsoService.getDefault().tso();
-        String stmtId = "Stmt_" + sh.toString() + "_" + jobSeqId;
+        String stmtId = "Stmt_" + sh + "_" + jobSeqId;
         MdcUtils.setStmtId(stmtId);
         try {
             DingoStatement statement = (DingoStatement) dingoConnection.getStatement(sh);
             statement.removeJob(jobManager);
-            final Timer.Context timeCtx = DingoMetrics.getTimeContext("parse_query");
             Signature signature = parser.parseQuery(jobManager, jobSeqId, sql);
             // add profile
             sqlProfile(sql, statement.getSqlProfile(), parser);
             // for mysql protocol start
             addMysqlProtocolState(statement, parser);
             // for mysql protocol end
-            timeCtx.stop();
             sh.signature = signature;
             final int updateCount = getUpdateCount(signature.statementType);
             synchronized (callback.getMonitor()) {
@@ -454,7 +449,7 @@ public class DingoMeta extends MetaImpl {
             Signature signature = resultSet.getSignature();
             if (signature instanceof  DingoSignature) {
                 final long jobSeqId = ((DingoSignature) signature).getJobId().seq;
-                MdcUtils.setStmtId("Stmt_" + sh.toString() + "_" + jobSeqId);
+                MdcUtils.setStmtId("Stmt_" + sh + "_" + jobSeqId);
             }
             Iterator<Object[]> iterator = resultSet.getIterator();
             ITransaction transaction = ((DingoConnection) connection).getTransaction();
@@ -653,7 +648,7 @@ public class DingoMeta extends MetaImpl {
         statement.setParameterValues(parameterValues);
         if (sh.signature instanceof  DingoSignature) {
             final long jobSeqId = ((DingoSignature) sh.signature).getJobId().seq;
-            MdcUtils.setStmtId("Stmt_" + sh.toString() + "_" + jobSeqId);
+            MdcUtils.setStmtId("Stmt_" + sh + "_" + jobSeqId);
         }
         ITransaction transaction = ((DingoConnection) connection).getTransaction();
         if (transaction == null) {
@@ -670,6 +665,7 @@ public class DingoMeta extends MetaImpl {
                 SqlProfile sqlProfile = getProfile(iterator, statement);
                 if (transaction != null) {
                     transaction.addSql(statement.getSql());
+                    sqlProfile.setAutoCommit(transaction.isAutoCommit());
                     if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
                         try {
                             connection.commit();
@@ -730,13 +726,13 @@ public class DingoMeta extends MetaImpl {
                     true
                 );
                 statement.setTxnId(jobManager, transaction.getTxnId());
-                MdcUtils.setStmtId("Stmt_" + sh.toString() + "_" + job.getJobId().seq);
+                MdcUtils.setStmtId("Stmt_" + sh + "_" + job.getJobId().seq);
             } else {
                 jobManager.removeJob(statement.getJobId(jobManager));
                 DingoConnection dingoConnection = (DingoConnection) connection;
                 DingoDriverParser parser = new DingoDriverParser(dingoConnection);
                 long jobSeqId = TsoService.getDefault().tso();
-                String stmtId = "Stmt_" + sh.toString() + "_" + jobSeqId;
+                String stmtId = "Stmt_" + sh + "_" + jobSeqId;
                 MdcUtils.setStmtId(stmtId);
                 sh.signature = parser.parseQuery(jobManager, jobSeqId, statement.getSql());
             }
