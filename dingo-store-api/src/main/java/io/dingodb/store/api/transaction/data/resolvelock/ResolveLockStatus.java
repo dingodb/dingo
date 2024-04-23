@@ -17,5 +17,5 @@
 package io.dingodb.store.api.transaction.data.resolvelock;
 
 public enum ResolveLockStatus {
-    NONE, LOCK_TTL, ROLLBACK, COMMIT, PESSIMISTIC_ROLLBACK, MIN_COMMIT_TS_PUSHED
+    NONE, LOCK_TTL, ROLLBACK, COMMIT, PESSIMISTIC_ROLLBACK, MIN_COMMIT_TS_PUSHED, TXN_NOT_FOUND
 }

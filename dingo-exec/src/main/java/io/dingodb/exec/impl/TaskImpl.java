@@ -27,8 +27,8 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.log.MdcUtils;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.util.DebugLog;
 import io.dingodb.exec.OperatorFactory;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Status;
@@ -227,6 +227,7 @@ public final class TaskImpl implements Task {
 
     // Synchronize to make sure there are only one thread run this.
     private synchronized void internalRun(Object @Nullable [] paras) {
+        MdcUtils.setTxnId(txnId.toString());
         if (!status.compareAndSet(Status.READY, Status.RUNNING)) {
             throw new RuntimeException("Status should be READY.");
         }
@@ -242,6 +243,7 @@ public final class TaskImpl implements Task {
             assert operator instanceof SourceOperator
                 : "Operators in run list must be source operator.";
             Executors.execute("operator-" + jobId + "-" + id + "-" + operatorId, () -> {
+                MdcUtils.setTxnId(txnId.toString());
                 final long startTime = System.currentTimeMillis();
                 activeTaskCount.incrementAndGet();
                 try {
@@ -267,6 +269,7 @@ public final class TaskImpl implements Task {
                 } finally {
                     activeTaskCount.decrementAndGet();
                     LogUtils.debug(log, "TaskImpl run cost: {}ms.", System.currentTimeMillis() - startTime);
+                    MdcUtils.removeTxnId();
                     activeThreads.countDown();
                 }
             });

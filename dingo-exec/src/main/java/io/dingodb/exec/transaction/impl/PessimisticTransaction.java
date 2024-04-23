@@ -344,6 +344,7 @@ public class PessimisticTransaction extends BaseTransaction {
     @Override
     public synchronized void rollback(JobManager jobManager) {
         MdcUtils.setTxnId(txnId.toString());
+        LogUtils.info(log, "{} RollBack Start", transactionOf());
         // PessimisticRollback
         rollBackResidualPessimisticLock(jobManager);
         if (getSqlList().size() == 0 || !cache.checkContinue()) {
@@ -353,7 +354,6 @@ public class PessimisticTransaction extends BaseTransaction {
         // first rollback primaryKey
         rollbackPrimaryKeyLock();
         long rollBackStart = System.currentTimeMillis();
-        LogUtils.info(log, "{} RollBack Start", transactionOf());
         Location currentLocation = MetaService.root().currentLocation();
         CommonId jobId = CommonId.EMPTY_JOB;
         try {
@@ -365,6 +365,9 @@ public class PessimisticTransaction extends BaseTransaction {
             DingoTransactionRenderJob.renderRollBackJob(job, currentLocation, this, true);
             // 3、run RollBack
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+            while (iterator.hasNext()){
+                iterator.next();
+            }
             this.status = TransactionStatus.ROLLBACK;
         } catch (Throwable t) {
             LogUtils.error(log, t.getMessage(), t);
@@ -381,15 +384,16 @@ public class PessimisticTransaction extends BaseTransaction {
         if (cacheToObject == null) {
             cacheToObject = primaryLockTo();
             primaryKey = cacheToObject.getMutation().getKey();
-            LogUtils.info(log, "rollbackPrimaryKeyLock key:{}", Arrays.toString(primaryKey));
         }
+        long forUpdateTs = cacheToObject.getMutation().getForUpdateTs();
+        LogUtils.info(log, "rollbackPrimaryKeyLock key:{}, forUpdateTs:{}", Arrays.toString(primaryKey), forUpdateTs);
         TransactionUtil.pessimisticPrimaryLockRollBack(
             txnId,
             cacheToObject.getTableId(),
             cacheToObject.getPartId(),
             isolationLevel,
             startTs,
-            cacheToObject.getMutation().getForUpdateTs(),
+            forUpdateTs,
             primaryKey
         );
     }

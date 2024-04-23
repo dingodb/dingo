@@ -155,7 +155,8 @@ public class TransactionStoreInstance {
                 resolvedLocks,
                 "txnPreWrite"
             );
-            if (resolveLockStatus == ResolveLockStatus.LOCK_TTL) {
+            if (resolveLockStatus == ResolveLockStatus.LOCK_TTL
+                || resolveLockStatus == ResolveLockStatus.TXN_NOT_FOUND) {
                 if (timeOut < 0) {
                     throw new RuntimeException("startTs:" + txnPreWrite.getStartTs() + " resolve lock timeout");
                 }
@@ -275,7 +276,8 @@ public class TransactionStoreInstance {
                 resolvedLocks,
                 "txnPessimisticLock"
             );
-            if (resolveLockStatus == ResolveLockStatus.LOCK_TTL) {
+            if (resolveLockStatus == ResolveLockStatus.LOCK_TTL
+                || resolveLockStatus == ResolveLockStatus.TXN_NOT_FOUND) {
                 if (timeOut < 0) {
                     throw new RuntimeException("Lock wait timeout exceeded; try restarting transaction");
                 }
@@ -300,6 +302,7 @@ public class TransactionStoreInstance {
     public boolean txnPessimisticLockRollback(TxnPessimisticRollBack txnPessimisticRollBack) {
         txnPessimisticRollBack.getKeys().stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
         TxnPessimisticRollbackResponse response;
+        long startTs = txnPessimisticRollBack.getStartTs();
         if (indexService != null) {
             List<byte[]> keys = txnPessimisticRollBack.getKeys();
             IntStream.range(0, keys.size())
@@ -308,19 +311,30 @@ public class TransactionStoreInstance {
                     byte[] newKey = Arrays.copyOf(key, VectorKeyLen);
                     keys.set(i, newKey);
                 });
-            response = indexService.txnPessimisticRollback(txnPessimisticRollBack.getStartTs(), MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
+            response = indexService.txnPessimisticRollback(startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
         } else {
-            response = storeService.txnPessimisticRollback(txnPessimisticRollBack.getStartTs(), MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
+            response = storeService.txnPessimisticRollback(startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
         }
-        List<Long> resolvedLocks = new ArrayList<>();
         if (response.getTxnResult() != null && response.getTxnResult().size() > 0) {
-//            writeResolveConflict(
-//                response.getTxnResult(),
-//                txnPessimisticRollBack.getIsolationLevel().getCode(),
-//                txnPessimisticRollBack.getStartTs(),
-//                resolvedLocks,
-//                "txnPessimisticLockRollback"
-//            );
+            LogUtils.error(log, "txnPessimisticLockRollback txnResult:{}", response.getTxnResult().toString());
+            for (TxnResultInfo txnResultInfo: response.getTxnResult()) {
+                LockInfo lockInfo = txnResultInfo.getLocked();
+                if (lockInfo != null && lockInfo.getLockTs() == startTs && lockInfo.getLockType() != Op.Lock) {
+                    LogUtils.info(log, "txnPessimisticLockRollback lockInfo:{}", lockInfo.toString());
+                    TxnBatchRollBack rollBackRequest = TxnBatchRollBack.builder().
+                        isolationLevel(txnPessimisticRollBack.getIsolationLevel())
+                        .startTs(startTs)
+                        .keys(singletonList(lockInfo.getKey()))
+                        .build();
+                    boolean result = txnBatchRollback(rollBackRequest);
+                    if (!result) {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            }
+            return true;
         }
         return response.getTxnResult() == null;
     }
@@ -371,7 +385,8 @@ public class TransactionStoreInstance {
                 resolvedLocks,
                 "txnScan"
             );
-            if (resolveLockStatus == ResolveLockStatus.LOCK_TTL) {
+            if (resolveLockStatus == ResolveLockStatus.LOCK_TTL
+                || resolveLockStatus == ResolveLockStatus.TXN_NOT_FOUND) {
                 if (timeOut < 0) {
                     throw new RuntimeException("startTs:" + startTs + " resolve lock timeout");
                 }
@@ -399,6 +414,9 @@ public class TransactionStoreInstance {
             response = indexService.txnBatchRollback(txnBatchRollBack.getStartTs(), MAPPER.rollbackTo(txnBatchRollBack));
         } else {
             response = storeService.txnBatchRollback(txnBatchRollBack.getStartTs(), MAPPER.rollbackTo(txnBatchRollBack));
+        }
+        if (response.getTxnResult() != null) {
+            LogUtils.error(log, "txnBatchRollback txnResult:{}", response.getTxnResult().toString());
         }
         return response.getTxnResult() == null;
     }
@@ -506,7 +524,8 @@ public class TransactionStoreInstance {
                     if (resultInfo.getPrimaryMismatch() != null) {
                         throw new PrimaryMismatchException(resultInfo.getPrimaryMismatch().toString());
                     } else if (resultInfo.getTxnNotFound() != null) {
-                        throw new RuntimeException(resultInfo.getTxnNotFound().toString());
+                        LogUtils.warn(log, "{} txnNotFound : {}", funName, resultInfo.getTxnNotFound().toString());
+                        resolveLockStatus = ResolveLockStatus.TXN_NOT_FOUND;
                     } else if (resultInfo.getLocked() != null) {
                         throw new RuntimeException(resultInfo.getLocked().toString());
                     }
@@ -568,7 +587,7 @@ public class TransactionStoreInstance {
                             // wait
                             switch (action) {
                                 case MinCommitTSPushed:
-                                    resolvedLocks.add(currentTs);
+                                    resolvedLocks.add(lockInfo.getLockTs());
                                     resolveLockStatus = ResolveLockStatus.LOCK_TTL;
                                     break;
                                 default:
@@ -636,7 +655,8 @@ public class TransactionStoreInstance {
                     if (resultInfo.getPrimaryMismatch() != null) {
                         throw new PrimaryMismatchException(resultInfo.getPrimaryMismatch().toString());
                     } else if (resultInfo.getTxnNotFound() != null) {
-                        throw new RuntimeException(resultInfo.getTxnNotFound().toString());
+                        LogUtils.warn(log, "{} txnNotFound : {}", funName, resultInfo.getTxnNotFound().toString());
+                        resolveLockStatus = ResolveLockStatus.TXN_NOT_FOUND;
                     } else if (resultInfo.getLocked() != null) {
                         throw new RuntimeException(resultInfo.getLocked().toString());
                     }
@@ -709,7 +729,8 @@ public class TransactionStoreInstance {
                         resolvedLocks,
                         "txnScan"
                     );
-                    if (resolveLockStatus == ResolveLockStatus.LOCK_TTL) {
+                    if (resolveLockStatus == ResolveLockStatus.LOCK_TTL
+                        || resolveLockStatus == ResolveLockStatus.TXN_NOT_FOUND) {
                         if (scanTimeOut < 0) {
                             throw new RuntimeException("startTs:" + txnScanRequest.getStartTs() + " resolve lock timeout");
                         }

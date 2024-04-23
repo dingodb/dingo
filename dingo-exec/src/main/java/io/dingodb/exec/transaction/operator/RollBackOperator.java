@@ -160,8 +160,9 @@ public class RollBackOperator extends TransactionOperator {
             int isolationLevel = param.getIsolationLevel();
             long startTs = param.getStartTs();
             // call sdk TxnPessimisticRollBack
+            // todo The preWritten key needs to call BatchRollBack
             for (int i = 0; i < param.getKeys().size(); i++) {
-                txnPessimisticRollBack(
+                boolean result = txnPessimisticRollBack(
                     param.getKeys().get(i),
                     startTs,
                     param.getForUpdateTsList().get(i),
@@ -170,32 +171,37 @@ public class RollBackOperator extends TransactionOperator {
                     tableId,
                     newPartId
                 );
-            }
-        }
-        // 1、Async call sdk TxnRollBack
-        TxnBatchRollBack rollBackRequest = TxnBatchRollBack.builder().
-            isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
-            .startTs(param.getStartTs())
-            .keys(param.getKeys())
-            .build();
-        try {
-            StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
-            return store.txnBatchRollback(rollBackRequest);
-        } catch (RegionSplitException e) {
-            LogUtils.error(log, e.getMessage(), e);
-            // 2、regin split
-            Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(tableId, txnId, param.getKeys());
-            for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
-                CommonId regionId = entry.getKey();
-                List<byte[]> value = entry.getValue();
-                StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
-                rollBackRequest.setKeys(value);
-                boolean result = store.txnBatchRollback(rollBackRequest);
                 if (!result) {
                     return false;
                 }
             }
             return true;
+        } else {
+            // 1、Async call sdk TxnRollBack
+            TxnBatchRollBack rollBackRequest = TxnBatchRollBack.builder().
+                isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
+                .startTs(param.getStartTs())
+                .keys(param.getKeys())
+                .build();
+            try {
+                StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
+                return store.txnBatchRollback(rollBackRequest);
+            } catch (RegionSplitException e) {
+                LogUtils.error(log, e.getMessage(), e);
+                // 2、regin split
+                Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(tableId, txnId, param.getKeys());
+                for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
+                    CommonId regionId = entry.getKey();
+                    List<byte[]> value = entry.getValue();
+                    StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
+                    rollBackRequest.setKeys(value);
+                    boolean result = store.txnBatchRollback(rollBackRequest);
+                    if (!result) {
+                        return false;
+                    }
+                }
+                return true;
+            }
         }
     }
 

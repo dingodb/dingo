@@ -297,6 +297,7 @@ public abstract class BaseTransaction implements ITransaction {
             checkContinue();
             // 1、PreWritePrimaryKey 、heartBeat
             preWritePrimaryKey();
+            this.status = TransactionStatus.PRE_WRITE_PRIMARY_KEY;
             commitProfile.endPreWritePrimary();
             if (cacheToObject.getMutation().getOp() == Op.CheckNotExists) {
                 LogUtils.info(log, "{} PreWritePrimaryKey Op is CheckNotExists", transactionOf());
@@ -380,6 +381,7 @@ public abstract class BaseTransaction implements ITransaction {
                     + ",txnCommitPrimaryKey false, commit_ts:" + commitTs +",PrimaryKey:"
                     + primaryKey.toString());
             }
+            this.status = TransactionStatus.COMMIT_PRIMARY_KEY;
             CompletableFuture<Void> commit_future = CompletableFuture.runAsync(() ->
                 commitJobRun(jobManager, currentLocation), Executors.executor("exec-txnCommit")
             ).exceptionally(
