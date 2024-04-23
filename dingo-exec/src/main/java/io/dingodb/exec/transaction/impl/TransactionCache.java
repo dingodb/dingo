@@ -20,7 +20,6 @@ import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.util.DebugLog;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.base.TxnLocalData;
@@ -130,7 +129,7 @@ public class TransactionCache {
                 tableId,
                 newPartId), tableId, newPartId
             );
-            DebugLog.debugDelegate(log, "txnId:{} primary key is {}" , txnId, primaryKey);
+            LogUtils.debug(log, "txnId:{} primary key is {}" , txnId, primaryKey);
             if (op != Op.CheckNotExists.getCode()) {
                 break;
             }
