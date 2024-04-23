@@ -224,6 +224,7 @@ public class MetaCache {
         return schema.getTableIds().stream()
             .map(MAPPER::idFrom)
             .map(this::getTable)
+            .filter(Objects::nonNull)
             .collect(Collectors.toConcurrentMap(Table::getName, Function.identity()));
     }
 

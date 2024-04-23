@@ -516,8 +516,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         long distinctColCnt = columns.stream().map(ColumnDefinition::getName).distinct().count();
         long realColCnt = columns.size();
         if (distinctColCnt != realColCnt) {
-            throw new RuntimeException("Duplicate column names are not allowed in table definition. Total: "
-                + realColCnt + ", distinct: " + distinctColCnt);
+            throw DINGO_RESOURCE.duplicateColumn().ex();
         }
 
         // Check table exist

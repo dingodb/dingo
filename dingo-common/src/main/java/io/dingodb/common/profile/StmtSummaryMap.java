@@ -81,6 +81,9 @@ public final class StmtSummaryMap {
     }
 
     public static void addSqlProfile(SqlProfile sqlProfile, Connection connection) {
+        if (sqlProfile == null || sqlProfile.getExecProfile() == null) {
+            return;
+        }
         boolean slowQueryEnabled = false;
         long slowQueryThreshold = 5000;
         try {
@@ -97,11 +100,8 @@ public final class StmtSummaryMap {
         } catch (SQLException ignored) {
             log.error(ignored.getMessage(), ignored);
         }
-        if (sqlProfile == null) {
-            return;
-        }
         sqlProfile.end();
-        if (slowQueryEnabled) {
+        if (slowQueryEnabled && sqlProfile.duration > slowQueryThreshold) {
             log.info(sqlProfile.dumpTree());
         }
         try {

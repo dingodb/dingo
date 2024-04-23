@@ -16,8 +16,10 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.RelOpParam;
 import io.dingodb.exec.utils.RelOpUtils;
@@ -33,12 +35,21 @@ public final class PipeOpOperator extends SoleOutOperator {
 
     @Override
     public void fin(int pin, Fin fin, @NonNull Vertex vertex) {
+        if (fin instanceof FinWithProfiles) {
+            FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+            finWithProfiles.addProfile(vertex);
+        }
         vertex.getSoleEdge().fin(fin);
     }
 
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, @NonNull Vertex vertex) {
-        PipeOp relOp = (PipeOp) ((RelOpParam) vertex.getParam()).getRelOp();
-        return RelOpUtils.processWithPipeOp(relOp, tuple, vertex.getSoleEdge(), context);
+        RelOpParam param = vertex.getParam();
+        OperatorProfile profile = param.getProfile("pipeOp");
+        long start = System.currentTimeMillis();
+        PipeOp relOp = (PipeOp) param.getRelOp();
+        boolean res = RelOpUtils.processWithPipeOp(relOp, tuple, vertex.getSoleEdge(), context);
+        profile.time(start);
+        return res;
     }
 }

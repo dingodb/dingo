@@ -244,7 +244,7 @@ public final class MysqlResponseHandler {
     }
 
     public static SQLException errorDingo2Mysql(SQLException e) {
-        if (e.getMessage() != null && e.getMessage().contains("Duplicate")) {
+        if (e.getMessage() != null && e.getMessage().contains("Duplicate data")) {
             return new SQLException("Duplicate data for key 'PRIMARY'", "23000", 1062);
         } else if (e.getErrorCode() == 9001 && e.getSQLState().equals("45000")) {
             return new SQLException(e.getMessage(), "HY000", 1105);
