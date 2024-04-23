@@ -29,11 +29,13 @@ import io.netty.channel.socket.nio.NioChannelOption;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.net.StandardSocketOptions;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Getter
 @Builder
 public class MysqlNettyServer {
@@ -60,7 +62,12 @@ public class MysqlNettyServer {
         } else {
             server.localAddress(port);
         }
-        server.bind().sync().await();
+        try {
+            server.bind().sync().await();
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            System.exit(-1);
+        }
     }
 
     private ChannelInitializer<SocketChannel> channelInitializer() {

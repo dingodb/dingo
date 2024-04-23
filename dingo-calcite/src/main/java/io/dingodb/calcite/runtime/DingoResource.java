@@ -116,4 +116,7 @@ public interface DingoResource {
 
     @BaseMessage("Error 1146(42S02): Table ''{0}'' does not exist")
     ExInst<DingoSqlException> tableNotExists(String a0);
+
+    @BaseMessage("Error 1060 (42S21): Duplicate column names are not allowed in table definition")
+    ExInst<DingoSqlException> duplicateColumn();
 }

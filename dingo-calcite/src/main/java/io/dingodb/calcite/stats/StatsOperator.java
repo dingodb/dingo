@@ -134,8 +134,7 @@ public abstract class StatsOperator {
             tuple[0] = schemaName;
             tuple[1] = tableName;
             delStats(bucketsStore, bucketsCodec, tuple);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
+        } catch (Exception ignored) {
         }
     }
 

@@ -21,6 +21,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.error.DingoException;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.privilege.PrivilegeDefinition;
 import io.dingodb.common.privilege.PrivilegeDict;
@@ -64,37 +65,67 @@ public class UserService implements io.dingodb.verify.service.UserService {
         }
     }
 
-    private UserService() {
-    }
-
     public static final String userTable = "USER";
     public static final String dbPrivilegeTable = "DB";
     public static final String tablePrivilegeTable = "TABLES_PRIV";
 
-    private final MetaService metaService = MetaService.root().getSubMetaService("MYSQL");
-    private final StoreService storeService = StoreService.getDefault();
+    private MetaService metaService;
+    private CommonId tablePrivTblId;
 
-    private final CommonId userTblId = metaService.getTable(userTable).getTableId();
-    private final CommonId dbPrivTblId = metaService.getTable(dbPrivilegeTable).getTableId();
-    private final CommonId tablePrivTblId = metaService.getTable(tablePrivilegeTable).getTableId();
+    private Table userTd;
+    private Table dbPrivTd;
+    private Table tablePrivTd;
 
-    private final Table userTd = metaService.getTable(userTable);
-    private final Table dbPrivTd = metaService.getTable(dbPrivilegeTable);
-    private final Table tablePrivTd = metaService.getTable(tablePrivilegeTable);
+    private StoreInstance userStore;
+    private StoreInstance dbPrivStore;
+    private StoreInstance tablePrivStore;
 
-    private final StoreInstance userStore = storeService.getInstance(userTblId, getRegionId(userTblId));
-    private final StoreInstance dbPrivStore = storeService.getInstance(dbPrivTblId, getRegionId(dbPrivTblId));
-    private final StoreInstance tablePrivStore = storeService.getInstance(tablePrivTblId, getRegionId(tablePrivTblId));
+    private KeyValueCodec userCodec;
+    private KeyValueCodec dbPrivCodec;
+    private KeyValueCodec tablePrivCodec;
 
-    private final KeyValueCodec userCodec = CodecService.getDefault().createKeyValueCodec(
-        getPartId(userTblId, userStore.id()), userTd.tupleType(), userTd.keyMapping()
-    );
-    private final KeyValueCodec dbPrivCodec = CodecService.getDefault().createKeyValueCodec(
-        getPartId(dbPrivTblId, dbPrivStore.id()), dbPrivTd.tupleType(), dbPrivTd.keyMapping()
-    );
-    private final KeyValueCodec tablePrivCodec = CodecService.getDefault().createKeyValueCodec(
-        getPartId(tablePrivTblId, tablePrivStore.id()), tablePrivTd.tupleType(), tablePrivTd.keyMapping()
-    );
+    private UserService() {
+        try {
+            metaService = MetaService.root().getSubMetaService("MYSQL");
+            StoreService storeService = StoreService.getDefault();
+            userTd = getTable(userTable);
+            CommonId userTblId = userTd.getTableId();
+            dbPrivTd = getTable(dbPrivilegeTable);
+            CommonId dbPrivTblId = dbPrivTd.getTableId();
+            tablePrivTd = getTable(tablePrivilegeTable);
+            tablePrivTblId = tablePrivTd.getTableId();
+            userStore = storeService.getInstance(userTblId, getRegionId(userTblId));
+            dbPrivStore = storeService.getInstance(dbPrivTblId, getRegionId(dbPrivTblId));
+            tablePrivStore = storeService.getInstance(tablePrivTblId, getRegionId(tablePrivTblId));
+            userCodec = CodecService.getDefault().createKeyValueCodec(
+                getPartId(userTblId, userStore.id()), userTd.tupleType(), userTd.keyMapping()
+            );
+            dbPrivCodec = CodecService.getDefault().createKeyValueCodec(
+                getPartId(dbPrivTblId, dbPrivStore.id()), dbPrivTd.tupleType(), dbPrivTd.keyMapping()
+            );
+            tablePrivCodec = CodecService.getDefault().createKeyValueCodec(
+                getPartId(tablePrivTblId, tablePrivStore.id()), tablePrivTd.tupleType(), tablePrivTd.keyMapping()
+            );
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+    public Table getTable(String tableName) {
+        int times = 3;
+        while (times-- > 0) {
+            Table table = metaService.getTable(tableName);
+            if (table != null) {
+                return table;
+            }
+            try {
+                Thread.sleep(10000L);
+            } catch (Exception ignored) {
+
+            }
+        }
+        throw new RuntimeException("init user error");
+    }
 
     @Override
     public boolean existsUser(UserDefinition userDefinition) {

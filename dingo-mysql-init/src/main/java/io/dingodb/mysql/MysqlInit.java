@@ -33,6 +33,8 @@ import io.dingodb.sdk.common.utils.ByteArrayUtils;
 import io.dingodb.sdk.common.utils.NoBreakFunctions;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.VersionService;
+import io.dingodb.sdk.service.cluster.ClusterServiceClient;
+import io.dingodb.sdk.service.connector.CoordinatorServiceConnector;
 import io.dingodb.sdk.service.entity.version.PutRequest;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.sdk.service.store.StoreServiceClient;
@@ -41,6 +43,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +80,7 @@ public final class MysqlInit {
     private static final String FIXED = "Fixed";
     // engine
     private static final String LSM = Common.Engine.LSM.name();
+    private static int replica;
 
     private MysqlInit() {
     }
@@ -310,6 +314,7 @@ public final class MysqlInit {
             .collate("utf8_bin")
             .tableType(tableType)
             .rowFormat(rowFormat)
+            .replica(replica)
             .build();
     }
 
@@ -478,6 +483,24 @@ public final class MysqlInit {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static void getReplica(String coordinator) {
+        CoordinatorServiceConnector connector = io.dingodb.sdk.common.utils.Optional.ofNullable(coordinator.split(","))
+            .map(Arrays::stream)
+            .map(ss -> ss
+                .map(s -> s.split(":"))
+                .map(__ -> new io.dingodb.sdk.common.Location(__[0], Integer.parseInt(__[1])))
+                .collect(Collectors.toSet()))
+            .map(CoordinatorServiceConnector::new)
+            .orElseThrow("Create coordinator service connector error.");
+        ClusterServiceClient clusterServiceClient = new ClusterServiceClient(connector);
+        List<io.dingodb.sdk.common.cluster.Store> storeList = clusterServiceClient.getStoreMap(0);
+        long count = storeList
+            .stream()
+            .filter(store -> store.storeType() == 0 && store.storeState() != 2)
+            .count();
+        replica = (int)count;
     }
 
 }

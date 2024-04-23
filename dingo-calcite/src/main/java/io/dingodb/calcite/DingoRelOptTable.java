@@ -16,10 +16,13 @@
 
 package io.dingodb.calcite;
 
+import io.dingodb.calcite.utils.RelDataTypeUtils;
 import io.dingodb.common.privilege.DingoSqlAccessEnum;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.verify.privilege.PrivilegeVerify;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
@@ -43,6 +46,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -87,7 +91,16 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
 
     @Override
     public RelDataType getRowType() {
-        return relOptTable.getRowType();
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        StackTraceElement stackTraceElement = null;
+        if (stackTrace.length >= 2) {
+            stackTraceElement = stackTrace[2];
+        }
+        if (withOutPrimaryRowType(stackTraceElement)) {
+            return getWithoutPriRowType();
+        } else {
+            return relOptTable.getRowType();
+        }
     }
 
     @Override
@@ -184,5 +197,36 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
         } else {
             return targetClass.cast(this);
         }
+    }
+
+    public boolean withOutPrimaryRowType(StackTraceElement stackTraceElement) {
+        if (stackTraceElement == null) {
+            return false;
+        }
+        DingoTable table = relOptTable.unwrap(DingoTable.class);
+        assert table != null;
+        boolean withoutPri =
+            table.getTable().getColumns().stream().anyMatch(col -> col.getState() == 2);
+        return withoutPri && ("createTargetRowType".equals(stackTraceElement.getMethodName())
+            || "collectInsertTargets".equals(stackTraceElement.getMethodName()));
+    }
+
+    public RelDataType getWithoutPriRowType() {
+        DingoTable dingoTable = relOptTable.unwrap(DingoTable.class);
+
+        assert dingoTable != null;
+        List<Integer> mapping = dingoTable.getTable()
+            .getColumns()
+            .stream()
+            .filter(col -> col.getState() == 1)
+            .map(col -> dingoTable.getTable().getColumns().indexOf(col))
+            .collect(Collectors.toList());
+        TupleMapping selection = TupleMapping.of(mapping);
+        JavaTypeFactoryImpl dummyTypeFactory = new JavaTypeFactoryImpl();
+        return RelDataTypeUtils.mapType(
+            dummyTypeFactory,
+            relOptTable.getRowType(),
+            selection
+        );
     }
 }

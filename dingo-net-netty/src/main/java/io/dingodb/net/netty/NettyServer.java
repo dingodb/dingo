@@ -27,6 +27,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -34,6 +35,7 @@ import java.util.function.Consumer;
 
 import static io.dingodb.net.netty.Constant.SERVER;
 
+@Slf4j
 @Getter
 @Builder
 public class NettyServer {
@@ -59,7 +61,12 @@ public class NettyServer {
         } else {
             server.localAddress(port);
         }
-        server.bind().sync().await();
+        try {
+            server.bind().sync().await();
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            System.exit(-1);
+        }
     }
 
     private ChannelInitializer<SocketChannel> channelInitializer() {
