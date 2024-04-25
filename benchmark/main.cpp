@@ -1,6 +1,8 @@
 #include <SkipIndexBenchmark.h>
-#include <Bm25SearchBenchmark.h>
+#include <BM25SearchBenchmark.h>
+#include <IndexDocumentBenchmark.h>
 #include <benchmark/benchmark.h>
+#include <BenchmarkConfig.h>
 using namespace std;
 namespace  bpo = boost::program_options;
 
@@ -18,6 +20,7 @@ int main(int argc, char** argv) {
     ("docs-path,dp", bpo::value<std::string>(&docs_path)->default_value("wiki_560w.json"), "docs json file path")
     ("skip-build-index,sbi", bpo::value<bool>(&skip_build_index)->default_value(false), "if need skip build index")
     ("help", "this is help message");
+
 
    try {
         bpo::variables_map vm;
@@ -43,13 +46,15 @@ int main(int argc, char** argv) {
         }
         WikiDatasetLoader::getInstance().loadQueryTerms(query_term_path);
         WikiDatasetLoader::getInstance().setIndexDirectory(index_path);
+        WikiDatasetLoader::getInstance().setDatasetFilePath(docs_path);
+        QueryTerms::initializeQueryTerms();
         tantivy_search_log4rs_initialize("./log", "info", true, false, false);
 
 
         // Run all benchmark
-        int benchmark_argc = 2; // 参数数量
-        char* benchmark_program = argv[0]; // 程序名称，通常是 argv[0]
-        char benchmark_tabular_arg[] = "--benchmark_counters_tabular=true"; // 要添加的参数
+        int benchmark_argc = 2;
+        char* benchmark_program = argv[0];
+        char benchmark_tabular_arg[] = "--benchmark_counters_tabular=true";
         char* benchmark_argv[] = { benchmark_program, benchmark_tabular_arg };
         ::benchmark::Initialize(&benchmark_argc, benchmark_argv);
         if (::benchmark::ReportUnrecognizedArguments(benchmark_argc, benchmark_argv)) return 1;

@@ -4,7 +4,6 @@
 [submodule "contrib/easylogging"]
 	path = contrib/easylogging
 	url = https://github.com/abumq/easyloggingpp.git
-
 [submodule "contrib/boost"]
 	path = contrib/boost
 	url = https://github.com/ClickHouse/boost
@@ -23,3 +22,7 @@
 [submodule "contrib/corrosion-rs"]
 	path = contrib/corrosion-rs
 	url = https://github.com/corrosion-rs/corrosion.git
+[submodule "contrib/croaring"]
+	path = contrib/croaring
+	url = https://github.com/RoaringBitmap/CRoaring
+

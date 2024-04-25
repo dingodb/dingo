@@ -19,6 +19,13 @@ cxxbridge src/lib.rs --header > include/tantivy_search_cxx.h
 
 If developers do not add, delete, or modify the names of FFI functions, there is no need to execute the above command.
 
+If developers do not have cbindgen or cxxbridge, install like this:
+
+```bash
+cargo install cbindgen
+cargo install cxxbridge-cmd
+```
+
 ## Work in progress
 
 - [x] Added unit tests in C++ to test Rust FFI functions.

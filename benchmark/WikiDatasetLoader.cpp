@@ -74,7 +74,7 @@ std::vector<Doc> WikiDatasetLoader::loadDocs(const std::string& file_path) {
     // thread-safe
     std::lock_guard<std::mutex> lock(docs_mutex);
     // different file path, reload
-    if (file_path!=doc_file_path) {
+    if (file_path!=dataset_file_path) {
         std::ifstream file(file_path);
         // parase JSON
         json j;
@@ -82,7 +82,22 @@ std::vector<Doc> WikiDatasetLoader::loadDocs(const std::string& file_path) {
         // from json file to Doc vector
         docs = j.get<std::vector<Doc>>();
         file.close();
+        dataset_file_path = file_path;
     }
+    return docs;
+}
+
+std::vector<Doc> WikiDatasetLoader::loadDocs() {
+    // thread-safe
+    std::lock_guard<std::mutex> lock(docs_mutex);
+    // different file path, reload
+    std::ifstream file(this->dataset_file_path);
+    // parase JSON
+    json j;
+    file >> j;
+    // from json file to Doc vector
+    docs = j.get<std::vector<Doc>>();
+    file.close();
     return docs;
 }
 
@@ -91,6 +106,14 @@ void WikiDatasetLoader::setIndexDirectory(const std::string& index_directory) {
     }
 std::string WikiDatasetLoader::getIndexDirectory(){
     return this->index_directory;
+}
+
+void WikiDatasetLoader::setDatasetFilePath(const std::string& dataset_file_path){
+    this->dataset_file_path = dataset_file_path;
+}
+
+std::string WikiDatasetLoader::getDatasetFilePath(){
+    return this->dataset_file_path;
 }
 
 std::vector<uint64_t> WikiDatasetLoader::getRowIdRanges(size_t index_granularity){

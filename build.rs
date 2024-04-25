@@ -1,6 +1,8 @@
+use std::collections::HashSet;
+
 fn main() {
     let mut build = cxx_build::bridge("src/lib.rs");
-    let flags = "-Wno-dollar-in-identifier-extension -Wno-unused-macros ";
+    let flags = "-Wno-dollar-in-identifier-extension -Wno-unused-macros";
     let unique_flags: Vec<&str> = flags
         .split_whitespace()
         .collect::<HashSet<_>>()

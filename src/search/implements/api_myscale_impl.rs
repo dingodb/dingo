@@ -1,5 +1,5 @@
 use tantivy::query::Bm25StatisticsProvider;
-use tantivy::reader::multi_parts_statistics::MultiPartsStatistics;
+// use tantivy::reader::multi_parts_statistics::MultiPartsStatistics;
 use tantivy::schema::Field;
 use tantivy::schema::FieldType;
 use tantivy::schema::Schema;
@@ -81,15 +81,15 @@ pub fn bm25_search(
         .entry(field)
         .or_insert(statistics.total_num_tokens);
 
-    let multi_parts_statistics = MultiPartsStatistics {
-        doc_freq_map,
-        total_num_tokens: total_num_tokens_map,
-        total_num_docs: statistics.total_num_docs,
-    };
+    // let multi_parts_statistics = MultiPartsStatistics {
+    //     doc_freq_map,
+    //     total_num_tokens: total_num_tokens_map,
+    //     total_num_docs: statistics.total_num_docs,
+    // };
 
-    TRACE!(function:"bm25_search", "use MultiPartsStatistics {:?}", multi_parts_statistics);
+    // TRACE!(function:"bm25_search", "use MultiPartsStatistics {:?}", multi_parts_statistics);
 
-    let _ = searcher.update_multi_parts_statistics(multi_parts_statistics);
+    // let _ = searcher.update_multi_parts_statistics(multi_parts_statistics);
 
     let result: Vec<RowIdWithScore> = query_executor.execute(searcher).map_err(|e| {
         ERROR!(function:"bm25_search", "{}", e);

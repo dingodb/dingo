@@ -6,6 +6,7 @@ add_subdirectory(boost-cmake)
 add_subdirectory(google_test)
 add_subdirectory(benchmark)
 add_subdirectory(corrosion-rs-cmake)
+add_subdirectory(croaring-cmake)
 
 # gather third-party include directories
 set(CONTRIB_INCLUDE_DIRS 
@@ -27,5 +28,5 @@ file(GLOB_RECURSE CONTRIB_SOURCES
 # create a library
 message(STATUS "Create tantivy_search contrib library")
 add_library(tantivy_search_contrib_lib ${CONTRIB_SOURCES})
-target_link_libraries(tantivy_search_contrib_lib PUBLIC boost::program_options benchmark::benchmark)
+target_link_libraries(tantivy_search_contrib_lib PUBLIC boost::program_options benchmark::benchmark contrib::roaring)
 target_include_directories(tantivy_search_contrib_lib PUBLIC ${CONTRIB_INCLUDE_DIRS})

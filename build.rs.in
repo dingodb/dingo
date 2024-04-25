@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 fn main() {
     let mut build = cxx_build::bridge("src/lib.rs");
     let flags = "@RUST_CXXFLAGS@";

@@ -18,6 +18,60 @@ pub fn ffi_bm25_search(
     topk: u32,
     u8_aived_bitmap: &CxxVector<u8>,
     query_with_filter: bool,
+) -> Vec<RowIdWithScore> {
+    let index_path: String = match CXX_STRING_CONERTER.convert(index_path) {
+        Ok(path) => path,
+        Err(e) => {
+            ERROR!(function: "ffi_bm25_search", "Can't convert 'index_path', message: {}", e);
+            return Vec::new();
+        }
+    };
+
+    let sentence: String = match CXX_STRING_CONERTER.convert(sentence) {
+        Ok(q) => q,
+        Err(e) => {
+            ERROR!(function: "ffi_bm25_search", "Can't convert 'sentence', message: {}", e);
+            return Vec::new();
+        }
+    };
+
+    let u8_aived_bitmap: Vec<u8> = match cxx_vector_converter::<u8>().convert(u8_aived_bitmap) {
+        Ok(bitmap) => bitmap,
+        Err(e) => {
+            ERROR!(function: "ffi_bm25_search", "Can't convert vector 'u8_aived_bitmap', message: {}", e);
+            return Vec::new();
+        }
+    };
+
+    let statistics = Statistics {
+        docs_freq: Vec::new(),
+        total_num_tokens: 0,
+        total_num_docs: 0,
+    };
+
+    match bm25_search(
+        &index_path,
+        &sentence,
+        topk,
+        &u8_aived_bitmap,
+        query_with_filter,
+        &statistics,
+        false,
+    ) {
+        Ok(results) => results,
+        Err(e) => {
+            ERROR!(function: "ffi_bm25_search", "Error performing BM25 search with statistics: {}", e);
+            Vec::new()
+        }
+    }
+}
+
+pub fn ffi_bm25_search_with_stat(
+    index_path: &CxxString,
+    sentence: &CxxString,
+    topk: u32,
+    u8_aived_bitmap: &CxxVector<u8>,
+    query_with_filter: bool,
     statistics: &Statistics,
 ) -> Vec<RowIdWithScore> {
     let index_path: String = match CXX_STRING_CONERTER.convert(index_path) {

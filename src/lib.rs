@@ -177,7 +177,7 @@ pub mod ffi {
         ) -> bool;
 
         /// Execute a term query and return rowIds u8 bitmap.
-        /// arguments:
+        /// arguments:
         /// - `index_path`: index directory.
         /// - `column_name`: which column will execute search.
         /// - `term`: term needs to be searched.
@@ -203,7 +203,7 @@ pub mod ffi {
         /// - `index_path`: index directory.
         /// - `column_name`: which column will execute search.
         /// - `sentence`: sentence needs to be searched.
-        pub fn ffi_query_sentence_bitmap(
+        pub fn ffi_query_sentence_bitmap(
             index_path: &CxxString,
             column_name: &CxxString,
             sentence: &CxxString,
@@ -228,7 +228,7 @@ pub mod ffi {
         /// - `u8_aived_bitmap`: alived rowIds given by u8 bitmap.
         /// - `query_with_filter`: whether use alived_bitmap or not.
         /// - `statistics`: for multi parts bm25 statistics info.
-        pub fn ffi_bm25_search(
+        pub fn ffi_bm25_search_with_stat(
             index_path: &CxxString,
             sentence: &CxxString,
             topk: u32,
@@ -237,11 +237,27 @@ pub mod ffi {
             statistics: &Statistics,
         ) -> Vec<RowIdWithScore>;
 
+        /// Execute a regex query and return rowIds u8 bitmap.
+        /// arguments:
+        /// - `index_path`: index directory.
+        /// - `sentence`: from ClickHouse TextSearch function.
+        /// - `topk`: only return top k related results.
+        /// - `u8_aived_bitmap`: alived rowIds given by u8 bitmap.
+        /// - `query_with_filter`: whether use alived_bitmap or not.
+        /// - `statistics`: for multi parts bm25 statistics info.
+        pub fn ffi_bm25_search(
+            index_path: &CxxString,
+            sentence: &CxxString,
+            topk: u32,
+            u8_aived_bitmap: &CxxVector<u8>,
+            query_with_filter: bool,
+        ) -> Vec<RowIdWithScore>;
+
         /// Get doc freq for current part.
         /// arguments:
         /// - `index_path`: index directory.
         /// - `sentence`: query_str.
-        pub fn ffi_get_doc_freq(index_path: &CxxString, senten0ce: &CxxString) -> Vec<DocWithFreq>;
+        pub fn ffi_get_doc_freq(index_path: &CxxString, sentence: &CxxString) -> Vec<DocWithFreq>;
 
         /// Get total num docs for current part.
         /// arguments:

@@ -38,9 +38,13 @@ public:
     std::vector<std::string> loadQueryTerms(const std::string& file_path);
     std::vector<std::string> loadQueryTerms();
     std::vector<Doc> loadDocs(const std::string& file_path);
+    std::vector<Doc> loadDocs();
 
     void setIndexDirectory(const std::string& index_directory);
     std::string getIndexDirectory();
+
+    void setDatasetFilePath(const std::string& dataset_file_path);
+    std::string getDatasetFilePath();
 
     std::vector<uint64_t> getRowIdRanges(size_t index_granularity);
     std::vector<size_t> generateRandomArray(int length, int min, int max);
@@ -50,7 +54,7 @@ private:
     size_t wiki_total_docs = 5600000; // wiki stored ≈ 560w rows doc
 
     std::string query_terms_file_path;
-    std::string doc_file_path;
+    std::string dataset_file_path;
 
     std::string index_directory; // directory stored index files
     std::vector<std::string> query_terms; // stored ≈ 10w terms for search
