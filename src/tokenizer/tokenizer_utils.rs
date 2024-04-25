@@ -19,9 +19,9 @@ use super::vo::{
     tokenizers_vo::TokenizerConfig,
 };
 
-pub struct ToeknizerUtils;
+pub struct TokenizerUtils;
 
-impl ToeknizerUtils {
+impl TokenizerUtils {
     // Register the tokenizer to the index
     pub fn register_tokenizer_to_index(
         index: &mut Index,

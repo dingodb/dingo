@@ -87,3 +87,5 @@ add_library(rust::${rust_lib} ALIAS ${rust_lib}-total)
 
 add_subdirectory(benchmark ${CMAKE_CURRENT_BINARY_DIR}/benchmark)
 add_subdirectory(tests ${CMAKE_CURRENT_BINARY_DIR}/tests)
+add_subdirectory(examples ${CMAKE_CURRENT_BINARY_DIR}/examples)
+

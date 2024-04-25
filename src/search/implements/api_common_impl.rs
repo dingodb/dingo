@@ -10,7 +10,7 @@ use crate::{common::constants::LOG_CALLBACK, ERROR};
 use std::{path::Path, sync::Arc};
 
 use crate::search::bridge::index_reader_bridge::IndexReaderBridge;
-use crate::tokenizer::tokenizer_utils::ToeknizerUtils;
+use crate::tokenizer::tokenizer_utils::TokenizerUtils;
 use std::collections::HashMap;
 use tantivy::IndexReader;
 use tantivy::{Index, ReloadPolicy};
@@ -43,7 +43,7 @@ pub fn load_index_reader(index_path: &str) -> Result<bool, TantivySearchError> {
 
     // Parse tokenizer map from local index parameter DTO.
     let col_tokenizer_map: HashMap<String, TokenizerConfig> =
-        ToeknizerUtils::parse_tokenizer_json_to_config_map(
+        TokenizerUtils::parse_tokenizer_json_to_config_map(
             &index_parameter_dto.tokenizers_json_parameter,
         )
         .map_err(|e| {
@@ -53,7 +53,7 @@ pub fn load_index_reader(index_path: &str) -> Result<bool, TantivySearchError> {
 
     // Register tokenizer config into `index`.
     for (column_name, tokenizer_config) in col_tokenizer_map.iter() {
-        ToeknizerUtils::register_tokenizer_to_index(
+        TokenizerUtils::register_tokenizer_to_index(
             &mut index,
             tokenizer_config.tokenizer_type.clone(),
             &column_name,

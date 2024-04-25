@@ -14,7 +14,7 @@ use crate::index::bridge::index_writer_bridge::IndexWriterBridge;
 use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::search::implements::api_common_impl::free_index_reader;
 use crate::tokenizer::dto::index_parameter_dto::IndexParameterDTO;
-use crate::tokenizer::tokenizer_utils::ToeknizerUtils;
+use crate::tokenizer::tokenizer_utils::TokenizerUtils;
 use crate::tokenizer::vo::tokenizers_vo::TokenizerConfig;
 use crate::utils::index_utils::IndexUtils;
 use crate::{common::constants::LOG_CALLBACK, DEBUG, ERROR, INFO, WARNING};
@@ -56,7 +56,7 @@ pub fn create_index_with_parameter(
 
     // Parse tokenizer map from local index parameter DTO.
     let col_tokenizer_map: HashMap<String, TokenizerConfig> =
-        ToeknizerUtils::parse_tokenizer_json_to_config_map(
+        TokenizerUtils::parse_tokenizer_json_to_config_map(
             &index_parameter_dto.tokenizers_json_parameter,
         )
         .map_err(|e| {
@@ -112,7 +112,7 @@ pub fn create_index_with_parameter(
 
     // Register the tokenizer with the index.
     for (col_name, tokenizer_config) in col_tokenizer_map.iter() {
-        ToeknizerUtils::register_tokenizer_to_index(
+        TokenizerUtils::register_tokenizer_to_index(
             &mut index,
             tokenizer_config.tokenizer_type.clone(),
             &col_name,
