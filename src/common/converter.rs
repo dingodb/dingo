@@ -54,7 +54,7 @@ where
     }
 }
 
-// CxxVector<String> 转换为 Vec<String>
+// CxxVector<String> -> Vec<String>
 pub struct CxxVectorStringStrategy;
 
 impl ConvertStrategy<CxxVector<CxxString>, Vec<String>> for CxxVectorStringStrategy {
