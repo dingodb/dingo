@@ -911,8 +911,17 @@ bool ffi_regex_term_with_range(::std::string const &index_path, ::std::string co
 // - `topk`: only return top k related results.
 // - `u8_aived_bitmap`: alived rowIds given by u8 bitmap.
 // - `query_with_filter`: whether use alived_bitmap or not.
-// - `statistics`: for multi parts bm25 statistics info.
 ::rust::Vec<::RowIdWithScore> ffi_bm25_search(::std::string const &index_path, ::std::string const &sentence, ::std::uint32_t topk, ::std::vector<::std::uint8_t> const &u8_aived_bitmap, bool query_with_filter) noexcept;
+
+// Execute a regex query and return rowIds u8 bitmap.
+// arguments:
+// - `index_path`: index directory.
+// - `sentence`: from ClickHouse TextSearch function.
+// - `topk`: only return top k related results.
+// - `u8_aived_bitmap`: alived rowIds given by u8 bitmap.
+// - `query_with_filter`: whether use alived_bitmap or not.
+// - `colunm_names`: for multi column search.
+::rust::Vec<::RowIdWithScore> ffi_bm25_search_with_column_names(::std::string const &index_path, ::std::string const &sentence, ::std::uint32_t topk, ::std::vector<::std::uint8_t> const &u8_aived_bitmap, bool query_with_filter, ::std::vector<::std::string> const &column_names) noexcept;
 
 // Get doc freq for current part.
 // arguments:

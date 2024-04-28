@@ -320,11 +320,47 @@ void test_multi_type_column() {
   ffi_load_index_reader(index_path);
 
   auto result = ffi_bm25_search(index_path, "社会", 10, {}, false);
+  cout << "ffi_bm25_search result size:" << result.size() << endl;
 
   for (auto it : result) {
-    cout << "rowid:" << it.row_id << " score:" << it.score
+    cout << "ffi_bm25_search rowid:" << it.row_id << " score:" << it.score
          << " doc_id:" << it.doc_id << " seg_id:" << it.seg_id << endl;
   }
+
+  result = ffi_bm25_search_with_column_names(index_path, "社会", 10, {}, false,
+                                             {"col1"});
+  cout << "ffi_bm25_search_with_column_names col1 result size:" << result.size()
+       << endl;
+  for (auto it : result) {
+    cout << "ffi_bm25_search_with_column_names rowid:" << it.row_id
+         << " score:" << it.score << " doc_id:" << it.doc_id
+         << " seg_id:" << it.seg_id << endl;
+  }
+
+  result = ffi_bm25_search_with_column_names(index_path, "balance", 10, {},
+                                             false, {"col4"});
+  cout << "ffi_bm25_search_with_column_names col4 result size:" << result.size()
+       << endl;
+  for (auto it : result) {
+    cout << "ffi_bm25_search_with_column_names rowid:" << it.row_id
+         << " score:" << it.score << " doc_id:" << it.doc_id
+         << " seg_id:" << it.seg_id << endl;
+  }
+
+  result = ffi_bm25_search_with_column_names(index_path, "社会", 10, {}, false,
+                                             {"col1", "col4"});
+  cout << "ffi_bm25_search_with_column_names col1,col4 result size:"
+       << result.size() << endl;
+  for (auto it : result) {
+    cout << "ffi_bm25_search_with_column_names rowid:" << it.row_id
+         << " score:" << it.score << " doc_id:" << it.doc_id
+         << " seg_id:" << it.seg_id << endl;
+  }
+
+  result = ffi_bm25_search_with_column_names(index_path, "社会", 10, {}, false,
+                                             {"col11", "col44"});
+  cout << "ffi_bm25_search_with_column_names col11,col44 result size:"
+       << result.size() << endl;
 
   ffi_free_index_reader(index_path);
   ffi_free_index_writer(index_path);

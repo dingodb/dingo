@@ -14,6 +14,7 @@ use common::constants::*;
 use index::api::api_index::*;
 use search::api::api_clickhouse::*;
 use search::api::api_common::*;
+use search::api::api_dingo::*;
 use search::api::api_myscale::*;
 use utils::ffi_utils::*;
 // re-export log ffi function.
@@ -265,13 +266,29 @@ pub mod ffi {
         /// - `topk`: only return top k related results.
         /// - `u8_aived_bitmap`: alived rowIds given by u8 bitmap.
         /// - `query_with_filter`: whether use alived_bitmap or not.
-        /// - `statistics`: for multi parts bm25 statistics info.
         pub fn ffi_bm25_search(
             index_path: &CxxString,
             sentence: &CxxString,
             topk: u32,
             u8_aived_bitmap: &CxxVector<u8>,
             query_with_filter: bool,
+        ) -> Vec<RowIdWithScore>;
+
+        /// Execute a regex query and return rowIds u8 bitmap.
+        /// arguments:
+        /// - `index_path`: index directory.
+        /// - `sentence`: from ClickHouse TextSearch function.
+        /// - `topk`: only return top k related results.
+        /// - `u8_aived_bitmap`: alived rowIds given by u8 bitmap.
+        /// - `query_with_filter`: whether use alived_bitmap or not.
+        /// - `colunm_names`: for multi column search.
+        pub fn ffi_bm25_search_with_column_names(
+            index_path: &CxxString,
+            sentence: &CxxString,
+            topk: u32,
+            u8_aived_bitmap: &CxxVector<u8>,
+            query_with_filter: bool,
+            column_names: &CxxVector<CxxString>,
         ) -> Vec<RowIdWithScore>;
 
         /// Get doc freq for current part.

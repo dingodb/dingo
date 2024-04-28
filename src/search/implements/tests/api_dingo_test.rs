@@ -12,11 +12,10 @@ mod tests {
         get_mocked_docs_for_part0, get_mocked_docs_for_part1, get_mocked_docs_for_part2,
         get_mocked_docs_for_part3, get_mocked_docs_for_part4, index_documents,
     };
-    use crate::ffi::{DocWithFreq, FieldTokenNums, RowIdWithScore, Statistics};
+    use crate::ffi::{DocWithFreq, FieldTokenNums, RowIdWithScore};
     use crate::search::implements::api_common_impl::load_index_reader;
-    use crate::search::implements::api_myscale_impl::{
-        bm25_search, get_doc_freq, get_total_num_docs, get_total_num_tokens,
-    };
+    use crate::search::implements::api_dingo_impl::bm25_search_with_column_names;
+    use crate::search::implements::api_myscale_impl::get_doc_freq;
 
     #[allow(dead_code)]
     #[derive(Debug, Clone)]
@@ -75,6 +74,11 @@ mod tests {
         schema_builder.add_text_field("col3", TEXT | STORED);
         let schema = schema_builder.build();
         return schema;
+    }
+
+    fn create_colunm_names() -> Vec<String> {
+        // Construct the column_names for search.
+        vec!["col1".to_string(), "col2".to_string(), "col3".to_string()]
     }
 
     pub fn create_index(
@@ -155,6 +159,7 @@ mod tests {
         )
     }
 
+    #[allow(dead_code)]
     fn merge_doc_freq(doc_with_freqs: Vec<Vec<DocWithFreq>>) -> Vec<DocWithFreq> {
         let mut res: HashMap<(String, u32), u64> = HashMap::new();
         for doc_with_freq in doc_with_freqs {
@@ -207,17 +212,17 @@ mod tests {
         topk: u32,
         u8_alive_bitmap: &Vec<u8>,
         use_filter: bool,
-        statistics: &Statistics,
         need_docs: bool,
+        column_names: &Vec<String>,
     ) -> Vec<DocsWithScore> {
-        let res: Vec<RowIdWithScore> = bm25_search(
+        let res: Vec<RowIdWithScore> = bm25_search_with_column_names(
             part_path,
             query_str,
             topk,
             u8_alive_bitmap,
             use_filter,
-            statistics,
             need_docs,
+            column_names,
         )
         .unwrap();
         let mut processed: Vec<DocsWithScore> = res
@@ -280,40 +285,7 @@ mod tests {
         #[rustfmt::skip]
         assert!(part_0_doc_freq.iter().zip(part_4_doc_freq.iter()).all(|(a, b)| a.term_str == b.term_str && a.field_id == b.field_id),"term_str in part 0 and part 4 differ");
 
-        let mut merged_doc_freq: Vec<DocWithFreq> = merge_doc_freq(vec![
-            part_0_doc_freq,
-            part_1_doc_freq,
-            part_2_doc_freq,
-            part_3_doc_freq,
-            part_4_doc_freq,
-        ]);
-        merged_doc_freq = merged_doc_freq
-            .iter()
-            .filter(|e| e.field_id == 1)
-            .cloned()
-            .collect();
-
-        let total_num_tokens: u64 = vec![
-            get_total_num_tokens(part_0).unwrap(),
-            get_total_num_tokens(part_1).unwrap(),
-            get_total_num_tokens(part_2).unwrap(),
-            get_total_num_tokens(part_3).unwrap(),
-            get_total_num_tokens(part_4).unwrap(),
-        ]
-        .iter()
-        .sum();
-
-        let total_num_docs: u64 = vec![
-            get_total_num_docs(part_0).unwrap(),
-            get_total_num_docs(part_1).unwrap(),
-            get_total_num_docs(part_2).unwrap(),
-            get_total_num_docs(part_3).unwrap(),
-            get_total_num_docs(part_4).unwrap(),
-        ]
-        .iter()
-        .sum();
-
-        let statistics = Statistics::new(merged_doc_freq, total_num_tokens, total_num_docs);
+        let column_names = create_colunm_names();
 
         let topk = 50;
         let optimized_ds: Vec<DocsWithScore> = get_docs_with_score(
@@ -322,25 +294,25 @@ mod tests {
             topk,
             &vec![],
             false,
-            &statistics,
             true,
+            &column_names,
         );
 
         // println!("\nExexute get_docs_with_score in part-0.");
         let part_0_ds: Vec<DocsWithScore> =
-            get_docs_with_score(part_0, query_str, topk, &vec![], false, &statistics, true);
+            get_docs_with_score(part_0, query_str, topk, &vec![], false, true, &column_names);
         // println!("\nExexute get_docs_with_score in part-1.");
         let part_1_ds: Vec<DocsWithScore> =
-            get_docs_with_score(part_1, query_str, topk, &vec![], false, &statistics, true);
+            get_docs_with_score(part_1, query_str, topk, &vec![], false, true, &column_names);
         // println!("\nExexute get_docs_with_score in part-2.");
         let part_2_ds: Vec<DocsWithScore> =
-            get_docs_with_score(part_2, query_str, topk, &vec![], false, &statistics, true);
+            get_docs_with_score(part_2, query_str, topk, &vec![], false, true, &column_names);
         // println!("\nExexute get_docs_with_score in part-3.");
         let part_3_ds: Vec<DocsWithScore> =
-            get_docs_with_score(part_3, query_str, topk, &vec![], false, &statistics, true);
+            get_docs_with_score(part_3, query_str, topk, &vec![], false, true, &column_names);
         // println!("\nExexute get_docs_with_score in part-4.");
         let part_4_ds: Vec<DocsWithScore> =
-            get_docs_with_score(part_4, query_str, topk, &vec![], false, &statistics, true);
+            get_docs_with_score(part_4, query_str, topk, &vec![], false, true, &column_names);
 
         let mut combined = part_0_ds;
         combined.extend_from_slice(&part_1_ds);
