@@ -86,7 +86,7 @@ pub enum ColumnTokenizer {
         )]
         mode: String,
         #[serde(default)]
-        hnm: bool,
+        hmm: bool,
         #[serde(default)]
         store_doc: bool,
     },

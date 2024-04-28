@@ -54,7 +54,7 @@ protected:
                 // ngram tokenizer
                 "{\"col1\":{\"tokenizer\":{\"type\":\"ngram\",\"min_gram\":1,\"max_gram\":4,\"prefix_only\":false,\"stop_word_filters\":[\"english\"],\"store_doc\":true,\"length_limit\":40,\"case_sensitive\":true}}}",
                 // chinese tokenizer
-                "{\"col2\":{\"tokenizer\":{\"type\":\"chinese\",\"jieba\":\"default\",\"mode\":\"search\",\"hnm\":false,\"store_doc\":true}}}"
+                "{\"col2\":{\"tokenizer\":{\"type\":\"chinese\",\"jieba\":\"default\",\"mode\":\"search\",\"hmm\":false,\"store_doc\":true}}}"
             };
             return validTokenizers;
         } else {
