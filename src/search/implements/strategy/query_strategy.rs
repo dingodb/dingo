@@ -12,6 +12,7 @@ use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::search::collector::row_id_bitmap_collector::RowIdRoaringCollector;
 use crate::search::collector::top_dos_with_bitmap_collector::TopDocsWithFilter;
 use crate::search::utils::convert_utils::ConvertUtils;
+use crate::INFO;
 use crate::{common::errors::IndexSearcherError, ffi::RowIdWithScore, ERROR};
 
 pub trait QueryStrategy<T> {
@@ -338,9 +339,18 @@ impl<'a> QueryStrategy<Vec<RowIdWithScore>> for BM25QueryStrategy<'a> {
 
         let fields: Vec<Field> = schema
             .fields()
-            .filter(|(field, _)| schema.get_field_name(*field) != "row_id")
+            .filter(|(field, _)| {
+                schema.get_field_name(*field) != "row_id" && {
+                    match schema.get_field_entry(*field).field_type() {
+                        tantivy::schema::FieldType::Str(_) => true,
+                        _ => false,
+                    }
+                }
+            })
             .map(|(field, _)| field)
             .collect();
+
+        INFO!(function:"BM25QueryStrategy", "Fields: {:?}", fields);
 
         let mut top_docs_collector: TopDocsWithFilter =
             TopDocsWithFilter::with_limit(*self.topk as usize)

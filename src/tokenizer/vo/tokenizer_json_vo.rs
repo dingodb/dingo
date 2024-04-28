@@ -90,6 +90,20 @@ pub enum ColumnTokenizer {
         #[serde(default)]
         store_doc: bool,
     },
+    #[serde(rename = "i64")]
+    I64 {
+        #[serde(default)]
+        store_doc: bool,
+        #[serde(default = "default_indexed")]
+        indexed: bool,
+    },
+    #[serde(rename = "f64")]
+    F64 {
+        #[serde(default)]
+        store_doc: bool,
+        #[serde(default = "default_indexed")]
+        indexed: bool,
+    },
 }
 
 fn default_length_limit() -> usize {
@@ -102,6 +116,10 @@ fn default_min_gram() -> usize {
 
 fn default_max_gram() -> usize {
     3
+}
+
+fn default_indexed() -> bool {
+    true
 }
 
 fn chinese_jieba_default() -> String {

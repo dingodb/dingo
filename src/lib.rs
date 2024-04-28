@@ -85,6 +85,27 @@ pub mod ffi {
             column_docs: &CxxVector<CxxString>,
         ) -> bool;
 
+        /// Index multi column docs with given rowId.
+        /// arguments:
+        /// - `index_path`: index directory.
+        /// - `row_id`: row_id given by ClickHouse.
+        /// - `text_column_names`: align with column_docs.
+        /// - `text_column_docs`: align with column_names.
+        /// - `i64_column_names`: align with column_docs.
+        /// - `i64_column_docs`: align with column_names.
+        /// - `f64_column_names`: align with column_docs.
+        /// - `f64_column_docs`: align with column_names.
+        fn ffi_index_multi_type_column_docs(
+            index_path: &CxxString,
+            row_id: u64,
+            text_column_names: &CxxVector<CxxString>,
+            text_column_docs: &CxxVector<CxxString>,
+            i64_column_names: &CxxVector<CxxString>,
+            i64_column_docs: &CxxVector<i64>,
+            f64_column_names: &CxxVector<CxxString>,
+            f64_column_docs: &CxxVector<f64>,
+        ) -> bool;
+
         /// Delete a group of rowIds.
         /// arguments:
         /// - `index_path`: index directory.

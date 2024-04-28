@@ -787,6 +787,18 @@ bool ffi_create_index(::std::string const &index_path, ::std::vector<::std::stri
 // - `column_docs`: align with column_names.
 bool ffi_index_multi_column_docs(::std::string const &index_path, ::std::uint64_t row_id, ::std::vector<::std::string> const &column_names, ::std::vector<::std::string> const &column_docs) noexcept;
 
+// Index multi column docs with given rowId.
+// arguments:
+// - `index_path`: index directory.
+// - `row_id`: row_id given by ClickHouse.
+// - `text_column_names`: align with column_docs.
+// - `text_column_docs`: align with column_names.
+// - `i64_column_names`: align with column_docs.
+// - `i64_column_docs`: align with column_names.
+// - `f64_column_names`: align with column_docs.
+// - `f64_column_docs`: align with column_names.
+bool ffi_index_multi_type_column_docs(::std::string const &index_path, ::std::uint64_t row_id, ::std::vector<::std::string> const &text_column_names, ::std::vector<::std::string> const &text_column_docs, ::std::vector<::std::string> const &i64_column_names, ::std::vector<::std::int64_t> const &i64_column_docs, ::std::vector<::std::string> const &f64_column_names, ::std::vector<double> const &f64_column_docs) noexcept;
+
 // Delete a group of rowIds.
 // arguments:
 // - `index_path`: index directory.

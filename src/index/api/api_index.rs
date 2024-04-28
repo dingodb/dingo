@@ -117,6 +117,115 @@ pub fn ffi_index_multi_column_docs(
     }
 }
 
+pub fn ffi_index_multi_type_column_docs(
+    index_path: &CxxString,
+    row_id: u64,
+    text_column_names: &CxxVector<CxxString>,
+    text_column_docs: &CxxVector<CxxString>,
+    i64_column_names: &CxxVector<CxxString>,
+    i64_column_docs: &CxxVector<i64>,
+    f64_column_names: &CxxVector<CxxString>,
+    f64_column_docs: &CxxVector<f64>,
+) -> bool {
+    let index_path: String = match CXX_STRING_CONERTER.convert(index_path) {
+        Ok(path) => path,
+        Err(e) => {
+            ERROR!(function: "ffi_index_multi_column_docs", "Can't convert 'index_path', message: {}", e);
+            return false;
+        }
+    };
+
+    let text_column_names: Vec<String> = match CXX_VECTOR_STRING_CONERTER.convert(text_column_names)
+    {
+        Ok(names) => names,
+        Err(e) => {
+            ERROR!(function: "ffi_index_multi_column_docs", "Can't convert 'text_column_names', message: {}", e);
+            return false;
+        }
+    };
+
+    let text_column_docs: Vec<String> = match CXX_VECTOR_STRING_CONERTER.convert(text_column_docs) {
+        Ok(docs) => docs,
+        Err(e) => {
+            ERROR!(function: "ffi_index_multi_column_docs", "Can't convert 'text_column_docs', message: {}", e);
+            return false;
+        }
+    };
+
+    if text_column_names.len() != text_column_docs.len() {
+        ERROR!(function: "ffi_index_multi_column_docs", "text_column_names size doesn't match text_column_docs size");
+        return false;
+    }
+
+    let i64_column_names: Vec<String> = match CXX_VECTOR_STRING_CONERTER.convert(i64_column_names) {
+        Ok(names) => names,
+        Err(e) => {
+            ERROR!(function: "ffi_index_multi_column_docs", "Can't convert 'i64_column_names', message: {}", e);
+            return false;
+        }
+    };
+
+    // convert CxxVector<i64> to Vec<i64>
+    let i64_column_docs = match cxx_vector_converter::<i64>().convert(i64_column_docs) {
+        Ok(docs) => docs,
+        Err(e) => {
+            ERROR!(function: "ffi_index_multi_column_docs", "Can't convert 'i64_column_docs', message: {}", e);
+            return false;
+        }
+    };
+
+    if i64_column_names.len() != i64_column_docs.len() {
+        ERROR!(function: "ffi_index_multi_column_docs", "i64_column_names size doesn't match i64_column_docs size");
+        return false;
+    }
+
+    let f64_column_names: Vec<String> = match CXX_VECTOR_STRING_CONERTER.convert(f64_column_names) {
+        Ok(names) => names,
+        Err(e) => {
+            ERROR!(function: "ffi_index_multi_column_docs", "Can't convert 'f64_column_names', message: {}", e);
+            return false;
+        }
+    };
+
+    // convert CxxVector<f64> to Vec<f64>
+    let f64_column_docs = match cxx_vector_converter::<f64>().convert(f64_column_docs) {
+        Ok(docs) => docs,
+        Err(e) => {
+            ERROR!(function: "ffi_index_multi_column_docs", "Can't convert 'f64_column_docs', message: {}", e);
+            return false;
+        }
+    };
+
+    if f64_column_names.len() != f64_column_docs.len() {
+        ERROR!(function: "ffi_index_multi_column_docs", "f64_column_names size doesn't match f64_column_docs size");
+        return false;
+    }
+
+    if (text_column_names.len() + i64_column_names.len() + f64_column_names.len()) == 0
+        || (text_column_docs.len() + i64_column_docs.len() + f64_column_docs.len()) == 0
+    {
+        ERROR!(function: "ffi_index_multi_column_docs", "column_names and column_docs can't be empty");
+        return false;
+    }
+
+    match index_multi_type_column_docs(
+        &index_path,
+        row_id,
+        &text_column_names,
+        &text_column_docs,
+        &i64_column_names,
+        &i64_column_docs,
+        &f64_column_names,
+        &f64_column_docs,
+    ) {
+        Ok(status) => status,
+        Err(e) => {
+            ERROR!(function: "ffi_index_multi_column_docs", "Error indexing multi-column docs: {}", e);
+            false
+        }
+    }
+}
+
 pub fn ffi_delete_row_ids(index_path: &CxxString, row_ids: &CxxVector<u32>) -> bool {
     let index_path: String = match CXX_STRING_CONERTER.convert(index_path) {
         Ok(path) => path,

@@ -94,6 +94,14 @@ impl TokenizerUtils {
                     column_name, tokenizer_name
                 ))
             }
+            TokenizerType::I64(tokenizer_name) => Ok(format!(
+                "`{}-{}` tokenizer is not text-based, no need to register",
+                column_name, tokenizer_name
+            )),
+            TokenizerType::F64(tokenizer_name) => Ok(format!(
+                "`{}-{}` tokenizer is not text-based, no need to register",
+                column_name, tokenizer_name
+            )),
             _ => Err(TokenizerUtilsError::UnsupportedTokenizerType(
                 tokenizer_type.name().to_string(),
             )),
@@ -314,6 +322,22 @@ impl TokenizerUtils {
                         TokenizerType::Chinese("chinese".to_string()),
                         builder.build(),
                         *store_doc,
+                    );
+                    tokenizer_map.insert(col_name.to_string(), tokenizer_config);
+                }
+                ColumnTokenizer::I64 { store_doc, indexed } => {
+                    let tokenizer_config = TokenizerConfig::new_non_text(
+                        TokenizerType::I64("i64".to_string()),
+                        *store_doc,
+                        *indexed,
+                    );
+                    tokenizer_map.insert(col_name.to_string(), tokenizer_config);
+                }
+                ColumnTokenizer::F64 { store_doc, indexed } => {
+                    let tokenizer_config = TokenizerConfig::new_non_text(
+                        TokenizerType::F64("f64".to_string()),
+                        *store_doc,
+                        *indexed,
                     );
                     tokenizer_map.insert(col_name.to_string(), tokenizer_config);
                 }

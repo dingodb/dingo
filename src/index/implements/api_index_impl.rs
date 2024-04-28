@@ -6,8 +6,8 @@ use tantivy::schema::IndexRecordOption;
 use tantivy::schema::TextFieldIndexing;
 use tantivy::schema::TextOptions;
 use tantivy::schema::FAST;
-use tantivy::schema::INDEXED;
 use tantivy::schema::{Schema, TEXT};
+use tantivy::schema::{INDEXED, STORED};
 
 use crate::common::errors::TantivySearchError;
 use crate::index::bridge::index_writer_bridge::IndexWriterBridge;
@@ -15,6 +15,7 @@ use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::search::implements::api_common_impl::free_index_reader;
 use crate::tokenizer::dto::index_parameter_dto::IndexParameterDTO;
 use crate::tokenizer::tokenizer_utils::TokenizerUtils;
+use crate::tokenizer::vo::tokenizer_types::TokenizerType;
 use crate::tokenizer::vo::tokenizers_vo::TokenizerConfig;
 use crate::utils::index_utils::IndexUtils;
 use crate::{common::constants::LOG_CALLBACK, DEBUG, ERROR, INFO, WARNING};
@@ -70,6 +71,42 @@ pub fn create_index_with_parameter(
 
     for column_name in column_names {
         if let Some(tokenizer_config) = col_tokenizer_map.get(column_name) {
+            if !tokenizer_config.is_text_field {
+                match tokenizer_config.tokenizer_type {
+                    TokenizerType::I64(_) => {
+                        if tokenizer_config.doc_store && tokenizer_config.doc_index {
+                            schema_builder.add_i64_field(&column_name, STORED | INDEXED);
+                        } else {
+                            if !tokenizer_config.doc_store && tokenizer_config.doc_index {
+                                schema_builder.add_i64_field(&column_name, INDEXED);
+                            } else {
+                                schema_builder.add_i64_field(&column_name, STORED);
+                            }
+                        }
+                        INFO!(function:"create_index_with_parameter", "column_name:{}, field_options name: {}", column_name, "I64");
+                        continue;
+                    }
+                    TokenizerType::F64(_) => {
+                        if tokenizer_config.doc_store && tokenizer_config.doc_index {
+                            schema_builder.add_f64_field(&column_name, STORED | INDEXED);
+                        } else {
+                            if !tokenizer_config.doc_store && tokenizer_config.doc_index {
+                                schema_builder.add_f64_field(&column_name, INDEXED);
+                            } else {
+                                schema_builder.add_f64_field(&column_name, STORED);
+                            }
+                        }
+                        INFO!(function:"create_index_with_parameter", "column_name:{}, field_options name: {}", column_name, "F64");
+                        continue;
+                    }
+                    _ => {
+                        WARNING!(function:"create_index_with_parameter", "column_name:{}, tokenizer_type:{}, is_text_field:{}",
+                            column_name, tokenizer_config.tokenizer_type.name(), tokenizer_config.is_text_field);
+                        continue;
+                    }
+                }
+            }
+
             let tokenizer_name =
                 format!("{}_{}", column_name, tokenizer_config.tokenizer_type.name());
             let mut text_options = TextOptions::default().set_indexing_options(
@@ -85,7 +122,7 @@ pub fn create_index_with_parameter(
             INFO!(function:"create_index_with_parameter", "column_name:{}, field_options name: {}", column_name, tokenizer_name);
             schema_builder.add_text_field(&column_name, text_options);
         } else {
-            INFO!(function:"create_index_with_parameter", "column_name:{}, field_options name: {}", column_name, "TEXT");
+            WARNING!(function:"create_index_with_parameter with no_json_schema", "column_name:{}, field_options name: {}", column_name, "TEXT");
             schema_builder.add_text_field(&column_name, TEXT);
         }
     }
@@ -193,6 +230,74 @@ pub fn index_multi_column_docs(
             TantivySearchError::TantivyError(e)
         })?;
         doc.add_text(column_field, column_docs[column_idx].clone());
+        column_idx += 1;
+    }
+
+    match index_writer_bridge.add_document(doc) {
+        Ok(_) => Ok(true),
+        Err(e) => {
+            let error_info = format!("Failed to index doc:{}", e);
+            ERROR!(function: "index_multi_column_docs", "{}", error_info);
+            Err(TantivySearchError::InternalError(e))
+        }
+    }
+}
+
+pub fn index_multi_type_column_docs(
+    index_path: &str,
+    row_id: u64,
+    text_column_names: &Vec<String>,
+    text_column_docs: &Vec<String>,
+    i64_column_names: &Vec<String>,
+    i64_column_docs: &Vec<i64>,
+    f64_column_names: &Vec<String>,
+    f64_column_docs: &Vec<f64>,
+) -> Result<bool, TantivySearchError> {
+    // Get index writer from CACHE
+    let index_writer_bridge = FFI_INDEX_WRITER_CACHE
+        .get_index_writer_bridge(index_path.to_string())
+        .map_err(|e| {
+            ERROR!(function: "index_multi_column_docs", "{}", e);
+            TantivySearchError::InternalError(e)
+        })?;
+
+    // Get schema from index writer.
+    let schema = index_writer_bridge.index.schema();
+    let row_id_field = schema.get_field("row_id").map_err(|e| {
+        ERROR!(function: "index_multi_column_docs", "Failed to get row_id field: {}", e.to_string());
+        TantivySearchError::TantivyError(e)
+    })?;
+
+    let mut doc = TantivyDocument::default();
+    doc.add_u64(row_id_field, row_id);
+
+    let mut column_idx = 0;
+    for column_name in text_column_names {
+        let column_field = schema.get_field(column_name).map_err(|e| {
+            ERROR!(function: "index_multi_column_docs", "Failed to get {} field in schema: {}", column_name, e.to_string());
+            TantivySearchError::TantivyError(e)
+        })?;
+        doc.add_text(column_field, text_column_docs[column_idx].clone());
+        column_idx += 1;
+    }
+
+    column_idx = 0;
+    for column_name in i64_column_names {
+        let column_field = schema.get_field(column_name).map_err(|e| {
+            ERROR!(function: "index_multi_column_docs", "Failed to get {} field in schema: {}", column_name, e.to_string());
+            TantivySearchError::TantivyError(e)
+        })?;
+        doc.add_i64(column_field, i64_column_docs[column_idx]);
+        column_idx += 1;
+    }
+
+    column_idx = 0;
+    for column_name in f64_column_names {
+        let column_field = schema.get_field(column_name).map_err(|e| {
+            ERROR!(function: "index_multi_column_docs", "Failed to get {} field in schema: {}", column_name, e.to_string());
+            TantivySearchError::TantivyError(e)
+        })?;
+        doc.add_f64(column_field, f64_column_docs[column_idx]);
         column_idx += 1;
     }
 

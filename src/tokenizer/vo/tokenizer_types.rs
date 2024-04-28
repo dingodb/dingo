@@ -7,6 +7,8 @@ pub enum TokenizerType {
     WhiteSpace(String),
     Ngram(String),
     Chinese(String),
+    I64(String),
+    F64(String),
 }
 
 impl TokenizerType {
@@ -19,6 +21,8 @@ impl TokenizerType {
             TokenizerType::WhiteSpace(name) => name,
             TokenizerType::Ngram(name) => name,
             TokenizerType::Chinese(name) => name,
+            TokenizerType::I64(name) => name,
+            TokenizerType::F64(name) => name,
         }
     }
 }
