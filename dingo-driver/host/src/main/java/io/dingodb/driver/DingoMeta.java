@@ -231,18 +231,31 @@ public class DingoMeta extends MetaImpl {
         String sql,
         long maxRowCount
     ) {
-        SqlProfile sqlProfile = new SqlProfile("prepare", true);
-        final StatementHandle sh = createStatement(ch);
         DingoConnection dingoConnection = (DingoConnection) connection;
-        initProfile(sqlProfile, dingoConnection);
-        DingoDriverParser parser = new DingoDriverParser(dingoConnection);
-        long jobSeqId = TsoService.getDefault().tso();
-        String stmtId = "Stmt_" + sh.toString() + "_" + jobSeqId;
-        MdcUtils.setStmtId(stmtId);
-        sh.signature = parser.parseQuery(jobManager, jobSeqId, sql);
-        sqlProfile(sql, sqlProfile, parser);
-        addSqlProfile(sqlProfile, connection);
-        return sh;
+        try {
+            SqlProfile sqlProfile = new SqlProfile("prepare", true);
+            final StatementHandle sh = createStatement(ch);
+            initProfile(sqlProfile, dingoConnection);
+            DingoDriverParser parser = new DingoDriverParser(dingoConnection);
+            long jobSeqId = TsoService.getDefault().tso();
+            String stmtId = "Stmt_" + sh.toString() + "_" + jobSeqId;
+            MdcUtils.setStmtId(stmtId);
+            sh.signature = parser.parseQuery(jobManager, jobSeqId, sql);
+            sqlProfile(sql, sqlProfile, parser);
+            addSqlProfile(sqlProfile, connection);
+            return sh;
+        } catch (Throwable throwable) {
+            LogUtils.error(log, throwable.getMessage(), throwable);
+            ITransaction transaction = dingoConnection.getTransaction();
+            if (transaction != null && transaction.isAutoCommit()) {
+                try {
+                    cleanTransaction();
+                } catch (SQLException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+            throw ExceptionUtils.toRuntime(throwable);
+        }
     }
 
     @Deprecated
@@ -300,6 +313,14 @@ public class DingoMeta extends MetaImpl {
                 MdcUtils.setStmtId(stmtId);
             }
             LogUtils.error(log, "Prepare and execute error, sql: <[{}]>.", sql, e);
+            ITransaction transaction = dingoConnection.getTransaction();
+            if (transaction != null && transaction.isAutoCommit()) {
+                try {
+                    cleanTransaction();
+                } catch (SQLException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
             throw ExceptionUtils.toRuntime(e);
         } finally {
             MdcUtils.removeStmtId();
@@ -717,27 +738,40 @@ public class DingoMeta extends MetaImpl {
     private ITransaction prepareJobAndTxn(@NonNull StatementHandle sh, DingoPreparedStatement statement) {
         ITransaction transaction = null;
         Job job = statement.getJob(jobManager);
-        if (job != null) {
-            Task task = job.getTasks().entrySet().stream().findFirst().get().getValue();
-            if (task.getTransactionType() == TransactionType.OPTIMISTIC
-                || task.getTransactionType() == TransactionType.NONE) {
-                transaction = ((DingoConnection) connection).createTransaction(
-                    task.getTransactionType(),
-                    true
-                );
-                statement.setTxnId(jobManager, transaction.getTxnId());
-                MdcUtils.setStmtId("Stmt_" + sh + "_" + job.getJobId().seq);
-            } else {
-                jobManager.removeJob(statement.getJobId(jobManager));
-                DingoConnection dingoConnection = (DingoConnection) connection;
-                DingoDriverParser parser = new DingoDriverParser(dingoConnection);
-                long jobSeqId = TsoService.getDefault().tso();
-                String stmtId = "Stmt_" + sh + "_" + jobSeqId;
-                MdcUtils.setStmtId(stmtId);
-                sh.signature = parser.parseQuery(jobManager, jobSeqId, statement.getSql());
+        DingoConnection dingoConnection = (DingoConnection) connection;
+        try {
+            if (job != null) {
+                Task task = job.getTasks().entrySet().stream().findFirst().get().getValue();
+                if (task.getTransactionType() == TransactionType.OPTIMISTIC
+                    || task.getTransactionType() == TransactionType.NONE) {
+                    transaction = dingoConnection.createTransaction(
+                        task.getTransactionType(),
+                        true
+                    );
+                    statement.setTxnId(jobManager, transaction.getTxnId());
+                    MdcUtils.setStmtId("Stmt_" + sh + "_" + job.getJobId().seq);
+                } else {
+                    jobManager.removeJob(statement.getJobId(jobManager));
+                    DingoDriverParser parser = new DingoDriverParser(dingoConnection);
+                    long jobSeqId = TsoService.getDefault().tso();
+                    String stmtId = "Stmt_" + sh + "_" + jobSeqId;
+                    MdcUtils.setStmtId(stmtId);
+                    sh.signature = parser.parseQuery(jobManager, jobSeqId, statement.getSql());
+                }
             }
+            return transaction;
+        } catch (Throwable throwable) {
+            LogUtils.error(log, throwable.getMessage(), throwable);
+            transaction = dingoConnection.getTransaction();
+            if (transaction != null && transaction.isAutoCommit()) {
+                try {
+                    cleanTransaction();
+                } catch (SQLException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+            throw ExceptionUtils.toRuntime(throwable);
         }
-        return transaction;
     }
 
     public ExecuteResult execBatch(

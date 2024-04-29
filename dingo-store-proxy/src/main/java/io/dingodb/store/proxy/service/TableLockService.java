@@ -114,14 +114,14 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
             });
             tableLocks.runner.forceFollow(() -> lock(lock.tableId));
         });
-        LogUtils.debug(log, "doLock end table:{}", lock.toString());
+        LogUtils.info(log, "doLock end table:{}", lock.toString());
     }
 
     public void unlock(io.dingodb.transaction.api.TableLock lock) {
         runner.forceFollow(() -> {
             locks.get(lock.getTableId()).runner.forceFollow(() -> {
                 locks.get(lock.tableId).locked.remove(lock);
-                LogUtils.debug(log, "Unlocked: {}", lock);
+                LogUtils.info(log, "Unlocked: {}", lock);
             });
         });
     }
@@ -137,7 +137,7 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
         if (locks.size() > 0 && log.isDebugEnabled()) {
             StringJoiner lockJoiner = new StringJoiner(",\n\t");
             locks.forEach($ -> lockJoiner.add($.serverId + "|" + $.type + "|" + $.lockTs + "|" + $.currentTs));
-            LogUtils.debug(log, "{} lock not empty, locks: [\n\t{}\n]", tableId, lockJoiner);
+            LogUtils.info(log, "{} lock not empty, locks: [\n\t{}\n]", tableId, lockJoiner);
         }
         CompletableFuture<Boolean> future = lock.lockFuture;
         boolean locked = locks.isEmpty();
@@ -188,19 +188,20 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
             tableLocks.lockQueue.pollFirst();
             waitLocks.remove(lock);
             lock.unlockFuture.whenCompleteAsync((v, e) -> unlock(lock), Executors.LOCK_FUTURE_POOL);
-            LogUtils.debug(log, "Locked {}", lock);
+            LogUtils.info(log, "Locked {}", lock);
         } else {
             if (lock.lockFuture.isCancelled()) {
                 tableLocks.lockQueue.pollFirst();
-                LogUtils.debug(log, "Lock cancel {}", lock);
+                LogUtils.info(log, "Lock cancel {}", lock);
                 return;
             }
             if (lock.lockFuture.isCompletedExceptionally()) {
                 tableLocks.lockQueue.pollFirst();
-                LogUtils.debug(log, "Lock error {}", lock);
+                LogUtils.info(log, "Lock error {}", lock);
                 return;
             }
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
+            LogUtils.info(log, "locked is false Lock {}", lock);
             tableLocks.runner.forceFollow(() -> lock(lock.tableId));
         }
     }

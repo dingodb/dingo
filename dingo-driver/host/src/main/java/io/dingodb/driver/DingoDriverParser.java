@@ -347,13 +347,6 @@ public final class DingoDriverParser extends DingoParser {
             lockTables(tables, startTs, jobSeqId, transaction.getFinishedFuture());
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
-            if (transaction != null && transaction.isAutoCommit()) {
-                try {
-                    connection.cleanTransaction();
-                } catch (SQLException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
             throw e;
         }
         String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
@@ -492,15 +485,22 @@ public final class DingoDriverParser extends DingoParser {
             TableLockService.getDefault().lock(lock);
             int nextTtl = (start + ttl) - Utils.currentSecond();
             if (nextTtl < 0) {
+                LogUtils.info(log, "lockTables, jobSeqId:{}, startTs:{}, tableId:{}", jobSeqId, startTs, lock.tableId.toString());
+                lockFuture.cancel(true);
+                finishedFuture.complete(null);
                 throw new RuntimeException(String.format("Lock wait timeout exceeded. tableId: %s.", lock.tableId.toString()));
             }
             try {
                 lockFuture.get(nextTtl, TimeUnit.SECONDS);
             } catch (TimeoutException e) {
+                LogUtils.error(log, e.getMessage(), e);
+                LogUtils.info(log, "lockTables, jobSeqId:{}, startTs:{}, tableId:{}", jobSeqId, startTs, lock.tableId.toString());
                 lockFuture.cancel(true);
                 finishedFuture.complete(null);
                 throw new RuntimeException(String.format("Lock wait timeout exceeded. tableId: %s.", lock.tableId.toString()));
             } catch (Exception e) {
+                LogUtils.error(log, e.getMessage(), e);
+                LogUtils.info(log, "lockTables, jobSeqId:{}, startTs:{}, tableId:{}", jobSeqId, startTs, lock.tableId.toString());
                 lockFuture.cancel(true);
                 finishedFuture.complete(null);
                 throw ExceptionUtils.toRuntime(e);
