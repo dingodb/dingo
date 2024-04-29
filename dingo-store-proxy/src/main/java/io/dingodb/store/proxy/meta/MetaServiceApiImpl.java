@@ -241,12 +241,12 @@ public class MetaServiceApiImpl implements MetaServiceApi {
 
     private void pubTableLock(TableLock lock) {
         String key = "Lock" + "|" + lock.tableId + "|" + lock.serverId + "|" + lock.lockTs + "|" + lock.currentTs;
-        LogUtils.debug(log, "Pub table lock [{}].", key);
+        LogUtils.info(log, "Pub table lock [{}].", key);
         lockService.put(lock.lockTs, key, null);
-        LogUtils.debug(log, "Pub table lock [{}] success, add lock watch.", key);
+        LogUtils.info(log, "Pub table lock [{}] success, add lock watch.", key);
         lock.unlockFuture.thenRunAsync(() -> {
             lockService.delete(lock.lockTs, key);
-            LogUtils.debug(log, "Unlock table lock [{}] success.", key);
+            LogUtils.info(log, "Unlock table lock [{}] success.", key);
         });
         lockService.watchLock(
             Kv.builder().kv(KeyValue.builder().key(key.getBytes(UTF_8)).build()).build(),
@@ -257,13 +257,14 @@ public class MetaServiceApiImpl implements MetaServiceApi {
                 }
             }
         );
+        LogUtils.info(log, "pubTableLock end, lock:{}", lock);
     }
 
     private synchronized boolean subTableLock(TableLock lock) {
         String key = "Lock" + "|" + lock.tableId + "|" + lock.serverId + "|" + lock.lockTs + "|" + lock.currentTs;
-        LogUtils.debug(log, "Sub table lock [{}] success, add lock watch.", key);
+        LogUtils.info(log, "Sub table lock [{}] success, add lock watch.", key);
         if (tableLocks.containsKey(key)) {
-            LogUtils.debug(log, "Table lock {} exist, skip subscribe.", key);
+            LogUtils.info(log, "Table lock {} exist, skip subscribe.", key);
             return false;
         }
         lockService.watchLock(
@@ -273,8 +274,9 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         tableLocks.put(key, lock);
         lock.unlockFuture.thenRun(() -> {
             tableLocks.remove(key);
-            LogUtils.debug(log, "Table lock {} unlock.", key);
+            LogUtils.info(log, "Table lock {} unlock.", key);
         });
+        LogUtils.info(log, "subTableLock end, lock:{}", lock);
         return true;
     }
 
@@ -316,9 +318,11 @@ public class MetaServiceApiImpl implements MetaServiceApi {
             .unlockFuture(unlockFuture)
             .build();
         try {
+            LogUtils.info(log, "syncTableLock lock:{}", lock);
             if (!subTableLock(lock)) {
                 return;
             }
+            LogUtils.info(log, "syncTableLock doLock:{}", lock);
             io.dingodb.store.proxy.service.TableLockService.INSTANCE.doLock(lock);
             lockFuture.get(3, TimeUnit.SECONDS);
         } catch (Exception e) {
@@ -333,6 +337,7 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         if (!isReady()) {
             throw new RuntimeException("Offline, please wait and retry.");
         }
+        LogUtils.info(log, "broadcastTableLock requestId:{}, lock:{}", requestId, lock);
         for (Map.Entry<CommonId, Channel> entry : participantChannels.entrySet()) {
             if (lock.serverId.equals(entry.getKey())) {
                 continue;

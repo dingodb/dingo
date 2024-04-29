@@ -13,6 +13,14 @@ variable:
     autoIncrementCacheCount: 100
     autoIncrementIncrement: 1
     autoIncrementOffset: 1
+common:
+    scheduledCoreThreads: 16
+    lockCoreThreads: 0
+    globalCoreThreads: 0
+store:
+    bufferSize: 67108864
+    bufferNumber: 2
+    fileSize: 67108864
 security:
     cipher:
         keyPath: /opt/dingo/conf/dingodb.jks

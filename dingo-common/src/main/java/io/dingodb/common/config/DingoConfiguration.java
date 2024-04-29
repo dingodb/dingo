@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.util.Optional;
 import lombok.Getter;
 import lombok.Setter;
@@ -52,6 +53,7 @@ public class DingoConfiguration {
     private ExchangeConfiguration exchange = new ExchangeConfiguration();
     private SecurityConfiguration security = new SecurityConfiguration();
     private VariableConfiguration variable = new VariableConfiguration();
+    private CommonConfiguration common = new CommonConfiguration();
 
     public static synchronized void parse(final String configPath) throws Exception {
         if (configPath != null) {
@@ -60,6 +62,7 @@ public class DingoConfiguration {
         INSTANCE.exchange = INSTANCE.getConfig("exchange", ExchangeConfiguration.class);
         INSTANCE.security = INSTANCE.getConfig("security", SecurityConfiguration.class);
         INSTANCE.variable = INSTANCE.getConfig("variable", VariableConfiguration.class);
+        INSTANCE.common = INSTANCE.getConfig("common", CommonConfiguration.class);
     }
 
     private static void copyConfig(Map<String, Object> from, Map<String, Object> to) {
@@ -84,6 +87,18 @@ public class DingoConfiguration {
 
     public static int port() {
         return Optional.mapOrGet(INSTANCE.exchange, ExchangeConfiguration::getPort, () -> 0);
+    }
+
+    public static int scheduledCoreThreads() {
+        return Optional.mapOrGet(INSTANCE.common, CommonConfiguration::getScheduledCoreThreads, () -> 16);
+    }
+
+    public static int lockCoreThreads() {
+        return Optional.mapOrGet(INSTANCE.common, CommonConfiguration::getLockCoreThreads, () -> 0);
+    }
+
+    public static int globalCoreThreads() {
+        return Optional.mapOrGet(INSTANCE.common, CommonConfiguration::getGlobalCoreThreads, () -> 0);
     }
 
     public static CommonId serverId() {

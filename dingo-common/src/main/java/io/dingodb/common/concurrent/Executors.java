@@ -16,6 +16,7 @@
 
 package io.dingodb.common.concurrent;
 
+import io.dingodb.common.config.DingoConfiguration;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -44,7 +45,7 @@ public final class Executors {
 
     private static final ThreadPoolExecutor GLOBAL_POOL = new ThreadPoolBuilder()
         .name(GLOBAL_NAME)
-        .coreThreads(0)
+        .coreThreads(DingoConfiguration.globalCoreThreads())
         .maximumThreads(Integer.MAX_VALUE)
         .keepAliveSeconds(TimeUnit.MINUTES.toSeconds(1))
         .workQueue(new SynchronousQueue<>())
@@ -54,7 +55,7 @@ public final class Executors {
 
     public static final ThreadPoolExecutor LOCK_FUTURE_POOL = new ThreadPoolBuilder()
         .name(LOCK_COMPLETABLE_FUTURE)
-        .coreThreads(0)
+        .coreThreads(DingoConfiguration.lockCoreThreads())
         .maximumThreads(Integer.MAX_VALUE)
         .keepAliveSeconds(TimeUnit.MINUTES.toSeconds(1))
         .workQueue(new SynchronousQueue<>())
@@ -65,7 +66,7 @@ public final class Executors {
     private static final ScheduledThreadPoolExecutor GLOBAL_SCHEDULE_POOL = new ThreadPoolBuilder()
         .name(GLOBAL_SCHEDULE_NAME)
         .daemon(true)
-        .coreThreads(0)
+        .coreThreads(DingoConfiguration.scheduledCoreThreads())
         .group(new ThreadGroup(GLOBAL_SCHEDULE_NAME))
         .buildSchedule();
 
@@ -115,7 +116,7 @@ public final class Executors {
     public static ScheduledFuture<?> scheduleWithFixedDelayAsync(
         String name, Runnable command, long initialDelay, long period, TimeUnit unit
     ) {
-        return GLOBAL_SCHEDULE_POOL.scheduleWithFixedDelay(() -> execute(name, command), initialDelay, period, unit);
+        return GLOBAL_SCHEDULE_POOL.scheduleWithFixedDelay(wrap(name, command), initialDelay, period, unit);
     }
 
     public static ScheduledFuture<?> scheduleAtFixedRate(
@@ -127,7 +128,7 @@ public final class Executors {
     public static ScheduledFuture<?> scheduleAtFixedRateAsync(
         String name, Runnable command, long initialDelay, long period, TimeUnit unit
     ) {
-        return GLOBAL_SCHEDULE_POOL.scheduleAtFixedRate(() -> execute(name, command), initialDelay, period, unit);
+        return GLOBAL_SCHEDULE_POOL.scheduleAtFixedRate(wrap(name, command), initialDelay, period, unit);
     }
 
     public static <T> CompletableFuture<T> submit(String name, Callable<T> task) {
