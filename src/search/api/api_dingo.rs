@@ -1,9 +1,10 @@
 use crate::cxx_vector_converter;
 use crate::logger::logger_bridge::TantivySearchLogger;
 use crate::search::implements::api_dingo_impl::{
-    bm25_search, bm25_search_with_column_names, get_doc_freq, get_total_num_docs,
-    get_total_num_tokens, index_reader_reload,
+    bm25_search_with_column_names, get_doc_freq, get_total_num_docs, get_total_num_tokens,
+    index_reader_reload,
 };
+use crate::search::utils::convert_utils::ConvertUtils;
 use crate::BM25Result;
 use crate::BoolResult;
 use crate::DocWithFreq;
@@ -59,13 +60,94 @@ pub fn ffi_bm25_search(
         }
     };
 
-    match bm25_search(
+    let alived_ids = ConvertUtils::u8_bitmap_to_row_ids(&u8_aived_bitmap);
+    let column_names: Vec<String> = Vec::new();
+
+    match bm25_search_with_column_names(
         &index_path,
         &sentence,
         topk,
-        &u8_aived_bitmap,
+        &alived_ids,
         query_with_filter,
         false,
+        &column_names,
+    ) {
+        Ok(results) => {
+            return BM25Result {
+                result: results,
+                error_code: 0,
+                error_msg: String::new(),
+            };
+        }
+        Err(e) => {
+            ERROR!(function: "ffi_bm25_search", "Error performing BM25 search with statistics: {}", e);
+            let error_msg_for_cxx: String =
+                format!("Error performing BM25 search with statistics: {}", e);
+            return BM25Result {
+                result: Vec::new(),
+                error_code: -1,
+                error_msg: error_msg_for_cxx,
+            };
+        }
+    }
+}
+
+pub fn ffi_bm25_search_filter_ids(
+    index_path: &CxxString,
+    sentence: &CxxString,
+    topk: u32,
+    alived_ids: &CxxVector<u32>,
+    query_with_filter: bool,
+) -> BM25Result {
+    let index_path: String = match CXX_STRING_CONERTER.convert(index_path) {
+        Ok(path) => path,
+        Err(e) => {
+            ERROR!(function: "ffi_bm25_search", "Can't convert 'index_path', message: {}", e);
+            let error_msg_for_cxx: String = format!("Can't convert 'index_path', message: {}", e);
+            return BM25Result {
+                result: Vec::new(),
+                error_code: -1,
+                error_msg: error_msg_for_cxx,
+            };
+        }
+    };
+
+    let sentence: String = match CXX_STRING_CONERTER.convert(sentence) {
+        Ok(q) => q,
+        Err(e) => {
+            ERROR!(function: "ffi_bm25_search", "Can't convert 'sentence', message: {}", e);
+            let error_msg_for_cxx: String = format!("Can't convert 'sentence', message: {}", e);
+            return BM25Result {
+                result: Vec::new(),
+                error_code: -1,
+                error_msg: error_msg_for_cxx,
+            };
+        }
+    };
+
+    let alived_ids: Vec<u32> = match cxx_vector_converter::<u32>().convert(alived_ids) {
+        Ok(bitmap) => bitmap,
+        Err(e) => {
+            ERROR!(function: "ffi_bm25_search", "Can't convert vector 'alived_ids', message: {}", e);
+            let error_msg_for_cxx: String =
+                format!("Can't convert vector 'alived_ids', message: {}", e);
+            return BM25Result {
+                result: Vec::new(),
+                error_code: -1,
+                error_msg: error_msg_for_cxx,
+            };
+        }
+    };
+    let column_names: Vec<String> = Vec::new();
+
+    match bm25_search_with_column_names(
+        &index_path,
+        &sentence,
+        topk,
+        &alived_ids,
+        query_with_filter,
+        false,
+        &column_names,
     ) {
         Ok(results) => {
             return BM25Result {
@@ -91,7 +173,7 @@ pub fn ffi_bm25_search_with_column_names(
     index_path: &CxxString,
     sentence: &CxxString,
     topk: u32,
-    u8_aived_bitmap: &CxxVector<u8>,
+    alived_ids: &CxxVector<u32>,
     query_with_filter: bool,
     column_names: &CxxVector<CxxString>,
 ) -> BM25Result {
@@ -121,12 +203,12 @@ pub fn ffi_bm25_search_with_column_names(
         }
     };
 
-    let u8_aived_bitmap: Vec<u8> = match cxx_vector_converter::<u8>().convert(u8_aived_bitmap) {
+    let alived_ids: Vec<u32> = match cxx_vector_converter::<u32>().convert(alived_ids) {
         Ok(bitmap) => bitmap,
         Err(e) => {
-            ERROR!(function: "ffi_bm25_search", "Can't convert vector 'u8_aived_bitmap', message: {}", e);
+            ERROR!(function: "ffi_bm25_search", "Can't convert vector 'alived_ids', message: {}", e);
             let error_msg_for_cxx: String =
-                format!("Can't convert vector 'u8_aived_bitmap', message: {}", e);
+                format!("Can't convert vector 'alived_ids', message: {}", e);
             return BM25Result {
                 result: Vec::new(),
                 error_code: -1,
@@ -153,7 +235,7 @@ pub fn ffi_bm25_search_with_column_names(
         &index_path,
         &sentence,
         topk,
-        &u8_aived_bitmap,
+        &alived_ids,
         query_with_filter,
         false,
         &column_names,

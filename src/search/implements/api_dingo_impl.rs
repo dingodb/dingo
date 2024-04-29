@@ -8,8 +8,8 @@ use crate::{common::constants::LOG_CALLBACK, ERROR, WARNING};
 use std::sync::Arc;
 use tantivy::query::Bm25StatisticsProvider;
 
+use super::strategy::query_strategy::BM25QueryStrategy;
 use super::strategy::query_strategy::QueryExecutor;
-use super::strategy::query_strategy::{BM25QueryStrategy, BM25QueryStrategyWithColumnNames};
 use crate::DEBUG;
 use crate::TRACE;
 use tantivy::schema::FieldType;
@@ -19,51 +19,11 @@ use tantivy::tokenizer::BoxTokenStream;
 use tantivy::tokenizer::TextAnalyzer;
 use tantivy::Term;
 
-pub fn bm25_search(
-    index_path: &str,
-    sentence: &str,
-    topk: u32,
-    u8_aived_bitmap: &Vec<u8>,
-    query_with_filter: bool,
-    need_doc: bool,
-) -> Result<Vec<RowIdWithScore>, TantivySearchError> {
-    // Get index_reader_bridge from CACHE
-    let index_reader_bridge: Arc<IndexReaderBridge> = FFI_INDEX_SEARCHER_CACHE
-        .get_index_reader_bridge(index_path.to_string())
-        .map_err(|e| {
-            ERROR!(function:"bm25_search", "{}", e);
-            TantivySearchError::InternalError(e)
-        })?;
-
-    // Choose query strategy to construct query executor.
-    let sentence_query: BM25QueryStrategy<'_> = BM25QueryStrategy {
-        sentence,
-        topk: &topk,
-        u8_aived_bitmap,
-        query_with_filter: &query_with_filter,
-        need_doc: &need_doc,
-    };
-
-    let query_executor: QueryExecutor<'_, Vec<RowIdWithScore>> =
-        QueryExecutor::new(&sentence_query);
-
-    let searcher = &mut index_reader_bridge.reader.searcher();
-
-    let result: Vec<RowIdWithScore> = query_executor.execute(searcher).map_err(
-        |e: crate::common::errors::IndexSearcherError| {
-            ERROR!(function:"bm25_search", "{}", e);
-            TantivySearchError::IndexSearcherError(e)
-        },
-    )?;
-
-    Ok(result)
-}
-
 pub fn bm25_search_with_column_names(
     index_path: &str,
     sentence: &str,
     topk: u32,
-    u8_aived_bitmap: &Vec<u8>,
+    alived_ids: &Vec<u32>,
     query_with_filter: bool,
     need_doc: bool,
     column_names: &Vec<String>,
@@ -77,10 +37,10 @@ pub fn bm25_search_with_column_names(
         })?;
 
     // Choose query strategy to construct query executor.
-    let sentence_query: BM25QueryStrategyWithColumnNames<'_> = BM25QueryStrategyWithColumnNames {
+    let sentence_query: BM25QueryStrategy<'_> = BM25QueryStrategy {
         sentence,
         topk: &topk,
-        u8_aived_bitmap,
+        alived_ids,
         query_with_filter: &query_with_filter,
         need_doc: &need_doc,
         column_names: &column_names,

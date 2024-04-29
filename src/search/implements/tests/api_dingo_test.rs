@@ -16,6 +16,7 @@ mod tests {
     use crate::search::implements::api_common_impl::load_index_reader;
     use crate::search::implements::api_dingo_impl::bm25_search_with_column_names;
     use crate::search::implements::api_dingo_impl::get_doc_freq;
+    use crate::search::utils::convert_utils::ConvertUtils;
 
     #[allow(dead_code)]
     #[derive(Debug, Clone)]
@@ -215,11 +216,14 @@ mod tests {
         need_docs: bool,
         column_names: &Vec<String>,
     ) -> Vec<DocsWithScore> {
+        let alived_ids = crate::search::utils::convert_utils::ConvertUtils::u8_bitmap_to_row_ids(
+            &u8_alive_bitmap,
+        );
         let res: Vec<RowIdWithScore> = bm25_search_with_column_names(
             part_path,
             query_str,
             topk,
-            u8_alive_bitmap,
+            &alived_ids,
             use_filter,
             need_docs,
             column_names,

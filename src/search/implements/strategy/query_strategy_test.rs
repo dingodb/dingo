@@ -11,8 +11,8 @@ mod tests {
         common::tests::index_3column_docs_with_threads_merge,
         ffi::RowIdWithScore,
         search::implements::strategy::query_strategy::{
-            BM25QueryStrategy, BM25QueryStrategyWithColumnNames, ParserQueryStrategy,
-            QueryExecutor, RegexQueryStrategy, SingleTermQueryStrategy, TermSetQueryStrategy,
+            BM25QueryStrategy, ParserQueryStrategy, QueryExecutor, RegexQueryStrategy,
+            SingleTermQueryStrategy, TermSetQueryStrategy,
         },
     };
 
@@ -102,8 +102,9 @@ mod tests {
             sentence: "Literary inventions capture philosophical masterpieces.",
             topk: &10,
             query_with_filter: &false,
-            u8_aived_bitmap: &vec![],
+            alived_ids: &vec![],
             need_doc: &false,
+            column_names: &vec![],
         };
         let query_executor: QueryExecutor<'_, Vec<RowIdWithScore>> =
             QueryExecutor::new(&bm25_strategy);
@@ -124,15 +125,14 @@ mod tests {
         let (index_reader, _) = index_3column_docs_with_threads_merge(temp_directory_str);
 
         // Choose query strategy to construct query executor.
-        let bm25_strategy: BM25QueryStrategyWithColumnNames<'_> =
-            BM25QueryStrategyWithColumnNames {
-                sentence: "Literary inventions capture philosophical masterpieces.",
-                topk: &10,
-                query_with_filter: &false,
-                u8_aived_bitmap: &vec![],
-                need_doc: &false,
-                column_names: &create_3column_names(),
-            };
+        let bm25_strategy: BM25QueryStrategy<'_> = BM25QueryStrategy {
+            sentence: "Literary inventions capture philosophical masterpieces.",
+            topk: &10,
+            query_with_filter: &false,
+            alived_ids: &vec![],
+            need_doc: &false,
+            column_names: &create_3column_names(),
+        };
         let query_executor: QueryExecutor<'_, Vec<RowIdWithScore>> =
             QueryExecutor::new(&bm25_strategy);
 

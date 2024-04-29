@@ -290,14 +290,29 @@ pub mod ffi {
         /// - `index_path`: index directory.
         /// - `sentence`: from ClickHouse TextSearch function.
         /// - `topk`: only return top k related results.
-        /// - `u8_aived_bitmap`: alived rowIds given by u8 bitmap.
+        /// - `alived_ids`: alived rowIds given by u32 vector.
+        /// - `query_with_filter`: whether use alived_bitmap or not.
+        pub fn ffi_bm25_search_filter_ids(
+            index_path: &CxxString,
+            sentence: &CxxString,
+            topk: u32,
+            alived_ids: &CxxVector<u32>,
+            query_with_filter: bool,
+        ) -> BM25Result;
+
+        /// Execute a regex query and return rowIds u8 bitmap.
+        /// arguments:
+        /// - `index_path`: index directory.
+        /// - `sentence`: from ClickHouse TextSearch function.
+        /// - `topk`: only return top k related results.
+        /// - `alived_ids`: alived rowIds given by u32 vector.
         /// - `query_with_filter`: whether use alived_bitmap or not.
         /// - `colunm_names`: for multi column search.
         pub fn ffi_bm25_search_with_column_names(
             index_path: &CxxString,
             sentence: &CxxString,
             topk: u32,
-            u8_aived_bitmap: &CxxVector<u8>,
+            alived_ids: &CxxVector<u32>,
             query_with_filter: bool,
             column_names: &CxxVector<CxxString>,
         ) -> BM25Result;

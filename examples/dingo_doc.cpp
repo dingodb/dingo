@@ -1,3 +1,4 @@
+#include <sys/types.h>
 #include <tantivy_search.h>
 #include <utils.h>
 
@@ -354,11 +355,37 @@ void test_multi_type_column() {
     }
   }
 
-  bm25_result = ffi_bm25_search_with_column_names(index_path, "col222: IN [200 300 400]", 10, {}, false, {});
+  bm25_result =
+      ffi_bm25_search_with_column_names(index_path, "col222: IN [200 300 400 500 600 700 800]", 10, {}, false, {});
   if (bm25_result.error_code != 0) {
     cout << "ffi_bm25_search_with_column_names2-2 error:" << bm25_result.error_msg.c_str() << endl;
   } else {
     cout << "ffi_bm25_search_with_column_names2-2 parser result size:" << bm25_result.result.size() << endl;
+    for (auto it : bm25_result.result) {
+      cout << "ffi_bm25_search_with_column_names2 rowid:" << it.row_id << " score:" << it.score
+           << " doc_id:" << it.doc_id << " seg_id:" << it.seg_id << endl;
+    }
+  }
+
+  auto reload_result = ffi_index_reader_reload(index_path);
+  if (reload_result.error_code != 0) {
+    cout << "ffi_index_reader_reload error:" << reload_result.error_msg.c_str() << endl;
+  } else {
+    cout << "ffi_index_reader_reload success" << endl;
+  }
+
+  std::vector<uint32_t> alived_ids;
+  alived_ids.push_back(2);
+  alived_ids.push_back(4);
+  alived_ids.push_back(5);
+  alived_ids.push_back(6);
+  alived_ids.push_back(7);
+  bm25_result =
+      ffi_bm25_search_with_column_names(index_path, "col2: IN [800 700 600 500 400 300 200]", 3, alived_ids, true, {});
+  if (bm25_result.error_code != 0) {
+    cout << "ffi_bm25_search_with_column_names2-3 filter_ids error:" << bm25_result.error_msg.c_str() << endl;
+  } else {
+    cout << "ffi_bm25_search_with_column_names2-3 filter_ids parser result size:" << bm25_result.result.size() << endl;
     for (auto it : bm25_result.result) {
       cout << "ffi_bm25_search_with_column_names2 rowid:" << it.row_id << " score:" << it.score
            << " doc_id:" << it.doc_id << " seg_id:" << it.seg_id << endl;
