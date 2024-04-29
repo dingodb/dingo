@@ -1,0 +1,9 @@
+---
+Language:     Cpp
+BasedOnStyle: Google
+ColumnLimit: 120
+---
+Language: Proto
+BasedOnStyle: Google
+ColumnLimit: 120
+...

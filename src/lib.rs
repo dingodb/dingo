@@ -1,3 +1,5 @@
+use ffi::BM25Result;
+use ffi::BoolResult;
 use ffi::DocWithFreq;
 use ffi::FieldTokenNums;
 use ffi::RowIdWithScore;
@@ -15,7 +17,6 @@ use index::api::api_index::*;
 use search::api::api_clickhouse::*;
 use search::api::api_common::*;
 use search::api::api_dingo::*;
-use search::api::api_myscale::*;
 use utils::ffi_utils::*;
 // re-export log ffi function.
 pub use logger::ffi_logger::*;
@@ -30,6 +31,20 @@ pub mod ffi {
         pub seg_id: u32,
         pub doc_id: u32,
         pub docs: Vec<String>,
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct BM25Result {
+        result: Vec<RowIdWithScore>,
+        error_code: i32,
+        error_msg: String,
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct BoolResult {
+        result: bool,
+        error_code: i32,
+        error_msg: String,
     }
 
     #[derive(Debug, Clone, PartialEq)]
@@ -54,7 +69,7 @@ pub mod ffi {
     }
 
     extern "Rust" {
-        pub fn ffi_varify_index_parameter(index_json_parameter: &CxxString) -> bool;
+        pub fn ffi_varify_index_parameter(index_json_parameter: &CxxString) -> BoolResult;
 
         /// Create tantivy index.
         /// arguments:
@@ -65,13 +80,16 @@ pub mod ffi {
             index_path: &CxxString,
             column_names: &CxxVector<CxxString>,
             index_json_parameter: &CxxString,
-        ) -> bool;
+        ) -> BoolResult;
 
         /// Create tantivy index by default.
         /// argements:
         /// - `index_path`: index directory.
         /// - `column_names`: which columns will be used to build index.
-        fn ffi_create_index(index_path: &CxxString, column_names: &CxxVector<CxxString>) -> bool;
+        fn ffi_create_index(
+            index_path: &CxxString,
+            column_names: &CxxVector<CxxString>,
+        ) -> BoolResult;
 
         /// Index multi column docs with given rowId.
         /// arguments:
@@ -84,7 +102,7 @@ pub mod ffi {
             row_id: u64,
             column_names: &CxxVector<CxxString>,
             column_docs: &CxxVector<CxxString>,
-        ) -> bool;
+        ) -> BoolResult;
 
         /// Index multi column docs with given rowId.
         /// arguments:
@@ -105,33 +123,43 @@ pub mod ffi {
             i64_column_docs: &CxxVector<i64>,
             f64_column_names: &CxxVector<CxxString>,
             f64_column_docs: &CxxVector<f64>,
-        ) -> bool;
+        ) -> BoolResult;
 
         /// Delete a group of rowIds.
         /// arguments:
         /// - `index_path`: index directory.
         /// - `row_ids`: a group of rowIds need be deleted.
-        fn ffi_delete_row_ids(index_path: &CxxString, row_ids: &CxxVector<u32>) -> bool;
+        fn ffi_delete_row_ids(index_path: &CxxString, row_ids: &CxxVector<u32>) -> BoolResult;
 
         /// Commit index writer
         /// arguments:
         /// - `index_path`: index directory.
-        fn ffi_index_writer_commit(index_path: &CxxString) -> bool;
+        fn ffi_index_writer_commit(index_path: &CxxString) -> BoolResult;
 
         /// Free index writer
         /// arguments:
         /// - `index_path`: index directory.
-        fn ffi_free_index_writer(index_path: &CxxString) -> bool;
+        fn ffi_free_index_writer(index_path: &CxxString) -> BoolResult;
+
+        /// Load index writer
+        /// arguments:
+        /// - `index_path`: index directory.
+        fn ffi_load_index_writer(index_path: &CxxString) -> BoolResult;
+
+        /// Do index reader reload
+        /// arguments:
+        /// - `index_path`: index directory.
+        pub fn ffi_index_reader_reload(index_path: &CxxString) -> BoolResult;
 
         /// Load index reader
         /// arguments:
         /// - `index_path`: index directory.
-        fn ffi_load_index_reader(index_path: &CxxString) -> bool;
+        fn ffi_load_index_reader(index_path: &CxxString) -> BoolResult;
 
         /// Free index reader
         /// arguments:
         /// - `index_path`: index directory.
-        fn ffi_free_index_reader(index_path: &CxxString) -> bool;
+        fn ffi_free_index_reader(index_path: &CxxString) -> BoolResult;
 
         /// Get indexed docs numbers.
         /// arguments:
@@ -151,7 +179,7 @@ pub mod ffi {
             term: &CxxString,
             lrange: u64,
             rrange: u64,
-        ) -> bool;
+        ) -> BoolResult;
 
         /// Execute a group of terms query with given rowId range.
         /// arguments:
@@ -166,7 +194,7 @@ pub mod ffi {
             terms: &CxxVector<CxxString>,
             lrange: u64,
             rrange: u64,
-        ) -> bool;
+        ) -> BoolResult;
 
         /// Execute a sentence query with given rowId range.
         /// arguments:
@@ -181,7 +209,7 @@ pub mod ffi {
             sentence: &CxxString,
             lrange: u64,
             rrange: u64,
-        ) -> bool;
+        ) -> BoolResult;
 
         /// Execute a regex query with given rowId range.
         /// arguments:
@@ -196,7 +224,7 @@ pub mod ffi {
             pattern: &CxxString,
             lrange: u64,
             rrange: u64,
-        ) -> bool;
+        ) -> BoolResult;
 
         /// Execute a term query and return rowIds u8 bitmap.
         /// arguments:
@@ -249,30 +277,13 @@ pub mod ffi {
         /// - `topk`: only return top k related results.
         /// - `u8_aived_bitmap`: alived rowIds given by u8 bitmap.
         /// - `query_with_filter`: whether use alived_bitmap or not.
-        /// - `statistics`: for multi parts bm25 statistics info.
-        pub fn ffi_bm25_search_with_stat(
-            index_path: &CxxString,
-            sentence: &CxxString,
-            topk: u32,
-            u8_aived_bitmap: &CxxVector<u8>,
-            query_with_filter: bool,
-            statistics: &Statistics,
-        ) -> Vec<RowIdWithScore>;
-
-        /// Execute a regex query and return rowIds u8 bitmap.
-        /// arguments:
-        /// - `index_path`: index directory.
-        /// - `sentence`: from ClickHouse TextSearch function.
-        /// - `topk`: only return top k related results.
-        /// - `u8_aived_bitmap`: alived rowIds given by u8 bitmap.
-        /// - `query_with_filter`: whether use alived_bitmap or not.
         pub fn ffi_bm25_search(
             index_path: &CxxString,
             sentence: &CxxString,
             topk: u32,
             u8_aived_bitmap: &CxxVector<u8>,
             query_with_filter: bool,
-        ) -> Vec<RowIdWithScore>;
+        ) -> BM25Result;
 
         /// Execute a regex query and return rowIds u8 bitmap.
         /// arguments:
@@ -289,7 +300,7 @@ pub mod ffi {
             u8_aived_bitmap: &CxxVector<u8>,
             query_with_filter: bool,
             column_names: &CxxVector<CxxString>,
-        ) -> Vec<RowIdWithScore>;
+        ) -> BM25Result;
 
         /// Get doc freq for current part.
         /// arguments:

@@ -50,6 +50,16 @@ fn create_3column_schema() -> Schema {
 }
 
 #[allow(dead_code)]
+pub fn create_3column_names() -> Vec<String> {
+    // Construct the schema for the index.
+    let mut column_names: Vec<String> = Vec::new();
+    column_names.push("col1".to_string());
+    column_names.push("col2".to_string());
+    column_names.push("col3".to_string());
+    return column_names;
+}
+
+#[allow(dead_code)]
 fn create_3column_index(index_directory: &str) -> (Index, Schema) {
     let schema = create_3column_schema();
     // Create the index in the specified directory.

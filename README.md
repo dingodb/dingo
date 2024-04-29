@@ -1,12 +1,6 @@
 # Tantivy Search
 
-[![coverage](https://git.moqi.ai/mqdb/tantivy-search/badges/tantivy_0.21.1/coverage.svg?job=CodeCoverage)]()
-[![pipeline status](https://git.moqi.ai/mqdb/tantivy-search/badges/tantivy_0.21.1/pipeline.svg)](https://git.moqi.ai/mqdb/tantivy-search/-/pipelines?page=1&scope=all&ref=tantivy_0.21.1)
-[![codecov](https://codecov.io/gh/MochiXu/tantivy-search/graph/badge.svg?token=DRUQZXPYRP)](https://codecov.io/gh/MochiXu/tantivy-search)
-
-
-
-This library is designed to integrate [tantivy](https://github.com/quickwit-oss/tantivy/) into [ClickHouse](https://github.com/ClickHouse/ClickHouse) and [MyScale](https://git.moqi.ai/mqdb/ClickHouse/).
+This library is designed to integrate [tantivy](https://github.com/quickwit-oss/tantivy/) into [DingoDB](https://github.com/dingodb/dingo-store).
 
 ## Development
 
@@ -16,6 +10,8 @@ All FFI (Foreign Function Interface) functions are exposed in [lib.rs](./src/lib
 cbindgen . -o include/tantivy_search_cbindgen.h --config cbindgen.toml
 cxxbridge src/lib.rs --header > include/tantivy_search_cxx.h
 ```
+
+Developers can use gen-cxx-header.sh to do this too.
 
 If developers do not add, delete, or modify the names of FFI functions, there is no need to execute the above command.
 
@@ -64,3 +60,11 @@ Here is an example to run unit test in C++:
 cd build/tests/unit_test
 ./unit_test
 ```
+
+## Credits
+We give special thanks for these open-source projects, upon which we have developed:
+
+- [Tantivy](https://github.com/quickwit-oss/tantivy/) - A library for full-text search.
+- [tantivy-search](https://github.com/myscale/tantivy-search) - A library is designed to integrate tantivy into ClickHouse and MyScaleDB.
+- [cang-jie](https://github.com/DCjanus/cang-jie) - A Chinese tokenizer for tantivy, based on jieba-rs.
+

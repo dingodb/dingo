@@ -711,6 +711,8 @@ std::size_t align_of() {
 } // namespace rust
 
 struct RowIdWithScore;
+struct BM25Result;
+struct BoolResult;
 struct DocWithFreq;
 struct FieldTokenNums;
 struct Statistics;
@@ -727,6 +729,28 @@ struct RowIdWithScore final {
   using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_RowIdWithScore
+
+#ifndef CXXBRIDGE1_STRUCT_BM25Result
+#define CXXBRIDGE1_STRUCT_BM25Result
+struct BM25Result final {
+  ::rust::Vec<::RowIdWithScore> result;
+  ::std::int32_t error_code;
+  ::rust::String error_msg;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_BM25Result
+
+#ifndef CXXBRIDGE1_STRUCT_BoolResult
+#define CXXBRIDGE1_STRUCT_BoolResult
+struct BoolResult final {
+  bool result;
+  ::std::int32_t error_code;
+  ::rust::String error_msg;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_BoolResult
 
 #ifndef CXXBRIDGE1_STRUCT_DocWithFreq
 #define CXXBRIDGE1_STRUCT_DocWithFreq
@@ -764,20 +788,20 @@ struct Statistics final {
 };
 #endif // CXXBRIDGE1_STRUCT_Statistics
 
-bool ffi_varify_index_parameter(::std::string const &index_json_parameter) noexcept;
+::BoolResult ffi_varify_index_parameter(::std::string const &index_json_parameter) noexcept;
 
 // Create tantivy index.
 // arguments:
 // - `index_path`: index directory.
 // - `column_names`: which columns will be used to build index.
 // - `index_json_parameter`: config index with json.
-bool ffi_create_index_with_parameter(::std::string const &index_path, ::std::vector<::std::string> const &column_names, ::std::string const &index_json_parameter) noexcept;
+::BoolResult ffi_create_index_with_parameter(::std::string const &index_path, ::std::vector<::std::string> const &column_names, ::std::string const &index_json_parameter) noexcept;
 
 // Create tantivy index by default.
 // argements:
 // - `index_path`: index directory.
 // - `column_names`: which columns will be used to build index.
-bool ffi_create_index(::std::string const &index_path, ::std::vector<::std::string> const &column_names) noexcept;
+::BoolResult ffi_create_index(::std::string const &index_path, ::std::vector<::std::string> const &column_names) noexcept;
 
 // Index multi column docs with given rowId.
 // arguments:
@@ -785,7 +809,7 @@ bool ffi_create_index(::std::string const &index_path, ::std::vector<::std::stri
 // - `row_id`: row_id given by ClickHouse.
 // - `column_names`: align with column_docs.
 // - `column_docs`: align with column_names.
-bool ffi_index_multi_column_docs(::std::string const &index_path, ::std::uint64_t row_id, ::std::vector<::std::string> const &column_names, ::std::vector<::std::string> const &column_docs) noexcept;
+::BoolResult ffi_index_multi_column_docs(::std::string const &index_path, ::std::uint64_t row_id, ::std::vector<::std::string> const &column_names, ::std::vector<::std::string> const &column_docs) noexcept;
 
 // Index multi column docs with given rowId.
 // arguments:
@@ -797,33 +821,43 @@ bool ffi_index_multi_column_docs(::std::string const &index_path, ::std::uint64_
 // - `i64_column_docs`: align with column_names.
 // - `f64_column_names`: align with column_docs.
 // - `f64_column_docs`: align with column_names.
-bool ffi_index_multi_type_column_docs(::std::string const &index_path, ::std::uint64_t row_id, ::std::vector<::std::string> const &text_column_names, ::std::vector<::std::string> const &text_column_docs, ::std::vector<::std::string> const &i64_column_names, ::std::vector<::std::int64_t> const &i64_column_docs, ::std::vector<::std::string> const &f64_column_names, ::std::vector<double> const &f64_column_docs) noexcept;
+::BoolResult ffi_index_multi_type_column_docs(::std::string const &index_path, ::std::uint64_t row_id, ::std::vector<::std::string> const &text_column_names, ::std::vector<::std::string> const &text_column_docs, ::std::vector<::std::string> const &i64_column_names, ::std::vector<::std::int64_t> const &i64_column_docs, ::std::vector<::std::string> const &f64_column_names, ::std::vector<double> const &f64_column_docs) noexcept;
 
 // Delete a group of rowIds.
 // arguments:
 // - `index_path`: index directory.
 // - `row_ids`: a group of rowIds need be deleted.
-bool ffi_delete_row_ids(::std::string const &index_path, ::std::vector<::std::uint32_t> const &row_ids) noexcept;
+::BoolResult ffi_delete_row_ids(::std::string const &index_path, ::std::vector<::std::uint32_t> const &row_ids) noexcept;
 
 // Commit index writer
 // arguments:
 // - `index_path`: index directory.
-bool ffi_index_writer_commit(::std::string const &index_path) noexcept;
+::BoolResult ffi_index_writer_commit(::std::string const &index_path) noexcept;
 
 // Free index writer
 // arguments:
 // - `index_path`: index directory.
-bool ffi_free_index_writer(::std::string const &index_path) noexcept;
+::BoolResult ffi_free_index_writer(::std::string const &index_path) noexcept;
+
+// Load index writer
+// arguments:
+// - `index_path`: index directory.
+::BoolResult ffi_load_index_writer(::std::string const &index_path) noexcept;
+
+// Do index reader reload
+// arguments:
+// - `index_path`: index directory.
+::BoolResult ffi_index_reader_reload(::std::string const &index_path) noexcept;
 
 // Load index reader
 // arguments:
 // - `index_path`: index directory.
-bool ffi_load_index_reader(::std::string const &index_path) noexcept;
+::BoolResult ffi_load_index_reader(::std::string const &index_path) noexcept;
 
 // Free index reader
 // arguments:
 // - `index_path`: index directory.
-bool ffi_free_index_reader(::std::string const &index_path) noexcept;
+::BoolResult ffi_free_index_reader(::std::string const &index_path) noexcept;
 
 // Get indexed docs numbers.
 // arguments:
@@ -837,7 +871,7 @@ bool ffi_free_index_reader(::std::string const &index_path) noexcept;
 // - `term`: term needs to be searched.
 // - `lrange`: rowId left begin.
 // - `rrange`: rowId right end.
-bool ffi_query_term_with_range(::std::string const &index_path, ::std::string const &column_name, ::std::string const &term, ::std::uint64_t lrange, ::std::uint64_t rrange) noexcept;
+::BoolResult ffi_query_term_with_range(::std::string const &index_path, ::std::string const &column_name, ::std::string const &term, ::std::uint64_t lrange, ::std::uint64_t rrange) noexcept;
 
 // Execute a group of terms query with given rowId range.
 // arguments:
@@ -846,7 +880,7 @@ bool ffi_query_term_with_range(::std::string const &index_path, ::std::string co
 // - `terms`: a group of terms need to be searched.
 // - `lrange`: rowId left begin.
 // - `rrange`: rowId right end.
-bool ffi_query_terms_with_range(::std::string const &index_path, ::std::string const &column_name, ::std::vector<::std::string> const &terms, ::std::uint64_t lrange, ::std::uint64_t rrange) noexcept;
+::BoolResult ffi_query_terms_with_range(::std::string const &index_path, ::std::string const &column_name, ::std::vector<::std::string> const &terms, ::std::uint64_t lrange, ::std::uint64_t rrange) noexcept;
 
 // Execute a sentence query with given rowId range.
 // arguments:
@@ -855,7 +889,7 @@ bool ffi_query_terms_with_range(::std::string const &index_path, ::std::string c
 // - `sentence`: sentence needs to be searched.
 // - `lrange`: rowId left begin.
 // - `rrange`: rowId right end.
-bool ffi_query_sentence_with_range(::std::string const &index_path, ::std::string const &column_name, ::std::string const &sentence, ::std::uint64_t lrange, ::std::uint64_t rrange) noexcept;
+::BoolResult ffi_query_sentence_with_range(::std::string const &index_path, ::std::string const &column_name, ::std::string const &sentence, ::std::uint64_t lrange, ::std::uint64_t rrange) noexcept;
 
 // Execute a regex query with given rowId range.
 // arguments:
@@ -864,7 +898,7 @@ bool ffi_query_sentence_with_range(::std::string const &index_path, ::std::strin
 // - `pattern`: pattern should be given by ClickHouse.
 // - `lrange`: rowId left begin.
 // - `rrange`: rowId right end.
-bool ffi_regex_term_with_range(::std::string const &index_path, ::std::string const &column_name, ::std::string const &pattern, ::std::uint64_t lrange, ::std::uint64_t rrange) noexcept;
+::BoolResult ffi_regex_term_with_range(::std::string const &index_path, ::std::string const &column_name, ::std::string const &pattern, ::std::uint64_t lrange, ::std::uint64_t rrange) noexcept;
 
 // Execute a term query and return rowIds u8 bitmap.
 // arguments:
@@ -901,17 +935,7 @@ bool ffi_regex_term_with_range(::std::string const &index_path, ::std::string co
 // - `topk`: only return top k related results.
 // - `u8_aived_bitmap`: alived rowIds given by u8 bitmap.
 // - `query_with_filter`: whether use alived_bitmap or not.
-// - `statistics`: for multi parts bm25 statistics info.
-::rust::Vec<::RowIdWithScore> ffi_bm25_search_with_stat(::std::string const &index_path, ::std::string const &sentence, ::std::uint32_t topk, ::std::vector<::std::uint8_t> const &u8_aived_bitmap, bool query_with_filter, ::Statistics const &statistics) noexcept;
-
-// Execute a regex query and return rowIds u8 bitmap.
-// arguments:
-// - `index_path`: index directory.
-// - `sentence`: from ClickHouse TextSearch function.
-// - `topk`: only return top k related results.
-// - `u8_aived_bitmap`: alived rowIds given by u8 bitmap.
-// - `query_with_filter`: whether use alived_bitmap or not.
-::rust::Vec<::RowIdWithScore> ffi_bm25_search(::std::string const &index_path, ::std::string const &sentence, ::std::uint32_t topk, ::std::vector<::std::uint8_t> const &u8_aived_bitmap, bool query_with_filter) noexcept;
+::BM25Result ffi_bm25_search(::std::string const &index_path, ::std::string const &sentence, ::std::uint32_t topk, ::std::vector<::std::uint8_t> const &u8_aived_bitmap, bool query_with_filter) noexcept;
 
 // Execute a regex query and return rowIds u8 bitmap.
 // arguments:
@@ -921,7 +945,7 @@ bool ffi_regex_term_with_range(::std::string const &index_path, ::std::string co
 // - `u8_aived_bitmap`: alived rowIds given by u8 bitmap.
 // - `query_with_filter`: whether use alived_bitmap or not.
 // - `colunm_names`: for multi column search.
-::rust::Vec<::RowIdWithScore> ffi_bm25_search_with_column_names(::std::string const &index_path, ::std::string const &sentence, ::std::uint32_t topk, ::std::vector<::std::uint8_t> const &u8_aived_bitmap, bool query_with_filter, ::std::vector<::std::string> const &column_names) noexcept;
+::BM25Result ffi_bm25_search_with_column_names(::std::string const &index_path, ::std::string const &sentence, ::std::uint32_t topk, ::std::vector<::std::uint8_t> const &u8_aived_bitmap, bool query_with_filter, ::std::vector<::std::string> const &column_names) noexcept;
 
 // Get doc freq for current part.
 // arguments:

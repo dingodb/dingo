@@ -15,7 +15,7 @@ mod tests {
     use crate::ffi::{DocWithFreq, FieldTokenNums, RowIdWithScore};
     use crate::search::implements::api_common_impl::load_index_reader;
     use crate::search::implements::api_dingo_impl::bm25_search_with_column_names;
-    use crate::search::implements::api_myscale_impl::get_doc_freq;
+    use crate::search::implements::api_dingo_impl::get_doc_freq;
 
     #[allow(dead_code)]
     #[derive(Debug, Clone)]

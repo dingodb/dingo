@@ -416,3 +416,111 @@ pub fn free_index_writer(index_path: &str) -> Result<bool, TantivySearchError> {
     DEBUG!(function: "free_index_writer", "Index writer has been freed:[{}]", index_path);
     Ok(true)
 }
+
+pub fn load_index_writer(index_path: &str) -> Result<bool, TantivySearchError> {
+    // Verify index files directory.
+    let index_files_directory = Path::new(index_path);
+    if !index_files_directory.exists() || !index_files_directory.is_dir() {
+        let error_info: String = format!("index_path not exists: {:?}", index_path);
+        let error: TantivySearchError = TantivySearchError::IndexNotExists(error_info);
+        ERROR!(function:"load_index_writer", "{}", error.to_string());
+        return Err(error);
+    }
+
+    // Load tantivy index with given directory.
+    let mut index: Index = Index::open_in_dir(index_files_directory).map_err(|e| {
+        let error: TantivySearchError = TantivySearchError::TantivyError(e);
+        ERROR!(function:"load_index_writer", "{}", error.to_string());
+        error
+    })?;
+
+    // Load index parameter DTO from local index files.
+    let index_parameter_dto: IndexParameterDTO =
+        IndexUtils::load_custom_index_setting(index_files_directory).map_err(|e| {
+            ERROR!(function:"load_index_writer", "{}", e);
+            TantivySearchError::IndexUtilsError(e)
+        })?;
+
+    DEBUG!(function:"load_index_writer", "parameter DTO is {:?}", index_parameter_dto);
+
+    // Parse tokenizer map from local index parameter DTO.
+    let col_tokenizer_map: HashMap<String, TokenizerConfig> =
+        TokenizerUtils::parse_tokenizer_json_to_config_map(
+            &index_parameter_dto.tokenizers_json_parameter,
+        )
+        .map_err(|e| {
+            ERROR!(function:"load_index_writer", "{}", e);
+            TantivySearchError::TokenizerUtilsError(e)
+        })?;
+
+    // Register tokenizer config into `index`.
+    for (column_name, tokenizer_config) in col_tokenizer_map.iter() {
+        TokenizerUtils::register_tokenizer_to_index(
+            &mut index,
+            tokenizer_config.tokenizer_type.clone(),
+            &column_name,
+            tokenizer_config.text_analyzer.clone(),
+        )
+        .map_err(|e| {
+            ERROR!(function:"load_index_writer", "{}", e);
+            TantivySearchError::TokenizerUtilsError(e)
+        })?;
+    }
+
+    // #[cfg(feature = "use-shared-search-pool")]
+    // {
+    //     // Set the multithreaded executor for search.
+    //     match FFI_INDEX_SEARCHER_CACHE.get_shared_multithread_executor(2) {
+    //         Ok(shared_thread_pool) => {
+    //             index
+    //                 .set_shared_multithread_executor(shared_thread_pool)
+    //                 .map_err(|e| TantivySearchError::TantivyError(e))?;
+    //             DEBUG!(function:"load_index_writer", "Using shared multithread with index_path: [{}]", index_path);
+    //         }
+    //         Err(e) => {
+    //             ERROR!(function:"load_index_writer", "Failed to use shared multithread executor, due to: {}", e);
+    //             index.set_default_multithread_executor().map_err(|e| {
+    //                 ERROR!(function:"load_index_writer", "Failed fall back to default multithread executor, due to: {}", e);
+    //                 TantivySearchError::TantivyError(e)
+    //             })?;
+    //         }
+    //     }
+    // }
+    // #[cfg(not(feature = "use-shared-search-pool"))]
+    // {
+    //     index.set_default_multithread_executor().map_err(|e| {
+    //         ERROR!(function:"load_index_writer", "Failed to set default multithread executor, due to: {}", e);
+    //         TantivySearchError::TantivyError(e)
+    //     })?;
+    // }
+
+    // Create the writer with a specified buffer size (e.g., 64 MB).
+    let writer = index
+        .writer_with_num_threads(2, 1024 * 1024 * 64)
+        .map_err(|e| {
+            let error_info = format!("Failed to create tantivy writer: {}", e);
+            ERROR!(function:"load_index_writer", "{}", error_info);
+            TantivySearchError::TantivyError(e)
+        })?;
+
+    // Configure and set the merge policy.
+    let mut merge_policy = tantivy::merge_policy::LogMergePolicy::default();
+    merge_policy.set_min_num_segments(5);
+    writer.set_merge_policy(Box::new(merge_policy));
+
+    // Save index_writer_bridge to cache.
+    let index_writer_bridge: IndexWriterBridge = IndexWriterBridge {
+        index,
+        path: index_path.trim_end_matches('/').to_string(),
+        writer: Mutex::new(Some(writer)),
+    };
+
+    FFI_INDEX_WRITER_CACHE
+        .set_index_writer_bridge(index_path.to_string(), Arc::new(index_writer_bridge))
+        .map_err(|e| {
+            ERROR!(function:"load_index_writer", "{}", e);
+            TantivySearchError::InternalError(e)
+        })?;
+
+    Ok(true)
+}
