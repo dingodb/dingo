@@ -1,3 +1,4 @@
 myst-parser
 sphinxcontrib-mermaid
 sphinx-rtd-theme
+sphinx
