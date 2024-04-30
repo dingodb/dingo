@@ -4,6 +4,7 @@ use ffi::DocWithFreq;
 use ffi::FieldTokenNums;
 use ffi::RowIdWithScore;
 use ffi::Statistics;
+use ffi::StringResult;
 use std::cmp::Ordering;
 
 mod common;
@@ -43,6 +44,13 @@ pub mod ffi {
     #[derive(Debug, Clone)]
     pub struct BoolResult {
         result: bool,
+        error_code: i32,
+        error_msg: String,
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct StringResult {
+        result: String,
         error_code: i32,
         error_msg: String,
     }
@@ -332,6 +340,16 @@ pub mod ffi {
         /// arguments:
         /// - `index_path`: index directory.
         pub fn ffi_get_total_num_tokens(index_path: &CxxString) -> u64;
+
+        /// Get index meta json
+        /// arguments:
+        /// - `index_path`: index directory.
+        pub fn ffi_get_index_meta_json(index_path: &CxxString) -> StringResult;
+
+        /// Get index json parameter
+        /// arguments:
+        /// - `index_path`: index directory.
+        pub fn ffi_get_index_json_parameter(index_path: &CxxString) -> StringResult;
     }
 }
 

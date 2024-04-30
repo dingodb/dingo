@@ -713,6 +713,7 @@ std::size_t align_of() {
 struct RowIdWithScore;
 struct BM25Result;
 struct BoolResult;
+struct StringResult;
 struct DocWithFreq;
 struct FieldTokenNums;
 struct Statistics;
@@ -751,6 +752,17 @@ struct BoolResult final {
   using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_BoolResult
+
+#ifndef CXXBRIDGE1_STRUCT_StringResult
+#define CXXBRIDGE1_STRUCT_StringResult
+struct StringResult final {
+  ::rust::String result;
+  ::std::int32_t error_code;
+  ::rust::String error_msg;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_StringResult
 
 #ifndef CXXBRIDGE1_STRUCT_DocWithFreq
 #define CXXBRIDGE1_STRUCT_DocWithFreq
@@ -971,3 +983,13 @@ struct Statistics final {
 // arguments:
 // - `index_path`: index directory.
 ::std::uint64_t ffi_get_total_num_tokens(::std::string const &index_path) noexcept;
+
+// Get index meta json
+// arguments:
+// - `index_path`: index directory.
+::StringResult ffi_get_index_meta_json(::std::string const &index_path) noexcept;
+
+// Get index json parameter
+// arguments:
+// - `index_path`: index directory.
+::StringResult ffi_get_index_json_parameter(::std::string const &index_path) noexcept;

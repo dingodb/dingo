@@ -12,8 +12,83 @@ use std::{path::Path, sync::Arc};
 use crate::search::bridge::index_reader_bridge::IndexReaderBridge;
 use crate::tokenizer::tokenizer_utils::TokenizerUtils;
 use std::collections::HashMap;
+use tantivy::Directory;
 use tantivy::IndexReader;
 use tantivy::{Index, ReloadPolicy};
+
+pub fn get_index_json_parameter(index_path: &str) -> Result<String, TantivySearchError> {
+    // Verify index files directory.
+    let index_files_directory = Path::new(index_path);
+    if !index_files_directory.exists() || !index_files_directory.is_dir() {
+        let error_info: String = format!("index_path not exists: {:?}", index_path);
+        let error: TantivySearchError = TantivySearchError::IndexNotExists(error_info);
+        ERROR!(function:"get_index_json_parameter", "{}", error.to_string());
+        return Err(error);
+    }
+
+    // Load index parameter DTO from local index files.
+    let index_parameter_dto: IndexParameterDTO = IndexUtils::load_custom_index_setting(
+        index_files_directory,
+    )
+    .map_err(|e: crate::common::errors::IndexUtilsError| {
+        ERROR!(function:"get_index_json_parameter", "{}", e);
+        TantivySearchError::IndexUtilsError(e)
+    })?;
+
+    DEBUG!(function:"get_index_json_parameter", "parameter DTO is {:?}", index_parameter_dto);
+
+    Ok(index_parameter_dto.tokenizers_json_parameter.clone())
+}
+
+pub fn get_index_meta_json(index_path: &str) -> Result<String, TantivySearchError> {
+    // Verify index files directory.
+    let index_files_directory = Path::new(index_path);
+    if !index_files_directory.exists() || !index_files_directory.is_dir() {
+        let error_info: String = format!("index_path not exists: {:?}", index_path);
+        let error: TantivySearchError = TantivySearchError::IndexNotExists(error_info);
+        ERROR!(function:"get_index_meta_json", "{}", error.to_string());
+        return Err(error);
+    }
+
+    // Load tantivy index with given directory.
+    let index: Index = Index::open_in_dir(index_files_directory).map_err(|e| {
+        let error: TantivySearchError = TantivySearchError::TantivyError(e);
+        ERROR!(function:"load_index_reader", "{}", error.to_string());
+        error
+    })?;
+
+    let meta_json_path = Path::new("meta.json");
+
+    let meta_data = match index.directory().atomic_read(&meta_json_path) {
+        Ok(data) => data,
+        Err(e) => {
+            ERROR!(function:"get_index_meta_json", "Failed to read meta.json: {}", e);
+            let error_info: String = format!(
+                "read path for json failed: {:?}, Failed to read meta.json, error_msg: {}",
+                meta_json_path, e
+            );
+            let error: TantivySearchError = TantivySearchError::InternalError(error_info);
+            return Err(error);
+        }
+    };
+
+    let meta_string = match String::from_utf8(meta_data) {
+        Ok(meta_string) => meta_string,
+        Err(e) => {
+            ERROR!(function:"get_index_meta_json", "Meta data is not valid utf8: {}", e);
+            let error_info: String = format!(
+                "Meta file does not contain valid utf8 file. {:?}, error_msg: {}",
+                meta_json_path, e
+            );
+            let error: TantivySearchError = TantivySearchError::InternalError(error_info);
+            return Err(error);
+        }
+    };
+
+    DEBUG!(function:"get_index_meta_json", "json is {:?}", &meta_string);
+
+    Ok(meta_string)
+}
 
 pub fn load_index_reader(index_path: &str) -> Result<bool, TantivySearchError> {
     // Verify index files directory.
@@ -33,11 +108,13 @@ pub fn load_index_reader(index_path: &str) -> Result<bool, TantivySearchError> {
     })?;
 
     // Load index parameter DTO from local index files.
-    let index_parameter_dto: IndexParameterDTO =
-        IndexUtils::load_custom_index_setting(index_files_directory).map_err(|e| {
-            ERROR!(function:"load_index_reader", "{}", e);
-            TantivySearchError::IndexUtilsError(e)
-        })?;
+    let index_parameter_dto: IndexParameterDTO = IndexUtils::load_custom_index_setting(
+        index_files_directory,
+    )
+    .map_err(|e: crate::common::errors::IndexUtilsError| {
+        ERROR!(function:"load_index_reader", "{}", e);
+        TantivySearchError::IndexUtilsError(e)
+    })?;
 
     DEBUG!(function:"load_index_reader", "parameter DTO is {:?}", index_parameter_dto);
 
