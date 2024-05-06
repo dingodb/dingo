@@ -50,6 +50,10 @@ public class OperatorProfile extends Profile {
         }
     }
 
+    public void decreaseCount() {
+        count --;
+    }
+
     @Override
     public String toString() {
         return "{" +

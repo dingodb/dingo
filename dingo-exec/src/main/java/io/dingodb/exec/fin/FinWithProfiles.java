@@ -112,6 +112,8 @@ public class FinWithProfiles implements Fin {
                 } else {
                     profile.getChildren().add(this.profile);
                 }
+            } else if (!profile.getChildren().isEmpty() && this.profile != null) {
+                profile.getChildren().add(this.profile);
             }
             this.profile = profile;
         }

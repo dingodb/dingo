@@ -33,8 +33,6 @@ import io.dingodb.sdk.common.utils.ByteArrayUtils;
 import io.dingodb.sdk.common.utils.NoBreakFunctions;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.VersionService;
-import io.dingodb.sdk.service.cluster.ClusterServiceClient;
-import io.dingodb.sdk.service.connector.CoordinatorServiceConnector;
 import io.dingodb.sdk.service.entity.version.PutRequest;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.sdk.service.store.StoreServiceClient;
@@ -43,7 +41,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -89,12 +86,14 @@ public final class MysqlInit {
 
     public static void main(String[] args) throws IOException {
         if (args.length < 1) {
-            System.out.println("Usage: java -cp mysql-init.jar io.dingodb.mysql.MysqlInit <coordinatorSvr>");
+            System.out.println("Usage: java -cp mysql-init.jar io.dingodb.mysql.MysqlInit <coordinatorSvr> <replica>");
             return;
         }
         String coordinatorSvr = args[0];
         initMetaStore(coordinatorSvr);
-        replica = (int) initReplica(coordinatorSvr);
+        if (args.length == 2) {
+            replica = Integer.parseInt(args[1]);
+        }
         System.out.println("init meta store success");
         createAndInitTable(MYSQL, USER, BASE_TABLE, LSM, DYNAMIC);
         initTableByTemplate(MYSQL, DB, BASE_TABLE, LSM, FIXED);
@@ -317,7 +316,7 @@ public final class MysqlInit {
                                                       String engine,
                                                       String rowFormat) throws IOException {
         List<Column> columns = getColumnList(tableName);
-        return TableDefinition.builder()
+        TableDefinition.TableDefinitionBuilder builder = TableDefinition.builder()
             .name(tableName)
             .columns(columns)
             .version(1)
@@ -326,9 +325,11 @@ public final class MysqlInit {
             .charset("utf8")
             .collate("utf8_bin")
             .tableType(tableType)
-            .rowFormat(rowFormat)
-            .replica(replica)
-            .build();
+            .rowFormat(rowFormat);
+        if (replica > 0) {
+            builder.replica(replica);
+        }
+        return builder.build();
     }
 
     private static List<Column> getColumnList(String tableName) throws IOException {
@@ -526,23 +527,6 @@ public final class MysqlInit {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    public static long initReplica(String coordinator) {
-        CoordinatorServiceConnector connector = io.dingodb.sdk.common.utils.Optional.ofNullable(coordinator.split(","))
-            .map(Arrays::stream)
-            .map(ss -> ss
-                .map(s -> s.split(":"))
-                .map(__ -> new io.dingodb.sdk.common.Location(__[0], Integer.parseInt(__[1])))
-                .collect(Collectors.toSet()))
-            .map(CoordinatorServiceConnector::new)
-            .orElseThrow("Create coordinator service connector error.");
-        ClusterServiceClient clusterServiceClient = new ClusterServiceClient(connector);
-        List<io.dingodb.sdk.common.cluster.Store> storeList = clusterServiceClient.getStoreMap(0);
-        return storeList
-            .stream()
-            .filter(store -> store.storeType() == 0 && store.storeState() != 2)
-            .count();
     }
 
 }

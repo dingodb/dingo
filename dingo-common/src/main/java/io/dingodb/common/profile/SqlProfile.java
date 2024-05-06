@@ -73,7 +73,7 @@ public class SqlProfile extends Profile {
         if (schema == null) {
             schema = "null";
         }
-        return type + schema + ":" + sql;
+        return simpleUser + ">" + type + schema + ":" + sql;
     }
 
     public String dumpTree() {
