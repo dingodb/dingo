@@ -51,6 +51,7 @@ import io.dingodb.common.error.DingoError;
 import io.dingodb.common.error.DingoException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.SqlLogUtils;
+import io.dingodb.common.profile.PlanProfile;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -67,7 +68,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintStrategyTable;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.runtime.Hook;
@@ -119,6 +119,9 @@ public class DingoParser {
 
     static {
         sensitiveKey.put(".\"USER\"", ".USER");
+        // for mysql dump start
+        sensitiveKey.put("GROUP BY LOGFILE_GROUP_NAME, FILE_NAME, ENGINE, TOTAL_EXTENTS, INITIAL_SIZE ORDER BY LOGFILE_GROUP_NAME", "GROUP BY LOGFILE_GROUP_NAME, FILE_NAME, ENGINE, TOTAL_EXTENTS, INITIAL_SIZE, EXTRA ORDER BY LOGFILE_GROUP_NAME");
+        // for mysql dump end
     }
 
     public static SqlParser.Config PARSER_CONFIG = SqlParser.config()
@@ -165,6 +168,8 @@ public class DingoParser {
     @Getter
     private final DingoSqlValidator sqlValidator;
 
+    protected long pointTs;
+
     public DingoParser(final @NonNull DingoParserContext context) {
         this.context = context;
 
@@ -195,7 +200,6 @@ public class DingoParser {
         context.resetSchemaCache();
     }
 
-    @SuppressWarnings("MethodMayBeStatic")
     public SqlNode parse(String sql) throws SqlParseException {
         sql = processKeyWords(sql);
         SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
@@ -210,12 +214,7 @@ public class DingoParser {
     }
 
     public RelRoot convert(@NonNull SqlNode sqlNode, boolean needsValidation) {
-        HintPredicate hintPredicate = new HintPredicate() {
-            @Override
-            public boolean apply(RelHint hint, RelNode rel) {
-                return true;
-            }
-        };
+        HintPredicate hintPredicate = (hint, rel) -> true;
         HintStrategyTable hintStrategyTable = new HintStrategyTable.Builder()
             .hintStrategy("vector_pre", hintPredicate).build();
         SqlToRelConverter sqlToRelConverter = new DingoSqlToRelConverter(
@@ -253,6 +252,7 @@ public class DingoParser {
                     sqlSelect.getLineStarting(),
                     context.getTimeZone()
                 );
+                pointTs = sqlSelect.getPointStartTs();
             }
         }
         // Insert a `DingoRoot` to collect the results.
@@ -309,20 +309,14 @@ public class DingoParser {
         }
     }
 
-    protected static boolean compatibleMysql(SqlNode sqlNode) {
+    protected static boolean compatibleMysql(SqlNode sqlNode, PlanProfile planProfile) {
         if (sqlNode instanceof SqlShow || sqlNode instanceof SqlDesc || sqlNode instanceof SqlNextAutoIncrement) {
+            planProfile.setStmtType("show");
             return true;
-        } else if (sqlNode instanceof SqlSelect) {
-            return compatibleSelect((SqlSelect) sqlNode);
-        } else if (sqlNode instanceof SqlOrderBy) {
-            SqlOrderBy sqlOrderBy = (SqlOrderBy) sqlNode;
-            if (sqlOrderBy.query instanceof io.dingodb.calcite.grammar.dql.SqlSelect) {
-                return compatibleSelect((SqlSelect) sqlOrderBy.query);
-            }
-            return false;
         } else if (sqlNode instanceof SqlSetOption && !(sqlNode instanceof SqlSetPassword)) {
+            planProfile.setStmtType("set");
             return true;
-        } else if (sqlNode instanceof SqlPrepare
+        } else return sqlNode instanceof SqlPrepare
             || sqlNode instanceof SqlExecute
             || sqlNode instanceof SqlAnalyze
             || sqlNode instanceof SqlBeginTx
@@ -335,35 +329,7 @@ public class DingoParser {
             || sqlNode instanceof SqlKillQuery
             || sqlNode instanceof SqlKillConnection
             || sqlNode instanceof SqlLoadData
-            || sqlNode instanceof SqlCall
-        ) {
-            return true;
-        }
-        return false;
-    }
-
-    private static boolean compatibleSelect(SqlSelect sqlNode) {
-        SqlNodeList sqlNodes = sqlNode.getSelectList();
-        return sqlNodes.stream().allMatch(e -> {
-            if (e instanceof SqlBasicCall) {
-                SqlBasicCall sqlBasicCall = (SqlBasicCall) e;
-                String operatorName = sqlBasicCall.getOperator().getName();
-                if (operatorName.equalsIgnoreCase("AS")) {
-                    SqlNode sqlNode1 = sqlBasicCall.getOperandList().get(0);
-                    if (sqlNode1 instanceof SqlBasicCall) {
-                        operatorName = ((SqlBasicCall) sqlNode1).getOperator().getName();
-                        return operatorName.equalsIgnoreCase("database")
-                            || operatorName.equals("@")
-                            || operatorName.equals("@@");
-                    }
-                } else {
-                    return operatorName.equalsIgnoreCase("database")
-                        || operatorName.equals("@")
-                        || operatorName.equals("@@");
-                }
-            }
-            return false;
-        });
+            || sqlNode instanceof SqlCall;
     }
 
     public static Operation convertToOperation(SqlNode sqlNode, Connection connection, DingoParserContext context) {
@@ -375,6 +341,31 @@ public class DingoParser {
         if (sql.contains("\\r\\n") || sql.contains("\\n")) {
             sql = StringEscapeUtils.unescapeJson(sql);
         }
+        if (sql.endsWith(" ")) {
+            sql = sql.trim();
+        }
+        if (sql.endsWith(";")) {
+            sql = sql.substring(0, sql.length() - 1);
+        }
+        // for dump test
+        if ((sql.startsWith("use") || sql.startsWith("USE")) && sql.contains("`") ) {
+            sql = sql.replace("`", "");
+        }
+        //if (sql.contains(",'[") && sql.contains("]'")) {
+        //    sql = sql.replace(",'[", ", array[");
+        //    sql = sql.replace("]'", "]");
+        //}
+        // tmp todo replace
+        if (sql.startsWith("/*!") && sql.endsWith("*/")) {
+            sql = "set session net_write_timeout=10000";
+        } else if (sql.contains("/*!") && sql.contains("*/")){
+            int beginIndex = sql.indexOf("/*!");
+            int endIndex = sql.indexOf("*/");
+            String comment = sql.substring(beginIndex, endIndex + 2);
+            sql = sql.replace(comment, "");
+        }
+        // for dump test
+
         for (Map.Entry<String, String> entry : sensitiveKey.entrySet()) {
             if (sql.contains(entry.getKey())) {
                 sql = sql.replace(entry.getKey(), entry.getValue());

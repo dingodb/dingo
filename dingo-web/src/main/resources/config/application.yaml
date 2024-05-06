@@ -18,7 +18,7 @@ server:
     executor:
       heapAlarmThreshold: 80
     instance:
-      nodeExportPort: 19100
+      exportPort: 19100
       cpuAlarmThreshold: 70
       memAlarmThreshold: 70
       diskAlarmThreshold: 90

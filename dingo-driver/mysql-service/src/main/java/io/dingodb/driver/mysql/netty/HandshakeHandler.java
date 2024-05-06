@@ -28,7 +28,6 @@ import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.common.util.ByteUtils;
 import io.dingodb.driver.DingoConnection;
-import io.dingodb.driver.ServerMeta;
 import io.dingodb.driver.mysql.MysqlConnection;
 import io.dingodb.driver.mysql.command.MysqlResponseHandler;
 import io.dingodb.driver.mysql.facotry.SecureChatSslContextFactory;
@@ -260,8 +259,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         java.sql.Connection connection;
         try {
             connection = DriverManager.getConnection("jdbc:dingo:", properties);
-            ServerMeta serverMeta = ServerMeta.getInstance();
-            serverMeta.connectionMap.put("mysql:" + (threadId.get() - 1), (DingoConnection) connection);
+            ExecutionEnvironment.connectionMap.put("mysql:" + (threadId.get() - 1), connection);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -284,7 +282,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         int numToXor = toBeXord.length;
 
         if (clientPwd.length == 0) {
-            return dbPwd.length() == 0;
+            return dbPwd.isEmpty();
         }
         for (int i = 0; i < numToXor; i++) {
             toBeXord[i] = (byte) (toBeXord[i] ^ clientPwd[i]);

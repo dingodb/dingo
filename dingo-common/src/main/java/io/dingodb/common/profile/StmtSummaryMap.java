@@ -34,7 +34,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 public final class StmtSummaryMap {
     static BlockingQueue<SqlProfile> profileQueue;
     private static final LoadingCache<String, StmtSummary> stmtSummaryMap;
-    private static BlockingQueue<AnalyzeEvent> analyzeQueue;
+    private static final BlockingQueue<AnalyzeEvent> analyzeQueue;
 
     private StmtSummaryMap() {
     }
@@ -84,6 +84,10 @@ public final class StmtSummaryMap {
         if (sqlProfile == null || sqlProfile.getExecProfile() == null) {
             return;
         }
+        addProfileQueue(sqlProfile, connection);
+    }
+
+    public static void addProfileQueue(SqlProfile sqlProfile, Connection connection) {
         boolean slowQueryEnabled = false;
         long slowQueryThreshold = 5000;
         try {

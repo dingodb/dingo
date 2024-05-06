@@ -183,6 +183,9 @@ public class DingoCostModelV1 extends DingoCostModel {
         if (tableScan.getRealSelection() == null) {
             return dingoTable.getTable().getColumns();
         }
+        if (tableScan.getSelection() == null) {
+            return dingoTable.getTable().getColumns();
+        }
         int[] selections = tableScan.getSelection().getMappings();
         List<Column> selectionCdList = new ArrayList<>();
         for (int selection : selections) {

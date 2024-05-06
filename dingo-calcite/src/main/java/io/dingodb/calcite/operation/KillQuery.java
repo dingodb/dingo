@@ -38,12 +38,14 @@ public class KillQuery implements DdlOperation {
     public void execute() {
         Connection connection = connectionMap.get(threadId);
         AvaticaConnection avaticaConnection = (AvaticaConnection) connection;
-        avaticaConnection.statementMap.forEach((k, v) -> {
-            try {
-                v.cancel();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        if (avaticaConnection.statementMap != null) {
+            avaticaConnection.statementMap.forEach((k, v) -> {
+                try {
+                    v.cancel();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
     }
 }

@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.Objects;
 
 import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_RANGE_SCAN;
@@ -68,7 +69,7 @@ public final class DingoTableScanVisitFun {
         ITransaction transaction, DingoJobVisitor visitor, @NonNull DingoTableScan rel
     ) {
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
-        final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
+        final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
 
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
         SqlExpr filter = null;
@@ -115,18 +116,28 @@ public final class DingoTableScanVisitFun {
 
         List<Vertex> outputs = new ArrayList<>();
 
-        long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
-        // Use current read
-        if (transaction != null && transaction.isPessimistic()
-            && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.SnapshotIsolation
-            && (visitor.getKind() == SqlKind.INSERT || visitor.getKind() == SqlKind.DELETE
-            || visitor.getKind() == SqlKind.UPDATE) ) {
-            scanTs = TsoService.getDefault().tso();
+        long pointStartTs = 0;
+        if (transaction != null) {
+            pointStartTs = transaction.getPointStartTs();
         }
-        if (transaction != null && transaction.isPessimistic()
-            && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.ReadCommitted
-            && visitor.getKind() == SqlKind.SELECT) {
-            scanTs = TsoService.getDefault().tso();
+        long scanTs;
+        if (pointStartTs == 0) {
+            scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
+            // Use current read
+            if (transaction != null && transaction.isPessimistic()
+                && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.SnapshotIsolation
+                && (visitor.getKind() == SqlKind.INSERT || visitor.getKind() == SqlKind.DELETE
+                || visitor.getKind() == SqlKind.UPDATE)) {
+                scanTs = TsoService.getDefault().tso();
+            }
+            if (transaction != null && transaction.isPessimistic()
+                && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.ReadCommitted
+                && visitor.getKind() == SqlKind.SELECT) {
+                scanTs = TsoService.getDefault().tso();
+            }
+        } else {
+            scanTs = pointStartTs;
+            transaction.setPointStartTs(0);
         }
         // TODO
         for (int i = 0; i <= Optional.mapOrGet(td.getPartitions(), List::size, () -> 0); i++) {

@@ -40,6 +40,7 @@ public final class RelDataTypeUtils {
         RelDataTypeFactory.Builder builder = typeFactory.builder();
         final List<RelDataTypeField> fieldList = relDataType.getFieldList();
         selection.stream()
+            .filter(i -> i < fieldList.size())
             .mapToObj(fieldList::get)
             .forEach(builder::add);
         return builder.build();

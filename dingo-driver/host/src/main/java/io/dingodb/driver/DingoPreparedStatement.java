@@ -32,6 +32,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -122,6 +123,10 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
                     }
                 }
                 CommonId jobId = ((DingoSignature) signature).getJobId();
+                if (jobId == null) {
+                    List<Object[]> empty = new ArrayList<>();
+                    return empty.iterator();
+                }
                 Job job = jobManager.getJob(jobId);
                 Object[] paras = ((Object[]) job.getParasType().convertFrom(
                     parasValue,

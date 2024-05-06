@@ -16,6 +16,13 @@
 
 package io.dingodb.exec.fun;
 
+import io.dingodb.exec.fun.mysql.InstrFun;
+import io.dingodb.exec.fun.mysql.JsonExtractFun;
+import io.dingodb.exec.fun.mysql.DatabaseFun;
+import io.dingodb.exec.fun.mysql.SchemaFun;
+import io.dingodb.exec.fun.mysql.ScopeVarFun;
+import io.dingodb.exec.fun.mysql.UserDefVarFun;
+import io.dingodb.exec.fun.mysql.UserFun;
 import io.dingodb.exec.fun.mysql.VersionFun;
 import io.dingodb.exec.fun.special.ThrowFun;
 import io.dingodb.exec.fun.vector.VectorCosineDistanceFun;
@@ -48,6 +55,13 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerBinaryFun(VectorCosineDistanceFun.NAME, VectorCosineDistanceFun.INSTANCE);
         registerBinaryFun(VectorDistanceFun.NAME, VectorDistanceFun.INSTANCE);
         registerNullaryFun(VersionFun.NAME, VersionFun.INSTANCE);
+        registerBinaryFun(JsonExtractFun.NAME, JsonExtractFun.INSTANCE);
+        registerBinaryFun(DatabaseFun.NAME, DatabaseFun.INSTANCE);
+        registerBinaryFun(ScopeVarFun.NAME, ScopeVarFun.INSTANCE);
+        registerBinaryFun(UserDefVarFun.NAME, UserDefVarFun.INSTANCE);
+        registerBinaryFun(UserFun.NAME, UserFun.INSTANCE);
+        registerBinaryFun(InstrFun.NAME, InstrFun.INSTANCE);
+        registerBinaryFun(SchemaFun.NAME, SchemaFun.INSTANCE);
     }
 
     public static synchronized DingoFunFactory getInstance() {

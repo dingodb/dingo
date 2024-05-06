@@ -23,6 +23,7 @@ import io.dingodb.exec.operator.params.InfoSchemaScanParam;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Partition;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +65,17 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             case "TRIGGERS":
             case "STATISTICS":
             case "ROUTINES":
+            case "FILES":
             case "KEY_COLUMN_USAGE":
+            case "COLUMN_STATISTICS":
+            case "USER_PRIVILEGES":
+            case "SCHEMA_PRIVILEGES":
+            case "TABLE_PRIVILEGES":
+            case "TABLE_CONSTRAINTS":
+                return getInformationTableConstraints(metaService);
+            case "VIEWS":
+            case "COLUMN_PRIVILEGES":
+            case "COLLATIONS":
                 return getEmpty();
             case "STATEMENTS_SUMMARY":
                 return StmtSummaryMap.iterator();
@@ -236,6 +247,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                         if (td.getProperties().size() > 0) {
                             createOptions = td.getProperties().toString();
                         }
+                        boolean hasInc = td.getColumns().stream().anyMatch(Column::isAutoIncrement);
                         return new Object[]{"def",
                             e.getKey(),
                             td.getName(),
@@ -255,7 +267,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             0L,
                             // data free
                             null,
-                            td.autoIncrement,
+                            hasInc ? metaService.getLastId(td.tableId) : null,
                             new Timestamp(td.getCreateTime()),
                             updateTime,
                             null,
@@ -265,6 +277,26 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             td.getComment()
                         };
                     })
+                    .collect(Collectors.toList()).stream();
+            })
+            .collect(Collectors.toList());
+        return tuples.iterator();
+    }
+
+    private static Iterator<Object[]> getInformationTableConstraints(MetaService metaService) {
+        Map<String, MetaService> metaServiceMap = metaService.getSubMetaServices();
+        List<Object[]> tuples = metaServiceMap.entrySet()
+            .stream()
+            .flatMap(e -> {
+                Set<Table> tables = e.getValue().getTables();
+                return tables.stream()
+                    .map(td -> new Object[]{"def",
+                    e.getKey(),
+                    "PRIMARY",
+                    e.getKey(),
+                    td.getName(),
+                    "PRIMARY KEY"
+                   })
                     .collect(Collectors.toList()).stream();
             })
             .collect(Collectors.toList());

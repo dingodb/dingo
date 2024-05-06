@@ -84,8 +84,11 @@ public final class PrivilegeVerify {
 
     public static boolean verify(String user, String host, String schema, String table,
                                  DingoSqlAccessEnum accessType) {
-        if (prefilter(user) || verifyInformationSchema(schema, accessType)) {
+        if (prefilter(user)) {
             return true;
+        }
+        if ("INFORMATION_SCHEMA".equalsIgnoreCase(schema)) {
+            return accessType == DingoSqlAccessEnum.SELECT;
         }
         PrivilegeGather privilegeGather = env.getPrivilegeGatherMap().get(user + "#"
             + PrivilegeUtils.getRealAddress(host));

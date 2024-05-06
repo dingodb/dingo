@@ -4,7 +4,7 @@
       "type": "varchar",
       "precision": 512,
       "scale": -2147483648,
-      "primary": 0,
+      "primary": -1,
       "nullable": false
     },
     {
@@ -12,17 +12,17 @@
       "type": "varchar",
       "precision": 64,
       "scale": -2147483648,
-      "primary": 1,
+      "primary": -1,
       "nullable": false
     },
-   {
-     "name": "TRIGGER_NAME",
-     "type": "varchar",
-     "precision": 64,
-     "scale": -2147483648,
-     "primary": 2,
-     "nullable": false
-   },
+    {
+       "name": "TRIGGER_NAME",
+       "type": "varchar",
+       "precision": 64,
+       "scale": -2147483648,
+       "primary": -1,
+       "nullable": false
+    },
    {
      "name": "EVENT_MANIPULATION",
      "type": "varchar",
@@ -58,14 +58,16 @@
    {
      "name": "ACTION_ORDER",
      "type": "bigint",
-     "precision": -1,
      "scale": -2147483648,
+     "default": 0,
+     "precision": -1,
      "primary": -1,
      "nullable": false
    },
    {
      "name": "ACTION_CONDITION",
      "type": "varchar",
+     "precision": 65536,
      "scale": -2147483648,
      "primary": -1,
      "nullable": true
@@ -73,6 +75,7 @@
    {
      "name": "ACTION_STATEMENT",
      "type": "varchar",
+     "precision": 65536,
      "scale": -2147483648,
      "primary": -1,
      "nullable": false

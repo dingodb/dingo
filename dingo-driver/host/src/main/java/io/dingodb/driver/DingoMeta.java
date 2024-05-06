@@ -79,6 +79,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static io.dingodb.common.profile.StmtSummaryMap.addProfileQueue;
 import static io.dingodb.common.profile.StmtSummaryMap.addSqlProfile;
 import static java.util.Objects.requireNonNull;
 
@@ -242,7 +243,7 @@ public class DingoMeta extends MetaImpl {
             MdcUtils.setStmtId(stmtId);
             sh.signature = parser.parseQuery(jobManager, jobSeqId, sql);
             sqlProfile(sql, sqlProfile, parser);
-            addSqlProfile(sqlProfile, connection);
+            addProfileQueue(sqlProfile, connection);
             return sh;
         } catch (Throwable throwable) {
             LogUtils.error(log, throwable.getMessage(), throwable);
@@ -284,6 +285,7 @@ public class DingoMeta extends MetaImpl {
         MdcUtils.setStmtId(stmtId);
         try {
             DingoStatement statement = (DingoStatement) dingoConnection.getStatement(sh);
+            statement.initSqlProfile();
             statement.removeJob(jobManager);
             Signature signature = parser.parseQuery(jobManager, jobSeqId, sql);
             // add profile
@@ -299,6 +301,9 @@ public class DingoMeta extends MetaImpl {
             }
             // For local driver, here `fetch` is called.
             callback.execute();
+            if (signature.statementType == StatementType.OTHER_DDL) {
+                addSqlProfile(statement.getSqlProfile(), connection);
+            }
             final MetaResultSet metaResultSet = MetaResultSet.create(
                 sh.connectionId,
                 sh.id,
@@ -469,8 +474,11 @@ public class DingoMeta extends MetaImpl {
             }
             Signature signature = resultSet.getSignature();
             if (signature instanceof  DingoSignature) {
-                final long jobSeqId = ((DingoSignature) signature).getJobId().seq;
-                MdcUtils.setStmtId("Stmt_" + sh + "_" + jobSeqId);
+                DingoSignature dingoSignature = (DingoSignature) signature;
+                if (dingoSignature.getJobId() != null) {
+                    final long jobSeqId = dingoSignature.getJobId().seq;
+                    MdcUtils.setStmtId("Stmt_" + sh + "_" + jobSeqId);
+                }
             }
             Iterator<Object[]> iterator = resultSet.getIterator();
             ITransaction transaction = ((DingoConnection) connection).getTransaction();

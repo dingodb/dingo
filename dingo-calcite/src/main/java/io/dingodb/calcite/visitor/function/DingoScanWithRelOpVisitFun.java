@@ -152,6 +152,11 @@ public final class DingoScanWithRelOpVisitFun {
     }
 
     private static long getScanTs(@NonNull ITransaction transaction, SqlKind kind) {
+        long pointStartTs = transaction.getPointStartTs();
+        if (pointStartTs > 0) {
+            transaction.setPointStartTs(0);
+            return pointStartTs;
+        }
         long scanTs = transaction.getStartTs();
         // Use current read
         if (

@@ -637,9 +637,15 @@ public class LoadDataOperation implements DmlOperation {
 
     private Object[] processHideCol(Object[] tuples) {
         boolean hasHide = false;
+        boolean hasInc = false;
+        int incColIdx = -1;
         for (Column colDef : table.getColumns()) {
             if (colDef.getState() == 2 && colDef.isAutoIncrement()) {
                 hasHide = true;
+                break;
+            } else if (colDef.getState() == 1 && colDef.isAutoIncrement()) {
+                incColIdx = table.getColumns().indexOf(colDef);
+                hasInc = true;
                 break;
             }
         }
@@ -649,9 +655,12 @@ public class LoadDataOperation implements DmlOperation {
             Long id = metaService.getAutoIncrement(table.getTableId());
             tupleTmp[tuples.length] = id.toString();
             return tupleTmp;
-        } else {
-            return tuples;
+        } else if (hasInc && schema.fieldCount() == tuples.length && incColIdx >= 0 && incColIdx < tuples.length) {
+            MetaService metaService = MetaService.root();
+            long autoIncVal = Long.parseLong(tuples[incColIdx].toString());
+            metaService.updateAutoIncrement(table.getTableId(), autoIncVal);
         }
+        return tuples;
     }
 
     private boolean checkEngine() {

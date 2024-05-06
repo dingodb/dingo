@@ -20,6 +20,13 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import io.dingodb.exec.fun.AutoIncrementFun;
 import io.dingodb.exec.fun.PowFunFactory;
+import io.dingodb.exec.fun.mysql.InstrFun;
+import io.dingodb.exec.fun.mysql.JsonExtractFun;
+import io.dingodb.exec.fun.mysql.DatabaseFun;
+import io.dingodb.exec.fun.mysql.SchemaFun;
+import io.dingodb.exec.fun.mysql.ScopeVarFun;
+import io.dingodb.exec.fun.mysql.UserDefVarFun;
+import io.dingodb.exec.fun.mysql.UserFun;
 import io.dingodb.exec.fun.mysql.VersionFun;
 import io.dingodb.exec.fun.special.ThrowFun;
 import io.dingodb.exec.fun.vector.VectorCosineDistanceFun;
@@ -315,6 +322,55 @@ public class DingoOperatorTable implements SqlOperatorTable {
             ReturnTypes.VARCHAR_2000,
             null,
             OperandTypes.POSITIVE_INTEGER_LITERAL.or(OperandTypes.NILADIC),
+            SqlFunctionCategory.STRING
+        );
+        registerFunction(
+            JsonExtractFun.NAME,
+            ReturnTypes.VARCHAR_2000,
+            DingoInferTypes.VARCHAR,
+            family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
+            SqlFunctionCategory.STRING
+        );
+        registerFunction(
+            DatabaseFun.NAME,
+            ReturnTypes.VARCHAR_2000,
+            DingoInferTypes.VARCHAR,
+            family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
+            SqlFunctionCategory.STRING
+        );
+        registerFunction(
+            UserDefVarFun.NAME,
+            ReturnTypes.VARCHAR_2000,
+            DingoInferTypes.VARCHAR,
+            family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
+            SqlFunctionCategory.STRING
+        );
+        registerFunction(
+            ScopeVarFun.NAME,
+            ReturnTypes.VARCHAR_2000,
+            DingoInferTypes.VARCHAR,
+            family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
+            SqlFunctionCategory.STRING
+        );
+        registerFunction(
+            UserFun.NAME,
+            ReturnTypes.VARCHAR_2000,
+            DingoInferTypes.VARCHAR,
+            family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
+            SqlFunctionCategory.STRING
+        );
+        registerFunction(
+            InstrFun.NAME,
+            ReturnTypes.INTEGER,
+            DingoInferTypes.VARCHAR,
+            family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
+            SqlFunctionCategory.STRING
+        );
+        registerFunction(
+            SchemaFun.NAME,
+            ReturnTypes.VARCHAR_2000,
+            DingoInferTypes.VARCHAR,
+            family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
             SqlFunctionCategory.STRING
         );
     }

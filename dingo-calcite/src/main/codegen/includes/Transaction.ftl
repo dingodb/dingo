@@ -35,10 +35,10 @@ SqlLock SqlLock(): {
   List<SqlBlock> sqlBlockList = new ArrayList<>();
 } {
   <LOCK> { s = span(); }
-  (<TABLES> { tableNameList.add(CompoundIdentifier()); }
+  (<TABLES> { tableNameList.add(CompoundIdentifier()); } (<READ>|<WRITE> { String rw = getNextToken().image;})*
    (
      <COMMA>
-     { tableNameList.add(CompoundIdentifier()); }
+     { tableNameList.add(CompoundIdentifier()); } (<READ>|<WRITE> { String rw = getNextToken().image;})*
    )*
    { return new SqlLockTable(s.end(this), tableNameList); }
   |

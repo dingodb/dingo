@@ -23,6 +23,7 @@ import io.dingodb.common.store.KeyValue;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.sql.Connection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,8 @@ public class ExecutionEnvironment {
     }
 
     public static ExecutionEnvironment INSTANCE = new ExecutionEnvironment();
+
+    public static Map<String, Connection> connectionMap = new ConcurrentHashMap<>();
 
     public static Map<Object, Map<String, KeyValue>> memoryCache = new HashMap<>();
 

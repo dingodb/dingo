@@ -83,6 +83,9 @@ public final class JobManagerImpl implements JobManager {
 
     @Override
     public Job getJob(CommonId jobId) {
+        if (jobId == null) {
+            return null;
+        }
         return jobMap.get(jobId);
     }
 

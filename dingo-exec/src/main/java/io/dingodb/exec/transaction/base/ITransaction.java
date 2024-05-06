@@ -98,4 +98,8 @@ public interface ITransaction {
     CompletableFuture<Void> getFinishedFuture();
 
     CommitProfile getCommitProfile();
+
+    void setPointStartTs(long startTs);
+
+    long getPointStartTs();
 }

@@ -123,11 +123,22 @@ public class LogicalDingoTableScan extends TableScan {
         this.forDml = forDml;
         // If the columns of the table contain hide and delete, the data shows that they need to be deleted
         if (selection != null) {
+            int fieldCount = dingoTable.getTable().getColumns().size();
             if (forDml) {
-                this.selection = selection;
+                int[] mappingTmp = selection.getMappings();
+                List<Integer> selectionTmp = new ArrayList<>();
+                for (int i : mappingTmp) {
+                    if (i < fieldCount) {
+                        selectionTmp.add(i);
+                    }
+                }
+                this.selection = TupleMapping.of(selectionTmp);
             } else {
                 List<Integer> mappingList = new ArrayList<>();
                 for (int index : selection.getMappings()) {
+                    if (index >= fieldCount) {
+                        continue;
+                    }
                     if (dingoTable.getTable().getColumns().get(index).getState() == 1) {
                         mappingList.add(index);
                     }

@@ -106,6 +106,8 @@ public final class DingoParserContext implements Context {
         rootSchema.add("longblob", blobType);
         rootSchema.add("mediumblob", blobType);
         rootSchema.add("tinyblob", blobType);
+        RelProtoDataType stringType = (RelDataTypeFactory factory) -> factory.createSqlType(SqlTypeName.VARCHAR);
+        rootSchema.add("json", stringType);
 
         CalciteConnectionConfigImpl config;
         if (options != null) {

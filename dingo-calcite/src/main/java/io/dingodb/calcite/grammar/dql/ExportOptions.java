@@ -31,6 +31,7 @@ public class ExportOptions {
     private byte[] escaped;
     private byte[] lineStarting;
     private String charset;
+    private long startTs;
 
     public ExportOptions(boolean export,
                          String outfile,
@@ -39,7 +40,8 @@ public class ExportOptions {
                          byte[] lineTerminated,
                          byte[] escaped,
                          byte[] lineStarting,
-                         String charset) {
+                         String charset,
+                         long startTs) {
         this.export = export;
         this.outfile = outfile;
         this.terminated = terminated;
@@ -48,6 +50,7 @@ public class ExportOptions {
         this.escaped = escaped;
         this.lineStarting = lineStarting;
         this.charset = charset;
+        this.startTs = startTs;
     }
 
 }

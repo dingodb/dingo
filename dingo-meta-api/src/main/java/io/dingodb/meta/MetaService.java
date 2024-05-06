@@ -184,4 +184,6 @@ public interface MetaService {
     Long getNextAutoIncrement(CommonId tableId);
 
     void updateAutoIncrement(CommonId tableId, long autoIncrementId);
+
+    long getLastId(CommonId tableId);
 }

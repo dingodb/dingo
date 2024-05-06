@@ -80,6 +80,7 @@ public final class MysqlInit {
     private static final String FIXED = "Fixed";
     // engine
     private static final String LSM = Common.Engine.LSM.name();
+    private static final String TXN_LSM = Common.Engine.TXN_LSM.name();
     private static int replica;
 
     private MysqlInit() {
@@ -93,26 +94,37 @@ public final class MysqlInit {
         }
         String coordinatorSvr = args[0];
         initMetaStore(coordinatorSvr);
+        replica = (int) initReplica(coordinatorSvr);
         System.out.println("init meta store success");
         createAndInitTable(MYSQL, USER, BASE_TABLE, LSM, DYNAMIC);
         initTableByTemplate(MYSQL, DB, BASE_TABLE, LSM, FIXED);
         initTableByTemplate(MYSQL, TABLES_PRIV, BASE_TABLE, LSM, FIXED);
         initTableByTemplate(INFORMATION_SCHEMA, GLOBAL_VARIABLES, SYSTEM_VIEW, LSM, FIXED);
         initGlobalVariables(coordinatorSvr);
-        initTableByTemplate(INFORMATION_SCHEMA, "COLUMNS", SYSTEM_VIEW, LSM, DYNAMIC);
-        initTableByTemplate(INFORMATION_SCHEMA, "PARTITIONS", SYSTEM_VIEW, LSM, DYNAMIC);
-        initTableByTemplate(INFORMATION_SCHEMA, "EVENTS", SYSTEM_VIEW, LSM, DYNAMIC);
-        initTableByTemplate(INFORMATION_SCHEMA, "TRIGGERS", SYSTEM_VIEW, LSM, DYNAMIC);
-        initTableByTemplate(INFORMATION_SCHEMA, "STATISTICS", SYSTEM_VIEW, LSM, FIXED);
-        initTableByTemplate(INFORMATION_SCHEMA, "ROUTINES", SYSTEM_VIEW, LSM, DYNAMIC);
-        initTableByTemplate(INFORMATION_SCHEMA, "KEY_COLUMN_USAGE", SYSTEM_VIEW, LSM, FIXED);
-        initTableByTemplate(INFORMATION_SCHEMA, "SCHEMATA", SYSTEM_VIEW, LSM, FIXED);
-        initTableByTemplate(INFORMATION_SCHEMA, "TABLES", SYSTEM_VIEW, LSM, FIXED);
-        initTableByTemplate(INFORMATION_SCHEMA, "STATEMENTS_SUMMARY", SYSTEM_VIEW, LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "COLUMNS", SYSTEM_VIEW, TXN_LSM, DYNAMIC);
+        initTableByTemplate(INFORMATION_SCHEMA, "PARTITIONS", SYSTEM_VIEW, TXN_LSM, DYNAMIC);
+        initTableByTemplate(INFORMATION_SCHEMA, "EVENTS", SYSTEM_VIEW, TXN_LSM, DYNAMIC);
+        initTableByTemplate(INFORMATION_SCHEMA, "TRIGGERS", SYSTEM_VIEW, TXN_LSM, DYNAMIC);
+        initTableByTemplate(INFORMATION_SCHEMA, "STATISTICS", SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "ROUTINES", SYSTEM_VIEW, TXN_LSM, DYNAMIC);
+        initTableByTemplate(INFORMATION_SCHEMA, "KEY_COLUMN_USAGE", SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "SCHEMATA", SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "TABLES", SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "STATEMENTS_SUMMARY", SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "FILES", SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "COLUMN_STATISTICS", SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "USER_PRIVILEGES", SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "SCHEMA_PRIVILEGES", SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "TABLE_PRIVILEGES", SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "TABLE_CONSTRAINTS", SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "COLUMN_PRIVILEGES", SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "VIEWS", SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(INFORMATION_SCHEMA, "COLLATIONS", SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(MYSQL, "ANALYZE_TASK", BASE_TABLE, LSM, DYNAMIC);
         initTableByTemplate(MYSQL, "CM_SKETCH", BASE_TABLE, LSM, DYNAMIC);
         initTableByTemplate(MYSQL, "TABLE_STATS", BASE_TABLE, LSM, DYNAMIC);
         initTableByTemplate(MYSQL, "TABLE_BUCKETS", BASE_TABLE, LSM, DYNAMIC);
+        initTableByTemplate(MYSQL, "PROCS_PRIV", BASE_TABLE, LSM, DYNAMIC);
         int code = check();
         close();
         System.out.println("code:" + code);
@@ -251,7 +263,7 @@ public final class MysqlInit {
         values.add(new Object[]{"thread_concurrency", "10"});
         values.add(new Object[]{"time_zone", "SYSTEM"});
         values.add(new Object[]{"system_time_zone", "UTC"});
-        values.add(new Object[]{"sql_mode", ""});
+        values.add(new Object[]{"sql_mode", "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"});
         values.add(new Object[]{"query_cache_type", "OFF"});
         values.add(new Object[]{"query_cache_size", "16777216"});
         values.add(new Object[]{"performance_schema", "0"});
@@ -295,6 +307,7 @@ public final class MysqlInit {
         values.add(new Object[]{"slow_query_threshold", "5000"});
         values.add(new Object[]{"sql_profile_enable", "on"});
         values.add(new Object[]{"metric_log_enable", "on"});
+        values.add(new Object[]{"increment_backup", "off"});
         return values;
     }
 
@@ -373,7 +386,37 @@ public final class MysqlInit {
                 jsonFile = "/mysql-tableStats.json";
                 break;
             case "STATEMENTS_SUMMARY":
-                jsonFile = "/information_stmtSummary.json";
+                jsonFile = "/information-stmtSummary.json";
+                break;
+            case "FILES":
+                jsonFile = "/information-files.json";
+                break;
+            case "COLUMN_STATISTICS":
+                jsonFile = "/information-columnStatistics.json";
+                break;
+            case "USER_PRIVILEGES":
+                jsonFile = "/information-userPrivileges.json";
+                break;
+            case "SCHEMA_PRIVILEGES":
+                jsonFile = "/information-schemaPrivileges.json";
+                break;
+            case "TABLE_PRIVILEGES":
+                jsonFile = "/information-tablePrivileges.json";
+                break;
+            case "TABLE_CONSTRAINTS":
+                jsonFile = "/information-tablesConstraints.json";
+                break;
+            case "PROCS_PRIV":
+                jsonFile = "/mysql-procsPriv.json";
+                break;
+            case "COLUMN_PRIVILEGES":
+                jsonFile = "/information-columnPrivileges.json";
+                break;
+            case "VIEWS":
+                jsonFile = "/information-views.json";
+                break;
+            case "COLLATIONS":
+                jsonFile = "/information-collations.json";
                 break;
             default:
                 throw new RuntimeException("table not found");
@@ -485,7 +528,7 @@ public final class MysqlInit {
         }
     }
 
-    public static void getReplica(String coordinator) {
+    public static long initReplica(String coordinator) {
         CoordinatorServiceConnector connector = io.dingodb.sdk.common.utils.Optional.ofNullable(coordinator.split(","))
             .map(Arrays::stream)
             .map(ss -> ss
@@ -496,11 +539,10 @@ public final class MysqlInit {
             .orElseThrow("Create coordinator service connector error.");
         ClusterServiceClient clusterServiceClient = new ClusterServiceClient(connector);
         List<io.dingodb.sdk.common.cluster.Store> storeList = clusterServiceClient.getStoreMap(0);
-        long count = storeList
+        return storeList
             .stream()
             .filter(store -> store.storeType() == 0 && store.storeState() != 2)
             .count();
-        replica = (int)count;
     }
 
 }
