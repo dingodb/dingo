@@ -97,6 +97,8 @@ public class Profile {
             dagText.append(node).append(profile.type)
                 .append(",duration:").append(profile.duration)
                 .append(",count:").append(profile.count)
+//                .append(",start:").append(profile.start)
+//                .append(",end:").append(profile.end)
                 .append("  ").append(profile.location).append("\r\n");
         }
         for (Profile child : profile.children) {

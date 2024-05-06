@@ -24,7 +24,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.commons.lang3.StringUtils;
 
 public class SqlShowTableStatus extends SqlShow {
-    public String schema;
+    public String schemaName;
     public String sqlLikePattern;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator("SHOW TABLE STATUS", SqlKind.SELECT);
@@ -34,9 +34,9 @@ public class SqlShowTableStatus extends SqlShow {
      *
      * @param pos      pos
      */
-    public SqlShowTableStatus(SqlParserPos pos, String schema, String sqlLikePattern) {
+    public SqlShowTableStatus(SqlParserPos pos, String schemaName, String sqlLikePattern) {
         super(OPERATOR, pos);
-        this.schema = schema;
+        this.schemaName = schemaName;
         this.sqlLikePattern = sqlLikePattern;
     }
 
@@ -45,9 +45,9 @@ public class SqlShowTableStatus extends SqlShow {
         writer.keyword("SHOW");
         writer.keyword("TABLE");
         writer.keyword("STATUS");
-        if (StringUtils.isNotBlank(schema)) {
+        if (StringUtils.isNotBlank(schemaName)) {
             writer.keyword("FROM");
-            writer.keyword(schema);
+            writer.keyword(schemaName);
         }
         if (StringUtils.isNotBlank(sqlLikePattern)) {
             writer.keyword("LIKE");

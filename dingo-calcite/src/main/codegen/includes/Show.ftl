@@ -40,6 +40,8 @@ SqlShow SqlShow(): {
     |
     show = SqlShowColumns(s)
     |
+    show = SqlShowFields(s)
+    |
     show = SqlShowTable(s)
     |
     show = SqlShowLocks(s)
@@ -53,6 +55,12 @@ SqlShow SqlShow(): {
     show = SqlShowPlugins(s)
     |
     show = SqlShowProcess(s)
+    |
+    show = SqlShowTriggers(s)
+    |
+    show = SqlShowStarTs(s)
+    |
+    show = SqlShowStatus(s)
   )
   {
     return show;
@@ -82,6 +90,15 @@ SqlShow SqlShowColumns(Span s): {
    String pattern = null;
 } {
    <COLUMNS> <FROM> tableName = CompoundTableIdentifier()
+   [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+   { return new SqlShowColumns(s.end(this), tableName, pattern); }
+}
+
+SqlShow SqlShowFields(Span s): {
+  SqlIdentifier tableName = null;
+  String pattern = null;
+} {
+   <FIELDS> <FROM> tableName = CompoundTableIdentifier()
    [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
    { return new SqlShowColumns(s.end(this), tableName, pattern); }
 }
@@ -223,4 +240,23 @@ SqlShow SqlShowProcess(Span s): {
 } {
   <PROCESSLIST>
   { return new SqlShowProcessList(s.end(this)); }
+}
+
+SqlShow SqlShowTriggers(Span s): {
+  String pattern = null;
+} {
+  <TRIGGERS> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  { return new SqlShowTriggers(s.end(this), pattern); }
+}
+
+SqlShow SqlShowStarTs(Span s): {
+} {
+  <STARTTS> { return new SqlShowStartTs(s.end(this)); }
+}
+
+SqlShow SqlShowStatus(Span s): {
+  String pattern = null;
+} {
+  <STATUS> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  { return new SqlShowStatus(s.end(this), pattern); }
 }

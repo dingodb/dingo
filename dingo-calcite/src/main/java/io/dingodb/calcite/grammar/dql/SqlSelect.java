@@ -122,4 +122,11 @@ public class SqlSelect extends org.apache.calcite.sql.SqlSelect {
         }
         return null;
     }
+
+    public long getPointStartTs() {
+        if (exportOptions != null) {
+            return exportOptions.getStartTs();
+        }
+        return 0;
+    }
 }

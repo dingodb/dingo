@@ -1381,6 +1381,7 @@ ExportOptions exportOptions(): {
     byte[] escaped = "\\".getBytes();
     byte[] lineStarting = null;
     String exportCharset = "utf8";
+    long startTs = 0;
 } {
     <INTO> <OUTFILE> <QUOTED_STRING>
     {
@@ -1412,8 +1413,9 @@ ExportOptions exportOptions(): {
                                    [<BINARY_STRING_LITERAL> { lineStarting = getSpecialHexBytes(token.image); }]
                  ]
      ]
+     [ <STARTTS> (<UNSIGNED_INTEGER_LITERAL> | <DECIMAL_NUMERIC_LITERAL>) { startTs = Long.parseLong(token.image); }]
      {
-       return new ExportOptions(export, outfile, terminated, enclosed, lineTerminated, escaped, lineStarting, exportCharset);
+       return new ExportOptions(export, outfile, terminated, enclosed, lineTerminated, escaped, lineStarting, exportCharset, startTs);
      }
 }
 
@@ -4199,8 +4201,8 @@ SqlCall SequenceExpression() :
  */
 SqlSetOption SqlSetOption(Span s, String scope) :
 {
-    SqlIdentifier name;
-    SqlIdentifier identifier;
+    SqlIdentifier name = null;
+    SqlIdentifier identifier = null;
     SqlNode val = null;
     String user = null;
     String host = "%";
@@ -4225,6 +4227,8 @@ SqlSetOption SqlSetOption(Span s, String scope) :
                 return new SqlSetPassword(s.end(this), user, host, password);
               }
         ]
+        (
+        [ <COMMA> ]
         [ <GLOBAL> { scope = "SYSTEM"; } ]
         [ <SESSION> { scope = "SESSION"; } ]
         [ <EXECUTOR> { scope = "EXECUTOR"; } ]
@@ -4259,6 +4263,18 @@ SqlSetOption SqlSetOption(Span s, String scope) :
             return new SqlSetOption(s.end(this), scope, name, val);
          }
         |
+          <READ> [<WRITE> { val = new SqlIdentifier("off", s.end(this)); }]{
+             name = new SqlIdentifier("transaction_read_only", name.getParserPosition());
+             if (val == null) {
+               val = new SqlIdentifier("on", s.end(this));
+             }
+           }
+        |
+          <WRITE> {
+             name = new SqlIdentifier("transaction_read_only", name.getParserPosition());
+             val = new SqlIdentifier("off", s.end(this));
+           }
+        |
         <EQ>
         (
             val = Literal()
@@ -4275,13 +4291,14 @@ SqlSetOption SqlSetOption(Span s, String scope) :
              val = new SqlIdentifier(token.image.toUpperCase(Locale.ROOT), getPos());
            }
         )
+        )
+        )*
         {
             if (scope == null) {
                scope = "session";
             }
             return new SqlSetOption(s.end(val), scope, name, val);
         }
-        )
     |
         <RESET> {
             s.add(this);

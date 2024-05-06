@@ -16,6 +16,7 @@
 
 package io.dingodb.driver.mysql;
 
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.client.SessionVariableChange;
 import io.dingodb.driver.DingoConnection;
@@ -69,12 +70,12 @@ public class SessionVariableChangeWatcher implements Observer {
                     }
                 }
             } else {
-                if (ServerMeta.getInstance().connectionMap.containsKey(sessionVariable.getValue())) {
-                    DingoConnection dingoConnection = ServerMeta.getInstance()
+                if (ExecutionEnvironment.connectionMap.containsKey(sessionVariable.getValue())) {
+                    DingoConnection dingoConnection = (DingoConnection) ExecutionEnvironment
                         .connectionMap.get(sessionVariable.getValue());
                     try {
                         dingoConnection.close();
-                        ServerMeta.getInstance().connectionMap.remove(sessionVariable.getValue());
+                        ExecutionEnvironment.connectionMap.remove(sessionVariable.getValue());
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
                     }

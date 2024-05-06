@@ -35,6 +35,8 @@ dependencies {
     compileOnly group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     annotationProcessor group: 'org.mapstruct', name: 'mapstruct-processor', version: 'mapstruct'.v()
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    runtimeOnly group: 'mysql', name:'mysql-connector-java', version: 'mysql-connector'.v()
 }
 
 test {

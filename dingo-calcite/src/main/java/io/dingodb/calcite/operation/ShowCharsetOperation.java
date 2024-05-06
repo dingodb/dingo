@@ -29,7 +29,7 @@ public class ShowCharsetOperation extends QueryOperation {
     }
 
     @Override
-    public Iterator getIterator() {
+    public Iterator<Object[]> getIterator() {
         List<Object[]> tupleList = new ArrayList<>();
         tupleList.add(new Object[] {"utf8", "UTF-8 Unicode", "utf8_bin", 3});
         return tupleList.iterator();

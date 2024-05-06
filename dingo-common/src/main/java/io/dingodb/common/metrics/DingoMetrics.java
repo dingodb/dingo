@@ -19,22 +19,32 @@ package io.dingodb.common.metrics;
 import com.codahale.metrics.CachedGauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.Timer;
+import com.codahale.metrics.jmx.JmxReporter;
 import io.dingodb.common.concurrent.Executors;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+@Slf4j
 public final class DingoMetrics {
-    private static final MetricRegistry metricRegistry = new MetricRegistry();
+    public static final MetricRegistry metricRegistry = new MetricRegistry();
 
     public static AtomicLong activeTaskCount = new AtomicLong(0);
     private static final LoggerReporter slf4jReporter = LoggerReporter.forRegistry(metricRegistry).build();
+    public static JmxReporter jmxReporter = JmxReporter.forRegistry(metricRegistry).build();
+
+    public static Map<String, List<Long>> sqlCallLatencyMap = new ConcurrentHashMap<>();
 
     static {
+        jmxReporter.start();
         slf4jReporter.start(60000, TimeUnit.MILLISECONDS);
         metricRegistry.register("forkCommonPool", new CachedGauge<Integer>(5, TimeUnit.MINUTES) {
             @Override
@@ -81,6 +91,54 @@ public final class DingoMetrics {
                 return  (double) (totalMemory - freeMemory) / totalMemory * 100;
             }
         });
+        metricRegistry.register("select-latency", new CachedGauge<Double>(5, TimeUnit.MINUTES) {
+            @Override
+            protected Double loadValue() {
+                List<Long> durationList = sqlCallLatencyMap.get("select");
+                if (durationList == null) {
+                    return 0D;
+                }
+                double avg = durationList.stream().mapToInt(Long::intValue).average().orElse(0);
+                sqlCallLatencyMap.remove("select");
+                return avg;
+            }
+        });
+        metricRegistry.register("delete-latency", new CachedGauge<Double>(5, TimeUnit.MINUTES) {
+            @Override
+            protected Double loadValue() {
+                List<Long> durationList = sqlCallLatencyMap.get("delete");
+                if (durationList == null) {
+                    return 0D;
+                }
+                double avg = durationList.stream().mapToInt(Long::intValue).average().orElse(0);
+                sqlCallLatencyMap.remove("delete");
+                return avg;
+            }
+        });
+        metricRegistry.register("update-latency", new CachedGauge<Double>(5, TimeUnit.MINUTES) {
+            @Override
+            protected Double loadValue() {
+                List<Long> durationList = sqlCallLatencyMap.get("update");
+                if (durationList == null) {
+                    return 0D;
+                }
+                double avg = durationList.stream().mapToInt(Long::intValue).average().orElse(0);
+                sqlCallLatencyMap.remove("update");
+                return avg;
+            }
+        });
+        metricRegistry.register("insert-latency", new CachedGauge<Double>(5, TimeUnit.MINUTES) {
+            @Override
+            protected Double loadValue() {
+                List<Long> durationList = sqlCallLatencyMap.get("insert");
+                if (durationList == null) {
+                    return 0D;
+                }
+                double avg = durationList.stream().mapToInt(Long::intValue).average().orElse(0);
+                sqlCallLatencyMap.remove("insert");
+                return avg;
+            }
+        });
 
     }
 
@@ -100,6 +158,15 @@ public final class DingoMetrics {
     }
 
     public static void latency(final @NonNull String name, final long durationMs) {
+        sqlCallLatencyMap.computeIfAbsent(name, key -> {
+            List<Long> durationList = new ArrayList<>();
+            durationList.add(durationMs);
+            return durationList;
+        });
+        sqlCallLatencyMap.computeIfPresent(name, (k, v) -> {
+            v.add(durationMs);
+            return v;
+        });
         metricRegistry.timer(name).update(durationMs, TimeUnit.MILLISECONDS);
     }
 
@@ -108,10 +175,10 @@ public final class DingoMetrics {
     }
 
     public static void startReporter() {
-        slf4jReporter.setMetricLogEnable(true);
+//        slf4jReporter.setMetricLogEnable(true);
     }
 
     public static void stopReporter() {
-        slf4jReporter.setMetricLogEnable(false);
+//        slf4jReporter.setMetricLogEnable(false);
     }
 }

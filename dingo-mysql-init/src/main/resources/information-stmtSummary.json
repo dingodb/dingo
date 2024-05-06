@@ -20,7 +20,7 @@
     "type": "varchar",
     "precision": 64,
     "scale": -2147483648,
-    "primary": 1,
+    "primary": 2,
     "nullable": true
   },
   {
@@ -368,6 +368,22 @@
     "nullable": false
   },
   {
+    "name": "PLAN",
+    "type": "varchar",
+    "precision": 20,
+    "scale": -2147483648,
+    "primary": -1,
+    "nullable": false
+  },
+  {
+    "name": "BINARY_PLAN",
+    "type": "varchar",
+    "precision": 20,
+    "scale": -2147483648,
+    "primary": -1,
+    "nullable": false
+  },
+  {
     "name": "PLAN_IN_CACHE",
     "type": "bigint",
     "precision": -1,
@@ -379,6 +395,14 @@
     "name": "PREPARED",
     "type": "BOOLEAN",
     "precision": -1,
+    "scale": -2147483648,
+    "primary": -1,
+    "nullable": false
+  },
+  {
+    "name": "ID",
+    "type": "varchar",
+    "precision": 512,
     "scale": -2147483648,
     "primary": -1,
     "nullable": false

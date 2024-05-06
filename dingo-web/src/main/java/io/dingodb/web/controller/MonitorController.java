@@ -17,14 +17,16 @@
 package io.dingodb.web.controller;
 
 import io.dingodb.sdk.common.Location;
+import io.dingodb.web.model.dto.Stmt;
 import io.dingodb.web.model.vo.ClusterInfo;
 import io.dingodb.web.model.vo.IndexInfo;
 import io.dingodb.web.model.vo.Region;
 import io.dingodb.web.model.vo.RegionDetailInfo;
+import io.dingodb.web.model.vo.ResVo;
 import io.dingodb.web.model.vo.StoreDetailInfo;
-import io.dingodb.web.model.vo.StoreInfo;
 import io.dingodb.web.model.vo.TableInfo;
 import io.dingodb.web.model.vo.TreeSchema;
+import io.dingodb.web.service.DaoService;
 import io.dingodb.web.service.MonitorServerService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -46,6 +48,9 @@ public class MonitorController {
 
     @Autowired
     private MonitorServerService monitorServerService;
+
+    @Autowired
+    private DaoService daoService;
 
 
     @ApiOperation("Get data")
@@ -147,6 +152,26 @@ public class MonitorController {
     @GetMapping("/api/queryProcessLeaderRegion")
     public ResponseEntity<List<Region>> queryProcessLeaderRegions(long id) {
         return ResponseEntity.ok(monitorServerService.getRegionMap("regionMap").getOrDefault(id, new ArrayList<>()));
+    }
+
+    @ApiOperation("get stmt summary")
+    @GetMapping("/api/queryStmt")
+    public ResponseEntity<List<Stmt>> getStmt() {
+        return ResponseEntity.ok(daoService.findAll());
+    }
+
+    @ApiOperation("get top sql")
+    @GetMapping("/api/queryTopSql")
+    public ResponseEntity<List<Stmt>> getTopSql() {
+        return ResponseEntity.ok(daoService.topSql());
+    }
+
+    @ApiOperation("login")
+    @GetMapping("/api/login")
+    public ResponseEntity<ResVo> login(String user, String password) {
+        boolean res = daoService.login(user, password);
+        ResVo resVo = new ResVo(res ? 1 : 0, "");
+        return ResponseEntity.ok(resVo);
     }
 
 }

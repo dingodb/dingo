@@ -16,6 +16,7 @@
 
 package io.dingodb.driver.mysql;
 
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.ServerMeta;
@@ -78,7 +79,7 @@ public class MysqlConnection {
                     connection.close();
                 }
             }
-            Map connectionMap = ServerMeta.getInstance().connectionMap;
+            Map connectionMap = ExecutionEnvironment.connectionMap;
             connectionMap.remove("mysql:" + threadId);
         } catch (Exception e) {
             e.printStackTrace();

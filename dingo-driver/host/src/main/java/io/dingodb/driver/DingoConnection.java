@@ -112,6 +112,12 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         LogUtils.trace(log, "Connection url = {}, properties = {}, default schema = {}.", url, info, defaultSchema);
         context = new DingoParserContext(defaultSchema, info);
         sessionVariables = new Properties();
+        String user = info.getProperty("user");
+        String host  = info.getProperty("host");
+        if (user != null && host != null) {
+            sessionVariables.setProperty("@user", user);
+            sessionVariables.setProperty("@host", host);
+        }
     }
 
     public DingoMeta getMeta() {
@@ -364,8 +370,6 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                                              boolean isUpdate) throws SQLException {
         try {
             return super.executeQueryInternal(statement, signature, firstFrame, state, isUpdate);
-        } catch (Exception e) {
-            throw e;
         } finally {
             this.commandStartTime = 0;
         }
@@ -380,8 +384,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         this.command = sql;
         this.commandStartTime = System.currentTimeMillis();
         try {
-            Meta.ExecuteResult result = super.prepareAndExecuteInternal(statement, sql, maxRowCount);
-            return result;
+            return super.prepareAndExecuteInternal(statement, sql, maxRowCount);
         } catch (Exception e) {
             this.commandStartTime = 0;
             throw e;
@@ -473,5 +476,17 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         public @Nullable Object get(String name) {
             return connection.getContext().getOption(name);
         }
+    }
+
+    public String toString() {
+        return id;
+    }
+
+    @Override
+    public String getSchema() throws SQLException {
+        if (context.getUsedSchema() != null) {
+            return context.getUsedSchema().getName();
+        }
+        return "dingo";
     }
 }

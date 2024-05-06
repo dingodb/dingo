@@ -16,7 +16,6 @@
 
 package io.dingodb.common.profile;
 
-import io.dingodb.common.metrics.DingoMetrics;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,6 +24,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Slf4j
@@ -79,14 +79,18 @@ public class StmtSummary {
     private long sumAffectedRows;
     private long maxAffectedRows;
     private long avgAffectedRows;
+    private String plan;
     private long planInCache;
     private boolean prepared;
+    private String binaryPlan;
+    private String id;
 
     private long analyzeInc;
 
     public StmtSummary(String stmtSummaryKey) {
         this.firstSeen = System.currentTimeMillis();
         this.sql = stmtSummaryKey;
+        this.id = UUID.randomUUID().toString().replace("-", "");
         int sqlPos;
         if ((sqlPos = stmtSummaryKey.indexOf(":")) > 0) {
             String prefix = stmtSummaryKey.substring(0, sqlPos);
@@ -112,7 +116,7 @@ public class StmtSummary {
         if (maxLatency < profile.getDuration()) {
             this.maxLatency = profile.getDuration();
         }
-        if (minLatency > profile.getDuration()) {
+        if (minLatency > profile.getDuration() || minLatency == 0) {
             this.minLatency = profile.getDuration();
         }
         this.avgLatency = sumLatency / execCount;
@@ -151,6 +155,7 @@ public class StmtSummary {
             if (this.maxLockLatency < planProfile.getLock()) {
                 this.maxLockLatency = planProfile.getLock();
             }
+            this.avgLockLatency = sumLockLatency / execCount;
             if (planProfile.isHitCache()) {
                 this.planInCache++;
             }
@@ -160,23 +165,29 @@ public class StmtSummary {
         }
         this.statementType = profile.getStatementType();
 
-        ExecProfile jobProfile = profile.getExecProfile();
-        if (jobProfile != null) {
-            this.sumJobLatency += jobProfile.duration;
-            if (this.maxJobLatency < jobProfile.duration) {
-                this.maxJobLatency = jobProfile.duration;
+        ExecProfile execProfile = profile.getExecProfile();
+        if (execProfile != null) {
+            this.sumJobLatency += execProfile.duration;
+            if (this.maxJobLatency < execProfile.duration) {
+                this.maxJobLatency = execProfile.duration;
             }
             this.avgJobLatency = sumJobLatency / execCount;
+            if (plan == null) {
+                plan = execProfile.dumpTree(new byte[0]);
+            }
+            if (binaryPlan == null) {
+                binaryPlan = execProfile.binaryPlanOp();
+            }
             // foreach profile to calculate avgKvLatency and set
             // foreach profile to calculate operator duration
 
             if ("select".equals(statementType)) {
-                this.sumResultCount += jobProfile.count;
-                if (this.maxResultCount < jobProfile.count) {
-                    this.maxResultCount = jobProfile.count;
+                this.sumResultCount += execProfile.count;
+                if (this.maxResultCount < execProfile.count) {
+                    this.maxResultCount = execProfile.count;
                 }
-                if (this.minResultCount > jobProfile.count) {
-                    this.minResultCount = jobProfile.count;
+                if (this.minResultCount > execProfile.count) {
+                    this.minResultCount = execProfile.count;
                 }
                 this.avgResultCount = sumResultCount / execCount;
             }
@@ -184,9 +195,9 @@ public class StmtSummary {
                   || "update".equals(statementType)
                   || "insert".equals(statementType)
                   || "is_dml".equals(statementType)) {
-                if (jobProfile.getLastTuple() != null && jobProfile.getLastTuple().length > 0
-                    && jobProfile.getLastTuple()[0] instanceof Long) {
-                    long affectRows = (long) jobProfile.getLastTuple()[0];
+                if (execProfile.getLastTuple() != null && execProfile.getLastTuple().length > 0
+                    && execProfile.getLastTuple()[0] instanceof Long) {
+                    long affectRows = (long) execProfile.getLastTuple()[0];
                     this.sumAffectedRows += affectRows;
                     if (profile.isAutoCommit()) {
                         this.analyzeInc += affectRows;
@@ -254,8 +265,8 @@ public class StmtSummary {
                 maxCommitLatency, avgCommitLatency, sumPreWriteLatency, maxPreWriteLatency, avgPreWriteLatency,
                 sumCleanLatency, maxCleanLatency, avgCleanLatency, sumResultCount, maxResultCount,
                 avgResultCount, sumAffectedRows, maxAffectedRows,
-                avgAffectedRows, planInCache,
-                prepared};
+                avgAffectedRows, plan, binaryPlan, planInCache,
+                prepared, id};
         } finally {
             lock.readLock().unlock();
         }

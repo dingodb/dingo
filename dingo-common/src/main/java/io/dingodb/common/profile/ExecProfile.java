@@ -16,8 +16,13 @@
 
 package io.dingodb.common.profile;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Base64;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -47,9 +52,21 @@ public class ExecProfile extends Profile {
         return dag.toString();
     }
 
+    public String binaryPlanOp() {
+        if (profile != null) {
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                return mapper.writeValueAsString(profile);
+            } catch (IOException e) {
+                return "";
+            }
+        }
+        return "";
+    }
+
     @Override
     public String toString() {
-        return "ExecProfile{" +
+        return "Exec{" +
             "duration=" + duration +
             ", start=" + start +
             ", end=" + end +

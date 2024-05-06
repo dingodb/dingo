@@ -365,6 +365,11 @@ public class LocalMetaService implements MetaService {
 
     }
 
+    @Override
+    public long getLastId(CommonId tableId) {
+        return 1L;
+    }
+
     @AutoService(MetaServiceProvider.class)
     public static class Provider implements MetaServiceProvider {
         @Override

@@ -62,7 +62,10 @@ public class LoggerReporter extends ScheduledReporter {
             Map.Entry entry;
             while(var6.hasNext()) {
                 entry = (Map.Entry)var6.next();
-                this.logGauge((String)entry.getKey(), (Gauge)entry.getValue());
+                String key = (String) entry.getKey();
+                if (!key.contains("latency")) {
+                    this.logGauge((String) entry.getKey(), (Gauge) entry.getValue());
+                }
             }
 
             var6 = counters.entrySet().iterator();

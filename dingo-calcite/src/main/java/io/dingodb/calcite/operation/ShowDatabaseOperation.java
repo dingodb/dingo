@@ -30,7 +30,7 @@ public class ShowDatabaseOperation extends QueryOperation {
 
     Connection connection;
 
-    private String sqlLikePattern;
+    private final String sqlLikePattern;
 
     public ShowDatabaseOperation(Connection connection, String sqlLikePattern) {
         this.connection = connection;
@@ -38,7 +38,7 @@ public class ShowDatabaseOperation extends QueryOperation {
     }
 
     @Override
-    public Iterator getIterator() {
+    public Iterator<Object[]> getIterator() {
         List<Object[]> schemas = new ArrayList<>();
         try {
             ResultSet rs = connection.getMetaData().getSchemas();

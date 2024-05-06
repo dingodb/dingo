@@ -545,4 +545,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
         AutoIncrementService.INSTANCE.updateAutoIncrementId(tableId, autoIncrementId);
     }
 
+    @Override
+    public long getLastId(CommonId tableId) {
+        return AutoIncrementService.INSTANCE.getLastId(tableId);
+    }
 }

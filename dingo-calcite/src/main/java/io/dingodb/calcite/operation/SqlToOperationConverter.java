@@ -44,9 +44,12 @@ import io.dingodb.calcite.grammar.dql.SqlShowGrants;
 import io.dingodb.calcite.grammar.dql.SqlShowLocks;
 import io.dingodb.calcite.grammar.dql.SqlShowPlugins;
 import io.dingodb.calcite.grammar.dql.SqlShowProcessList;
+import io.dingodb.calcite.grammar.dql.SqlShowStartTs;
+import io.dingodb.calcite.grammar.dql.SqlShowStatus;
 import io.dingodb.calcite.grammar.dql.SqlShowTableDistribution;
 import io.dingodb.calcite.grammar.dql.SqlShowTableStatus;
 import io.dingodb.calcite.grammar.dql.SqlShowTables;
+import io.dingodb.calcite.grammar.dql.SqlShowTriggers;
 import io.dingodb.calcite.grammar.dql.SqlShowVariables;
 import io.dingodb.calcite.grammar.dql.SqlShowWarnings;
 import io.dingodb.exec.transaction.base.TransactionType;
@@ -54,7 +57,6 @@ import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlSetOption;
 import org.apache.commons.lang3.StringUtils;
@@ -101,14 +103,6 @@ public final class SqlToOperationConverter {
                 sqlNextAutoIncrement.schemaName = getSchemaName(context);
             }
             return Optional.of(new ShowNextAutoIncrementOperation(sqlNextAutoIncrement));
-        } else if (sqlNode instanceof SqlSelect) {
-            SqlSelect sqlSelect = ((SqlSelect) sqlNode);
-            List<SqlShowCall> sqlShowCallList = getSqlShowCallList(sqlSelect);
-            return Optional.of(new ShowCallsOperation(sqlShowCallList, connection, context));
-        } else if (sqlNode instanceof SqlOrderBy) {
-            SqlSelect sqlSelect = (SqlSelect) ((SqlOrderBy) sqlNode).query;
-            List<SqlShowCall> sqlShowCallList = getSqlShowCallList(sqlSelect);
-            return Optional.of(new ShowCallsOperation(sqlShowCallList, connection, context));
         } else if (sqlNode instanceof SqlShowVariables) {
             SqlShowVariables sqlShowVariables = (SqlShowVariables) sqlNode;
             return Optional.of(new ShowVariablesOperation(sqlShowVariables.sqlLikePattern, sqlShowVariables.isGlobal,
@@ -146,7 +140,10 @@ public final class SqlToOperationConverter {
             return Optional.of(new ShowColumnsOperation(sqlShowColumns));
         } else if (sqlNode instanceof SqlShowTableStatus) {
             SqlShowTableStatus showTableStatus = (SqlShowTableStatus) sqlNode;
-            return Optional.of(new ShowTableStatusOperation(showTableStatus.schema, showTableStatus.sqlLikePattern));
+            if (StringUtils.isEmpty(showTableStatus.schemaName)) {
+                showTableStatus.schemaName = getSchemaName(context);
+            }
+            return Optional.of(new ShowTableStatusOperation(showTableStatus.schemaName, showTableStatus.sqlLikePattern));
         } else if (sqlNode instanceof SqlAnalyze) {
             SqlAnalyze analyze = (SqlAnalyze) sqlNode;
             if (StringUtils.isEmpty(analyze.getSchemaName())) {
@@ -228,32 +225,17 @@ public final class SqlToOperationConverter {
             String user = context.getOption("user");
             String host = context.getOption("host");
             return Optional.of(new ShowProcessListOperation(showProcessList.isProcessPrivilege(), user, host));
+        } else if (sqlNode instanceof SqlShowTriggers) {
+            SqlShowTriggers triggers = (SqlShowTriggers) sqlNode;
+            return Optional.of(new ShowTriggersOperation(triggers.sqlLikePattern));
+        } else if (sqlNode instanceof SqlShowStartTs) {
+            return Optional.of(new ShowStartTsOperation());
+        } else if (sqlNode instanceof SqlShowStatus) {
+            SqlShowStatus sqlShowStatus = (SqlShowStatus) sqlNode;
+            return Optional.of(new ShowStatusOperation(sqlShowStatus.sqlLikePattern));
         } else {
             return Optional.empty();
         }
-    }
-
-    private static List<SqlShowCall> getSqlShowCallList(SqlSelect sqlSelect) {
-        SqlNodeList sqlNodes = sqlSelect.getSelectList();
-        return sqlNodes.stream().map(e -> {
-            SqlBasicCall call = (SqlBasicCall) e;
-            String opName = call.getOperator().getName();
-            if (opName.equalsIgnoreCase("AS")) {
-                SqlIdentifier identifier = (SqlIdentifier) call.getOperandList().get(1);
-                opName = identifier.getSimple();
-                call = (SqlBasicCall) call.getOperandList().get(0);
-            } else {
-                StringBuilder colNmStr = new StringBuilder(opName);
-                if (call.getOperandList() != null && call.getOperandList().size() > 0) {
-                    colNmStr.append(call.getOperandList().get(0).toString());
-                }
-                opName = colNmStr.toString();
-                if (opName.contains("'")) {
-                    opName = opName.replace("'", "");
-                }
-            }
-            return new SqlShowCall(opName, call);
-        }).collect(Collectors.toList());
     }
 
     private static String getSchemaName(DingoParserContext context) {

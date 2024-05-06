@@ -48,10 +48,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -67,6 +69,7 @@ public abstract class BaseTransaction implements ITransaction {
 
     protected int isolationLevel;
     protected long startTs;
+    protected long pointStartTs;
     protected CommonId txnId;
     protected CommonId txnInstanceId;
     protected boolean closed = false;
@@ -135,14 +138,10 @@ public abstract class BaseTransaction implements ITransaction {
 
     public boolean isPessimistic() {
         TransactionType type = getType();
-        switch (type) {
-            case PESSIMISTIC:
-                return true;
-        }
-        return false;
+        return Objects.requireNonNull(type) == TransactionType.PESSIMISTIC;
     }
 
-    protected void sleep() {
+    protected static void sleep() {
         try {
             Thread.sleep(100);
         } catch (InterruptedException ex) {
@@ -161,12 +160,12 @@ public abstract class BaseTransaction implements ITransaction {
         if (getType() == TransactionType.NONE) {
             return;
         }
-        if (getSqlList().size() == 0 || !cache.checkCleanContinue(isPessimistic())) {
+        if (getSqlList().isEmpty() || !cache.checkCleanContinue(isPessimistic())) {
             LogUtils.warn(log, "The current {} has no data to cleanUp", transactionOf());
             return;
         }
         Location currentLocation = MetaService.root().currentLocation();
-        CompletableFuture<Void> cleanUp_future = CompletableFuture.runAsync(() ->
+        CompletableFuture.runAsync(() ->
             cleanUpJobRun(jobManager, currentLocation), Executors.executor("exec-txnCleanUp")
         ).exceptionally(
             ex -> {
@@ -280,7 +279,7 @@ public abstract class BaseTransaction implements ITransaction {
             return;
         }
         checkContinue();
-        if (getSqlList().size() == 0 || !cache.checkContinue()) {
+        if (getSqlList().isEmpty() || !cache.checkContinue()) {
             LogUtils.warn(log, "The current {} has no data to commit", transactionOf());
             if (isPessimistic()) {
                 // PessimisticRollback
@@ -312,7 +311,7 @@ public abstract class BaseTransaction implements ITransaction {
             // 3、run PreWrite
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
             while (iterator.hasNext()) {
-                Object[] next = iterator.next();
+                iterator.next();
             }
             commitProfile.endPreWriteSecond();
             this.status = TransactionStatus.PRE_WRITE;
@@ -379,7 +378,7 @@ public abstract class BaseTransaction implements ITransaction {
                 rollback(jobManager);
                 throw new RuntimeException(txnId + " " + cacheToObject.getPartId()
                     + ",txnCommitPrimaryKey false, commit_ts:" + commitTs +",PrimaryKey:"
-                    + primaryKey.toString());
+                    + Arrays.toString(primaryKey));
             }
             this.status = TransactionStatus.COMMIT_PRIMARY_KEY;
             CompletableFuture<Void> commit_future = CompletableFuture.runAsync(() ->
@@ -430,7 +429,7 @@ public abstract class BaseTransaction implements ITransaction {
             }
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
             while (iterator.hasNext()) {
-                Object[] next = iterator.next();
+                iterator.next();
             }
             LogUtils.info(log, "{} cleanUpJobRun end", transactionOf());
         } catch (Throwable throwable) {
@@ -452,7 +451,7 @@ public abstract class BaseTransaction implements ITransaction {
             // 6、run Commit
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
             while (iterator.hasNext()) {
-                Object[] next = iterator.next();
+                iterator.next();
             }
             LogUtils.info(log, "{} commitJobRun end", transactionOf());
         } catch (Throwable throwable) {
@@ -469,7 +468,7 @@ public abstract class BaseTransaction implements ITransaction {
         if (getType() == TransactionType.NONE) {
             return;
         }
-        if (getSqlList().size() == 0 || !cache.checkContinue()) {
+        if (getSqlList().isEmpty() || !cache.checkContinue()) {
             LogUtils.warn(log, "The current {} has no data to rollback", transactionOf());
             return;
         }
@@ -485,7 +484,7 @@ public abstract class BaseTransaction implements ITransaction {
             jobId = job.getJobId();
             DingoTransactionRenderJob.renderRollBackJob(job, currentLocation, this, true);
             // 3、run RollBack
-            Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+            jobManager.createIterator(job, null);
             this.status = TransactionStatus.ROLLBACK;
         } catch (Throwable t) {
             LogUtils.error(log, t.getMessage(), t);

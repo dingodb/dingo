@@ -29,7 +29,7 @@ public class ShowCollationOperation extends QueryOperation {
     }
 
     @Override
-    public Iterator getIterator() {
+    public Iterator<Object[]> getIterator() {
         List<Object[]> tupleList = new ArrayList<>();
         tupleList.add(new Object[] {"utf8_bin", "utf8", 83, "", "Yes", 1});
         return tupleList.iterator();

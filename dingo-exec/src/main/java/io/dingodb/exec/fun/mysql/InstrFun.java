@@ -14,17 +14,22 @@
  * limitations under the License.
  */
 
-package io.dingodb.driver;
+package io.dingodb.exec.fun.mysql;
 
-import org.apache.calcite.avatica.Meta;
+import io.dingodb.expr.runtime.ExprConfig;
+import io.dingodb.expr.runtime.op.BinaryOp;
 
-import java.util.List;
+public class InstrFun extends BinaryOp {
+    private static final long serialVersionUID = -200033123590846940L;
 
-// Used by HttpServer
-@SuppressWarnings("unused")
-public class ServerMetaFactory implements Meta.Factory {
+    public static final InstrFun INSTANCE = new InstrFun();
+
+    public static final String NAME = "instr";
+
     @Override
-    public Meta create(List<String> args) {
-        return new ServerMeta();
+    public Object evalValue(Object value0, Object value1, ExprConfig config) {
+        String str = value0.toString();
+        String point = value1.toString();
+        return str.indexOf(point) + 1;
     }
 }

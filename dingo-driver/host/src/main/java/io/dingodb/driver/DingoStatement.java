@@ -79,12 +79,6 @@ public class DingoStatement extends AvaticaStatement {
             resultSetConcurrency,
             resultSetHoldability
         );
-        sqlProfile = new SqlProfile("statement", false);
-        sqlProfile.setSchema(connection.getContext().getUsedSchema().getName());
-        String user = connection.getContext().getOption("user");
-        String host = connection.getContext().getOption("host");
-        sqlProfile.setSimpleUser(user + "@" + host);
-        sqlProfile.setInstance(DingoConfiguration.location().toString());
     }
 
     @Override
@@ -169,6 +163,16 @@ public class DingoStatement extends AvaticaStatement {
             initServerStatus |= ServerStatus.SERVER_STATUS_IN_TRANS_READONLY;
         }
         return initServerStatus;
+    }
+
+    public void initSqlProfile() {
+        sqlProfile = new SqlProfile("statement", false);
+        DingoConnection connection1 = (DingoConnection) connection;
+        sqlProfile.setSchema(connection1.getContext().getUsedSchema().getName());
+        String user = connection1.getContext().getOption("user");
+        String host = connection1.getContext().getOption("host");
+        sqlProfile.setSimpleUser(user + "@" + host);
+        sqlProfile.setInstance(DingoConfiguration.location().toString());
     }
 
 }
