@@ -101,7 +101,7 @@ public class LoggerReporter extends ScheduledReporter {
 
     private void logTimer(String name, Timer timer) {
         Snapshot snapshot = timer.getSnapshot();
-        this.loggerProxy.log(this.marker, "type={}, name={}, count={}, min={}, max={}, mean={}, median={}, p75={}, p95={}, p98={}, p99={}, p999={}", "TIMER", this.prefix(name), timer.getCount(), this.convertDuration((double)snapshot.getMin()), this.convertDuration((double)snapshot.getMax()), this.convertDuration(snapshot.getMean()), this.convertDuration(snapshot.getStdDev()), this.convertDuration(snapshot.getMedian()), this.convertDuration(snapshot.get75thPercentile()), this.convertDuration(snapshot.get95thPercentile()), this.convertDuration(snapshot.get98thPercentile()), this.convertDuration(snapshot.get99thPercentile()), this.convertDuration(snapshot.get999thPercentile()));
+        this.loggerProxy.log(this.marker, "type={}, name={}, count={}, min={}, max={}, mean={}, median={}, p75={}, p95={}, p98={}, p99={}, p999={}", "TIMER", this.prefix(name), timer.getCount(), this.convertDuration((double)snapshot.getMin()), this.convertDuration((double)snapshot.getMax()), this.convertDuration(snapshot.getMean()), this.convertDuration(snapshot.getMedian()), this.convertDuration(snapshot.get75thPercentile()), this.convertDuration(snapshot.get95thPercentile()), this.convertDuration(snapshot.get98thPercentile()), this.convertDuration(snapshot.get99thPercentile()), this.convertDuration(snapshot.get999thPercentile()));
     }
 
     private void logMeter(String name, Meter meter) {

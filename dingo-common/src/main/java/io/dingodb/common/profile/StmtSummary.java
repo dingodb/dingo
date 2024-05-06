@@ -91,6 +91,11 @@ public class StmtSummary {
         this.firstSeen = System.currentTimeMillis();
         this.sql = stmtSummaryKey;
         this.id = UUID.randomUUID().toString().replace("-", "");
+        int userPos;
+        if ((userPos = stmtSummaryKey.indexOf(">")) > 0) {
+            simpleUser = stmtSummaryKey.substring(0, userPos);
+            stmtSummaryKey = stmtSummaryKey.substring(userPos + 1);
+        }
         int sqlPos;
         if ((sqlPos = stmtSummaryKey.indexOf(":")) > 0) {
             String prefix = stmtSummaryKey.substring(0, sqlPos);

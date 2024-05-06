@@ -71,6 +71,7 @@ public final class RelOpUtils {
             tmp = System.currentTimeMillis();
         }
         profile.time(tmp);
+        profile.decreaseCount();
         profile.end();
         return count;
     }
@@ -96,6 +97,7 @@ public final class RelOpUtils {
             tmp = System.currentTimeMillis();
         }
         profile.time(tmp);
+        profile.decreaseCount();
         return count;
     }
 
@@ -117,6 +119,8 @@ public final class RelOpUtils {
             tmp = System.currentTimeMillis();
         }
         profile.time(tmp);
+
+        profile.decreaseCount();
         forwardCacheOpResults(relOp, vertex.getSoleEdge());
         relOp.clear();
         return count;
