@@ -36,6 +36,9 @@ public class ShowTableStatusOperation extends QueryOperation {
 
     public ShowTableStatusOperation(String schema, String sqlLikePattern) {
         this.schema = schema;
+        if (sqlLikePattern.contains("\\_")) {
+           sqlLikePattern = sqlLikePattern.replace("\\", "");
+        }
         this.sqlLikePattern = sqlLikePattern;
     }
 

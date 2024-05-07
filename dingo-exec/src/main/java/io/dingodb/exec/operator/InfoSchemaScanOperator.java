@@ -71,12 +71,12 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             case "USER_PRIVILEGES":
             case "SCHEMA_PRIVILEGES":
             case "TABLE_PRIVILEGES":
-            case "TABLE_CONSTRAINTS":
-                return getInformationTableConstraints(metaService);
             case "VIEWS":
             case "COLUMN_PRIVILEGES":
             case "COLLATIONS":
                 return getEmpty();
+            case "TABLE_CONSTRAINTS":
+                return getInformationTableConstraints(metaService);
             case "STATEMENTS_SUMMARY":
                 return StmtSummaryMap.iterator();
             default:

@@ -475,7 +475,7 @@ public class LoadDataOperation implements DmlOperation {
             Map<String, KeyValue> caches = ExecutionEnvironment.memoryCache
                 .computeIfAbsent(statementId, e -> new TreeMap<>());
             List<Object[]> tupleList = getCacheTupleList(caches, txnId);
-            if (tupleList.size() == 0) {
+            if (tupleList.isEmpty()) {
                 return;
             }
             int result = txnImportDataOperation.insertByTxn(tupleList);
