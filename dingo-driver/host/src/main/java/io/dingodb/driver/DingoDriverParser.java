@@ -39,6 +39,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.ProcessInfo;
 import io.dingodb.common.environment.ExecutionEnvironment;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.common.profile.ExecProfile;
 import io.dingodb.common.profile.PlanProfile;
@@ -492,35 +493,35 @@ public final class DingoDriverParser extends DingoParser {
         int start = Utils.currentSecond();
         for (RelOptTable table : waitLocktableList) {
             CompletableFuture<Boolean> lockFuture = new CompletableFuture<>();
+            CompletableFuture<Void> unlockFuture = new CompletableFuture<>();
             TableLock lock = TableLock.builder()
                 .lockTs(startTs)
                 .currentTs(jobSeqId)
                 .type(LockType.ROW)
                 .tableId(Objects.requireNonNull(table.unwrap(DingoTable.class)).getTableId())
                 .lockFuture(lockFuture)
-                .unlockFuture(finishedFuture)
+                .unlockFuture(unlockFuture)
                 .build();
             TableLockService.getDefault().lock(lock);
+            LogUtils.info(log, "lockTables, jobSeqId:{}, startTs:{}, tableId:{}", jobSeqId, startTs, lock.tableId.toString());
             int nextTtl = (start + ttl) - Utils.currentSecond();
             if (nextTtl < 0) {
-                LogUtils.info(log, "lockTables, jobSeqId:{}, startTs:{}, tableId:{}", jobSeqId, startTs, lock.tableId.toString());
                 lockFuture.cancel(true);
-                finishedFuture.complete(null);
+                unlockFuture.complete(null);
                 throw new RuntimeException(String.format("Lock wait timeout exceeded. tableId: %s.", lock.tableId.toString()));
             }
             try {
                 lockFuture.get(nextTtl, TimeUnit.SECONDS);
+                finishedFuture.whenCompleteAsync((v, t) -> unlockFuture.complete(null), Executors.LOCK_FUTURE_POOL);
             } catch (TimeoutException e) {
                 LogUtils.error(log, e.getMessage(), e);
-                LogUtils.info(log, "lockTables, jobSeqId:{}, startTs:{}, tableId:{}", jobSeqId, startTs, lock.tableId.toString());
                 lockFuture.cancel(true);
-                finishedFuture.complete(null);
+                unlockFuture.complete(null);
                 throw new RuntimeException(String.format("Lock wait timeout exceeded. tableId: %s.", lock.tableId.toString()));
             } catch (Exception e) {
                 LogUtils.error(log, e.getMessage(), e);
-                LogUtils.info(log, "lockTables, jobSeqId:{}, startTs:{}, tableId:{}", jobSeqId, startTs, lock.tableId.toString());
                 lockFuture.cancel(true);
-                finishedFuture.complete(null);
+                unlockFuture.complete(null);
                 throw ExceptionUtils.toRuntime(e);
             }
         }

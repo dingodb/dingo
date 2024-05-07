@@ -127,6 +127,7 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
     }
 
     private void lock(CommonId tableId) {
+        LogUtils.info(log, "lock tableId:{}", tableId);
         TableLocks tableLocks = this.locks.get(tableId);
         io.dingodb.transaction.api.TableLock lock = tableLocks.lockQueue.first();
         if (lock == null) {
@@ -134,7 +135,7 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
             return;
         }
         List<io.dingodb.transaction.api.TableLock> locks = this.locks.get(lock.tableId).locked;
-        if (locks.size() > 0 && log.isDebugEnabled()) {
+        if (locks.size() > 0 && log.isInfoEnabled()) {
             StringJoiner lockJoiner = new StringJoiner(",\n\t");
             locks.forEach($ -> lockJoiner.add($.serverId + "|" + $.type + "|" + $.lockTs + "|" + $.currentTs));
             LogUtils.info(log, "{} lock not empty, locks: [\n\t{}\n]", tableId, lockJoiner);
@@ -185,18 +186,18 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
         if (locked) {
             future.complete(true);
             locks.add(lock);
-            tableLocks.lockQueue.pollFirst();
+            tableLocks.lockQueue.remove(lock);
             waitLocks.remove(lock);
             lock.unlockFuture.whenCompleteAsync((v, e) -> unlock(lock), Executors.LOCK_FUTURE_POOL);
             LogUtils.info(log, "Locked {}", lock);
         } else {
             if (lock.lockFuture.isCancelled()) {
-                tableLocks.lockQueue.pollFirst();
+                tableLocks.lockQueue.remove(lock);
                 LogUtils.info(log, "Lock cancel {}", lock);
                 return;
             }
             if (lock.lockFuture.isCompletedExceptionally()) {
-                tableLocks.lockQueue.pollFirst();
+                tableLocks.lockQueue.remove(lock);
                 LogUtils.info(log, "Lock error {}", lock);
                 return;
             }
