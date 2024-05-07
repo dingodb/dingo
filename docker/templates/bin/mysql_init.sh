@@ -16,18 +16,25 @@
 # limitations under the License.
 #
 
+if [ -e ${DEFAULT_REPLICA_NUM} ]; then
+  echo "default replica number is not set, set to 3"
+  DEFAULT_REPLICA_NUM=3
+fi
+
+echo "DEFAULT_REPLICA_NUM="${DEFAULT_REPLICA_NUM}
+
 ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 JAR_PATH=$(find $ROOT -name dingo-mysql-init-*.jar)
 
 DINGODB_STORE_NORMAL=0
-DINGODB_MYSQL_INIT=0
+DINGODB_INIT_COUNT=${DEFAULT_REPLICA_NUM}
 DINGODB_SCHEMA_MYSQL=0
 
-while [ "${DINGODB_STORE_NORMAL}" -lt ${DINGODB_INIT_COUNT:-6} ]; do
-    echo "DINGODB_STORE_NORMAL = ${DINGODB_STORE_NORMAL}, wait 1 second"
+while [ "${DINGODB_STORE_NORMAL}" -lt ${DINGODB_INIT_COUNT:-3} ]; do
+    echo "DINGODB_STORE_NORMAL=${DINGODB_STORE_NORMAL}, wait 1 second"
     sleep 1
     echo "DINGO_MYSQL_COORDINATORS: ${DINGO_MYSQL_COORDINATORS}"
-    ERRCODE=$(curl -s  http://${DINGO_MYSQL_COORDINATORS}/CoordinatorService/GetStoreMap -d '{"epoch": 0}' 2>&1  | grep -o '"ERAFT_NOTLEADER"' | wc -l)
+    ERRCODE=$(curl -s  http://${DINGO_MYSQL_COORDINATORS}/CoordinatorService/GetStoreMap -d '{"epoch": 0, "filter_store_types": [0]}' 2>&1  | grep -o '"ERAFT_NOTLEADER"' | wc -l)
     echo "ERRCODE ${ERRCODE}"
     if [ "${ERRCODE}" -ne 0 ]; then
          ERR_INFO=$(curl -s  http://${DINGO_MYSQL_COORDINATORS}/CoordinatorService/GetStoreMap -d '{"epoch": 0}')
@@ -41,15 +48,14 @@ while [ "${DINGODB_STORE_NORMAL}" -lt ${DINGODB_INIT_COUNT:-6} ]; do
         DINGODB_SCHEMA_MYSQL=$(curl http://${DINGO_MYSQL_COORDINATORS}/MetaService/GetSchemaByName -d '{"schema_name": "mysql"}' 2>&1 | grep -o 'table_ids' | wc -l)
         echo "DINGODB_STORE_NORMAL: ${DINGODB_STORE_NORMAL} DINGODB_SCHEMA_MYSQL ${DINGODB_SCHEMA_MYSQL}"
     fi
-
 done
 
 echo "DINGODB_STORE_NORMAL = ${DINGODB_STORE_NORMAL}"
-echo "DINGODB_STORE_NORMAL >= ${DINGODB_INIT_COUNT:-6}, start to initialize MySQL"
+echo "DINGODB_STORE_NORMAL >= ${DINGODB_INIT_COUNT:-3}, start to initialize MySQL"
 if [ "${DINGODB_SCHEMA_MYSQL}" -ne 0 ]; then
     echo "mysql init has been completed"
 else
-    # run Java start mysql_init 
+    # run Java start mysql_init
     java -cp ${JAR_PATH} io.dingodb.mysql.MysqlInit ${DINGO_COORDINATORS}
 
     # check status
@@ -60,7 +66,5 @@ else
       echo "Java mysql init fail"
     fi
 fi
-
-
 
 
