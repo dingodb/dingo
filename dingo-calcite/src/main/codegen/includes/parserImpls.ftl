@@ -228,7 +228,7 @@ void TableElement(List<SqlNode> list) :
         )?
         [ name = SimpleIdentifier() ]
         columnList = ParenthesizedSimpleIdentifierList() {
-              list.add(SqlDdlNodes.unique(s.end(columnList), name, columnList));
+              list.add(new DingoSqlKeyConstraint(s.end(columnList), name, columnList));
         }
         [<USING> <IDENTIFIER> ]
     |

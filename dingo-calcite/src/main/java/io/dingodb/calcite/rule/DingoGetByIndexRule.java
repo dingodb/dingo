@@ -106,8 +106,13 @@ public class DingoGetByIndexRule extends ConverterRule {
             Map<CommonId, Set> indexMap = new HashMap<>();
             boolean matchIndex;
             // example: a column index =2, b column index = 3
-            // set1 : a=v or a=v1 => Map1<entry(key = 2, value = v)>, Map2<entry(key = 2, value = v1)>
-            // set2 : a=v and b=v1 => Map1<entry(key = 2, value = v), entry(key = 2, value = v1)>
+            // set : a=v or a=v1 =>
+            // Set item count is 2:
+            //   Map1<entry(key = 2, value = v)>,
+            //   Map2<entry(key = 2, value = v1)>
+            // set : a=v and b=v1 =>
+            // Set item count is 1:
+            // Map1<entry(key = 2, value = v), entry(key = 3, value = v1)>
             for (Map<Integer, RexNode> map : set) {
                 matchIndex = false;
                 for (Map.Entry<CommonId, Table> index : indexTdMap.entrySet()) {
@@ -134,7 +139,7 @@ public class DingoGetByIndexRule extends ConverterRule {
                     return null;
                 }
             }
-            if (indexMap.size() == 0) {
+            if (indexMap.isEmpty()) {
                 return null;
             }
             return indexMap;
@@ -171,7 +176,7 @@ public class DingoGetByIndexRule extends ConverterRule {
         //}
 
         // get all index definition
-        // find match first index to use; todo replace
+        // find match first index to use;
         // new DingoGetIndex
         Map<CommonId, Table> indexTdMap = getScalaIndices(scan.getTable());
 

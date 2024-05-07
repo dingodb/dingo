@@ -47,7 +47,6 @@ import io.dingodb.common.privilege.PrivilegeType;
 import io.dingodb.common.privilege.SchemaPrivDefinition;
 import io.dingodb.common.privilege.TablePrivDefinition;
 import io.dingodb.common.privilege.UserDefinition;
-import io.dingodb.common.profile.StmtSummaryMap;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
@@ -81,6 +80,7 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlTypeNameSpec;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.ddl.DingoSqlColumn;
+import org.apache.calcite.sql.ddl.DingoSqlKeyConstraint;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.ddl.SqlDropSchema;
 import org.apache.calcite.sql.ddl.SqlDropTable;
@@ -125,10 +125,90 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     private List<TableDefinition> getIndexDefinitions(DingoSqlCreateTable create, TableDefinition tableDefinition) {
         assert create.columnList != null;
-        return create.columnList.stream()
+        List<TableDefinition> tableDefList = create.columnList.stream()
+            .filter(col -> col.getKind() == SqlKind.UNIQUE)
+            .filter(col -> {
+                if (col instanceof DingoSqlKeyConstraint) {
+                    DingoSqlKeyConstraint keyConstraint = (DingoSqlKeyConstraint) col;
+                    return !keyConstraint.isUsePrimary();
+                }
+                return false;
+            })
+            .map(col -> fromSqlUniqueDeclaration((SqlKeyConstraint) col, tableDefinition))
+            .collect(Collectors.toCollection(ArrayList::new));
+        tableDefList.addAll(create.columnList.stream()
             .filter(col -> col.getKind() == SqlKind.CREATE_INDEX)
             .map(col -> fromSqlIndexDeclaration((SqlIndexDeclaration) col, tableDefinition))
+            .collect(Collectors.toCollection(ArrayList::new)));
+        return tableDefList;
+    }
+
+    private @Nullable TableDefinition fromSqlUniqueDeclaration(
+        @NonNull SqlKeyConstraint sqlKeyConstraint,
+        TableDefinition tableDefinition
+    ) {
+        List<ColumnDefinition> tableColumns = tableDefinition.getColumns();
+        List<String> tableColumnNames = tableColumns.stream().map(ColumnDefinition::getName)
+            .collect(Collectors.toList());
+
+        // Primary key list
+        SqlNodeList sqlNodes = (SqlNodeList) sqlKeyConstraint.getOperandList().get(1);
+        List<String> columns = sqlNodes.getList().stream()
+            .filter(Objects::nonNull)
+            .map(SqlIdentifier.class::cast)
+            .map(SqlIdentifier::getSimple)
+            .map(String::toUpperCase)
             .collect(Collectors.toCollection(ArrayList::new));
+
+        Properties properties = new Properties();
+
+        List<ColumnDefinition> indexColumnDefinitions = new ArrayList<>();
+        properties.put("indexType", "scalar");
+        for (int i = 0; i < columns.size(); i++) {
+            String columnName = columns.get(i);
+            if (!tableColumnNames.contains(columnName)) {
+                throw new RuntimeException("Invalid column name: " + columnName);
+            }
+
+            ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
+                .findFirst().get();
+
+            ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
+                .name(columnDefinition.getName())
+                .type(columnDefinition.getTypeName())
+                .elementType(columnDefinition.getElementType())
+                .precision(columnDefinition.getPrecision())
+                .scale(columnDefinition.getScale())
+                .nullable(columnDefinition.isNullable())
+                .primary(i)
+                .build();
+            indexColumnDefinitions.add(indexColumnDefinition);
+        }
+        tableDefinition.getKeyColumns().stream()
+            .sorted(Comparator.comparingInt(ColumnDefinition::getPrimary))
+            .map(columnDefinition -> ColumnDefinition.builder()
+                .name(columnDefinition.getName())
+                .type(columnDefinition.getTypeName())
+                .elementType(columnDefinition.getElementType())
+                .precision(columnDefinition.getPrecision())
+                .scale(columnDefinition.getScale())
+                .nullable(columnDefinition.isNullable())
+                .primary(-1)
+                .build())
+            .forEach(indexColumnDefinitions::add);
+
+        DingoSqlKeyConstraint dingoSqlKeyConstraint = (DingoSqlKeyConstraint) sqlKeyConstraint;
+        TableDefinition indexTableDefinition = tableDefinition.copyWithName(dingoSqlKeyConstraint.getUniqueName());
+        indexTableDefinition.setColumns(indexColumnDefinitions);
+        indexTableDefinition.setProperties(properties);
+
+        validatePartitionBy(
+            indexTableDefinition.getKeyColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
+            indexTableDefinition,
+            indexTableDefinition.getPartDefinition()
+        );
+
+        return indexTableDefinition;
     }
 
     private @Nullable TableDefinition fromSqlIndexDeclaration(
@@ -475,9 +555,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .filter(SqlKeyConstraint.class::isInstance)
             .map(SqlKeyConstraint.class::cast)
             .filter(constraint -> constraint.getOperator().getKind() == SqlKind.PRIMARY_KEY)
+            .findAny()
             // The 0th element is the name of the constraint
             .map(constraint -> (SqlNodeList) constraint.getOperandList().get(1))
-            .findAny().map(sqlNodes -> sqlNodes.getList().stream()
+            .map(sqlNodes -> sqlNodes.getList().stream()
                 .filter(Objects::nonNull)
                 .map(SqlIdentifier.class::cast)
                 .map(SqlIdentifier::getSimple)
@@ -490,16 +571,36 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 .map(column -> column.name.getSimple())
                 .map(String::toUpperCase)
                 .collect(Collectors.toCollection(ArrayList::new)));
+        if (pks.isEmpty()) {
+            pks = create.columnList.stream()
+                .filter(SqlKeyConstraint.class::isInstance)
+                .map(SqlKeyConstraint.class::cast)
+                .filter(constraint -> constraint.getOperator().getKind() == SqlKind.UNIQUE)
+                .findFirst()
+                .map(key -> {
+                    DingoSqlKeyConstraint sqlKeyConstraint = (DingoSqlKeyConstraint) key;
+                    sqlKeyConstraint.setUsePrimary(true);
+                    return  (SqlNodeList) sqlKeyConstraint.getOperandList().get(1);
+                }).map(sqlNodes -> sqlNodes.getList().stream()
+                    .filter(Objects::nonNull)
+                    .map(SqlIdentifier.class::cast)
+                    .map(SqlIdentifier::getSimple)
+                    .map(String::toUpperCase)
+                    .collect(Collectors.toCollection(ArrayList::new))
+                ).orElseGet(ArrayList::new);
+
+        }
 
         SqlValidator validator = new ContextSqlValidator(context, true);
 
         // Mapping, column node -> column definition
+        List<String> finalPks = pks;
         List<ColumnDefinition> columns = create.columnList.stream()
             .filter(col -> col.getKind() == SqlKind.COLUMN_DECL)
-            .map(col -> fromSqlColumnDeclaration((DingoSqlColumn) col, validator, pks))
+            .map(col -> fromSqlColumnDeclaration((DingoSqlColumn) col, validator, finalPks))
             .collect(Collectors.toCollection(ArrayList::new));
         // If it is a table without a primary key, create an invisible column _rowid is a self increasing primary key
-        if (pks.size() == 0) {
+        if (pks.isEmpty()) {
             pks.add("_ROWID");
             columns.add(createRowIdColDef(validator));
         }
