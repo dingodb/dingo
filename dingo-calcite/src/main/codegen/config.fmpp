@@ -101,6 +101,7 @@ data: {
       "org.apache.calcite.sql.SqlTimestampLiteral"
       "org.apache.calcite.sql.ddl.SqlDdlNodes"
       "org.apache.calcite.sql.ddl.DingoSqlColumn"
+      "org.apache.calcite.sql.ddl.DingoSqlKeyConstraint"
       "org.apache.calcite.sql.ddl.SqlFloatTypeNameSpec"
       "org.apache.calcite.sql2rel.SqlLikeBinaryOperator"
       "org.apache.calcite.sql2rel.SqlFunctionScanOperator"
