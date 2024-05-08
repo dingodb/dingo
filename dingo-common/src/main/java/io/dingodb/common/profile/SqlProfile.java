@@ -33,6 +33,8 @@ public class SqlProfile extends Profile {
     private boolean prepared;
     private String statementType;
     private boolean autoCommit;
+    private String state = "success";
+    private String msg;
     private List<String> fullyTableList;
 
     private PlanProfile planProfile;

@@ -46,6 +46,7 @@ public enum DingoSqlAccessEnum {
     REPL_CLIENT("replication client"),
     CREATE_USER("create user"),
     CREATE_TABLESPACE("create tablespace"),
+    MONITOR("monitor"),
     EXTEND1("extend1"),
     EXTEND2("extend2"),
     EXTEND3("extend3"),

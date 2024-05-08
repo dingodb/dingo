@@ -81,7 +81,7 @@ public final class StmtSummaryMap {
     }
 
     public static void addSqlProfile(SqlProfile sqlProfile, Connection connection) {
-        if (sqlProfile == null || sqlProfile.getExecProfile() == null) {
+        if (sqlProfile == null || (sqlProfile.getExecProfile() == null && "success".equals(sqlProfile.getState()))) {
             return;
         }
         addProfileQueue(sqlProfile, connection);

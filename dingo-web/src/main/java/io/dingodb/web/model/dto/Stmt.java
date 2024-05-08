@@ -88,4 +88,6 @@ public class Stmt {
     private long planInCache;
     private boolean prepared;
     private String id;
+    private String state;
+    private String msg;
 }

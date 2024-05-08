@@ -83,9 +83,11 @@ public class StmtSummary {
     private long planInCache;
     private boolean prepared;
     private String binaryPlan;
-    private String id;
+    private final String id;
 
     private long analyzeInc;
+    private String state;
+    private String msg;
 
     public StmtSummary(String stmtSummaryKey) {
         this.firstSeen = System.currentTimeMillis();
@@ -127,6 +129,8 @@ public class StmtSummary {
         this.avgLatency = sumLatency / execCount;
         this.instance = profile.getInstance();
         this.simpleUser = profile.getSimpleUser();
+        this.state = profile.getState();
+        this.msg = profile.getMsg();
         if (profile.getStart() < firstSeen) {
             this.firstSeen = profile.start;
         }
@@ -271,7 +275,7 @@ public class StmtSummary {
                 sumCleanLatency, maxCleanLatency, avgCleanLatency, sumResultCount, maxResultCount,
                 avgResultCount, sumAffectedRows, maxAffectedRows,
                 avgAffectedRows, plan, binaryPlan, planInCache,
-                prepared, id};
+                prepared, id, state, msg};
         } finally {
             lock.readLock().unlock();
         }

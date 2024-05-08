@@ -102,7 +102,7 @@ public class FinWithProfiles implements Fin {
                     serial.getChildren().add(profile);
 
                     boolean r = this.profile.getChildren().stream()
-                     .allMatch(p -> p.getType().equalsIgnoreCase(this.profile.getType()));
+                        .allMatch(p -> p.getType().equalsIgnoreCase(this.profile.getType()));
                     if (!r) {
                         serial.getChildren().add(this.profile);
                     } else {
@@ -112,8 +112,6 @@ public class FinWithProfiles implements Fin {
                 } else {
                     profile.getChildren().add(this.profile);
                 }
-            } else if (!profile.getChildren().isEmpty() && this.profile != null) {
-                profile.getChildren().add(this.profile);
             }
             this.profile = profile;
         }

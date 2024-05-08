@@ -96,6 +96,7 @@ String privilege() : {
   | <INDEX>
   | <ALTER>
   | <RELOAD>
+  | <MONITOR>
   )
   {
      return token.image.toLowerCase();

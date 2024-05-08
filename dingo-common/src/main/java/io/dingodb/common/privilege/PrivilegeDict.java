@@ -63,6 +63,7 @@ public final class PrivilegeDict {
         privilegeIndexDict.put(DingoSqlAccessEnum.EXTEND3.getAccessType(), 31);
         privilegeIndexDict.put(DingoSqlAccessEnum.EXTEND4.getAccessType(), 32);
         privilegeIndexDict.put(DingoSqlAccessEnum.EXTEND5.getAccessType(), 33);
+        privilegeIndexDict.put(DingoSqlAccessEnum.MONITOR.getAccessType(), 34);
     }
 
     private PrivilegeDict() {
@@ -109,6 +110,7 @@ public final class PrivilegeDict {
         userPrivilegeIndex.put(DingoSqlAccessEnum.EVENT.getAccessType(), 28);
         userPrivilegeIndex.put(DingoSqlAccessEnum.TRIGGER.getAccessType(), 29);
         userPrivilegeIndex.put(DingoSqlAccessEnum.CREATE_TABLESPACE.getAccessType(), 30);
+        userPrivilegeIndex.put(DingoSqlAccessEnum.MONITOR.getAccessType(), 45);
 
         dbPrivilegeIndex.put(DingoSqlAccessEnum.SELECT.getAccessType(), 3);
         dbPrivilegeIndex.put(DingoSqlAccessEnum.INSERT.getAccessType(), 4);

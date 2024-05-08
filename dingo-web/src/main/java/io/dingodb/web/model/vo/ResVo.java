@@ -24,4 +24,5 @@ import lombok.Data;
 public class ResVo {
     int code;
     String msg;
+    int level;
 }

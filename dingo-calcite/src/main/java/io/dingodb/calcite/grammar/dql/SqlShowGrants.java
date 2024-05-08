@@ -38,15 +38,21 @@ public class SqlShowGrants extends SqlShow {
      */
     public SqlShowGrants(SqlParserPos pos, String user, String host) {
         super(OPERATOR, pos);
-        this.user = user.startsWith("'") ? user.replace("'", "") : user;
-        this.host = host.startsWith("'") ? host.replace("'", "") : host;
+        if (user != null) {
+            this.user = user.startsWith("'") ? user.replace("'", "") : user;
+        }
+        if (host != null) {
+            this.host = host.startsWith("'") ? host.replace("'", "") : host;
+        }
     }
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword("SHOW GRANTS FOR ");
-        writer.keyword(user);
-        writer.keyword("@");
-        writer.keyword(host);
+        if (user != null) {
+            writer.keyword(user);
+            writer.keyword("@");
+            writer.keyword(host);
+        }
     }
 }

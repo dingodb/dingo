@@ -160,7 +160,8 @@ SqlShow SqlShowGrants(Span s): {
   String user = null;
   String host = "%";
 } {
-  <GRANTS> <FOR>
+  <GRANTS>
+  (<FOR>
   [
        <QUOTED_STRING> { user = token.image; }
        [<AT_SPLIT> <QUOTED_STRING> { host = token.image;} ]
@@ -170,6 +171,7 @@ SqlShow SqlShowGrants(Span s): {
   ]
   userIdentifier = CompoundIdentifier() { user = userIdentifier.getSimple(); }
   [<AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER>) {host = token.image; } ]
+  )?
   {
     return new SqlShowGrants(s.end(this), user, host);
   }

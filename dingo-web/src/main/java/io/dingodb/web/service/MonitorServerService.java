@@ -36,6 +36,7 @@ import io.dingodb.sdk.service.connector.IndexServiceConnector;
 import io.dingodb.sdk.service.connector.StoreServiceConnector;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.store.Store;
+import io.dingodb.web.bean.LogEventCache;
 import io.dingodb.web.constant.DingoCluster;
 import io.dingodb.web.model.vo.ClusterInfo;
 import io.dingodb.web.model.vo.Column;
@@ -111,6 +112,8 @@ public class MonitorServerService {
 
     @Autowired
     MetaServiceClient rootMetaServiceClient;
+    byte[] lineTerm = new byte[]{13, 10};
+    String lineSeparator = new String(lineTerm);
 
     private static final String timeFormat = "yyyy-MM-dd HH:mm:ss";
     private static final String SCHEMA_TYPE = "schema";
@@ -644,6 +647,22 @@ public class MonitorServerService {
         BufImpl buf = new BufImpl(key);
         buf.skip(1);
         buf.writeLong(0);
+    }
+
+    public String logStr() {
+        StringBuilder builder = new StringBuilder();
+        LogEventCache.logCache.forEach((k, v) -> {
+            builder.append(k).append(lineSeparator);
+        });
+        return builder.toString();
+    }
+
+    public String eventStr() {
+        StringBuilder builder = new StringBuilder();
+        LogEventCache.eventCache.forEach((k, v) -> {
+            builder.append(k).append(lineSeparator);
+        });
+        return builder.toString();
     }
 
 }
