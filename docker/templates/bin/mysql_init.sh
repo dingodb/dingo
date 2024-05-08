@@ -37,14 +37,14 @@ while [ "${DINGODB_STORE_NORMAL}" -lt ${DINGODB_INIT_COUNT:-3} ]; do
     ERRCODE=$(curl -s  http://${DINGO_MYSQL_COORDINATORS}/CoordinatorService/GetStoreMap -d '{"epoch": 0, "filter_store_types": [0]}' 2>&1  | grep -o '"ERAFT_NOTLEADER"' | wc -l)
     echo "ERRCODE ${ERRCODE}"
     if [ "${ERRCODE}" -ne 0 ]; then
-         ERR_INFO=$(curl -s  http://${DINGO_MYSQL_COORDINATORS}/CoordinatorService/GetStoreMap -d '{"epoch": 0}')
+         ERR_INFO=$(curl -s  http://${DINGO_MYSQL_COORDINATORS}/CoordinatorService/GetStoreMap -d '{"epoch": 0, "filter_store_types": [0]}')
          LEADER_HOST=$(echo "${ERR_INFO}" | grep -oP '(?<="host":")[^"]+')
          LEADER_PORT=$(echo "${ERR_INFO}" | grep -oP '(?<="port":)[^,}]+')
          echo "LEADER_HOST: ${LEADER_HOST} LEADER_PORT: ${LEADER_PORT}"
-         DINGODB_STORE_NORMAL=$(curl http://${LEADER_HOST}:${LEADER_PORT}/CoordinatorService/GetStoreMap -d '{"epoch": 0}'  2>&1  | grep -o 'STORE_NORMAL' | wc -l)
+         DINGODB_STORE_NORMAL=$(curl http://${LEADER_HOST}:${LEADER_PORT}/CoordinatorService/GetStoreMap -d '{"epoch": 0, "filter_store_types": [0]}'  2>&1  | grep -o 'STORE_NORMAL' | wc -l)
          DINGODB_SCHEMA_MYSQL=$(curl http://${LEADER_HOST}:${LEADER_PORT}/MetaService/GetSchemaByName -d '{"schema_name": "mysql"}' 2>&1 | grep -o 'table_ids' | wc -l)
     else
-        DINGODB_STORE_NORMAL=$(curl http://${DINGO_MYSQL_COORDINATORS}/CoordinatorService/GetStoreMap -d '{"epoch": 0}'  2>&1 | grep -o 'STORE_NORMAL' | wc -l)
+        DINGODB_STORE_NORMAL=$(curl http://${DINGO_MYSQL_COORDINATORS}/CoordinatorService/GetStoreMap -d '{"epoch": 0, "filter_store_types": [0]}'  2>&1 | grep -o 'STORE_NORMAL' | wc -l)
         DINGODB_SCHEMA_MYSQL=$(curl http://${DINGO_MYSQL_COORDINATORS}/MetaService/GetSchemaByName -d '{"schema_name": "mysql"}' 2>&1 | grep -o 'table_ids' | wc -l)
         echo "DINGODB_STORE_NORMAL: ${DINGODB_STORE_NORMAL} DINGODB_SCHEMA_MYSQL ${DINGODB_SCHEMA_MYSQL}"
     fi
