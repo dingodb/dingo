@@ -185,6 +185,7 @@ data: {
       "LONGTEXT"
       "OUTFILE"
       "TRIGGERS"
+      "MONITOR"
     ]
 
     # List of non-reserved keywords to add;

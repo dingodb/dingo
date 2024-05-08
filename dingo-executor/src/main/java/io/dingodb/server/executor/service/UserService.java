@@ -21,7 +21,6 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.error.DingoException;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.privilege.PrivilegeDefinition;
 import io.dingodb.common.privilege.PrivilegeDict;

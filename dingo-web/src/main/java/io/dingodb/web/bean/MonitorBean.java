@@ -23,6 +23,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -38,6 +41,49 @@ public class MonitorBean {
     @Bean
     public static MetaServiceClient rootMetaServiceClient(@Value("${server.coordinatorExchangeSvrList}") String coordinator) {
         return new MetaServiceClient(coordinator);
+    }
+
+    @Bean
+    public static Thread logEvent(@Value("${server.monitor.executor.logPath}") String logPath) {
+        Thread logThread = new Thread(() -> getLog(logPath));
+        Thread eventThread = new Thread(() -> getEvent(logPath));
+        logThread.start();
+        eventThread.start();
+        return eventThread;
+    }
+
+    public static void getLog(String logPath) {
+        String filePath = logPath + "/calcite.log";
+
+        LogEventCache logCache = LogEventCache.logCache;
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while (true) {
+                if ((line = br.readLine()) != null) {
+                    logCache.put(line, line);
+                } else {
+                    Thread.sleep(100L);
+                }
+            }
+        } catch (IOException | InterruptedException ignored) {
+        }
+    }
+
+    public static void getEvent(String logPath) {
+        String filePath = logPath + "/metaEvent.log";
+
+        LogEventCache eventCache = LogEventCache.eventCache;
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while (true) {
+                if ((line = br.readLine()) != null) {
+                    eventCache.put(line, line);
+                } else {
+                    Thread.sleep(100L);
+                }
+            }
+        } catch (IOException | InterruptedException ignored) {
+        }
     }
 
     public static CoordinatorServiceConnector getCoordinatorServiceConnector(String coordinator) {

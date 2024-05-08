@@ -169,9 +169,19 @@ public class MonitorController {
     @ApiOperation("login")
     @GetMapping("/api/login")
     public ResponseEntity<ResVo> login(String user, String password) {
-        boolean res = daoService.login(user, password);
-        ResVo resVo = new ResVo(res ? 1 : 0, "");
-        return ResponseEntity.ok(resVo);
+        return ResponseEntity.ok(daoService.login(user, password));
+    }
+
+    @ApiOperation("log")
+    @GetMapping("/api/log")
+    public ResponseEntity<String> getLog() {
+        return ResponseEntity.ok(monitorServerService.logStr());
+    }
+
+    @ApiOperation("event")
+    @GetMapping("/api/event")
+    public ResponseEntity<String> getEvent() {
+        return ResponseEntity.ok(monitorServerService.eventStr());
     }
 
 }

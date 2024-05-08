@@ -144,8 +144,7 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
         Meta.Signature signature = getSignature();
         if (signature instanceof DingoSignature) {
             CommonId jobId = ((DingoSignature) signature).getJobId();
-            Job job = jobManager.getJob(jobId);
-            return job;
+            return jobManager.getJob(jobId);
         }
         return null;
     }

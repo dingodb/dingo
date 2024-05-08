@@ -31,7 +31,6 @@ import io.dingodb.calcite.grammar.ddl.SqlUnLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockTable;
 import io.dingodb.calcite.grammar.dql.SqlDesc;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
-import io.dingodb.calcite.grammar.dql.SqlShowCall;
 import io.dingodb.calcite.grammar.dql.SqlShowCharset;
 import io.dingodb.calcite.grammar.dql.SqlShowCollation;
 import io.dingodb.calcite.grammar.dql.SqlShowColumns;
@@ -53,19 +52,13 @@ import io.dingodb.calcite.grammar.dql.SqlShowTriggers;
 import io.dingodb.calcite.grammar.dql.SqlShowVariables;
 import io.dingodb.calcite.grammar.dql.SqlShowWarnings;
 import io.dingodb.exec.transaction.base.TransactionType;
-import org.apache.calcite.sql.SqlBasicCall;
-import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlSetOption;
 import org.apache.commons.lang3.StringUtils;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public final class SqlToOperationConverter {
 
@@ -76,7 +69,7 @@ public final class SqlToOperationConverter {
         if (sqlNode instanceof SqlShowWarnings) {
             return Optional.of(new ShowWarningsOperation(context));
         } else if (sqlNode instanceof SqlShowGrants) {
-            return Optional.of(new ShowGrantsOperation(sqlNode));
+            return Optional.of(new ShowGrantsOperation(sqlNode, connection));
         } else if (sqlNode instanceof SqlShowDatabases) {
             SqlShowDatabases sqlShowDatabases = (SqlShowDatabases) sqlNode;
             return Optional.of(new ShowDatabaseOperation(connection, sqlShowDatabases.sqlLikePattern));
@@ -160,7 +153,7 @@ public final class SqlToOperationConverter {
             try {
                 if (TransactionType.PESSIMISTIC.name().equalsIgnoreCase(sqlBeginTx.txnMode)) {
                     pessimistic = true;
-                } else if (sqlBeginTx.txnMode.equals("")
+                } else if (sqlBeginTx.txnMode.isEmpty()
                     && TransactionType.PESSIMISTIC.name().equalsIgnoreCase(connection.getClientInfo("txn_mode"))) {
                     pessimistic = true;
                 }

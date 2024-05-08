@@ -283,8 +283,9 @@ public class DingoMeta extends MetaImpl {
         long jobSeqId = TsoService.getDefault().tso();
         String stmtId = "Stmt_" + sh + "_" + jobSeqId;
         MdcUtils.setStmtId(stmtId);
+        DingoStatement statement = null;
         try {
-            DingoStatement statement = (DingoStatement) dingoConnection.getStatement(sh);
+            statement = (DingoStatement) dingoConnection.getStatement(sh);
             statement.initSqlProfile();
             statement.removeJob(jobManager);
             Signature signature = parser.parseQuery(jobManager, jobSeqId, sql);
@@ -319,6 +320,14 @@ public class DingoMeta extends MetaImpl {
             }
             LogUtils.error(log, "Prepare and execute error, sql: <[{}]>.", sql, e);
             ITransaction transaction = dingoConnection.getTransaction();
+            if (statement != null && statement.getSqlProfile() != null) {
+                if (statement.getSqlProfile().getSql() == null) {
+                    statement.getSqlProfile().setSql(sql);
+                }
+                statement.getSqlProfile().setState("failed");
+                statement.getSqlProfile().setMsg(e.getMessage());
+                addSqlProfile(statement.getSqlProfile(), connection);
+            }
             if (transaction != null && transaction.isAutoCommit()) {
                 try {
                     cleanTransaction();
@@ -410,6 +419,7 @@ public class DingoMeta extends MetaImpl {
         if (transaction == null) {
             transaction = prepareJobAndTxn(sh, statement);
         }
+        SqlProfile profile = statement.getSqlProfile();
         try {
             for (List<TypedValue> parameterValue : parameterValues) {
                 ExecuteResult executeResult = execBatch(sh, parameterValue, -1);
@@ -447,8 +457,10 @@ public class DingoMeta extends MetaImpl {
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
+                profile.setCommitProfile(transaction.getCommitProfile());
             }
         }
+        addSqlProfile(profile, connection);
         return new ExecuteBatchResult(Longs.toArray(updateCounts));
     }
 

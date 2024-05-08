@@ -17,6 +17,7 @@
 package io.dingodb.web.service;
 
 import io.dingodb.web.model.dto.Stmt;
+import io.dingodb.web.model.vo.ResVo;
 import io.dingodb.web.repo.CommonRepo;
 import io.dingodb.web.repo.StmtRepo;
 import lombok.extern.slf4j.Slf4j;
@@ -25,9 +26,11 @@ import org.springframework.stereotype.Service;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Properties;
-import java.util.UUID;
 import javax.annotation.Resource;
 
 @Slf4j
@@ -53,18 +56,41 @@ public class DaoService {
         return stmtRepo.topSql();
     }
 
-    public boolean login(String user, String password) {
+    public ResVo login(String user, String password) {
         Connection connection = null;
+        Statement statement = null;
+        ResultSet rs = null;
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             Properties props = new Properties();
             props.setProperty("user", user);
             props.setProperty("password", password);
             connection = DriverManager.getConnection("jdbc:mysql://" + host + ":3307/dingo", props);
-            return true;
+            statement = connection.createStatement();
+            rs = statement.executeQuery("show grants");
+            if (rs.next()) {
+                String grants = rs.getString(1);
+                if (grants.contains("MONITOR")) {
+                    return new ResVo(1, "", 1);
+                }
+            }
+
+            return new ResVo(1, "", 2);
         } catch (Exception e) {
-            return false;
+            return new ResVo(0, "", 2);
         } finally {
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException ignored) {
+                }
+            }
+            if (statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException ignored) {
+                }
+            }
             if (connection != null) {
                 try {
                     connection.close();

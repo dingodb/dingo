@@ -10,6 +10,7 @@ server:
     monitor:
       executor:
         heapAlarmThreshold: 80
+        logPath: logPath
       instance:
         exportPort: 19100
         cpuAlarmThreshold: 70

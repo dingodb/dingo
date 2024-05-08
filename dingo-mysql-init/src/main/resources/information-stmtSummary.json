@@ -406,5 +406,21 @@
     "scale": -2147483648,
     "primary": -1,
     "nullable": false
+  },
+  {
+    "name": "STATE",
+    "type": "varchar",
+    "precision": 512,
+    "scale": -2147483648,
+    "primary": -1,
+    "nullable": false
+  },
+  {
+    "name": "MSG",
+    "type": "varchar",
+    "precision": 512,
+    "scale": -2147483648,
+    "primary": -1,
+    "nullable": false
   }
 ]

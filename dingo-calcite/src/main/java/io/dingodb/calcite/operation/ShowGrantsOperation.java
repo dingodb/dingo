@@ -35,6 +35,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -48,14 +49,17 @@ import static io.dingodb.common.util.PrivilegeUtils.getRealAddress;
 public class ShowGrantsOperation extends QueryOperation {
     @Setter
     public SqlNode sqlNode;
+
+    public Connection connection;
     static UserService userService = UserServiceProvider.getRoot();
 
-    public ShowGrantsOperation(SqlNode sqlNode) {
+    public ShowGrantsOperation(SqlNode sqlNode, Connection connection) {
         this.sqlNode = sqlNode;
+        this.connection = connection;
     }
 
     @Override
-    public Iterator getIterator() {
+    public Iterator<Object[]> getIterator() {
         List<SqlGrant> sqlGrants = execute((SqlShowGrants) sqlNode);
         List<Object[]> showGrants = sqlGrants.stream().map(SqlNode::toString)
             .map(grant -> new Object[] {grant})
@@ -70,16 +74,28 @@ public class ShowGrantsOperation extends QueryOperation {
         return columns;
     }
 
-    public static List<SqlGrant> execute(@NonNull SqlShowGrants sqlShowGrants) {
+    public List<SqlGrant> execute(@NonNull SqlShowGrants sqlShowGrants) {
+        String user = sqlShowGrants.user;
+        String host = sqlShowGrants.host;
+        if (sqlShowGrants.user == null) {
+            try {
+                user = connection.getClientInfo("@user");
+                host = connection.getClientInfo("@host");
+                sqlShowGrants.user = user;
+                sqlShowGrants.host = host;
+            } catch (Exception ignored) {
+
+            }
+        }
         UserDefinition userDef = UserDefinition.builder()
-            .user(sqlShowGrants.user)
-            .host(getRealAddress(sqlShowGrants.host))
+            .user(user)
+            .host(getRealAddress(host))
             .build();
         if (!userService.existsUser(userDef)) {
             throw new RuntimeException("user is not exist");
         }
-        PrivilegeGather privilegeGather = userService.getPrivilegeDef(sqlShowGrants.user,
-            getRealAddress(sqlShowGrants.host));
+        PrivilegeGather privilegeGather = userService.getPrivilegeDef(user,
+            getRealAddress(host));
         List<SchemaPrivDefinition> schemaPrivDefinitions = new ArrayList<>(privilegeGather
             .getSchemaPrivDefMap().values());
         UserDefinition userDefinition = privilegeGather.getUserDef();
@@ -90,7 +106,7 @@ public class ShowGrantsOperation extends QueryOperation {
 
         List<SqlGrant> sqlGrants = new ArrayList<>();
         SqlGrant userGrant;
-        if ((userGrant = getUserGrant(sqlShowGrants, userDefinition)) != null) {
+        if ((userGrant = getUserGrant(userDefinition)) != null) {
             sqlGrants.add(userGrant);
         }
         sqlGrants.addAll(getSchemaGrant(sqlShowGrants, schemaPrivDefinitions));
@@ -100,7 +116,7 @@ public class ShowGrantsOperation extends QueryOperation {
         return sqlGrants;
     }
 
-    public static SqlGrant getUserGrant(@NonNull SqlShowGrants dingoSqlShowGrants, UserDefinition userDefinition) {
+    public static SqlGrant getUserGrant(UserDefinition userDefinition) {
         List<Boolean> userPrivileges = Arrays.asList(userDefinition.getPrivileges());
         long count = userPrivileges.stream()
             .filter(isPrivilege -> isPrivilege).count();
@@ -126,7 +142,7 @@ public class ShowGrantsOperation extends QueryOperation {
                 pos,
                 new ArrayList<>());
             SqlGrant sqlGrant = new SqlGrant(pos, isAllPrivilege, privileges, subject,
-                dingoSqlShowGrants.user, dingoSqlShowGrants.host, withGrantOption);
+                userDefinition.getUser(), userDefinition.getHost(), withGrantOption);
             LogUtils.debug(log, "user sqlGrant:" + sqlGrant);
             return sqlGrant;
         }

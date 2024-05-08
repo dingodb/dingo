@@ -356,6 +356,14 @@
       "default": "'N'",
       "primary": -1,
       "nullable": false
+    },
+    {
+      "name": "Monitor_priv",
+      "type": "varchar",
+      "scale": -2147483648,
+      "default": "'N'",
+      "primary": -1,
+      "nullable": false
     }
   ]
 

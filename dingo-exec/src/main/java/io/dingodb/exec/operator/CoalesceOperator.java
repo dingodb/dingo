@@ -61,6 +61,7 @@ public final class CoalesceOperator extends SoleOutOperator {
             if (isAllFin(param)) {
                 if (fin instanceof FinWithProfiles) {
                     FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+                    profile.getChildren().add(finWithProfiles.getProfile());
                     finWithProfiles.addProfile(vertex);
                 }
                 edge.fin(fin);
