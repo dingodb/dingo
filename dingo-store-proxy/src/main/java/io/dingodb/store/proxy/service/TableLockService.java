@@ -112,7 +112,7 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
                 tableLocks.lockQueue.add(lock);
                 waitLocks.add(lock);
             });
-            tableLocks.runner.forceFollow(() -> lock(lock.tableId));
+            tableLocks.runner.forceFollow(() -> lock(lock.tableId, lock.lockTs, lock.currentTs));
         });
         LogUtils.info(log, "doLock end table:{}", lock.toString());
     }
@@ -126,10 +126,11 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
         });
     }
 
-    private void lock(CommonId tableId) {
-        LogUtils.info(log, "lock tableId:{}", tableId);
+    private void lock(CommonId tableId, long lockTs, long currentTs) {
+        LogUtils.info(log, "lock tableId:{}, lockTs:{}, currentTs:{}", tableId, lockTs, currentTs);
         TableLocks tableLocks = this.locks.get(tableId);
         io.dingodb.transaction.api.TableLock lock = tableLocks.lockQueue.first();
+        LogUtils.info(log, "tableLocks.lockQueue.first:{}", lock);
         if (lock == null) {
             LogUtils.error(log, "Poll {} first wait lock null.", tableId);
             return;
@@ -203,7 +204,7 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
             }
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
             LogUtils.info(log, "locked is false Lock {}", lock);
-            tableLocks.runner.forceFollow(() -> lock(lock.tableId));
+            tableLocks.runner.forceFollow(() -> lock(lock.tableId, lock.getLockTs(), lock.getCurrentTs()));
         }
     }
 

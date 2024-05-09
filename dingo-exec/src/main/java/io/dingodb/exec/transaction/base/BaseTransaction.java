@@ -302,6 +302,7 @@ public abstract class BaseTransaction implements ITransaction {
                 LogUtils.info(log, "{} PreWritePrimaryKey Op is CheckNotExists", transactionOf());
                 return;
             }
+            LogUtils.info(log, "{} PreWritePrimaryKey end", transactionOf());
             checkContinue();
             // 2、generator job、task、PreWriteOperator
             long jobSeqId = TransactionManager.nextTimestamp();
@@ -381,6 +382,7 @@ public abstract class BaseTransaction implements ITransaction {
                     + Arrays.toString(primaryKey));
             }
             this.status = TransactionStatus.COMMIT_PRIMARY_KEY;
+            LogUtils.info(log, "{} CommitPrimaryKey end", transactionOf());
             CompletableFuture<Void> commit_future = CompletableFuture.runAsync(() ->
                 commitJobRun(jobManager, currentLocation), Executors.executor("exec-txnCommit")
             ).exceptionally(
@@ -466,6 +468,10 @@ public abstract class BaseTransaction implements ITransaction {
     public synchronized void rollback(JobManager jobManager) {
         MdcUtils.setTxnId(txnId.toString());
         if (getType() == TransactionType.NONE) {
+            return;
+        }
+        if (this.status == TransactionStatus.START) {
+            LogUtils.warn(log, "The current {} status is start, has no data to rollback", transactionOf());
             return;
         }
         if (getSqlList().isEmpty() || !cache.checkContinue()) {

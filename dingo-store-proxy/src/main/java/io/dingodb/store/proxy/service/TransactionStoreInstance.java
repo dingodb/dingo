@@ -305,12 +305,10 @@ public class TransactionStoreInstance {
         long startTs = txnPessimisticRollBack.getStartTs();
         if (indexService != null) {
             List<byte[]> keys = txnPessimisticRollBack.getKeys();
-            IntStream.range(0, keys.size())
-                .forEach(i -> {
-                    byte[] key = keys.get(i);
-                    byte[] newKey = Arrays.copyOf(key, VectorKeyLen);
-                    keys.set(i, newKey);
-                });
+            List<byte[]> newKeys = keys.stream()
+                .map(key -> Arrays.copyOf(key, VectorKeyLen))
+                .collect(Collectors.toList());
+            txnPessimisticRollBack.setKeys(newKeys);
             response = indexService.txnPessimisticRollback(startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
         } else {
             response = storeService.txnPessimisticRollback(startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));

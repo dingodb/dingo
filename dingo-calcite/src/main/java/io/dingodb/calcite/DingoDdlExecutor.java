@@ -707,9 +707,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .lockFuture(future)
             .unlockFuture(unlockFuture)
             .build();
+        LogUtils.info(log, "DDL execute drop lock: {}", lock);
         TableLockService.getDefault().lock(lock);
         try {
             future.get(ttl, TimeUnit.SECONDS);
+            LogUtils.info(log, "DDL execute drop lock end lock: {}", lock);
             schema.dropTable(tableName);
             userService.dropTablePrivilege(schema.name(), tableName);
             StatsOperator.delStats(schema.name(), tableName);
@@ -752,9 +754,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .lockFuture(future)
             .unlockFuture(unlockFuture)
             .build();
+        LogUtils.info(log, "DDL execute truncate lock: {}", lock);
         TableLockService.getDefault().lock(lock);
         try {
             future.get(ttl, TimeUnit.SECONDS);
+            LogUtils.info(log, "DDL execute truncate lock end lock: {}", lock);
             schema.getMetaService().truncateTable(tableName);
             StatsOperator.delStats(schema.name(), tableName);
         } catch (TimeoutException e) {
