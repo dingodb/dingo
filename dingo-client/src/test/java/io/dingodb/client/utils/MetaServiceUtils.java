@@ -37,6 +37,9 @@ public class MetaServiceUtils {
             0,
             null,
             false,
+            1,
+            1,
+            1,
             1)
         );
         columns.add(ColumnDefinition.getInstance(
@@ -49,6 +52,9 @@ public class MetaServiceUtils {
             1,
             null,
             false,
+            1,
+            1,
+            1,
             1)
         );
         columns.add(ColumnDefinition.getInstance(
@@ -61,6 +67,9 @@ public class MetaServiceUtils {
             2,
             null,
             false,
+            1,
+            1,
+            1,
             1)
         );
         TableDefinition tableDefinition = new TableDefinition(tableName);
@@ -80,6 +89,9 @@ public class MetaServiceUtils {
             0,
             null,
             false,
+            1,
+            1,
+            1,
             1)
         );
 
@@ -93,6 +105,9 @@ public class MetaServiceUtils {
             1,
             null,
             false,
+            1,
+            1,
+            1,
             1)
         );
 
@@ -106,6 +121,9 @@ public class MetaServiceUtils {
             2,
             null,
             false,
+            1,
+            1,
+            1,
             1)
         );
 
@@ -119,6 +137,9 @@ public class MetaServiceUtils {
             3,
             null,
             false,
+            1,
+            1,
+            1,
             1)
         );
 
@@ -132,6 +153,9 @@ public class MetaServiceUtils {
             4,
             null,
             false,
+            1,
+            1,
+            1,
             1)
         );
 
@@ -145,6 +169,9 @@ public class MetaServiceUtils {
             5,
             null,
             false,
+            1,
+            1,
+            1,
             1)
         );
 

@@ -69,7 +69,7 @@ public final class TableUtils {
     }
 
     public static KeyValueCodec getKeyValueCodecForTable(Table td) {
-        return CodecService.getDefault().createKeyValueCodec(td.tupleType(), td.keyMapping());
+        return CodecService.getDefault().createKeyValueCodec(td.version, td.tupleType(), td.keyMapping());
     }
 
 }

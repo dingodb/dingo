@@ -92,6 +92,7 @@ public class TableDefinition {
 
     @JsonProperty("autoIncrement")
     @Getter
+    @Builder.Default
     private long autoIncrement = 1;
     @JsonProperty("replica")
     @Getter

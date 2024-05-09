@@ -106,7 +106,7 @@ public class DingoLikeRule extends RelRule<DingoLikeRule.Config> {
             return;
         }
 
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td.tupleType(), td.keyMapping());
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td.version, td.tupleType(), td.keyMapping());
         Object[] tuple = new Object[td.getColumns().size()];
 
         byte[] prefixBytes;

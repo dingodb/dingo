@@ -56,20 +56,23 @@ public class ScanParam extends AbstractParams {
 
     @Getter
     protected List<Profile> profileList;
+    protected int schemaVersion;
 
     public ScanParam(
         CommonId tableId,
         @NonNull DingoType schema,
-        TupleMapping keyMapping
+        TupleMapping keyMapping,
+        int schemaVersion
     ) {
         super(null, null);
         this.tableId = tableId;
         this.schema = schema;
         this.keyMapping = keyMapping;
+        this.schemaVersion = schemaVersion;
     }
 
     public KeyValueCodec getCodec() {
-        return CodecService.getDefault().createKeyValueCodec(schema, keyMapping);
+        return CodecService.getDefault().createKeyValueCodec(schemaVersion, schema, keyMapping);
     }
 
     public synchronized OperatorProfile getProfile(String type) {

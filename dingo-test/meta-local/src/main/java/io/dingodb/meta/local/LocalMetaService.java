@@ -39,6 +39,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -208,11 +209,6 @@ public class LocalMetaService implements MetaService {
         return tableDefinitions.get(id);
     }
 
-    public List<TableDefinition> getTableDefinitions(@NonNull String name) {
-        //TODO:
-        return Collections.singletonList(getTableDefinition(name));
-    }
-
     @Override
     public Table getTable(String tableName) {
         CommonId tableId = getTableId(tableName);
@@ -270,6 +266,13 @@ public class LocalMetaService implements MetaService {
     }
 
     @Override
+    public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id) {
+        Map<CommonId, TableDefinition> map = new HashMap<>();
+        map.put(id, getTableDefinition(id));
+        return map;
+    }
+
+    @Override
     public NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
         return Parameters.cleanNull(distributions.get(id), defaultDistributions);
     }
@@ -277,16 +280,6 @@ public class LocalMetaService implements MetaService {
     @Override
     public Location currentLocation() {
         return location;
-    }
-
-    @Override
-    public void createIndex(String tableName, @NonNull List<Index> indexList) {
-        TableDefinition td = getTableDefinition(tableName);
-    }
-
-    @Override
-    public void dropIndex(String tableName, String indexName) {
-
     }
 
     public void createDistribution(

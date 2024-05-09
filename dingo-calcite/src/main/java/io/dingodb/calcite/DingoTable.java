@@ -23,6 +23,7 @@ import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.util.Optional;
 import io.dingodb.meta.TableStatistic;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -43,6 +44,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
@@ -58,6 +60,8 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
     @Getter
     @EqualsAndHashCode.Include
     private final Table table;
+    @Getter
+    private final List<IndexTable> indexTableDefinitions;
 
     public DingoTable(
         @NonNull DingoParserContext context,
@@ -70,6 +74,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
         this.names = names;
         this.tableStatistic = tableStatistic;
         this.table = table;
+        this.indexTableDefinitions = table.getIndexes();
     }
 
     public CommonId getTableId() {
@@ -78,6 +83,21 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
 
     public DingoSchema getSchema() {
         return (DingoSchema) context.getSchemaByNames(names).schema;
+    }
+
+    public CommonId getIndexId(String name) {
+        return indexTableDefinitions.stream()
+            .filter(i -> i.getName().equalsIgnoreCase(name))
+            .findAny()
+            .map(IndexTable::getTableId)
+            .orElse(null);
+    }
+
+    public IndexTable getIndexDefinition(String name) {
+        return indexTableDefinitions.stream()
+            .filter(i -> i.getName().equalsIgnoreCase(name))
+            .findAny()
+            .orElse(null);
     }
 
     @Override

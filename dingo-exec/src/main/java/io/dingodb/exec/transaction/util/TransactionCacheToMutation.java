@@ -51,7 +51,7 @@ public class TransactionCacheToMutation {
         TupleMapping mapping = TupleMapping.of(new int[]{0});
         DingoType dingoType = new LongType(false);
         TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
-        CODEC = CodecService.getDefault().createKeyValueCodec(tupleType, mapping);
+        CODEC = CodecService.getDefault().createKeyValueCodec(1, tupleType, mapping);
     }
 
     public static Mutation cacheToMutation(@Nullable int op, @NonNull byte[] key,
@@ -73,7 +73,7 @@ public class TransactionCacheToMutation {
                 tableRecord[index.getMapping().get(i)] = record[i];
             }
             key = CodecService.getDefault()
-                .createKeyValueCodec(table.tupleType(), table.keyMapping())
+                .createKeyValueCodec(table.version, table.tupleType(), table.keyMapping())
                 .encodeKey(tableRecord);
 
             Column column = index.getColumns().get(0);

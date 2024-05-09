@@ -79,9 +79,10 @@ public class ScanWithRelOpParam extends ScanParam {
         TupleMapping keyMapping,
         @NonNull RelOp relOp,
         DingoType outputSchema,
-        boolean pushDown
+        boolean pushDown,
+        int schemaVersion
     ) {
-        super(tableId, schema, keyMapping);
+        super(tableId, schema, keyMapping, schemaVersion);
         this.relOp = relOp;
         this.outputSchema = outputSchema;
         this.pushDown = pushDown;
@@ -117,7 +118,7 @@ public class ScanWithRelOpParam extends ScanParam {
     public KeyValueCodec getPushDownCodec() {
         // TODO
         TupleMapping outputKeyMapping = TupleMapping.of(new int[]{});
-        return CodecService.getDefault().createKeyValueCodec(outputSchema, outputKeyMapping);
+        return CodecService.getDefault().createKeyValueCodec(schemaVersion, outputSchema, outputKeyMapping);
     }
 
     @Override

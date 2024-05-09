@@ -33,4 +33,6 @@ public interface ClusterService {
     CommonId getServerId(Location location);
 
     Location getLocation(CommonId serverId);
+
+    int getStoreMap();
 }

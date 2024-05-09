@@ -84,6 +84,7 @@ public final class DingoFunctionScanVisitFun {
             PartRangeScanParam param = new PartRangeScanParam(
                 tableId,
                 td.tupleType(),
+                td.version,
                 td.keyMapping(),
                 null,
                 td.mapping(),

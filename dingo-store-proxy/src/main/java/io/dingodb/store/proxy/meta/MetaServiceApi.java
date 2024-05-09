@@ -21,10 +21,15 @@ import io.dingodb.common.Location;
 import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
+import io.dingodb.sdk.service.entity.meta.AddIndexOnTableRequest;
+import io.dingodb.sdk.service.entity.meta.CreateIndexRequest;
 import io.dingodb.sdk.service.entity.meta.CreateSchemaRequest;
 import io.dingodb.sdk.service.entity.meta.CreateTablesRequest;
+import io.dingodb.sdk.service.entity.meta.DropIndexOnTableRequest;
+import io.dingodb.sdk.service.entity.meta.DropIndexRequest;
 import io.dingodb.sdk.service.entity.meta.DropSchemaRequest;
 import io.dingodb.sdk.service.entity.meta.DropTablesRequest;
+import io.dingodb.sdk.service.entity.meta.UpdateIndexRequest;
 import io.dingodb.transaction.api.TableLock;
 
 import java.util.List;
@@ -56,4 +61,18 @@ public interface MetaServiceApi {
     @ApiDeclaration
     void dropSchema(long requestId, String schema, DropSchemaRequest request) throws Exception;
 
+    @ApiDeclaration
+    void createIndex(long requestId, String schema, String table, String index, CreateIndexRequest request) throws Exception;
+
+    @ApiDeclaration
+    void addIndexOnTable(long requestId, String schema, AddIndexOnTableRequest request) throws Exception;
+
+    @ApiDeclaration
+    void updateIndex(long requestId, String schema, UpdateIndexRequest request) throws Exception;
+
+    @ApiDeclaration
+    void dropIndex(long requestId, String schema, DropIndexRequest request) throws Exception;
+
+    @ApiDeclaration
+    void dropIndexOnTable(long requestId, String schema, DropIndexOnTableRequest request) throws Exception;
 }

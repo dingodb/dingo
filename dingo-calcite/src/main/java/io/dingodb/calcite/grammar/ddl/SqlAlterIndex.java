@@ -23,17 +23,23 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
-public class SqlAlterAddIndex extends SqlAlterTable {
+import java.util.Properties;
+
+public class SqlAlterIndex extends SqlAlterTable {
 
     @Getter
-    private SqlIndexDeclaration indexDeclaration;
+    private String index;
+
+    @Getter
+    private Properties properties;
 
     private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("ALTER TABLE ADD INDEX", SqlKind.ALTER_TABLE);
+        new SqlSpecialOperator("ALTER TABLE ALTER INDEX", SqlKind.ALTER_TABLE);
 
-    public SqlAlterAddIndex(SqlParserPos pos, SqlIdentifier sqlIdentifier, SqlIndexDeclaration indexDeclaration) {
+    public SqlAlterIndex(SqlParserPos pos, SqlIdentifier sqlIdentifier, String index, Properties properties) {
         super(pos, sqlIdentifier, OPERATOR);
-        this.indexDeclaration = indexDeclaration;
+        this.index = index;
+        this.properties = properties;
     }
 
 }

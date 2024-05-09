@@ -45,9 +45,11 @@ public class TxnPartRangeDeleteParam extends AbstractParams {
     private final TupleMapping keyMapping;
 
     private transient KeyValueCodec codec;
+    private int schemaVersion;
 
     public TxnPartRangeDeleteParam(
         CommonId tableId,
+        int schemaVersion,
         DingoType schema,
         TupleMapping keyMapping
     ) {
@@ -55,10 +57,11 @@ public class TxnPartRangeDeleteParam extends AbstractParams {
         this.tableId = tableId;
         this.schema = schema;
         this.keyMapping = keyMapping;
+        this.schemaVersion = schemaVersion;
     }
 
     @Override
     public void init(Vertex vertex) {
-        this.codec = CodecService.getDefault().createKeyValueCodec(schema, keyMapping);
+        this.codec = CodecService.getDefault().createKeyValueCodec(schemaVersion, schema, keyMapping);
     }
 }

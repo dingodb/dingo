@@ -34,6 +34,8 @@ public abstract class FilterProjectSourceParam extends SourceParam {
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
     protected final CommonId tableId;
     protected final DingoType schema;
+    @JsonProperty("schemaVersion")
+    protected final int schemaVersion;
     @JsonProperty("filter")
     protected SqlExpr filter;
     @JsonProperty("selection")
@@ -45,6 +47,7 @@ public abstract class FilterProjectSourceParam extends SourceParam {
         CommonId tableId,
         CommonId partId,
         DingoType schema,
+        int schemaVersion,
         SqlExpr filter,
         TupleMapping selection,
         TupleMapping keyMapping
@@ -52,6 +55,7 @@ public abstract class FilterProjectSourceParam extends SourceParam {
         super(partId, null);
         this.tableId = tableId;
         this.schema = schema;
+        this.schemaVersion = schemaVersion;
         this.filter = filter;
         this.selection = selection;
         this.keyMapping = keyMapping;

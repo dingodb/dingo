@@ -41,10 +41,11 @@ public class InfoSchemaScanParam extends FilterProjectSourceParam {
     private final String target;
 
     public InfoSchemaScanParam(DingoType schema,
+                               int schemaVersion,
                                SqlExpr filter,
                                TupleMapping selection,
                                String target) {
-        super(null, null, schema, filter, selection, null);
+        super(null, null, schema, schemaVersion, filter, selection, null);
         this.schema = schema;
         this.filter = filter;
         this.selection = selection;

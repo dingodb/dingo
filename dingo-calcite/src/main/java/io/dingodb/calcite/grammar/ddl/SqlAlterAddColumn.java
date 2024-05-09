@@ -21,19 +21,20 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
+import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
-public class SqlAlterAddIndex extends SqlAlterTable {
+public class SqlAlterAddColumn extends SqlAlterTable {
 
     @Getter
-    private SqlIndexDeclaration indexDeclaration;
+    private SqlColumnDeclaration columnDeclaration;
 
     private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("ALTER TABLE ADD INDEX", SqlKind.ALTER_TABLE);
+        new SqlSpecialOperator("ALTER TABLE ADD COLUMN", SqlKind.ALTER_TABLE);
 
-    public SqlAlterAddIndex(SqlParserPos pos, SqlIdentifier sqlIdentifier, SqlIndexDeclaration indexDeclaration) {
+    public SqlAlterAddColumn(SqlParserPos pos, SqlIdentifier sqlIdentifier, SqlColumnDeclaration indexDeclaration) {
         super(pos, sqlIdentifier, OPERATOR);
-        this.indexDeclaration = indexDeclaration;
+        this.columnDeclaration = indexDeclaration;
     }
 
 }

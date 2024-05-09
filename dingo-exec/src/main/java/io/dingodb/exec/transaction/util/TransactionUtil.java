@@ -267,7 +267,7 @@ public class TransactionUtil {
 
     public static String duplicateEntryKey(CommonId tableId, byte[] key) {
         Table table = MetaService.root().getTable(tableId);
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
         TupleMapping keyMapping = table.keyMapping();
         return joinPrimaryKey(codec.decodeKeyPrefix(key), keyMapping);
     }

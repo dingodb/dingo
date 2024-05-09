@@ -73,7 +73,11 @@ SqlShow SqlShowTable(Span s): {
      }
     |
      tableName = CompoundTableIdentifier()
-     <DISTRIBUTION> { return new SqlShowTableDistribution(s.end(this), tableName); }
+     (
+      <DISTRIBUTION> { return new SqlShowTableDistribution(s.end(this), tableName); }
+     |
+      <INDEX> { return new SqlShowTableIndex(s.end(this), tableName); }
+     )
    )
 }
 

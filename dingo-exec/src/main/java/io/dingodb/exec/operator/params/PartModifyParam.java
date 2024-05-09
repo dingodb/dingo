@@ -61,7 +61,7 @@ public abstract class PartModifyParam extends AbstractParams {
         this.tableId = tableId;
         this.schema = schema;
         this.keyMapping = keyMapping;
-        this.codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
+        this.codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
         this.table = table;
     }
 

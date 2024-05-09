@@ -240,7 +240,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 this.tableMap = new HashMap<>();
             }
             this.tableCodec = (KeyValueCodec) CodecService.getDefault().createKeyValueCodec(
-                table.tupleType(), table.keyMapping()
+                table.version, table.tupleType(), table.keyMapping()
             );
             this.storeService = storeService(tableId, regionId);
             if (tableId.type == CommonId.CommonType.INDEX && ((IndexTable) table).indexType.isVector) {
@@ -260,7 +260,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 .orElseThrow(() -> new RuntimeException("Not found index " + indexId));
             this.tableMap = table.getIndexes().stream().collect(Collectors.toMap(Table::getTableId, identity()));
             this.tableCodec = (KeyValueCodec) CodecService.getDefault().createKeyValueCodec(
-                table.tupleType(), table.keyMapping()
+                table.version, table.tupleType(), table.keyMapping()
             );
             this.storeService = storeService(tableId, regionId);
             this.transactionStoreInstance = new TransactionStoreInstance(storeService, indexService, partitionId);

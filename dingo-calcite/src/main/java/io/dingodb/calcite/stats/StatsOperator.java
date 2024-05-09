@@ -80,13 +80,13 @@ public abstract class StatsOperator {
             statsTblId = statsTable.tableId;
             cmSketchTblId = cmSketchTable.tableId;
             analyzeTaskCodec = CodecService.getDefault()
-                .createKeyValueCodec(analyzeTaskTable.tupleType(), analyzeTaskTable.keyMapping());
+                .createKeyValueCodec(analyzeTaskTable.version, analyzeTaskTable.tupleType(), analyzeTaskTable.keyMapping());
             bucketsCodec = CodecService.getDefault()
-                .createKeyValueCodec(bucketsTable.tupleType(), bucketsTable.keyMapping());
+                .createKeyValueCodec(bucketsTable.version, bucketsTable.tupleType(), bucketsTable.keyMapping());
             statsCodec = CodecService.getDefault()
-                .createKeyValueCodec(statsTable.tupleType(), statsTable.keyMapping());
+                .createKeyValueCodec(statsTable.version, statsTable.tupleType(), statsTable.keyMapping());
             cmSketchCodec = CodecService.getDefault()
-                .createKeyValueCodec(cmSketchTable.tupleType(), cmSketchTable.keyMapping());
+                .createKeyValueCodec(cmSketchTable.version, cmSketchTable.tupleType(), cmSketchTable.keyMapping());
             analyzeTaskStore = storeService.getInstance(analyzeTaskTblId,
                 getRegionId(analyzeTaskTblId));
             bucketsStore = storeService.getInstance(bucketsTblId, getRegionId(bucketsTblId));

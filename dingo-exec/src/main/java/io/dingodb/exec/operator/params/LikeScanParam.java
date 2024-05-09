@@ -31,7 +31,7 @@ import lombok.Getter;
 @Getter
 @JsonTypeName("likeScan")
 @JsonPropertyOrder({
-    "tableId", "part", "schema", "keyMapping", "filter", "selection", "prefix"
+    "tableId", "part", "schema", "schemaVersion", "keyMapping", "filter", "selection", "prefix"
 })
 public class LikeScanParam extends FilterProjectSourceParam {
 
@@ -43,18 +43,19 @@ public class LikeScanParam extends FilterProjectSourceParam {
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("part") CommonId partId,
         @JsonProperty("schema") DingoType schema,
+        @JsonProperty("schemaVersion") int schemaVersion,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("filter") SqlExpr filter,
         @JsonProperty("selection") TupleMapping selection,
         @JsonProperty("prefix") byte[] prefix
     ) {
-        super(tableId, partId, schema, filter, selection, keyMapping);
+        super(tableId, partId, schema, schemaVersion, filter, selection, keyMapping);
         this.prefix = prefix;
     }
 
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
-        this.codec = CodecService.getDefault().createKeyValueCodec(schema, keyMapping);
+        this.codec = CodecService.getDefault().createKeyValueCodec(schemaVersion, schema, keyMapping);
     }
 }

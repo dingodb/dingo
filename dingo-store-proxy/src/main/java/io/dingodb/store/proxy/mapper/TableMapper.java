@@ -183,14 +183,15 @@ public interface TableMapper {
         io.dingodb.sdk.service.entity.meta.TableDefinitionWithId tableWithId,
         List<io.dingodb.sdk.service.entity.meta.TableDefinitionWithId> indexes
     ) {
+        io.dingodb.sdk.service.entity.meta.TableDefinition definition = tableWithId.getTableDefinition();
         Table.TableBuilder builder = Table.builder();
-        tableFrom(tableWithId.getTableDefinition(), builder);
-        PartitionRule partitionRule = tableWithId.getTableDefinition().getTablePartition();
+        tableFrom(definition, builder);
+        PartitionRule partitionRule = definition.getTablePartition();
         builder.partitionStrategy(fromPartitionStrategy(partitionRule.getStrategy()));
         KeyValueCodec codec = CodecService.INSTANCE
-            .createKeyValueCodec(columnDefinitionFrom(tableWithId.getTableDefinition().getColumns()));
+            .createKeyValueCodec(definition.getVersion(), columnDefinitionFrom(definition.getColumns()));
         builder.partitions(partitionFrom(
-            tableWithId.getTableDefinition().getTablePartition().getPartitions(),
+            definition.getTablePartition().getPartitions(),
             codec,
             fromPartitionStrategy(partitionRule.getStrategy()))
         );
@@ -212,7 +213,7 @@ public interface TableMapper {
         PartitionRule partitionRule = definition.getTablePartition();
         builder.partitionStrategy(fromPartitionStrategy(partitionRule.getStrategy()));
         KeyValueCodec codec = CodecService.INSTANCE
-            .createKeyValueCodec(columnDefinitionFrom(definition.getColumns()));
+            .createKeyValueCodec(definition.getVersion(), columnDefinitionFrom(definition.getColumns()));
         builder.partitions(partitionFrom(
             definition.getTablePartition().getPartitions(),
             codec,

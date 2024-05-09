@@ -61,6 +61,7 @@ public class PartRangeScanParam extends FilterProjectParam {
     public PartRangeScanParam(
         CommonId tableId,
         DingoType schema,
+        int schemaVersion,
         TupleMapping keyMapping,
         SqlExpr filter,
         TupleMapping selection,
@@ -69,7 +70,7 @@ public class PartRangeScanParam extends FilterProjectParam {
         DingoType outputSchema,
         boolean pushDown
     ) {
-        super(tableId, schema, filter, selection, keyMapping);
+        super(tableId, schema, schemaVersion, filter, selection, keyMapping);
         this.aggKeys = aggKeys;
         this.aggList = aggList;
         this.outputSchema = outputSchema;
@@ -122,9 +123,9 @@ public class PartRangeScanParam extends FilterProjectParam {
                 outputSchema, outputKeyMapping, tableId.seq
             ));
             coprocessor = builder.build();
-            codec = CodecService.getDefault().createKeyValueCodec(outputSchema, outputKeyMapping);
+            codec = CodecService.getDefault().createKeyValueCodec(schemaVersion, outputSchema, outputKeyMapping);
             return;
         }
-        codec = CodecService.getDefault().createKeyValueCodec(schema, keyMapping);
+        codec = CodecService.getDefault().createKeyValueCodec(schemaVersion, schema, keyMapping);
     }
 }
