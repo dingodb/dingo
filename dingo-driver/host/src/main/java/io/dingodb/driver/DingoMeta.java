@@ -23,6 +23,7 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.audit.DingoAudit;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.log.LogUtils;
@@ -45,6 +46,7 @@ import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.tso.TsoService;
 import io.dingodb.verify.privilege.PrivilegeVerify;
@@ -226,6 +228,15 @@ public class DingoMeta extends MetaImpl {
             new Frame(0, true, iterable));
     }
 
+    public boolean isDisableAudit() throws SQLException {
+        return "on".equalsIgnoreCase(connection.getClientInfo("dingo_audit_enable"));
+    }
+
+    public boolean isDisableIncrementBackup() throws SQLException {
+        return "on".equalsIgnoreCase(connection.getClientInfo("increment_backup"));
+    }
+
+    @SneakyThrows
     @Override
     public StatementHandle prepare(
         ConnectionHandle ch,
@@ -244,6 +255,7 @@ public class DingoMeta extends MetaImpl {
             sh.signature = parser.parseQuery(jobManager, jobSeqId, sql);
             sqlProfile(sql, sqlProfile, parser);
             addProfileQueue(sqlProfile, connection);
+            printDingoAudit(sh, sql, dingoConnection, jobSeqId, parser);
             return sh;
         } catch (Throwable throwable) {
             LogUtils.error(log, throwable.getMessage(), throwable);
@@ -295,6 +307,7 @@ public class DingoMeta extends MetaImpl {
             addMysqlProtocolState(statement, parser);
             // for mysql protocol end
             sh.signature = signature;
+            printDingoAudit(sh, sql, dingoConnection, jobSeqId, parser);
             final int updateCount = getUpdateCount(signature.statementType);
             synchronized (callback.getMonitor()) {
                 callback.clear();
@@ -339,6 +352,49 @@ public class DingoMeta extends MetaImpl {
         } finally {
             MdcUtils.removeStmtId();
         }
+    }
+
+    private void printDingoAudit(@NonNull StatementHandle sh, String sql, @NonNull DingoConnection dingoConnection,
+                                 long jobSeqId, @NonNull DingoDriverParser parser) throws SQLException {
+        String user = dingoConnection.getContext().getOption("user");
+        String client = dingoConnection.getContext().getOption("client");
+        ITransaction transaction = dingoConnection.getTransaction();
+        DingoAudit dingoAudit;
+        if (transaction != null) {
+            dingoAudit = DingoAudit.builder()
+                .serverId(DingoConfiguration.serverId())
+                .connId(sh.toString())
+                .jobSeqId(jobSeqId)
+                .schema(dingoConnection.getContext().getUsedSchema().getName())
+                .client(client)
+                .user(user)
+                .startTs(transaction.getStartTs())
+                .forUpdateTs(transaction.isPessimistic() ? transaction.getForUpdateTs() : 0L)
+                .txIsolation(IsolationLevel.of(transaction.getIsolationLevel()).name())
+                .transactionType(transaction.getType().name())
+                .isAutoCommit(transaction.isAutoCommit())
+                .sqlType(sh.signature == null ? "" : sh.signature.statementType.name())
+                .sql(sql)
+                .build();
+        } else {
+            dingoAudit = DingoAudit.builder()
+                .serverId(DingoConfiguration.serverId())
+                .connId(sh.toString())
+                .jobSeqId(jobSeqId)
+                .schema(dingoConnection.getContext().getUsedSchema().getName())
+                .client(client)
+                .user(user)
+                .startTs(parser.getDingoAudit().getStartTs())
+                .forUpdateTs(parser.getDingoAudit().getForUpdateTs())
+                .txIsolation(parser.getDingoAudit().getTxIsolation())
+                .transactionType(parser.getDingoAudit().getTransactionType())
+                .isAutoCommit(parser.getDingoAudit().isAutoCommit())
+                .sqlType(sh.signature == null ? "" : sh.signature.statementType.name())
+                .sql(sql)
+                .build();
+        }
+        dingoAudit.printAudit(isDisableAudit());
+        dingoAudit.printIncrementBackup(isDisableIncrementBackup());
     }
 
     private void addMysqlProtocolState(DingoStatement statement, DingoDriverParser parser) throws SQLException {
@@ -755,6 +811,7 @@ public class DingoMeta extends MetaImpl {
         }
     }
 
+    @SneakyThrows
     private ITransaction prepareJobAndTxn(@NonNull StatementHandle sh, DingoPreparedStatement statement) {
         ITransaction transaction = null;
         Job job = statement.getJob(jobManager);
@@ -777,6 +834,7 @@ public class DingoMeta extends MetaImpl {
                     String stmtId = "Stmt_" + sh + "_" + jobSeqId;
                     MdcUtils.setStmtId(stmtId);
                     sh.signature = parser.parseQuery(jobManager, jobSeqId, statement.getSql());
+                    printDingoAudit(sh, statement.getSql(), (DingoConnection) connection, jobSeqId, parser);
                 }
             }
             return transaction;

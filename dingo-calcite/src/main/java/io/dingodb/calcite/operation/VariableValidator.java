@@ -58,6 +58,7 @@ public final class VariableValidator {
             || name.equalsIgnoreCase("sql_profile_enable")
             || name.equalsIgnoreCase("slow_query_enable")
             || name.equalsIgnoreCase("metric_log_enable")
+            || name.equalsIgnoreCase("dingo_audit_enable")
         ) {
             value = value.toLowerCase();
             if (!SWITCH.contains(value)) {
