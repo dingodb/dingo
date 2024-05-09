@@ -115,7 +115,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                 if (index.indexType.isVector) {
                     isVector = true;
                 }
-                codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
+                codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
                 if (updated && columnIndices.stream().anyMatch(c -> mapping.contains(c))) {
                     PartitionService ps = PartitionService.getService(
                         Optional.ofNullable(indexTable.getPartitionStrategy())

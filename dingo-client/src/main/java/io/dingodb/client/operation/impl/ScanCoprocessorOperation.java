@@ -151,7 +151,10 @@ public class ScanCoprocessorOperation implements Operation {
             primary,
             column.getDefaultValue(),
             column.isAutoIncrement(),
-            column.getState());
+            column.getState(),
+            column.getCreateVersion(),
+            column.getUpdateVersion(),
+            column.getDeleteVersion());
     }
 
     @Override

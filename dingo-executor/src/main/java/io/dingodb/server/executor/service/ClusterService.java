@@ -28,9 +28,12 @@ import io.dingodb.sdk.service.entity.common.Executor;
 import io.dingodb.sdk.service.entity.common.ExecutorMap;
 import io.dingodb.sdk.service.entity.common.ExecutorState;
 import io.dingodb.sdk.service.entity.common.ExecutorUser;
+import io.dingodb.sdk.service.entity.common.StoreMap;
 import io.dingodb.sdk.service.entity.coordinator.ExecutorHeartbeatRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetExecutorMapRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetExecutorMapResponse;
+import io.dingodb.sdk.service.entity.coordinator.GetStoreMapRequest;
+import io.dingodb.sdk.service.entity.coordinator.GetStoreMapResponse;
 import io.dingodb.server.executor.Configuration;
 import io.dingodb.tso.TsoService;
 
@@ -121,6 +124,13 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
                 .map(this::url)
                 .map(Location::parseUrl)
             ).orElse(null);
+    }
+
+    @Override
+    public int getStoreMap() {
+        return coordinatorService.getStoreMap(
+            TsoService.getDefault().tso(), GetStoreMapRequest.builder().build()
+        ).getStoremap().getStores().size();
     }
 
     private String url(io.dingodb.sdk.service.entity.common.Location location) {

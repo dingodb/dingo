@@ -125,7 +125,7 @@ public final class DingoGetByKeysFun {
             );
             getVertex = new Vertex(TXN_GET_BY_KEYS, param);
         } else {
-            GetByKeysParam param = new GetByKeysParam(tableInfo.getId(), td.tupleType(),
+            GetByKeysParam param = new GetByKeysParam(tableInfo.getId(), td.tupleType(), td.version,
                 td.keyMapping(), SqlExprUtils.toSqlExpr(rel.getFilter()), rel.getSelection(), td
             );
             getVertex = new Vertex(GET_BY_KEYS, param);

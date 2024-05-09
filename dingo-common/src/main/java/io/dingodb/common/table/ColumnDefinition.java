@@ -39,8 +39,7 @@ public class ColumnDefinition {
     public static final int DEFAULT_SCALE = Integer.MIN_VALUE;
 
     public static final int NORMAL_STATE = 1;
-    public static final int HIDE_STATE = 2;
-    public static final int DELETE_STATE = -1;
+    public static final int HIDE_STATE = 1 << 1;
 
     @JsonProperty(value = "name", required = true)
     @Getter
@@ -98,6 +97,21 @@ public class ColumnDefinition {
     @Builder.Default
     private int state = NORMAL_STATE;
 
+    @JsonProperty("createVersion")
+    @Getter
+    @Builder.Default
+    private final int createVersion = 1;
+
+    @JsonProperty("updateVersion")
+    @Getter
+    @Builder.Default
+    private final int updateVersion = 1;
+
+    @JsonProperty("deleteVersion")
+    @Getter
+    @Builder.Default
+    private final int deleteVersion = 1;
+
     @JsonProperty("comment")
     @Getter
     @Builder.Default
@@ -114,7 +128,10 @@ public class ColumnDefinition {
         @JsonProperty("primary") int primary,
         @JsonProperty("default") String defaultValue,
         @JsonProperty("autoIncrement") boolean autoIncrement,
-        @JsonProperty("state") int state
+        @JsonProperty("state") int state,
+        @JsonProperty("createVersion") int createVersion,
+        @JsonProperty("updateVersion") int updateVersion,
+        @JsonProperty("deleteVersion") int deleteVersion
     ) {
         return builder()
             .name(name)
@@ -127,6 +144,9 @@ public class ColumnDefinition {
             .defaultValue(defaultValue)
             .autoIncrement(autoIncrement)
             .state(state)
+            .createVersion(createVersion)
+            .updateVersion(updateVersion)
+            .deleteVersion(deleteVersion)
             .build();
     }
 

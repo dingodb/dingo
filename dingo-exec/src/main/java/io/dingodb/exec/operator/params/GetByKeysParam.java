@@ -29,7 +29,7 @@ import lombok.Getter;
 
 @Getter
 @JsonTypeName("get")
-@JsonPropertyOrder({"table", "part", "schema", "keyMapping", "keys", "filter", "selection"})
+@JsonPropertyOrder({"table", "part", "schema", "schemaVersion", "keyMapping", "keys", "filter", "selection"})
 public class GetByKeysParam extends FilterProjectParam {
 
     private KeyValueCodec codec;
@@ -38,13 +38,14 @@ public class GetByKeysParam extends FilterProjectParam {
     public GetByKeysParam(
         CommonId tableId,
         DingoType schema,
+        int schemaVersion,
         TupleMapping keyMapping,
         SqlExpr filter,
         TupleMapping selection,
         Table table
     ) {
-        super(tableId, schema, filter, selection, keyMapping);
-        this.codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
+        super(tableId, schema, schemaVersion, filter, selection, keyMapping);
+        this.codec = CodecService.getDefault().createKeyValueCodec(schemaVersion, table.tupleType(), table.keyMapping());
         this.table = table;
     }
 

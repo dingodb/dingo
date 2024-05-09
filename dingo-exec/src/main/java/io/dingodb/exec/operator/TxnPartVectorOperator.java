@@ -63,7 +63,7 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
         String distanceType = param.getDistanceType();
         KeyValueCodec tableCodec;
         tableCodec = CodecService.getDefault().createKeyValueCodec(
-            param.getTableDataSchema(), param.tableDataKeyMapping()
+            param.getTable().version, param.getTableDataSchema(), param.tableDataKeyMapping()
         );
         StoreInstance instance = Services.KV_STORE.getInstance(param.getTableId(), param.getPartId());
         List<VectorSearchResponse> searchResponseList = instance.vectorSearch(

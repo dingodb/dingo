@@ -35,7 +35,7 @@ import java.util.NavigableMap;
 @Getter
 @JsonTypeName("partVector")
 @JsonPropertyOrder({
-    "tableId", "part", "schema", "keyMapping", "filter", "selection", "indexId", "indexRegionId"
+    "tableId", "part", "schema", "schemaVersion", "keyMapping", "filter", "selection", "indexId", "indexRegionId"
 })
 public class PartVectorParam extends FilterProjectSourceParam {
 
@@ -61,8 +61,8 @@ public class PartVectorParam extends FilterProjectSourceParam {
         int topN,
         Map<String, Object> parameterMap
     ) {
-        super(tableId, partId, schema, filter, selection, keyMapping);
-        this.codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
+        super(tableId, partId, schema, table.version, filter, selection, keyMapping);
+        this.codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
         this.table = table;
         this.distributions = distributions;
         this.indexId = indexId;

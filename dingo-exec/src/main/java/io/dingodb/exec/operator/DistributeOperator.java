@@ -75,7 +75,7 @@ public class DistributeOperator extends SoleOutOperator {
                         indexTuple[i] = tuple[indexTable.getMapping().get(i)];
                     }
                     KeyValueCodec indexCodec = CodecService.getDefault()
-                        .createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
+                        .createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
                     partId = ps.calcPartId(indexTuple, wrap(indexCodec::encodeKey), param.getDistributions());
                 } else {
                     partId = ps.calcPartId(newTuple, wrap(param.getCodec()::encodeKey), param.getDistributions());

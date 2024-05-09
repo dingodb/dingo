@@ -209,7 +209,7 @@ public class TransactionStoreInstance {
     public void getJoinedPrimaryKey(TxnPreWrite txnPreWrite, List<AlreadyExist> keysAlreadyExist) {
         CommonId tableId = LockExtraDataList.decode(txnPreWrite.getLockExtraDatas().get(0).getExtraData()).getTableId();
         Table table = MetaService.root().getTable(tableId);
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
         AtomicReference<String> joinedKey = new AtomicReference<>("");
         TupleMapping keyMapping = table.keyMapping();
         keysAlreadyExist.stream().forEach(

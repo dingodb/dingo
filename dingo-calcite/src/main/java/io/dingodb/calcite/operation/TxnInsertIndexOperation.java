@@ -55,7 +55,7 @@ import java.util.Map;
 import java.util.concurrent.Future;
 
 @Slf4j
-public class TxnImportDataOperation {
+public class TxnInsertIndexOperation {
     int isolationLevel = IsolationLevel.ReadCommitted.getCode();
     long startTs;
     CommonId txnId;
@@ -68,12 +68,12 @@ public class TxnImportDataOperation {
     int retryCnt;
     long timeOut;
 
-    public TxnImportDataOperation(Long startTs, CommonId txnId, boolean retry, int retryCnt, long timeOut) {
+    public TxnInsertIndexOperation(Long startTs, CommonId txnId, long timeOut) {
         dingoType = new BooleanType(true);
         this.startTs = startTs;
         this.txnId = txnId;
-        this.retry = retry;
-        this.retryCnt = retryCnt;
+        this.retry = true;
+        this.retryCnt = 10;
         this.timeOut = timeOut;
     }
 

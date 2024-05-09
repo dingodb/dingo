@@ -26,8 +26,12 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
 	        alterTable = addPartition(s, scope, id)
 	    |
 	        alterTable = addIndex(s, scope, id)
+        |
+            alterTable = addColumn(s, scope, id)
 	    )
 	  |
+        <ALTER>
+        alterTable = alterIndex(s, scope, id)
 	    <CONVERT> <TO>
 	    alterTable = convertCharset(s, id)
     )
@@ -42,22 +46,110 @@ SqlAlterTable addPartition(Span s, String scope, SqlIdentifier id): {
     }
 }
 
+SqlAlterTable addColumn(Span s, String scope, SqlIdentifier id): {
+    final SqlIdentifier columnId;
+    final SqlDataTypeSpec type;
+    final boolean nullable;
+    final SqlNode e;
+    final SqlNode constraint;
+    final ColumnStrategy strategy;
+} {
+    <COLUMN>
+    columnId = SimpleIdentifier()
+    type = DataType()
+    nullable = NullableOptDefaultTrue()
+    (
+        [ <GENERATED> <ALWAYS> ] <AS> <LPAREN>
+        e = Expression(ExprContext.ACCEPT_SUB_QUERY) <RPAREN>
+        (
+            <VIRTUAL> { strategy = ColumnStrategy.VIRTUAL; }
+        |
+            <STORED> { strategy = ColumnStrategy.STORED; }
+        |
+            { strategy = ColumnStrategy.VIRTUAL; }
+        )
+    |
+        <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY)
+        { strategy = ColumnStrategy.DEFAULT; }
+    |
+        {
+            e = null;
+            strategy = nullable ? ColumnStrategy.NULLABLE: ColumnStrategy.NOT_NULLABLE;
+        }
+    )
+    {
+        return new SqlAlterAddColumn(s.end(this), id, DingoSqlDdlNodes.createColumn(
+            s.end(this), columnId, type.withNullable(nullable), e, strategy, false
+        ));
+    }
+}
+
 SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
     final String index;
-    SqlIdentifier column;
-    List<SqlIdentifier> columns;
-    boolean isUnique = false;
+    Boolean autoIncrement = false;
+    Properties properties = null;
+    PartitionDefinition partitionDefinition = null;
+    int replica = 0;
+    String indexType = "scalar";
+    SqlNodeList withColumnList = null;
+    final SqlNodeList columnList;
+    String engine = null;
 } {
-    [ <INDEX> ] [<UNIQUE> { isUnique = true;} ]
-    ( <QUOTED_STRING> | <IDENTIFIER> )
-    { index = token.image.toUpperCase(); }
-    <LPAREN>
-        column = SimpleIdentifier() { columns = new ArrayList<SqlIdentifier>(); columns.add(column); }
-        (
-            <COMMA> column = SimpleIdentifier() { columns.add(column); }
-        )*
-    <RPAREN>
-    { return new SqlAlterAddIndex(s.end(this), id, index, columns, isUnique); }
+<INDEX> { s.add(this); }
+    { index = getNextToken().image; }
+    (
+        <VECTOR> { indexType = "vector"; } columnList = ParenthesizedSimpleIdentifierList()
+    |
+        [<SCALAR>] columnList = ParenthesizedSimpleIdentifierList()
+    )
+    [ <WITH> withColumnList = ParenthesizedSimpleIdentifierList() ]
+    [ <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} } ]
+    [
+        <PARTITION> <BY>
+            {
+                partitionDefinition = new PartitionDefinition();
+                partitionDefinition.setFuncName(getNextToken().image);
+                partitionDefinition.setColumns(readNames());
+                partitionDefinition.setDetails(readPartitionDetails());
+            }
+    ]
+    [
+        <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
+    ]
+    [ <PARAMETERS> properties = readProperties() ]
+    {
+        return new SqlAlterAddIndex(
+            s.end(this), id,
+            new SqlIndexDeclaration(
+                s.end(this), index, columnList, withColumnList, properties,partitionDefinition, replica, indexType, engine
+            )
+        );
+    }
+}
+
+SqlAlterTable alterIndex(Span s, String scope, SqlIdentifier id): {
+    final String index;
+    Properties properties = new Properties();
+    String key;
+}
+{
+    <INDEX> { s.add(this); }
+    { index = getNextToken().image; }
+    <SET>
+    readProperty(properties)
+    (
+        <COMMA>
+        readProperty(properties)
+    )*
+    (
+        <AND>
+        readProperty(properties)
+    )*
+    {
+        return new SqlAlterIndex(
+            s.end(this), id, index, properties
+        );
+    }
 }
 
 SqlAlterTable convertCharset(Span s, SqlIdentifier id): {

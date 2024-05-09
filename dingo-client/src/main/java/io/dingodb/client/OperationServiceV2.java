@@ -516,6 +516,7 @@ public class OperationServiceV2 {
             PartRangeScanParam param = new PartRangeScanParam(
                 tableId,
                 td.tupleType(),
+                td.version,
                 td.keyMapping(),
                 null,
                 null,
@@ -567,7 +568,7 @@ public class OperationServiceV2 {
 
         List<Vertex> outputs = new ArrayList<>();
         for (int i = 0; i <= td.getPartitions().size(); i++) {
-            PartRangeDeleteParam param = new PartRangeDeleteParam(tableId, td.tupleType(), td.keyMapping());
+            PartRangeDeleteParam param = new PartRangeDeleteParam(tableId, td.version, td.tupleType(), td.keyMapping());
             Vertex deleteVertex = new Vertex(PART_RANGE_DELETE, param);
             task = job.getOrCreate(currentLocation, idGenerator);
             deleteVertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -637,7 +638,7 @@ public class OperationServiceV2 {
                     true));
         } else {
             vertex = new Vertex(GET_BY_KEYS,
-                new GetByKeysParam(tableId, td.tupleType(), td.keyMapping(), null, null, td));
+                new GetByKeysParam(tableId, td.tupleType(), td.version, td.keyMapping(), null, null, td));
         }
         OutputHint hint = new OutputHint();
         vertex.setHint(hint);

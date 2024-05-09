@@ -22,6 +22,7 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
@@ -30,6 +31,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
 import io.dingodb.meta.MetaServiceProvider;
 import io.dingodb.meta.TableStatistic;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.sdk.common.serial.RecordEncoder;
@@ -42,19 +44,27 @@ import io.dingodb.sdk.service.entity.coordinator.GetRegionMapRequest;
 import io.dingodb.sdk.service.entity.coordinator.QueryRegionRequest;
 import io.dingodb.sdk.service.entity.coordinator.RegionCmd.RequestNest.SplitRequest;
 import io.dingodb.sdk.service.entity.coordinator.SplitRegionRequest;
+import io.dingodb.sdk.service.entity.meta.AddIndexOnTableRequest;
+import io.dingodb.sdk.service.entity.meta.CreateIndexRequest;
 import io.dingodb.sdk.service.entity.meta.CreateSchemaRequest;
 import io.dingodb.sdk.service.entity.meta.CreateTablesRequest;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
+import io.dingodb.sdk.service.entity.meta.DropIndexOnTableRequest;
+import io.dingodb.sdk.service.entity.meta.DropIndexRequest;
 import io.dingodb.sdk.service.entity.meta.DropSchemaRequest;
 import io.dingodb.sdk.service.entity.meta.DropTablesRequest;
 import io.dingodb.sdk.service.entity.meta.EntityType;
 import io.dingodb.sdk.service.entity.meta.GenerateTableIdsRequest;
+import io.dingodb.sdk.service.entity.meta.GetIndexRequest;
+import io.dingodb.sdk.service.entity.meta.GetIndexesRequest;
 import io.dingodb.sdk.service.entity.meta.GetSchemasRequest;
 import io.dingodb.sdk.service.entity.meta.GetSchemasResponse;
 import io.dingodb.sdk.service.entity.meta.GetTableByNameRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableMetricsRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableMetricsResponse;
+import io.dingodb.sdk.service.entity.meta.GetTableRequest;
 import io.dingodb.sdk.service.entity.meta.GetTablesRequest;
+import io.dingodb.sdk.service.entity.meta.IndexDefinition;
 import io.dingodb.sdk.service.entity.meta.Partition;
 import io.dingodb.sdk.service.entity.meta.ReservedSchemaIds;
 import io.dingodb.sdk.service.entity.meta.Schema;
@@ -63,7 +73,9 @@ import io.dingodb.sdk.service.entity.meta.TableIdWithPartIds;
 import io.dingodb.sdk.service.entity.meta.TableMetrics;
 import io.dingodb.sdk.service.entity.meta.TableMetricsWithId;
 import io.dingodb.sdk.service.entity.meta.TableWithPartCount;
+import io.dingodb.sdk.service.entity.meta.UpdateTablesRequest;
 import io.dingodb.store.proxy.Configuration;
+import io.dingodb.store.proxy.common.Mapping;
 import io.dingodb.store.proxy.service.AutoIncrementService;
 import io.dingodb.store.proxy.service.CodecService;
 import io.dingodb.tso.TsoService;
@@ -78,6 +90,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -87,6 +100,7 @@ import java.util.stream.Stream;
 
 import static io.dingodb.common.CommonId.CommonType.TABLE;
 import static io.dingodb.partition.DingoPartitionServiceProvider.HASH_FUNC_NAME;
+import static io.dingodb.store.proxy.common.Mapping.mapping;
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 
 @Slf4j
@@ -263,6 +277,162 @@ public class MetaService implements io.dingodb.meta.MetaService {
             tso(), name, tableName, CreateTablesRequest.builder().schemaId(id).tableDefinitionWithIds(tables).build()
         );
         cache.refreshSchema(name);
+    }
+
+    @Override
+    public void createIndex(CommonId tableId, TableDefinition table, TableDefinition index) {
+        if (!MetaServiceApiImpl.INSTANCE.isReady()) {
+            throw new RuntimeException("Offline, please wait and retry.");
+        }
+        String tableName = cleanTableName(table.getName());
+        TableIdWithPartIds tableIdWithPartIds = service.generateTableIds(
+            tso(),
+            GenerateTableIdsRequest.builder()
+                .schemaId(id)
+                .count(
+                TableWithPartCount.builder()
+                    .indexCount(1)
+                    .indexPartCount(Collections.singletonList(index.getPartDefinition().getDetails().size()))
+                    .build()
+            ).build()).getIds().get(0);
+        /*io.dingodb.store.proxy.common.TableDefinition indexTable = mapping(index);
+        indexTable.setProperties(indexTable.getProperties());
+        indexTable.setName(table.getName() + "." + index.getName());
+        index = index.copyWithName(table.getName() + "." + index.getName());
+        io.dingodb.sdk.service.entity.meta.TableDefinition tableDefinition = MAPPER.tableTo(index);
+        MAPPER.resetIndexParameter(tableDefinition);*/
+        TableDefinitionWithId tableDefinitionWithId = Stream.of(index).map(i -> MAPPER.tableTo(tableIdWithPartIds, i))
+            .peek(td -> MAPPER.resetIndexParameter(td.getTableDefinition()))
+            .peek(td -> td.getTableDefinition().setName(tableName + "." + td.getTableDefinition().getName()))
+            .findAny().get();
+
+        api.addIndexOnTable(
+            tso(),
+            name,
+            AddIndexOnTableRequest.builder()
+                .tableId(MAPPER.idTo(tableId))
+                .tableDefinitionWithId(tableDefinitionWithId)
+                .build());
+        cache.invalidateTable(id.getEntityId(), tableId.seq);
+    }
+
+    @Override
+    public void createDifferenceIndex(CommonId tableId, CommonId indexId, IndexTable indexTable) {
+        dropIndex(tableId, indexId);
+
+        TableIdWithPartIds tableIdWithPartIds = service.generateTableIds(
+            tso(),
+            GenerateTableIdsRequest.builder().count(
+                TableWithPartCount.builder()
+                    .indexCount(1)
+                    .indexPartCount(Collections.singletonList(indexTable.getPartitions().size()))
+                    .build()
+            ).build()).getIds().get(0);
+
+        /*api.addIndexOnTable(tso(),
+            name,
+            AddIndexOnTableRequest.builder()
+                .tableId(MAPPER.idTo(tableId))
+                .tableDefinitionWithId(TableDefinitionWithId.builder()
+                    .tableId(tableIdWithPartIds.getTableId())
+                    .tableDefinition(indexTable)));*/
+
+    }
+
+    @Override
+    public void updateTable(CommonId tableId, @NonNull Table table) {
+        io.dingodb.sdk.service.entity.meta.TableDefinition oldTable = service.getTable(
+            tso(),
+            GetTableRequest.builder().tableId(MAPPER.idTo(tableId)).build()
+        ).getTableDefinitionWithId().getTableDefinition();
+
+        /*service.updateTables(
+            tso(),
+            UpdateTablesRequest.builder()
+                .tableDefinitionWithId(TableDefinitionWithId.builder()
+                    .tableId(MAPPER.idTo(tableId))
+                    .tableDefinition()
+                    .build())
+                .build())*/
+    }
+
+    @Override
+    public void dropIndex(CommonId table, CommonId index) {
+        api.dropIndexOnTable(
+            tso(),
+            name,
+            DropIndexOnTableRequest.builder()
+                .tableId(MAPPER.idTo(table))
+                .indexId(MAPPER.idTo(index))
+                .build()
+        );
+    }
+
+    @Override
+    public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id) {
+        return service.getTables(
+            tso(),
+            GetTablesRequest.builder()
+                .tableId(MAPPER.idTo(id))
+                .build()
+        ).getTableDefinitionWithIds().stream().collect(Collectors.toMap(entry -> MAPPER.idFrom(entry.getTableId()), entry -> {
+            TableDefinition table = mapping1(entry);
+            String tableName = table.getName();
+            String[] split = tableName.split("\\.");
+                if (split.length > 1) {
+                    tableName = split[split.length - 1];
+                }
+                return table.copyWithName(tableName);
+            }));
+    }
+
+    private TableDefinition mapping1(TableDefinitionWithId tableDefinitionWithId) {
+        io.dingodb.sdk.service.entity.meta.TableDefinition table = tableDefinitionWithId.getTableDefinition();
+        Map<String, String> properties = table.getProperties();
+        Properties prop = new Properties();
+        if (properties != null) {
+            for (Map.Entry<String, String> entry : properties.entrySet()) {
+                prop.setProperty(entry.getKey(), entry.getValue());
+            }
+        }
+        return TableDefinition.builder()
+            .name(table.getName())
+            .columns(table.getColumns().stream().map(this::mapping1).collect(Collectors.toList()))
+            .collate(table.getCollate())
+            .charset(table.getCharset())
+            .comment(table.getComment())
+            .version(table.getVersion())
+            .createTime(table.getCreateTimestamp())
+            .ttl((int) table.getTtl())
+            .rowFormat(table.getRowFormat())
+            .tableType(table.getTableType())
+            .updateTime(table.getUpdateTimestamp())
+            // .partDefinition()
+            .engine(table.getEngine().name())
+            .replica(table.getReplica())
+            .autoIncrement(table.getAutoIncrement())
+            .createSql(table.getCreateSql())
+            .properties(prop)
+            .build();
+    }
+
+    private ColumnDefinition mapping1(io.dingodb.sdk.service.entity.meta.ColumnDefinition column) {
+        return ColumnDefinition.builder()
+            .name(column.getName())
+            .type(column.getSqlType())
+            .scale(column.getScale())
+            .primary(column.getIndexOfKey())
+            .state(column.getState())
+            .nullable(column.isNullable())
+            .createVersion(column.getCreateVersion())
+            .defaultValue(column.getDefaultVal())
+            .precision(column.getPrecision())
+            .elementType(column.getElementType())
+            .comment(column.getComment())
+            .autoIncrement(column.isAutoIncrement())
+            .updateVersion(column.getUpdateVersion())
+            .deleteVersion(column.getDeleteVersion())
+            .build();
     }
 
     @Override

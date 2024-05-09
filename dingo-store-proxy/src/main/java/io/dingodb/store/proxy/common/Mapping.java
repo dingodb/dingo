@@ -32,6 +32,7 @@ import io.dingodb.sdk.common.partition.PartitionDetail;
 import io.dingodb.sdk.common.table.Column;
 import io.dingodb.sdk.common.table.Table;
 import io.dingodb.store.api.StoreInstance;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -53,7 +54,11 @@ public final class Mapping {
             .nullable(definition.isNullable())
             .primary(definition.getPrimary())
             .defaultValue(definition.getDefaultValue())
+            .isAutoIncrement(definition.isAutoIncrement())
             .state(definition.getState())
+            .createVersion(definition.getCreateVersion())
+            .updateVersion(definition.getUpdateVersion())
+            .deleteVersion(definition.getDeleteVersion())
             .build();
     }
 
@@ -128,40 +133,50 @@ public final class Mapping {
     }
 
     public static io.dingodb.common.partition.PartitionDetailDefinition mapping(PartitionDetail partitionDetail) {
+        Object[] operand = partitionDetail.getOperand();
+        operand = cleanOperand(operand);
         return new io.dingodb.common.partition.PartitionDetailDefinition(
             partitionDetail.getPartName(),
             partitionDetail.getOperator(),
-            partitionDetail.getOperand());
+            operand);
     }
 
+    public static PartitionDetailDefinition mapping(io.dingodb.common.partition.PartitionDetailDefinition partitionDetail) {
+        return new PartitionDetailDefinition(partitionDetail);
+    }
 
-    public static RangeDistribution mapping(
-        io.dingodb.sdk.common.table.RangeDistribution rangeDistribution,
-        KeyValueCodec codec
-    ) {
-        byte[] startKey = rangeDistribution.getRange().getStartKey();
-        byte[] endKey = rangeDistribution.getRange().getEndKey();
-        return RangeDistribution.builder()
-            .id(mapping(rangeDistribution.getId()))
-            .startKey(startKey)
-            .endKey(endKey)
-            .start(codec.decodeKeyPrefix(startKey))
-            .end(codec.decodeKeyPrefix(endKey))
-            .build();
+    @NonNull
+    private static Object[] cleanOperand(Object[] operand) {
+        if (operand.length > 0) {
+            for (int i = (operand.length - 1); i >= 0; --i) {
+                if (operand[i] != null) {
+                    operand = Arrays.copyOf(operand, i + 1);
+                    break;
+                }
+            }
+        }
+        if (operand.length > 0 && operand[operand.length - 1] == null) {
+            operand = new Object[0];
+        }
+        return operand;
     }
 
     public static ColumnDefinition mapping(Column column) {
-        return ColumnDefinition.getInstance(
-            column.getName(),
-            column.getType().equals("STRING") ? "VARCHAR" : column.getType(),
-            column.getElementType(),
-            column.getPrecision(),
-            column.getScale(),
-            column.isNullable(),
-            column.getPrimary(),
-            column.getDefaultValue(),
-            column.isAutoIncrement(),
-            column.getState());
+        return ColumnDefinition.builder()
+            .name(column.getName())
+            .type(column.getType())
+            .elementType(column.getElementType())
+            .precision(column.getPrecision())
+            .scale(column.getScale())
+            .nullable(column.isNullable())
+            .primary(column.getPrimary())
+            .defaultValue(column.getDefaultValue())
+            .autoIncrement(column.isAutoIncrement())
+            .state(column.getState())
+            .createVersion(column.getCreateVersion())
+            .updateVersion(column.getUpdateVersion())
+            .deleteVersion(column.getDeleteVersion())
+            .build();
     }
 
     public static DingoCommonId mapping(CommonId commonId) {

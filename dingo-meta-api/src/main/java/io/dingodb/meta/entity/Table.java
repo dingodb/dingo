@@ -26,9 +26,11 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -52,6 +54,7 @@ public class Table {
     @EqualsAndHashCode.Include
     public final String name;
 
+    @Setter
     @JsonProperty
     public final List<Column> columns;
 
@@ -112,6 +115,15 @@ public class Table {
         );
     }
 
+    public @Nullable Column getColumn(String name) {
+        for (Column column : columns) {
+            if (column.getName().equalsIgnoreCase(name)) {
+                return column;
+            }
+        }
+        return null;
+    }
+
     public List<Column> keyColumns() {
         return columns.stream().filter(Column::isPrimary).collect(Collectors.toList());
     }
@@ -148,6 +160,30 @@ public class Table {
         return names.stream()
             .map(this::getColumnIndex)
             .collect(Collectors.toList());
+    }
+
+    public Table copyWithColumns(List<Column> columns) {
+        return Table.builder()
+            .tableId(this.tableId)
+            .columns(columns)
+            .indexes(this.indexes)
+            .autoIncrement(this.autoIncrement)
+            .charset(this.charset)
+            .collate(this.collate)
+            .comment(this.comment)
+            .createSql(this.createSql)
+            .createTime(this.createTime)
+            .engine(this.engine)
+            .name(this.name)
+            .partitions(this.partitions)
+            .partitionStrategy(this.partitionStrategy)
+            .properties(this.properties)
+            .replica(this.replica)
+            .rowFormat(this.rowFormat)
+            .tableType(this.tableType)
+            .updateTime(this.updateTime)
+            .version(this.version)
+            .build();
     }
 
 }

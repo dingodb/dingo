@@ -45,4 +45,9 @@ public class ClusterTestService implements ClusterService {
     public Location getLocation(CommonId serverId) {
         return null;
     }
+
+    @Override
+    public int getStoreMap() {
+        return 0;
+    }
 }

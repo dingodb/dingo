@@ -49,6 +49,7 @@ import io.dingodb.sdk.service.entity.meta.MetaEventIndex;
 import io.dingodb.sdk.service.entity.meta.MetaEventRegion;
 import io.dingodb.sdk.service.entity.meta.MetaEventSchema;
 import io.dingodb.sdk.service.entity.meta.MetaEventTable;
+import io.dingodb.sdk.service.entity.meta.MetaEventTableIndex;
 import io.dingodb.sdk.service.entity.meta.MetaEventType;
 import io.dingodb.sdk.service.entity.meta.Schema;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
@@ -80,6 +81,7 @@ import java.util.stream.Collectors;
 
 import static io.dingodb.common.CommonId.CommonType.INDEX;
 import static io.dingodb.common.CommonId.CommonType.TABLE;
+import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_INDEX_CREATE;
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_INDEX_DELETE;
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_REGION_CREATE;
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_REGION_DELETE;
@@ -89,6 +91,7 @@ import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_SCHEMA
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_SCHEMA_UPDATE;
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_TABLE_CREATE;
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_TABLE_DELETE;
+import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_TABLE_INDEX_UPDATE;
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_TABLE_UPDATE;
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 import static java.lang.Math.max;
@@ -181,9 +184,19 @@ public class MetaCache {
                         revision = max(revision, tableEvent.getDefinition().getRevision());
                         break;
                     }
+                    case META_EVENT_TABLE_INDEX_UPDATE: {
+                        MetaEventTableIndex tableIndexEvent = (MetaEventTableIndex) event.getEvent();
+                        long schemaId = tableIndexEvent.getTableIds() != null && tableIndexEvent.getTableIds().size() != 0 ? tableIndexEvent.getTableIds().get(0).getParentEntityId() : 2;
+                        refreshSchema(getMetaService(schemaId).name);
+                        invalidateTable(schemaId, tableIndexEvent.getId());
+                        revision = max(revision, tableIndexEvent.getRevision());
+                        break;
+                    }
+                    case META_EVENT_INDEX_CREATE:
                     case META_EVENT_INDEX_DELETE: {
                         MetaEventIndex indexDeleteEvent = (MetaEventIndex) event.getEvent();
                         invalidateTable(indexDeleteEvent.getSchemaId(), indexDeleteEvent.getId());
+                        refreshSchema(getMetaService(indexDeleteEvent.getSchemaId()).name);
                         revision = max(revision, indexDeleteEvent.getDefinition().getRevision());
                         break;
                     }
@@ -210,10 +223,12 @@ public class MetaCache {
             META_EVENT_TABLE_CREATE,
             META_EVENT_TABLE_UPDATE,
             META_EVENT_TABLE_DELETE,
+            META_EVENT_INDEX_CREATE,
             META_EVENT_INDEX_DELETE,
             META_EVENT_REGION_CREATE,
             META_EVENT_REGION_UPDATE,
-            META_EVENT_REGION_DELETE
+            META_EVENT_REGION_DELETE,
+            META_EVENT_TABLE_INDEX_UPDATE
         );
     }
 
@@ -285,7 +300,7 @@ public class MetaCache {
     private NavigableMap<ComparableByteArray, RangeDistribution> loadDistribution(CommonId tableId) {
         List<io.dingodb.sdk.service.entity.meta.RangeDistribution> ranges;
         Table table = getTable(tableId);
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
         boolean isOriginalKey = table.getPartitionStrategy().equalsIgnoreCase("HASH");
         if (tableId.type == TABLE) {
             ranges = metaService.getTableRange(

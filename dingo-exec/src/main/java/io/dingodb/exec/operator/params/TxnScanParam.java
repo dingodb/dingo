@@ -49,9 +49,10 @@ public final class TxnScanParam extends ScanParam {
         TupleMapping keyMapping,
         long scanTs,
         int isolationLevel,
-        long timeOut
+        long timeOut,
+        int schemaVersion
     ) {
-        super(tableId, schema, keyMapping);
+        super(tableId, schema, keyMapping, schemaVersion);
         this.scanTs = scanTs;
         this.isolationLevel = isolationLevel;
         this.timeOut = timeOut;

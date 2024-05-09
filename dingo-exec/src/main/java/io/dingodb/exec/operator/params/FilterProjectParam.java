@@ -35,6 +35,8 @@ public abstract class FilterProjectParam extends AbstractParams {
     protected final CommonId tableId;
     @JsonProperty("schema")
     protected final DingoType schema;
+    @JsonProperty("schemaVersion")
+    protected final int schemaVersion;
     @JsonProperty("filter")
     protected SqlExpr filter;
     @JsonProperty("selection")
@@ -45,6 +47,7 @@ public abstract class FilterProjectParam extends AbstractParams {
     public FilterProjectParam(
         CommonId tableId,
         DingoType schema,
+        int schemaVersion,
         SqlExpr filter,
         TupleMapping selection,
         TupleMapping keyMapping
@@ -52,6 +55,7 @@ public abstract class FilterProjectParam extends AbstractParams {
         super();
         this.tableId = tableId;
         this.schema = schema;
+        this.schemaVersion = schemaVersion;
         this.filter = filter;
         this.selection = selection;
         this.keyMapping = keyMapping;

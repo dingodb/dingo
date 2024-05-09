@@ -237,7 +237,10 @@ public class RangeUtils {
             column.getPrimary(),
             column.getDefaultValue(),
             column.isAutoIncrement(),
-            column.getState());
+            column.getState(),
+            column.getCreateVersion(),
+            column.getUpdateVersion(),
+            column.getDeleteVersion());
     }
 
     public static Column mapping(ColumnDefinition definition) {

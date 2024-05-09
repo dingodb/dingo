@@ -24,6 +24,7 @@ import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -32,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 
 public interface MetaService {
 
@@ -109,6 +109,10 @@ public interface MetaService {
 
     void createTables(@NonNull TableDefinition tableDefinition, @NonNull List<TableDefinition> indexTableDefinitions);
 
+    default void updateTable(CommonId tableId, @NonNull Table table) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Drop table meta and table storage.
      * Notice: check the table name case, because by default, the table names are converted to uppercase
@@ -171,7 +175,47 @@ public interface MetaService {
         throw new UnsupportedOperationException();
     }
 
-    default void dropIndex(String tableName, String indexName) {
+    default void createIndex(CommonId tableId, TableDefinition table, TableDefinition index) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void createDifferenceIndex(CommonId tableId, CommonId indexId, IndexTable indexTable) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void dropIndex(CommonId table, CommonId index) {
+        throw new UnsupportedOperationException();
+    }
+
+    Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id);
+
+    /**
+     * Returns all table definition.
+     *
+     * @return all table definition
+     */
+    default Map<String, TableDefinition> getTableDefinitions() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Get table definition by table name.
+     * Notice: check the table name case, because by default, the table names are converted to uppercase
+     *
+     * @param name table name
+     * @return table definition or null if not found.
+     */
+    default TableDefinition getTableDefinition(@NonNull String name) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Get table definition by table id.
+     *
+     * @param id table id
+     * @return table definition or null if not found.
+     */
+    default TableDefinition getTableDefinition(@NonNull CommonId id) {
         throw new UnsupportedOperationException();
     }
 

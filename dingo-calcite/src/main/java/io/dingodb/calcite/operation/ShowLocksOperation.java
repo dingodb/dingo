@@ -255,7 +255,7 @@ public class ShowLocksOperation extends QueryOperation {
 
     private static String lockKey(CommonId tableId, byte[] keyBytes) {
         Table table = MetaService.root().getTable(tableId);
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
         return Utils.buildKeyStr(table.keyMapping(), codec.decodeKeyPrefix(keyBytes));
     }
 

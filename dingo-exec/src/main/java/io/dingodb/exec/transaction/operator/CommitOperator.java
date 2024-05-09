@@ -104,12 +104,12 @@ public class CommitOperator extends TransactionOperator {
             if (tableId.type == CommonId.CommonType.INDEX) {
                 IndexTable indexTable = TransactionUtil.getIndexDefinitions(tableId);
                 if (indexTable.indexType.isVector) {
-                    KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
+                    KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
                     Object[] decodeKey = codec.decodeKeyPrefix(key);
                     TupleMapping mapping = TupleMapping.of(new int[]{0});
                     DingoType dingoType = new LongType(false);
                     TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
-                    KeyValueCodec vectorCodec = CodecService.getDefault().createKeyValueCodec(tupleType, mapping);
+                    KeyValueCodec vectorCodec = CodecService.getDefault().createKeyValueCodec(indexTable.version, tupleType, mapping);
                     key = vectorCodec.encodeKeyPrefix(new Object[]{decodeKey[0]}, 1);
                 }
             }

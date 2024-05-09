@@ -309,7 +309,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                     30000,
                     coprocessor
                 );
-                return Iterators.transform(iterator, wrap(CodecService.getDefault().createKeyValueCodec(outputSchema, outputKeyMapping)::decode)::apply);
+                return Iterators.transform(iterator, wrap(CodecService.getDefault().createKeyValueCodec(td.version, outputSchema, outputKeyMapping)::decode)::apply);
             }).collect(Collectors.toList());
             for (Iterator<Object[]> iterator : iteratorList) {
                 if (iterator == null) {

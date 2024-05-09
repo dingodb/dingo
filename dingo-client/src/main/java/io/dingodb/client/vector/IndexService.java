@@ -230,12 +230,13 @@ public class IndexService {
             VectorKeyCodec.setEntityId(partitionId.getEntityId(), partition.getRange().getStartKey());
             partition.getRange().setEndKey(VectorKeyCodec.nextEntityKey(partitionId.getEntityId()));
         }
-        metaService.createIndex(CreateIndexRequest.builder()
+        DingoCommonId indexId = metaService.createIndex(CreateIndexRequest.builder()
             .schemaId(schemaId)
             .indexDefinition(index)
             .indexId(tableIdWithPartIds.getTableId())
             .build()
-        );
+        ).getIndexId();
+        log.info("Create index, index id is {}, index name is :{} ", indexId, index.getName());
         return true;
     }
 

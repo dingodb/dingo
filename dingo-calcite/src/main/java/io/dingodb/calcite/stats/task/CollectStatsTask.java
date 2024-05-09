@@ -74,7 +74,7 @@ public class CollectStatsTask implements Callable<TableStats> {
                             long timeout) {
         boolean isTxn = td.getEngine().contains("TXN");
         StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, region.id());
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableId, td.tupleType(), td.keyMapping());
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td.getVersion(), td.tupleType(), td.keyMapping());
         if (!isTxn) {
             Part part = new PartInKvStore(
                 kvStore,

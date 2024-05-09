@@ -99,7 +99,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     .collect(Collectors.toList()));
                 tableId = context.getIndexId();
                 schema = indexTable.tupleType();
-                codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
+                codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
                 Object[] finalNewTuple = newTuple;
                 newTuple = columnIndices.stream().map(c -> finalNewTuple[c]).toArray();
                 Object[] copyNewTuple = copyTuple;

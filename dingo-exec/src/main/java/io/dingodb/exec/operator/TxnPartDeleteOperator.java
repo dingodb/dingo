@@ -70,7 +70,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                 tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
             }
             localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
-            codec = CodecService.getDefault().createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
+            codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
         }
         byte[] keys = wrap(codec::encodeKey).apply(tuple);
         CodecService.getDefault().setId(keys, partId.domain);

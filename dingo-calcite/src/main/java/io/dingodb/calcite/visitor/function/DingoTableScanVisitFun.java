@@ -79,7 +79,7 @@ public final class DingoTableScanVisitFun {
         boolean withEnd = false;
         if (rel.getFilter() != null) {
             filter = SqlExprUtils.toSqlExpr(rel.getFilter());
-            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td.tupleType(), td.keyMapping());
+            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td.version, td.tupleType(), td.keyMapping());
             RangeDistribution range = RangeUtils.createRangeByFilter(td, codec, rel.getFilter(), rel.getSelection());
             if (range != null) {
                 startKey = range.getStartKey();
@@ -153,6 +153,7 @@ public final class DingoTableScanVisitFun {
                     tableInfo.getId(),
                     td.tupleType(),
                     td.keyMapping(),
+                    td.version,
                     Optional.mapOrNull(filter, SqlExpr::copy),
                     rel.getSelection(),
                     rel.getGroupSet() == null ? null
@@ -171,6 +172,7 @@ public final class DingoTableScanVisitFun {
                 PartRangeScanParam param = new PartRangeScanParam(
                     tableInfo.getId(),
                     td.tupleType(),
+                    td.version,
                     td.keyMapping(),
                     Optional.mapOrNull(filter, SqlExpr::copy),
                     rel.getSelection(),

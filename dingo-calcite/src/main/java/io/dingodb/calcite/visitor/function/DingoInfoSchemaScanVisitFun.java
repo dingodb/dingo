@@ -62,6 +62,7 @@ public final class DingoInfoSchemaScanVisitFun {
         }
         InfoSchemaScanParam param = new InfoSchemaScanParam(
             td.tupleType(),
+            td.version,
             filter,
             rel.getSelection(),
             tableName

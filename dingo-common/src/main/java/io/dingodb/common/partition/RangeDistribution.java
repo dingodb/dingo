@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.util.ByteArrayUtils;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -33,7 +34,7 @@ import java.util.Arrays;
 @Setter
 @Builder
 @EqualsAndHashCode
-public class RangeDistribution implements Distribution, Serializable {
+public class RangeDistribution implements Distribution, Serializable, Comparable<RangeDistribution> {
 
     private static final long serialVersionUID = -2767354268752865267L;
 
@@ -92,6 +93,11 @@ public class RangeDistribution implements Distribution, Serializable {
 
     public byte[] getEndKey() {
         return endKey == null ? null : Arrays.copyOf(endKey, endKey.length);
+    }
+
+    @Override
+    public int compareTo(RangeDistribution other) {
+        return ByteArrayUtils.compare(startKey, other.startKey);
     }
 
     @Override

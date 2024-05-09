@@ -102,6 +102,7 @@ public final class DingoLikeScanVisitFun {
                 tableInfo.getId(),
                 distribution.id(),
                 td.tupleType(),
+                td.version,
                 td.keyMapping(),
                 Optional.mapOrNull(filter, SqlExpr::copy),
                 rel.getSelection(),

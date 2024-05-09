@@ -32,16 +32,20 @@ import io.dingodb.net.service.ListenService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.VersionService;
 import io.dingodb.sdk.service.entity.common.KeyValue;
+import io.dingodb.sdk.service.entity.meta.AddIndexOnTableRequest;
+import io.dingodb.sdk.service.entity.meta.CreateIndexRequest;
 import io.dingodb.sdk.service.entity.meta.CreateSchemaRequest;
 import io.dingodb.sdk.service.entity.meta.CreateTablesRequest;
+import io.dingodb.sdk.service.entity.meta.DropIndexOnTableRequest;
+import io.dingodb.sdk.service.entity.meta.DropIndexRequest;
 import io.dingodb.sdk.service.entity.meta.DropSchemaRequest;
 import io.dingodb.sdk.service.entity.meta.DropTablesRequest;
+import io.dingodb.sdk.service.entity.meta.UpdateIndexRequest;
 import io.dingodb.sdk.service.entity.version.Kv;
 import io.dingodb.sdk.service.entity.version.RangeRequest;
 import io.dingodb.sdk.service.entity.version.RangeResponse;
 import io.dingodb.store.proxy.Configuration;
 import io.dingodb.transaction.api.TableLock;
-import io.dingodb.transaction.api.TableLockService;
 import io.dingodb.tso.TsoService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -404,6 +408,80 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         } else {
             try (Channel channel = leaderChannel()) {
                 proxy(channel).dropSchema(requestId, schema, request);
+            }
+        }
+    }
+
+    @Override
+    @SneakyThrows
+    public void createIndex(long requestId, String schema, String table, String index, CreateIndexRequest request) {
+        if (!isReady()) {
+            throw new RuntimeException("Offline, please wait and retry.");
+        }
+        if (isLeader()) {
+            proxyService.createIndex(requestId, request);
+        } else {
+            try (Channel channel = leaderChannel()) {
+                proxy(channel).createIndex(requestId, schema, table, index, request);
+            }
+        }
+    }
+
+    @Override
+    @SneakyThrows
+    public void addIndexOnTable(long requestId, String schema, AddIndexOnTableRequest request) {
+        if (!isReady()) {
+            throw new RuntimeException("Offline, please wait and retry.");
+        }
+        if (isLeader()) {
+            proxyService.addIndexOnTable(requestId, request);
+        } else {
+            try (Channel channel = leaderChannel()) {
+                proxy(channel).addIndexOnTable(requestId, schema, request);
+            }
+        }
+    }
+
+    @Override
+    public void updateIndex(long requestId, String schema, UpdateIndexRequest request) throws Exception {
+        if (!isReady()) {
+            throw new RuntimeException("Offline, please wait and retry.");
+        }
+        if (isLeader()) {
+            proxyService.updateIndex(requestId, request);
+        } else {
+            try (Channel channel = leaderChannel()) {
+                proxy(channel).updateIndex(requestId, schema, request);
+            }
+        }
+    }
+
+    @Override
+    @SneakyThrows
+    public void dropIndex(long requestId, String schema, DropIndexRequest request) {
+        if (!isReady()) {
+            throw new RuntimeException("Offline, please wait and retry.");
+        }
+        if (isLeader()) {
+            proxyService.dropIndex(requestId, request);
+        } else {
+            try (Channel channel = leaderChannel()) {
+                proxy(channel).dropIndex(requestId, schema, request);
+            }
+        }
+    }
+
+    @Override
+    @SneakyThrows
+    public void dropIndexOnTable(long requestId, String schema, DropIndexOnTableRequest request) {
+        if (!isReady()) {
+            throw new RuntimeException("Offline, please wait and retry.");
+        }
+        if (isLeader()) {
+            proxyService.dropIndexOnTable(requestId, request);
+        } else {
+            try (Channel channel = leaderChannel()) {
+                proxy(channel).dropIndexOnTable(requestId, schema, request);
             }
         }
     }

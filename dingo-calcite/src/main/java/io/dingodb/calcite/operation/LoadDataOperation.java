@@ -150,7 +150,7 @@ public class LoadDataOperation implements DmlOperation {
         this.ignoreNum = sqlLoadData.getIgnoreNum();
         metaService = MetaService.root().getSubMetaService(schemaName);
         table = metaService.getTable(sqlLoadData.getTableName());
-        codec = CodecService.getDefault().createKeyValueCodec(table.tupleType(), table.keyMapping());
+        codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
         distributions = metaService.getRangeDistribution(table.tableId);
         schema = table.tupleType();
         this.isTxn = checkEngine();
@@ -393,7 +393,7 @@ public class LoadDataOperation implements DmlOperation {
                     .collect(Collectors.toList()));
                 Object[] tuplesTmp = columnIndices.stream().map(i -> tuples[i]).toArray();
                 KeyValueCodec codec = CodecService.getDefault()
-                    .createKeyValueCodec(indexTable.tupleType(), indexTable.keyMapping());
+                    .createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
 
                 keyValue = wrap(codec::encode).apply(tuplesTmp);
                 PartitionService ps = PartitionService.getService(
