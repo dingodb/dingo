@@ -20,6 +20,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
@@ -31,12 +32,15 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.params.CommitParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
+import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
+import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
@@ -67,6 +71,35 @@ public class CommitOperator extends TransactionOperator {
             byte[] value = txnLocalData.getValue();
             if (ByteArrayUtils.compare(key, param.getPrimaryKey(), 1) == 0) {
                 return true;
+            }
+            if (param.getTransactionType() == TransactionType.OPTIMISTIC) {
+                StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
+                byte[] txnIdByte = txnId.encode();
+                byte[] tableIdByte = tableId.encode();
+                byte[] partIdByte = newPartId.encode();
+                int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
+                byte[] checkBytes = ByteUtils.encode(
+                    CommonId.CommonType.TXN_CACHE_CHECK_DATA,
+                    key,
+                    Op.CheckNotExists.getCode(),
+                    len,
+                    txnIdByte, tableIdByte, partIdByte);
+                KeyValue keyValue = store.get(checkBytes);
+                if (keyValue != null && keyValue.getValue() != null) {
+                    switch (Op.forNumber(op)) {
+                        case PUT:
+                            op = Op.PUTIFABSENT.getCode();
+                            break;
+                        case DELETE:
+                            op = Op.CheckNotExists.getCode();
+                            break;
+                        default:
+                            break;
+                    }
+                    if (op == Op.CheckNotExists.getCode()) {
+                        return true;
+                    }
+                }
             }
             if (tableId.type == CommonId.CommonType.INDEX) {
                 IndexTable indexTable = TransactionUtil.getIndexDefinitions(tableId);

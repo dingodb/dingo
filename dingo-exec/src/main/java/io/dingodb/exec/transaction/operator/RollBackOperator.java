@@ -76,6 +76,36 @@ public class RollBackOperator extends TransactionOperator {
             if (isPessimistic && (ByteArrayUtils.compare(key, param.getPrimaryKey(), 1) == 0)) {
                 return true;
             }
+            if (!isPessimistic) {
+                StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
+                byte[] txnIdByte = txnId.encode();
+                byte[] tableIdByte = tableId.encode();
+                byte[] partIdByte = newPartId.encode();
+                int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
+                byte[] checkBytes = ByteUtils.encode(
+                    CommonId.CommonType.TXN_CACHE_CHECK_DATA,
+                    key,
+                    Op.CheckNotExists.getCode(),
+                    len,
+                    txnIdByte, tableIdByte, partIdByte);
+                KeyValue keyValue = store.get(checkBytes);
+                if (keyValue != null && keyValue.getValue() != null) {
+                    switch (Op.forNumber(op)) {
+                        case PUT:
+                            op = Op.PUTIFABSENT.getCode();
+                            break;
+                        case DELETE:
+                            op = Op.CheckNotExists.getCode();
+                            break;
+                        default:
+                            break;
+                    }
+                    if (op == Op.CheckNotExists.getCode()) {
+                        return true;
+                    }
+                }
+            }
+            byte[] keyBytes = Arrays.copyOf(key, key.length);
             if (tableId.type == CommonId.CommonType.INDEX) {
                 IndexTable indexTable = TransactionUtil.getIndexDefinitions(tableId);
                 if (indexTable.indexType.isVector) {
@@ -96,7 +126,7 @@ public class RollBackOperator extends TransactionOperator {
                 int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
                 byte[] lockBytes = ByteUtils.encode(
                     CommonId.CommonType.TXN_CACHE_LOCK,
-                    key,
+                    keyBytes,
                     Op.LOCK.getCode(),
                     len,
                     txnIdByte,
@@ -104,7 +134,7 @@ public class RollBackOperator extends TransactionOperator {
                     partIdByte);
                 KeyValue keyValue = store.get(lockBytes);
                 if (keyValue == null) {
-                    throw new RuntimeException(txnId + " lock keyValue is null ");
+                    throw new RuntimeException(txnId + " lock keyValue is null key is " + Arrays.toString(keyBytes));
                 }
                 forUpdateTs = ByteUtils.decodePessimisticLockValue(keyValue);
             }

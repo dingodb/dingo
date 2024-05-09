@@ -219,8 +219,11 @@ public class PessimisticTransaction extends BaseTransaction {
 
     @Override
     public void cleanUp(JobManager jobManager) {
-        super.cleanUp(jobManager);
         // PessimisticRollback
+        if (status == TransactionStatus.START) {
+            rollback(jobManager);
+        }
+        super.cleanUp(jobManager);
     }
 
     public CacheToObject primaryLockTo() {
