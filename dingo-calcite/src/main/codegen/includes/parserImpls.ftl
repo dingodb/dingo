@@ -305,18 +305,25 @@ SqlCreate SqlCreateUser(Span s, boolean replace) :
     String requireSsl = null;
     String lock = "N";
     Object expireDays = null;
+    String plugin = "mysql_native_password";
+    String pluginDn = "";
 }
 {
     <USER> ifNotExists = IfNotExistsOpt()
     ( <QUOTED_STRING> | <IDENTIFIER> )
      { user = token.image; }
     [ <AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER>) { host = token.image; }  ]
-    <IDENTIFIED> <BY>  <QUOTED_STRING> { password = token.image; }
+    <IDENTIFIED> 
+    (
+    <WITH> (<QUOTED_STRING> | <IDENTIFIER>) { plugin = token.image; } [<AS> <QUOTED_STRING> { pluginDn = token.image; }] 
+    |
+    <BY>  <QUOTED_STRING> { password = token.image; }
     [ <REQUIRE> (  <SSL> { requireSsl = "SSL"; } | <NONE> { requireSsl  = "NONE"; }) ]
     [ <PASSWORD> <EXPIRE> { expireDays = "0"; } [ <INTERVAL> expireDays = number() <DAY> ] ]
     [ <ACCOUNT> [ <LOCK> { lock = "Y"; } ] [ <UNLOCK> { lock = "N"; } ] ]
+    )*
     {
-       return new SqlCreateUser(user, password, host, s.end(this), replace, ifNotExists, requireSsl, lock, expireDays);
+       return new SqlCreateUser(user, password, host, s.end(this), replace, ifNotExists, requireSsl, lock, expireDays, plugin, pluginDn);
     }
 }
 

@@ -67,6 +67,11 @@ public class AuthPacket extends MysqlPacket {
                 database = mm.readStringWithNull();
             }
             clientAuthPlugin = mm.readStringWithNull();
+            if ("mysql_clear_password".equalsIgnoreCase(clientAuthPlugin)) {
+                byte[] newPwd = new byte[password.length - 1];
+                System.arraycopy(password, 0, newPwd, 0, newPwd.length);
+                password = newPwd;
+            }
         }
     }
 

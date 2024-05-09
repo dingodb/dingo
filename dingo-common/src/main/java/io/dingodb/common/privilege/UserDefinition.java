@@ -32,14 +32,11 @@ public class UserDefinition extends PrivilegeDefinition {
     private String plugin;
     private String password;
     private String requireSsl;
-
     private String lock;
-
     private Object passwordExpire;
-
     private Timestamp pwdLastChange;
-
     private Object expireDays;
+    private String ldapUser = "";
 
     Boolean[] privileges;
 
