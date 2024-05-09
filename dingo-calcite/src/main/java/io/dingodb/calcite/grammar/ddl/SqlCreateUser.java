@@ -34,6 +34,8 @@ public class SqlCreateUser extends SqlCreate {
     public String requireSsl;
     public Object expireDays;
     public String lock;
+    public String plugin;
+    public String pluginDn;
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("CREATE USER", SqlKind.OTHER_DDL);
@@ -46,7 +48,9 @@ public class SqlCreateUser extends SqlCreate {
                          boolean ifNotExists,
                          String requireSsl,
                          String lock,
-                         Object expireDays) {
+                         Object expireDays,
+                         String plugin,
+                         String pluginDn) {
         super(OPERATOR, pos, replace, ifNotExists);
         this.password = password.contains("'") ? password.replace("'", "") : password;
         this.user = user.contains("'") ? user.replace("'", "") : user;
@@ -54,6 +58,8 @@ public class SqlCreateUser extends SqlCreate {
         this.requireSsl = requireSsl;
         this.lock = lock;
         this.expireDays = expireDays;
+        this.plugin = plugin;
+        this.pluginDn = pluginDn == null ? "" : pluginDn.contains("'") ? pluginDn.replace("'", "") : pluginDn;
     }
 
     @Override

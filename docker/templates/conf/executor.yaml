@@ -22,6 +22,12 @@ store:
     bufferNumber: 2
     fileSize: 67108864
 security:
+    ldap:
+        ldapHost: ldap
+        ldapPort: 389
+        bindDN: cn=admin,dc=localdomain,dc=com
+        password: 123456
+        baseDN: dc=localdomain,dc=com
     cipher:
         keyPath: /opt/dingo/conf/dingodb.jks
         keyPass: dingodb

@@ -304,6 +304,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
         userDefinition.setExpireDays(userPrivilege[43]);
         userDefinition.setPwdLastChange((Timestamp) userPrivilege[42]);
         userDefinition.setPrivileges(upMapping(userPrivilege));
+        userDefinition.setLdapUser((String) userPrivilege[46]);
         return userDefinition;
     }
 
@@ -386,6 +387,9 @@ public class UserService implements io.dingodb.verify.service.UserService {
                     break;
                 case "PLUGIN":
                     row[i] = user.getPlugin();
+                    break;
+                case "LDAP_USER":
+                    row[i] = user.getLdapUser();
                     break;
                 case "PASSWORD_LAST_CHANGED":
                     row[i] = new Timestamp(System.currentTimeMillis());

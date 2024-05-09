@@ -364,6 +364,14 @@
       "default": "'N'",
       "primary": -1,
       "nullable": false
+    },
+    {
+      "name": "Ldap_user",
+      "type": "varchar",
+      "scale": -2147483648,
+      "default": "''",
+      "primary": -1,
+      "nullable": true
     }
   ]
 

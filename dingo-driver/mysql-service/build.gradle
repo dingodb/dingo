@@ -23,6 +23,7 @@ dependencies {
 
     implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
+    implementation 'com.unboundid:unboundid-ldapsdk:3.2.0'
 
     implementation project(":dingo-net-api")
     implementation project(":dingo-net-netty")

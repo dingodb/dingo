@@ -90,6 +90,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.Pair;
+import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -817,7 +818,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (userService.existsUser(userDefinition)) {
             throw DINGO_RESOURCE.createUserFailed(sqlCreateUser.user, sqlCreateUser.host).ex();
         } else {
-            userDefinition.setPlugin("mysql_native_password");
+            userDefinition.setPlugin(sqlCreateUser.plugin);
+            if ("dingo_ldap".equalsIgnoreCase(sqlCreateUser.plugin) && StringUtils.isNoneBlank(sqlCreateUser.pluginDn)) {
+                userDefinition.setLdapUser(sqlCreateUser.pluginDn);
+            }
             userDefinition.setRequireSsl(sqlCreateUser.requireSsl);
             userDefinition.setLock(sqlCreateUser.lock);
             String digestPwd = AlgorithmPlugin.digestAlgorithm(sqlCreateUser.password, userDefinition.getPlugin());

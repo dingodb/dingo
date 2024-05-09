@@ -28,6 +28,7 @@ import lombok.ToString;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class SecurityConfiguration {
     private CipherConfiguration cipher;
+    private LdapConfiguration ldap;
     private boolean verify = true;
     private boolean auth = true;
 
@@ -49,6 +50,13 @@ public class SecurityConfiguration {
         return Optional.ofNullable(DingoConfiguration.instance())
             .map(DingoConfiguration::getSecurity)
             .map(s -> s.cipher)
+            .orNull();
+    }
+
+    public static LdapConfiguration ldap() {
+        return Optional.ofNullable(DingoConfiguration.instance())
+            .map(DingoConfiguration::getSecurity)
+            .map(s -> s.ldap)
             .orNull();
     }
 

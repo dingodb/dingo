@@ -29,6 +29,9 @@ public class AlgorithmPlugin {
 
     public static String digestAlgorithm(String password, String plugin) {
         AlgorithmPlugin algorithmPlugin = AlgorithmPlugin.algorithmPluginMap.get(plugin);
+        if (algorithmPlugin == null) {
+            return "";
+        }
         return algorithmPlugin.getEncodedPassword(password);
     }
 

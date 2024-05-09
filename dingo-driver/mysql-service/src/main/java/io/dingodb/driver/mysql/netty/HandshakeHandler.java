@@ -34,6 +34,7 @@ import io.dingodb.driver.mysql.facotry.SecureChatSslContextFactory;
 import io.dingodb.driver.mysql.packet.AuthPacket;
 import io.dingodb.driver.mysql.packet.HandshakePacket;
 import io.dingodb.driver.mysql.packet.OKPacket;
+import io.dingodb.verify.plugin.AlgorithmPlugin;
 import io.dingodb.verify.service.UserService;
 import io.dingodb.verify.service.UserServiceProvider;
 import io.netty.buffer.ByteBuf;
@@ -130,8 +131,12 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                     UserDefinition userDefinition = userService.getUserDefinition(user, ip);
                     boolean isUserExists = true;
                     String dbPwd = "";
+                    String plugin = null;
+                    String ldapUser = null;
                     if (userDefinition != null) {
                         dbPwd = userDefinition.getPassword();
+                        plugin = userDefinition.getPlugin();
+                        ldapUser = userDefinition.getLdapUser();
                     } else {
                         isUserExists = false;
                     }
@@ -140,7 +145,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                     AtomicLong packetId = new AtomicLong(authPacket.packetId);
                     //mysql protocol packet auto increment based by 0;
                     packetId.incrementAndGet();
-                    if (isUserExists && validator(dbPwd, fullSeed, authPacket.password)) {
+                    if (isUserExists && verify(plugin, dbPwd, fullSeed, authPacket, ldapUser)) {
                         //if ("Y".equalsIgnoreCase(userDefinition.getLock())) {
                         //    String error = String.format(ErrorCode.ER_LOCK_ACCOUNT.message, user, ip);
                         //    MysqlResponseHandler.responseError(packetId,
@@ -266,6 +271,22 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         return connection;
     }
 
+    public static boolean verify(String plugin, String dbPwd, byte[] seed, AuthPacket authPacket, String user) {
+        if ("dingo_ldap".equalsIgnoreCase(plugin)) {
+            return LdapConn.conn(user, new String(authPacket.password));
+        } else if ("mysql_native_password".equalsIgnoreCase(plugin)) {
+            if ("mysql_clear_password".equalsIgnoreCase(authPacket.clientAuthPlugin)) {
+                byte[] clientPwd = authPacket.password;
+                String clientPwdStr = new String(clientPwd);
+                return dbPwd.equalsIgnoreCase(AlgorithmPlugin.digestAlgorithm(clientPwdStr, plugin));
+            } else {
+                return validator(dbPwd, seed, authPacket.password);
+            }
+        } else {
+            return false;
+        }
+    }
+
     public static boolean validator(String dbPwd, byte[] seed, byte[] clientPwd) {
         MessageDigest md;
         try {
@@ -312,11 +333,12 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         handshakePacket.serverCharsetIndex = 0x08;
         handshakePacket.serverStatus = SERVER_STATUS_AUTOCOMMIT;
         handshakePacket.extendedServer = (short) 0xc1ff;
-        handshakePacket.authPluginLength = (byte) "mysql_native_password".length();
+        String plugin = "mysql_native_password";
+        handshakePacket.authPluginLength = (byte) plugin.length();
 
         handshakePacket.unused = ServerConstant.unused;
         handshakePacket.seed2 = createRandomString(12).getBytes();
-        handshakePacket.authPlugin = "mysql_native_password".getBytes();
+        handshakePacket.authPlugin = plugin.getBytes();
         AtomicLong packetId = new AtomicLong(0);
         handshakePacket.packetId = (byte) packetId.getAndIncrement();
 

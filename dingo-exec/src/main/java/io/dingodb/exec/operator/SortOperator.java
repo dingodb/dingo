@@ -60,6 +60,7 @@ public class SortOperator extends SoleOutOperator {
             int limit = param.getLimit();
             int offset = param.getOffset();
             List<Object[]> cache = param.getCache();
+            profile.setCount(cache.size());
             Comparator<Object[]> comparator = param.getComparator();
             if (comparator != null) {
                 cache.sort(comparator);
