@@ -169,6 +169,38 @@
         </encoder>
     </appender>
 
+    <appender name="Audit" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/audit.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/audit.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>1024MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>1</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%-5level] %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="BackUp" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/backup.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/backup.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>1024MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>1</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%-5level] %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
     <appender name="StoreProxy" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.filePath}/log/storeProxy.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -403,6 +435,26 @@
     </appender>
     <logger name="metrics" level="${log.level}" additivity="false">
         <appender-ref ref="ASYNC-Metric"/>
+    </logger>
+
+    <appender name="ASYNC-Audit" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="Audit" />
+    </appender>
+    <logger name="io.dingodb.common.log.AuditLogUtils" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Audit"/>
+    </logger>
+
+    <appender name="ASYNC-BackUp" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="BackUp" />
+    </appender>
+    <logger name="io.dingodb.common.log.BackUpLogUtils" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-BackUp"/>
     </logger>
 
     <appender name="ASYNC-StoreProxy" class="ch.qos.logback.classic.AsyncAppender">

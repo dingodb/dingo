@@ -23,6 +23,7 @@ import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
+import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.operation.DdlOperation;
 import io.dingodb.calcite.operation.DmlOperation;
 import io.dingodb.calcite.operation.KillConnection;
@@ -40,6 +41,7 @@ import io.dingodb.common.Location;
 import io.dingodb.common.ProcessInfo;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.audit.DingoAudit;
 import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.common.profile.ExecProfile;
 import io.dingodb.common.profile.PlanProfile;
@@ -53,6 +55,7 @@ import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.transaction.api.LockType;
 import io.dingodb.transaction.api.TableLock;
 import io.dingodb.transaction.api.TableLockService;
@@ -123,11 +126,14 @@ public final class DingoDriverParser extends DingoParser {
     private ExecProfile execProfile;
     @Getter
     private CommitProfile commitProfile;
+    @Getter
+    private DingoAudit dingoAudit;
 
     public DingoDriverParser(@NonNull DingoConnection connection) {
         super(connection.getContext());
         this.connection = connection;
         this.planProfile = new PlanProfile();
+        this.dingoAudit = new DingoAudit(IsolationLevel.InvalidIsolationLevel.name(), TransactionType.NONE.name());
     }
 
     private static RelDataType makeStruct(RelDataTypeFactory typeFactory, @NonNull RelDataType type) {
@@ -455,9 +461,18 @@ public final class DingoDriverParser extends DingoParser {
                     killQuery.init(ExecutionEnvironment.connectionMap);
                 }
                 if (sqlNode instanceof SqlCommit) {
+                    if (connection.getTransaction() != null) {
+                        dingoAudit(connection.getTransaction());
+                    }
                     ((DdlOperation)operation).execute();
                     this.commitProfile = connection.getCommitProfile();
-                } else {
+                }  else if (sqlNode instanceof SqlRollback) {
+                    if (connection.getTransaction() != null) {
+                        dingoAudit(connection.getTransaction());
+                    }
+                    this.execProfile = new ExecProfile("other_ddl");
+                    ((DdlOperation)operation).doExecute(this.execProfile);
+                }else {
                     this.execProfile = new ExecProfile("other_ddl");
                     ((DdlOperation)operation).doExecute(this.execProfile);
                 }
@@ -472,6 +487,14 @@ public final class DingoDriverParser extends DingoParser {
                 operation);
         }
         return null;
+    }
+
+    private void dingoAudit(ITransaction transaction) {
+        dingoAudit.setStartTs(transaction.getStartTs());
+        dingoAudit.setForUpdateTs(transaction.isPessimistic() ? transaction.getForUpdateTs() : 0L);
+        dingoAudit.setTransactionType(transaction.getType().name());
+        dingoAudit.setTxIsolation(IsolationLevel.of(transaction.getIsolationLevel()).name());
+        dingoAudit.setAutoCommit(transaction.isAutoCommit());
     }
 
     private void lockTables(
