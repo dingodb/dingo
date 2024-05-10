@@ -35,12 +35,16 @@ public final class LdapConn {
     static String baseDN;
 
     static {
-        LdapConfiguration configuration = SecurityConfiguration.ldap();
-        ldapHost = configuration.getLdapHost();
-        ldapPort = configuration.getLdapPort();
-        bindDN = configuration.getBindDN();
-        password = configuration.getPassword();
-        baseDN = configuration.getBaseDN();
+        try {
+            LdapConfiguration configuration = SecurityConfiguration.ldap();
+            ldapHost = configuration.getLdapHost();
+            ldapPort = configuration.getLdapPort();
+            bindDN = configuration.getBindDN();
+            password = configuration.getPassword();
+            baseDN = configuration.getBaseDN();
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
     }
 
     private LdapConn() {
