@@ -109,6 +109,7 @@ public class DingoSchema extends AbstractSchema {
     private void recreateIndexData(
         @NonNull String tableName, String indexName, @NonNull Table table
     ) {
+        String statementId = UUID.randomUUID().toString();
         try {
             KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
             CommonId tableId = getTableId(tableName);
@@ -116,6 +117,8 @@ public class DingoSchema extends AbstractSchema {
             Collection<RangeDistribution> ranges = metaService.getRangeDistribution(tableId).values();
             StoreService storeService = StoreService.getDefault();
             ITransaction transaction = getTransaction(tableName);
+            CommonId txnId = new CommonId(CommonId.CommonType.TRANSACTION,
+                TransactionManager.getServerId().seq, TransactionManager.getStartTs());
             for (RangeDistribution range : ranges) {
                 StoreInstance store = storeService.getInstance(tableId, range.id());
                 long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
@@ -127,9 +130,23 @@ public class DingoSchema extends AbstractSchema {
                 );
                 while (iterator.hasNext()) {
                     KeyValue next = iterator.next();
-                    insertWithTxn(next, table, indexName, codec);
+                    insertWithTxn(next, table, indexName, codec, statementId, txnId);
                 }
             }
+            Map<String, KeyValue> caches = ExecutionEnvironment.memoryCache.get(statementId);
+            if (caches != null && caches.size() > 0) {
+                try {
+                    List<Object[]> tupleList = getCacheTupleList(caches, txnId);
+                    TxnInsertIndexOperation txnImportDataOperation = new TxnInsertIndexOperation(
+                        txnId.seq, txnId, 50000
+                    );
+                    int result = txnImportDataOperation.insertByTxn(tupleList);
+                    caches.clear();
+                } finally {
+                    ExecutionEnvironment.memoryCache.remove(statementId);
+                }
+            }
+
         } catch (Exception e) {
             log.error("Recreate {} index date failed.", indexName, e);
             dropIndex(tableName, indexName);
@@ -137,22 +154,14 @@ public class DingoSchema extends AbstractSchema {
         }
     }
 
-    public void insertWithTxn(KeyValue keyValue, Table table, String indexName, KeyValueCodec codec) {
-        String statementId = UUID.randomUUID().toString();
+    public void insertWithTxn(KeyValue keyValue, Table table, String indexName, KeyValueCodec codec, String statementId, CommonId txnId) {
         Map<String, KeyValue> caches = ExecutionEnvironment.memoryCache
             .computeIfAbsent(statementId, e -> new TreeMap<>());
         Object[] tuples = codec.decode(keyValue);
 
-        CommonId txnId = new CommonId(CommonId.CommonType.TRANSACTION,
-            TransactionManager.getServerId().seq, TransactionManager.getStartTs());
-
         Table newTable = metaService.getTable(table.name);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distribution = metaService.getRangeDistribution(newTable.tableId);
         recodePriTable(keyValue, txnId, newTable, distribution);
-        /*String cacheKey = Base64.getEncoder().encodeToString(keyValue.getKey());
-        if (!caches.containsKey(cacheKey)) {
-            caches.put(cacheKey, keyValue);
-        }*/
         List<IndexTable> indexTableList = newTable.getIndexes();
         if (indexTableList != null) {
             for (IndexTable indexTable : indexTableList) {
@@ -194,19 +203,6 @@ public class DingoSchema extends AbstractSchema {
                 }
             }
         }
-
-        int cacheSize = 0;
-        try {
-            List<Object[]> tupleList = getCacheTupleList(caches, txnId);
-            TxnInsertIndexOperation txnImportDataOperation = new TxnInsertIndexOperation(
-                txnId.seq, txnId, 50000
-            );
-            int result = txnImportDataOperation.insertByTxn(tupleList);
-            caches.clear();
-        } finally {
-            ExecutionEnvironment.memoryCache.remove(statementId);
-        }
-
     }
 
     public List<Object[]> getCacheTupleList(Map<String, KeyValue> keyValueMap, CommonId txnId) {

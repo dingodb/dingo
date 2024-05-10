@@ -295,12 +295,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
                     .indexPartCount(Collections.singletonList(index.getPartDefinition().getDetails().size()))
                     .build()
             ).build()).getIds().get(0);
-        /*io.dingodb.store.proxy.common.TableDefinition indexTable = mapping(index);
-        indexTable.setProperties(indexTable.getProperties());
-        indexTable.setName(table.getName() + "." + index.getName());
-        index = index.copyWithName(table.getName() + "." + index.getName());
-        io.dingodb.sdk.service.entity.meta.TableDefinition tableDefinition = MAPPER.tableTo(index);
-        MAPPER.resetIndexParameter(tableDefinition);*/
         TableDefinitionWithId tableDefinitionWithId = Stream.of(index).map(i -> MAPPER.tableTo(tableIdWithPartIds, i))
             .peek(td -> MAPPER.resetIndexParameter(td.getTableDefinition()))
             .peek(td -> td.getTableDefinition().setName(tableName + "." + td.getTableDefinition().getName()))

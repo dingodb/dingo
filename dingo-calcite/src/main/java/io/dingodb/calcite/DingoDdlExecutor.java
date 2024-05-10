@@ -1008,7 +1008,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             = getSchemaAndTableName(sqlDropIndex.table, context);
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
         final DingoSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
-        // TODO support drop index and add validate method
         validateDropIndex(schema, tableName, sqlDropIndex.index);
         schema.dropIndex(tableName, sqlDropIndex.index);
     }
