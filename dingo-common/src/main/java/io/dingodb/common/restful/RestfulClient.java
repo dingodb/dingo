@@ -45,7 +45,7 @@ public class RestfulClient {
             URL url = new URL(path);
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod(method);
-            connection.setRequestProperty("Content-Type", "text/plain; charset=utf-8");
+            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
 
             if (requestBody != null) {
                 connection.setDoOutput(true);

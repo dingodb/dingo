@@ -78,21 +78,19 @@ public final class TxnGetByIndexOperator extends FilterProjectOperator {
             new StoreInstance.Range(keys, keys, true, true),
             param.getTimeout());
         Iterator<Object[]> iterator = createMergedIterator(localIterator, storeIterator, param.getCodec());
+        iterator = Iterators.transform(iterator, tuples -> revMap(tuples, vertex));
 
-        List<Object[]> objectList = new ArrayList<>();
-        while (iterator.hasNext()) {
-            Object[] objects = iterator.next();
-            if (param.isLookup()) {
-                Object[] val = lookUp(objects, param, vertex.getTask());
-                if (val != null) {
-                    objectList.add(val);
-                }
-            } else {
-                objectList.add(transformTuple(objects, param));
-            }
-        }
         profile.time(start);
-        return objectList.iterator();
+        return iterator;
+    }
+
+    public static Object[] revMap(Object[] tuple, Vertex vertex) {
+        TxnGetByIndexParam param = vertex.getParam();
+        if (param.isLookup()) {
+            return lookUp(tuple, param, vertex.getTask());
+        } else {
+            return transformTuple(tuple, param);
+        }
     }
 
     private static Object[] lookUp(Object[] tuples, TxnGetByIndexParam param, Task task) {
@@ -178,7 +176,7 @@ public final class TxnGetByIndexOperator extends FilterProjectOperator {
         StoreInstance store;
         store = Services.LOCAL_STORE.getInstance(tableId, partId);
         List<KeyValue> keyValues = store.get(bytes);
-        if (keyValues != null && keyValues.size() > 0) {
+        if (keyValues != null && !keyValues.isEmpty()) {
             if (keyValues.size() > 1) {
                 throw new RuntimeException(txnId + " Key is not existed than two in local store");
             }
