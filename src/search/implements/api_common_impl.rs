@@ -147,9 +147,7 @@ pub fn load_index_reader(index_path: &str) -> Result<bool, TantivySearchError> {
         // Set the multithreaded executor for search.
         match FFI_INDEX_SEARCHER_CACHE.get_shared_multithread_executor(2) {
             Ok(shared_thread_pool) => {
-                index
-                    .set_shared_multithread_executor(shared_thread_pool)
-                    .map_err(|e| TantivySearchError::TantivyError(e))?;
+                index.set_executor(shared_thread_pool.as_ref().clone());
                 DEBUG!(function:"load_index_reader", "Using shared multithread with index_path: [{}]", index_path);
             }
             Err(e) => {

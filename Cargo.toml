@@ -1,7 +1,7 @@
 [package]
 name = "tantivy_search" # repo package name
-version = "0.1.0"
-authors = ["MochiXu <mochix@myscale.com>"]
+version = "0.2.0"
+authors = ["Ketor <d.ketor@gmail.com>"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -12,34 +12,34 @@ name = "tantivy_search" # library name
 crate-type = ["staticlib", "rlib"]
 
 [dependencies]
-libc = "0.2.82"
+libc = "0.2.154"
 # tantivy = "0.21.1"
 tantivy = { path = "contrib/tantivy"}
-rayon = "1.5"
-once_cell = "1.7"
-flurry = "0.3"
-roaring = "0.10.2"
-cached = "0.46.1"
-stretto = { version = "0.8.2", features = ["full"] }
+rayon = "1.10.0"
+once_cell = "1.19.0"
+flurry = "0.5.1"
+roaring = "0.10.4"
+cached = "0.51.3"
+stretto = { version = "0.8.4", features = ["full"] }
 # cang-jie = "0.18.0"
 cang-jie = { path = "contrib/cang-jie" }
-jieba-rs = { version = "0.6.8", default-features = true }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-env_logger = "0.10.0"
-log = "0.4.16"
-log4rs = "1.2.0"
+jieba-rs = { version = "0.7.0", default-features = true }
+serde = { version = "1.0.201", features = ["derive"] }
+serde_json = "1.0.117"
+env_logger = "0.11.3"
+log = "0.4.21"
+log4rs = "1.3.0"
 threadpool = "1.8.1"
-rand = "0.8.4"
+rand = "0.8.5"
 clap = "2.33"
-regex = "1.10.2"
-rstest = "0.18.2"
-cxx = "1.0.119"
-tempfile = "3.2.0"
-thiserror = "1.0.30"
+regex = "1.10.4"
+rstest = "0.19.0"
+cxx = "1.0.122"
+tempfile = "3.10.1"
+thiserror = "1.0.60"
 
 [build-dependencies]
-cxx-build = "1.0.119"
+cxx-build = "1.0.122"
 
 [features]
 use-flurry-cache = []

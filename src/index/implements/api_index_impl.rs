@@ -467,32 +467,30 @@ pub fn load_index_writer(index_path: &str) -> Result<bool, TantivySearchError> {
         })?;
     }
 
-    // #[cfg(feature = "use-shared-search-pool")]
-    // {
-    //     // Set the multithreaded executor for search.
-    //     match FFI_INDEX_SEARCHER_CACHE.get_shared_multithread_executor(2) {
-    //         Ok(shared_thread_pool) => {
-    //             index
-    //                 .set_shared_multithread_executor(shared_thread_pool)
-    //                 .map_err(|e| TantivySearchError::TantivyError(e))?;
-    //             DEBUG!(function:"load_index_writer", "Using shared multithread with index_path: [{}]", index_path);
-    //         }
-    //         Err(e) => {
-    //             ERROR!(function:"load_index_writer", "Failed to use shared multithread executor, due to: {}", e);
-    //             index.set_default_multithread_executor().map_err(|e| {
-    //                 ERROR!(function:"load_index_writer", "Failed fall back to default multithread executor, due to: {}", e);
-    //                 TantivySearchError::TantivyError(e)
-    //             })?;
-    //         }
-    //     }
-    // }
-    // #[cfg(not(feature = "use-shared-search-pool"))]
-    // {
-    //     index.set_default_multithread_executor().map_err(|e| {
-    //         ERROR!(function:"load_index_writer", "Failed to set default multithread executor, due to: {}", e);
-    //         TantivySearchError::TantivyError(e)
-    //     })?;
-    // }
+    #[cfg(feature = "use-shared-search-pool")]
+    {
+        // Set the multithreaded executor for search.
+        match FFI_INDEX_SEARCHER_CACHE.get_shared_multithread_executor(2) {
+            Ok(shared_thread_pool) => {
+                index.set_executor(shared_thread_pool.as_ref().clone());
+                DEBUG!(function:"load_index_writer", "Using shared multithread with index_path: [{}]", index_path);
+            }
+            Err(e) => {
+                ERROR!(function:"load_index_writer", "Failed to use shared multithread executor, due to: {}", e);
+                index.set_default_multithread_executor().map_err(|e| {
+                    ERROR!(function:"load_index_writer", "Failed fall back to default multithread executor, due to: {}", e);
+                    TantivySearchError::TantivyError(e)
+                })?;
+            }
+        }
+    }
+    #[cfg(not(feature = "use-shared-search-pool"))]
+    {
+        index.set_default_multithread_executor().map_err(|e| {
+            ERROR!(function:"load_index_writer", "Failed to set default multithread executor, due to: {}", e);
+            TantivySearchError::TantivyError(e)
+        })?;
+    }
 
     // Create the writer with a specified buffer size (e.g., 64 MB).
     let writer = index
