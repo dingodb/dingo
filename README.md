@@ -1,32 +1,30 @@
 # DingoDB
 
-[DingoDB](https://github.com/dingodb/dingo) is a distributed multi-modal vector database. It combines the features of a data lake and a vector database, allowing for the storage of any type of data (key-value, PDF, audio, video, etc.) regardless of its size. Utilizing DingoDB, you can construct your own **Vector Ocean** (the next-generation data architecture following data warehouse and data lake, as introduced by [DataCanvas](https://www.datacanvas.com/)). This enables the analysis of both structured and unstructured data through a singular SQL with exceptionally low latency in real time.
+[DingoDB](https://github.com/dingodb/dingo) is an open-source distributed multimodal vector database designed and developed by [DataCanvas](https://www.datacanvas.com/). It integrates multiple features such as online strong consistency, relational semantics, and vector semantics, making it a unique multimodal database product. In addition, DingoDB has excellent horizontal scalability and scaling capabilities, easily meeting enterprise-level high availability requirements. At the same time, it supports multiple language interfaces and is fully compatible with the MySQL protocol, providing users with high flexibility and convenience. DingoDB demonstrates comprehensive and outstanding advantages in terms of functionality, performance, and ease of use, bringing users an unprecedented data management experience.
 
 ![](docs/images/dingo_stack.png)
 
 ## Key Features
 
-### As a Distributed Vector Database for Any Data
+**1. Comprehensive access interface**
 
-1. Provides comprehensive data storage solutions, accommodating a wide range of data types including but not limited to embeddings, audio files, text, videos, images, PDFs, and annotations.
-2. Facilitates efficient querying and vector searching with minimal latency using a singular SQL approach.
-3. Employs a hybrid search mechanism that caters to both structured and unstructured data, supporting operations like metadata querying and vector querying.
-4. Possesses the ability to dynamically ingest data and construct corresponding indexes in real time, promoting operational efficiency.
-  
-### As a Distributed Relation database
+DingoDB provides comprehensive access interfaces, supporting various flexible access modes such as SQL, SDK, and API to meet the needs of different developers. Additionally, it introduces Table and Vector as first-class citizen data models, providing users with efficient and powerful data processing capabilities.
 
-1. MySQL Compatibility
-   Built upon the acclaimed [Apache Calcite](https://calcite.apache.org/) SQL engine, DingoDB is capable of parsing, optimizing, and executing standard SQL statements, and can handle parts of TPC-H and TPC-DS(See [TPC](http://www.tpc.org/)) queries. Compliant with MySQL Shell and MySQL-JDBC-Driver Client, it offers seamless integration with web services, BI tools, and more.
-2. Supports High Frequency Write Operations
-   DingoDB is designed to handle high-frequency write operations, such as INSERT, UPDATE, and DELETE, while maintaining strong data consistency using the [RAFT](https://raft.github.io/) consensus protocol. In the short future, it will also support Redis protocol, You can use redis-cli to access DingoDB RawKV.
-3. Facilitates Point Queries and Multi-dimensional Analysis Simultaneously:
-   DingoDB can push down expressions to accelerate queries and quickly carry out multi-dimensional analysis with low latency.
-4. Distributed Storage Capabilities
-   As a distributed storage engine, DingoDB has the capacity to store vast amounts of data. It allows for easy horizontal scaling operations on clusters as data scale increases, and implemented using [dingo-store](https://github.com/dingodb/dingo-store).
-5. High Data Reliability and Recovery
-   Based on the [Raft](https://raft.github.io/) distributed consensus protocol, DingoDB can ensure data reliability and recovery in the event of machine or disk failures and offers a swift automatic recovery mechanism.
-6. Supports Multiple Vector Searches
-   DingoDB supports vector searches, which are queries that involve vector data types, such as vectors of integers or vectors of floating-point numbers.
+**2.Built-in data high availability**
+
+DingoDB provides fully functional and highly available built-in configurations without the need to deploy any external components, which can significantly reduce users' deployment and operation and maintenance costs and significantly improve the efficiency of system operation and maintenance.
+
+**3.Fully automatic elastic data sharding**
+
+DingoDB supports dynamic configuration of data shard size, automatic splitting and merging, realizing efficient and friendly resource allocation strategies, and easily responding to various business expansion needs.
+
+**4.Scalar-vector hybrid retrieval**
+
+DingoDB supports both traditional database index types and various vector index types, providing a seamless scalar and vector hybrid retrieval experience, reflecting industry-leading retrieval capabilities. In addition, it also supports fusion of scalars and vectors. Distributed transaction processing.
+
+**5.Built-in real-time index optimization**
+
+DingoDB can build scalar and vector indexes in real time, providing users with unconscious background automatic index optimization. At the same time, it ensures no delays during data retrieval.
 
 ## Related Projects about DingoDB
 
@@ -36,10 +34,16 @@ Welcome to visit [DingoDB](https://github.com/dingodb/dingo). The documentation 
 - [Dingo-Store](https://github.com/dingodb/dingo-store): A strongly consistent distributed storage system based on the Raft protocol.
 - [Dingo-Deploy](https://github.com/dingodb/dingo-deploy): The deployment project of compute nodes and storage nodes.
 
-## Documentation
+## Get Start
 
-The documentation of DingoDB is located on the website: [https://dingodb.readthedocs.io](https://dingodb.readthedocs.io)
-or in the `docs/` directory of the source code.
+### Docs
+All Documentation [Docs](https://dingodb.readthedocs.io/en/latest/)
+
+### Install
+How to install and deploy [Docker](https://dingodb.readthedocs.io/en/latest/deployment/deploy_in_single_node_using_docker.html) or [Ansible](https://dingodb.readthedocs.io/en/latest/deployment/deploy_on_cluster_by_ansible.html#)
+
+### Usage
+How to use DingoDB [Usage](https://dingodb.readthedocs.io/en/latest/usage/how_to_use_dingodb.html)
 
 ## Developing DingoDB
 
@@ -99,4 +103,8 @@ If you have any technical questions or business needs, please contact us.
 
 Attach the Wetchat QR Code
 
-![](./docs/images/dingo_contact.jpg)
+![](./docs/en/images/dingo_contact_Wetchat.png)
+
+Attach the Offical Account QR Code
+
+![](./docs/en/images/dingo_contact_officalAccount.png)
