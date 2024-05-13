@@ -58,7 +58,7 @@ public class SqlCreateUser extends SqlCreate {
         this.requireSsl = requireSsl;
         this.lock = lock;
         this.expireDays = expireDays;
-        this.plugin = plugin;
+        this.plugin = plugin == null ? "mysql_native_password" : plugin.contains("'") ? plugin.replace("'", ""): plugin;
         this.pluginDn = pluginDn == null ? "" : pluginDn.contains("'") ? pluginDn.replace("'", "") : pluginDn;
     }
 

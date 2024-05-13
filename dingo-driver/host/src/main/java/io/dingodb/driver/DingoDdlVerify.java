@@ -161,7 +161,8 @@ public class DingoDdlVerify {
             accessTypes.add(DingoSqlAccessEnum.CREATE_USER);
         } else if (sqlNode instanceof SqlShowGrants) {
             SqlShowGrants sqlShowGrants = (SqlShowGrants) sqlNode;
-            if (user.equals(sqlShowGrants.user) && host.equals(sqlShowGrants.host)) {
+            if (sqlShowGrants.user == null
+                 || (user.equals(sqlShowGrants.user) && host.equals(sqlShowGrants.host))) {
                  return;
             }
             accessTypes.add(DingoSqlAccessEnum.SELECT);

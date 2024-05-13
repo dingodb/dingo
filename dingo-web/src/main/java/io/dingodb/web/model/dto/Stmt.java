@@ -90,4 +90,5 @@ public class Stmt {
     private String id;
     private String state;
     private String msg;
+    private long priority;
 }

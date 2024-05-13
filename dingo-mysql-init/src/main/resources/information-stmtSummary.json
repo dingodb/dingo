@@ -422,5 +422,13 @@
     "scale": -2147483648,
     "primary": -1,
     "nullable": false
+  },
+  {
+    "name": "PRIORITY",
+    "type": "bigint",
+    "precision": -1,
+    "scale": -2147483648,
+    "primary": -1,
+    "nullable":  true
   }
 ]

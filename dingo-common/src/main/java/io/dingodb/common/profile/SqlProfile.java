@@ -53,6 +53,9 @@ public class SqlProfile extends Profile {
         if (planProfile != null && planProfile.end == 0) {
             planProfile.end();
             this.statementType = planProfile.getStmtType();
+            if (planProfile.getTableList() != null) {
+                this.fullyTableList = planProfile.getTableList();
+            }
         }
         this.planProfile = planProfile;
     }

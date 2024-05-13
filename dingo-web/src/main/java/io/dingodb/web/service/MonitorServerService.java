@@ -628,7 +628,7 @@ public class MonitorServerService {
         TimeZone timeZone = TimeZone.getTimeZone("GMT+8");
         Calendar calendar = Calendar.getInstance(timeZone);
         long currentTimeSeconds = calendar.getTimeInMillis() / 1000;
-        promMetricService.loadMetric(currentTimeSeconds, false);
+        promMetricService.loadMetric(currentTimeSeconds, true);
         ResourceInfo resourceInfo = promMetricService.getResource(instance, currentTimeSeconds);
         ProcessInfo processInfo = promMetricService.getProcessMetric(serverLocation.toString());
         boolean exceedAlarm = exceedAlarm(resourceInfo);
