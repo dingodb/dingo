@@ -55,7 +55,6 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
-import io.dingodb.serial.schema.IntegerSchema;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
@@ -78,14 +77,12 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rel.LogicalDingoTableScan.getIndexMetricType;
@@ -400,10 +397,11 @@ public final class DingoVectorVisitFun {
         };
         filter.accept(visitor);
         List<Column> selectionColList = inputRefList.stream()
+            .filter(i -> i < table.columns.size())
             .map(i -> table.getColumns().get(i))
             .filter(col -> !col.isPrimary())
             .collect(Collectors.toList());
-        if (selectionColList.size() == 0) {
+        if (selectionColList.isEmpty()) {
             return false;
         }
         boolean recognizableTypes = selectionColList.stream()
