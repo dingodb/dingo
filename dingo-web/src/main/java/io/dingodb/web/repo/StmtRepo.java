@@ -27,7 +27,7 @@ import java.util.List;
 @Repository
 public interface StmtRepo extends JpaRepository<Stmt, StmtId> {
 
-    @Query(value = "select * from information_schema.statements_summary order by exec_count desc limit 5", nativeQuery=true)
+    @Query(value = "select * from information_schema.statements_summary where statement_type is not null order by exec_count desc limit 5", nativeQuery=true)
     List<Stmt> topSql();
 
     @Query(value = "select * from information_schema.statements_summary order by priority desc limit 100", nativeQuery=true)
