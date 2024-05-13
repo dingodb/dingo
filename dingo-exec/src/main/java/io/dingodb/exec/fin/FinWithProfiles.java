@@ -16,9 +16,6 @@
 
 package io.dingodb.exec.fin;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.common.profile.OperatorProfile;
@@ -103,10 +100,12 @@ public class FinWithProfiles implements Fin {
 
                     boolean r = this.profile.getChildren().stream()
                         .allMatch(p -> p.getType().equalsIgnoreCase(this.profile.getType()));
-                    if (!r) {
-                        serial.getChildren().add(this.profile);
-                    } else {
-                        serial.getChildren().addAll(this.profile.getChildren());
+                    if (serial.getChildren() != null && serial.getChildren().size() < 10) {
+                        if (!r) {
+                            serial.getChildren().add(this.profile);
+                        } else {
+                            serial.getChildren().addAll(this.profile.getChildren());
+                        }
                     }
                     profile = serial;
                 } else {

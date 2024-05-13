@@ -113,20 +113,21 @@ public class PromMetricService {
     }
 
     public double getCpuUsage(String instance, long currentTimeSeconds) {
-        BigDecimal idle = cpuIdleMap.computeIfAbsent(instance, location -> {
-            String realCpuUsageMetric = SYSTEM_CPU_IDLE_METRIC.replace("location", location);
-            PromResponseInfo promResponseInfo = getPromByMetric(realCpuUsageMetric, currentTimeSeconds);
-            if (promResponseInfo == null) {
-               return ZERO;
-            } else {
-               Object val = promResponseInfo.getData().getResult().get(0).getValue().get(1);
-               return new BigDecimal(val.toString());
-            }
-        });
+        //BigDecimal idle = cpuIdleMap.computeIfAbsent(instance, location -> {
+        BigDecimal idle;
+        String realCpuUsageMetric = SYSTEM_CPU_IDLE_METRIC.replace("location", instance);
+        PromResponseInfo promResponseInfo = getPromByMetric(realCpuUsageMetric, currentTimeSeconds);
+        if (promResponseInfo == null) {
+            return 0;
+        } else {
+            Object val = promResponseInfo.getData().getResult().get(0).getValue().get(1);
+            idle = new BigDecimal(val.toString());
+        }
+        //});
         if (idle == ZERO) {
             return 0;
         }
-        return TMP1.subtract(idle).setScale(2, RoundingMode.HALF_UP).doubleValue();
+        return TMP1.subtract(idle).setScale(4, RoundingMode.HALF_UP).doubleValue();
     }
 
     public PromResponseInfo getPromByMetric(String metric, long currentTimeSeconds) {
@@ -161,7 +162,7 @@ public class PromMetricService {
         if (total == ZERO || available == ZERO) {
             return 0;
         }
-        return  (TMP1.subtract(available.divide(total, 2, RoundingMode.HALF_UP))).doubleValue();
+        return  (TMP1.subtract(available.divide(total, 4, RoundingMode.HALF_UP))).doubleValue();
     }
 
     public Map<String, BigDecimal> getDistanceMetric(String metric, long currentTimeSeconds) {

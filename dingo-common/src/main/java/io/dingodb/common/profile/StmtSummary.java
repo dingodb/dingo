@@ -88,6 +88,7 @@ public class StmtSummary {
     private long analyzeInc;
     private String state;
     private String msg;
+    private long priority;
 
     public StmtSummary(String stmtSummaryKey) {
         this.firstSeen = System.currentTimeMillis();
@@ -137,6 +138,7 @@ public class StmtSummary {
         if (profile.getEnd() > lastSeen) {
             this.lastSeen = profile.getEnd();
         }
+
         PlanProfile planProfile = profile.getPlanProfile();
         if (planProfile != null) {
             this.sumPlanLatency += planProfile.duration;
@@ -172,7 +174,18 @@ public class StmtSummary {
         if (tableList.isEmpty() && profile.getFullyTableList() != null) {
             tableList.addAll(profile.getFullyTableList());
         }
+
         this.statementType = profile.getStatementType();
+        if (profile.getStatementType() == null) {
+            this.priority = System.currentTimeMillis();
+        } else {
+            long time = System.currentTimeMillis();
+            if (!tableList.isEmpty()) {
+                this.priority = Long.parseLong("2" + time);
+            } else {
+                this.priority = Long.parseLong("1" + time);
+            }
+        }
 
         ExecProfile execProfile = profile.getExecProfile();
         if (execProfile != null) {
@@ -275,7 +288,7 @@ public class StmtSummary {
                 sumCleanLatency, maxCleanLatency, avgCleanLatency, sumResultCount, maxResultCount,
                 avgResultCount, sumAffectedRows, maxAffectedRows,
                 avgAffectedRows, plan, binaryPlan, planInCache,
-                prepared, id, state, msg};
+                prepared, id, state, msg, priority};
         } finally {
             lock.readLock().unlock();
         }
