@@ -48,7 +48,7 @@ public class FinWithProfiles implements Fin {
         if (profile != null) {
             this.profile = profile;
         } else {
-            this.profile = new Profile("base");
+            this.profile = new Profile("source");
         }
     }
 
@@ -58,10 +58,6 @@ public class FinWithProfiles implements Fin {
 
     public static @NonNull FinWithProfiles of(Profile profile) {
         return new FinWithProfiles(profile);
-    }
-
-    public synchronized List<Profile> getProfiles() {
-        return profile.getChildren();
     }
 
     @Override

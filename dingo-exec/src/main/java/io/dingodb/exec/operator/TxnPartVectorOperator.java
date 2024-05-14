@@ -152,7 +152,7 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                 results.add(priTuples);
             }
         }
-        profile.time(start);
+        profile.incrTime(start);
         return results.iterator();
     }
 
