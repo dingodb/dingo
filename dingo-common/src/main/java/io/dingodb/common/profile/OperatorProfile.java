@@ -38,10 +38,14 @@ public class OperatorProfile extends Profile {
     }
 
     public void time(long start) {
+        incrTime(start);
+        count ++;
+    }
+
+    public void incrTime(long start) {
         long current = System.currentTimeMillis();
         long time = current - start;
         duration += time;
-        count ++;
         if (time > max) {
             max = time;
         }
@@ -52,6 +56,22 @@ public class OperatorProfile extends Profile {
 
     public void decreaseCount() {
         count --;
+    }
+
+    public void mergeChild() {
+        if (this.children != null && this.children.size() > 1) {
+            boolean res = this.children.stream().anyMatch(profile -> profile.duration == 0 && profile.getChildren().isEmpty());
+            if (!res) {
+                return;
+            }
+            Profile first = this.children.get(0);
+            for (int i = 1; i < this.children.size(); i ++) {
+                Profile profile = this.children.get(i);
+                first.count += profile.count;
+            }
+            this.children.clear();
+            this.children.add(first);
+        }
     }
 
     @Override

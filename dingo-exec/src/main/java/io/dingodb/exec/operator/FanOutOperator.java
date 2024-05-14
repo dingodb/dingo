@@ -47,15 +47,15 @@ public abstract class FanOutOperator extends AbstractOperator {
     @Override
     public void fin(int pin, Fin fin, Vertex vertex) {
         LogUtils.debug(log, "Got FIN, push it to {} outputs", vertex.getOutList().size());
-        if (fin instanceof FinWithProfiles) {
-            AbstractParams param = vertex.getParam();
-            Profile profile = param.getProfile();
-            if (profile == null) {
-                profile = new OperatorProfile("fanOut");
-            }
-            FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
-            finWithProfiles.addProfile(profile);
-        }
+        //if (fin instanceof FinWithProfiles) {
+        //    AbstractParams param = vertex.getParam();
+        //    Profile profile = param.getProfile();
+        //    if (profile == null) {
+        //        profile = new OperatorProfile("fanOut");
+        //    }
+        //    FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+        //    finWithProfiles.addProfile(profile);
+        //}
         for (Edge edge : vertex.getOutList()) {
             edge.fin(fin);
         }
