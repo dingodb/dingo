@@ -19,16 +19,19 @@ package io.dingodb.web.bean;
 import io.dingodb.sdk.service.cluster.ClusterServiceClient;
 import io.dingodb.sdk.service.connector.CoordinatorServiceConnector;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Configuration
 public class MonitorBean {
 
@@ -54,36 +57,54 @@ public class MonitorBean {
 
     public static void getLog(String logPath) {
         String filePath = logPath + "/calcite.log";
-
+        log.info("get log:" + filePath);
         LogEventCache logCache = LogEventCache.logCache;
-        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+        logCache.clear();
+
+        rollLog(filePath, logCache);
+        log.info("logs size:" + logCache.size());
+        getLog(logPath);
+    }
+
+    private static void rollLog(String filePath, LogEventCache logCache) {
+        FileReader fr;
+        try {
+            fr = new FileReader(filePath);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        try (BufferedReader br = new BufferedReader(fr)) {
             String line;
-            while (true) {
+            long start = System.currentTimeMillis();
+            while (!Thread.interrupted()) {
                 if ((line = br.readLine()) != null) {
                     logCache.put(line, line);
                 } else {
-                    Thread.sleep(100L);
+                    Thread.sleep(1000L);
+                }
+                long end = System.currentTimeMillis();
+                if (end - start > 3600000) {
+                    break;
                 }
             }
-        } catch (IOException | InterruptedException ignored) {
+        } catch (IOException | InterruptedException e) {
+            log.info(e.getMessage(), e);
+        } finally {
+            try {
+                fr.close();
+            } catch (IOException ignored) {
+            }
         }
     }
 
     public static void getEvent(String logPath) {
         String filePath = logPath + "/metaEvent.log";
-
+        log.info("get event:" + filePath);
         LogEventCache eventCache = LogEventCache.eventCache;
-        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
-            String line;
-            while (true) {
-                if ((line = br.readLine()) != null) {
-                    eventCache.put(line, line);
-                } else {
-                    Thread.sleep(100L);
-                }
-            }
-        } catch (IOException | InterruptedException ignored) {
-        }
+        eventCache.clear();
+        rollLog(filePath, eventCache);
+        log.info("event size:" + eventCache.size());
+        getEvent(logPath);
     }
 
     public static CoordinatorServiceConnector getCoordinatorServiceConnector(String coordinator) {
