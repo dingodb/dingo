@@ -650,18 +650,16 @@ public class MonitorServerService {
     }
 
     public String logStr() {
+        log.info("logs line size:" + LogEventCache.logCache.size());
         StringBuilder builder = new StringBuilder();
-        LogEventCache.logCache.forEach((k, v) -> {
-            builder.append(k).append(lineSeparator);
-        });
+        LogEventCache.logCache.forEach((k, v) -> builder.append(k).append(lineSeparator));
         return builder.toString();
     }
 
     public String eventStr() {
+        log.info("events line size:" + LogEventCache.logCache.size());
         StringBuilder builder = new StringBuilder();
-        LogEventCache.eventCache.forEach((k, v) -> {
-            builder.append(k).append(lineSeparator);
-        });
+        LogEventCache.eventCache.forEach((k, v) -> builder.append(k).append(lineSeparator));
         return builder.toString();
     }
 
