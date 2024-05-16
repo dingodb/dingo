@@ -54,4 +54,9 @@ public class SqlSetPassword extends SqlSetOption {
         return null;
     }
 
+    public String toLog() {
+        StringBuilder str = new StringBuilder();
+        str.append("SET PASSWORD ").append(user).append("@").append(host).append(" = ").append("(").append("***").append(")");
+        return str.toString();
+    }
 }

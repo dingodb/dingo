@@ -35,6 +35,7 @@ import io.dingodb.calcite.rel.AutoIncrementShuttle;
 import io.dingodb.calcite.rel.DingoBasicCall;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
+import io.dingodb.calcite.utils.SqlUtil;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
@@ -267,7 +268,7 @@ public final class DingoDriverParser extends DingoParser {
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
         planProfile.setStmtType(sqlNode.getKind().lowerName);
         // for compatible mysql protocol
-        MysqlSignature mysqlSignature = getMysqlSignature(sql, sqlNode, typeFactory, cursorFactory);
+        MysqlSignature mysqlSignature = getMysqlSignature(SqlUtil.checkSql(sqlNode, sql), sqlNode, typeFactory, cursorFactory);
         if (mysqlSignature != null) {
             return mysqlSignature;
         }
@@ -281,7 +282,7 @@ public final class DingoDriverParser extends DingoParser {
             execProfile.end();
             return new DingoSignature(
                 ImmutableList.of(),
-                sql,
+                SqlUtil.checkSql(sqlNode, sql),
                 Meta.CursorFactory.OBJECT,
                 Meta.StatementType.OTHER_DDL,
                 null,

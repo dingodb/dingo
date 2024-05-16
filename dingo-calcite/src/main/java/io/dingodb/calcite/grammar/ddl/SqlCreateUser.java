@@ -95,4 +95,28 @@ public class SqlCreateUser extends SqlCreate {
             writer.keyword("UNLOCK");
         }
     }
+
+    public String toLog() {
+        StringBuilder str = new StringBuilder();
+        str.append("CREATE").append(" USER ").append(user).append("@").append(host).append(" IDENTIFIED BY ").append("***");
+        if (StringUtils.isNotBlank(requireSsl)) {
+            str.append(" REQUIRE ");
+            str.append(requireSsl);
+        }
+        if (expireDays != null) {
+            str.append(" PASSWORD EXPIRE");
+            if (!expireDays.equals("0")) {
+                str.append(" INTERVAL ");
+                str.append(expireDays.toString());
+                str.append(" DAY");
+            }
+        }
+        str.append(" ACCOUNT ");
+        if ("Y".equalsIgnoreCase(lock)) {
+            str.append("LOCK");
+        } else if ("N".equalsIgnoreCase(lock)) {
+            str.append("UNLOCK");
+        }
+        return str.toString();
+    }
 }

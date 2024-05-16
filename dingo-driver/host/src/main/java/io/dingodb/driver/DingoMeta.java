@@ -253,6 +253,7 @@ public class DingoMeta extends MetaImpl {
             String stmtId = "Stmt_" + sh.toString() + "_" + jobSeqId;
             MdcUtils.setStmtId(stmtId);
             sh.signature = parser.parseQuery(jobManager, jobSeqId, sql);
+            sql = sh.signature.sql;
             sqlProfile(sql, sqlProfile, parser);
             addProfileQueue(sqlProfile, connection);
             printDingoAudit(sh, sql, dingoConnection, jobSeqId, parser);
@@ -301,6 +302,7 @@ public class DingoMeta extends MetaImpl {
             statement.initSqlProfile();
             statement.removeJob(jobManager);
             Signature signature = parser.parseQuery(jobManager, jobSeqId, sql);
+            sql = signature.sql;
             // add profile
             sqlProfile(sql, statement.getSqlProfile(), parser);
             // for mysql protocol start

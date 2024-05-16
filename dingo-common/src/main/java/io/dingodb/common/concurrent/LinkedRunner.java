@@ -51,8 +51,8 @@ public final class LinkedRunner implements Unsafe {
         private final Runnable task;
         private final LinkedRunner runner;
 
-        private int complete = 0;
-        private RunnerNode next = null;
+        private volatile int complete = 0;
+        private volatile RunnerNode next = null;
 
         public RunnerNode(Runnable task, LinkedRunner runner) {
             this.task = task;

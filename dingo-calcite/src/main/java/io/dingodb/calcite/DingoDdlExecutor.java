@@ -859,7 +859,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(@NonNull SqlCreateUser sqlCreateUser, CalcitePrepare.Context context) {
-        LogUtils.info(log, "DDL execute: {}", sqlCreateUser);
+        LogUtils.info(log, "DDL execute: {}", sqlCreateUser.toLog());
         UserDefinition userDefinition = UserDefinition.builder().user(sqlCreateUser.user)
             .host(getRealAddress(sqlCreateUser.host)).build();
         if (userService.existsUser(userDefinition)) {
@@ -1055,7 +1055,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void execute(@NonNull SqlAlterUser sqlAlterUser, CalcitePrepare.Context context) {
         final Timer.Context timeCtx = DingoMetrics.getTimeContext("alterUser");
-        LogUtils.info(log, "DDL execute: {}", sqlAlterUser);
+        LogUtils.info(log, "DDL execute: {}", sqlAlterUser.toLog());
         UserDefinition userDefinition = UserDefinition.builder()
             .user(sqlAlterUser.user)
             .host(getRealAddress(sqlAlterUser.host))
