@@ -69,7 +69,7 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
         final LinkedRunner runner = new LinkedRunner("lock");
     }
 
-    private final Map<CommonId, TableLocks> locks = new HashMap<>();
+    private final Map<CommonId, TableLocks> locks = new ConcurrentHashMap<>();
     private final LinkedRunner runner = new LinkedRunner("lock");
     private final HashSet<io.dingodb.transaction.api.TableLock> waitLocks = new HashSet<>();
 
