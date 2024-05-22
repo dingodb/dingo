@@ -235,11 +235,11 @@ public class StmtSummary {
 
         CommitProfile commitProfile = profile.getCommitProfile();
         if (commitProfile != null) {
-            this.sumCommitLatency += commitProfile.duration;
-            if (this.maxCommitLatency < commitProfile.getDuration()) {
-                this.maxCommitLatency = commitProfile.getDuration();
-            }
-            this.avgCommitLatency = this.sumCommitLatency / execCount;
+            //this.sumCommitLatency += commitProfile.duration;
+            //if (this.maxCommitLatency < commitProfile.getDuration()) {
+            //    this.maxCommitLatency = commitProfile.getDuration();
+            //}
+            //this.avgCommitLatency = this.sumCommitLatency / execCount;
 
             long preWrite = commitProfile.getPreWrite();
             long commit = commitProfile.getCommit();

@@ -74,6 +74,7 @@ public final class CoalesceOperator extends SoleOutOperator {
                 if (fin instanceof FinWithProfiles) {
                     FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
                     profile.getChildren().add(finWithProfiles.getProfile());
+                    param.setLastFin(finWithProfiles.getId());
                 }
             }
         }

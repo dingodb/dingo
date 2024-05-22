@@ -31,11 +31,13 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Data
 public class FinWithProfiles implements Fin {
     public static final Parser PARSER = Parser.JSON;
+    public String id;
 
     @JsonProperty("profile")
     Profile profile;
@@ -45,6 +47,7 @@ public class FinWithProfiles implements Fin {
     }
 
     public FinWithProfiles(Profile profile) {
+        id = UUID.randomUUID().toString();
         if (profile != null) {
             this.profile = profile;
         } else {

@@ -98,23 +98,13 @@ public final class GetByIndexOperator extends FilterProjectOperator {
 
     private static Object[] transformTuple(Object[] tuple, GetByIndexParam param) {
         TupleMapping selection = param.getSelection();
-        Table index = param.getIndex();
         Table table = param.getTable();
         Object[] response = new Object[table.getColumns().size()];
-        List<Integer> selectedColumns = mapping(selection, table, index);
+        List<Integer> selectedColumns = param.getMapList();
         for (int i = 0; i < selection.size(); i ++) {
             response[selection.get(i)] = tuple[selectedColumns.get(i)];
         }
         return response;
-    }
-
-    private static List<Integer> mapping(TupleMapping selection, Table td, Table index) {
-        Integer[] mappings = new Integer[selection.size()];
-        for (int i = 0; i < selection.size(); i ++) {
-            Column column = td.getColumns().get(selection.get(i));
-            mappings[i] = index.getColumns().indexOf(column);
-        }
-        return Arrays.asList(mappings);
     }
 
 }

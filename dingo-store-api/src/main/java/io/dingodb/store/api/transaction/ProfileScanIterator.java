@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-package io.dingodb.common.config;
+package io.dingodb.store.api.transaction;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import io.dingodb.common.profile.Profile;
+import io.dingodb.common.store.KeyValue;
 
-@Getter
-@Setter
-@ToString
-@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-public class VariableConfiguration {
-    private Long autoIncrementCacheCount;
-    private Integer autoIncrementIncrement;
-    private Integer autoIncrementOffset;
-    private Boolean enableTableLock;
+import java.util.Iterator;
+
+public interface ProfileScanIterator extends Iterator<KeyValue> {
+    public Profile getRpcProfile();
+
+    public Profile getInitRpcProfile();
 }

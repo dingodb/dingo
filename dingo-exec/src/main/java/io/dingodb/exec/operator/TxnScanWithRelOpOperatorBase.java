@@ -21,12 +21,15 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnScanWithRelOpParam;
 import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.api.transaction.DingoTransformedIterator;
+import io.dingodb.store.api.transaction.ProfileScanIterator;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -62,6 +65,8 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
     @Override
     protected @NonNull Iterator<Object[]> createIterator(@NonNull Context context, @NonNull Vertex vertex) {
         TxnScanWithRelOpParam param = vertex.getParam();
+        OperatorProfile profile = param.getProfile("createIterator");
+        long start = System.currentTimeMillis();
         CommonId tableId = param.getTableId();
         CommonId txnId = vertex.getTask().getTxnId();
         RangeDistribution distribution = context.getDistribution();
@@ -74,6 +79,11 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
                 param.getTimeOut()
             );
             param.setCoprocessor(null);
+            profile.incrTime(start);
+            if (storeIterator instanceof ProfileScanIterator) {
+                ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
+                profile.getChildren().add(profileScanIterator.getInitRpcProfile());
+            }
             return createMergedIterator(localIterator, storeIterator, param.getCodec());
         }
         CoprocessorV2 coprocessor = param.getCoprocessor();
@@ -84,7 +94,12 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
                 param.getScanTs(),
                 param.getTimeOut()
             );
-            return Iterators.transform(storeIterator, wrap(param.getCodec()::decode)::apply);
+            profile.incrTime(start);
+            if (storeIterator instanceof ProfileScanIterator) {
+                ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
+                profile.getChildren().add(profileScanIterator.getInitRpcProfile());
+            }
+            return DingoTransformedIterator.transform(storeIterator, wrap(param.getCodec()::decode)::apply);
         }
         Iterator<KeyValue> storeIterator = createStoreIteratorCp(
             tableId,
@@ -93,6 +108,11 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
             param.getTimeOut(),
             coprocessor
         );
-        return Iterators.transform(storeIterator, wrap(param.getPushDownCodec()::decode)::apply);
+        profile.incrTime(start);
+        if (storeIterator instanceof ProfileScanIterator) {
+            ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
+            profile.getChildren().add(profileScanIterator.getInitRpcProfile());
+        }
+        return DingoTransformedIterator.transform(storeIterator, wrap(param.getPushDownCodec()::decode)::apply);
     }
 }

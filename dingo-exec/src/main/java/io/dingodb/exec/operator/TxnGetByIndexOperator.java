@@ -39,6 +39,7 @@ import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.api.transaction.DingoTransformedIterator;
 import io.dingodb.store.api.transaction.data.Op;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -128,23 +129,13 @@ public final class TxnGetByIndexOperator extends FilterProjectOperator {
 
     private static Object[] transformTuple(Object[] tuple, TxnGetByIndexParam param) {
         TupleMapping selection = param.getSelection();
-        Table index = param.getIndex();
         Table table = param.getTable();
         Object[] response = new Object[table.getColumns().size()];
-        List<Integer> selectedColumns = mapping(selection, table, index);
+        List<Integer> selectedColumns = param.getMapList();
         for (int i = 0; i < selection.size(); i ++) {
             response[selection.get(i)] = tuple[selectedColumns.get(i)];
         }
         return response;
-    }
-
-    private static List<Integer> mapping(TupleMapping selection, Table td, Table index) {
-        Integer[] mappings = new Integer[selection.size()];
-        for (int i = 0; i < selection.size(); i ++) {
-            Column column = td.getColumns().get(selection.get(i));
-            mappings[i] = index.getColumns().indexOf(column);
-        }
-        return Arrays.asList(mappings);
     }
 
     private static Object[] createGetLocal(
@@ -237,6 +228,9 @@ public final class TxnGetByIndexOperator extends FilterProjectOperator {
         KeyValueCodec decoder
     ) {
         KeyValue kv1 = getNextValue(localKVIterator);
+        if (kv1 == null) {
+            return DingoTransformedIterator.transform(kvKVIterator, wrap(decoder::decode)::apply);
+        }
         KeyValue kv2 = getNextValue(kvKVIterator);
 
         final int pos = 9;

@@ -26,6 +26,7 @@ import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.api.transaction.DingoTransformedIterator;
 import io.dingodb.store.api.transaction.data.Op;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -100,6 +101,9 @@ public abstract class TxnScanOperatorBase extends ScanOperatorBase {
         KeyValueCodec decoder
     ) {
         KeyValue kv1 = getNextValue(localKVIterator);
+        if (kv1 == null) {
+            return DingoTransformedIterator.transform(kvKVIterator, wrap(decoder::decode)::apply);
+        }
         KeyValue kv2 = getNextValue(kvKVIterator);
 
         final int pos = 9;
@@ -171,7 +175,7 @@ public abstract class TxnScanOperatorBase extends ScanOperatorBase {
             kv2 = getNextValue(kvKVIterator);
         }
 
-        return Iterators.transform(mergedList.iterator(), wrap(decoder::decode)::apply);
+        return DingoTransformedIterator.transform(mergedList.iterator(), wrap(decoder::decode)::apply);
     }
 
     @AllArgsConstructor

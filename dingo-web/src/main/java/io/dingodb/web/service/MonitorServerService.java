@@ -372,6 +372,7 @@ public class MonitorServerService {
         AtomicInteger coorIndex = new AtomicInteger(0);
         List<CoordinatorInfo> coorInfoList = coordinatorList
             .stream()
+            .filter(coordinator -> coordinator.state() == 1)
             .map(coordinator -> {
                 coorIndex.incrementAndGet();
                 String instance = coordinator.location().getHost() + ":" + nodeExportPort;

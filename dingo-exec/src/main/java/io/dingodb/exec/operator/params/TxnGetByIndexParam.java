@@ -27,8 +27,12 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Getter
 @JsonTypeName("txn_index")
@@ -51,6 +55,7 @@ public class TxnGetByIndexParam extends FilterProjectParam {
     @JsonProperty("scanTs")
     private final long scanTs;
     private final long timeout;
+    private List<Integer> mapList;
 
     public TxnGetByIndexParam(
         CommonId indexTableId,
@@ -79,6 +84,19 @@ public class TxnGetByIndexParam extends FilterProjectParam {
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
-        lookupCodec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
+        if (isLookup()) {
+            lookupCodec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
+        } else {
+            mapList = mapping(selection, table, index);
+        }
+    }
+
+    private static List<Integer> mapping(TupleMapping selection, Table td, Table index) {
+        Integer[] mappings = new Integer[selection.size()];
+        for (int i = 0; i < selection.size(); i ++) {
+            Column column = td.getColumns().get(selection.get(i));
+            mappings[i] = index.getColumns().indexOf(column);
+        }
+        return Arrays.asList(mappings);
     }
 }

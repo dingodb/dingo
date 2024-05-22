@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.exec.dag.Vertex;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -37,6 +38,10 @@ public class CoalesceParam extends AbstractParams {
 
     private transient boolean[] finFlags;
     private transient List<Profile> profiles;
+
+    @Getter
+    @Setter
+    private String lastFin;
 
     public CoalesceParam(int inputNum) {
         this.inputNum = inputNum;

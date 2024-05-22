@@ -22,6 +22,8 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
@@ -50,6 +52,7 @@ import io.dingodb.sdk.service.entity.store.TxnScanRequest;
 import io.dingodb.sdk.service.entity.store.TxnScanResponse;
 import io.dingodb.sdk.service.entity.store.WriteConflict;
 import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.api.transaction.ProfileScanIterator;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.TxnVariables;
 import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatus;
@@ -77,7 +80,6 @@ import java.util.StringJoiner;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
@@ -670,7 +672,7 @@ public class TransactionStoreInstance {
         return resolveLockStatus;
     }
 
-    public class ScanIterator implements Iterator<io.dingodb.common.store.KeyValue> {
+    public class ScanIterator implements ProfileScanIterator {
         private final long startTs;
         private final StoreInstance.Range range;
         private final long timeOut;
@@ -680,6 +682,8 @@ public class TransactionStoreInstance {
         private boolean hasMore = true;
         private StoreInstance.Range current;
         private Iterator<KeyValue> keyValues;
+        private OperatorProfile rpcProfile;
+        private final OperatorProfile initRpcProfile;
 
         public ScanIterator(long startTs, StoreInstance.Range range, long timeOut) {
             this(startTs, range, timeOut, null);
@@ -698,7 +702,13 @@ public class TransactionStoreInstance {
             Optional.ofNullable(this.coprocessor)
                 .map(io.dingodb.sdk.service.entity.common.CoprocessorV2::getResultSchema)
                 .ifPresent($ -> $.setCommonId(partitionId.seq));
+            initRpcProfile = new OperatorProfile("initTxnRpc");
+            rpcProfile = new OperatorProfile("continueTxnRpc");
+            initRpcProfile.start();
+            long start = System.currentTimeMillis();
             fetch();
+            initRpcProfile.time(start);
+            initRpcProfile.end();
         }
 
         private synchronized void fetch() {
@@ -760,7 +770,12 @@ public class TransactionStoreInstance {
         @Override
         public boolean hasNext() {
             while (hasMore && !keyValues.hasNext()) {
+                if (rpcProfile.getStart() == 0) {
+                    rpcProfile.start();
+                }
+                long start = System.currentTimeMillis();
                 fetch();
+                rpcProfile.time(start);
             }
             return keyValues.hasNext();
         }
@@ -768,6 +783,16 @@ public class TransactionStoreInstance {
         @Override
         public io.dingodb.common.store.KeyValue next() {
             return MAPPER.kvFrom(keyValues.next());
+        }
+
+        @Override
+        public Profile getRpcProfile() {
+            return rpcProfile;
+        }
+
+        @Override
+        public Profile getInitRpcProfile() {
+            return initRpcProfile;
         }
     }
 
