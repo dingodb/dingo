@@ -50,4 +50,14 @@ public class ClusterTestService implements ClusterService {
     public int getStoreMap() {
         return 0;
     }
+
+    @Override
+    public int getLocations() {
+        return 0;
+    }
+
+    @Override
+    public void configCoordinator(boolean isReadOnly, String reason) {
+
+    }
 }

@@ -28,12 +28,13 @@ import io.dingodb.sdk.service.entity.common.Executor;
 import io.dingodb.sdk.service.entity.common.ExecutorMap;
 import io.dingodb.sdk.service.entity.common.ExecutorState;
 import io.dingodb.sdk.service.entity.common.ExecutorUser;
-import io.dingodb.sdk.service.entity.common.StoreMap;
+import io.dingodb.sdk.service.entity.common.Store;
+import io.dingodb.sdk.service.entity.coordinator.ConfigCoordinatorRequest;
+import io.dingodb.sdk.service.entity.coordinator.ConfigCoordinatorResponse;
 import io.dingodb.sdk.service.entity.coordinator.ExecutorHeartbeatRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetExecutorMapRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetExecutorMapResponse;
 import io.dingodb.sdk.service.entity.coordinator.GetStoreMapRequest;
-import io.dingodb.sdk.service.entity.coordinator.GetStoreMapResponse;
 import io.dingodb.server.executor.Configuration;
 import io.dingodb.tso.TsoService;
 
@@ -131,6 +132,25 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
         return coordinatorService.getStoreMap(
             TsoService.getDefault().tso(), GetStoreMapRequest.builder().build()
         ).getStoremap().getStores().size();
+    }
+
+    @Override
+    public int getLocations() {
+        return coordinatorService.getStoreMap(
+            TsoService.getDefault().tso(), GetStoreMapRequest.builder().build()
+        ).getStoremap().getStores().stream().map(s -> s.getRaftLocation().getHost()).collect(Collectors.toSet()).size();
+    }
+
+    @Override
+    public void configCoordinator(boolean isReadOnly, String reason) {
+        ConfigCoordinatorResponse configCoordinatorResponse = coordinatorService.configCoordinator(
+            TsoService.getDefault().tso(),
+            ConfigCoordinatorRequest.builder()
+                .isForceReadOnly(isReadOnly)
+                .setForceReadOnly(true)
+                .forceReadOnlyReason(reason)
+                .build()
+        );
     }
 
     private String url(io.dingodb.sdk.service.entity.common.Location location) {

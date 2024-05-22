@@ -50,6 +50,7 @@ dependencies {
     implementation project(":dingo-partition-base")
     implementation project(":dingo-tool-service")
     implementation project(":dingo-transaction-api")
+    implementation project(":dingo-license-api")
 
     implementation project(":dingo-driver:dingo-mysql-service")
 
@@ -63,6 +64,7 @@ task fatJar(type: Jar) {
         attributes 'Main-Class': 'io.dingodb.server.executor.Starter'
     }
     classifier 'all'
+    zip64=true
     from(
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
     )

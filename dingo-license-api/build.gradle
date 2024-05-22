@@ -14,29 +14,11 @@
  * limitations under the License.
  */
 
-package io.dingodb.cluster;
+plugins {
+    id 'java-conventions'
+    id 'java-library'
+}
 
-
-import io.dingodb.common.CommonId;
-import io.dingodb.common.Location;
-
-import java.util.List;
-
-public interface ClusterService {
-
-    static ClusterService getDefault() {
-        return ClusterServiceProvider.getDefault().get();
-    }
-
-    List<Location> getComputingLocations();
-
-    CommonId getServerId(Location location);
-
-    Location getLocation(CommonId serverId);
-
-    int getStoreMap();
-
-    int getLocations();
-
-    void configCoordinator(boolean isReadOnly, String reason);
+dependencies {
+    implementation project(':dingo-common')
 }
