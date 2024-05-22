@@ -14,29 +14,14 @@
  * limitations under the License.
  */
 
-package io.dingodb.cluster;
+package io.dingodb.license;
 
+public interface LicenseService {
 
-import io.dingodb.common.CommonId;
-import io.dingodb.common.Location;
-
-import java.util.List;
-
-public interface ClusterService {
-
-    static ClusterService getDefault() {
-        return ClusterServiceProvider.getDefault().get();
+    static LicenseService getDefault() {
+        return LicenseServiceProvider.getDefault().get();
     }
 
-    List<Location> getComputingLocations();
+    boolean check(long timestamp, int storeMap, int locations);
 
-    CommonId getServerId(Location location);
-
-    Location getLocation(CommonId serverId);
-
-    int getStoreMap();
-
-    int getLocations();
-
-    void configCoordinator(boolean isReadOnly, String reason);
 }
