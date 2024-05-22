@@ -149,7 +149,13 @@ public class LoadDataOperation implements DmlOperation {
         this.lineStarting = sqlLoadData.getLineStarting();
         this.ignoreNum = sqlLoadData.getIgnoreNum();
         metaService = MetaService.root().getSubMetaService(schemaName);
+        if (metaService == null) {
+            throw DingoResource.DINGO_RESOURCE.unknownSchema(schemaName).ex();
+        }
         table = metaService.getTable(sqlLoadData.getTableName());
+        if (table == null) {
+            throw DingoResource.DINGO_RESOURCE.unknownTable(schemaName + "." + sqlLoadData.getTableName()).ex();
+        }
         codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
         distributions = metaService.getRangeDistribution(table.tableId);
         schema = table.tupleType();

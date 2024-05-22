@@ -24,6 +24,8 @@ import io.dingodb.exec.operator.params.ScanParam;
 import io.dingodb.exec.operator.params.ScanWithRelOpParam;
 import io.dingodb.expr.rel.CacheOp;
 import io.dingodb.expr.rel.PipeOp;
+import io.dingodb.store.api.transaction.DingoTransformedIterator;
+import io.dingodb.store.api.transaction.ProfileScanIterator;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -70,6 +72,12 @@ public final class RelOpUtils {
             }
             tmp = System.currentTimeMillis();
         }
+        if (iterator instanceof DingoTransformedIterator) {
+            DingoTransformedIterator transformedIterator = (DingoTransformedIterator) iterator;
+            OperatorProfile profile1 = (OperatorProfile) transformedIterator.getProfile();
+            profile1.end();
+            profile.getChildren().add(profile1);
+        }
         profile.time(tmp);
         profile.decreaseCount();
         profile.end();
@@ -96,6 +104,12 @@ public final class RelOpUtils {
             }
             tmp = System.currentTimeMillis();
         }
+        if (sourceIterator instanceof DingoTransformedIterator) {
+            DingoTransformedIterator transformedIterator = (DingoTransformedIterator) sourceIterator;
+            OperatorProfile profile1 = (OperatorProfile) transformedIterator.getProfile();
+            profile1.end();
+            profile.getChildren().add(profile1);
+        }
         profile.time(tmp);
         profile.decreaseCount();
         return count;
@@ -117,6 +131,12 @@ public final class RelOpUtils {
             ++count;
             relOp.put(tuple);
             tmp = System.currentTimeMillis();
+        }
+        if (sourceIterator instanceof DingoTransformedIterator) {
+            DingoTransformedIterator transformedIterator = (DingoTransformedIterator) sourceIterator;
+            OperatorProfile profile1 = (OperatorProfile) transformedIterator.getProfile();
+            profile1.end();
+            profile.getChildren().add(profile1);
         }
         profile.time(tmp);
 

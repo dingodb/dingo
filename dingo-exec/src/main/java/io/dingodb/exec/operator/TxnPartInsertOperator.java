@@ -59,7 +59,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
     @Override
     protected boolean pushTuple(Context context, Object[] tuple, Vertex vertex) {
         TxnPartInsertParam param = vertex.getParam();
-        OperatorProfile profile = param.getProfile("partInsert");
+        OperatorProfile profile = param.getProfile("partInsertLocal");
         long start = System.currentTimeMillis();
         if (param.isHasAutoInc() && param.getAutoIncColIdx() < tuple.length) {
             Object tmp = tuple[param.getAutoIncColIdx()];

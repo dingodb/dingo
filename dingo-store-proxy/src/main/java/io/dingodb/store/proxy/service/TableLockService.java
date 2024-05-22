@@ -20,6 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.concurrent.LinkedRunner;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.net.api.ApiRegistry;
@@ -31,7 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -51,6 +51,7 @@ import static io.dingodb.transaction.api.LockType.TABLE;
 
 @Slf4j
 public class TableLockService implements io.dingodb.transaction.api.TableLockService {
+    private boolean enableTableLock;
 
     @AutoService(TableLockServiceProvider.class)
     public static final class LockServiceProvider implements TableLockServiceProvider {
@@ -77,6 +78,12 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
 
     private TableLockService() {
         ApiRegistry.getDefault().register(io.dingodb.transaction.api.TableLockService.class, this);
+        Boolean enableTableLockConfig = DingoConfiguration.instance().getVariable().getEnableTableLock();
+        if (enableTableLockConfig == null) {
+            enableTableLock = false;
+            return;
+        }
+        enableTableLock = enableTableLockConfig;
     }
 
     @Override
@@ -98,6 +105,9 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
 
     @Override
     public void lock(TableLock lock) {
+        if (!enableTableLock) {
+           return;
+        }
         if (MetaServiceApiImpl.INSTANCE.isReady()) {
             doLock(lock);
             return;
