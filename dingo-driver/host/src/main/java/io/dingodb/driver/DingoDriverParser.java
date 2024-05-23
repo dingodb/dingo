@@ -40,6 +40,7 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.ProcessInfo;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.audit.DingoAudit;
@@ -501,6 +502,9 @@ public final class DingoDriverParser extends DingoParser {
     private void lockTables(
         Set<RelOptTable> tables, long startTs, long jobSeqId, CompletableFuture<Void> finishedFuture
     ) {
+        if (!DingoConfiguration.instance().getVariable().getEnableTableLock()) {
+            return;
+        }
         List<RelOptTable> waitLocktableList = new ArrayList<>();
         if (connection.getLockTables() != null && !connection.getLockTables().isEmpty()) {
             for (RelOptTable table : tables) {
