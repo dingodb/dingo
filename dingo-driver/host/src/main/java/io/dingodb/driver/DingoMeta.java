@@ -252,7 +252,7 @@ public class DingoMeta extends MetaImpl {
             long jobSeqId = TsoService.getDefault().tso();
             String stmtId = "Stmt_" + sh.toString() + "_" + jobSeqId;
             MdcUtils.setStmtId(stmtId);
-            sh.signature = parser.parseQuery(jobManager, jobSeqId, sql);
+            sh.signature = parser.parseQuery(jobManager, jobSeqId, sql, true);
             sql = sh.signature.sql;
             sqlProfile(sql, sqlProfile, parser);
             addProfileQueue(sqlProfile, connection);
@@ -301,7 +301,7 @@ public class DingoMeta extends MetaImpl {
             statement = (DingoStatement) dingoConnection.getStatement(sh);
             statement.initSqlProfile();
             statement.removeJob(jobManager);
-            Signature signature = parser.parseQuery(jobManager, jobSeqId, sql);
+            Signature signature = parser.parseQuery(jobManager, jobSeqId, sql, false);
             sql = signature.sql;
             // add profile
             sqlProfile(sql, statement.getSqlProfile(), parser);
@@ -835,7 +835,7 @@ public class DingoMeta extends MetaImpl {
                     long jobSeqId = TsoService.getDefault().tso();
                     String stmtId = "Stmt_" + sh + "_" + jobSeqId;
                     MdcUtils.setStmtId(stmtId);
-                    sh.signature = parser.parseQuery(jobManager, jobSeqId, statement.getSql());
+                    sh.signature = parser.parseQuery(jobManager, jobSeqId, statement.getSql(), true);
                     printDingoAudit(sh, statement.getSql(), (DingoConnection) connection, jobSeqId, parser);
                 }
             }

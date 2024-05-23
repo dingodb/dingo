@@ -25,6 +25,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.profile.StmtSummaryMap;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -76,6 +77,8 @@ import static io.dingodb.common.util.Utils.getByteIndexOf;
 @Slf4j
 public class LoadDataOperation implements DmlOperation {
     private final DingoParserContext context;
+
+    private final String schemaName;
 
     private final String filePath;
     private final byte[] fieldsTerm;
@@ -145,7 +148,7 @@ public class LoadDataOperation implements DmlOperation {
             txnRetryCnt = 0;
         }
 
-        String schemaName = sqlLoadData.getSchemaName();
+        this.schemaName = sqlLoadData.getSchemaName();
         this.lineStarting = sqlLoadData.getLineStarting();
         this.ignoreNum = sqlLoadData.getIgnoreNum();
         metaService = MetaService.root().getSubMetaService(schemaName);
@@ -250,10 +253,11 @@ public class LoadDataOperation implements DmlOperation {
         }
         List<IndexTable> indexTableList = table.getIndexes();
         if (indexTableList != null) {
-            insertCount = indexTableList.size() > 0 ? insertCount / (indexTableList.size() + 1)  : insertCount;
+            insertCount = !indexTableList.isEmpty() ? insertCount / (indexTableList.size() + 1)  : insertCount;
         }
         List<Object[]> objects = new ArrayList<>();
         objects.add(new Object[] {insertCount});
+        StmtSummaryMap.addAnalyzeEvent(schemaName, table.name, insertCount);
         return objects.iterator();
     }
 
@@ -456,7 +460,6 @@ public class LoadDataOperation implements DmlOperation {
                 Optional.ofNullable(table.getPartitionStrategy())
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
             .calcPartId(keyValue.getKey(), distributions);
-        // todo replace
         CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
         byte[] txnIdByte = txnId.encode();
         byte[] tableIdByte = table.getTableId().encode();

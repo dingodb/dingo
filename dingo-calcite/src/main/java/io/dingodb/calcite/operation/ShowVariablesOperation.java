@@ -16,8 +16,8 @@
 
 package io.dingodb.calcite.operation;
 
-import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.util.SqlLikeUtils;
+import io.dingodb.meta.InfoSchemaService;
 import org.apache.commons.lang3.StringUtils;
 
 import java.sql.Connection;
@@ -43,16 +43,22 @@ public class ShowVariablesOperation extends QueryOperation {
     }
 
     @Override
-    public Iterator getIterator() {
+    public Iterator<Object[]> getIterator() {
         Properties variables;
         if (isGlobal) {
-            variables = ScopeVariables.getGlobalVariables();
+            InfoSchemaService infoSchemaService = InfoSchemaService.root();
+            Map<String, String> globalVariableMap = infoSchemaService.getGlobalVariables();
+            variables = new Properties();
+            variables.putAll(globalVariableMap);
         } else {
             try {
                 variables = connection.getClientInfo();
                 if (variables.isEmpty()) {
-                    connection.setClientInfo(ScopeVariables.getGlobalVariables());
-                    variables = connection.getClientInfo();
+                    InfoSchemaService infoSchemaService = InfoSchemaService.root();
+                    Map<String, String> globalVariableMap = infoSchemaService.getGlobalVariables();
+                    variables = new Properties();
+                    variables.putAll(globalVariableMap);
+                    connection.setClientInfo(new Properties());
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);

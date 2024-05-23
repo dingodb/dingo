@@ -691,14 +691,10 @@ public class ServerMeta implements Meta {
     }
 
     public synchronized static void loadGlobalVariables(DingoConnection dingoConnection) {
-        if (!ScopeVariables.globalVarEmpty()) {
-            dingoConnection.setClientInfo(ScopeVariables.getGlobalVariables());
-            return;
-        }
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         Map<String, String> globalVariableMap = infoSchemaService.getGlobalVariables();
-        ScopeVariables.putAllGlobalVar(globalVariableMap);
-        dingoConnection.setClientInfo(ScopeVariables.getGlobalVariables());
+        Properties globalProp = ScopeVariables.putAllGlobalVar(globalVariableMap);
+        dingoConnection.setClientInfo(globalProp);
     }
 
     @Override

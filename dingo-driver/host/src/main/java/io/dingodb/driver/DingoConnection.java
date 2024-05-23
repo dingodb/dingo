@@ -483,7 +483,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     }
 
     @Override
-    public String getSchema() throws SQLException {
+    public String getSchema() {
         if (context.getUsedSchema() != null) {
             return context.getUsedSchema().getName();
         }

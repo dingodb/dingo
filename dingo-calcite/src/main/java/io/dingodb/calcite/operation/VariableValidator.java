@@ -81,6 +81,7 @@ public final class VariableValidator {
         } else if (name.endsWith("timeout")
             || name.equalsIgnoreCase("txn_retry_cnt")
             || name.equalsIgnoreCase("max_execution_time")
+            || name.equalsIgnoreCase("rpc_batch_size")
         ) {
             if (!value.matches("\\d+")) {
                 throw DINGO_RESOURCE.incorrectArgType(name).ex();

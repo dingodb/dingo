@@ -22,6 +22,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.TupleMapping;
@@ -144,7 +145,7 @@ public class TransactionStoreInstance {
             } else {
                 response = indexService.txnPrewrite(txnPreWrite.getStartTs(), request);
             }
-            if (response.getKeysAlreadyExist() != null && response.getKeysAlreadyExist().size() > 0) {
+            if (response.getKeysAlreadyExist() != null && !response.getKeysAlreadyExist().isEmpty()) {
                 getJoinedPrimaryKey(txnPreWrite, response.getKeysAlreadyExist());
             }
             if (response.getTxnResult() == null || response.getTxnResult().isEmpty()) {
@@ -199,10 +200,10 @@ public class TransactionStoreInstance {
 
     private String joinPrimaryKeys(String key1, String key2) {
         StringJoiner joiner = new StringJoiner(",");
-        if (!key1.equals("")) {
+        if (!key1.isEmpty()) {
             joiner.add(key1);
         }
-        if (!key2.equals("")) {
+        if (!key2.isEmpty()) {
             joiner.add(key2);
         }
         return joiner.toString();
@@ -682,7 +683,7 @@ public class TransactionStoreInstance {
         private boolean hasMore = true;
         private StoreInstance.Range current;
         private Iterator<KeyValue> keyValues;
-        private OperatorProfile rpcProfile;
+        private final OperatorProfile rpcProfile;
         private final OperatorProfile initRpcProfile;
 
         public ScanIterator(long startTs, StoreInstance.Range range, long timeOut) {
@@ -720,7 +721,7 @@ public class TransactionStoreInstance {
             List<Long> resolvedLocks = new ArrayList<>();
             while (true) {
                 TxnScanRequest txnScanRequest = MAPPER.scanTo(startTs, IsolationLevel.SnapshotIsolation, current);
-                txnScanRequest.setLimit(1024);
+                txnScanRequest.setLimit(ScopeVariables.getRpcBatchSize());
                 txnScanRequest.setResolveLocks(resolvedLocks);
                 txnScanRequest.setCoprocessor(coprocessor);
                 TxnScanResponse txnScanResponse;

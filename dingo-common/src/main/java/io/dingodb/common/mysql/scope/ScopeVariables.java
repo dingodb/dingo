@@ -18,18 +18,18 @@ package io.dingodb.common.mysql.scope;
 
 import io.dingodb.common.metrics.DingoMetrics;
 import lombok.Getter;
-import org.apache.commons.lang3.StringUtils;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
 public final class ScopeVariables {
-    // load from store
-    @Getter
-    private static Properties globalVariables = new Properties();
+
+    private static Properties executorProp = new Properties();
+
+    private static Properties globalVariablesValidator = new Properties();
 
     public static final List<String> immutableVariables = new ArrayList<>();
 
@@ -58,36 +58,18 @@ public final class ScopeVariables {
     private ScopeVariables() {
     }
 
-    public static boolean globalVarEmpty() {
-        return globalVariables.isEmpty();
-    }
-
-    public static synchronized void setGlobalVariable(String key, Object value) {
-        if (StringUtils.isBlank(key)) {
-            return;
-        }
-        if ("metric_log_enable".equalsIgnoreCase(key)) {
-            if (value == null) {
-                return;
-            }
-            metricReporter(value.toString());
-        }
-        globalVariables.put(key, value);
-    }
-
-    public static synchronized String getGlobalVar(String key, String defaultVal) {
-        return globalVariables.getProperty(key, defaultVal);
-    }
-
-    public static synchronized void putAllGlobalVar(Map<String, String> globalVariableMap) {
+    public static synchronized Properties putAllGlobalVar(Map<String, String> globalVariableMap) {
         if (globalVariableMap.containsKey("metric_log_enable")) {
             String metricLogEnable = globalVariableMap.get("metric_log_enable");
             metricReporter(metricLogEnable);
         }
+        Properties globalVariables = new Properties();
         globalVariables.putAll(globalVariableMap);
+        globalVariablesValidator = globalVariables;
+        return globalVariables;
     }
 
-    private static synchronized void metricReporter(String metricLogEnable) {
+    public static synchronized void metricReporter(String metricLogEnable) {
         if ("on".equalsIgnoreCase(metricLogEnable)) {
             DingoMetrics.startReporter();
         } else if ("off".equalsIgnoreCase(metricLogEnable)) {
@@ -96,6 +78,19 @@ public final class ScopeVariables {
     }
 
     public static synchronized boolean containsGlobalVarKey(String key) {
-        return globalVariables.containsKey(key);
+        return globalVariablesValidator.containsKey(key);
+    }
+
+    public static Integer getRpcBatchSize() {
+        return (Integer) executorProp.getOrDefault("rpc_batch_size", 1024);
+    }
+
+    public static synchronized void setExecutorProp(String key, String val) {
+        if ("rpc_batch_size".equalsIgnoreCase(key)) {
+            int rpcBatchSize = Integer.parseInt(val);
+            executorProp.put(key, rpcBatchSize);
+            return;
+        }
+        executorProp.put(key, val);
     }
 }
