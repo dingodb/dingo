@@ -18,7 +18,8 @@ package io.dingodb.license;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Iterator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ServiceLoader;
 
 public interface LicenseServiceProvider {
@@ -27,20 +28,30 @@ public interface LicenseServiceProvider {
     final class Impl {
         private static final Impl INSTANCE = new Impl();
 
+        private final Map<String, LicenseServiceProvider> services = new HashMap<>();
         private final LicenseServiceProvider serviceProvider;
 
         private Impl() {
-            Iterator<LicenseServiceProvider> iterator = ServiceLoader.load(LicenseServiceProvider.class).iterator();
-            this.serviceProvider = iterator.next();
-            if (iterator.hasNext()) {
-                log.warn("Load multi license service provider, use {}.", serviceProvider.getClass().getName());
+            for (LicenseServiceProvider provider : ServiceLoader.load(LicenseServiceProvider.class)) {
+                services.put(provider.key(), provider);
             }
+            this.serviceProvider = services.get(DEFAULT);
         }
     }
 
     LicenseService get();
 
+    String DEFAULT = "default";
+
+    default String key() {
+        return DEFAULT;
+    }
+
     static LicenseServiceProvider getDefault() {
         return Impl.INSTANCE.serviceProvider;
+    }
+
+    static LicenseServiceProvider get(String key) {
+        return Impl.INSTANCE.services.get(key);
     }
 }
