@@ -39,6 +39,7 @@ import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
 import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.calcite.stats.StatsOperator;
+import io.dingodb.calcite.utils.RelNodeCache;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
@@ -98,6 +99,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -105,7 +107,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
@@ -525,7 +529,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (schemaName.equalsIgnoreCase(context.getDefaultSchemaPath().get(0))) {
             throw new RuntimeException("Schema used.");
         }
-        Schema subSchema = rootSchema.getSubSchema(schemaName);
+        DingoSchema subSchema = rootSchema.getSubSchema(schemaName);
         if (subSchema == null) {
             if (!schema.ifExists) {
                 throw SqlUtil.newContextException(
@@ -539,7 +543,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (subSchema.getTableNames().isEmpty()) {
             rootSchema.dropSubSchema(schemaName);
         } else {
-            throw new RuntimeException("Schema not empty.");
+            Set<String> tables = subSchema.getTableNames();
+            tables.forEach(tableName -> {
+                try {
+                    dropTableByName(null, (Connection)context, subSchema, tableName);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }
         timeCtx.stop();
     }
@@ -693,12 +704,18 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             return;
         }
         final String tableName = getTableName(drop.name, context);
+        dropTableByName(drop, (Connection) context, schema, tableName);
+        timeCtx.stop();
+    }
+
+    private void dropTableByName(SqlDropTable drop, Connection context, DingoSchema schema, String tableName)
+        throws SQLException, InterruptedException, ExecutionException {
         int ttl = Optional.mapOrGet(
-            ((Connection) context).getClientInfo("lock_wait_timeout"), Integer::parseInt, () -> 50
+            context.getClientInfo("lock_wait_timeout"), Integer::parseInt, () -> 50
         );
         CommonId tableId = mapOrNull(schema.getMetaService().getTable(tableName), Table::getTableId);
         if (tableId == null) {
-            if (drop.ifExists) {
+            if (drop != null && drop.ifExists) {
                 return;
             } else {
                 throw DINGO_RESOURCE.unknownTable(schema.name() + "." + tableName).ex();
@@ -723,6 +740,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             schema.dropTable(tableName);
             userService.dropTablePrivilege(schema.name(), tableName);
             StatsOperator.delStats(schema.name(), tableName);
+            RelNodeCache.clearRelNode(tableName);
         } catch (TimeoutException e) {
             future.cancel(true);
             throw new RuntimeException("Lock wait timeout exceeded.");
@@ -732,7 +750,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } finally {
             unlockFuture.complete(null);
         }
-        timeCtx.stop();
     }
 
     public void execute(@NonNull SqlTruncate truncate, CalcitePrepare.Context context) throws Exception {
@@ -769,6 +786,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             LogUtils.info(log, "DDL execute truncate lock end lock: {}", lock);
             schema.getMetaService().truncateTable(tableName);
             StatsOperator.delStats(schema.name(), tableName);
+            RelNodeCache.clearRelNode(tableName);
         } catch (TimeoutException e) {
             future.cancel(true);
             throw new RuntimeException("Lock wait timeout exceeded.");

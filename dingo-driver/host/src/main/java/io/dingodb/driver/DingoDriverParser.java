@@ -35,6 +35,7 @@ import io.dingodb.calcite.rel.AutoIncrementShuttle;
 import io.dingodb.calcite.rel.DingoBasicCall;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
+import io.dingodb.calcite.utils.RelNodeCache;
 import io.dingodb.calcite.utils.SqlUtil;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
@@ -252,7 +253,8 @@ public final class DingoDriverParser extends DingoParser {
     public Meta.Signature parseQuery(
         JobManager jobManager,
         long jobSeqId,
-        String sql
+        String sql,
+        boolean prepare
     ) {
         SqlNode sqlNode;
         try {
@@ -323,9 +325,12 @@ public final class DingoDriverParser extends DingoParser {
         List<List<String>> originList = validator.getFieldOrigins(sqlNode);
         final List<ColumnMetaData> columns = getColumnMetaDataList(typeFactory, jdbcType, originList);
 
-        final RelRoot relRoot = convert(sqlNode, false);
-
-        final RelNode relNode = optimize(relRoot.rel);
+        RelNode relNode = RelNodeCache.getRelNode(connection.getSchema(), sql, prepare);
+        if (relNode == null) {
+            final RelRoot relRoot = convert(sqlNode, false);
+            relNode = optimize(relRoot.rel);
+            RelNodeCache.setRelNode(connection.getSchema(), sql, relNode, prepare);
+        }
         planProfile.endOptimize();
         markAutoIncForDml(relNode);
         Location currentLocation = MetaService.root().currentLocation();

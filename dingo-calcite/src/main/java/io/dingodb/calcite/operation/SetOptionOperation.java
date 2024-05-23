@@ -23,11 +23,14 @@ import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlSetOption;
+import org.apache.commons.lang3.StringUtils;
 
 import java.sql.Connection;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.util.Objects;
+
+import static io.dingodb.common.mysql.scope.ScopeVariables.metricReporter;
 
 public class SetOptionOperation implements DdlOperation {
 
@@ -95,7 +98,8 @@ public class SetOptionOperation implements DdlOperation {
                 }
             } else if ("SYSTEM".equals(scope)) {
                 putGlobalVariable(name, value);
-                ScopeVariables.setGlobalVariable(name, value);
+            } else if ("EXECUTOR".equals(scope)) {
+                ScopeVariables.setExecutorProp(name, value);
             } else {
                 if (name.equals("transaction_isolation")) {
                     connection.setClientInfo("onetime_transaction_isolation", value);
@@ -127,6 +131,15 @@ public class SetOptionOperation implements DdlOperation {
     }
 
     public static void putGlobalVariable(String key, String value) {
+        if (StringUtils.isBlank(key)) {
+            return;
+        }
+        if ("metric_log_enable".equalsIgnoreCase(key)) {
+            if (value == null) {
+                return;
+            }
+            metricReporter(value);
+        }
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         infoSchemaService.putGlobalVariable(key, value);
     }

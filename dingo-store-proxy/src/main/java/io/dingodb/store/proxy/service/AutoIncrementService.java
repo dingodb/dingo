@@ -21,8 +21,11 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.config.VariableConfiguration;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.util.Optional;
+import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.store.proxy.Configuration;
 import lombok.experimental.Delegate;
+
+import java.util.Map;
 
 import static io.dingodb.store.proxy.common.Mapping.mapping;
 
@@ -43,17 +46,20 @@ public class AutoIncrementService {
             .filter(v -> v > 0)
             .orElseThrow("The config autoIncrementCacheCount must be a positive integer greater than 0.");
 
+        InfoSchemaService infoSchemaService = InfoSchemaService.root();
+        Map<String, String> globalVariableMap = infoSchemaService.getGlobalVariables();
+
         Integer increment = Optional.ofNullable(DingoConfiguration.instance().getVariable())
             .map(VariableConfiguration::getAutoIncrementIncrement)
             .ifAbsentSet(
-                () -> Integer.valueOf(ScopeVariables.getGlobalVar("auto_increment_increment", "1")))
+                () -> Integer.valueOf(globalVariableMap.getOrDefault("auto_increment_increment", "1")))
             .filter(v -> v > 0)
             .orElseThrow("The config autoIncrementIncrement must be a positive integer greater than 0.");
 
         Integer offset = Optional.ofNullable(DingoConfiguration.instance().getVariable())
             .map(VariableConfiguration::getAutoIncrementOffset)
             .ifAbsentSet(
-                () -> Integer.valueOf(ScopeVariables.getGlobalVar("auto_increment_offset", "1")))
+                () -> Integer.valueOf(globalVariableMap.getOrDefault("auto_increment_offset", "1")))
             .filter(v -> v > 0)
             .orElseThrow("The config autoIncrementOffset must be a positive integer greater than 0.");
 

@@ -18,13 +18,14 @@ package io.dingodb.exec.fun.mysql;
 
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
-import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
+import io.dingodb.meta.InfoSchemaService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Map;
 
 @Slf4j
 public class ScopeVarFun extends BinaryOp {
@@ -49,8 +50,11 @@ public class ScopeVarFun extends BinaryOp {
         String value = null;
 
         if (variableName.startsWith("global.")) {
+            InfoSchemaService infoSchemaService = InfoSchemaService.root();
+            Map<String, String> globalVariableMap = infoSchemaService.getGlobalVariables();
+
             variableName = variableName.substring(7);
-            value = ScopeVariables.getGlobalVar(variableName, "");
+            value = globalVariableMap.getOrDefault(variableName, "");
         } else if (variableName.startsWith("session.")) {
             variableName = variableName.substring(8);
             try {
