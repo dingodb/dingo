@@ -17,8 +17,122 @@
 plugins {
     id 'java-conventions'
     id 'java-library'
+    id 'maven-publish'
 }
+
+apply plugin: 'maven'
+apply plugin: 'signing'
 
 dependencies {
     implementation project(':dingo-common')
+}
+
+tasks.register('javadocJar', Jar) {
+    classifier 'javadoc'
+    from javadoc
+}
+
+tasks.register('sourcesJar', Jar) {
+    classifier 'sources'
+    from sourceSets.main.allSource
+}
+
+tasks.register('fatJar', Jar) {
+    from(
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
+    )
+    with jar
+
+    exclude "META-INF/*.SF"
+    exclude "META-INF/*.DSA"
+    exclude "META-INF/*.RSA"
+}
+
+fatJar.dependsOn([
+    ':dingo-common:jar'
+])
+
+tasks.named("build") { x ->
+    x.finalizedBy("fatJar")
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "OSSRH"
+            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+            /**
+             * will manually release the artifactory
+             */
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl;
+            credentials {
+                username = System.getenv("MAVEN_USERNAME") != null ? System.getenv("MAVEN_USERNAME") : project.findProperty("ossrhUsername")
+                password = System.getenv("MAVEN_TOKEN") != null ? System.getenv("MAVEN_TOKEN") : project.findProperty("ossrhPassword")
+            }
+        }
+    }
+
+    publications {
+        maven(MavenPublication) {
+            groupId = 'io.dingodb'
+            artifactId = 'dingo-license-api'
+            artifacts = [fatJar, sourcesJar, javadocJar]
+        }
+        maven(MavenPublication) {
+            pom {
+                name = 'dingo-license-api'
+                packaging = 'jar'
+                // optionally artifactId can be defined here
+                description = 'License API for DingoDB'
+                url = 'http://www.dingodb.datacanvas.com/'
+
+                scm {
+                    connection = 'scm:svn:http://foo.googlecode.com/svn/trunk/'
+                    developerConnection = 'scm:svn:https://foo.googlecode.com/svn/trunk/'
+                    url = 'http://foo.googlecode.com/svn/trunk/'
+                }
+
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'dingodb'
+                        name = 'DingoDB develop team'
+                        email = 'dingodb@zetyun.com'
+                    }
+                }
+            }
+            pom.withXml {
+                def dependenciesNode = asNode().appendNode('dependencies')
+                configurations.implementation.allDependencies.each {
+                    if (!it.name.startsWith('dingo')) {
+                        def dependencyNode = dependenciesNode.appendNode('dependency')
+                        dependencyNode.appendNode('groupId', it.group)
+                        dependencyNode.appendNode('artifactId', it.name)
+                        dependencyNode.appendNode('version', it.version)
+                    }
+                }
+            }
+            if (!version.endsWith("SNAPSHOT")) {
+                signing {
+                    sign publishing.publications.maven
+                }
+            }
+        }
+    }
+}
+
+
+project.gradle.taskGraph.whenReady { graph ->
+    project.tasks.findAll().forEach { task ->
+        if (task.name.contains("signArchives")) {
+            task.enabled = false
+        }
+    }
 }

@@ -16,10 +16,14 @@
 
 package io.dingodb.license;
 
+import io.dingodb.common.util.Optional;
+
 public interface LicenseService {
 
     static LicenseService getDefault() {
-        return LicenseServiceProvider.getDefault().get();
+        return Optional.mapOrNull(
+            LicenseServiceProvider.get(LicenseServiceProvider.DEFAULT), LicenseServiceProvider::get
+        );
     }
 
     boolean check(long timestamp, int storeMap, int locations);

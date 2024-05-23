@@ -26,26 +26,27 @@ import lombok.extern.slf4j.Slf4j;
 public class LicenseCheckTask implements Runnable {
 
     private static ClusterService clusterService;
-    private static LicenseService licenseService;
 
     static {
         clusterService = ClusterService.getDefault();
-        licenseService = LicenseService.getDefault();
     }
 
     @Override
     public void run() {
-        long timestamp = TsoService.getDefault().timestamp();
+        LicenseService licenseService = LicenseService.getDefault();
+        if (licenseService != null) {
+            long timestamp = TsoService.getDefault().timestamp();
 
-        int locations = clusterService.getLocations();
-        int storeMap = clusterService.getStoreMap();
+            int locations = clusterService.getLocations();
+            int storeMap = clusterService.getStoreMap();
 
-        boolean check = licenseService.check(timestamp, storeMap, locations);
-        LogUtils.info(log, "license check: {}", check);
-        if (!check) {
-            clusterService.configCoordinator(true, "License check failed");
-        } else {
-            clusterService.configCoordinator(false, "");
+            boolean check = licenseService.check(timestamp, storeMap, locations);
+            LogUtils.info(log, "license check: {}", check);
+            if (!check) {
+                clusterService.configCoordinator(true, "License check failed");
+            } else {
+                clusterService.configCoordinator(false, "");
+            }
         }
     }
 }
