@@ -30,4 +30,11 @@ public class VariableConfiguration {
     private Integer autoIncrementIncrement;
     private Integer autoIncrementOffset;
     private Boolean enableTableLock;
+
+    public boolean getEnableTableLock() {
+        if (enableTableLock == null) {
+            return true;
+        }
+        return enableTableLock;
+    }
 }
