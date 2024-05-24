@@ -543,14 +543,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (subSchema.getTableNames().isEmpty()) {
             rootSchema.dropSubSchema(schemaName);
         } else {
-            Set<String> tables = subSchema.getTableNames();
-            tables.forEach(tableName -> {
-                try {
-                    dropTableByName(null, (Connection)context, subSchema, tableName);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            });
+            throw new RuntimeException("Schema not empty.");
         }
         timeCtx.stop();
     }

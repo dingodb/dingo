@@ -243,7 +243,8 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 table.version, table.tupleType(), table.keyMapping()
             );
             this.storeService = storeService(tableId, regionId);
-            if (tableId.type == CommonId.CommonType.INDEX && ((IndexTable) table).indexType.isVector) {
+            if (tableId.type == CommonId.CommonType.INDEX && table instanceof IndexTable
+                && ((IndexTable) table).indexType.isVector) {
                 indexService = indexService(tableId, regionId);
             }
             this.transactionStoreInstance = new TransactionStoreInstance(storeService, indexService, partitionId);
