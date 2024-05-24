@@ -75,8 +75,10 @@ public final class RelOpUtils {
         if (iterator instanceof DingoTransformedIterator) {
             DingoTransformedIterator transformedIterator = (DingoTransformedIterator) iterator;
             OperatorProfile profile1 = (OperatorProfile) transformedIterator.getProfile();
-            profile1.end();
-            profile.getChildren().add(profile1);
+            if (profile1 != null) {
+                profile1.end();
+                profile.getChildren().add(profile1);
+            }
         }
         profile.time(tmp);
         profile.decreaseCount();
@@ -107,8 +109,10 @@ public final class RelOpUtils {
         if (sourceIterator instanceof DingoTransformedIterator) {
             DingoTransformedIterator transformedIterator = (DingoTransformedIterator) sourceIterator;
             OperatorProfile profile1 = (OperatorProfile) transformedIterator.getProfile();
-            profile1.end();
-            profile.getChildren().add(profile1);
+            if (profile1 != null) {
+                profile1.end();
+                profile.getChildren().add(profile1);
+            }
         }
         profile.time(tmp);
         profile.decreaseCount();
@@ -135,8 +139,10 @@ public final class RelOpUtils {
         if (sourceIterator instanceof DingoTransformedIterator) {
             DingoTransformedIterator transformedIterator = (DingoTransformedIterator) sourceIterator;
             OperatorProfile profile1 = (OperatorProfile) transformedIterator.getProfile();
-            profile1.end();
-            profile.getChildren().add(profile1);
+            if (profile1 != null) {
+                profile1.end();
+                profile.getChildren().add(profile1);
+            }
         }
         profile.time(tmp);
 
