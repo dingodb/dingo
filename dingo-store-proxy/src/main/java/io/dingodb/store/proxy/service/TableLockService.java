@@ -188,7 +188,7 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
             locks.add(lock);
             tableLocks.lockQueue.remove(lock);
             waitLocks.remove(lock);
-            lock.unlockFuture.whenCompleteAsync((v, e) -> unlock(lock), Executors.LOCK_FUTURE_POOL);
+            lock.unlockFuture.whenComplete((v, e) -> unlock(lock));
             LogUtils.info(log, "Locked {}", lock);
         } else {
             if (lock.lockFuture.isCancelled()) {

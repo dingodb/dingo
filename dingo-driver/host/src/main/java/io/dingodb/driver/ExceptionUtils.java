@@ -85,7 +85,7 @@ public final class ExceptionUtils {
 
     public static @NonNull DingoSqlException toRuntime(@NonNull NumberFormatException exception) {
         return new DingoSqlException(
-            exception.getMessage(),
+            exception.getMessage() == null ? exception.toString() : exception.getMessage(),
             NUMBER_FORMAT_ERROR_CODE,
             DingoSqlException.CUSTOM_ERROR_STATE
         );
