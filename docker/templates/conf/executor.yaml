@@ -22,6 +22,7 @@ store:
     bufferSize: 67108864
     bufferNumber: 2
     fileSize: 67108864
+    path: /opt/dingo/localStore
 security:
     ldap:
         ldapHost: ldap

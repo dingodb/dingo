@@ -265,7 +265,13 @@ public final class TaskImpl implements Task {
                     } else {
                         taskStatus.setErrorType(ErrorType.TaskFin);
                     }
-                    operator.fin(0, FinWithException.of(taskStatus), vertex);
+                    try {
+                        operator.fin(0, FinWithException.of(taskStatus), vertex);
+                    } catch (RuntimeException exception) {
+                        LogUtils.error(log, "Run Task Fin:{} catch operator:{} run Exception:{}",
+                            getId().toString(), vertex.getId(), exception, exception);
+                        throw exception;
+                    }
                 } finally {
                     activeTaskCount.decrementAndGet();
                     LogUtils.debug(log, "TaskImpl run cost: {}ms.", System.currentTimeMillis() - startTime);

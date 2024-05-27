@@ -41,14 +41,13 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.ProcessInfo;
+import io.dingodb.common.audit.DingoAudit;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
-import io.dingodb.common.concurrent.Executors;
-import io.dingodb.common.audit.DingoAudit;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.common.profile.ExecProfile;
 import io.dingodb.common.profile.PlanProfile;
-import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
@@ -371,11 +370,14 @@ public final class DingoDriverParser extends DingoParser {
                 currentLocation, DefinitionMapper.mapToDingoType(parasType));
             jobSeqId = transaction.getForUpdateTs();
         }
-        try {
-            lockTables(tables, startTs, jobSeqId, transaction.getFinishedFuture());
-        } catch (Exception e) {
-            LogUtils.error(log, e.getMessage(), e);
-            throw e;
+        // Automatically submitted selection, no locks
+        if (!(transaction.isAutoCommit() && sqlNode.getKind() == SqlKind.SELECT)) {
+            try {
+                lockTables(tables, startTs, jobSeqId, transaction.getFinishedFuture());
+            } catch (Exception e) {
+                LogUtils.error(log, e.getMessage(), e);
+                throw e;
+            }
         }
         String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
         maxExecutionTimeStr = maxExecutionTimeStr == null ? "0" : maxExecutionTimeStr;
@@ -541,20 +543,23 @@ public final class DingoDriverParser extends DingoParser {
             if (nextTtl < 0) {
                 lockFuture.cancel(true);
                 unlockFuture.complete(null);
+                unlockFuture.join();
                 throw new RuntimeException(String.format("Lock wait timeout exceeded. tableId: %s.", lock.tableId.toString()));
             }
             try {
                 lockFuture.get(nextTtl, TimeUnit.SECONDS);
-                finishedFuture.whenCompleteAsync((v, t) -> unlockFuture.complete(null), Executors.LOCK_FUTURE_POOL);
+                finishedFuture.whenComplete((v, t) -> unlockFuture.complete(null));
             } catch (TimeoutException e) {
                 LogUtils.error(log, e.getMessage(), e);
                 lockFuture.cancel(true);
                 unlockFuture.complete(null);
+                unlockFuture.join();
                 throw new RuntimeException(String.format("Lock wait timeout exceeded. tableId: %s.", lock.tableId.toString()));
             } catch (Exception e) {
                 LogUtils.error(log, e.getMessage(), e);
                 lockFuture.cancel(true);
                 unlockFuture.complete(null);
+                unlockFuture.join();
                 throw ExceptionUtils.toRuntime(e);
             }
         }
@@ -592,7 +597,14 @@ public final class DingoDriverParser extends DingoParser {
         );
         long startTs = transaction.getStartTs();
         long jobSeqId = TsoService.getDefault().tso();
-        lockTables(tables, transaction.getStartTs(), jobSeqId, transaction.getFinishedFuture());
+        if (!(transaction.isAutoCommit() && sqlNode.getKind() == SqlKind.SELECT)) {
+            try {
+                lockTables(tables, startTs, jobSeqId, transaction.getFinishedFuture());
+            } catch (Exception e) {
+                LogUtils.error(log, e.getMessage(), e);
+                throw e;
+            }
+        }
         String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
         maxExecutionTimeStr = maxExecutionTimeStr == null ? "0" : maxExecutionTimeStr;
         long maxTimeOut = Long.parseLong(maxExecutionTimeStr);

@@ -19,9 +19,9 @@ package io.dingodb.exec.transaction.base;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
-import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.MdcUtils;
+import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
@@ -156,6 +156,7 @@ public abstract class BaseTransaction implements ITransaction {
             LogUtils.info(log, "CleanUp future cancel is {}, the current {} ", future.isCancelled(), transactionOf());
         }
         finishedFuture.complete(null);
+        finishedFuture.join();
         LogUtils.info(log, "CleanUp finishedFuture the current {} end", transactionOf());
         if (getType() == TransactionType.NONE) {
             return;

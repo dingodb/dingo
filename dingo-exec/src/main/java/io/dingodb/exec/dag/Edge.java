@@ -24,6 +24,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
+
 @Setter
 @Getter
 @AllArgsConstructor
@@ -39,7 +41,7 @@ public class Edge {
     }
 
     public boolean transformToNext(Object[] tuple) {
-        return transformToNext(Context.builder().build(), tuple);
+        return transformToNext(Context.builder().keyState(new ArrayList<>()).build(), tuple);
     }
 
     public boolean transformToNext(Context context, Object[] tuple) {

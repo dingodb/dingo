@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.ReduceRelOpParam;
 import io.dingodb.exec.utils.RelOpUtils;
@@ -47,7 +48,9 @@ public final class ReduceRelOpOperator extends SoleOutOperator {
         ReduceRelOpParam param = vertex.getParam();
         Edge edge = vertex.getSoleEdge();
         CacheOp relOp = (CacheOp) param.getRelOp();
-        RelOpUtils.forwardCacheOpResults(relOp, vertex.getSoleEdge());
+        if (!(fin instanceof FinWithException)) {
+            RelOpUtils.forwardCacheOpResults(relOp, vertex.getSoleEdge());
+        }
         edge.fin(fin);
         relOp.clear();
     }
