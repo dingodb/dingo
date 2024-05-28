@@ -5,8 +5,8 @@ DingoDB中文文档
    :maxdepth: 3
 
    概览/index
+   新手指南/index
 
-搜索
 ==================
 
 * :ref:`genindex`
