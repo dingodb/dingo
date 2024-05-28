@@ -82,7 +82,7 @@ public final class ScopeVariables {
     }
 
     public static Integer getRpcBatchSize() {
-        return (Integer) executorProp.getOrDefault("rpc_batch_size", 1024);
+        return (Integer) executorProp.getOrDefault("rpc_batch_size", 40960);
     }
 
     public static synchronized void setExecutorProp(String key, String val) {
