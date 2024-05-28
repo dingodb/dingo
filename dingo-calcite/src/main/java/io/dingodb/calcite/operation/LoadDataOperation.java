@@ -73,6 +73,7 @@ import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 import static io.dingodb.common.util.Utils.getByteIndexOf;
+import static io.dingodb.exec.transaction.util.TransactionUtil.max_pre_write_count;
 
 @Slf4j
 public class LoadDataOperation implements DmlOperation {
@@ -331,7 +332,7 @@ public class LoadDataOperation implements DmlOperation {
         tuples = (Object[]) schema.convertFrom(tuples, new ImportFileConverter(escaped));
 
         if (isTxn) {
-            if (dataGenNum % 1000 == 0) {
+            if (dataGenNum % max_pre_write_count == 0) {
                 refreshTxnId = true;
             }
             insertWithTxn(tuples);
