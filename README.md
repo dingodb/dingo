@@ -2,7 +2,7 @@
 
 [DingoDB](https://github.com/dingodb/dingo) is an open-source distributed multimodal vector database designed and developed by [DataCanvas](https://www.datacanvas.com/). It integrates multiple features such as online strong consistency, relational semantics, and vector semantics, making it a unique multimodal database product. In addition, DingoDB has excellent horizontal scalability and scaling capabilities, easily meeting enterprise-level high availability requirements. At the same time, it supports multiple language interfaces and is fully compatible with the MySQL protocol, providing users with high flexibility and convenience. DingoDB demonstrates comprehensive and outstanding advantages in terms of functionality, performance, and ease of use, bringing users an unprecedented data management experience.
 
-![](docs/images/dingo_stack.png)
+![](docs/en/images/dingo_stack.png)
 
 ## Key Features
 
