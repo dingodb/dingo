@@ -19,6 +19,9 @@ package io.dingodb.server.executor.schedule;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.license.LicenseService;
+import io.dingodb.sdk.service.Services;
+import io.dingodb.sdk.service.VersionService;
+import io.dingodb.store.proxy.Configuration;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,6 +36,7 @@ public class LicenseCheckTask implements Runnable {
 
     @Override
     public void run() {
+        String servers = Configuration.coordinators();
         LicenseService licenseService = LicenseService.getDefault();
         if (licenseService != null) {
             long timestamp = TsoService.getDefault().timestamp();
@@ -40,7 +44,7 @@ public class LicenseCheckTask implements Runnable {
             int locations = clusterService.getLocations();
             int storeMap = clusterService.getStoreMap();
 
-            boolean check = licenseService.check(timestamp, storeMap, locations);
+            boolean check = licenseService.check(timestamp, storeMap, locations, servers);
             LogUtils.info(log, "license check: {}", check);
             if (!check) {
                 clusterService.configCoordinator(true, "License check failed");

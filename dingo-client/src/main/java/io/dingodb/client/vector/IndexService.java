@@ -86,10 +86,10 @@ public class IndexService {
 
         Operation.Fork fork = null;
         try {
-            fork = operation.fork(Any.wrap(parameters), indexInfo);
+            fork = operation.fork(Any.wrap(parameters), indexInfo, context);
         } catch (Exception ignore) {
             indexInfo = Parameters.nonNull(cache.getIndexNewly(schemaName, indexName), "Index not found.");
-            fork = operation.fork(Any.wrap(parameters), indexInfo);
+            fork = operation.fork(Any.wrap(parameters), indexInfo, context);
         }
 
         if (operation.stateful()) {
@@ -111,7 +111,7 @@ public class IndexService {
                 } catch (Exception e) {
                     if (OperationUtils.getCause(e) instanceof DingoClientException.InvalidRouteTableException) {
                         indexInfo = Parameters.nonNull(cache.getIndexNewly(schemaName, indexName), "Index not found.");
-                        fork = operation.fork(Any.wrap(parameters), indexInfo);
+                        fork = operation.fork(Any.wrap(parameters), indexInfo, context);
                         continue;
                     }
                     throw new RuntimeException(e);

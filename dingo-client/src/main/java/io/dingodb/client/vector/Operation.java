@@ -16,6 +16,7 @@
 
 package io.dingodb.client.vector;
 
+import io.dingodb.client.VectorContext;
 import io.dingodb.client.common.IndexInfo;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
@@ -60,7 +61,7 @@ public interface Operation {
         }
     }
 
-    default Fork fork(Any parameters, Index index) {
+    default Fork fork(Any parameters, Index index, VectorContext context) {
         throw new UnsupportedOperationException();
     }
 

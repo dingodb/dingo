@@ -110,6 +110,10 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         Executors.execute("meta-lock", this::lock, true);
     }
 
+    public void close() {
+        lockService.close();
+    }
+
     private void retryLock() {
         needLock = true;
         lockRunner.forceFollow(this::lock);

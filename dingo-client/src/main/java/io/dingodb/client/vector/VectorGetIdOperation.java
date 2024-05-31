@@ -16,6 +16,7 @@
 
 package io.dingodb.client.vector;
 
+import io.dingodb.client.VectorContext;
 import io.dingodb.client.common.IndexInfo;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.service.entity.index.VectorGetBorderIdRequest;
@@ -44,7 +45,7 @@ public class VectorGetIdOperation implements Operation {
     }
 
     @Override
-    public Fork fork(Any parameters, Index indexInfo) {
+    public Fork fork(Any parameters, Index indexInfo, VectorContext context) {
         Boolean isGetMin = parameters.getValue();
         NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().getEntityId()));
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();

@@ -16,6 +16,7 @@
 
 package io.dingodb.client.vector;
 
+import io.dingodb.client.VectorContext;
 import io.dingodb.client.common.ArrayWrapperList;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.utils.Any;
@@ -41,7 +42,8 @@ public class VectorAddOperation implements Operation {
     }
 
     @Override
-    public Fork fork(Any parameters, Index indexInfo) {
+    public Fork fork(Any parameters, Index indexInfo, VectorContext context) {
+        boolean update = context.isUpdate();
         List<VectorWithId> vectors = parameters.getValue();
         NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().getEntityId()));
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
@@ -62,7 +64,7 @@ public class VectorAddOperation implements Operation {
 
         for (int i = 0; i < vectors.size(); i++) {
             VectorWithId vector = vectors.get(i);
-            if (index.isWithAutoIncrment()) {
+            if (index.isWithAutoIncrment() && !update) {
                 long id = indexInfo.autoIncrementService.next(indexInfo.id);
                 vector.setId(id);
             }

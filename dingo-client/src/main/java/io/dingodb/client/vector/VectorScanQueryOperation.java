@@ -16,6 +16,7 @@
 
 package io.dingodb.client.vector;
 
+import io.dingodb.client.VectorContext;
 import io.dingodb.client.common.VectorScanQuery;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.common.utils.Optional;
@@ -51,7 +52,7 @@ public class VectorScanQueryOperation implements Operation {
     }
 
     @Override
-    public Fork fork(Any parameters, Index indexInfo) {
+    public Fork fork(Any parameters, Index indexInfo, VectorContext context) {
         VectorScanQuery query = parameters.getValue();
         NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().getEntityId()));
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();

@@ -230,4 +230,6 @@ public interface MetaService {
     void updateAutoIncrement(CommonId tableId, long autoIncrementId);
 
     long getLastId(CommonId tableId);
+
+    void close();
 }

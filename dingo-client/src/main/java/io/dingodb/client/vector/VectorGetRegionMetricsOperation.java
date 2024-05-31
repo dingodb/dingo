@@ -16,6 +16,7 @@
 
 package io.dingodb.client.vector;
 
+import io.dingodb.client.VectorContext;
 import io.dingodb.sdk.common.utils.Any;
 import io.dingodb.sdk.service.entity.common.VectorIndexMetrics;
 import io.dingodb.sdk.service.entity.index.VectorGetRegionMetricsRequest;
@@ -43,7 +44,7 @@ public class VectorGetRegionMetricsOperation implements Operation {
     }
 
     @Override
-    public Fork fork(Any parameters, Index indexInfo) {
+    public Fork fork(Any parameters, Index indexInfo, VectorContext context) {
         NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().getEntityId()));
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
 

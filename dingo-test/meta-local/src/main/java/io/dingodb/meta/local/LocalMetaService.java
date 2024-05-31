@@ -82,6 +82,11 @@ public class LocalMetaService implements MetaService {
         tableDefinitions.clear();
     }
 
+    @Override
+    public void close() {
+
+    }
+
     public static void setLocation(Location location) {
         LocalMetaService.location = location;
     }

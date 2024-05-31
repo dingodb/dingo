@@ -147,6 +147,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
         this.cache = cache;
     }
 
+    @Override
+    public void close() {
+        api.close();
+        cache.clear();
+    }
+
     private String cleanTableName(String name) {
         return cleanName(name, "Table");
     }
