@@ -109,6 +109,8 @@ public class MetaCache {
 
     private final LoadingCache<CommonId, NavigableMap<ComparableByteArray, RangeDistribution>> distributionCache;
 
+    private boolean isClose = false;
+
     public MetaCache(Set<Location> coordinators) {
         this.coordinators = coordinators;
         this.metaService = Services.metaService(coordinators);
@@ -117,7 +119,7 @@ public class MetaCache {
         this.distributionCache = buildDistributionCache();
         this.cache = new ConcurrentHashMap<>();
         Executors.execute("watch-meta", () -> {
-            while (true) {
+            while (!isClose) {
                 try {
                     watch();
                 } catch (Exception e) {
@@ -138,6 +140,11 @@ public class MetaCache {
         distributionCache.invalidateAll();
     }
 
+    public void close() {
+        clear();
+        isClose = true;
+    }
+
     private void watch() {
         WatchResponse response = metaService.watch(
             tso(),
@@ -146,7 +153,7 @@ public class MetaCache {
         clear();
         long watchId = response.getWatchId();
         long revision = -1;
-        while (true) {
+        while (!isClose) {
             response = metaService.watch(
                 tso(),
                 WatchRequest.builder().requestUnion(ProgressRequest.builder().watchId(watchId).build()).build()

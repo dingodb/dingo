@@ -26,6 +26,6 @@ public interface LicenseService {
         );
     }
 
-    boolean check(long timestamp, int storeMap, int locations);
+    boolean check(long timestamp, int storeMap, int locations, String servers);
 
 }

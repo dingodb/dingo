@@ -119,6 +119,7 @@ public class OperationServiceV2 {
 
     public void close() {
         jobManager.close();
+        metaService.close();
     }
 
     public MetaService getSubMetaService(String schemaName) {

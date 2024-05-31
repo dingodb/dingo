@@ -16,6 +16,7 @@
 
 package io.dingodb.client.vector;
 
+import io.dingodb.client.VectorContext;
 import io.dingodb.client.common.VectorDistanceArray;
 import io.dingodb.client.common.VectorSearch;
 import io.dingodb.sdk.common.utils.Any;
@@ -50,7 +51,7 @@ public class VectorSearchOperation implements Operation {
     }
 
     @Override
-    public Fork fork(Any parameters, Index indexInfo) {
+    public Fork fork(Any parameters, Index indexInfo, VectorContext context) {
         VectorSearch vectorSearch = parameters.getValue();
         NavigableSet<Task> subTasks = new TreeSet<>(Comparator.comparing(t -> t.getRegionId().getEntityId()));
         Map<DingoCommonId, Any> subTaskMap = new HashMap<>();
