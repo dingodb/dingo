@@ -319,6 +319,7 @@ public class DingoMeta extends MetaImpl {
             callback.execute();
             if (signature.statementType == StatementType.OTHER_DDL) {
                 addSqlProfile(statement.getSqlProfile(), connection);
+                ((DingoConnection) connection).setCommandStartTime(0);
             }
             final MetaResultSet metaResultSet = MetaResultSet.create(
                 sh.connectionId,

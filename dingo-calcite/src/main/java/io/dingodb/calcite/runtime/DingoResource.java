@@ -122,4 +122,7 @@ public interface DingoResource {
 
     @BaseMessage("Error 1060 (42S21): Duplicate column names are not allowed in table definition")
     ExInst<DingoSqlException> duplicateColumn();
+
+    @BaseMessage("Error 1105 (HY000): Check illegalArgumentException")
+    ExInst<DingoSqlException> illegalArgumentException();
 }

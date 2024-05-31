@@ -928,12 +928,16 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .filter(Column::isPrimary)
             .sorted(Comparator.comparingInt(Column::getPrimaryKeyIndex))
             .collect(Collectors.toList());
-        DefinitionUtils.checkAndConvertRangePartition(
-            keyColumns.stream().map(Column::getName).collect(Collectors.toList()),
-            Collections.emptyList(),
-            keyColumns.stream().map(Column::getType).collect(Collectors.toList()),
-            Collections.singletonList(detail.getOperand())
-        );
+        try {
+            DefinitionUtils.checkAndConvertRangePartition(
+                keyColumns.stream().map(Column::getName).collect(Collectors.toList()),
+                Collections.emptyList(),
+                keyColumns.stream().map(Column::getType).collect(Collectors.toList()),
+                Collections.singletonList(detail.getOperand())
+            );
+        } catch (Exception e) {
+            throw DINGO_RESOURCE.illegalArgumentException().ex();
+        }
         LogUtils.info(log, "DDL execute SqlAlterTableDistribution tableName: {}, partitionDefinition: {}", tableName, detail);
         schema.addDistribution(tableName, sqlAlterTableDistribution.getPartitionDefinition());
         timeCtx.stop();

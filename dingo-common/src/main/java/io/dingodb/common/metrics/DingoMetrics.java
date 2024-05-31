@@ -20,6 +20,7 @@ import com.codahale.metrics.CachedGauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.codahale.metrics.UniformReservoir;
 import com.codahale.metrics.jmx.JmxReporter;
 import io.dingodb.common.concurrent.Executors;
 import lombok.extern.slf4j.Slf4j;
@@ -150,7 +151,7 @@ public final class DingoMetrics {
     }
 
     public static Timer timer(final @NonNull String name) {
-        return metricRegistry.timer(name);
+        return metricRegistry.timer(name, () -> new Timer(new UniformReservoir()));
     }
 
     public static Timer.Context getTimeContext(final @NonNull String name) {
