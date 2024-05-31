@@ -279,8 +279,20 @@ public final class DingoDriverParser extends DingoParser {
             planProfile.end();
             DingoDdlVerify.verify(sqlNode, connection);
             execProfile = new ExecProfile("DDL");
-            final DdlExecutor ddlExecutor = PARSER_CONFIG.parserFactory().getDdlExecutor();
-            ddlExecutor.executeDdl(connection, sqlNode);
+            Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
+            while (retry-- > 0) {
+                try {
+                    final DdlExecutor ddlExecutor = PARSER_CONFIG.parserFactory().getDdlExecutor();
+                    ddlExecutor.executeDdl(connection, sqlNode);
+                    break;
+                } catch (IllegalArgumentException e) {
+                    // Method not found: execute([class org.apache.calcite.sql.ddl.SqlCreateTable,org.apache.calcite.jdbc.CalcitePrepare$Context])
+                    LogUtils.error(log, e.getMessage(), e);
+                    if (!(sqlNode instanceof DingoSqlCreateTable)) {
+                        throw e;
+                    }
+                }
+            }
             execProfile.end();
             return new DingoSignature(
                 ImmutableList.of(),

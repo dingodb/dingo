@@ -87,6 +87,7 @@ public abstract class BaseTransaction implements ITransaction {
     protected Future commitFuture;
     protected CacheToObject cacheToObject;
     protected AtomicBoolean cancel;
+    protected AtomicBoolean primaryKeyPreWrite;
     protected CommitProfile commitProfile;
 
     protected CompletableFuture<Void> finishedFuture = new CompletableFuture<>();
@@ -98,6 +99,7 @@ public abstract class BaseTransaction implements ITransaction {
         this.txnInstanceId = new CommonId(CommonId.CommonType.TXN_INSTANCE, txnId.seq, 0L);
         this.status = TransactionStatus.START;
         this.cancel = new AtomicBoolean(false);
+        this.primaryKeyPreWrite = new AtomicBoolean(false);
         this.channelMap = new ConcurrentHashMap<>();
         this.cache = new TransactionCache(txnId);
         this.sqlList = new ArrayList<>();
@@ -113,6 +115,7 @@ public abstract class BaseTransaction implements ITransaction {
         this.txnId = new CommonId(CommonId.CommonType.TRANSACTION, TransactionManager.getServerId().seq, startTs);
         this.status = TransactionStatus.START;
         this.cancel = new AtomicBoolean(false);
+        this.primaryKeyPreWrite = new AtomicBoolean(false);
         this.channelMap = new ConcurrentHashMap<>();
         this.cache = new TransactionCache(txnId);
         this.sqlList = new ArrayList<>();
@@ -265,6 +268,20 @@ public abstract class BaseTransaction implements ITransaction {
         return false;
     }
 
+    private void rollBackPrimaryKey(CacheToObject cacheToObject) {
+        boolean result = TransactionUtil.rollBackPrimaryKey(
+            txnId,
+            cacheToObject.getTableId(),
+            cacheToObject.getPartId(),
+            isolationLevel,
+            startTs,
+            primaryKey
+        );
+        if (!result) {
+            throw new RuntimeException(txnId + ",rollBackPrimaryKey false");
+        }
+    }
+
     @Override
     public synchronized void commit(JobManager jobManager) {
         MdcUtils.setTxnId(txnId.toString());
@@ -297,13 +314,14 @@ public abstract class BaseTransaction implements ITransaction {
             checkContinue();
             // 1、PreWritePrimaryKey 、heartBeat
             preWritePrimaryKey();
+            this.primaryKeyPreWrite.compareAndSet(false, true);
             this.status = TransactionStatus.PRE_WRITE_PRIMARY_KEY;
             commitProfile.endPreWritePrimary();
             if (cacheToObject.getMutation().getOp() == Op.CheckNotExists) {
                 LogUtils.info(log, "{} PreWritePrimaryKey Op is CheckNotExists", transactionOf());
                 return;
             }
-            LogUtils.info(log, "{} PreWritePrimaryKey end", transactionOf());
+            LogUtils.info(log, "{} PreWritePrimaryKey end, PrimaryKey is {}", transactionOf(), Arrays.toString(primaryKey));
             checkContinue();
             // 2、generator job、task、PreWriteOperator
             long jobSeqId = TransactionManager.nextTimestamp();
@@ -471,7 +489,7 @@ public abstract class BaseTransaction implements ITransaction {
         if (getType() == TransactionType.NONE) {
             return;
         }
-        if (this.status == TransactionStatus.START) {
+        if (this.status == TransactionStatus.START || !primaryKeyPreWrite.get()) {
             LogUtils.warn(log, "The current {} status is start, has no data to rollback", transactionOf());
             return;
         }
@@ -481,7 +499,10 @@ public abstract class BaseTransaction implements ITransaction {
         }
         long rollBackStart = System.currentTimeMillis();
         LogUtils.info(log, "{} RollBack Start", transactionOf());
-        Location currentLocation = MetaService.root().currentLocation();
+        if (cacheToObject != null) {
+            rollBackPrimaryKey(cacheToObject);
+        }
+         Location currentLocation = MetaService.root().currentLocation();
         CommonId jobId = CommonId.EMPTY_JOB;
         try {
             // 1、get commit_ts

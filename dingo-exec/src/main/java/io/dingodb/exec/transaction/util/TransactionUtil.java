@@ -19,6 +19,7 @@ package io.dingodb.exec.transaction.util;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.TupleMapping;
@@ -40,6 +41,7 @@ import io.dingodb.store.api.transaction.data.prewrite.ForUpdateTsCheck;
 import io.dingodb.store.api.transaction.data.prewrite.LockExtraData;
 import io.dingodb.store.api.transaction.data.prewrite.LockExtraDataList;
 import io.dingodb.store.api.transaction.data.prewrite.PessimisticCheck;
+import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
 import io.dingodb.store.api.transaction.data.rollback.TxnPessimisticRollBack;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
@@ -298,6 +300,28 @@ public class TransactionUtil {
         if (hasException){
             throw new RuntimeException(e.getMessage());
         }
+    }
+
+    public static boolean rollBackPrimaryKey(CommonId txnId, CommonId tableId, CommonId newPartId,
+                                   int isolationLevel, long startTs, byte[] key) {
+        // 1、Async call sdk TxnRollBack
+        TxnBatchRollBack rollBackRequest = TxnBatchRollBack.builder().
+            isolationLevel(IsolationLevel.of(isolationLevel))
+            .startTs(startTs)
+            .keys(Collections.singletonList(key))
+            .build();
+        Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
+        while (retry-- > 0) {
+            try {
+                StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
+                return store.txnBatchRollback(rollBackRequest);
+            } catch (RegionSplitException e) {
+                LogUtils.error(log, e.getMessage(), e);
+                // 2、regin split
+                newPartId = singleKeySplitRegionId(tableId, txnId, key);
+            }
+        }
+        return false;
     }
 
 }
