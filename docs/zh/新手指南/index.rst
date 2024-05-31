@@ -2,7 +2,8 @@
 ========
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 3
    :glob:
 
-   快速入门.md
+   Windows安装/index
+   SQL基本操作.md
