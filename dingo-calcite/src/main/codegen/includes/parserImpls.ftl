@@ -192,9 +192,10 @@ void TableElement(List<SqlNode> list) :
             [<SCALAR>]
             columnList = ParenthesizedSimpleIdentifierList()
         )
-        [ <WITH> withColumnList = ParenthesizedSimpleIdentifierList() ]
-        [ <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} } ]
-        [
+        ( <WITH> withColumnList = ParenthesizedSimpleIdentifierList()
+         |
+          <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
+         |
            <PARTITION> <BY>
            {
                partitionDefinition = new PartitionDefinition();
@@ -202,11 +203,11 @@ void TableElement(List<SqlNode> list) :
                partitionDefinition.setColumns(readNames());
                partitionDefinition.setDetails(readPartitionDetails());
            }
-        ]
-        [
+         |
             <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
-        ]
-        [ <PARAMETERS> properties = readProperties() ]
+         |
+           <PARAMETERS> properties = readProperties()
+        )*
         {
             list.add(new SqlIndexDeclaration(s.end(this), index, columnList, withColumnList, properties,
             partitionDefinition, replica, indexType, engine));
@@ -313,9 +314,9 @@ SqlCreate SqlCreateUser(Span s, boolean replace) :
     ( <QUOTED_STRING> | <IDENTIFIER> )
      { user = token.image; }
     [ <AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER>) { host = token.image; }  ]
-    <IDENTIFIED> 
+    <IDENTIFIED>
     (
-    <WITH> (<QUOTED_STRING> | <IDENTIFIER>) { plugin = token.image; } [<AS> <QUOTED_STRING> { pluginDn = token.image; }] 
+    <WITH> (<QUOTED_STRING> | <IDENTIFIER>) { plugin = token.image; } [<AS> <QUOTED_STRING> { pluginDn = token.image; }]
     |
     <BY>  <QUOTED_STRING> { password = token.image; }
     [ <REQUIRE> (  <SSL> { requireSsl = "SSL"; } | <NONE> { requireSsl  = "NONE"; }) ]

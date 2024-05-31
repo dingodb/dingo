@@ -45,18 +45,14 @@ import io.dingodb.sdk.service.entity.coordinator.QueryRegionRequest;
 import io.dingodb.sdk.service.entity.coordinator.RegionCmd.RequestNest.SplitRequest;
 import io.dingodb.sdk.service.entity.coordinator.SplitRegionRequest;
 import io.dingodb.sdk.service.entity.meta.AddIndexOnTableRequest;
-import io.dingodb.sdk.service.entity.meta.CreateIndexRequest;
 import io.dingodb.sdk.service.entity.meta.CreateSchemaRequest;
 import io.dingodb.sdk.service.entity.meta.CreateTablesRequest;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.DropIndexOnTableRequest;
-import io.dingodb.sdk.service.entity.meta.DropIndexRequest;
 import io.dingodb.sdk.service.entity.meta.DropSchemaRequest;
 import io.dingodb.sdk.service.entity.meta.DropTablesRequest;
 import io.dingodb.sdk.service.entity.meta.EntityType;
 import io.dingodb.sdk.service.entity.meta.GenerateTableIdsRequest;
-import io.dingodb.sdk.service.entity.meta.GetIndexRequest;
-import io.dingodb.sdk.service.entity.meta.GetIndexesRequest;
 import io.dingodb.sdk.service.entity.meta.GetSchemasRequest;
 import io.dingodb.sdk.service.entity.meta.GetSchemasResponse;
 import io.dingodb.sdk.service.entity.meta.GetTableByNameRequest;
@@ -64,7 +60,6 @@ import io.dingodb.sdk.service.entity.meta.GetTableMetricsRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableMetricsResponse;
 import io.dingodb.sdk.service.entity.meta.GetTableRequest;
 import io.dingodb.sdk.service.entity.meta.GetTablesRequest;
-import io.dingodb.sdk.service.entity.meta.IndexDefinition;
 import io.dingodb.sdk.service.entity.meta.Partition;
 import io.dingodb.sdk.service.entity.meta.ReservedSchemaIds;
 import io.dingodb.sdk.service.entity.meta.Schema;
@@ -73,9 +68,7 @@ import io.dingodb.sdk.service.entity.meta.TableIdWithPartIds;
 import io.dingodb.sdk.service.entity.meta.TableMetrics;
 import io.dingodb.sdk.service.entity.meta.TableMetricsWithId;
 import io.dingodb.sdk.service.entity.meta.TableWithPartCount;
-import io.dingodb.sdk.service.entity.meta.UpdateTablesRequest;
 import io.dingodb.store.proxy.Configuration;
-import io.dingodb.store.proxy.common.Mapping;
 import io.dingodb.store.proxy.service.AutoIncrementService;
 import io.dingodb.store.proxy.service.CodecService;
 import io.dingodb.tso.TsoService;
@@ -100,7 +93,6 @@ import java.util.stream.Stream;
 
 import static io.dingodb.common.CommonId.CommonType.TABLE;
 import static io.dingodb.partition.DingoPartitionServiceProvider.HASH_FUNC_NAME;
-import static io.dingodb.store.proxy.common.Mapping.mapping;
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 
 @Slf4j
@@ -123,8 +115,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
     }
 
-    private static Pattern pattern = Pattern.compile("^[A-Z_][A-Z\\d_]*$");
-    private static Pattern warnPattern = Pattern.compile(".*[a-z]+.*");
+    private static final Pattern pattern = Pattern.compile("^[A-Z_][A-Z\\d_]*$");
+    private static final Pattern warnPattern = Pattern.compile(".*[a-z]+.*");
 
     public final DingoCommonId id;
     public final String name;
