@@ -291,6 +291,13 @@ public final class DingoDriverParser extends DingoParser {
                     if (!(sqlNode instanceof DingoSqlCreateTable) || retry <= 0) {
                         throw e;
                     }
+                } catch (RuntimeException e) {
+                    // java.lang.RuntimeException: While invoking method 'public void io.dingodb.calcite.DingoDdlExecutor.execute(org.apache.calcite.sql.ddl.SqlCreateTable,org.apache.calcite.jdbc.CalcitePrepare$Context)'
+                    LogUtils.error(log, e.getMessage(), e);
+                    if (!(sqlNode instanceof DingoSqlCreateTable) || retry <= 0
+                        || !e.getMessage().startsWith("While invoking method")) {
+                        throw e;
+                    }
                 }
             }
             execProfile.end();
