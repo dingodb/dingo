@@ -92,7 +92,7 @@ public class DingoClient {
 
     @Deprecated
     public boolean dropTable(String schema, String table) {
-        return operationService.dropTable(schema, table);
+        return dropTables(schema, Collections.singletonList(table));
     }
 
     @Deprecated
