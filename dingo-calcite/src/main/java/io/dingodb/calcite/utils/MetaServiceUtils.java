@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.utils;
 
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.common.CommonId;
 import io.dingodb.meta.MetaService;
 import org.apache.calcite.plan.RelOptTable;
@@ -31,15 +32,19 @@ public final class MetaServiceUtils {
     }
 
     public static @NonNull CommonId getTableId(RelOptTable table) {
-        String tableName = getTableName(table);
-        MetaService metaService = getMetaService(table);
-        return metaService.getTable(tableName).getTableId();
+        //String tableName = getTableName(table);
+        //MetaService metaService = getMetaService(table);
+        //return metaService.getTable(tableName).getTableId();
+        DingoTable dingoTable = table.unwrapOrThrow(DingoTable.class);
+        return dingoTable.getTable().tableId;
     }
 
     public static @NonNull TableInfo getTableInfo(RelOptTable table) {
-        String tableName = getTableName(table);
+        //String tableName = getTableName(table);
         MetaService metaService = getMetaService(table);
-        CommonId tableId = metaService.getTable(tableName).getTableId();
+        DingoTable dingoTable = table.unwrapOrThrow(DingoTable.class);
+        CommonId tableId = dingoTable.getTable().tableId;
+        //CommonId tableId = metaService.getTable(tableName).getTableId();
         return new TableInfo(
             tableId,
             metaService.getRangeDistribution(tableId)
