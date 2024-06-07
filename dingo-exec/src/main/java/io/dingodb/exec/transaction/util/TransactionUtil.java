@@ -125,7 +125,11 @@ public class TransactionUtil {
 
     public static IndexTable getIndexDefinitions(CommonId tableId) {
         MetaService root = MetaService.root();
-        return (IndexTable) root.getTable(tableId);
+        Table table = root.getTable(tableId);
+        if (!(table instanceof IndexTable)) {
+            LogUtils.error(log, "except indexTable, bug not, tableId:{}, act table", tableId, table);
+        }
+        return (IndexTable) table;
     }
     public static List<byte[]> mutationToKey(List<Mutation> mutations) {
         List<byte[]> keys = new ArrayList<>(mutations.size());
