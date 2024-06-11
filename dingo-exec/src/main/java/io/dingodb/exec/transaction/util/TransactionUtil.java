@@ -126,8 +126,16 @@ public class TransactionUtil {
     public static IndexTable getIndexDefinitions(CommonId tableId) {
         MetaService root = MetaService.root();
         Table table = root.getTable(tableId);
-        if (!(table instanceof IndexTable)) {
-            LogUtils.error(log, "except indexTable, bug not, tableId:{}, act table", tableId, table);
+        if (table == null) {
+            LogUtils.error(log, "expect indexTable, bug is not, indexTableId:{}, act table is null", tableId);
+        } else if (!(table instanceof IndexTable)) {
+            LogUtils.error(log, "expect indexTable, bug is not, indexTableId:{}, act table:{}", tableId, table);
+            List<IndexTable> indexTableList = table.getIndexes();
+            if (indexTableList != null && !indexTableList.isEmpty()) {
+                indexTableList.forEach(indexTable -> {
+                    LogUtils.error(log, "expect indexTable, bug is not, tableId:{}, loop indexId:{}", tableId, indexTable.getTableId());
+                });
+            }
         }
         return (IndexTable) table;
     }
