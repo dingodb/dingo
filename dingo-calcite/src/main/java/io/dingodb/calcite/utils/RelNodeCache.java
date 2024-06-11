@@ -78,10 +78,10 @@ public final class RelNodeCache {
     }
 
     public static void clearRelNode(String tableName) {
-        Collection<Map<String, RelNode>> collection = relNodeCache.asMap().values();
-        collection.forEach(map -> {
-            map.keySet().removeIf(key -> key.contains(tableName)
-              || key.contains(tableName.toUpperCase()) || key.contains(tableName.toLowerCase()));
-        });
+        //Collection<Map<String, RelNode>> collection = relNodeCache.asMap().values();
+        //collection.forEach(map -> {
+        //    map.keySet().removeIf(key -> key.contains(tableName)
+        //      || key.contains(tableName.toUpperCase()) || key.contains(tableName.toLowerCase()));
+        //});
     }
 }

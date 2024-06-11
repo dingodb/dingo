@@ -733,7 +733,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             schema.dropTable(tableName);
             userService.dropTablePrivilege(schema.name(), tableName);
             StatsOperator.delStats(schema.name(), tableName);
-            RelNodeCache.clearRelNode(tableName);
         } catch (TimeoutException e) {
             future.cancel(true);
             throw new RuntimeException("Lock wait timeout exceeded.");
@@ -779,7 +778,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             LogUtils.info(log, "DDL execute truncate lock end lock: {}", lock);
             schema.getMetaService().truncateTable(tableName);
             StatsOperator.delStats(schema.name(), tableName);
-            RelNodeCache.clearRelNode(tableName);
         } catch (TimeoutException e) {
             future.cancel(true);
             throw new RuntimeException("Lock wait timeout exceeded.");

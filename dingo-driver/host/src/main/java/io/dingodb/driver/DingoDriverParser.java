@@ -343,12 +343,8 @@ public final class DingoDriverParser extends DingoParser {
         List<List<String>> originList = validator.getFieldOrigins(sqlNode);
         final List<ColumnMetaData> columns = getColumnMetaDataList(typeFactory, jdbcType, originList);
 
-        RelNode relNode = RelNodeCache.getRelNode(connection.getSchema(), sql, prepare);
-        if (relNode == null) {
-            final RelRoot relRoot = convert(sqlNode, false);
-            relNode = optimize(relRoot.rel);
-            RelNodeCache.setRelNode(connection.getSchema(), sql, relNode, prepare);
-        }
+        final RelRoot relRoot = convert(sqlNode, false);
+        RelNode relNode = optimize(relRoot.rel);
         planProfile.endOptimize();
         markAutoIncForDml(relNode);
         Location currentLocation = MetaService.root().currentLocation();
