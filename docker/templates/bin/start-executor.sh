@@ -22,7 +22,7 @@ LOCAL_STORE_JAR_PATH=$(find $ROOT -name dingo-store-local*.jar)
 NET_JAR_PATH=$(find $ROOT -name dingo-net-*.jar)
 
 java ${JAVA_OPTS} \
-     -Dlogback.configurationFile=file:${ROOT}/conf/logback-executor.xml \
+     -Dlogback.configurationFile=file:${ROOT}/conf/logback-executor-release.xml \
      -classpath ${JAR_PATH}:${NET_JAR_PATH}:${LOCAL_STORE_JAR_PATH}  \
      io.dingodb.server.executor.Starter \
      --config ${ROOT}/conf/executor.yaml \
