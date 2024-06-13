@@ -23,7 +23,7 @@ NET_JAR_PATH=$(find $ROOT -name dingo-net-*.jar)
 JAVA_OPTS="-Xms2g -Xmx2g -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+HeapDumpOnOutOfMemoryError"
 
 nohup java ${JAVA_OPTS} \
-     -Dlogback.configurationFile=file:${ROOT}/conf/logback-executor-release.xml \
+     -Dlogback.configurationFile=file:${ROOT}/conf/logback-executor.xml \
      -classpath ${JAR_PATH}:${NET_JAR_PATH}:${LOCAL_STORE_JAR_PATH}  \
      io.dingodb.server.executor.Starter \
      --config ${ROOT}/conf/executor.yaml \
