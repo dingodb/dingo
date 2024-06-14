@@ -6,4 +6,5 @@
    :glob:
 
    Windows安装/index
+   Linux安装/index
    SQL基本操作.md
