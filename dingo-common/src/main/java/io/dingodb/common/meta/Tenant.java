@@ -14,26 +14,23 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.api;
+package io.dingodb.common.meta;
 
-import io.dingodb.common.CommonId;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 
-public interface StoreService {
+@Builder
+@Data
+@AllArgsConstructor
+public class Tenant {
+    private long id;
+    private String name;
+    private String comment;
+    private long createTimestamp;
+    private long updateTimestamp;
 
-    static StoreService getDefault() {
-        return StoreServiceProvider.getDefault().get();
-    }
-
-    default StoreInstance getInstance(CommonId tableId, CommonId regionId) {
-        return null;
-    }
-
-    default StoreInstance getInstance(CommonId tableId, CommonId regionId, CommonId indexId) {
-        return null;
-    }
-
-    default void deleteInstance(CommonId id) {
+    public Tenant() {
 
     }
-
 }

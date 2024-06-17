@@ -14,26 +14,17 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.api;
+package io.dingodb.common.meta;
 
-import io.dingodb.common.CommonId;
+public enum SchemaState {
+    NONE(0),
+    DELETE_ONLY(1),
+    WRITE_ONLY(2),
+    WRITE_REORG(3),
+    PUBLIC(4);
 
-public interface StoreService {
-
-    static StoreService getDefault() {
-        return StoreServiceProvider.getDefault().get();
+    public int code;
+    SchemaState(int code) {
+        this.code = code;
     }
-
-    default StoreInstance getInstance(CommonId tableId, CommonId regionId) {
-        return null;
-    }
-
-    default StoreInstance getInstance(CommonId tableId, CommonId regionId, CommonId indexId) {
-        return null;
-    }
-
-    default void deleteInstance(CommonId id) {
-
-    }
-
 }

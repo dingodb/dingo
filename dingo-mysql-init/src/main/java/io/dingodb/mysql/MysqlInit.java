@@ -177,7 +177,7 @@ public final class MysqlInit {
         System.out.println("INIT GLOBAL VARIABLE VALUES");
     }
 
-    private static PutRequest putRequest(Object resourceKey, Object valObj) {
+    public static PutRequest putRequest(Object resourceKey, Object valObj) {
         String key = GLOBAL_VAR_PREFIX_BEGIN + resourceKey.toString();
         String value = valObj.toString();
         return PutRequest.builder()

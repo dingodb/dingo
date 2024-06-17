@@ -16,7 +16,10 @@
 
 package io.dingodb.common.mysql;
 
-public class InformationSchemaConstant {
+public final class InformationSchemaConstant {
     public static final String GLOBAL_VAR_PREFIX_BEGIN = "global_variables|0|";
     public static final String GLOBAL_VAR_PREFIX_END = "global_variables|1|";
+
+    private InformationSchemaConstant() {
+    }
 }
