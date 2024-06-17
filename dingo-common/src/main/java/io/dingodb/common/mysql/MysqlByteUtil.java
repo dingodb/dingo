@@ -116,8 +116,8 @@ public class MysqlByteUtil {
 
     public static Time bytesToTimeLittleEndian(byte[] bytes) {
         //byte flags = bytes[0];
-        byte[] dayBytes = new byte[4];
-        System.arraycopy(bytes, 1, dayBytes, 0, dayBytes.length);
+        //byte[] dayBytes = new byte[4];
+        //System.arraycopy(bytes, 1, dayBytes, 0, dayBytes.length);
         //int day = bytesToIntLittleEndian(dayBytes);
 
         int hour = bytes[5] & 0xff;
@@ -126,8 +126,7 @@ public class MysqlByteUtil {
         //byte[] nsBytes = new byte[4];
         //System.arraycopy(bytes, 8, nsBytes, 0, dayBytes.length);
         //int ns = bytesToIntLittleEndian(nsBytes);
-        Time time = new Time(hour, minute, second);
-        return time;
+        return new Time(hour, minute, second);
     }
 
     public static Timestamp bytesToTimeStampLittleEndian(byte[] bytes) {
@@ -150,6 +149,10 @@ public class MysqlByteUtil {
             .withMinute(minute)
             .withSecond(second);
         return Timestamp.valueOf(dateTime);
+    }
+
+    public static byte[] toByteArray(Long value) {
+        return ByteBuffer.allocate(8).putLong(value).array();
     }
 
 }

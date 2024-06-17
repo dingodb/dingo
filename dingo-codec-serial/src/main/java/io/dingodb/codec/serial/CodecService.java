@@ -23,7 +23,6 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
 
 import java.util.List;

@@ -16,19 +16,15 @@
 
 package io.dingodb.calcite.rel;
 
-import io.dingodb.calcite.utils.RelDataTypeUtils;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;

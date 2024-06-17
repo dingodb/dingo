@@ -18,7 +18,6 @@ package io.dingodb.calcite.schema;
 
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
-import io.dingodb.calcite.operation.TxnImportDataOperation;
 import io.dingodb.calcite.operation.TxnInsertIndexOperation;
 import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.codec.CodecService;
@@ -85,21 +84,21 @@ public class DingoSchema extends AbstractSchema {
 
     public void createIndex(@NonNull String tableName, @NonNull TableDefinition indexDefinition) {
         CommonId tableId = getTableId(tableName);
-        DingoTable table = (DingoTable) getTable(tableName);
+        DingoTable table = getTable(tableName);
         Table definition = table.getTable();
         metaService.createIndex(tableId, TableDefinition.builder().name(definition.name).build(), indexDefinition);
         recreateIndexData(tableName, indexDefinition.getName(), definition);
     }
 
     public void createDifferenceIndex(String tableName, String indexName, IndexTable indexTable) {
-        DingoTable table = (DingoTable) getTable(tableName);
+        DingoTable table = getTable(tableName);
         metaService.createDifferenceIndex(table.getTableId(), table.getIndexId(indexName), indexTable);
-        table = (DingoTable) getTable(tableName);
+        table = getTable(tableName);
         recreateIndexData(tableName, indexName, table.getTable());
     }
 
     public void dropIndex(@NonNull String tableName, @NonNull String index) {
-        DingoTable table = (DingoTable) getTable(tableName);
+        DingoTable table = getTable(tableName);
         CommonId indexId = table.getIndexTableDefinitions().stream()
             .filter(i -> i.name.equalsIgnoreCase(index.toUpperCase()))
             .findAny().orElseThrow(() -> DingoResource.DINGO_RESOURCE.unknownIndex(index).ex()).tableId;

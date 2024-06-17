@@ -18,7 +18,10 @@ package io.dingodb.common.util;
 
 import javax.xml.bind.DatatypeConverter;
 
-public class ByteUtils {
+public final class ByteUtils {
+    private ByteUtils() {
+    }
+
     public static byte[] hexStringToByteArray(String hexStr) {
         hexStr = hexStr.toUpperCase();
         int len = hexStr.length() / 2;

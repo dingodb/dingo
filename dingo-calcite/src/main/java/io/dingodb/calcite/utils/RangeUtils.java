@@ -16,10 +16,8 @@
 
 package io.dingodb.calcite.utils;
 
-import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.meta.entity.Table;
@@ -29,7 +27,6 @@ import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 

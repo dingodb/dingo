@@ -16,10 +16,7 @@
 
 package io.dingodb.calcite.operation;
 
-import io.dingodb.calcite.utils.MetaServiceUtils;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
@@ -33,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;
-import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.Utils.buildKeyStr;
 
