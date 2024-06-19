@@ -36,6 +36,11 @@ public class QueryPacket extends MysqlPacket {
         packetId = mm.read();
         flag = mm.read();
         message = mm.readBytes();
+        if (message[message.length - 1] == 0x00) {
+            byte[] tmp = new byte[message.length - 1];
+            System.arraycopy(message, 0, tmp, 0, tmp.length);
+            message = tmp;
+        }
     }
 
     public void write(ByteBuf buffer) {

@@ -52,7 +52,8 @@ public class DingoRelOpRule extends ConverterRule {
             relOp.getHints(),
             convert(relOp.getInput(), traits),
             relOp.getRowType(),
-            relOp.getRelOp()
+            relOp.getRelOp(),
+            relOp.getFilter()
         );
     }
 }

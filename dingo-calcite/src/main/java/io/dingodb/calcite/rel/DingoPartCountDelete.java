@@ -32,6 +32,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 public final class DingoPartCountDelete extends AbstractRelNode implements DingoRel {
     @Getter
+    private double rowCount;
+    @Getter
     private final RelOptTable table;
     @Getter
     private final boolean doDeleting;
@@ -71,5 +73,11 @@ public final class DingoPartCountDelete extends AbstractRelNode implements Dingo
     @Override
     public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
+        rowCount = super.estimateRowCount(mq);
+        return rowCount;
     }
 }

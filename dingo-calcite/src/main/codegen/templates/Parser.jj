@@ -1140,7 +1140,7 @@ SqlNode SqlStmt() :
         stmt = SqlDrop()
     |
 </#if>
-        stmt = SqlDesc()
+        stmt = SqlDescTable()
     |
         stmt = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
     |
@@ -1582,7 +1582,7 @@ SqlNode SqlDescribe() :
         stmt = SqlQueryOrDml() {
             // DESCRIBE STATEMENT currently does the same as EXPLAIN. See
             //   [CALCITE-1221] Implement DESCRIBE DATABASE, CATALOG, STATEMENT
-            final SqlExplainLevel detailLevel = SqlExplainLevel.EXPPLAN_ATTRIBUTES;
+            final SqlExplainLevel detailLevel = SqlExplainLevel.NO_ATTRIBUTES;
             final SqlExplain.Depth depth = SqlExplain.Depth.PHYSICAL;
             final SqlExplainFormat format = SqlExplainFormat.TEXT;
             return new SqlExplain(s.end(stmt),

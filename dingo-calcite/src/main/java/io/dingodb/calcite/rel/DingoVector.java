@@ -22,6 +22,7 @@ import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Table;
+import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -38,6 +39,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.List;
 
 public class DingoVector extends LogicalDingoVector implements DingoRel {
+    @Getter
+    private double rowCount;
 
     public DingoVector(
         RelOptCluster cluster,
@@ -83,4 +86,9 @@ public class DingoVector extends LogicalDingoVector implements DingoRel {
         );
     }
 
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
+        rowCount = super.estimateRowCount(mq);
+        return rowCount;
+    }
 }

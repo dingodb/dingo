@@ -34,7 +34,6 @@ import io.dingodb.exec.operator.params.TxnGetByIndexParam;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.MetaService;
-import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
@@ -56,10 +55,10 @@ import static io.dingodb.common.util.NoBreakFunctions.wrap;
 import static io.dingodb.common.util.Utils.calculatePrefixCount;
 
 @Slf4j
-public final class TxnGetByIndexOperator extends FilterProjectOperator {
+public class TxnGetByIndexOperator extends FilterProjectOperator {
     public static final TxnGetByIndexOperator INSTANCE = new TxnGetByIndexOperator();
 
-    private TxnGetByIndexOperator() {
+    public TxnGetByIndexOperator() {
     }
 
     @Override
@@ -94,7 +93,7 @@ public final class TxnGetByIndexOperator extends FilterProjectOperator {
         }
     }
 
-    private static Object[] lookUp(Object[] tuples, TxnGetByIndexParam param, Task task) {
+    public static Object[] lookUp(Object[] tuples, TxnGetByIndexParam param, Task task) {
         CommonId txnId = task.getTxnId();
         TransactionType transactionType = task.getTransactionType();
         TupleMapping indices = param.getKeyMapping();
@@ -138,7 +137,7 @@ public final class TxnGetByIndexOperator extends FilterProjectOperator {
         return response;
     }
 
-    private static Object[] createGetLocal(
+    public static Object[] createGetLocal(
         byte[] keys,
         CommonId txnId,
         CommonId partId,
@@ -202,7 +201,7 @@ public final class TxnGetByIndexOperator extends FilterProjectOperator {
         return null;
     }
 
-    private static Iterator<KeyValue> createScanLocalIterator(
+    protected Iterator<KeyValue> createScanLocalIterator(
         CommonId txnId,
         CommonId partId,
         CommonId indexId,
@@ -222,7 +221,7 @@ public final class TxnGetByIndexOperator extends FilterProjectOperator {
             wrap(ByteUtils::mapping)::apply);
     }
 
-    private static @NonNull Iterator<Object[]> createMergedIterator(
+    public static @NonNull Iterator<Object[]> createMergedIterator(
         Iterator<KeyValue> localKVIterator,
         Iterator<KeyValue> kvKVIterator,
         KeyValueCodec decoder

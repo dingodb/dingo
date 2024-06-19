@@ -269,5 +269,9 @@ public final class Utils {
         return -1;
     }
 
+    public static boolean parallel(int keepOrder) {
+        return keepOrder == 0 || keepOrder == 2;
+    }
+
     public static final int INTEGER_LEN_IN_BYTES = 4;
 }

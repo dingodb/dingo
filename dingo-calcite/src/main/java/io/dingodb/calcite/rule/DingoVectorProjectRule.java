@@ -108,7 +108,7 @@ public class DingoVectorProjectRule extends RelRule<DingoVectorProjectRule.Confi
         if (RexUtil.isIdentity(newProjectRexNodes, newVector.getSelectedType())) {
             call.transformTo(newVector);
         } else {
-            if (vectorSelected.size() > 0) {
+            if (!vectorSelected.isEmpty()) {
                 return;
             }
             call.transformTo(

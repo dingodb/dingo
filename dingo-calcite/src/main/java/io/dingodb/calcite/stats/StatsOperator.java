@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.stats;
 
+import io.dingodb.calcite.utils.RelNodeCache;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
@@ -134,6 +135,8 @@ public abstract class StatsOperator {
             tuple[0] = schemaName;
             tuple[1] = tableName;
             delStats(bucketsStore, bucketsCodec, tuple);
+            StatsCache.removeCache(schemaName, tableName);
+            //RelNodeCache.clearRelNode(tableName);
         } catch (Exception ignored) {
         }
     }

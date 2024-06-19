@@ -864,13 +864,13 @@ void schemaTableSegment(List<String> names, List<SqlParserPos> positions) :
     }
 }
 
-SqlDesc SqlDesc(): {
+SqlDescTable SqlDescTable(): {
     final Span s;
     SqlIdentifier tableName = null;
 } {
     <DESC> { s = span(); }
     tableName = CompoundTableIdentifier()
-    { return new SqlDesc(s.end(this), tableName); }
+    { return new SqlDescTable(s.end(this), tableName); }
 }
 
 SqlNode ScopeVariable(): {

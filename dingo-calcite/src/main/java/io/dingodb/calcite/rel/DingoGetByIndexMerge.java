@@ -22,9 +22,12 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -33,7 +36,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static io.dingodb.calcite.meta.DingoCostModelV1.memFactor;
+
 public class DingoGetByIndexMerge extends DingoGetByIndex implements DingoRel {
+    @Getter
+    private double rowCount;
 
     @Getter
     private TupleMapping keyMapping;
@@ -72,4 +79,18 @@ public class DingoGetByIndexMerge extends DingoGetByIndex implements DingoRel {
         return visitor.visit(this);
     }
 
+    @Override
+    public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, @NonNull RelMetadataQuery mq) {
+        RelOptCost cost = super.computeSelfCost(planner, mq);
+        double rowCount = this.estimateRowCount(mq);
+        RelOptCost memCost = DingoCost.FACTORY.makeCost(rowCount * memFactor, 0, 0);
+        assert cost != null;
+        return cost.plus(memCost);
+    }
+
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
+        rowCount = super.estimateRowCount(mq);
+        return rowCount;
+    }
 }

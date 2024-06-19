@@ -59,4 +59,8 @@ public interface DingoRel extends PhysicalNode {
     default @Nullable Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
         return null;
     }
+
+    default double getRowCount() {
+        return 0;
+    }
 }

@@ -35,7 +35,6 @@ import io.dingodb.calcite.rel.AutoIncrementShuttle;
 import io.dingodb.calcite.rel.DingoBasicCall;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
-import io.dingodb.calcite.utils.RelNodeCache;
 import io.dingodb.calcite.utils.SqlUtil;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
@@ -413,18 +412,42 @@ public final class DingoDriverParser extends DingoParser {
             statementType = Meta.StatementType.CALL;
             String logicalPlan = RelOptUtil.dumpPlan("", relNode, SqlExplainFormat.TEXT,
                 SqlExplainLevel.ALL_ATTRIBUTES);
-            return new DingoExplainSignature(
-                new ArrayList<>(Collections.singletonList(metaData(typeFactory, 0, "PLAN",
-                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null))),
-                sql,
-                createParameterList(parasType),
-                null,
-                cursorFactory,
-                statementType,
-                sqlNode.toString(),
-                logicalPlan,
-                job
-            );
+            if (explain.getDetailLevel() == SqlExplainLevel.EXPPLAN_ATTRIBUTES) {
+                return new DingoExplainSignature(
+                    new ArrayList<>(Collections.singletonList(metaData(typeFactory, 0, "PLAN",
+                        new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null))),
+                    sql,
+                    createParameterList(parasType),
+                    null,
+                    cursorFactory,
+                    statementType,
+                    sqlNode.toString(),
+                    logicalPlan,
+                    job,
+                    explain.getDetailLevel()
+                );
+            } else {
+                ColumnMetaData colMeta1 = metaData(typeFactory, 0, "id",
+                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null);
+                ColumnMetaData colMeta2 = metaData(typeFactory, 1, "estRows",
+                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.DOUBLE), null);
+                ColumnMetaData colMeta3 = metaData(typeFactory, 1, "task",
+                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null);
+                ColumnMetaData colMeta4 = metaData(typeFactory, 2, "accessObject",
+                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null);
+                ColumnMetaData colMeta5 = metaData(typeFactory, 3, "info",
+                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null);
+                List<ColumnMetaData> metaDataList = new ArrayList<>();
+                metaDataList.add(colMeta1);
+                metaDataList.add(colMeta2);
+                metaDataList.add(colMeta3);
+                metaDataList.add(colMeta4);
+                metaDataList.add(colMeta5);
+                return new ExplainSignature(metaDataList, sql, createParameterList(parasType),
+                    null,
+                    cursorFactory,
+                    statementType, relNode);
+            }
         }
         planProfile.endLock();
         return new DingoSignature(

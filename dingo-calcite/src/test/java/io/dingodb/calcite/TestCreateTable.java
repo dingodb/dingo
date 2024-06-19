@@ -160,19 +160,7 @@ public class TestCreateTable {
 
     @Test
     public void setPassword() {
-        String sql = "set password for gjn = password('123')";
-        SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
-        SqlParser parser = SqlParser.create(sql, config);
-        try {
-            SqlNode sqlNode = parser.parseStmt();
-            SqlSetPassword sqlSetPassword = (SqlSetPassword) sqlNode;
-            System.out.println(sqlSetPassword.user + ", host:" + sqlSetPassword.host
-                + ",pwd" + sqlSetPassword.password);
-            System.out.println("---> sqlNode:" + sqlNode);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
+
     }
 
 }

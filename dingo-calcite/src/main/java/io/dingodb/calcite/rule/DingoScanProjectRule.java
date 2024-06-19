@@ -105,7 +105,7 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
         LogicalDingoTableScan newScan = new LogicalDingoTableScan(
             scan.getCluster(),
             scan.getTraitSet(),
-            scan.getHints(),
+            project.getHints(),
             scan.getTable(),
             newFilter,
             TupleMapping.of(selectedColumns),

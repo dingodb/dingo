@@ -52,6 +52,7 @@ public class DingoRelMdRowCount implements MetadataHandler<BuiltInMetadata.RowCo
     }
 
     public Double getRowCount(@NonNull LogicalDingoTableScan rel, RelMetadataQuery mq) {
-        return StatsCache.getTableRowCount(rel);
+        double rowCount = rel.estimateRowCount(mq);
+        return rowCount;
     }
 }

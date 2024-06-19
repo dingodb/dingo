@@ -19,7 +19,6 @@ package io.dingodb.calcite.operation;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
 import io.dingodb.calcite.stats.StatsOperator;
 import io.dingodb.calcite.stats.task.AnalyzeTask;
-import io.dingodb.meta.MetaService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
@@ -37,8 +36,8 @@ public class AnalyzeTableOperation extends StatsOperator implements DdlOperation
     private int cmSketchHeight;
     private int cmSketchWidth;
     private Integer bucketCount;
-    private long samples;
-    private float sampleRate;
+    private final long samples;
+    private final float sampleRate;
 
     private long timeout;
 

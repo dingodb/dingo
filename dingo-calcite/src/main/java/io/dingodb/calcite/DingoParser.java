@@ -34,6 +34,7 @@ import io.dingodb.calcite.grammar.dml.SqlExecute;
 import io.dingodb.calcite.grammar.dml.SqlPrepare;
 import io.dingodb.calcite.grammar.dql.ExportOptions;
 import io.dingodb.calcite.grammar.dql.SqlDesc;
+import io.dingodb.calcite.grammar.dql.SqlDescTable;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
 import io.dingodb.calcite.grammar.dql.SqlShow;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
@@ -213,7 +214,8 @@ public class DingoParser {
     public RelRoot convert(@NonNull SqlNode sqlNode, boolean needsValidation) {
         HintPredicate hintPredicate = (hint, rel) -> true;
         HintStrategyTable hintStrategyTable = new HintStrategyTable.Builder()
-            .hintStrategy("vector_pre", hintPredicate).build();
+            .hintStrategy("vector_pre", hintPredicate)
+            .hintStrategy("disable_index", hintPredicate).build();
         SqlToRelConverter sqlToRelConverter = new DingoSqlToRelConverter(
             ViewExpanders.simpleContext(cluster),
             sqlValidator,
@@ -307,7 +309,7 @@ public class DingoParser {
     }
 
     protected static boolean compatibleMysql(SqlNode sqlNode, PlanProfile planProfile) {
-        if (sqlNode instanceof SqlShow || sqlNode instanceof SqlDesc || sqlNode instanceof SqlNextAutoIncrement) {
+        if (sqlNode instanceof SqlShow || sqlNode instanceof SqlNextAutoIncrement) {
             planProfile.setStmtType("show");
             return true;
         } else if (sqlNode instanceof SqlSetOption && !(sqlNode instanceof SqlSetPassword)) {

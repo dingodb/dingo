@@ -64,6 +64,7 @@ import io.dingodb.exec.operator.SortOperator;
 import io.dingodb.exec.operator.SumUpOperator;
 import io.dingodb.exec.operator.TxnGetByIndexOperator;
 import io.dingodb.exec.operator.TxnGetByKeysOperator;
+import io.dingodb.exec.operator.TxnIndexRangeScanOperator;
 import io.dingodb.exec.operator.TxnLikeScanOperator;
 import io.dingodb.exec.operator.TxnPartDeleteOperator;
 import io.dingodb.exec.operator.TxnPartInsertOperator;
@@ -141,6 +142,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.SUM_UP;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_CLEAN_CACHE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_GET_BY_INDEX;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_GET_BY_KEYS;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_INDEX_RANGE_SCAN;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_LIKE_SCAN;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_INSERT;
@@ -224,6 +226,7 @@ public final class OperatorFactory {
         OPERATORS.put(TXN_GET_BY_KEYS, TxnGetByKeysOperator.INSTANCE);
         OPERATORS.put(TXN_PART_VECTOR, TxnPartVectorOperator.INSTANCE);
         OPERATORS.put(TXN_GET_BY_INDEX, TxnGetByIndexOperator.INSTANCE);
+        OPERATORS.put(TXN_INDEX_RANGE_SCAN, TxnIndexRangeScanOperator.INSTANCE);
         OPERATORS.put(PESSIMISTIC_LOCK, PessimisticLockOperator.INSTANCE);
         OPERATORS.put(PESSIMISTIC_RESIDUAL_LOCK, PessimisticResidualLockOperator.INSTANCE);
     }

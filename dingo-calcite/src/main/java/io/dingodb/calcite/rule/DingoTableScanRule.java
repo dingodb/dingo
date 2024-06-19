@@ -19,6 +19,8 @@ package io.dingodb.calcite.rule;
 import io.dingodb.calcite.rel.DingoInfoSchemaScan;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.rel.logical.LogicalIndexFullScan;
+import io.dingodb.calcite.rel.logical.LogicalIndexRangeScan;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import org.apache.calcite.plan.Convention;
@@ -48,6 +50,9 @@ public class DingoTableScanRule extends ConverterRule {
     @Override
     public RelNode convert(RelNode rel) {
         LogicalDingoTableScan scan = (LogicalDingoTableScan) rel;
+        if (scan instanceof LogicalIndexFullScan || scan instanceof LogicalIndexRangeScan) {
+            return null;
+        }
         RelTraitSet traits = scan.getTraitSet()
             .replace(DingoConvention.INSTANCE)
             .replace(DingoRelStreaming.of(scan.getTable()));

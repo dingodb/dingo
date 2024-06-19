@@ -24,6 +24,7 @@ import lombok.Setter;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.sql.SqlExplainLevel;
 
 import java.util.Collections;
 import java.util.List;
@@ -47,6 +48,11 @@ final class DingoExplainSignature extends Meta.Signature {
     @Setter
     private String job;
 
+    @JsonProperty("sqlExplainLevel")
+    @Getter
+    @Setter
+    private SqlExplainLevel sqlExplainLevel;
+
     public DingoExplainSignature(
         List<ColumnMetaData> columns,
         String sql,
@@ -56,12 +62,14 @@ final class DingoExplainSignature extends Meta.Signature {
         Meta.StatementType statementType,
         String physicalPlan,
         String logicalPlan,
-        Job job
+        Job job,
+        SqlExplainLevel sqlExplainLevel
     ) {
         super(columns, sql, parameters, internalParameters, cursorFactory, statementType);
         this.physicalPlan = physicalPlan;
         this.logicalPlan = logicalPlan;
         this.job = job.toString();
+        this.sqlExplainLevel = sqlExplainLevel;
     }
 
     @Override
@@ -69,9 +77,11 @@ final class DingoExplainSignature extends Meta.Signature {
         StringBuilder resultBuilder = new StringBuilder();
         String separate = String.join("", Collections.nCopies(100, "-"));
 
-        // sql
-        resultBuilder.append("SQL: \n" + this.physicalPlan + "\n");
-        resultBuilder.append(separate + "\n");
+        if (sqlExplainLevel == SqlExplainLevel.EXPPLAN_ATTRIBUTES) {
+            // sql
+            resultBuilder.append("SQL: \n" + this.physicalPlan + "\n");
+            resultBuilder.append(separate + "\n");
+        }
 
         // logical plan
         resultBuilder.append("LOGICAL PLAN: \n");
@@ -81,8 +91,10 @@ final class DingoExplainSignature extends Meta.Signature {
         }
         resultBuilder.append(separate + "\n");
 
-        // job
-        resultBuilder.append("IMPLEMENTATION PLAN: \n" + this.job);
+        if (sqlExplainLevel == SqlExplainLevel.EXPPLAN_ATTRIBUTES) {
+            // job
+            resultBuilder.append("IMPLEMENTATION PLAN: \n" + this.job);
+        }
         return resultBuilder.toString();
     }
 }

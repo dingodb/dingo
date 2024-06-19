@@ -36,6 +36,8 @@ public class RuleUtils {
                 return getConditionInfo((RexCall) rexNode, SqlKind.LESS_THAN);
             case GREATER_THAN_OR_EQUAL:
                 return getConditionInfo((RexCall) rexNode, SqlKind.LESS_THAN_OR_EQUAL);
+            case EQUALS:
+                return getConditionInfo((RexCall) rexNode, SqlKind.EQUALS);
             default:
                 break;
         }

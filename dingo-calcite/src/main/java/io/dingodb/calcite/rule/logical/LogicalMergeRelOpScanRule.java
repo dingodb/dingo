@@ -23,6 +23,7 @@ import io.dingodb.expr.rel.op.RelOpBuilder;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.rules.SubstitutionRule;
+import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
@@ -37,15 +38,22 @@ public class LogicalMergeRelOpScanRule extends RelRule<LogicalMergeRelOpScanRule
         final LogicalRelOp rel = call.rel(0);
         final LogicalScanWithRelOp scan = call.rel(1);
         RelOp op = RelOpBuilder.builder(scan.getRelOp()).add(rel.getRelOp()).build();
+        RexNode filter = rel.getFilter();
+        if (filter == null) {
+            filter = scan.getFilter();
+        }
         call.transformTo(
             new LogicalScanWithRelOp(
                 scan.getCluster(),
                 scan.getTraitSet(),
-                scan.getHints(),
+                rel.getHints(),
                 scan.getTable(),
                 rel.getRowType(),
                 op,
-                scan.isPushDown()
+                filter,
+                scan.isPushDown(),
+                scan.getKeepSerialOrder(),
+                scan.getLimit()
             )
         );
         call.getPlanner().prune(scan);

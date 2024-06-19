@@ -49,8 +49,7 @@ public class TokenAuthImpl implements TokenAuth {
     }
 
     public String getAuthToken() {
-        String token =  TokenManager.INSTANCE.createInnerToken();
-        return token;
+        return TokenManager.INSTANCE.createInnerToken();
     }
 
     @Override

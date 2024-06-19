@@ -45,7 +45,7 @@ public class DingoScanFilterRule extends RelRule<DingoScanFilterRule.Config> imp
             new LogicalDingoTableScan(
                 scan.getCluster(),
                 scan.getTraitSet(),
-                scan.getHints(),
+                filter.getHints(),
                 scan.getTable(),
                 filter.getCondition(),
                 scan.getRealSelection(),

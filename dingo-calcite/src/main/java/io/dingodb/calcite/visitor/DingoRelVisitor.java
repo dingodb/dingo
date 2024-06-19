@@ -31,6 +31,7 @@ import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.DingoPartRangeDelete;
 import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoReduce;
+import io.dingodb.calcite.rel.dingo.DingoIndexScanWithRelOp;
 import io.dingodb.calcite.rel.dingo.DingoRoot;
 import io.dingodb.calcite.rel.dingo.DingoSort;
 import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
@@ -43,6 +44,8 @@ import io.dingodb.calcite.rel.VectorStreamConvertor;
 import io.dingodb.calcite.rel.dingo.DingoReduceAggregate;
 import io.dingodb.calcite.rel.dingo.DingoRelOp;
 import io.dingodb.calcite.rel.dingo.DingoScanWithRelOp;
+import io.dingodb.calcite.rel.dingo.IndexFullScan;
+import io.dingodb.calcite.rel.dingo.IndexRangeScan;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public interface DingoRelVisitor<T> {
@@ -99,4 +102,10 @@ public interface DingoRelVisitor<T> {
     T visitDingoScanWithRelOp(@NonNull DingoScanWithRelOp rel);
 
     T visitDingoAggregateReduce(@NonNull DingoReduceAggregate rel);
+
+    T visit(@NonNull IndexFullScan indexFullScan);
+
+    T visit(@NonNull IndexRangeScan indexRangeScan);
+
+    T visitDingoIndexScanWithRelOp(@NonNull DingoIndexScanWithRelOp rel);
 }

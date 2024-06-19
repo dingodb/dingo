@@ -74,7 +74,7 @@ public abstract class TxnScanOperatorBase extends ScanOperatorBase {
             wrap(ByteUtils::mapping)::apply);
     }
 
-    protected static @NonNull Iterator<KeyValue> createStoreIterator(
+    public static @NonNull Iterator<KeyValue> createStoreIterator(
         @NonNull CommonId tableId,
         @NonNull RangeDistribution distribution,
         long scanTs,

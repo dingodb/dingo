@@ -21,6 +21,8 @@ import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.hint.RelHint;
@@ -32,6 +34,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
+import static io.dingodb.calcite.meta.DingoCostModelV1.getNetCost;
+import static io.dingodb.calcite.meta.DingoCostModelV1.getScanAvgRowSize;
+import static io.dingodb.calcite.meta.DingoCostModelV1.scanConcurrency;
 
 @Slf4j
 public final class DingoGetByKeys extends DingoGetByIndex {
@@ -59,5 +65,14 @@ public final class DingoGetByKeys extends DingoGetByIndex {
     @Override
     public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, @NonNull RelMetadataQuery mq) {
+        double rowCount = estimateRowCount(mq);
+        double rowSize = getScanAvgRowSize(this);
+        double indexNetCost = getNetCost(rowCount, rowSize) / scanConcurrency;
+
+        return DingoCost.FACTORY.makeCost(indexNetCost, 0, 0);
     }
 }

@@ -20,16 +20,20 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.dingo.DingoScanWithRelOp;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.MetaServiceUtils;
+import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.params.DistributionSourceParam;
 import io.dingodb.exec.operator.params.ScanParam;
 import io.dingodb.exec.operator.params.ScanWithRelOpParam;
@@ -96,7 +100,7 @@ public final class DingoScanWithRelOpVisitFun {
             outputs.add(createVerticesForRange(
                 task,
                 idGenerator,
-                (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end, false),
+                (start, end) -> createCalcRangeDistributionVertex(rel, tableInfo, start, end, false),
                 null,
                 null,
                 scanVertexCreator
@@ -113,6 +117,17 @@ public final class DingoScanWithRelOpVisitFun {
                     scanVertexCreator
                 ));
             } else {
+                if (rel.getRangeDistribution() != null || !Utils.parallel(rel.getKeepSerialOrder())) {
+                    outputs.add(createVerticesForRange(
+                        task,
+                        idGenerator,
+                        (start, end) -> createCalcRangeDistributionVertex(rel, tableInfo, start, end, false),
+                        null,
+                        null,
+                        scanVertexCreator
+                    ));
+                    return outputs;
+                }
                 int partitionNum = partitions.size();
                 for (int i = 0; i < partitionNum; ++i) {
                     Partition partition = partitions.get(i);
@@ -139,6 +154,24 @@ public final class DingoScanWithRelOpVisitFun {
         @NonNull Supplier<Vertex> scanVertexCreator
     ) {
         Vertex calcVertex = calcVertexCreator.apply(start, end);
+        calcVertex.setId(idGenerator.getOperatorId(task.getId()));
+        task.putVertex(calcVertex);
+        Vertex vertex = scanVertexCreator.get();
+        // vertex.setHint(new OutputHint());
+        vertex.setId(idGenerator.getOperatorId(task.getId()));
+        task.putVertex(vertex);
+        Edge edge = new Edge(calcVertex, vertex);
+        calcVertex.addEdge(edge);
+        vertex.addIn(edge);
+        return vertex;
+    }
+
+    private static @NonNull Vertex createVerticesForPartRange(
+        @NonNull Task task,
+        @NonNull IdGenerator idGenerator,
+        Vertex calcVertex,
+        @NonNull Supplier<Vertex> scanVertexCreator
+    ) {
         calcVertex.setId(idGenerator.getOperatorId(task.getId()));
         task.putVertex(calcVertex);
         Vertex vertex = scanVertexCreator.get();
@@ -200,7 +233,8 @@ public final class DingoScanWithRelOpVisitFun {
                 relOp,
                 DefinitionMapper.mapToDingoType(rel.getRowType()),
                 rel.isPushDown(),
-                td.version
+                td.version,
+                rel.getLimit()
             );
             if (relOp instanceof PipeOp) {
                 return new Vertex(SCAN_WITH_PIPE_OP, param);
@@ -241,7 +275,8 @@ public final class DingoScanWithRelOpVisitFun {
                 relOp,
                 DefinitionMapper.mapToDingoType(rel.getRowType()),
                 rel.isPushDown(),
-                td.version
+                td.version,
+                rel.getLimit()
             );
             if (relOp instanceof PipeOp) {
                 return new Vertex(TXN_SCAN_WITH_PIPE_OP, param);
@@ -261,7 +296,12 @@ public final class DingoScanWithRelOpVisitFun {
     ) {
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
-        // TODO: need to create range by filters.
+        SqlExpr filter = null;
+
+        if (rel.getFilter() != null) {
+            filter = SqlExprUtils.toSqlExpr(rel.getFilter());
+        }
+
         DistributionSourceParam distributionParam = new DistributionSourceParam(
             td,
             ranges,
@@ -269,11 +309,52 @@ public final class DingoScanWithRelOpVisitFun {
             endKey,
             true,
             withEnd,
-            null,
+            filter,
             false,
             false,
             null
         );
         return new Vertex(CALC_DISTRIBUTION_1, distributionParam);
     }
+
+    private static @NonNull Vertex createCalcRangeDistributionVertex(
+        @NonNull DingoScanWithRelOp rel,
+        @NonNull TableInfo tableInfo,
+        byte[] startKey,
+        byte[] endKey,
+        boolean withEnd
+    ) {
+        final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
+        NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
+
+        SqlExpr filter = null;
+        boolean withStart = true;
+
+        if (rel.getFilter() != null) {
+            filter = SqlExprUtils.toSqlExpr(rel.getFilter());
+        }
+        if (rel.getRangeDistribution() != null) {
+            startKey = rel.getRangeDistribution().getStartKey();
+            endKey = rel.getRangeDistribution().getEndKey();
+            withStart = rel.getRangeDistribution().isWithStart();
+            withEnd = rel.getRangeDistribution().isWithEnd();
+        }
+
+        DistributionSourceParam distributionParam = new DistributionSourceParam(
+            td,
+            ranges,
+            startKey,
+            endKey,
+            withStart,
+            withEnd,
+            filter,
+            Optional.mapOrGet(rel.getFilter(), __ -> __.getKind() == SqlKind.NOT, () -> false),
+            false,
+            null
+        );
+        distributionParam.setKeepOrder(rel.getKeepSerialOrder());
+        distributionParam.setFilterRange(rel.isRangeScan());
+        return new Vertex(CALC_DISTRIBUTION_1, distributionParam);
+    }
+
 }

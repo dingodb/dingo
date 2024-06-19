@@ -17,10 +17,14 @@
 package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
+import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Union;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -29,6 +33,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DingoUnion extends Union implements DingoRel {
+    @Getter
+    private double rowCount;
     public DingoUnion(
         RelOptCluster cluster,
         RelTraitSet traits,
@@ -56,5 +62,17 @@ public class DingoUnion extends Union implements DingoRel {
             traitSetList.add(childTraits);
         }
         return Pair.of(childTraits, traitSetList);
+    }
+
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
+        rowCount = super.estimateRowCount(mq);
+        return rowCount;
+    }
+
+    @Override
+    public @Nullable RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        double rowCount = estimateRowCount(mq);
+        return planner.getCostFactory().makeCost(rowCount, 0, 0.0);
     }
 }
