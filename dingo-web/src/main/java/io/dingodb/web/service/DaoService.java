@@ -77,6 +77,7 @@ public class DaoService {
 
             return new ResVo(1, "", 2);
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
             return new ResVo(0, "", 2);
         } finally {
             if (rs != null) {

@@ -54,6 +54,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -81,11 +82,8 @@ public final class DingoGetByIndexVisitFun {
         MetaService metaService = MetaServiceUtils.getMetaService(rel.getTable());
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         Map<CommonId, Set> indexSetMap = rel.getIndexSetMap();
-        final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
-        boolean needLookup = false;
-        if (indexSetMap.size() > 1) {
-            needLookup = true;
-        }
+        final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
+        boolean needLookup = indexSetMap.size() > 1;
         for (Map.Entry<CommonId, Set> indexValSet : indexSetMap.entrySet()) {
             CommonId idxId = indexValSet.getKey();
             Table indexTd = rel.getIndexTdMap().get(idxId);

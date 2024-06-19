@@ -85,10 +85,26 @@ public final class ScopeVariables {
         return (Integer) executorProp.getOrDefault("rpc_batch_size", 40960);
     }
 
+    public static Double getStatsDefaultSize() {
+        return (Double) executorProp.getOrDefault("stats_default_size", 100D);
+    }
+
+    public static Double getRequestFactor() {
+        return (Double) executorProp.getOrDefault("request_factor", 15000D);
+    }
+
     public static synchronized void setExecutorProp(String key, String val) {
         if ("rpc_batch_size".equalsIgnoreCase(key)) {
             int rpcBatchSize = Integer.parseInt(val);
             executorProp.put(key, rpcBatchSize);
+            return;
+        } else if ("stats_default_size".equalsIgnoreCase(key)) {
+            double statsDefaultSize = Double.parseDouble(val);
+            executorProp.put(key, statsDefaultSize);
+            return;
+        } else if ("request_factor".equalsIgnoreCase(key)) {
+            double requestFactor = Double.parseDouble(val);
+            executorProp.put(key, requestFactor);
             return;
         }
         executorProp.put(key, val);

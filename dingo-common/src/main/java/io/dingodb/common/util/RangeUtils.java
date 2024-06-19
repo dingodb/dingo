@@ -78,7 +78,8 @@ public class RangeUtils {
             subRanges.first().setStartKey(rangeStart);
             subRanges.first().setWithStart(range.isWithStart());
 
-            if (subRanges.last().getEndKey().length == rangeEnd.length) {
+            if (subRanges.last().getEndKey().length == rangeEnd.length
+                && !greatThan(subRanges.last().getEndKey(), rangeEnd, pos)) {
                 subRanges.last().setWithEnd(true);
             } else {
                 subRanges.last().setEndKey(rangeEnd);

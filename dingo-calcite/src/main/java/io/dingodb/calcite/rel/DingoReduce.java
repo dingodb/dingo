@@ -39,6 +39,8 @@ import java.util.List;
  */
 public final class DingoReduce extends SingleRel implements DingoRel {
     @Getter
+    private double rowCount;
+    @Getter
     private final ImmutableBitSet groupSet;
     @Getter
     private final List<AggregateCall> aggregateCallList;
@@ -82,10 +84,12 @@ public final class DingoReduce extends SingleRel implements DingoRel {
     public double estimateRowCount(@NonNull RelMetadataQuery mq) {
         final int groupCount = groupSet.cardinality();
         if (groupCount == 0) {
+            this.rowCount = 1;
             return 1;
         } else {
             double rowCount = super.estimateRowCount(mq);
             rowCount *= 1.0 - Math.pow(.5, groupCount);
+            this.rowCount = rowCount;
             return rowCount;
         }
     }

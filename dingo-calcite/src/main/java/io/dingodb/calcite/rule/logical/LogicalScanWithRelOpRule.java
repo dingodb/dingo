@@ -63,7 +63,10 @@ public class LogicalScanWithRelOpRule extends ConverterRule implements Substitut
             scan.getTable(),
             scan.getRowType(),
             null,
-            scan.isPushDown()
+            null,
+            scan.isPushDown(),
+            scan.getKeepSerialOrder(),
+            0
         );
     }
 }

@@ -57,7 +57,8 @@ public class LogicalRelOpFromProjectRule extends ConverterRule implements Substi
                 project.getHints(),
                 project.getInput(),
                 project.getRowType(),
-                relOp
+                relOp,
+                null
             );
         } catch (UnsupportedOperationException e) {
             return null;

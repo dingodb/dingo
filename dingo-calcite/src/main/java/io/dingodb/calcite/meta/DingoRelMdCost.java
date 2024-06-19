@@ -30,36 +30,17 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 
 public class DingoRelMdCost implements MetadataHandler<BuiltInMetadata.NonCumulativeCost> {
 
-    private final DingoCostModel dingoCostModel;
-
     public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider.reflectiveSource(
         new DingoRelMdCost(),
         BuiltInMetadata.NonCumulativeCost.Handler.class
     );
 
     public DingoRelMdCost() {
-        this.dingoCostModel = DingoCostModelV1.getCostModel();
     }
 
     @Override
     public MetadataDef<BuiltInMetadata.NonCumulativeCost> getDef() {
         return BuiltInMetadata.NonCumulativeCost.DEF;
-    }
-
-    public RelOptCost getNonCumulativeCost(DingoGetByIndex dingoGetByIndex, RelMetadataQuery mq) {
-        return dingoCostModel.getDingoGetByIndex(dingoGetByIndex, mq);
-    }
-
-    public RelOptCost getNonCumulativeCost(DingoTableScan dingoTableScan, RelMetadataQuery mq) {
-        return dingoCostModel.getDingoTableScan(dingoTableScan, mq);
-    }
-
-    public RelOptCost getNonCumulativeCost(DingoGetByKeys dingoGetByKeys, RelMetadataQuery mq) {
-        return dingoCostModel.getDingoGetByKeys(dingoGetByKeys, mq);
-    }
-
-    public RelOptCost getNonCumulativeCost(DingoGetByIndexMerge dingoGetByIndexMerge, RelMetadataQuery mq) {
-        return dingoCostModel.getDingoGetByIndexMerge(dingoGetByIndexMerge, mq);
     }
 
 }

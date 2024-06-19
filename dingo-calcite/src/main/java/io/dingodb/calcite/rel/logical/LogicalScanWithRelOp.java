@@ -18,6 +18,7 @@ package io.dingodb.calcite.rel.logical;
 
 import io.dingodb.expr.rel.RelOp;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -25,6 +26,7 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
@@ -33,9 +35,17 @@ public class LogicalScanWithRelOp extends TableScan {
     @Getter
     protected final RelOp relOp;
     @Getter
+    protected final RexNode filter;
+    @Getter
     protected final boolean pushDown;
 
     protected RelDataType rowType;
+    @Getter
+    @Setter
+    protected int keepSerialOrder;
+    @Setter
+    @Getter
+    protected int limit;
 
     public LogicalScanWithRelOp(
         RelOptCluster cluster,
@@ -44,12 +54,18 @@ public class LogicalScanWithRelOp extends TableScan {
         RelOptTable table,
         RelDataType rowType,
         RelOp relOp,
-        boolean pushDown
+        RexNode filter,
+        boolean pushDown,
+        int keepSerialOrder,
+        int limit
     ) {
         super(cluster, traitSet, hints, table);
         this.relOp = relOp;
         this.pushDown = pushDown;
         this.rowType = rowType;
+        this.filter = filter;
+        this.keepSerialOrder = keepSerialOrder;
+        this.limit = limit;
     }
 
     @Override

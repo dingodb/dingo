@@ -21,6 +21,7 @@ import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.rel.logical.LogicalIndexFullScan;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.utils.IndexValueMapSet;
@@ -56,7 +57,7 @@ public class DingoGetByIndexRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
             LogicalDingoTableScan.class,
-            rel -> rel.getFilter() != null,
+            rel -> rel.getFilter() != null && !(rel instanceof LogicalIndexFullScan),
             Convention.NONE,
             DingoConvention.INSTANCE,
             "DingoGetByKeysRule"
@@ -120,6 +121,9 @@ public class DingoGetByIndexRule extends ConverterRule {
                     indices = columnList.stream().map(td.getColumns()::indexOf).collect(Collectors.toList());
                     Map<Integer, RexNode> newMap = new HashMap<>(indices.size());
                     for (int k : map.keySet()) {
+                        if (selection != null && k >= selection.size()) {
+                            return null;
+                        }
                         int originIndex = (selection == null ? k : selection.get(k));
                         if (indices.contains(originIndex)) {
                             newMap.put(indices.indexOf(originIndex), map.get(k));
@@ -170,14 +174,20 @@ public class DingoGetByIndexRule extends ConverterRule {
                 keyMapSet
             );
         }
+
         //The update index column will not use indexes for now, and will be changed in the next version
-        //if (scan.isForDml()) {
+        //if (!scan.isForDml()) {
         //    return null;
         //}
 
         // get all index definition
         // find match first index to use;
         // new DingoGetIndex
+        boolean disableIndex = !scan.getHints().isEmpty()
+            && "disable_index".equalsIgnoreCase(scan.getHints().get(0).hintName);
+        if (disableIndex) {
+            return null;
+        }
         Map<CommonId, Table> indexTdMap = getScalaIndices(scan.getTable());
 
         LogUtils.debug(log, "Definition of table = {}", table);

@@ -37,12 +37,15 @@ import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.rel.VectorStreamConvertor;
 import io.dingodb.calcite.rel.dingo.DingoHashJoin;
+import io.dingodb.calcite.rel.dingo.DingoIndexScanWithRelOp;
 import io.dingodb.calcite.rel.dingo.DingoReduceAggregate;
 import io.dingodb.calcite.rel.dingo.DingoRelOp;
 import io.dingodb.calcite.rel.dingo.DingoRoot;
 import io.dingodb.calcite.rel.dingo.DingoScanWithRelOp;
 import io.dingodb.calcite.rel.dingo.DingoSort;
 import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
+import io.dingodb.calcite.rel.dingo.IndexFullScan;
+import io.dingodb.calcite.rel.dingo.IndexRangeScan;
 import io.dingodb.calcite.visitor.function.DingoAggregateVisitFun;
 import io.dingodb.calcite.visitor.function.DingoCountDeleteVisitFun;
 import io.dingodb.calcite.visitor.function.DingoExportDataVisitFun;
@@ -53,6 +56,9 @@ import io.dingodb.calcite.visitor.function.DingoGetByIndexVisitFun;
 import io.dingodb.calcite.visitor.function.DingoGetByKeysFun;
 import io.dingodb.calcite.visitor.function.DingoGetVectorByDistanceVisitFun;
 import io.dingodb.calcite.visitor.function.DingoHashJoinVisitFun;
+import io.dingodb.calcite.visitor.function.DingoIndexFullScanVisitFun;
+import io.dingodb.calcite.visitor.function.DingoIndexRangeScanVisitFun;
+import io.dingodb.calcite.visitor.function.DingoIndexScanWithRelOpVisitFun;
 import io.dingodb.calcite.visitor.function.DingoInfoSchemaScanVisitFun;
 import io.dingodb.calcite.visitor.function.DingoLikeScanVisitFun;
 import io.dingodb.calcite.visitor.function.DingoProjectVisitFun;
@@ -116,7 +122,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
         IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
         DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation, transaction, kind);
         Collection<Vertex> outputs = dingo(input).accept(visitor);
-        if (checkRoot && outputs.size() > 0) {
+        if (checkRoot && !outputs.isEmpty()) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
         if (transaction != null && transaction.isPessimistic()) {
@@ -262,4 +268,20 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     public Collection<Vertex> visitDingoAggregateReduce(@NonNull DingoReduceAggregate rel) {
         return DingoReduceAggregateVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
+
+    @Override
+    public Collection<Vertex> visit(@NonNull IndexFullScan rel) {
+        return DingoIndexFullScanVisitFun.visit(job, idGenerator, currentLocation, this, transaction, rel);
+    }
+
+    public Collection<Vertex> visit(@NonNull IndexRangeScan rel) {
+        return DingoIndexRangeScanVisitFun.visit(job, idGenerator, currentLocation, this, transaction, rel);
+    }
+
+    @Override
+    public Collection<Vertex> visitDingoIndexScanWithRelOp(@NonNull DingoIndexScanWithRelOp rel) {
+        return DingoIndexScanWithRelOpVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel);
+    }
+
+
 }

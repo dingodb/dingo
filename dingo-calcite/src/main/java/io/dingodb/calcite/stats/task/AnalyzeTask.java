@@ -46,6 +46,8 @@ import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
+import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.expr.DingoCompileContext;
 import io.dingodb.exec.expr.DingoRelConfig;
@@ -60,6 +62,8 @@ import io.dingodb.expr.coding.RelOpCoder;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.tso.TsoService;
 import lombok.Builder;
@@ -74,6 +78,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NavigableMap;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -109,6 +115,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
         long rowCount = 0;
         String failReason = "";
         try {
+            long start = System.currentTimeMillis();
             // get table info
             MetaService metaService = MetaService.root();
             metaService = metaService.getSubMetaService(schemaName);
@@ -122,35 +129,45 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             CommonId tableId = td.getTableId();
 
             startAnalyzeTask(tableId);
-            List<RangeDistribution> rangeDistributions = new ArrayList<>(metaService
-                .getRangeDistribution(tableId).values());
+            PartitionService ps = PartitionService.getService(
+                Optional.ofNullable(td.getPartitionStrategy())
+                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+
+            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistributionNavigableMap
+                = metaService.getRangeDistribution(tableId);
+
+            Set<RangeDistribution> distributions
+               = ps.calcPartitionRange(null, null, true, true, rangeDistributionNavigableMap);
 
             List<Histogram> histogramList = new ArrayList<>();
             List<CountMinSketch> cmSketchList = new ArrayList<>();
             List<StatsNormal> statsNormals = new ArrayList<>();
+            long end1 = System.currentTimeMillis();
+            LogUtils.info(log, "step1 cost:{}", (end1 - start));
 
             // varchar -> count-min-sketch  int,float,double,date,time,timestamp -> histogram
             // ndv, nullCount -> normal
             typeMetricAdaptor(td, histogramList, cmSketchList, statsNormals, cmSketchWidth, cmSketchHeight);
             // par scan get min, max
             // histogram equ-width need max, min
-            buildHistogram(histogramList, rangeDistributions, tableId, td);
+            buildHistogram(histogramList, distributions, tableId, td);
 
-            LogUtils.info(log, "collect stats start");
+            long end2 = System.currentTimeMillis();
+            LogUtils.info(log, "step2 cost:{}", (end2 - end1));
             List<TableStats> statsList = null;
             try {
-                List<CompletableFuture<TableStats>> futureList = getCompletableFutures(td, tableId, rangeDistributions,
+                List<CompletableFuture<TableStats>> futureList = getCompletableFutures(td, tableId, distributions,
                     cmSketchList, statsNormals, histogramList);
-                statsList = new ArrayList<>();
-                for (CompletableFuture<TableStats> completableFuture : futureList) {
-                    try {
-                        statsList.add(completableFuture.get());
-                    } catch (InterruptedException | ExecutionException e) {
-                        failReason = e.getMessage();
-                        LogUtils.error(log, e.getMessage(), e);
-                        break;
-                    }
-                }
+
+                LogUtils.info(log, "get futureList...");
+                statsList = futureList.stream().map(CompletableFuture::toCompletableFuture)
+                    .map(o -> {
+                        try {
+                            return o.get();
+                        } catch (InterruptedException | ExecutionException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }).collect(Collectors.toList());
             } catch (Exception e) {
                 failReason = e.getMessage();
                 LogUtils.error(log, e.getMessage(), e);
@@ -159,17 +176,29 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             if (statsList == null) {
                 return;
             }
+            long end3 = System.currentTimeMillis();
+            LogUtils.info(log, "step3 cost:{}", (end3 - end2));
             TableStats.mergeStats(statsList);
             TableStats tableStats = statsList.get(0);
+            long end4 = System.currentTimeMillis();
+            LogUtils.info(log, "step4 merge success cost:{}", (end4 - end3));
 
             // save stats to store
             addHistogram(tableStats.getHistogramList());
+            long end5 = System.currentTimeMillis();
+            LogUtils.info(log, "step5 cost:{}", (end5 - end4));
             addCountMinSketch(tableStats.getCountMinSketchList());
+            long end6 = System.currentTimeMillis();
+            LogUtils.info(log, "step6 cost:{}", (end6 - end5));
             addStatsNormal(tableStats.getStatsNormalList());
+            long end7 = System.currentTimeMillis();
+            LogUtils.info(log, "step7 cost:{}", (end7 - end6));
             // update analyze job status
             cache(tableStats);
             rowCount = tableStats.getRowCount();
-            LogUtils.info(log, "stats collect done");
+            long end = System.currentTimeMillis();
+            LogUtils.info(log, "stats collect done, take time:{}, tableName:{}, rowCount:{}",
+                (end - start), tableName, rowCount);
         } catch (Exception e) {
             failReason = e.getMessage();
             LogUtils.error(log, e.getMessage(), e);
@@ -180,28 +209,19 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
     private List<CompletableFuture<TableStats>> getCompletableFutures(
         Table td,
         CommonId tableId,
-        List<RangeDistribution> rangeDistributions,
+        Set<RangeDistribution> rangeDistributions,
         List<CountMinSketch> cmSketchList,
         List<StatsNormal> statsNormals,
         List<Histogram> columnHistograms
     ) {
         long scanTs = TsoService.getDefault().tso();
-        List<CompletableFuture<TableStats>> futureList = rangeDistributions.stream().map(_i -> {
+
+        return rangeDistributions.stream().map(_i -> {
             Callable<TableStats> collectStatsTask = new CollectStatsTask(
                 _i, tableId, td, columnHistograms, cmSketchList, statsNormals, scanTs, timeout
             );
             return Executors.submit("collect-task", collectStatsTask);
         }).collect(Collectors.toList());
-
-        CompletableFuture<Void> allFutures = CompletableFuture.allOf(
-            futureList.toArray(new CompletableFuture[0]));
-
-        try {
-            allFutures.join();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return futureList;
     }
 
     private void typeMetricAdaptor(Table td,
@@ -261,7 +281,10 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                 countMinSketch.getTotalCount(), countMinSketch.getIndex(), new Timestamp(System.currentTimeMillis())
             };
         }).collect(Collectors.toList());
+        long start = System.currentTimeMillis();
         upsert(cmSketchStore, cmSketchCodec, paramList);
+        long end = System.currentTimeMillis();
+        LogUtils.info(log, "add sketch done, take time:{}", (end - start));
     }
 
     private void addStatsNormal(List<StatsNormal> statsNormals) {
@@ -280,51 +303,52 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
     }
 
     private void buildHistogram(List<Histogram> histogramList,
-                                List<RangeDistribution> rangeDistributions,
+                                Set<RangeDistribution> rangeDistributions,
                                 CommonId tableId,
                                 Table td) {
-        if (!histogramList.isEmpty()) {
-            List<Iterator<Object[]>> iteratorList = rangeDistributions.stream().map(region -> {
-                DingoType outputSchema = DingoTypeFactory.tuple(
-                    histogramList.stream().flatMap(histogram ->
-                        Arrays.stream(new DingoType[]{histogram.getDingoType(),
-                            histogram.getDingoType()})).toArray(DingoType[]::new));
-                TupleMapping outputKeyMapping = TupleMapping.of(
-                    IntStream.range(0, 0).boxed().collect(Collectors.toList())
-                );
-                CoprocessorV2 coprocessor = getCoprocessor(td, histogramList, outputSchema);
-                if (coprocessor == null) {
-                    return null;
-                }
-                byte[] startKey = region.getStartKey();
-                byte[] endKey = region.getEndKey();
-                CodecService.getDefault().setId(startKey, region.getId().domain);
-                CodecService.getDefault().setId(endKey, region.getId().domain);
-                StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, region.getId());
+        if (histogramList.isEmpty()) {
+            return;
+        }
+        List<Iterator<Object[]>> iteratorList = rangeDistributions.stream().map(region -> {
+            DingoType outputSchema = DingoTypeFactory.tuple(
+                histogramList.stream().flatMap(histogram ->
+                    Arrays.stream(new DingoType[]{histogram.getDingoType(),
+                        histogram.getDingoType()})).toArray(DingoType[]::new));
+            TupleMapping outputKeyMapping = TupleMapping.of(
+                IntStream.range(0, 0).boxed().collect(Collectors.toList())
+            );
+            CoprocessorV2 coprocessor = getCoprocessor(td, histogramList, outputSchema);
+            if (coprocessor == null) {
+                return null;
+            }
+            byte[] startKey = region.getStartKey();
+            byte[] endKey = region.getEndKey();
+            CodecService.getDefault().setId(startKey, region.getId().domain);
+            CodecService.getDefault().setId(endKey, region.getId().domain);
+            StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, region.getId());
 
-                Iterator<KeyValue> iterator = kvStore.txnScan(
-                    TsoService.getDefault().tso(),
-                    new StoreInstance.Range(startKey, endKey,
-                       true, true),
-                    30000,
-                    coprocessor
-                );
-                return Iterators.transform(iterator, wrap(CodecService.getDefault().createKeyValueCodec(td.version, outputSchema, outputKeyMapping)::decode)::apply);
-            }).collect(Collectors.toList());
-            for (Iterator<Object[]> iterator : iteratorList) {
-                if (iterator == null) {
-                    continue;
-                }
-                while (iterator.hasNext()) {
-                    Object[] tuples = iterator.next();
-                    for (int i = 0; i < histogramList.size(); i ++) {
-                        histogramList.get(i).setRegionMax(tuples[2 * i]);
-                        histogramList.get(i).setRegionMin(tuples[2 * i + 1]);
-                    }
+            Iterator<KeyValue> iterator = kvStore.txnScan(
+                TsoService.getDefault().tso(),
+                new StoreInstance.Range(startKey, endKey,
+                   region.isWithStart(), region.isWithEnd()),
+                30000,
+                coprocessor
+            );
+            return Iterators.transform(iterator, wrap(CodecService.getDefault().createKeyValueCodec(td.version, outputSchema, outputKeyMapping)::decode)::apply);
+        }).collect(Collectors.toList());
+        for (Iterator<Object[]> iterator : iteratorList) {
+            if (iterator == null) {
+                continue;
+            }
+            while (iterator.hasNext()) {
+                Object[] tuples = iterator.next();
+                for (int i = 0; i < histogramList.size(); i ++) {
+                    histogramList.get(i).setRegionMax(tuples[2 * i]);
+                    histogramList.get(i).setRegionMin(tuples[2 * i + 1]);
                 }
             }
-            histogramList.forEach(histogram -> histogram.init(bucketCount));
         }
+        histogramList.forEach(histogram -> histogram.init(bucketCount));
     }
 
     private void startAnalyzeTask(CommonId tableId) {

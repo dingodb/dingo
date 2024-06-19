@@ -118,6 +118,9 @@ public class DingoStatement extends AvaticaStatement {
         if (signature instanceof DingoExplainSignature) {
             DingoExplainSignature explainSignature = (DingoExplainSignature) signature;
             return ImmutableList.of(new Object[]{explainSignature.toString()}).iterator();
+        } else if (signature instanceof ExplainSignature) {
+            ExplainSignature explainSignature = (ExplainSignature) signature;
+            return explainSignature.getIterator();
         } else if (signature instanceof DingoSignature) {
             Job job = jobManager.getJob(((DingoSignature) signature).getJobId());
             return jobManager.createIterator(

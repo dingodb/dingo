@@ -17,16 +17,21 @@
 package io.dingodb.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.stats.StatsCache;
 import io.dingodb.calcite.utils.RelDataTypeUtils;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.type.TupleMapping;
+import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -34,6 +39,11 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
+
+import static io.dingodb.calcite.meta.DingoCostModelV1.getNetCost;
+import static io.dingodb.calcite.meta.DingoCostModelV1.getScanAvgRowSize;
+import static io.dingodb.calcite.meta.DingoCostModelV1.getScanCost;
+import static io.dingodb.calcite.meta.DingoCostModelV1.scanConcurrency;
 
 public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
 
@@ -107,5 +117,26 @@ public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
             getTableType(),
             selection
         );
+    }
+
+    @Override
+    public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, @NonNull RelMetadataQuery mq) {
+        double rowCount = getTable().getRowCount();
+        if (rowCount == 0) {
+            rowCount = StatsCache.getTableRowCount(this);
+        }
+
+        if (getGroupSet() != null) {
+            if (getGroupSet().cardinality() == 0) {
+                rowCount = 1.0;
+            } else {
+                rowCount *= 1.0 - Math.pow(.8, getGroupSet().cardinality());
+            }
+        }
+        double rowSize = getScanAvgRowSize(this);
+        double tableScanCost = getScanCost(rowCount, rowSize);
+        double tableNetCost = getNetCost(rowCount, rowSize);
+        double rangeCost = (tableScanCost + tableNetCost) / scanConcurrency;
+        return DingoCost.FACTORY.makeCost(rangeCost, 0, 0);
     }
 }

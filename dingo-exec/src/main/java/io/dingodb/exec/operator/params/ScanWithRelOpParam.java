@@ -56,22 +56,26 @@ import java.util.stream.IntStream;
 })
 public class ScanWithRelOpParam extends ScanParam {
     @JsonProperty("outSchema")
-    private final DingoType outputSchema;
+    protected final DingoType outputSchema;
     @JsonProperty("pushDown")
-    private final boolean pushDown;
+    protected final boolean pushDown;
 
     @Getter
-    private final transient DingoRelConfig config;
+    protected final transient DingoRelConfig config;
 
     @Getter
     @JsonProperty("rel")
     @JsonSerialize(using = RelOpSerializer.class)
     @JsonDeserialize(using = RelOpDeserializer.class)
-    private RelOp relOp;
+    protected RelOp relOp;
 
     @Getter
     @Setter
-    private transient CoprocessorV2 coprocessor;
+    protected int limit;
+
+    @Getter
+    @Setter
+    protected transient CoprocessorV2 coprocessor;
 
     public ScanWithRelOpParam(
         CommonId tableId,
@@ -80,13 +84,15 @@ public class ScanWithRelOpParam extends ScanParam {
         @NonNull RelOp relOp,
         DingoType outputSchema,
         boolean pushDown,
-        int schemaVersion
+        int schemaVersion,
+        int limit
     ) {
         super(tableId, schema, keyMapping, schemaVersion);
         this.relOp = relOp;
         this.outputSchema = outputSchema;
         this.pushDown = pushDown;
         coprocessor = null;
+        this.limit = limit;
         config = new DingoRelConfig();
     }
 
@@ -103,7 +109,6 @@ public class ScanWithRelOpParam extends ScanParam {
                 List<Integer> selection = IntStream.range(0, schema.fieldCount())
                     .boxed()
                     .collect(Collectors.toList());
-                // TODO
                 TupleMapping outputKeyMapping = TupleMapping.of(new int[]{});
                 coprocessor = CoprocessorV2.builder()
                     .originalSchema(SchemaWrapperUtils.buildSchemaWrapper(schema, keyMapping, tableId.seq))
@@ -111,6 +116,9 @@ public class ScanWithRelOpParam extends ScanParam {
                     .selection(selection)
                     .relExpr(os.toByteArray())
                     .build();
+                if (limit > 0) {
+                    coprocessor.setLimit(limit);
+                }
             }
         }
     }

@@ -17,6 +17,7 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.util.Pair;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithProfiles;
@@ -40,9 +41,9 @@ public abstract class ScanOperatorBase extends SoleOutOperator {
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         Iterator<Object[]> iterator = createIterator(context, vertex);
-        getScanner(context, vertex).apply(context, vertex, iterator);
+        Pair<Long, Boolean> res = getScanner(context, vertex).apply(context, vertex, iterator);
         // Scan operator is not source operator, so may be push multiple times.
-        return true;
+        return res.getValue();
     }
 
     @Override
@@ -56,6 +57,6 @@ public abstract class ScanOperatorBase extends SoleOutOperator {
     }
 
     public interface Scanner {
-        long apply(@NonNull Context context, @NonNull Vertex vertex, @NonNull Iterator<Object[]> iterator);
+        Pair<Long, Boolean> apply(@NonNull Context context, @NonNull Vertex vertex, @NonNull Iterator<Object[]> iterator);
     }
 }

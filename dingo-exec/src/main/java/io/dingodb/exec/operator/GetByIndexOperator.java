@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -27,6 +28,7 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.GetByIndexParam;
+import io.dingodb.exec.operator.params.TxnGetByIndexParam;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
@@ -56,26 +58,28 @@ public final class GetByIndexOperator extends FilterProjectOperator {
     @Override
     protected @NonNull Iterator<Object[]> createSourceIterator(Context context, Object[] tuple, Vertex vertex) {
         GetByIndexParam param = vertex.getParam();
+        OperatorProfile profile = param.getProfile("getByIndex");
+        long start = System.currentTimeMillis();
         StoreInstance store = Services.KV_STORE.getInstance(param.getIndexTableId(), context.getDistribution().getId());
         byte[] keys = param.getCodec().encodeKeyPrefix(tuple, calculatePrefixCount(tuple));
         Iterator<Object[]> iterator = Iterators.transform(
             store.scan(System.identityHashCode(keys), keys),
             wrap(param.getCodec()::decode)::apply
         );
-        List<Object[]> objectList = new ArrayList<>();
-        while (iterator.hasNext()) {
-            Object[] objects = iterator.next();
-            if (param.isLookup()) {
-                Object[] val = lookUp(objects, param);
-                if (val != null) {
-                    objectList.add(val);
-                }
-            } else {
-                objectList.add(transformTuple(objects, param));
-            }
-        }
 
-        return objectList.iterator();
+        iterator = Iterators.transform(iterator, tuples -> revMap(tuples, vertex));
+
+        profile.time(start);
+        return iterator;
+    }
+
+    public static Object[] revMap(Object[] tuple, Vertex vertex) {
+        GetByIndexParam param = vertex.getParam();
+        if (param.isLookup()) {
+            return lookUp(tuple, param);
+        } else {
+            return transformTuple(tuple, param);
+        }
     }
 
     private static Object[] lookUp(Object[] tuples, GetByIndexParam param) {

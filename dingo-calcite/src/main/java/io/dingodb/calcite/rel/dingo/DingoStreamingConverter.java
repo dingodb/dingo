@@ -22,6 +22,7 @@ import io.dingodb.calcite.traits.DingoRelPartition;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.traits.DingoRelStreamingDef;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
+import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -37,6 +38,9 @@ import java.util.List;
 import java.util.Set;
 
 public final class DingoStreamingConverter extends SingleRel implements DingoRel {
+    @Getter
+    private double rowCount;
+
     public DingoStreamingConverter(
         RelOptCluster cluster,
         RelTraitSet traits,
@@ -52,14 +56,15 @@ public final class DingoStreamingConverter extends SingleRel implements DingoRel
         assert inputStreaming != null;
         Set<DingoRelPartition> partitions = getStreaming().getPartitions();
         Set<DingoRelPartition> inputPartitions = inputStreaming.getPartitions();
+        this.rowCount = rowCount;
         assert partitions != null && inputPartitions != null;
         if (partitions.size() > inputPartitions.size()) {
             for (int i = 0; i < partitions.size() - inputPartitions.size(); ++i) {
-                rowCount /= 3.0d;
+                rowCount /= 1.000001d;
             }
         } else if (inputPartitions.size() > partitions.size()) {
             for (int i = 0; i < inputPartitions.size() - partitions.size(); ++i) {
-                rowCount *= 3.0d;
+                rowCount *= 1.000001d;
             }
         }
         return rowCount;

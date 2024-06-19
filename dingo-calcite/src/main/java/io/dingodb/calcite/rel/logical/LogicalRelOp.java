@@ -26,6 +26,7 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexNode;
 
 import java.util.List;
 
@@ -34,6 +35,8 @@ public class LogicalRelOp extends SingleRel {
     protected final ImmutableList<RelHint> hints;
     @Getter
     protected final RelOp relOp;
+    @Getter
+    protected final RexNode filter;
 
     protected RelDataType rowType;
 
@@ -43,17 +46,19 @@ public class LogicalRelOp extends SingleRel {
         List<RelHint> hints,
         RelNode input,
         RelDataType rowType,
-        RelOp relOp
+        RelOp relOp,
+        RexNode filter
     ) {
         super(cluster, traits, input);
         this.hints = ImmutableList.copyOf(hints);
         this.rowType = rowType;
         this.relOp = relOp;
+        this.filter = filter;
     }
 
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new LogicalRelOp(getCluster(), traitSet, hints, sole(inputs), rowType, relOp);
+        return new LogicalRelOp(getCluster(), traitSet, hints, sole(inputs), rowType, relOp, filter);
     }
 
     @Override

@@ -162,7 +162,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
                                          RexNode condition) {
         Map<CommonId, Table> indexTdMap = getScalaIndices(dingoVector.getTable());
 
-        if (indexTdMap.size() == 0) {
+        if (indexTdMap.isEmpty()) {
             return null;
         }
         Map<CommonId, Set> indexSetMap = filterScalarIndices(

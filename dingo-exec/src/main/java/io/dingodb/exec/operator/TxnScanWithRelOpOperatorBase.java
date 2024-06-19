@@ -16,7 +16,6 @@
 
 package io.dingodb.exec.operator;
 
-import com.google.common.collect.Iterators;
 import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.CoprocessorV2;
@@ -65,7 +64,7 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
     @Override
     protected @NonNull Iterator<Object[]> createIterator(@NonNull Context context, @NonNull Vertex vertex) {
         TxnScanWithRelOpParam param = vertex.getParam();
-        OperatorProfile profile = param.getProfile("createIterator");
+        OperatorProfile profile = param.getProfile("initIterator");
         long start = System.currentTimeMillis();
         CommonId tableId = param.getTableId();
         CommonId txnId = vertex.getTask().getTxnId();
@@ -84,6 +83,7 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
                 ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
                 profile.getChildren().add(profileScanIterator.getInitRpcProfile());
             }
+            profile.end();
             return createMergedIterator(localIterator, storeIterator, param.getCodec());
         }
         CoprocessorV2 coprocessor = param.getCoprocessor();
@@ -99,6 +99,7 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
                 ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
                 profile.getChildren().add(profileScanIterator.getInitRpcProfile());
             }
+            profile.end();
             return DingoTransformedIterator.transform(storeIterator, wrap(param.getCodec()::decode)::apply);
         }
         Iterator<KeyValue> storeIterator = createStoreIteratorCp(
@@ -113,6 +114,7 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
             ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
             profile.getChildren().add(profileScanIterator.getInitRpcProfile());
         }
+        profile.end();
         return DingoTransformedIterator.transform(storeIterator, wrap(param.getPushDownCodec()::decode)::apply);
     }
 }

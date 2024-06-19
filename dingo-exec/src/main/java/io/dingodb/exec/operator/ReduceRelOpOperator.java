@@ -39,7 +39,9 @@ public final class ReduceRelOpOperator extends SoleOutOperator {
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, @NonNull Vertex vertex) {
         ReduceRelOpParam param = vertex.getParam();
-        ((AggregateOp) param.getRelOp()).reduce(tuple);
+        synchronized (param.getRelOp()) {
+            ((AggregateOp) param.getRelOp()).reduce(tuple);
+        }
         return true;
     }
 
@@ -48,10 +50,12 @@ public final class ReduceRelOpOperator extends SoleOutOperator {
         ReduceRelOpParam param = vertex.getParam();
         Edge edge = vertex.getSoleEdge();
         CacheOp relOp = (CacheOp) param.getRelOp();
-        if (!(fin instanceof FinWithException)) {
-            RelOpUtils.forwardCacheOpResults(relOp, vertex.getSoleEdge());
+        synchronized (relOp) {
+            if (!(fin instanceof FinWithException)) {
+                RelOpUtils.forwardCacheOpResults(relOp, vertex.getSoleEdge());
+            }
+            edge.fin(fin);
+            relOp.clear();
         }
-        edge.fin(fin);
-        relOp.clear();
     }
 }

@@ -111,7 +111,7 @@ public class DingoFactory implements AvaticaFactory {
     ) throws SQLException {
         final ResultSetMetaData metaData = newResultSetMetaData(statement, signature);
         if (signature instanceof DingoSignature || signature instanceof DingoExplainSignature
-            || signature instanceof MysqlSignature) {
+            || signature instanceof MysqlSignature || signature instanceof ExplainSignature) {
             return new DingoResultSet(statement, state, signature, metaData, timeZone, firstFrame);
         }
         return new AvaticaResultSet(statement, state, signature, metaData, timeZone, firstFrame);

@@ -20,10 +20,12 @@ import io.dingodb.calcite.rel.DingoRel;
 import io.dingodb.calcite.rel.logical.LogicalReduceAggregate;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.expr.rel.RelOp;
+import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -33,6 +35,9 @@ import java.util.List;
  * To reduce the results of partitioned aggregation.
  */
 public final class DingoReduceAggregate extends LogicalReduceAggregate implements DingoRel {
+    @Getter
+    private double rowCount;
+
     public DingoReduceAggregate(
         RelOptCluster cluster,
         RelTraitSet traits,
@@ -59,5 +64,11 @@ public final class DingoReduceAggregate extends LogicalReduceAggregate implement
     @Override
     public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visitDingoAggregateReduce(this);
+    }
+
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
+        rowCount = super.estimateRowCount(mq);
+        return rowCount;
     }
 }

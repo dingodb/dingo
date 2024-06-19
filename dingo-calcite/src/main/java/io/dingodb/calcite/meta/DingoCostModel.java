@@ -24,11 +24,5 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 
 public abstract class DingoCostModel {
-    public abstract RelOptCost getDingoGetByIndex(DingoGetByIndex tableScan, RelMetadataQuery mq);
 
-    public abstract RelOptCost getDingoGetByIndexMerge(DingoGetByIndexMerge dingoGetByIndexMerge, RelMetadataQuery mq);
-
-    public abstract RelOptCost getDingoGetByKeys(DingoGetByKeys dingoGetByKeys, RelMetadataQuery mq);
-
-    public abstract RelOptCost getDingoTableScan(DingoTableScan dingoTableScan, RelMetadataQuery mq);
 }

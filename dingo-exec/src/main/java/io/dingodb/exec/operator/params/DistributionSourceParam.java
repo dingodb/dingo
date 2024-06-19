@@ -55,6 +55,10 @@ public class DistributionSourceParam extends SourceParam {
     private boolean logicalNot;
     private boolean notBetween;
     private Object[] keyTuple;
+    @Setter
+    private boolean filterRange;
+    @Setter
+    private int keepOrder;
 
     public DistributionSourceParam(
         Table td,
@@ -87,4 +91,5 @@ public class DistributionSourceParam extends SourceParam {
             Optional.ofNullable(td.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
     }
+
 }

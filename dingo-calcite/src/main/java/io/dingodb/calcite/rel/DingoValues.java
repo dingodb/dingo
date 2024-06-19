@@ -33,6 +33,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.List;
 
 public class DingoValues extends LogicalDingoValues implements DingoRel {
+    @Getter
+    private double rowCount;
     @Setter
     @Getter
     private boolean hasAutoIncrement;
@@ -65,8 +67,8 @@ public class DingoValues extends LogicalDingoValues implements DingoRel {
 
     @Override
     public double estimateRowCount(RelMetadataQuery mq) {
-        int size = getTuples().size();
-        return size;
+        rowCount = getTuples().size();
+        return rowCount;
     }
 
     @Override

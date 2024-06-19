@@ -25,6 +25,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableModify;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -32,6 +33,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.List;
 
 public final class DingoTableModify extends TableModify implements DingoRel {
+    @Getter
+    private double rowCount;
+
     @Setter
     @Getter
     private boolean hasAutoIncrement;
@@ -81,5 +85,11 @@ public final class DingoTableModify extends TableModify implements DingoRel {
             getSourceExpressionList(),
             isFlattened()
         );
+    }
+
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
+        rowCount = super.estimateRowCount(mq);
+        return rowCount;
     }
 }

@@ -44,10 +44,10 @@ public class TableStats {
         this.countMinSketchList = countMinSketchList;
         this.histogramList = histogramList;
         this.statsNormalList = statsNormalList;
-        if (countMinSketchList.size() > 0) {
+        if (!countMinSketchList.isEmpty()) {
             this.schemaName = countMinSketchList.get(0).getSchemaName();
             this.tableName = countMinSketchList.get(0).getTableName();
-        } else if (histogramList.size() > 0) {
+        } else if (!histogramList.isEmpty()) {
             this.schemaName = histogramList.get(0).getSchemaName();
             this.tableName = histogramList.get(0).getTableName();
         }
@@ -81,7 +81,7 @@ public class TableStats {
         }
         // merge histogram
         // get first col histogram
-        if (tableStatsList.get(0).histogramList.size() > 0) {
+        if (!tableStatsList.get(0).histogramList.isEmpty()) {
             List<Histogram> firstHistogramList = tableStatsList.get(0).histogramList;
             for (int j = 0; j < firstHistogramList.size(); j ++) {
                 Histogram colHistogram = firstHistogramList.get(j);
@@ -93,7 +93,7 @@ public class TableStats {
         }
         // merge count-min-sketch
         // get first col cmsketch
-        if (tableStatsList.get(0).countMinSketchList.size() > 0) {
+        if (!tableStatsList.get(0).countMinSketchList.isEmpty()) {
             List<CountMinSketch> firstCmSketchList = tableStatsList.get(0).countMinSketchList;
             for (int j = 0; j < firstCmSketchList.size(); j ++) {
                 CountMinSketch countMinSketch = firstCmSketchList.get(j);
@@ -104,7 +104,7 @@ public class TableStats {
             }
         }
         // merge stats-normal
-        if (tableStatsList.get(0).statsNormalList.size() > 0) {
+        if (!tableStatsList.get(0).statsNormalList.isEmpty()) {
             List<StatsNormal> firstStatsNormalList = tableStatsList.get(0).statsNormalList;
             for (int j = 0; j < firstStatsNormalList.size(); j ++) {
                 StatsNormal statsNormal = firstStatsNormalList.get(j);
@@ -124,16 +124,16 @@ public class TableStats {
     }
 
     public void initRowCount() {
-        if (statsNormalList != null && statsNormalList.size() > 0 && statsNormalList.get(0) != null) {
+        if (statsNormalList != null && !statsNormalList.isEmpty() && statsNormalList.get(0) != null) {
             rowCount = statsNormalList.get(0).getTotalCount();
         }
         if (rowCount == 0) {
-            if (histogramList != null && histogramList.size() > 0 && histogramList.get(0) != null) {
+            if (histogramList != null && !histogramList.isEmpty() && histogramList.get(0) != null) {
                 rowCount = histogramList.get(0).getTotalCount();
             }
         }
         if (rowCount == 0) {
-            if (countMinSketchList != null && countMinSketchList.size() > 0 && countMinSketchList.get(0) != null) {
+            if (countMinSketchList != null && !countMinSketchList.isEmpty() && countMinSketchList.get(0) != null) {
                 rowCount = countMinSketchList.get(0).getTotalCount();
             }
         }

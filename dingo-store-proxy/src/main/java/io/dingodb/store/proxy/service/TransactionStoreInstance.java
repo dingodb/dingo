@@ -681,6 +681,7 @@ public class TransactionStoreInstance {
 
         private boolean withStart;
         private boolean hasMore = true;
+        private int limit;
         private StoreInstance.Range current;
         private Iterator<KeyValue> keyValues;
         private final OperatorProfile rpcProfile;
@@ -696,6 +697,10 @@ public class TransactionStoreInstance {
             this.current = range;
             this.withStart = range.withStart;
             this.timeOut = timeOut;
+            limit = ScopeVariables.getRpcBatchSize();
+            if (coprocessor != null && coprocessor.getLimit() > 0) {
+                limit = coprocessor.getLimit();
+            }
             this.coprocessor = MAPPER.coprocessorTo(coprocessor);
             Optional.ofNullable(this.coprocessor)
                 .map(io.dingodb.sdk.service.entity.common.CoprocessorV2::getOriginalSchema)
@@ -721,7 +726,7 @@ public class TransactionStoreInstance {
             List<Long> resolvedLocks = new ArrayList<>();
             while (true) {
                 TxnScanRequest txnScanRequest = MAPPER.scanTo(startTs, IsolationLevel.SnapshotIsolation, current);
-                txnScanRequest.setLimit(ScopeVariables.getRpcBatchSize());
+                txnScanRequest.setLimit(limit);
                 txnScanRequest.setResolveLocks(resolvedLocks);
                 txnScanRequest.setCoprocessor(coprocessor);
                 TxnScanResponse txnScanResponse;

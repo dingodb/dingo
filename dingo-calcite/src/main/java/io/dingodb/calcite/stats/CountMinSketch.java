@@ -260,6 +260,7 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
                 this.multiset[i][j] += that.multiset[i][j];
             }
         }
+        this.totalCount += that.getTotalCount();
     }
 
     public String serialize() {

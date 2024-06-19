@@ -112,6 +112,7 @@ public class StatsNormal implements Cloneable {
     }
 
     public StatsNormal merge(StatsNormal statsNormal) {
+        this.totalCount += statsNormal.getTotalCount();
         this.ndv += statsNormal.getNdv();
         this.numNull += statsNormal.numNull;
         this.totalColSize += statsNormal.totalColSize;

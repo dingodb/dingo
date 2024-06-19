@@ -61,6 +61,8 @@ import static io.dingodb.calcite.rule.DingoVectorIndexRule.getDefaultSelection;
 
 public class LogicalDingoTableScan extends TableScan {
     @Getter
+    private double rowCount;
+    @Getter
     protected final RexNode filter;
     @Getter
     protected TupleMapping selection;
@@ -74,6 +76,10 @@ public class LogicalDingoTableScan extends TableScan {
     protected final ImmutableList<ImmutableBitSet> groupSets;
     @Getter
     protected final boolean pushDown;
+
+    @Getter
+    @Setter
+    protected int keepSerialOrder;
 
     @Getter
     @Setter
@@ -183,6 +189,9 @@ public class LogicalDingoTableScan extends TableScan {
                 null
             );
             rowCount = RelMdUtil.estimateFilteredRows(fakeInput, filter, mq);
+            if (rowCount < 1) {
+                rowCount = 1;
+            }
         } else {
             rowCount = StatsCache.getTableRowCount(this);
         }
@@ -193,6 +202,7 @@ public class LogicalDingoTableScan extends TableScan {
                 rowCount *= 1.0 - Math.pow(.8, groupSet.cardinality());
             }
         }
+        this.rowCount = rowCount;
         return rowCount;
     }
 

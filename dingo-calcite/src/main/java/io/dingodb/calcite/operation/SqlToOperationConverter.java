@@ -27,6 +27,7 @@ import io.dingodb.calcite.grammar.ddl.SqlLoadData;
 import io.dingodb.calcite.grammar.ddl.SqlLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlLockTable;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
+import io.dingodb.calcite.grammar.dql.SqlDescTable;
 import io.dingodb.calcite.grammar.dql.SqlShowTableIndex;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockTable;
@@ -125,8 +126,8 @@ public final class SqlToOperationConverter {
             return Optional.of(new ShowTableDistributionOperation(
                 sqlNode, sqlShowTableDistribution.schemaName, sqlShowTableDistribution.tableName
             ));
-        } else if (sqlNode instanceof SqlDesc) {
-            SqlDesc sqlDesc = (SqlDesc) sqlNode;
+        } else if (sqlNode instanceof SqlDescTable) {
+            SqlDescTable sqlDesc = (SqlDescTable) sqlNode;
             if (StringUtils.isEmpty(sqlDesc.schemaName)) {
                 sqlDesc.schemaName = getSchemaName(context);
             }

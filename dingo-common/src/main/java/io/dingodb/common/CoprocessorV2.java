@@ -20,6 +20,7 @@ import io.dingodb.common.util.ByteArrayUtils;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.Collections;
 import java.util.List;
@@ -42,4 +43,7 @@ public class CoprocessorV2 {
 
     @Builder.Default
     private byte[] relExpr = ByteArrayUtils.EMPTY_BYTES;
+
+    @Setter
+    private int limit;
 }

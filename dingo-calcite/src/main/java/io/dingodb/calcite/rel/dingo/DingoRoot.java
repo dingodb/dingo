@@ -20,6 +20,7 @@ import io.dingodb.calcite.rel.DingoRel;
 import io.dingodb.calcite.rel.logical.LogicalDingoRoot;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.type.TupleMapping;
+import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -32,6 +33,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.List;
 
 public final class DingoRoot extends LogicalDingoRoot implements DingoRel {
+    @Getter
+    private double rowCount;
     public DingoRoot(RelOptCluster cluster, RelTraitSet traits, RelNode input, TupleMapping selection) {
         super(cluster, traits, input, selection);
     }
@@ -44,6 +47,12 @@ public final class DingoRoot extends LogicalDingoRoot implements DingoRel {
     @Override
     public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, RelMetadataQuery mq) {
         return planner.getCostFactory().makeZeroCost();
+    }
+
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
+        rowCount = super.estimateRowCount(mq);
+        return rowCount;
     }
 
     @Override

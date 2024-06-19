@@ -49,6 +49,13 @@ import static io.dingodb.common.util.NoBreakFunctions.wrap;
  */
 @Slf4j
 public class CollectStatsTask implements Callable<TableStats> {
+    private final String tableName;
+    private final RangeDistribution region;
+    private final boolean isTxn;
+    private final long timeout;
+    StoreInstance kvStore;
+    KeyValueCodec codec;
+    private final long startTs;
     Iterator<Object[]> tupleIterator;
     List<Histogram> columnHistogramList;
     List<CountMinSketch> minSketchList;
@@ -72,26 +79,14 @@ public class CollectStatsTask implements Callable<TableStats> {
                             List<StatsNormal> statsNormals,
                             long scanTs,
                             long timeout) {
-        boolean isTxn = td.getEngine().contains("TXN");
-        StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, region.id());
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td.getVersion(), td.tupleType(), td.keyMapping());
-        if (!isTxn) {
-            Part part = new PartInKvStore(
-                kvStore,
-                codec
-            );
-            tupleIterator = part.scan(region.getStartKey(), region.getEndKey(),
-                region.isWithStart(), true);
-        } else {
-            Iterator<KeyValue> iterator = kvStore.txnScan(
-                scanTs,
-                new StoreInstance.Range(region.getStartKey(), region.getEndKey(), region.isWithStart(), true),
-                timeout
-            );
-            tupleIterator = Iterators.transform(iterator,
-                wrap(codec::decode)::apply
-            );
-        }
+        this.tableName = td.getName();
+        this.region = region;
+        this.isTxn = td.getEngine().contains("TXN");
+        this.startTs = scanTs;
+        this.timeout = timeout;
+        this.kvStore = Services.KV_STORE.getInstance(tableId, region.id());
+        this.codec = CodecService.getDefault().createKeyValueCodec(td.getVersion(), td.tupleType(), td.keyMapping());
+
         this.minSketchList = minSketches.stream().map(CountMinSketch::copy)
             .collect(Collectors.toList());
         columnHistogramList = columnHistograms.stream().map(Histogram::copy)
@@ -102,17 +97,38 @@ public class CollectStatsTask implements Callable<TableStats> {
 
     @Override
     public TableStats call() {
-        LogUtils.info(log, "collect iterator start");
+        LogUtils.info(log, "collect region stats start, tableName:{}, regionId:{}",
+             tableName, region.getId());
+        if (!isTxn) {
+            Part part = new PartInKvStore(
+                kvStore,
+                codec
+            );
+            tupleIterator = part.scan(region.getStartKey(), region.getEndKey(),
+                region.isWithStart(), true);
+        } else {
+            Iterator<KeyValue> iterator = kvStore.txnScan(
+                startTs,
+                new StoreInstance.Range(region.getStartKey(), region.getEndKey(), region.isWithStart(), region.isWithEnd()),
+                timeout
+            );
+            tupleIterator = Iterators.transform(iterator,
+                wrap(codec::decode)::apply
+            );
+        }
+        long start = System.currentTimeMillis();
+        long count = 0;
         while (tupleIterator.hasNext()) {
+            count ++;
             Object[] tuples = tupleIterator.next();
-            if (columnHistogramList.size() > 0) {
+            if (!columnHistogramList.isEmpty()) {
                 columnHistogramList.forEach(e -> {
                     Object val = tuples[e.getIndex()];
                     e.addValue(val);
                     statsNormalMap.get(e.getColumnName()).addVal(val);
                 });
             }
-            if (minSketchList.size() > 0) {
+            if (!minSketchList.isEmpty()) {
                 minSketchList.forEach(e -> {
                     String val = (String) tuples[e.getIndex()];
                     e.setString(val);
@@ -120,7 +136,9 @@ public class CollectStatsTask implements Callable<TableStats> {
                 });
             }
         }
-        LogUtils.info(log, "collect iterator end...");
+        long end = System.currentTimeMillis();
+        LogUtils.info(log, "collect region stats end, take time:{}, tableName:{}, regionId:{}, count:{}",
+            (end - start), tableName, region.getId(), count);
         return new TableStats(minSketchList, columnHistogramList,
             new ArrayList<>(statsNormalMap.values()));
     }

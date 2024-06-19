@@ -48,14 +48,15 @@ public class TxnGetByIndexParam extends FilterProjectParam {
     @JsonProperty("isUnique")
     private final boolean isUnique;
     @JsonProperty("indexDefinition")
-    private final Table index;
-    private final Table table;
+    protected final Table index;
+    protected final Table table;
     private final KeyValueCodec codec;
     private transient KeyValueCodec lookupCodec;
     @JsonProperty("scanTs")
     private final long scanTs;
     private final long timeout;
-    private List<Integer> mapList;
+
+    protected List<Integer> mapList;
 
     public TxnGetByIndexParam(
         CommonId indexTableId,

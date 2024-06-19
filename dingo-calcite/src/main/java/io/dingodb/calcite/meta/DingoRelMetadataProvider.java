@@ -26,8 +26,7 @@ public class DingoRelMetadataProvider extends ChainedRelMetadataProvider {
         super(ImmutableList.of(
             DingoRelMdRowCount.SOURCE,
             DingoRelMdColumnUniqueness.SOURCE,
-            DingoRelMdSelectivity.SOURCE,
-            DingoRelMdCost.SOURCE
+            DingoRelMdSelectivity.SOURCE
         ));
     }
 }

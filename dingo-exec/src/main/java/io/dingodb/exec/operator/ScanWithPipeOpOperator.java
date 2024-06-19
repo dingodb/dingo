@@ -32,7 +32,8 @@ public final class ScanWithPipeOpOperator extends ScanWithRelOpOperatorBase {
 
     @Override
     protected @NonNull Scanner getScanner(@NonNull Context context, @NonNull Vertex vertex) {
-        if (((ScanWithRelOpParam) vertex.getParam()).getCoprocessor() != null) {
+        ScanWithRelOpParam param = vertex.getParam();
+        if (param.getCoprocessor() != null) {
             return RelOpUtils::doScan;
         }
         return RelOpUtils::doScanWithPipeOp;

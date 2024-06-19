@@ -17,6 +17,7 @@
 package io.dingodb.exec.utils;
 
 import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.util.Pair;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
@@ -25,7 +26,6 @@ import io.dingodb.exec.operator.params.ScanWithRelOpParam;
 import io.dingodb.expr.rel.CacheOp;
 import io.dingodb.expr.rel.PipeOp;
 import io.dingodb.store.api.transaction.DingoTransformedIterator;
-import io.dingodb.store.api.transaction.ProfileScanIterator;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -55,7 +55,7 @@ public final class RelOpUtils {
         }
     }
 
-    public static long doScan(
+    public static Pair<Long, Boolean> doScan(
         Context context,
         @NonNull Vertex vertex,
         @NonNull Iterator<Object[]> iterator
@@ -64,10 +64,12 @@ public final class RelOpUtils {
         OperatorProfile profile = param.getProfile("doScan");
         long count = 0;
         long tmp = System.currentTimeMillis();
+        boolean breakFlg = false;
         while (iterator.hasNext()) {
             profile.time(tmp);
             Object[] tuple = iterator.next();
             if (!vertex.getSoleEdge().transformToNext(context, tuple)) {
+                breakFlg = true;
                 break;
             }
             tmp = System.currentTimeMillis();
@@ -83,10 +85,10 @@ public final class RelOpUtils {
         profile.time(tmp);
         profile.decreaseCount();
         profile.end();
-        return count;
+        return Pair.of(count, !breakFlg);
     }
 
-    public static long doScanWithPipeOp(
+    public static Pair<Long, Boolean> doScanWithPipeOp(
         Context context,
         @NonNull Vertex vertex,
         @NonNull Iterator<Object[]> sourceIterator
@@ -97,11 +99,13 @@ public final class RelOpUtils {
         Edge edge = vertex.getSoleEdge();
         long count = 0;
         long tmp = System.currentTimeMillis();
+        boolean breakFlg = false;
         while (sourceIterator.hasNext()) {
             profile.time(tmp);
             Object[] tuple = sourceIterator.next();
             ++count;
             if (!processWithPipeOp(relOp, tuple, edge, context)) {
+                breakFlg = true;
                 break;
             }
             tmp = System.currentTimeMillis();
@@ -116,10 +120,10 @@ public final class RelOpUtils {
         }
         profile.time(tmp);
         profile.decreaseCount();
-        return count;
+        return Pair.of(count, !breakFlg);
     }
 
-    public static long doScanWithCacheOp(
+    public static Pair<Long, Boolean> doScanWithCacheOp(
         Context ignoredContext,
         @NonNull Vertex vertex,
         @NonNull Iterator<Object[]> sourceIterator
@@ -127,29 +131,32 @@ public final class RelOpUtils {
         ScanParam param = vertex.getParam();
         OperatorProfile profile = param.getProfile("doScanWithCacheOp");
         CacheOp relOp = (CacheOp) ((ScanWithRelOpParam) vertex.getParam()).getRelOp();
-        long count = 0;
-        long tmp = System.currentTimeMillis();
-        while (sourceIterator.hasNext()) {
-            profile.time(tmp);
-            Object[] tuple = sourceIterator.next();
-            ++count;
-            relOp.put(tuple);
-            tmp = System.currentTimeMillis();
-        }
-        if (sourceIterator instanceof DingoTransformedIterator) {
-            DingoTransformedIterator transformedIterator = (DingoTransformedIterator) sourceIterator;
-            OperatorProfile profile1 = (OperatorProfile) transformedIterator.getProfile();
-            if (profile1 != null) {
-                profile1.end();
-                profile.getChildren().add(profile1);
+        synchronized (relOp) {
+            long count = 0;
+            long tmp = System.currentTimeMillis();
+            boolean breakFlg = true;
+            while (sourceIterator.hasNext()) {
+                profile.time(tmp);
+                Object[] tuple = sourceIterator.next();
+                ++count;
+                relOp.put(tuple);
+                tmp = System.currentTimeMillis();
             }
-        }
-        profile.time(tmp);
+            if (sourceIterator instanceof DingoTransformedIterator) {
+                DingoTransformedIterator transformedIterator = (DingoTransformedIterator) sourceIterator;
+                OperatorProfile profile1 = (OperatorProfile) transformedIterator.getProfile();
+                if (profile1 != null) {
+                    profile1.end();
+                    profile.getChildren().add(profile1);
+                }
+            }
+            profile.time(tmp);
 
-        profile.decreaseCount();
-        forwardCacheOpResults(relOp, vertex.getSoleEdge());
-        relOp.clear();
-        return count;
+            profile.decreaseCount();
+            forwardCacheOpResults(relOp, vertex.getSoleEdge());
+            relOp.clear();
+            return Pair.of(count, breakFlg);
+        }
     }
 
     private static class BreakException extends RuntimeException {

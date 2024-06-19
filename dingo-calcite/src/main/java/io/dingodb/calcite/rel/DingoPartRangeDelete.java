@@ -34,6 +34,8 @@ import java.util.Objects;
 
 public final class DingoPartRangeDelete extends AbstractRelNode implements DingoRel {
     @Getter
+    private double rowCount;
+    @Getter
     private final RelOptTable table;
     private final RelDataType rowType;
     @Getter
@@ -92,5 +94,11 @@ public final class DingoPartRangeDelete extends AbstractRelNode implements Dingo
     @Override
     public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
+        rowCount = super.estimateRowCount(mq);
+        return rowCount;
     }
 }

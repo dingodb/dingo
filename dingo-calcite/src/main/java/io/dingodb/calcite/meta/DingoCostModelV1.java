@@ -17,15 +17,9 @@
 package io.dingodb.calcite.meta;
 
 import io.dingodb.calcite.DingoTable;
-import io.dingodb.calcite.rel.DingoCost;
-import io.dingodb.calcite.rel.DingoGetByIndex;
-import io.dingodb.calcite.rel.DingoGetByIndexMerge;
-import io.dingodb.calcite.rel.DingoGetByKeys;
-import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.stats.StatsCache;
 import io.dingodb.calcite.stats.TableStats;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.type.scalar.DateType;
 import io.dingodb.common.type.scalar.DoubleType;
 import io.dingodb.common.type.scalar.FloatType;
@@ -36,27 +30,22 @@ import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
-import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 public class DingoCostModelV1 extends DingoCostModel {
 
-    private static final double scanFactor = 40.7;
-    private static final double netFactor = 3.96;
-    private static final double requestFactor = 60;
-    private static final double cpuFactor = 49.9;
-    public static final double scanConcurrency = 15;
-    private static final double lookupConcurrency = 5;
+    public static final double scanFactor = 40.7;
+    public static final double netFactor = 3.96;
+    public static final double cpuFactor = 49.9;
+    public static final double scanConcurrency = 1;
+    public static final double lookupConcurrency = 1;
 
-    private static final double memFactor = 0.01;
+    public static final double memFactor = 0.01;
 
     private static DingoCostModelV1 INSTANCE;
 
@@ -68,94 +57,7 @@ public class DingoCostModelV1 extends DingoCostModel {
         return INSTANCE;
     }
 
-    @Override
-    public RelOptCost getDingoGetByIndex(DingoGetByIndex dingoGetByIndex, RelMetadataQuery mq) {
-        // cost = index_cost + (table_cost + double_read_cost) / double_read_concurrency
-        // index cost = (index_scan_cost + index_net_cost) / dist_concurrency
-        // table cost = (table_scan_cost + table_net_cost) / dist_concurrency
-
-        // index_scan_cost = cardinality * log2(row-size) * scanFactor
-        // table_scan_cost = cardinality * log2(row_size) * scanFactor
-
-        double rowSize = getScanAvgRowSize(dingoGetByIndex);
-        DingoTable dingoTable = dingoGetByIndex.getTable().unwrap(DingoTable.class);
-        assert dingoTable != null;
-        String schemaName = dingoTable.getNames().get(1);
-
-        CommonId commonId = dingoGetByIndex.getIndexSetMap().keySet().stream().findFirst().get();
-        Table table = dingoGetByIndex.getIndexTdMap().get(commonId);
-
-        List<String> columnList = table.getColumns()
-            .stream().map(Column::getName).collect(Collectors.toList());
-        List<Column> indexCdList = dingoTable.getTable().getColumns().stream()
-            .filter(cd -> columnList.contains(cd.getName())).collect(Collectors.toList());
-        double indexRowSize = getAvgRowSize(indexCdList,
-            dingoTable.getTable(), schemaName);
-
-        double estimateRowCount = dingoGetByIndex.estimateRowCount(mq);
-        double indexScanCost = estimateRowCount * (Math.log(indexRowSize) / Math.log(2)) * scanFactor;
-        double indexNetCost = estimateRowCount * indexRowSize * netFactor;
-        double indexSideCost = (indexNetCost + indexScanCost) / scanConcurrency;
-        List<Column> selectionCdList = getSelectionCdList(dingoGetByIndex, dingoTable);
-        boolean isNeedLookup = needLookUp(indexCdList, selectionCdList);
-        double tableSideCost = 0;
-        double doubleReadCost = 0;
-        if (isNeedLookup) {
-            double tableScanCost = getScanCost(estimateRowCount, rowSize);
-            double tableNetCost = estimateRowCount * rowSize * netFactor;
-            tableSideCost = (tableScanCost + tableNetCost) / scanConcurrency;
-
-            double doubleReadTasks = estimateRowCount / 20000 * 32;
-            double doubleReadRequestCost = doubleReadTasks * requestFactor;
-            double doubleReadCpuCost = estimateRowCount * cpuFactor;
-            doubleReadCost = doubleReadRequestCost + doubleReadCpuCost;
-        }
-
-        double cost = indexSideCost + (tableSideCost + doubleReadCost) / lookupConcurrency;
-        return DingoCost.FACTORY.makeCost(cost, 0, 0);
-    }
-
-    public RelOptCost getDingoGetByIndexMerge(DingoGetByIndexMerge dingoGetByIndexMerge, RelMetadataQuery mq) {
-        RelOptCost cost = getDingoGetByIndex(dingoGetByIndexMerge, mq);
-        double rowCount = dingoGetByIndexMerge.estimateRowCount(mq);
-        RelOptCost memCost = DingoCost.FACTORY.makeCost(rowCount * memFactor, 0, 0);
-        return cost.plus(memCost);
-    }
-
-    public RelOptCost getDingoGetByKeys(DingoGetByKeys dingoGetByKeys, RelMetadataQuery mq) {
-        double rowCount = dingoGetByKeys.estimateRowCount(mq);
-        double rowSize = getScanAvgRowSize(dingoGetByKeys);
-        double indexNetCost = getNetCost(rowCount, rowSize) / scanConcurrency;
-
-        return DingoCost.FACTORY.makeCost(indexNetCost, 0, 0);
-    }
-
-    @Override
-    public RelOptCost getDingoTableScan(DingoTableScan dingoTableScan, RelMetadataQuery mq) {
-        return getLogicDingoTableScan(dingoTableScan, mq);
-    }
-
-    private RelOptCost getLogicDingoTableScan(LogicalDingoTableScan dingoTableScan, RelMetadataQuery mq) {
-        double rowCount = dingoTableScan.getTable().getRowCount();
-        if (rowCount == 0) {
-            rowCount = StatsCache.getTableRowCount(dingoTableScan);
-        }
-
-        if (dingoTableScan.getGroupSet() != null) {
-            if (dingoTableScan.getGroupSet().cardinality() == 0) {
-                rowCount = 1.0;
-            } else {
-                rowCount *= 1.0 - Math.pow(.8, dingoTableScan.getGroupSet().cardinality());
-            }
-        }
-        double rowSize = getScanAvgRowSize(dingoTableScan);
-        double tableScanCost = getScanCost(rowCount, rowSize);
-        double tableNetCost = getNetCost(rowCount, rowSize);
-        double rangeCost = (tableScanCost + tableNetCost) / scanConcurrency;
-        return DingoCost.FACTORY.makeCost(rangeCost, 0, 0);
-    }
-
-    private double getScanAvgRowSize(LogicalDingoTableScan tableScan) {
+    public static double getScanAvgRowSize(LogicalDingoTableScan tableScan) {
         DingoTable dingoTable = tableScan.getTable().unwrap(DingoTable.class);
         assert dingoTable != null;
         String schemaName = dingoTable.getNames().get(1);
@@ -166,8 +68,8 @@ public class DingoCostModelV1 extends DingoCostModel {
     }
 
     public static double getScanCost(double rowCount, double rowSize) {
-        Double cost = rowCount * (Math.log(rowSize) / Math.log(2)) * scanFactor;
-        if (cost.isInfinite()) {
+        double cost = rowCount * (Math.log(rowSize) / Math.log(2)) * scanFactor;
+        if (Double.isInfinite(cost)) {
             return 0;
         } else {
             return cost;
@@ -179,7 +81,7 @@ public class DingoCostModelV1 extends DingoCostModel {
     }
 
     @NonNull
-    private static List<Column> getSelectionCdList(LogicalDingoTableScan tableScan, DingoTable dingoTable) {
+    public static List<Column> getSelectionCdList(LogicalDingoTableScan tableScan, DingoTable dingoTable) {
         if (tableScan.getRealSelection() == null) {
             return dingoTable.getTable().getColumns();
         }
@@ -242,7 +144,7 @@ public class DingoCostModelV1 extends DingoCostModel {
         return 32;
     }
 
-    private static boolean needLookUp(List<Column> indexCdList, List<Column> selectionCdList) {
+    public static boolean needLookUp(List<Column> indexCdList, List<Column> selectionCdList) {
         if (selectionCdList.size() > indexCdList.size()) {
             return true;
         } else {

@@ -18,11 +18,13 @@ package io.dingodb.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
+import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
@@ -32,6 +34,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.List;
 
 public final class DingoProject extends Project implements DingoRel {
+    @Getter
+    private double rowCount;
+
     public DingoProject(
         RelOptCluster cluster,
         RelTraitSet traits,
@@ -73,5 +78,11 @@ public final class DingoProject extends Project implements DingoRel {
     @Override
     public @Nullable Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(@NonNull RelTraitSet required) {
         return Pair.of(required, ImmutableList.of(required));
+    }
+
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
+        rowCount = super.estimateRowCount(mq);
+        return rowCount;
     }
 }

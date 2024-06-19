@@ -47,7 +47,7 @@ public class SortOperator extends SoleOutOperator {
                 return false;
             }
             param.getCache().add(tuple);
-            return collations.size() > 0 || limit < 0 || param.getCache().size() < offset + limit;
+            return !collations.isEmpty() || limit < 0 || param.getCache().size() < offset + limit;
         }
     }
 

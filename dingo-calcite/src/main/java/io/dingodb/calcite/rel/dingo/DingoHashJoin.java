@@ -18,6 +18,7 @@ package io.dingodb.calcite.rel.dingo;
 
 import io.dingodb.calcite.rel.DingoRel;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
+import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
@@ -25,6 +26,7 @@ import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -32,6 +34,9 @@ import java.util.List;
 import java.util.Set;
 
 public final class DingoHashJoin extends Join implements DingoRel {
+    @Getter
+    private double rowCount;
+
     public DingoHashJoin(
         RelOptCluster cluster,
         RelTraitSet traitSet,
@@ -69,5 +74,11 @@ public final class DingoHashJoin extends Join implements DingoRel {
     @Override
     public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
+        rowCount = super.estimateRowCount(mq);
+        return rowCount;
     }
 }

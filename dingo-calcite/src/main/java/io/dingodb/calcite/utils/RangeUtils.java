@@ -61,6 +61,14 @@ public final class RangeUtils {
         byte[] end = null;
         boolean withStart = true;
         boolean withEnd = true;
+        if ("HASH".equalsIgnoreCase(table.partitionStrategy)) {
+            return RangeDistribution.builder()
+                .startKey(start)
+                .endKey(end)
+                .withStart(withStart)
+                .withEnd(withEnd)
+                .build();
+        }
         List<RexNode> filters = sourceFilter.getKind() == SqlKind.AND
             ? ((RexCall) sourceFilter).operands
             : Collections.singletonList(sourceFilter);
@@ -70,7 +78,7 @@ public final class RangeUtils {
                 RuleUtils.checkCondition(filter), codec, realIndex, table.columns.size(), table
             );
             if (conditionValue == null) {
-                return null;
+                continue;
             }
             int compare = 0;
             switch (filter.getKind()) {
@@ -94,6 +102,12 @@ public final class RangeUtils {
                     }
                     break;
                 }
+                case EQUALS:
+                    start = conditionValue;
+                    end = conditionValue;
+                    withEnd = true;
+                    withStart = true;
+                    break;
                 default:
                     return null;
             }

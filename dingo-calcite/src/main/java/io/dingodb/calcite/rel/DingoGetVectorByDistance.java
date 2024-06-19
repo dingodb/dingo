@@ -44,6 +44,7 @@ public class DingoGetVectorByDistance extends Filter implements DingoRel {
     @Getter
     protected CommonId indexTableId;
 
+    @Getter
     protected Table indexTable;
 
     @Getter
