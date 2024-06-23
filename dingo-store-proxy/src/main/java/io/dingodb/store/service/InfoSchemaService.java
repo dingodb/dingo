@@ -31,6 +31,7 @@ import io.dingodb.sdk.service.entity.version.Kv;
 import io.dingodb.sdk.service.entity.version.PutRequest;
 import io.dingodb.sdk.service.entity.version.RangeRequest;
 import io.dingodb.sdk.service.entity.version.RangeResponse;
+import io.dingodb.store.proxy.Configuration;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayOutputStream;
@@ -50,7 +51,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final VersionService versionService;
-    public static final InfoSchemaService ROOT = new InfoSchemaService("172.20.3.93:22001,172.20.3.93:22002,172.20.3.93:22003");
+    public static final InfoSchemaService ROOT = new InfoSchemaService(Configuration.coordinators());
 
     @AutoService(InfoSchemaServiceProvider.class)
     public static class Provider implements InfoSchemaServiceProvider {
