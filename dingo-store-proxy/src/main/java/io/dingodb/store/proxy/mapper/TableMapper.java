@@ -250,7 +250,8 @@ public interface TableMapper {
             partitionTo(tableDefinition.getPartDefinition(), ids.getPartIds(), encoder, namespace)
         );
         definition.setName(definition.getName().toUpperCase());
-        return TableDefinitionWithId.builder().tableDefinition(definition).tableId(ids.getTableId()).build();
+        // TODO tenant id
+        return TableDefinitionWithId.builder().tenantId(0).tableDefinition(definition).tableId(ids.getTableId()).build();
     }
 
     default byte[] realKey(byte[] key, DingoCommonId id, byte namespace) {
