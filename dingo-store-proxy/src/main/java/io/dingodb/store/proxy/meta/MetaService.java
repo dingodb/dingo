@@ -315,7 +315,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
 
         // create index id
-        if (indexTableDefinitions.size() != 0) {
+        if (!indexTableDefinitions.isEmpty()) {
             List<DingoCommonId> indexIds = coordinatorService.createIds(
                     tso(),
                     CreateIdsRequest.builder()
@@ -362,7 +362,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                     .get();
                 indexWithIds.add(indexWithId);
                 // create index
-                infoSchemaService.createTableOrView(
+                infoSchemaService.createIndex(
                     indexWithId.getTenantId(),
                     id.getEntityId(),
                     indexWithId.getTableId().getEntityId(),

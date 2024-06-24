@@ -24,34 +24,23 @@ import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
-import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
+import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.service.MetaService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.entity.common.Location;
 import io.dingodb.sdk.service.entity.common.RegionDefinition;
+import io.dingodb.sdk.service.entity.coordinator.ScanRegionInfo;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.EntityType;
-import io.dingodb.sdk.service.entity.meta.GetIndexRangeRequest;
-import io.dingodb.sdk.service.entity.meta.GetSchemaByNameRequest;
-import io.dingodb.sdk.service.entity.meta.GetSchemasRequest;
-import io.dingodb.sdk.service.entity.meta.GetTableByNameRequest;
-import io.dingodb.sdk.service.entity.meta.GetTableByNameResponse;
-import io.dingodb.sdk.service.entity.meta.GetTableRangeRequest;
-import io.dingodb.sdk.service.entity.meta.GetTableRequest;
-import io.dingodb.sdk.service.entity.meta.GetTableResponse;
-import io.dingodb.sdk.service.entity.meta.GetTablesRequest;
 import io.dingodb.sdk.service.entity.meta.MetaEvent;
-import io.dingodb.sdk.service.entity.meta.MetaEventIndex;
 import io.dingodb.sdk.service.entity.meta.MetaEventRegion;
-import io.dingodb.sdk.service.entity.meta.MetaEventSchema;
-import io.dingodb.sdk.service.entity.meta.MetaEventTable;
-import io.dingodb.sdk.service.entity.meta.MetaEventTableIndex;
 import io.dingodb.sdk.service.entity.meta.MetaEventType;
-import io.dingodb.sdk.service.entity.meta.Schema;
+import io.dingodb.sdk.service.entity.meta.TableDefinition;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.sdk.service.entity.meta.WatchRequest;
 import io.dingodb.sdk.service.entity.meta.WatchRequest.RequestUnionNest.CreateRequest;
@@ -65,59 +54,41 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.CommonId.CommonType.INDEX;
 import static io.dingodb.common.CommonId.CommonType.TABLE;
-import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_INDEX_CREATE;
-import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_INDEX_DELETE;
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_REGION_CREATE;
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_REGION_DELETE;
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_REGION_UPDATE;
-import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_SCHEMA_CREATE;
-import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_SCHEMA_DELETE;
-import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_SCHEMA_UPDATE;
-import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_TABLE_CREATE;
-import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_TABLE_DELETE;
-import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_TABLE_INDEX_UPDATE;
-import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_TABLE_UPDATE;
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 import static java.lang.Math.max;
 
 @Slf4j
 public class MetaCache {
 
-    private final Set<Location> coordinators;
     private final MetaService metaService;
+    private final InfoSchemaService infoSchemaService;
     private final TsoService tsoService;
-
-    private final Map<String, Map<String, Table>> cache;
-    private final Map<CommonId, Table> tableIdCache;
-    private Map<String, io.dingodb.store.proxy.meta.MetaService> metaServices;
 
     private final LoadingCache<CommonId, NavigableMap<ComparableByteArray, RangeDistribution>> distributionCache;
 
     private boolean isClose = false;
 
     public MetaCache(Set<Location> coordinators) {
-        this.coordinators = coordinators;
         this.metaService = Services.metaService(coordinators);
+        this.infoSchemaService = InfoSchemaService.root();
         this.tsoService = TsoService.INSTANCE.isAvailable() ? TsoService.INSTANCE : new TsoService(coordinators);
-        this.tableIdCache = new ConcurrentSkipListMap<>();
+//        this.tableIdCache = new ConcurrentSkipListMap<>();
         this.distributionCache = buildDistributionCache();
-        this.cache = new ConcurrentHashMap<>();
+//        this.cache = new ConcurrentHashMap<>();
         Executors.execute("watch-meta", () -> {
             while (!isClose) {
                 try {
@@ -134,9 +105,9 @@ public class MetaCache {
     }
 
     public synchronized void clear() {
-        tableIdCache.clear();
-        cache.clear();
-        metaServices = null;
+//        tableIdCache.clear();
+//        cache.clear();
+//        metaServices = null;
         distributionCache.invalidateAll();
     }
 
@@ -173,40 +144,6 @@ public class MetaCache {
                 switch (event.getEventType()) {
                     case META_EVENT_NONE:
                         break;
-                    case META_EVENT_SCHEMA_CREATE:
-                    case META_EVENT_SCHEMA_UPDATE:
-                    case META_EVENT_SCHEMA_DELETE: {
-                        MetaEventSchema schemaEvent = (MetaEventSchema) event.getEvent();
-                        invalidateMetaServices();
-                        revision = max(revision, schemaEvent.getRevision());
-                        break;
-                    }
-                    case META_EVENT_TABLE_CREATE:
-                    case META_EVENT_TABLE_UPDATE:
-                    case META_EVENT_TABLE_DELETE: {
-                        MetaEventTable tableEvent = (MetaEventTable) event.getEvent();
-                        String schemaName = getMetaService(tableEvent.getSchemaId()).name;
-                        refreshSchema(schemaName);
-                        invalidateTable(tableEvent.getSchemaId(), tableEvent.getId());
-                        revision = max(revision, tableEvent.getDefinition().getRevision());
-                        break;
-                    }
-                    case META_EVENT_TABLE_INDEX_UPDATE: {
-                        MetaEventTableIndex tableIndexEvent = (MetaEventTableIndex) event.getEvent();
-                        long schemaId = tableIndexEvent.getTableIds() != null && tableIndexEvent.getTableIds().size() != 0 ? tableIndexEvent.getTableIds().get(0).getParentEntityId() : 2;
-                        refreshSchema(getMetaService(schemaId).name);
-                        invalidateTable(schemaId, tableIndexEvent.getId());
-                        revision = max(revision, tableIndexEvent.getRevision());
-                        break;
-                    }
-                    case META_EVENT_INDEX_CREATE:
-                    case META_EVENT_INDEX_DELETE: {
-                        MetaEventIndex indexDeleteEvent = (MetaEventIndex) event.getEvent();
-                        invalidateTable(indexDeleteEvent.getSchemaId(), indexDeleteEvent.getId());
-                        refreshSchema(getMetaService(indexDeleteEvent.getSchemaId()).name);
-                        revision = max(revision, indexDeleteEvent.getDefinition().getRevision());
-                        break;
-                    }
                     case META_EVENT_REGION_CREATE:
                     case META_EVENT_REGION_UPDATE:
                     case META_EVENT_REGION_DELETE: {
@@ -224,30 +161,10 @@ public class MetaCache {
     @NonNull
     private static List<MetaEventType> eventTypes() {
         return Arrays.asList(
-            META_EVENT_SCHEMA_CREATE,
-            META_EVENT_SCHEMA_UPDATE,
-            META_EVENT_SCHEMA_DELETE,
-            META_EVENT_TABLE_CREATE,
-            META_EVENT_TABLE_UPDATE,
-            META_EVENT_TABLE_DELETE,
-            META_EVENT_INDEX_CREATE,
-            META_EVENT_INDEX_DELETE,
             META_EVENT_REGION_CREATE,
             META_EVENT_REGION_UPDATE,
-            META_EVENT_REGION_DELETE,
-            META_EVENT_TABLE_INDEX_UPDATE
+            META_EVENT_REGION_DELETE
         );
-    }
-
-    private Map<String, Table> loadTables(Schema schema) {
-        if (schema.getTableIds() == null || schema.getTableIds().isEmpty()) {
-            return Collections.emptyMap();
-        }
-        return schema.getTableIds().stream()
-            .map(MAPPER::idFrom)
-            .map(this::getTable)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toConcurrentMap(Table::getName, Function.identity()));
     }
 
     private LoadingCache<CommonId, NavigableMap<ComparableByteArray, RangeDistribution>> buildDistributionCache() {
@@ -255,44 +172,26 @@ public class MetaCache {
             .expireAfterAccess(10, TimeUnit.MINUTES).expireAfterWrite(10, TimeUnit.MINUTES)
             .build(new CacheLoader<CommonId, NavigableMap<ComparableByteArray, RangeDistribution>>() {
                 @Override
-                public NavigableMap<ComparableByteArray, RangeDistribution> load(CommonId key) throws Exception {
+                public NavigableMap<ComparableByteArray, RangeDistribution> load(CommonId key) {
                     return loadDistribution(key);
                 }
             });
     }
 
     private Table loadTable(CommonId tableId) {
-        return Optional.ofNullable(metaService.getTable(
-                tso(), GetTableRequest.builder().tableId(MAPPER.idTo(tableId)).build()
-            )).map(GetTableResponse::getTableDefinitionWithId)
-            .ifAbsent(() -> LogUtils.warn(log, "Table {} not found.", tableId))
-            .filter(Objects::nonNull)
-            .map(tableWithId -> {
-                try {
-                    Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
-                    table.indexes.forEach($ -> tableIdCache.put($.getTableId(), $));
-                    return table;
-                } catch (Exception e) {
-                    LogUtils.warn(log, "load table and indexes error:" + tableId);
-                    return null;
-                }
-            }).filter(Objects::nonNull)
-            .orNull();
+        TableDefinitionWithId tableWithId
+            = (TableDefinitionWithId) infoSchemaService.getTable(0, tableId.domain, tableId.seq);
+        if (tableWithId == null) {
+            return null;
+        }
+        return MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
     }
 
     private List<TableDefinitionWithId> getIndexes(TableDefinitionWithId tableWithId, DingoCommonId tableId) {
         try {
-            return metaService.getTables(tso(), GetTablesRequest.builder().tableId(tableId).build())
-                .getTableDefinitionWithIds().stream()
-                .filter($ -> !$.getTableDefinition().getName().equalsIgnoreCase(tableWithId.getTableDefinition().getName()))
-                .peek($ -> {
-                    String name1 = $.getTableDefinition().getName();
-                    String[] split = name1.split("\\.");
-                    if (split.length > 1) {
-                        name1 = split[split.length - 1];
-                    }
-                    $.getTableDefinition().setName(name1);
-                }).collect(Collectors.toList());
+             List<Object> indexList = infoSchemaService
+                 .listIndex(0, tableId.getParentEntityId(), tableId.getEntityId());
+             return indexList.stream().map(object -> (TableDefinitionWithId)object).collect(Collectors.toList());
         } catch (Exception e) {
             if (tableWithId != null) {
                 LogUtils.error(log, "getIndexes tableWithId:" + tableWithId);
@@ -305,36 +204,49 @@ public class MetaCache {
 
     @SneakyThrows
     private NavigableMap<ComparableByteArray, RangeDistribution> loadDistribution(CommonId tableId) {
-        List<io.dingodb.sdk.service.entity.meta.RangeDistribution> ranges;
-        Table table = getTable(tableId);
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
-        boolean isOriginalKey = table.getPartitionStrategy().equalsIgnoreCase("HASH");
-        if (tableId.type == TABLE) {
-            ranges = metaService.getTableRange(
-                tso(), GetTableRangeRequest.builder().tableId(MAPPER.idTo(tableId)).build()
-            ).getTableRange().getRangeDistribution();
-        } else {
-            ranges = metaService.getIndexRange(
-                tso(), GetIndexRangeRequest.builder().indexId(MAPPER.idTo(tableId)).build()
-            ).getIndexRange().getRangeDistribution();
-        }
+        TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(
+            0, tableId.domain, tableId.seq
+            );
+        TableDefinition tableDefinition = tableWithId.getTableDefinition();
+        List<ScanRegionWithPartId> rangeDistributionList = new ArrayList<>();
+        tableDefinition.getTablePartition().getPartitions()
+            .forEach(partition -> {
+                List<Object> regionList = infoSchemaService
+                    .scanRegions(partition.getRange().getStartKey(), partition.getRange().getEndKey());
+                regionList
+                    .forEach(object -> {
+                        ScanRegionInfo scanRegionInfo = (ScanRegionInfo) object;
+//                        RangeDistribution distribution
+//                            = mapping(scanRegionInfo, partition.getId().getEntityId());
+                        rangeDistributionList.add(
+                            new ScanRegionWithPartId(scanRegionInfo, partition.getId().getEntityId())
+                            );
+                        //result.put(new ComparableByteArray(distribution.getStartKey(), 1), distribution);
+                    });
+            });
         NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
-        for (io.dingodb.sdk.service.entity.meta.RangeDistribution range : ranges) {
-            RangeDistribution distribution = mapping(range, codec, isOriginalKey);
+        Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
+        KeyValueCodec codec = CodecService.getDefault()
+            .createKeyValueCodec(tableDefinition.getVersion(), table.tupleType(), table.keyMapping());
+        boolean isOriginalKey = tableDefinition.getTablePartition().getStrategy().number() == 1;
+        rangeDistributionList.forEach(scanRegionWithPartId -> {
+            RangeDistribution distribution = mapping(scanRegionWithPartId, codec, isOriginalKey);
             result.put(new ComparableByteArray(distribution.getStartKey(), 1), distribution);
-        }
+        });
         return result;
     }
 
-    private RangeDistribution mapping(
-        io.dingodb.sdk.service.entity.meta.RangeDistribution rangeDistribution,
+
+    private static RangeDistribution mapping(
+        ScanRegionWithPartId scanRegionWithPartId,
         KeyValueCodec codec,
         boolean isOriginalKey
     ) {
-        byte[] startKey = rangeDistribution.getRange().getStartKey();
-        byte[] endKey = rangeDistribution.getRange().getEndKey();
+        ScanRegionInfo scanRegionInfo = scanRegionWithPartId.getScanRegionInfo();
+        byte[] startKey = scanRegionInfo.getRange().getStartKey();
+        byte[] endKey = scanRegionInfo.getRange().getEndKey();
         return RangeDistribution.builder()
-            .id(MAPPER.idFrom(rangeDistribution.getId()))
+            .id(new CommonId(CommonId.CommonType.DISTRIBUTION, scanRegionWithPartId.getPartId(), scanRegionInfo.getRegionId()))
             .startKey(startKey)
             .endKey(endKey)
             .start(codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(startKey, startKey.length) : startKey))
@@ -344,8 +256,6 @@ public class MetaCache {
 
     public void invalidateTable(long schema, long table) {
         LogUtils.info(log, "Invalid table {}.{}", schema, table);
-        tableIdCache.remove(new CommonId(TABLE, schema, table));
-        tableIdCache.remove(new CommonId(INDEX, schema, table));
     }
 
     public void invalidateDistribution(MetaEventRegion metaEventRegion) {
@@ -357,61 +267,27 @@ public class MetaCache {
 
     public void invalidateMetaServices() {
         LogUtils.info(log, "Invalid meta services");
-        metaServices = null;
     }
 
     public synchronized void refreshSchema(String schema) {
         LogUtils.info(log, "Invalid schema {}", schema);
-        try {
-            cache.compute(schema, (k, v) -> loadTables(metaService.getSchemaByName(
-                tso(), GetSchemaByNameRequest.builder().schemaName(schema).build()
-            ).getSchema()));
-        } catch (Exception e) {
-            LogUtils.error(log, "refresh schema error. " + e.getMessage(), e);
-        }
     }
 
     @SneakyThrows
     public Table getTable(String schema, String table) {
         schema = schema.toUpperCase();
-        if (getMetaServices().containsKey(schema)) {
-            if (cache.get(schema) == null) {
-                refreshSchema(schema);
-            }
-            Schema schema1 = metaService.getSchemaByName(
-                tso(), GetSchemaByNameRequest.builder().schemaName(schema).build()
-            ).getSchema();
-            if (schema1 == null) {
-                return null;
-            }
-            Map<String, Table> tableMap = cache.get(schema);
-            if (tableMap == null) {
-                log.error("get schema map error, name:" + schema + ", cache:" + cache);
-                return null;
-            }
-            Table table1 = tableMap.get(table.toUpperCase());
-            if (table1 == null) {
-                GetTableByNameResponse getTableByNameResponse
-                    = metaService.getTableByName(tso(), GetTableByNameRequest.builder().schemaId(schema1.getId()).tableName(table.toUpperCase()).build());
-                if (getTableByNameResponse == null) {
-                    return null;
-                }
-                Table table2 = MAPPER.tableFrom(getTableByNameResponse.getTableDefinitionWithId(),
-                    getIndexes(getTableByNameResponse.getTableDefinitionWithId(), getTableByNameResponse.getTableDefinitionWithId().getTableId()));
-                table2.indexes.forEach($ -> tableIdCache.put($.getTableId(), $));
-                cache.get(schema).put(table.toUpperCase(), table2);
-                return table2;
-            } else {
-                return table1;
-            }
-
+        table = table.toUpperCase();
+        TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(0, schema, table);
+        if (tableWithId == null) {
+            return null;
         }
-        return null;
+        return MAPPER.tableFrom(tableWithId,
+            getIndexes(tableWithId, tableWithId.getTableId()));
     }
 
     @SneakyThrows
     public Table getTable(CommonId tableId) {
-        return tableIdCache.computeIfAbsent(tableId, this::loadTable);
+        return this.loadTable(tableId);
     }
 
     public io.dingodb.store.proxy.meta.MetaService getMetaService(long schemaId) {
@@ -421,27 +297,39 @@ public class MetaCache {
     @SneakyThrows
     public Set<Table> getTables(String schema) {
         schema = schema.toUpperCase();
-        if (getMetaServices().containsKey(schema)) {
-            if (cache.get(schema) == null) {
-                refreshSchema(schema);
-            }
-            return new HashSet<>(cache.get(schema).values());
+        SchemaInfo schemaInfo = infoSchemaService.getSchema(0, schema);
+        long schemaId = schemaInfo.getSchemaId();
+        List<Object> objectList = infoSchemaService.listTable(0, schemaId);
+        if (objectList != null && !objectList.isEmpty()) {
+            return objectList
+                .stream()
+                .map(object -> {
+                    TableDefinitionWithId tableWithId = (TableDefinitionWithId) object;
+                    CommonId tableId = MAPPER.idFrom(tableWithId.getTableId());
+                    return getTable(tableId);
+                }).collect(Collectors.toSet());
         }
+
         return Collections.emptySet();
     }
 
     public Map<String, io.dingodb.store.proxy.meta.MetaService> getMetaServices() {
-        if (metaServices == null) {
-            metaServices = metaService.getSchemas(
-                    tso(), GetSchemasRequest.builder().schemaId(io.dingodb.store.proxy.meta.MetaService.ROOT.id).build()
-                ).getSchemas().stream()
-                .filter($ -> $.getId() != null && $.getId().getEntityId() != 0)
-                .peek($ -> $.getId().setEntityType(EntityType.ENTITY_TYPE_SCHEMA))
-                .map(schema -> new io.dingodb.store.proxy.meta.MetaService(
-                    schema.getId(), schema.getName().toUpperCase(), metaService, this
-                )).collect(Collectors.toMap(io.dingodb.store.proxy.meta.MetaService::name, Function.identity()));
-        }
-        return metaServices;
+        List<SchemaInfo> schemaInfoList = infoSchemaService.listSchema(0);
+        return schemaInfoList
+            .stream()
+            .filter(schemaInfo -> schemaInfo.getSchemaId() != 0)
+            .map(schemaInfo -> {
+                DingoCommonId dingoCommonId = DingoCommonId
+                    .builder()
+                    .entityId(schemaInfo.getSchemaId())
+                    .entityType(EntityType.ENTITY_TYPE_SCHEMA)
+                    .parentEntityId(0)
+                    .build();
+                return new io.dingodb.store.proxy.meta.MetaService(dingoCommonId,
+                    schemaInfo.getName().toUpperCase(), metaService, this);
+            })
+            .collect(Collectors.toMap(io.dingodb.store.proxy.meta.MetaService::name, Function.identity()));
+
     }
 
     @SneakyThrows

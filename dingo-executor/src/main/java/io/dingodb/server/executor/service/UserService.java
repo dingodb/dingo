@@ -239,8 +239,8 @@ public class UserService implements io.dingodb.verify.service.UserService {
         if (userDefinition == null) {
             return null;
         }
-        List<Object[]> dpValues = getSchemaPrivilegeList(userDefinition);
-        List<Object[]> tpValues = getTablePrivilegeList(userDefinition);
+        List<Object[]> dpValues = null;
+        List<Object[]> tpValues = null;
         Map<String, SchemaPrivDefinition> schemaPrivDefMap = new HashMap<>();
         if (dpValues != null) {
             dpValues.forEach(dbValue -> {
@@ -762,6 +762,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
             }
             return list;
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }
     }

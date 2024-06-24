@@ -1,0 +1,175 @@
+ [
+    {
+      "name": "Host",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "User",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": 1,
+      "nullable": false
+    },
+    {
+      "name": "Db",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": 2,
+      "nullable": false
+    },
+    {
+      "name": "Select_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Insert_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Update_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Delete_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Create_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Drop_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Grant_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "References_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Index_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Alter_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Create_tmp_table_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Lock_tables_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Create_view_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Show_view_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Create_routine_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Alter_routine_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Execute_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Event_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Trigger_priv",
+      "type": "varchar",
+      "default": "'N'",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    }
+  ]
