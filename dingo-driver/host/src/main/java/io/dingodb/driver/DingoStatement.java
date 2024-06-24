@@ -21,14 +21,17 @@ import io.dingodb.calcite.operation.DmlOperation;
 import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.QueryOperation;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.profile.SqlProfile;
 import io.dingodb.common.mysql.constant.ServerStatus;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
+import io.dingodb.exec.exception.TaskCancelException;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -38,6 +41,7 @@ import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.util.Iterator;
 
+@Slf4j
 public class DingoStatement extends AvaticaStatement {
 
     // for mysql protocol
@@ -64,6 +68,14 @@ public class DingoStatement extends AvaticaStatement {
     @Setter
     @Getter
     private Long autoIncId;
+
+    @Getter
+    @Setter
+    private Job job;
+
+    @Getter
+    @Setter
+    private JobManager jobManager;
 
     DingoStatement(
         DingoConnection connection,
@@ -111,6 +123,27 @@ public class DingoStatement extends AvaticaStatement {
         );
     }
 
+    @Override
+    public synchronized void close() throws SQLException {
+        try {
+            cancel();
+        } finally {
+            super.close();
+        }
+    }
+
+    @Override
+    public synchronized void cancel() throws SQLException {
+        LogUtils.info(log, "dingo statement cancel," + this.handle.id);
+        super.cancel();
+        if (jobManager != null && job != null) {
+            LogUtils.info(log, "dingo statement cancel job:{}", job);
+            jobManager.cancel(job.getJobId());
+        }
+        // If there is an open result set, it probably just set the same flag.
+        cancelFlag.compareAndSet(false, true);
+    }
+
     @NonNull
     @SneakyThrows
     public Iterator<Object[]> createIterator(@NonNull JobManager jobManager) {
@@ -122,10 +155,19 @@ public class DingoStatement extends AvaticaStatement {
             ExplainSignature explainSignature = (ExplainSignature) signature;
             return explainSignature.getIterator();
         } else if (signature instanceof DingoSignature) {
+            if (cancelFlag.get()) {
+                throw new TaskCancelException("task is cancel");
+            }
             Job job = jobManager.getJob(((DingoSignature) signature).getJobId());
-            return jobManager.createIterator(
+            this.job = job;
+            this.jobManager = jobManager;
+            Iterator<Object[]> iterator = jobManager.createIterator(
                 job, null, Optional.mapOrGet(connection.getClientInfo("max_execution_time"), Long::parseLong, () -> 0L)
             );
+            if (cancelFlag.get()) {
+                throw new TaskCancelException("task is cancel");
+            }
+            return iterator;
         } else if (signature instanceof MysqlSignature) {
             Operation operation = ((MysqlSignature) signature).getOperation();
             if (operation instanceof QueryOperation) {

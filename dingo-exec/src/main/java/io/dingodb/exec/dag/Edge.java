@@ -17,15 +17,19 @@
 package io.dingodb.exec.dag;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.OperatorFactory;
+import io.dingodb.exec.base.Status;
+import io.dingodb.exec.exception.TaskCancelException;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.operator.data.Context;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
-
+@Slf4j
 @Setter
 @Getter
 @AllArgsConstructor
@@ -45,6 +49,12 @@ public class Edge {
     }
 
     public boolean transformToNext(Context context, Object[] tuple) {
+        if(next.getTask().getStatus() == Status.CANCEL) {
+            LogUtils.info(log, "task status is cancel");
+            throw new TaskCancelException("task is cancel");
+        } else if (next.getTask().getStatus() == Status.STOPPED) {
+            return false;
+        }
         return OperatorFactory.getInstance(next.getOp()).push(context.setPin(previous.getPin()), tuple, next);
     }
 

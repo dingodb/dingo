@@ -97,6 +97,8 @@ public final class OperatorCodeUtils {
     public static final CommonId REDUCE_REL_OP = new CommonId(CommonId.CommonType.OP, OP, 72);
     public static final CommonId TXN_INDEX_RANGE_SCAN = new CommonId(CommonId.CommonType.OP, OP, 73);
 
+    public static final CommonId OPTIMISTIC_ROLL_BACK = new CommonId(CommonId.CommonType.OP, OP, 74);
+
     // sink
     public static final CommonId ROOT = new CommonId(CommonId.CommonType.OP, SINK, 80);
     public static final CommonId SEND = new CommonId(CommonId.CommonType.OP, SINK, 81);

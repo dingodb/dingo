@@ -45,6 +45,8 @@ public class TransactionCache {
 
     private final boolean pessimisticRollback;
 
+    private final boolean optimisticRollback;
+
     private final boolean pessimisticResidualLock;
 
     private boolean pessimisticTransaction;
@@ -54,6 +56,7 @@ public class TransactionCache {
     public TransactionCache(CommonId txnId) {
         this.txnId = txnId;
         this.pessimisticRollback = false;
+        this.optimisticRollback = false;
         this.cleanCache = false;
         this.pessimisticResidualLock = false;
     }
@@ -62,6 +65,16 @@ public class TransactionCache {
         this.txnId = txnId;
         this.jobId = new CommonId(CommonId.CommonType.JOB, txnId.seq, jobSeqId);
         this.pessimisticRollback = true;
+        this.optimisticRollback = false;
+        this.cleanCache = false;
+        this.pessimisticResidualLock = false;
+    }
+
+    public TransactionCache(CommonId txnId, long jobSeqId, boolean optimisticRollback) {
+        this.txnId = txnId;
+        this.jobId = new CommonId(CommonId.CommonType.JOB, txnId.seq, jobSeqId);
+        this.pessimisticRollback = false;
+        this.optimisticRollback = optimisticRollback;
         this.cleanCache = false;
         this.pessimisticResidualLock = false;
     }
@@ -69,6 +82,7 @@ public class TransactionCache {
     public TransactionCache(CommonId txnId, boolean cleanCache, boolean pessimisticTransaction) {
         this.txnId = txnId;
         this.pessimisticRollback = false;
+        this.optimisticRollback = false;
         this.cleanCache = cleanCache;
         this.pessimisticTransaction = pessimisticTransaction;
         this.pessimisticResidualLock = false;
@@ -77,6 +91,7 @@ public class TransactionCache {
     public TransactionCache(CommonId txnId, boolean pessimisticResidualLock) {
         this.txnId = txnId;
         this.pessimisticRollback = false;
+        this.optimisticRollback = false;
         this.cleanCache = false;
         this.pessimisticTransaction = true;
         this.pessimisticResidualLock = pessimisticResidualLock;
@@ -180,6 +195,11 @@ public class TransactionCache {
         return iterator.hasNext();
     }
 
+    public boolean checkOptimisticLockContinue() {
+        Iterator<KeyValue> iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_EXTRA_DATA, jobId));
+        return iterator.hasNext();
+    }
+
     public boolean checkResidualPessimisticLockContinue() {
         Iterator<KeyValue> iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, txnId));
         return iterator.hasNext();
@@ -190,6 +210,9 @@ public class TransactionCache {
         if (pessimisticRollback) {
             iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_EXTRA_DATA, jobId));
             return Iterators.transform(iterator, wrap(ByteUtils::decode)::apply);
+        } else if (optimisticRollback) {
+            iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_EXTRA_DATA, jobId));
+            return Iterators.transform(iterator, wrap(ByteUtils::decodeTxnCleanUp)::apply);
         } else if (pessimisticResidualLock) {
             iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, txnId));
             return Iterators.transform(iterator, wrap(ByteUtils::decode)::apply);

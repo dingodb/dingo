@@ -22,6 +22,7 @@ import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.utils.TableInfo;
+import io.dingodb.calcite.utils.VisitUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
@@ -106,16 +107,39 @@ public final class DingoScanWithRelOpVisitFun {
                 scanVertexCreator
             ));
         } else {
+            int partitionNum = partitions.size();
             if (td.getPartitionStrategy().equalsIgnoreCase("HASH")) {
                 // Partition will be split in executing time.
-                outputs.add(createVerticesForRange(
-                    task,
-                    idGenerator,
-                    (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end, false),
-                    null,
-                    null,
-                    scanVertexCreator
-                ));
+                if (rel.getRangeDistribution() != null || !Utils.parallel(rel.getKeepSerialOrder())) {
+                    outputs.add(createVerticesForRange(
+                        task,
+                        idGenerator,
+                        (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end, false),
+                        null,
+                        null,
+                        scanVertexCreator
+                    ));
+                    visitor.setScan(true);
+                    return outputs;
+                }
+                NavigableMap<ComparableByteArray, RangeDistribution> rangeDistributions = tableInfo.getRangeDistributions();
+                for (int i = 0; i < partitionNum; ++i) {
+                    Partition partition = partitions.get(i);
+                    NavigableMap<ComparableByteArray, RangeDistribution> subMap = rangeDistributions.subMap(
+                        new ComparableByteArray(partition.getStart()),
+                        true,
+                        new ComparableByteArray(partition.getEnd()),
+                        false
+                    );
+                    outputs.add(createVerticesForRange(
+                        task,
+                        idGenerator,
+                        (start, end) -> createCalcHashDistributionVertex(rel, subMap, start, end, false),
+                        null,
+                        null,
+                        scanVertexCreator
+                    ));
+                }
             } else {
                 if (rel.getRangeDistribution() != null || !Utils.parallel(rel.getKeepSerialOrder())) {
                     outputs.add(createVerticesForRange(
@@ -126,9 +150,9 @@ public final class DingoScanWithRelOpVisitFun {
                         null,
                         scanVertexCreator
                     ));
+                    visitor.setScan(true);
                     return outputs;
                 }
-                int partitionNum = partitions.size();
                 for (int i = 0; i < partitionNum; ++i) {
                     Partition partition = partitions.get(i);
                     outputs.add(createVerticesForRange(
@@ -142,6 +166,7 @@ public final class DingoScanWithRelOpVisitFun {
                 }
             }
         }
+        visitor.setScan(true);
         return outputs;
     }
 
@@ -190,25 +215,7 @@ public final class DingoScanWithRelOpVisitFun {
             transaction.setPointStartTs(0);
             return pointStartTs;
         }
-        long scanTs = transaction.getStartTs();
-        // Use current read
-        if (
-            transaction.isPessimistic()
-                && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.SnapshotIsolation
-                && (kind == SqlKind.INSERT
-                || kind == SqlKind.DELETE
-                || kind == SqlKind.UPDATE)
-        ) {
-            scanTs = TsoService.getDefault().tso();
-        }
-        if (
-            transaction.isPessimistic()
-                && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.ReadCommitted
-                && kind == SqlKind.SELECT
-        ) {
-            scanTs = TsoService.getDefault().tso();
-        }
-        return scanTs;
+        return VisitUtils.getScanTs(transaction, kind);
     }
 
     private static @NonNull Vertex createScanVertex(
@@ -285,6 +292,30 @@ public final class DingoScanWithRelOpVisitFun {
             }
         }
         throw new NeverRunHere();
+    }
+
+    private static @NonNull Vertex createCalcHashDistributionVertex(
+        @NonNull DingoScanWithRelOp rel,
+        @NonNull NavigableMap<ComparableByteArray, RangeDistribution> ranges,
+        byte[] startKey,
+        byte[] endKey,
+        boolean withEnd
+    ) {
+        final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
+        // TODO: need to create range by filters.
+        DistributionSourceParam distributionParam = new DistributionSourceParam(
+            td,
+            ranges,
+            startKey,
+            endKey,
+            true,
+            withEnd,
+            null,
+            false,
+            false,
+            null
+        );
+        return new Vertex(CALC_DISTRIBUTION_1, distributionParam);
     }
 
     private static @NonNull Vertex createCalcDistributionVertex(

@@ -14,23 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.base;
+package io.dingodb.store.api.transaction.exception;
 
-import io.dingodb.common.CommonId;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-
-import java.util.Iterator;
-
-@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public abstract class JobIterator implements Iterator<Object[]> {
-    private final Job job;
-
-    public boolean cancel() {
-        return job.cancel();
-    }
-
-    public CommonId getJobId() {
-        return job.getJobId();
+public class LockWaitException extends RuntimeException {
+    public LockWaitException(String message) {
+        super(message);
     }
 }

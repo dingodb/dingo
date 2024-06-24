@@ -30,6 +30,7 @@ import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.base.Status;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.base.TaskManager;
+import io.dingodb.exec.impl.message.CancelTaskMessage;
 import io.dingodb.exec.impl.message.CreateTaskMessage;
 import io.dingodb.exec.impl.message.DestroyTaskMessage;
 import io.dingodb.exec.impl.message.RunTaskMessage;
@@ -131,6 +132,29 @@ public final class JobManagerImpl implements JobManager {
         taskManager.close();
     }
 
+    @Override
+    public void cancel(CommonId jobId) {
+        Job job = jobMap.get(jobId);
+        if (job != null) {
+            if (job.getStatus() == Status.BORN || job.getStatus() == Status.STOPPED
+            || job.getStatus() ==  Status.CANCEL) {
+                return;
+            }
+            cancel(job);
+        }
+    }
+
+    private void cancel(@NonNull Job job) {
+        LogUtils.info(log, "Cancel job \"{}\". # of jobs: {}.", job.getJobId(), jobMap.size());
+        for (Task task : job.getTasks().values()) {
+            if (task.getRoot() != null) {
+                task.cancel();
+                continue;
+            }
+            sendTaskMessage(task, new Message(TASK_TAG, new CancelTaskMessage(task).toBytes()));
+        }
+    }
+
     private void distributeTasks(@NonNull Job job) {
         for (Task task : job.getTasks().values()) {
             if (task.getRoot() != null) {
@@ -144,7 +168,7 @@ public final class JobManagerImpl implements JobManager {
             try {
                 sendTaskMessage(task, new Message(TASK_TAG, new CreateTaskMessage(task).toBytes()));
             } catch (Exception e) {
-                LogUtils.error(log, "jobId:{}, Error to distribute tasks.",job.getJobId(), e);
+                LogUtils.error(log, "jobId:{}, Error to distribute tasks.", job.getJobId(), e);
                 throw new RuntimeException("jobId:" + job.getJobId() + "taskId:" + task.getId() + ", Error to distribute tasks.", e);
             }
         }
@@ -188,6 +212,8 @@ public final class JobManagerImpl implements JobManager {
             processCommand((CreateTaskMessage) taskMessage);
         } else if (taskMessage instanceof RunTaskMessage) {
             processCommand((RunTaskMessage) taskMessage);
+        } else if (taskMessage instanceof CancelTaskMessage) {
+            processCommand((CancelTaskMessage) taskMessage);
         } else if (taskMessage instanceof DestroyTaskMessage) {
             processCommand((DestroyTaskMessage) taskMessage);
         }
@@ -216,6 +242,11 @@ public final class JobManagerImpl implements JobManager {
     private void processCommand(@NonNull RunTaskMessage cmd) {
         Task task = taskManager.getTask(cmd.getJobId(), cmd.getTaskId());
         task.run(cmd.getParas());
+    }
+
+    private void processCommand(@NonNull CancelTaskMessage cmd) {
+        Task task = taskManager.getTask(cmd.getJobId(), cmd.getTaskId());
+        task.cancel();
     }
 
     private void processCommand(@NonNull DestroyTaskMessage cmd) {

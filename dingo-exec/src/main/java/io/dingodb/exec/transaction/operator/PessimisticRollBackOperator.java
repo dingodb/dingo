@@ -82,6 +82,19 @@ public class PessimisticRollBackOperator extends TransactionOperator {
             store.delete(deleteKey);
             deleteKey[deleteKey.length - 2] = (byte) Op.PUT.getCode();
             store.delete(deleteKey);
+            // first appearance
+            if (op != Op.NONE.getCode()) {
+                // set oldKeyValue
+                byte[] newKey = Arrays.copyOf(dataKey, dataKey.length);
+                newKey[newKey.length - 2] = (byte) op;
+                store.put(new KeyValue(newKey, value));
+                byte[] lockKey = getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, deleteKey);
+                // delete blockLock
+                lockKey[0] = (byte) CommonId.CommonType.TXN_CACHE_BLOCK_LOCK.getCode();
+                store.delete(lockKey);
+                LogUtils.info(log, "PessimisticRollBack key is {}, jobId:{}", Arrays.toString(key), jobId);
+                return true;
+            }
             byte[] lockKey = getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, deleteKey);
             KeyValue keyValue = store.get(lockKey);
             long forUpdateTs;
@@ -95,13 +108,7 @@ public class PessimisticRollBackOperator extends TransactionOperator {
             // delete blockLock
             lockKey[0] = (byte) CommonId.CommonType.TXN_CACHE_BLOCK_LOCK.getCode();
             store.delete(lockKey);
-            // first appearance
-            if (op != Op.NONE.getCode()) {
-                // set oldKeyValue
-                byte[] newKey = Arrays.copyOf(dataKey, dataKey.length);
-                newKey[newKey.length - 2] = (byte) op;
-                store.put(new KeyValue(newKey, value));
-            }
+            LogUtils.info(log, "PessimisticRollBack key is {}, forUpdateTs:{}, jobId:{}", Arrays.toString(key), forUpdateTs, jobId);
             CommonId partId = param.getPartId();
             if (partId == null) {
                 partId = newPartId;

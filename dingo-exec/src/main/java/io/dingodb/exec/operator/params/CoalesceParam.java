@@ -21,12 +21,14 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.fin.Fin;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Getter
 @JsonTypeName("coalesce")
@@ -38,6 +40,9 @@ public class CoalesceParam extends AbstractParams {
 
     private transient boolean[] finFlags;
     private transient List<Profile> profiles;
+    private transient AtomicBoolean finWithException;
+    @Setter
+    private transient Fin fin;
 
     @Getter
     @Setter
@@ -51,6 +56,7 @@ public class CoalesceParam extends AbstractParams {
     public void init(Vertex vertex) {
         profiles = new LinkedList<>();
         finFlags = new boolean[inputNum];
+        finWithException = new AtomicBoolean(false);
     }
 
     @Override
@@ -65,6 +71,10 @@ public class CoalesceParam extends AbstractParams {
         }
         this.profiles.addAll(profiles);
     }
+
+     public void setFinWithException() {
+         this.finWithException.compareAndSet(false, true);
+     }
 
     public void setFinFlags(int pin) {
         finFlags[pin] = true;

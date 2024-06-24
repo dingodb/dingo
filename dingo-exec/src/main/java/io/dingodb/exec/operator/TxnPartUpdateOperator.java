@@ -126,9 +126,9 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             byte[] txnIdBytes = vertex.getTask().getTxnId().encode();
             byte[] tableIdBytes = tableId.encode();
             byte[] partIdBytes = partId.encode();
+            byte[] jobIdByte = vertex.getTask().getJobId().encode();
+            int len = txnIdBytes.length + tableIdBytes.length + partIdBytes.length;
             if (param.isPessimisticTxn()) {
-                byte[] jobIdByte = vertex.getTask().getJobId().encode();
-                int len = txnIdBytes.length + tableIdBytes.length + partIdBytes.length;
                 // dataKeyValue   [10_txnId_tableId_partId_a_putIf, value]
                 byte[] dataKey = ByteUtils.encode(
                     CommonId.CommonType.TXN_CACHE_DATA,
@@ -140,7 +140,6 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     partIdBytes
                 );
                 KeyValue oldKeyValue = localStore.get(dataKey);
-                LogUtils.debug(log, "{} updated is true key is {}", txnId, Arrays.toString(key));
                 if (!updated) {
                     LogUtils.warn(log, "{} updated is false key is {}", txnId, Arrays.toString(key));
                     // data is not exist local store
@@ -166,6 +165,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     if (keyValues.size() > 1) {
                         throw new RuntimeException(txnId + " PrimaryKey is not existed than two in local store");
                     }
+                    LogUtils.debug(log, "{} updated is true, repeat key is {}", txnId, Arrays.toString(key));
                     KeyValue keyValue = wrap(codec::encode).apply(newTuple2);
                     CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
                     // write data
@@ -220,33 +220,67 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                             CommonId.CommonType.TXN_CACHE_DATA,
                             oldKey,
                             Op.PUT.getCode(),
-                            (txnIdBytes.length + tableIdBytes.length + partIdBytes.length),
+                            len,
                             txnIdBytes,
                             tableIdBytes,
                             context.getDistribution().getId().encode());
+                        Op op = Op.NONE;
+                        if (localStore.get(oldDataKey) != null) {
+                            op = Op.PUT;
+                        }
                         localStore.delete(oldDataKey);
                         byte[] updateKey = Arrays.copyOf(oldDataKey, oldDataKey.length);
                         updateKey[updateKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
+                        if (localStore.get(updateKey) != null) {
+                            op = Op.PUTIFABSENT;
+                        }
                         localStore.delete(updateKey);
                         byte[] deleteKey = Arrays.copyOf(oldDataKey, oldDataKey.length);
                         deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
+                        // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
+                        byte[] extraKey = ByteUtils.encode(
+                            CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
+                            oldKey,
+                            op.getCode(),
+                            len,
+                            jobIdByte,
+                            tableIdBytes,
+                            context.getDistribution().getId().encode()
+                        );
+                        localStore.put(new KeyValue(extraKey,  wrap(codec::encode).apply(copyTuple).getValue()));
                         localStore.put(new KeyValue(deleteKey, wrap(codec::encode).apply(copyTuple).getValue()));
                         localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
                     }
                 }
+                byte[] keyValueKey = keyValue.getKey();
                 keyValue.setKey(
                     ByteUtils.encode(
                         CommonId.CommonType.TXN_CACHE_DATA,
-                        keyValue.getKey(),
+                        keyValueKey,
                         Op.PUT.getCode(),
-                        (txnIdBytes.length + tableIdBytes.length + partIdBytes.length),
+                        len,
                         txnIdBytes,
                         tableIdBytes,
                         partIdBytes)
                 );
+                Op op = Op.NONE;
                 byte[] insertKey = Arrays.copyOf(keyValue.getKey(), keyValue.getKey().length);
                 insertKey[insertKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
+                if (localStore.get(insertKey) != null) {
+                    op = Op.PUTIFABSENT;
+                }
                 localStore.delete(insertKey);
+                // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
+                byte[] extraKey = ByteUtils.encode(
+                    CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
+                    keyValueKey,
+                    op.getCode(),
+                    len,
+                    jobIdByte,
+                    tableIdBytes,
+                    partIdBytes
+                );
+                localStore.put(new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length)));
                 if (updated) {
                     localStore.delete(keyValue.getKey());
                     if (localStore.put(keyValue) && context.getIndexId() == null) {

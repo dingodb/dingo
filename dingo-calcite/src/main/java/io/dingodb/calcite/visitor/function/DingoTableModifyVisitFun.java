@@ -75,6 +75,7 @@ public class DingoTableModifyVisitFun {
 
             Task task = input.getTask();
             Vertex vertex;
+            boolean isScan = visitor.isScan() && !input.getTask().getBachTask();
             switch (rel.getOperation()) {
                 case INSERT:
                     if (transaction != null) {
@@ -93,6 +94,7 @@ public class DingoTableModifyVisitFun {
                                     transaction.getPrimaryKeyLock(),
                                     transaction.getLockTimeOut(),
                                     true,
+                                    isScan,
                                     td
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
@@ -107,6 +109,7 @@ public class DingoTableModifyVisitFun {
                                     true,
                                     transaction.getPrimaryKeyLock(),
                                     transaction.getLockTimeOut(),
+                                    isScan,
                                     td
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK_INSERT, pessimisticLockParam);
@@ -206,6 +209,7 @@ public class DingoTableModifyVisitFun {
                                     transaction.getPrimaryKeyLock(),
                                     transaction.getLockTimeOut(),
                                     false,
+                                    isScan,
                                     td
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
@@ -224,6 +228,7 @@ public class DingoTableModifyVisitFun {
                                     true,
                                     transaction.getPrimaryKeyLock(),
                                     transaction.getLockTimeOut(),
+                                    isScan,
                                     td
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK_UPDATE, pessimisticLockParam);
@@ -339,6 +344,7 @@ public class DingoTableModifyVisitFun {
                                     transaction.getPrimaryKeyLock(),
                                     transaction.getLockTimeOut(),
                                     false,
+                                    isScan,
                                     td
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
@@ -353,6 +359,7 @@ public class DingoTableModifyVisitFun {
                                     true,
                                     transaction.getPrimaryKeyLock(),
                                     transaction.getLockTimeOut(),
+                                    isScan,
                                     td
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK_DELETE, pessimisticLockParam);

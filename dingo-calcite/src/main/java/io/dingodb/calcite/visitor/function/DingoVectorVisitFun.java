@@ -20,6 +20,7 @@ import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.utils.SqlExprUtils;
+import io.dingodb.calcite.utils.VisitUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.CommonId;
@@ -194,20 +195,7 @@ public final class DingoVectorVisitFun {
         if (rexFilter != null) {
             filter = SqlExprUtils.toSqlExpr(rexFilter);
         }
-        long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
-        // Use current read
-        if (transaction != null && transaction.isPessimistic()
-            && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.SnapshotIsolation
-            && (visitor.getKind() == SqlKind.INSERT || visitor.getKind() == SqlKind.DELETE
-            || visitor.getKind() == SqlKind.UPDATE) ) {
-            scanTs = TsoService.getDefault().tso();
-        }
-        if (transaction != null && transaction.isPessimistic()
-            && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.ReadCommitted
-            && visitor.getKind() == SqlKind.SELECT) {
-            scanTs = TsoService.getDefault().tso();
-        }
-
+        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
         // Get query additional parameters
         Map<String, Object> parameterMap = getParameterMap(operandsList);
         // Get all index table distributions
@@ -281,7 +269,7 @@ public final class DingoVectorVisitFun {
             task.putVertex(vertex);
             outputs.add(vertex);
         }
-
+        visitor.setScan(true);
         return outputs;
     }
 

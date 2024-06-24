@@ -22,6 +22,7 @@ import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.utils.TableUtils;
+import io.dingodb.calcite.utils.VisitUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
@@ -134,19 +135,8 @@ public final class DingoGetByIndexVisitFun {
                 if (!needLookup) {
                     needLookup = isNeedLookUp(rel.getSelection(), tupleMapping, td.columns.size());
                 }
-                long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
-                // Use current read
-                if (transaction != null && transaction.isPessimistic()
-                    && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.SnapshotIsolation
-                    && (visitor.getKind() == SqlKind.INSERT || visitor.getKind() == SqlKind.DELETE
-                    || visitor.getKind() == SqlKind.UPDATE) ) {
-                    scanTs = TsoService.getDefault().tso();
-                }
-                if (transaction != null && transaction.isPessimistic()
-                    && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.ReadCommitted
-                    && visitor.getKind() == SqlKind.SELECT) {
-                    scanTs = TsoService.getDefault().tso();
-                }
+                long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
+
                 Vertex vertex;
                 if (transaction != null) {
                     vertex = new Vertex(TXN_GET_BY_INDEX, new TxnGetByIndexParam(

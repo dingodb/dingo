@@ -144,6 +144,11 @@ public abstract class BaseTransaction implements ITransaction {
         return Objects.requireNonNull(type) == TransactionType.PESSIMISTIC;
     }
 
+    public boolean isOptimistic() {
+        TransactionType type = getType();
+        return Objects.requireNonNull(type) == TransactionType.OPTIMISTIC;
+    }
+
     protected static void sleep() {
         try {
             Thread.sleep(100);
@@ -342,6 +347,9 @@ public abstract class BaseTransaction implements ITransaction {
             resolveWriteConflict(jobManager, currentLocation, e);
         } catch (DuplicateEntryException e) {
             LogUtils.error(log, e.getMessage(), e);
+            if (this.status == TransactionStatus.PRE_WRITE_START) {
+                this.primaryKeyPreWrite.compareAndSet(false, true);
+            }
             // rollback
             this.status = TransactionStatus.PRE_WRITE_FAIL;
             rollback(jobManager);
@@ -395,6 +403,8 @@ public abstract class BaseTransaction implements ITransaction {
             boolean result = commitPrimaryKey(cacheToObject);
             commitProfile.endCommitPrimary();
             if (!result) {
+                LogUtils.error(log, "CommitPrimaryKey false, commit_ts:{}, PrimaryKey:{}", commitTs,
+                    Arrays.toString(primaryKey));
                 rollback(jobManager);
                 throw new RuntimeException(txnId + " " + cacheToObject.getPartId()
                     + ",txnCommitPrimaryKey false, commit_ts:" + commitTs +",PrimaryKey:"

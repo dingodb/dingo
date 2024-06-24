@@ -23,6 +23,7 @@ import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.RangeUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.utils.TableInfo;
+import io.dingodb.calcite.utils.VisitUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
@@ -122,19 +123,7 @@ public final class DingoTableScanVisitFun {
         }
         long scanTs;
         if (pointStartTs == 0) {
-            scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
-            // Use current read
-            if (transaction != null && transaction.isPessimistic()
-                && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.SnapshotIsolation
-                && (visitor.getKind() == SqlKind.INSERT || visitor.getKind() == SqlKind.DELETE
-                || visitor.getKind() == SqlKind.UPDATE)) {
-                scanTs = TsoService.getDefault().tso();
-            }
-            if (transaction != null && transaction.isPessimistic()
-                && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.ReadCommitted
-                && visitor.getKind() == SqlKind.SELECT) {
-                scanTs = TsoService.getDefault().tso();
-            }
+            scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
         } else {
             scanTs = pointStartTs;
             transaction.setPointStartTs(0);
@@ -193,7 +182,7 @@ public final class DingoTableScanVisitFun {
             task.putVertex(scanVertex);
             outputs.add(scanVertex);
         }
-
+        visitor.setScan(true);
         return outputs;
     }
 

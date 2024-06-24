@@ -61,6 +61,10 @@ public interface ITransaction {
 
     void rollBackPessimisticLock(JobManager jobManager);
 
+    void rollBackOptimisticCurrentJobData(JobManager jobManager);
+
+    void cleanOptimisticCurrentJobData(JobManager jobManager);
+
     void rollBackPessimisticPrimaryLock(JobManager jobManager);
 
     void close(JobManager jobManager);
@@ -76,6 +80,8 @@ public interface ITransaction {
     void setAutoCommit(boolean autoCommit);
 
     boolean isPessimistic();
+
+    boolean isOptimistic();
 
     long getForUpdateTs();
 
@@ -102,4 +108,7 @@ public interface ITransaction {
     void setPointStartTs(long startTs);
 
     long getPointStartTs();
+
+    long getJobSeqId();
+
 }

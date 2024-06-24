@@ -84,6 +84,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.impl.IdGeneratorImpl;
 import io.dingodb.exec.transaction.base.ITransaction;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlKind;
@@ -103,6 +104,10 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
 
     @Getter
     private final SqlKind kind;
+
+    @Getter
+    @Setter
+    private boolean isScan;
 
     private DingoJobVisitor(Job job, IdGenerator idGenerator, Location currentLocation,
                             ITransaction transaction, SqlKind kind) {
@@ -125,7 +130,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
         if (checkRoot && !outputs.isEmpty()) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
-        if (transaction != null && transaction.isPessimistic()) {
+        if (transaction != null) {
             transaction.setJob(job);
         }
 

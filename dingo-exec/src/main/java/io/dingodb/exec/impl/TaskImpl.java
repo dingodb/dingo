@@ -34,6 +34,7 @@ import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Status;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.exception.TaskCancelException;
 import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.TaskStatus;
@@ -42,6 +43,7 @@ import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
+import io.dingodb.store.api.transaction.exception.LockWaitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import lombok.Getter;
 import lombok.Setter;
@@ -254,6 +256,7 @@ public final class TaskImpl implements Task {
                 } catch (RuntimeException e) {
                     LogUtils.error(log, "Run Task:{} catch operator:{} run Exception:{}",
                         getId().toString(), vertex.getId(), e, e);
+                    status.compareAndSet(Status.RUNNING, Status.STOPPED);
                     TaskStatus taskStatus = new TaskStatus();
                     taskStatus.setStatus(false);
                     taskStatus.setTaskId(vertex.getTask().getId().toString());
@@ -262,6 +265,10 @@ public final class TaskImpl implements Task {
                         taskStatus.setErrorType(ErrorType.WriteConflict);
                     } else if (e instanceof DuplicateEntryException) {
                         taskStatus.setErrorType(ErrorType.DuplicateEntry);
+                    } else if (e instanceof LockWaitException) {
+                        taskStatus.setErrorType(ErrorType.LockWait);
+                    } else if (e instanceof TaskCancelException) {
+                        taskStatus.setErrorType(ErrorType.TaskCancel);
                     } else {
                         taskStatus.setErrorType(ErrorType.TaskFin);
                     }
@@ -293,7 +300,13 @@ public final class TaskImpl implements Task {
 
     @Override
     public boolean cancel() {
-        return status.compareAndSet(Status.RUNNING, Status.STOPPED);
+        status.set(Status.CANCEL);
+        return true;
+    }
+
+    @Override
+    public boolean getBachTask() {
+        return bachTask;
     }
 
     @Override

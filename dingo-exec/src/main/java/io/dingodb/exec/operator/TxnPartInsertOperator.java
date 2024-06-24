@@ -98,10 +98,10 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         byte[] txnIdByte = txnId.encode();
         byte[] tableIdByte = tableId.encode();
         byte[] partIdByte = partId.encode();
+        byte[] jobIdByte = vertex.getTask().getJobId().encode();
+        int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
         if (param.isPessimisticTxn()) {
             byte[] keyValueKey = keyValue.getKey();
-            byte[] jobIdByte = vertex.getTask().getJobId().encode();
-            int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
             // dataKeyValue   [10_txnId_tableId_partId_a_putIf, value]
             byte[] dataKey = ByteUtils.encode(
                 CommonId.CommonType.TXN_CACHE_DATA,
@@ -198,6 +198,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             bytes.add(deleteKey);
             bytes.add(updateKey);
             List<KeyValue> keyValues = localStore.get(bytes);
+            Op op = Op.NONE;
             if (keyValues != null && keyValues.size() > 0) {
                 if (keyValues.size() > 1) {
                     throw new RuntimeException(txnId + " Key is not existed than two in local store");
@@ -211,6 +212,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 } else {
                     // delete  ->  insert  convert --> put
                     insertKey[updateKey.length - 2] = (byte) Op.PUT.getCode();
+                    op = Op.DELETE;
                 }
             } else {
                 keyValue.setKey(
@@ -222,6 +224,17 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 insertKey
             );
             localStore.delete(deleteKey);
+            // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
+            byte[] extraKey = ByteUtils.encode(
+                CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
+                key,
+                op.getCode(),
+                len,
+                jobIdByte,
+                tableIdByte,
+                partIdByte
+            );
+            localStore.put(new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length)));
             if (localStore.put(keyValue) && context.getIndexId() == null) {
                 param.inc();
                 context.addKeyState(true);

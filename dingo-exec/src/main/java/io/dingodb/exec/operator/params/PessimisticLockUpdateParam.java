@@ -31,14 +31,16 @@ import java.util.List;
 
 @Getter
 @JsonTypeName("pessimistic_lock_update")
-@JsonPropertyOrder({"isolationLevel", "startTs", "lockTtl", "lockTimeOut", "pessimisticTxn", "table", "schema", "keyMapping"})
+@JsonPropertyOrder({"isolationLevel", "startTs", "lockTtl", "lockTimeOut", "pessimisticTxn",
+    "isScan", "table", "schema", "keyMapping"})
 public class PessimisticLockUpdateParam extends TxnPartModifyParam {
 
     @JsonProperty("mapping")
     private final TupleMapping mapping;
     @JsonProperty("updates")
     private final List<SqlExpr> updates;
-
+    @JsonProperty("isScan")
+    private final boolean isScan;
     public PessimisticLockUpdateParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
@@ -51,12 +53,14 @@ public class PessimisticLockUpdateParam extends TxnPartModifyParam {
         @JsonProperty("pessimisticTxn") boolean pessimisticTxn,
         @JsonProperty("primaryLockKey") byte[] primaryLockKey,
         @JsonProperty("lockTimeOut") long lockTimeOut,
+        @JsonProperty("isScan") boolean isScan,
         Table table
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
         this.mapping = mapping;
         this.updates = updates;
+        this.isScan = isScan;
     }
     @Override
     public void init(Vertex vertex) {
