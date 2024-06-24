@@ -42,7 +42,6 @@ dependencies {
 
     implementation project(":dingo-codec-api")
     implementation project(':dingo-net-api')
-    implementation project(":dingo-net-api")
     implementation project(":dingo-store-api")
     implementation project(":dingo-scheduler-api")
     implementation project(":dingo-tool-api")
@@ -56,6 +55,7 @@ dependencies {
 
     implementation project(':dingo-driver:dingo-driver-host')
     implementation project(':dingo-driver:dingo-driver-client')
+    implementation group: 'com.alibaba', name: 'fastjson', version: 'fastjson'.v()
     testImplementation project(":dingo-store-local")
 }
 

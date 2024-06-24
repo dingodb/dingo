@@ -458,7 +458,7 @@ public class TxnImportDataOperation {
     }
 
     public synchronized void rollback(List<Object[]> tupleList) {
-        if (tupleList.size() == 0) {
+        if (tupleList.isEmpty()) {
             return;
         }
         try {
@@ -518,7 +518,7 @@ public class TxnImportDataOperation {
                     param.addForUpdateTs(forUpdateTs);
                 }
             }
-            if (param.getKeys().size() > 0) {
+            if (!param.getKeys().isEmpty()) {
                 boolean result = txnRollBack(param, txnId, param.getTableId(), param.getPartId());
                 if (!result) {
                     throw new RuntimeException(txnId + " " + param.getPartId() + ",txnBatchRollback false");

@@ -114,8 +114,9 @@ public class ColumnDefinition {
 
     @JsonProperty("comment")
     @Getter
+    @Setter
     @Builder.Default
-    private final String comment = "";
+    private String comment = "";
 
     @JsonCreator
     public static ColumnDefinition getInstance(

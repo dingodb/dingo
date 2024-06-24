@@ -16,7 +16,8 @@
 
 package io.dingodb.meta;
 
-import java.util.Arrays;
+import io.dingodb.common.meta.SchemaInfo;
+
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +27,7 @@ public interface InfoSchemaService {
     //byte[] mDBs = "DBs".getBytes();
     String mDBPrefix= "DB";
     String mTablePrefix= "Table";
+    String mIndexPrefix= "Index";
     String TEMPLATE = "%s:%d";
 
     static InfoSchemaService root() {
@@ -87,6 +89,15 @@ public interface InfoSchemaService {
         return 0;
     }
 
+    default byte[] indexKey(long indexId) {
+        return IndexKey(indexId);
+    }
+
+    default byte[] IndexKey(long indexId) {
+        String indexKeyStr = String.format(TEMPLATE, mIndexPrefix, indexId);;
+        return indexKeyStr.getBytes();
+    }
+
     boolean checkTenantExists(byte[] tenantKey);
 
     boolean checkDBExists(byte[] tenant, byte[] schemaKey);
@@ -95,9 +106,11 @@ public interface InfoSchemaService {
 
     void createTableOrView(long tenantId, long schemaId, long tableId, Object table);
 
-    void createSchema(long tenantId, long schemaId, Object schema);
+    void createIndex(long tenantId, long schemaId, long tableId, Object index);
 
-    void createTenant(long tenantId, Object tenant);
+    void createSchema(long tenantId, long schemaId, SchemaInfo schema);
+
+    boolean createTenant(long tenantId, Object tenant);
 
     Object getTenant(long tenantId);
 
@@ -105,14 +118,36 @@ public interface InfoSchemaService {
 
     Object getSchema(long tenantId, long schemaId);
 
-    List<Object> listSchema(long tenantId);
+    SchemaInfo getSchema(long tenantId, String schemaName);
+
+    List<SchemaInfo> listSchema(long tenantId);
 
     Object getTable(long tenantId, long schemaId, long tableId);
 
+    Object getTable(long tenantId, long schemaId, String tableName);
+    Object getTable(long tenantId, String schemaName, String tableName);
+    Object getTable(long tenantId, long tableId);
+
     List<Object> listTable(long tenantId, long schemaId);
+
+    List<Object> listIndex(long tenantId, long schemaId, long tableId);
 
     void dropTenant(long tenantId);
     void dropSchema(long tenantId, long schemaId);
     void dropTable(long tenantId, long schemaId, long tableId);
+
+    long genSchemaId();
+
+    long genTenantId();
+
+    long genTableId();
+
+    long genIndexId();
+
+    List<Object> scanRegions(byte[] startKey, byte[] endKey);
+
+    int getStoreReplica();
+
+    int getIndexReplica();
 
 }
