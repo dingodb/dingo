@@ -56,9 +56,9 @@ public class DingoResultSet extends AvaticaResultSet {
 
     @Override
     protected void cancel() {
-        if (iterator instanceof JobIterator) {
-            ((JobIterator) iterator).cancel();
-        }
+//        if (iterator instanceof JobIterator) {
+//            ((JobIterator) iterator).cancel();
+//        }
     }
 
     public Meta.Signature getSignature() {

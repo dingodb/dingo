@@ -170,12 +170,12 @@ public class PessimisticLockOperator extends SoleOutOperator {
                     .forUpdateTs(jobId.seq)
                     .build();
                 try {
-                    future = kvStore.txnPessimisticLockPrimaryKey(txnPessimisticLock, param.getLockTimeOut());
+                    future = kvStore.txnPessimisticLockPrimaryKey(txnPessimisticLock, param.getLockTimeOut(), param.isScan());
                 } catch (RegionSplitException e) {
                     LogUtils.error(log, e.getMessage(), e);
                     CommonId regionId = TransactionUtil.singleKeySplitRegionId(tableId, txnId, primaryKey);
                     kvStore = Services.KV_STORE.getInstance(tableId, regionId);
-                    future = kvStore.txnPessimisticLockPrimaryKey(txnPessimisticLock, param.getLockTimeOut());
+                    future = kvStore.txnPessimisticLockPrimaryKey(txnPessimisticLock, param.getLockTimeOut(), param.isScan());
                 } catch (Throwable e) {
                     LogUtils.error(log, e.getMessage(), e);
                     TransactionUtil.resolvePessimisticLock(
@@ -266,6 +266,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
                             partIdByte),
                         kvKeyValue.getValue()
                     );
+                    LogUtils.info(log, "PessimisticLock jobId:{}", CommonId.decode(jobIdByte));
                     localStore.put(extraKeyValue);
                 } else {
                     if (param.isInsert()) {
@@ -284,6 +285,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
                         );
                         localStore.put(extraKeyValue);
                     } else {
+                        LogUtils.info(log, "PessimisticLock RESIDUAL_LOCK jobId:{}", CommonId.decode(jobIdByte));
                         byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, deadLockKeyBytes);
                         localStore.put(new KeyValue(rollBackKey, null));
                     }

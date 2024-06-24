@@ -43,4 +43,6 @@ public interface JobManager {
     @NonNull Iterator<Object[]> createIterator(@NonNull Job job, Object @Nullable [] paras, long takeNextTimeout);
 
     void close();
+
+    void cancel(CommonId jobId);
 }

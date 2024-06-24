@@ -109,6 +109,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         if (defaultSchema == null) {
             defaultSchema = DingoRootSchema.DEFAULT_SCHEMA_NAME;
         }
+        LogUtils.info(log, "DingoConnection:" + id);
         LogUtils.trace(log, "Connection url = {}, properties = {}, default schema = {}.", url, info, defaultSchema);
         context = new DingoParserContext(defaultSchema, info);
         sessionVariables = new Properties();
@@ -268,9 +269,24 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
 
     @Override
     public void close() throws SQLException {
+        LogUtils.info(log, "call dingoConnection close..., id:" + this.id);
         super.close();
-        getMeta().cleanTransaction();
-        unlockTables();
+        try {
+            // close call cancel, ensure data consistency and program security and controllability
+            if (this.statementMap != null) {
+                this.statementMap.forEach((k, v) -> {
+                    try {
+                        v.cancel();
+                    } catch (SQLException e) {
+                        LogUtils.error(log, e.getMessage(), e);
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+        } finally {
+            getMeta().cleanTransaction();
+            unlockTables();
+        }
     }
 
     @NonNull

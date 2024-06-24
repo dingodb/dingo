@@ -16,12 +16,15 @@
 
 package io.dingodb.calcite.operation;
 
+import io.dingodb.common.log.LogUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaConnection;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
 
+@Slf4j
 public class KillQuery implements DdlOperation {
     private String threadId;
     private Map<String, Connection> connectionMap;
@@ -36,13 +39,14 @@ public class KillQuery implements DdlOperation {
 
     @Override
     public void execute() {
-        Connection connection = connectionMap.get(threadId);
+        Connection connection = connectionMap.get("mysql:" +threadId);
         AvaticaConnection avaticaConnection = (AvaticaConnection) connection;
         if (avaticaConnection.statementMap != null) {
             avaticaConnection.statementMap.forEach((k, v) -> {
                 try {
                     v.cancel();
                 } catch (SQLException e) {
+                    LogUtils.error(log, e.getMessage(), e);
                     throw new RuntimeException(e);
                 }
             });

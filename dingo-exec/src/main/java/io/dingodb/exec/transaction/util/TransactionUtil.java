@@ -43,10 +43,12 @@ import io.dingodb.store.api.transaction.data.prewrite.LockExtraDataList;
 import io.dingodb.store.api.transaction.data.prewrite.PessimisticCheck;
 import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
 import io.dingodb.store.api.transaction.data.rollback.TxnPessimisticRollBack;
+import io.dingodb.store.api.transaction.exception.LockWaitException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -196,10 +198,40 @@ public class TransactionUtil {
         return forUpdateTsChecks;
     }
 
-    public static TxnPessimisticLock pessimisticLock(long timeOut, CommonId txnId, CommonId tableId,
-                                                     CommonId partId, byte[] primaryLockKey,
-                                                     byte[] key, long startTs,
-                                                     long forUpdateTs, int isolationLevel) {
+    public static void pessimisticLock(TxnPessimisticLock txnPessimisticLock,
+                                       long timeOut,
+                                       CommonId txnId,
+                                       CommonId tableId,
+                                       CommonId partId,
+                                       byte[] key,
+                                       boolean ignoreLockWait) {
+        try {
+            StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
+            boolean result = store.txnPessimisticLock(txnPessimisticLock, timeOut, ignoreLockWait);
+            if (!result) {
+                throw new RuntimeException(txnId + " " + partId + ",txnPessimisticLock false, txnPessimisticLock: "
+                    + txnPessimisticLock.toString());
+            }
+        } catch (RegionSplitException e) {
+            LogUtils.error(log, e.getMessage(), e);
+            CommonId regionId = singleKeySplitRegionId(tableId, txnId, key);
+            StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
+            boolean result = store.txnPessimisticLock(txnPessimisticLock, timeOut, ignoreLockWait);
+            if (!result) {
+                throw new RuntimeException(txnId + " " + partId + ",txnPessimisticLock false, txnPessimisticLock: "
+                    + txnPessimisticLock.toString());
+            }
+        }
+    }
+
+    public static TxnPessimisticLock getTxnPessimisticLock(CommonId txnId,
+                                                           CommonId tableId,
+                                                           CommonId partId,
+                                                           byte[] primaryLockKey,
+                                                           byte[] key,
+                                                           long startTs,
+                                                           long forUpdateTs,
+                                                           int isolationLevel) {
         TxnPessimisticLock txnPessimisticLock = TxnPessimisticLock.builder()
             .isolationLevel(IsolationLevel.of(isolationLevel))
             .primaryLock(primaryLockKey)
@@ -219,23 +251,6 @@ public class TransactionUtil {
             .startTs(startTs)
             .forUpdateTs(forUpdateTs)
             .build();
-        try {
-            StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
-            boolean result = store.txnPessimisticLock(txnPessimisticLock, timeOut);
-            if (!result) {
-                throw new RuntimeException(txnId + " " + partId + ",txnPessimisticLock false, txnPessimisticLock: "
-                    + txnPessimisticLock.toString());
-            }
-        } catch (RegionSplitException e) {
-            LogUtils.error(log, e.getMessage(), e);
-            CommonId regionId = singleKeySplitRegionId(tableId, txnId, key);
-            StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
-            boolean result = store.txnPessimisticLock(txnPessimisticLock, timeOut);
-            if (!result) {
-                throw new RuntimeException(txnId + " " + partId + ",txnPessimisticLock false, txnPessimisticLock: "
-                    + txnPessimisticLock.toString());
-            }
-        }
         return txnPessimisticLock;
     }
 
@@ -293,8 +308,10 @@ public class TransactionUtil {
                                               boolean hasException, Throwable e) {
         StoreInstance store;
         try {
+            LogUtils.info(log, "pessimisticPrimaryLockRollBack key is {}, forUpdateTs:{}",
+                Arrays.toString(primaryKey), forUpdateTs);
             // primaryKeyLock rollback
-            TransactionUtil.pessimisticPrimaryLockRollBack(
+            boolean result = TransactionUtil.pessimisticPrimaryLockRollBack(
                 txnId,
                 tableId,
                 partId,
@@ -303,6 +320,10 @@ public class TransactionUtil {
                 forUpdateTs,
                 primaryKey
             );
+            if (!result) {
+                LogUtils.warn(log, "pessimisticPrimaryLockRollBack fail key is {}, forUpdateTs:{}",
+                    Arrays.toString(primaryKey), forUpdateTs);
+            }
         } catch (Throwable throwable) {
             LogUtils.error(log, e.getMessage(), e);
             store = Services.LOCAL_STORE.getInstance(tableId, partId);
@@ -310,6 +331,9 @@ public class TransactionUtil {
             store.delete(deadLockKeyBytes);
         }
         if (hasException){
+            if (e instanceof LockWaitException) {
+                throw (LockWaitException) e;
+            }
             throw new RuntimeException(e.getMessage());
         }
     }

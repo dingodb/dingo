@@ -20,6 +20,8 @@ import io.dingodb.exec.transaction.visitor.data.CleanCacheLeaf;
 import io.dingodb.exec.transaction.visitor.data.CommitLeaf;
 import io.dingodb.exec.transaction.visitor.data.Composite;
 import io.dingodb.exec.transaction.visitor.data.Leaf;
+import io.dingodb.exec.transaction.visitor.data.OptimisticRollBackLeaf;
+import io.dingodb.exec.transaction.visitor.data.OptimisticRollBackScanLeaf;
 import io.dingodb.exec.transaction.visitor.data.PessimisticResidualLockLeaf;
 import io.dingodb.exec.transaction.visitor.data.PessimisticRollBackScanLeaf;
 import io.dingodb.exec.transaction.visitor.data.PreWriteLeaf;
@@ -49,6 +51,10 @@ public interface Visitor<T> {
     T visit(PessimisticRollBackLeaf pessimisticRollBackLeaf);
 
     T visit(PessimisticRollBackScanLeaf pessimisticRollBackScanLeaf);
+
+    T visit(OptimisticRollBackLeaf optimisticRollBackLeaf);
+
+    T visit(OptimisticRollBackScanLeaf optimisticRollBackScanLeaf);
 
     T visit(ScanCleanCacheLeaf scanCleanCacheLeaf);
 

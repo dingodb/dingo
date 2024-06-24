@@ -14,23 +14,12 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.base;
+package io.dingodb.exec.exception;
 
-import io.dingodb.common.CommonId;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
+public class TaskCancelException extends RuntimeException {
 
-import java.util.Iterator;
 
-@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public abstract class JobIterator implements Iterator<Object[]> {
-    private final Job job;
-
-    public boolean cancel() {
-        return job.cancel();
-    }
-
-    public CommonId getJobId() {
-        return job.getJobId();
+    public TaskCancelException(String message) {
+        super(message);
     }
 }

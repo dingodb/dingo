@@ -67,6 +67,7 @@ import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
 import io.dingodb.store.api.transaction.data.rollback.TxnPessimisticRollBack;
 import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
+import io.dingodb.store.api.transaction.exception.LockWaitException;
 import io.dingodb.store.api.transaction.exception.PrimaryMismatchException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.store.proxy.Configuration;
@@ -248,19 +249,21 @@ public class TransactionStoreInstance {
         return response.getTxnResult() == null;
     }
 
-    public Future txnPessimisticLockPrimaryKey(TxnPessimisticLock txnPessimisticLock, long timeOut) {
-        if (txnPessimisticLock(txnPessimisticLock, timeOut)) {
-            LogUtils.info(log, "txn pessimistic heartbeat, startTs:{}", txnPessimisticLock.getStartTs());
+    public Future txnPessimisticLockPrimaryKey(TxnPessimisticLock txnPessimisticLock, long timeOut, boolean ignoreLockWait) {
+        if (txnPessimisticLock(txnPessimisticLock, timeOut, ignoreLockWait)) {
+            LogUtils.info(log, "txn pessimistic heartbeat, startTs:{}, primaryKey is {}",
+                txnPessimisticLock.getStartTs(), Arrays.toString(txnPessimisticLock.getPrimaryLock()));
             return Executors.scheduleWithFixedDelayAsync("txn-pessimistic-heartbeat-" + txnPessimisticLock.getStartTs(), () -> heartbeat(txnPessimisticLock), 1, 1, SECONDS);
         }
         throw new WriteConflictException();
     }
 
-    public boolean txnPessimisticLock(TxnPessimisticLock txnPessimisticLock, long timeOut) {
+    public boolean txnPessimisticLock(TxnPessimisticLock txnPessimisticLock, long timeOut, boolean ignoreLockWait) {
         txnPessimisticLock.getMutations().stream().peek($ -> $.setKey(setId($.getKey()))).forEach($ -> $.getKey()[0] = 't');
         IsolationLevel isolationLevel = txnPessimisticLock.getIsolationLevel();
         int n = 1;
         List<Long> resolvedLocks = new ArrayList<>();
+        ResolveLockStatus resolveLockFlag = ResolveLockStatus.NONE;
         while (true) {
             TxnPessimisticLockResponse response;
             if (indexService != null) {
@@ -270,6 +273,10 @@ public class TransactionStoreInstance {
                 response = storeService.txnPessimisticLock(txnPessimisticLock.getStartTs(), MAPPER.pessimisticLockTo(txnPessimisticLock));
             }
             if (response.getTxnResult() == null || response.getTxnResult().isEmpty()) {
+                if (resolveLockFlag == ResolveLockStatus.LOCK_TTL && ignoreLockWait) {
+                    LogUtils.warn(log, "txnPessimisticLock lock wait...");
+                    throw new LockWaitException("Lock wait");
+                }
                 return true;
             }
             ResolveLockStatus resolveLockStatus = writeResolveConflict(
@@ -285,6 +292,7 @@ public class TransactionStoreInstance {
                     throw new RuntimeException("Lock wait timeout exceeded; try restarting transaction");
                 }
                 try {
+                    resolveLockFlag = resolveLockStatus;
                     long lockTtl = TxnVariables.WaitFixTime;
                     if (n < TxnVariables.WaitFixNum) {
                         lockTtl = TxnVariables.WaitTime * n;

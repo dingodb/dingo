@@ -20,7 +20,6 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.transaction.base.BaseTransaction;
-import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.base.TransactionType;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,6 +38,11 @@ public class NoneTransaction extends BaseTransaction {
     @Override
     public TransactionType getType() {
         return TransactionType.NONE;
+    }
+
+    @Override
+    public void rollBackOptimisticCurrentJobData(JobManager jobManager) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -88,6 +92,16 @@ public class NoneTransaction extends BaseTransaction {
 
     @Override
     public void setPrimaryKeyFuture(Future future) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long getJobSeqId() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void cleanOptimisticCurrentJobData(JobManager jobManager) {
         throw new UnsupportedOperationException();
     }
 

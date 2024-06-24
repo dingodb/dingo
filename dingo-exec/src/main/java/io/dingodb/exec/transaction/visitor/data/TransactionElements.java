@@ -27,12 +27,14 @@ public class TransactionElements {
         elementMap.put(ElementName.SINGLE_TRANSACTION_COMMIT, createSingleTransactionCommit());
         elementMap.put(ElementName.SINGLE_TRANSACTION_ROLLBACK, createSingleTransactionRollBack());
         elementMap.put(ElementName.SINGLE_TRANSACTION_PESSIMISTIC_ROLLBACK, createSingleTransactionRollBackPl());
+        elementMap.put(ElementName.SINGLE_TRANSACTION_OPTIMISTIC_ROLLBACK, createSingleTransactionRollBackOp());
         elementMap.put(ElementName.SINGLE_TRANSACTION_CLEAN_CACHE, createSingleTransactionCleanCache());
         elementMap.put(ElementName.SINGLE_TRANSACTION_RESIDUAL_LOCK, createSingleTransactionResidualLock());
         elementMap.put(ElementName.MULTI_TRANSACTION_PRE_WRITE, createMultiTransactionPreWrite());
         elementMap.put(ElementName.MULTI_TRANSACTION_COMMIT, createMultiTransactionCommit());
         elementMap.put(ElementName.MULTI_TRANSACTION_ROLLBACK, createMultiTransactionRollBack());
         elementMap.put(ElementName.MULTI_TRANSACTION_PESSIMISTIC_ROLLBACK, createMultiTransactionRollBackPl());
+        elementMap.put(ElementName.MULTI_TRANSACTION_OPTIMISTIC_ROLLBACK, createMultiTransactionRollBackOp());
         elementMap.put(ElementName.MULTI_TRANSACTION_CLEAN_CACHE, createMultiTransactionCleanCache());
         elementMap.put(ElementName.MULTI_TRANSACTION_RESIDUAL_LOCK, createMultiTransactionResidualLock());
     }
@@ -165,6 +167,41 @@ public class TransactionElements {
         StreamConverterLeaf streamConverterLeaf = StreamConverterLeaf.builder()
             .name(ElementName.STREAM)
             .data(pessimisticRollBackLeaf)
+            .build();
+        RootLeaf root = RootLeaf.builder()
+            .name(ElementName.ROOT)
+            .data(streamConverterLeaf)
+            .build();
+        return root;
+    }
+
+
+    private static Element createSingleTransactionRollBackOp() {
+        OptimisticRollBackScanLeaf  optimisticRollBackScanLeaf = OptimisticRollBackScanLeaf.builder()
+            .name(ElementName.OPTIMISTIC_ROLLBACK_SCAN)
+            .build();
+        OptimisticRollBackLeaf optimisticRollBackLeaf = OptimisticRollBackLeaf.builder()
+            .name(ElementName.OPTIMISTIC_ROLLBACK)
+            .data(optimisticRollBackScanLeaf)
+            .build();
+        RootLeaf root = RootLeaf.builder()
+            .name(ElementName.ROOT)
+            .data(optimisticRollBackLeaf)
+            .build();
+        return root;
+    }
+
+    private static Element createMultiTransactionRollBackOp() {
+        OptimisticRollBackScanLeaf optimisticRollBackScanLeaf = OptimisticRollBackScanLeaf.builder()
+            .name(ElementName.OPTIMISTIC_ROLLBACK_SCAN)
+            .build();
+        OptimisticRollBackLeaf optimisticRollBackLeaf = OptimisticRollBackLeaf.builder()
+            .name(ElementName.OPTIMISTIC_ROLLBACK)
+            .data(optimisticRollBackScanLeaf)
+            .build();
+        StreamConverterLeaf streamConverterLeaf = StreamConverterLeaf.builder()
+            .name(ElementName.STREAM)
+            .data(optimisticRollBackLeaf)
             .build();
         RootLeaf root = RootLeaf.builder()
             .name(ElementName.ROOT)

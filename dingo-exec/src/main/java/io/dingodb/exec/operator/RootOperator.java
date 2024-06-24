@@ -25,6 +25,7 @@ import io.dingodb.common.util.Pair;
 import io.dingodb.exec.base.Status;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.exception.TaskCancelException;
 import io.dingodb.exec.exception.TaskFinException;
 import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.fin.Fin;
@@ -50,6 +51,10 @@ public final class RootOperator extends SinkOperator {
             RootParam param = vertex.getParam();
             OperatorProfile profile = param.getProfile("root");
             long start = System.currentTimeMillis();
+            LogUtils.debug(log, "task status: {}", vertex.getTask().getStatus());
+            if(vertex.getTask().getStatus() == Status.CANCEL) {
+                throw new TaskCancelException("task is cancel");
+            }
             if (vertex.getTask().getStatus() != Status.RUNNING) {
                 return false;
             }

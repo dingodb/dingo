@@ -45,6 +45,10 @@ public final class CoalesceOperator extends SoleOutOperator {
             LogUtils.debug(log, "Got tuple from pin {}.", context.getPin());
             boolean result = vertex.getSoleEdge().transformToNext(context, tuple);
             profile.time(start);
+            LogUtils.debug(log, "task status: {}", vertex.getTask().getStatus());
+            if (param.getFinWithException().get()) {
+                return false;
+            }
             return result;
         }
     }
@@ -57,8 +61,10 @@ public final class CoalesceOperator extends SoleOutOperator {
             LogUtils.debug(log, "Got FIN from pin {}.", pin);
             Edge edge = vertex.getSoleEdge();
             if (fin instanceof FinWithException) {
-                edge.fin(fin);
-                return;
+                param.setFinWithException();
+                param.setFin(fin);
+//                edge.fin(fin);
+//                return;
             }
             setFin(pin, fin, param);
             if (isAllFin(param)) {
@@ -68,7 +74,11 @@ public final class CoalesceOperator extends SoleOutOperator {
                     profile.mergeChild();
                     finWithProfiles.addProfile(vertex);
                 }
-                edge.fin(fin);
+                if (param.getFinWithException().get()) {
+                    edge.fin(param.getFin());
+                } else {
+                    edge.fin(fin);
+                }
                 param.clear();
             } else {
                 if (fin instanceof FinWithProfiles) {

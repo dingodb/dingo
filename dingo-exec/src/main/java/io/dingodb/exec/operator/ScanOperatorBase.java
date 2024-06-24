@@ -16,9 +16,10 @@
 
 package io.dingodb.exec.operator;
 
-import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.util.Pair;
+import io.dingodb.exec.base.Status;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.exception.TaskCancelException;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.operator.data.Context;
@@ -40,6 +41,11 @@ public abstract class ScanOperatorBase extends SoleOutOperator {
 
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
+        if(vertex.getTask().getStatus() == Status.CANCEL) {
+            throw new TaskCancelException("task is cancel");
+        } else if (vertex.getTask().getStatus() == Status.STOPPED) {
+            return false;
+        }
         Iterator<Object[]> iterator = createIterator(context, vertex);
         Pair<Long, Boolean> res = getScanner(context, vertex).apply(context, vertex, iterator);
         // Scan operator is not source operator, so may be push multiple times.

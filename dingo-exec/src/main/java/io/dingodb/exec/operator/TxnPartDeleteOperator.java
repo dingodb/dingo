@@ -77,10 +77,10 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
         byte[] txnIdBytes = vertex.getTask().getTxnId().encode();
         byte[] tableIdBytes = tableId.encode();
         byte[] partIdBytes = partId.encode();
+        byte[] jobIdByte = vertex.getTask().getJobId().encode();
+        int len = txnIdBytes.length + tableIdBytes.length + partIdBytes.length;
         if (param.isPessimisticTxn()) {
             byte[] keyValueKey = keys;
-            byte[] jobIdByte = vertex.getTask().getJobId().encode();
-            int len = txnIdBytes.length + tableIdBytes.length + partIdBytes.length;
             // dataKeyValue   [10_txnId_tableId_partId_a_delete, value]
             byte[] dataKey = ByteUtils.encode(
                 CommonId.CommonType.TXN_CACHE_DATA,
@@ -181,11 +181,29 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                 partIdBytes
             );
             KeyValue keyValue = new KeyValue(resultKeys, kv.getValue());
+            Op op = Op.NONE;
             byte[] insertKey = Arrays.copyOf(keyValue.getKey(), keyValue.getKey().length);
             insertKey[insertKey.length - 2] = (byte) Op.PUT.getCode();
+            if (localStore.get(insertKey) != null) {
+               op = Op.PUT;
+            }
             localStore.delete(insertKey);
             insertKey[insertKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
+            if (localStore.get(insertKey) != null) {
+                op = Op.PUTIFABSENT;
+            }
             localStore.delete(insertKey);
+            // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
+            byte[] extraKey = ByteUtils.encode(
+                CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
+                keys,
+                op.getCode(),
+                len,
+                jobIdByte,
+                tableIdBytes,
+                partIdBytes
+            );
+            localStore.put(new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length)));
             if (localStore.put(keyValue) && context.getIndexId() == null) {
                 param.inc();
                 context.addKeyState(true);

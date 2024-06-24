@@ -624,7 +624,7 @@ public class ServerMeta implements Meta {
 
     @Override
     public void closeStatement(@NonNull StatementHandle sh) {
-        LogUtils.debug(log, "statement handle = {}.", sh);
+        LogUtils.info(log, "statement handle = {}.", sh);
         DingoConnection connection = (DingoConnection) ExecutionEnvironment.connectionMap.get(sh.connectionId);
         StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
         try {
@@ -641,17 +641,17 @@ public class ServerMeta implements Meta {
         DingoConnection connection = (DingoConnection) ExecutionEnvironment.connectionMap.get(connectionId);
         StatementHandle newSh = new StatementHandle(connection.id, id, signature);
         try {
-            LogUtils.debug(log, "statement handle = {}.", newSh);
+            LogUtils.info(log, "statement handle = {}.", newSh);
             AvaticaStatement statement = connection.getStatement(newSh);
             statement.cancel();
             ITransaction transaction = connection.getTransaction();
             if (transaction != null) {
                 if (transaction.isAutoCommit()) {
                     if (transaction.getStatus() == TransactionStatus.START) {
-                        LogUtils.debug(log, "cancelStatement, {} rollback ...", transaction.getTxnId());
+                        LogUtils.info(log, "cancelStatement, {} rollback ...", transaction.getTxnId());
                         connection.rollback();
                     } else {
-                        LogUtils.debug(log, "cancelStatement, cancel transaction {} ", transaction.getTxnId());
+                        LogUtils.info(log, "cancelStatement, cancel transaction {} ", transaction.getTxnId());
                         transaction.cancel();
                     }
                 }

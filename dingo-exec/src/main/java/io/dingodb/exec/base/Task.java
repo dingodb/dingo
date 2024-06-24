@@ -90,6 +90,8 @@ public interface Task {
     }
     void setTxnId(CommonId txnId);
 
+    boolean getBachTask();
+
     void setBathTask(boolean bathTask);
 
     void setContext(Context context);

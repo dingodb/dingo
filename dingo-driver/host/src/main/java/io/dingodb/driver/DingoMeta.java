@@ -47,6 +47,7 @@ import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
+import io.dingodb.store.api.transaction.exception.LockWaitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.tso.TsoService;
 import io.dingodb.verify.privilege.PrivilegeVerify;
@@ -573,12 +574,57 @@ public class DingoMeta extends MetaImpl {
                     || sh.signature.statementType == StatementType.INSERT
                     || sh.signature.statementType == StatementType.UPDATE
                     || sh.signature.statementType == StatementType.IS_DML)) {
+                    if (e instanceof LockWaitException) {
+                        return requireNonNull(
+                            resolveLockWait(
+                                sh,
+                                offset,
+                                fetchMaxRowCount,
+                                statement,
+                                resultSet,
+                                signature,
+                                transaction,
+                                (RuntimeException) e)
+                        );
+                    } else if (e instanceof TaskFinException) {
+                        if (((TaskFinException)e).getErrorType().equals(ErrorType.LockWait)) {
+                            return requireNonNull(
+                                resolveLockWait(
+                                    sh,
+                                    offset,
+                                    fetchMaxRowCount,
+                                    statement,
+                                    resultSet,
+                                    signature,
+                                    transaction,
+                                    (RuntimeException) e)
+                            );
+                        }
+                    }
                     // rollback pessimistic lock
                     transaction.rollBackPessimisticLock(jobManager);
+                } else if (transaction != null && transaction.isOptimistic()) {
+                    try {
+                        if (!transaction.isAutoCommit() &&
+                            (sh.signature.statementType == StatementType.DELETE
+                                || sh.signature.statementType == StatementType.INSERT
+                                || sh.signature.statementType == StatementType.UPDATE
+                                || sh.signature.statementType == StatementType.IS_DML)) {
+                            // rollback optimistic current job data
+                            transaction.rollBackOptimisticCurrentJobData(jobManager);
+                        }
+                    } catch (Throwable throwable) {
+                        LogUtils.error(log, throwable.getMessage(), throwable);
+                        throw ExceptionUtils.toRuntime(e);
+                    }
                 }
                 if (transaction != null) {
                     transaction.addSql(signature.sql);
                     if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
+                        // clean optimistic current job data
+                        if (transaction.isOptimistic()) {
+                            transaction.cleanOptimisticCurrentJobData(jobManager);
+                        }
                         cleanTransaction();
                     }
                 }
@@ -599,6 +645,10 @@ public class DingoMeta extends MetaImpl {
             if (transaction != null) {
                 LogUtils.info(log, "{} sql:{} , txnAutoCommit:{}, txnType:{} ", transaction.getTxnId(),
                     signature.sql, transaction.isAutoCommit(), transaction.getType());
+                // clean optimistic current job data
+                if (transaction.isOptimistic()) {
+                    transaction.cleanOptimisticCurrentJobData(jobManager);
+                }
                 transaction.addSql(signature.sql);
                 if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
                     try {
@@ -687,6 +737,33 @@ public class DingoMeta extends MetaImpl {
         }
     }
 
+    private Frame resolveLockWait(StatementHandle sh, long offset, int fetchMaxRowCount,
+                                       AvaticaStatement statement, DingoResultSet resultSet,
+                                       Signature signature, ITransaction transaction,
+                                       RuntimeException exception) throws NoSuchStatementException {
+        RuntimeException lockWaitException = exception;
+        Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
+        LogUtils.info(log, "resolveLockWait retry:{}", retry);
+        while (retry-- > 0 && transaction.isPessimistic()) {
+            ((DingoStatement) statement).removeJob(jobManager);
+            // rollback pessimistic lock
+            transaction.rollBackPessimisticLock(jobManager);
+            DingoDriverParser parser = new DingoDriverParser((DingoConnection) connection);
+            Signature signature1 = parser.retryQuery(jobManager, sh.signature.sql,
+                ((DingoSignature) sh.signature).getSqlNode(), ((DingoSignature) sh.signature).getRelNode(),
+                ((DingoSignature) sh.signature).getParasType(),
+                signature.columns, false);
+            ((DingoStatement) statement).setSignature(signature1);
+            resultSet.setIterator(null);
+            Frame frame = getFrame(sh, offset, fetchMaxRowCount);
+            return frame;
+        }
+        if (lockWaitException != null) {
+            throw lockWaitException;
+        }
+        return null;
+    }
+
     private Frame resolveWriteConflict(StatementHandle sh, long offset, int fetchMaxRowCount,
                                        AvaticaStatement statement, DingoResultSet resultSet,
                                        Signature signature, ITransaction transaction,
@@ -700,7 +777,7 @@ public class DingoMeta extends MetaImpl {
             Signature signature1 = parser.retryQuery(jobManager, sh.signature.sql,
                 ((DingoSignature) sh.signature).getSqlNode(), ((DingoSignature) sh.signature).getRelNode(),
                 ((DingoSignature) sh.signature).getParasType(),
-                signature.columns);
+                signature.columns, true);
             ((DingoStatement) statement).setSignature(signature1);
             resultSet.setIterator(null);
             Frame frame = getFrame(sh, offset, fetchMaxRowCount);

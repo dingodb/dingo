@@ -29,6 +29,8 @@ import io.dingodb.exec.transaction.visitor.data.Composite;
 import io.dingodb.exec.transaction.visitor.data.Element;
 import io.dingodb.exec.transaction.visitor.data.ElementName;
 import io.dingodb.exec.transaction.visitor.data.Leaf;
+import io.dingodb.exec.transaction.visitor.data.OptimisticRollBackLeaf;
+import io.dingodb.exec.transaction.visitor.data.OptimisticRollBackScanLeaf;
 import io.dingodb.exec.transaction.visitor.data.PessimisticResidualLockLeaf;
 import io.dingodb.exec.transaction.visitor.data.PessimisticRollBackLeaf;
 import io.dingodb.exec.transaction.visitor.data.PessimisticRollBackScanLeaf;
@@ -42,6 +44,8 @@ import io.dingodb.exec.transaction.visitor.data.StreamConverterLeaf;
 import io.dingodb.exec.transaction.visitor.data.TransactionElements;
 import io.dingodb.exec.transaction.visitor.function.DingoCleanCacheVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoCommitVisitFun;
+import io.dingodb.exec.transaction.visitor.function.DingoOptimisticRollBackScanVisitFun;
+import io.dingodb.exec.transaction.visitor.function.DingoOptimisticRollBackVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoPessimisticResidualLockVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoPessimisticRollBackScanVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoPessimisticRollBackVisitFun;
@@ -166,6 +170,28 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
         LogUtils.debug(log, "job = {}", job);
     }
 
+    public static void renderRollBackOptimisticData(Job job, Location currentLocation,
+                                                        ITransaction transaction, boolean checkRoot) {
+        IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
+        DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
+            job,
+            idGenerator,
+            currentLocation,
+            transaction
+        );
+        Element element;
+        if (transaction.getChannelMap().size() > 0) {
+            element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_OPTIMISTIC_ROLLBACK);
+        } else {
+            element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_OPTIMISTIC_ROLLBACK);
+        }
+        Collection<Vertex> outputs = element.accept(visitor);
+        if (checkRoot && outputs.size() > 0) {
+            throw new IllegalStateException("There root of plan must be `DingoRoot`.");
+        }
+        LogUtils.debug(log, "job = {}", job);
+    }
+
     public static void renderRollBackResidualPessimisticLockJob(Job job, Location currentLocation,
                                                                 ITransaction transaction, boolean checkRoot) {
         IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
@@ -256,6 +282,18 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
     public Collection<Vertex> visit(PessimisticRollBackScanLeaf pessimisticRollBackScanLeaf) {
         return DingoPessimisticRollBackScanVisitFun.visit(job, idGenerator, currentLocation,
             transaction, this, pessimisticRollBackScanLeaf);
+    }
+
+    @Override
+    public Collection<Vertex> visit(OptimisticRollBackLeaf optimisticRollBackLeaf) {
+        return DingoOptimisticRollBackVisitFun.visit(job, idGenerator, currentLocation,
+            transaction, this, optimisticRollBackLeaf);
+    }
+
+    @Override
+    public Collection<Vertex> visit(OptimisticRollBackScanLeaf optimisticRollBackScanLeaf) {
+        return DingoOptimisticRollBackScanVisitFun.visit(job, idGenerator, currentLocation,
+            transaction, this, optimisticRollBackScanLeaf);
     }
 
     @Override

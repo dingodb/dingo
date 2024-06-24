@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.base;
+package io.dingodb.exec.transaction.visitor.data;
 
-import io.dingodb.common.CommonId;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
+import io.dingodb.exec.transaction.visitor.Visitor;
+import lombok.experimental.SuperBuilder;
 
-import java.util.Iterator;
+@SuperBuilder
+public class OptimisticRollBackScanLeaf extends Leaf {
 
-@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public abstract class JobIterator implements Iterator<Object[]> {
-    private final Job job;
-
-    public boolean cancel() {
-        return job.cancel();
-    }
-
-    public CommonId getJobId() {
-        return job.getJobId();
+    @Override
+    public <T> T accept(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

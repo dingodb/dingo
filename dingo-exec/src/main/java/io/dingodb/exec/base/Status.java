@@ -21,6 +21,7 @@ public final class Status {
     public static int READY = 1;
     public static int RUNNING = 2;
     public static int STOPPED = 3;
+    public static int CANCEL = 4;
 
     private Status() {
     }

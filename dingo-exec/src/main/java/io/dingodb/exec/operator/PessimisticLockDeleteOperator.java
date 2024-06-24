@@ -24,8 +24,10 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.Services;
+import io.dingodb.exec.base.Status;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.exception.TaskCancelException;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PessimisticLockDeleteParam;
@@ -128,17 +130,36 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
                 long forUpdateTs = vertex.getTask().getJobId().seq;
                 byte[] forUpdateTsByte = PrimitiveCodec.encodeLong(forUpdateTs);
                 LogUtils.debug(log, "{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, forUpdateTs, Arrays.toString(key));
+                if(vertex.getTask().getStatus() == Status.STOPPED) {
+                    LogUtils.warn(log, "Task status is stop...");
+                    // delete deadLockKey
+                    localStore.delete(deadLockKeyBytes);
+                    return false;
+                } else if (vertex.getTask().getStatus() == Status.CANCEL) {
+                    LogUtils.warn(log, "Task status is cancel...");
+                    // delete deadLockKey
+                    localStore.delete(deadLockKeyBytes);
+                    throw new TaskCancelException("task is cancel");
+                }
+                TxnPessimisticLock txnPessimisticLock = TransactionUtil.getTxnPessimisticLock(
+                    txnId,
+                    tableId,
+                    partId,
+                    primaryLockKeyBytes,
+                    key,
+                    param.getStartTs(),
+                    forUpdateTs,
+                    param.getIsolationLevel()
+                );
                 try {
-                    TxnPessimisticLock txnPessimisticLock = TransactionUtil.pessimisticLock(
+                    TransactionUtil.pessimisticLock(
+                        txnPessimisticLock,
                         param.getLockTimeOut(),
                         txnId,
                         tableId,
                         partId,
-                        primaryLockKeyBytes,
                         key,
-                        param.getStartTs(),
-                        forUpdateTs,
-                        param.getIsolationLevel()
+                        param.isScan()
                     );
                     long newForUpdateTs = txnPessimisticLock.getForUpdateTs();
                     if (newForUpdateTs != forUpdateTs) {
@@ -146,6 +167,23 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
                         forUpdateTsByte = PrimitiveCodec.encodeLong(newForUpdateTs);
                     }
                     LogUtils.debug(log, "{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, newForUpdateTs, Arrays.toString(key));
+                    if(vertex.getTask().getStatus() == Status.STOPPED) {
+                        TransactionUtil.resolvePessimisticLock(
+                            param.getIsolationLevel(),
+                            txnId,
+                            tableId,
+                            partId,
+                            deadLockKeyBytes,
+                            key,
+                            param.getStartTs(),
+                            txnPessimisticLock.getForUpdateTs(),
+                            false,
+                            null
+                        );
+                        return false;
+                    } else if (vertex.getTask().getStatus() == Status.CANCEL) {
+                        throw new TaskCancelException("task is cancel");
+                    }
                 } catch (Throwable throwable) {
                     LogUtils.error(log, throwable.getMessage(), throwable);
                     TransactionUtil.resolvePessimisticLock(
@@ -156,7 +194,7 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
                         deadLockKeyBytes,
                         key,
                         param.getStartTs(),
-                        forUpdateTs,
+                        txnPessimisticLock.getForUpdateTs(),
                         true,
                         throwable
                     );

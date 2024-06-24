@@ -21,6 +21,7 @@ import io.dingodb.calcite.rel.dingo.IndexFullScan;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.TableInfo;
+import io.dingodb.calcite.utils.VisitUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.CommonId;
@@ -117,19 +118,7 @@ public final class DingoIndexFullScanVisitFun {
             indexSelectionList
         );
 
-        long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
-        // Use current read
-        if (transaction != null && transaction.isPessimistic()
-            && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.SnapshotIsolation
-            && (visitor.getKind() == SqlKind.INSERT || visitor.getKind() == SqlKind.DELETE
-            || visitor.getKind() == SqlKind.UPDATE) ) {
-            scanTs = TsoService.getDefault().tso();
-        }
-        if (transaction != null && transaction.isPessimistic()
-            && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.ReadCommitted
-            && visitor.getKind() == SqlKind.SELECT) {
-            scanTs = TsoService.getDefault().tso();
-        }
+        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
 
         RexNode rexFilter = rel.getFilter();
 
@@ -172,6 +161,7 @@ public final class DingoIndexFullScanVisitFun {
 
         task.putVertex(indexScanvertex);
         outputs.add(indexScanvertex);
+        visitor.setScan(true);
         return outputs;
     }
 }

@@ -40,9 +40,9 @@ import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.ProcessInfo;
-import io.dingodb.common.audit.DingoAudit;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
+import io.dingodb.common.audit.DingoAudit;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.common.profile.ExecProfile;
@@ -52,11 +52,14 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
+import io.dingodb.exec.exception.TaskFinException;
+import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
+import io.dingodb.store.api.transaction.exception.LockWaitException;
 import io.dingodb.transaction.api.LockType;
 import io.dingodb.transaction.api.TableLock;
 import io.dingodb.transaction.api.TableLockService;
@@ -611,7 +614,8 @@ public final class DingoDriverParser extends DingoParser {
         SqlNode sqlNode,
         RelNode relNode,
         RelDataType parasType,
-        List<ColumnMetaData> columns
+        List<ColumnMetaData> columns,
+        boolean lockTable
     ) {
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
         Meta.StatementType statementType;
@@ -635,13 +639,18 @@ public final class DingoDriverParser extends DingoParser {
         );
         long startTs = transaction.getStartTs();
         long jobSeqId = TsoService.getDefault().tso();
-        if (!(transaction.isAutoCommit() && sqlNode.getKind() == SqlKind.SELECT)) {
+        if (!(transaction.isAutoCommit() && sqlNode.getKind() == SqlKind.SELECT) && lockTable) {
             try {
                 lockTables(tables, startTs, jobSeqId, transaction.getFinishedFuture());
             } catch (Exception e) {
                 LogUtils.error(log, e.getMessage(), e);
                 throw e;
             }
+        }
+        if (transaction.isPessimistic() && transaction.getPrimaryKeyLock() == null) {
+            runPessimisticPrimaryKeyJob(jobSeqId, jobManager, transaction, sqlNode, relNode,
+                currentLocation, DefinitionMapper.mapToDingoType(parasType));
+            jobSeqId = transaction.getForUpdateTs();
         }
         String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
         maxExecutionTimeStr = maxExecutionTimeStr == null ? "0" : maxExecutionTimeStr;
@@ -681,19 +690,31 @@ public final class DingoDriverParser extends DingoParser {
         Location currentLocation,
         DingoType dingoType
     ) {
-        Job job = jobManager.createJob(transaction.getStartTs(), jobSeqId, transaction.getTxnId(), dingoType);
-        DingoJobVisitor.renderJob(job, relNode, currentLocation, true, transaction, sqlNode.getKind());
-        try {
-            Iterator<Object[]> iterator = jobManager.createIterator(job, null);
-            while (iterator.hasNext()) {
-                iterator.next();
+        Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
+        while (retry-- > 0) {
+            Job job = jobManager.createJob(transaction.getStartTs(), jobSeqId, transaction.getTxnId(), dingoType);
+            DingoJobVisitor.renderJob(job, relNode, currentLocation, true, transaction, sqlNode.getKind());
+            try {
+                Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+                while (iterator.hasNext()) {
+                    iterator.next();
+                }
+                break;
+            } catch (LockWaitException e) {
+                transaction.rollBackPessimisticPrimaryLock(jobManager);
+            } catch (TaskFinException e1) {
+                transaction.rollBackPessimisticPrimaryLock(jobManager);
+                if (!(e1.getErrorType().equals(ErrorType.LockWait))) {
+                    LogUtils.error(log, e1.getMessage(), e1);
+                    throw e1;
+                }
+            } catch (Throwable throwable) {
+                LogUtils.error(log, throwable.getMessage(), throwable);
+                transaction.rollBackPessimisticPrimaryLock(jobManager);
+                throw ExceptionUtils.toRuntime(throwable);
+            } finally {
+                jobManager.removeJob(job.getJobId());
             }
-        } catch (Throwable throwable) {
-            LogUtils.error(log, throwable.getMessage(), throwable);
-            transaction.rollBackPessimisticPrimaryLock(jobManager);
-            throw ExceptionUtils.toRuntime(throwable);
-        } finally {
-            jobManager.removeJob(job.getJobId());
         }
     }
 

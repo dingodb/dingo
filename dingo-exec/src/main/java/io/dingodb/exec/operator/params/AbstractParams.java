@@ -30,6 +30,8 @@ import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.table.Part;
 import io.dingodb.exec.transaction.params.CleanCacheParam;
 import io.dingodb.exec.transaction.params.CommitParam;
+import io.dingodb.exec.transaction.params.OptimisticRollBackParam;
+import io.dingodb.exec.transaction.params.OptimisticRollBackScanParam;
 import io.dingodb.exec.transaction.params.PessimisticResidualLockParam;
 import io.dingodb.exec.transaction.params.PessimisticRollBackParam;
 import io.dingodb.exec.transaction.params.PessimisticRollBackScanParam;
@@ -98,6 +100,8 @@ import lombok.Setter;
     @JsonSubTypes.Type(PessimisticLockUpdateParam.class),
     @JsonSubTypes.Type(PessimisticRollBackParam.class),
     @JsonSubTypes.Type(PessimisticRollBackScanParam.class),
+    @JsonSubTypes.Type(OptimisticRollBackParam.class),
+    @JsonSubTypes.Type(OptimisticRollBackScanParam.class),
     @JsonSubTypes.Type(DistributionSourceParam.class),
     @JsonSubTypes.Type(DistributionParam.class),
     @JsonSubTypes.Type(GetDistributionParam.class),
