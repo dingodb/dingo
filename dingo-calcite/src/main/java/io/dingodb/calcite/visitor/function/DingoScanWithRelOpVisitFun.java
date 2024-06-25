@@ -110,7 +110,7 @@ public final class DingoScanWithRelOpVisitFun {
             int partitionNum = partitions.size();
             if (td.getPartitionStrategy().equalsIgnoreCase("HASH")) {
                 // Partition will be split in executing time.
-                if (rel.getRangeDistribution() != null || !Utils.parallel(rel.getKeepSerialOrder())) {
+//                if (rel.getRangeDistribution() != null || !Utils.parallel(rel.getKeepSerialOrder())) {
                     outputs.add(createVerticesForRange(
                         task,
                         idGenerator,
@@ -121,25 +121,25 @@ public final class DingoScanWithRelOpVisitFun {
                     ));
                     visitor.setScan(true);
                     return outputs;
-                }
-                NavigableMap<ComparableByteArray, RangeDistribution> rangeDistributions = tableInfo.getRangeDistributions();
-                for (int i = 0; i < partitionNum; ++i) {
-                    Partition partition = partitions.get(i);
-                    NavigableMap<ComparableByteArray, RangeDistribution> subMap = rangeDistributions.subMap(
-                        new ComparableByteArray(partition.getStart()),
-                        true,
-                        new ComparableByteArray(partition.getEnd()),
-                        false
-                    );
-                    outputs.add(createVerticesForRange(
-                        task,
-                        idGenerator,
-                        (start, end) -> createCalcHashDistributionVertex(rel, subMap, start, end, false),
-                        null,
-                        null,
-                        scanVertexCreator
-                    ));
-                }
+//                }
+//                NavigableMap<ComparableByteArray, RangeDistribution> rangeDistributions = tableInfo.getRangeDistributions();
+//                for (int i = 0; i < partitionNum; ++i) {
+//                    Partition partition = partitions.get(i);
+//                    NavigableMap<ComparableByteArray, RangeDistribution> subMap = rangeDistributions.subMap(
+//                        new ComparableByteArray(partition.getStart()),
+//                        true,
+//                        new ComparableByteArray(partition.getEnd()),
+//                        false
+//                    );
+//                    outputs.add(createVerticesForRange(
+//                        task,
+//                        idGenerator,
+//                        (start, end) -> createCalcHashDistributionVertex(rel, subMap, start, end, false),
+//                        null,
+//                        null,
+//                        scanVertexCreator
+//                    ));
+//                }
             } else {
                 if (rel.getRangeDistribution() != null || !Utils.parallel(rel.getKeepSerialOrder())) {
                     outputs.add(createVerticesForRange(
