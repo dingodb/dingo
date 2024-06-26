@@ -18,6 +18,8 @@ package io.dingodb.store.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.auto.service.AutoService;
+import com.google.protobuf.CodedInputStream;
+import com.google.protobuf.CodedOutputStream;
 import io.dingodb.common.codec.CodecKvUtil;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
@@ -26,6 +28,7 @@ import io.dingodb.meta.InfoSchemaServiceProvider;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.VersionService;
+import io.dingodb.sdk.service.entity.Message;
 import io.dingodb.sdk.service.entity.common.KeyValue;
 import io.dingodb.sdk.service.entity.common.Location;
 import io.dingodb.sdk.service.entity.common.StoreState;
@@ -45,8 +48,10 @@ import io.dingodb.sdk.service.entity.version.RangeResponse;
 import io.dingodb.store.proxy.Configuration;
 
 import io.dingodb.store.proxy.service.TsoService;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -173,17 +178,34 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         hSet(tableKey, indexKey, val);
     }
 
+    @SneakyThrows
     private byte[] getBytesFromObj(Object table) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try {
-            objectMapper.writeValue(outputStream, table);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if (table instanceof Message) {
+            CodedOutputStream out = CodedOutputStream.newInstance(outputStream);
+            ((Message) table).write(out);
+            out.flush();
+        } else {
+            try {
+                objectMapper.writeValue(outputStream, table);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
         return outputStream.toByteArray();
     }
 
     private Object getObjFromBytes(byte[] val, Class type) {
+        try {
+            if (type.newInstance() instanceof Message) {
+                CodedInputStream inputStream = CodedInputStream.newInstance(new ByteArrayInputStream(val));
+                Message message = (Message) type.newInstance();
+                message.read(inputStream);
+                return message;
+            }
+        } catch (InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
         try {
             return objectMapper.readValue(val, type);
         } catch (IOException e) {
@@ -414,7 +436,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         }
         long storeCount = response.getStoremap().getStores()
             .stream()
-            .filter(store -> store.getStoreType() != StoreType.NODE_TYPE_INDEX
+            .filter(store -> store.getStoreType() == null || store.getStoreType() == StoreType.NODE_TYPE_STORE
                 && store.getState() == StoreState.STORE_NORMAL)
             .count();
         return (int) storeCount;
