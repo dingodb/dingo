@@ -118,7 +118,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             bytes.add(deleteKey);
             bytes.add(updateKey);
             List<KeyValue> keyValues = localStore.get(bytes);
-            if (keyValues != null && keyValues.size() > 0) {
+            if (keyValues != null && !keyValues.isEmpty()) {
                 if (keyValues.size() > 1) {
                     throw new RuntimeException(txnId + " PrimaryKey is not existed than two in local store");
                 }
@@ -199,7 +199,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             bytes.add(updateKey);
             List<KeyValue> keyValues = localStore.get(bytes);
             Op op = Op.NONE;
-            if (keyValues != null && keyValues.size() > 0) {
+            if (keyValues != null && !keyValues.isEmpty()) {
                 if (keyValues.size() > 1) {
                     throw new RuntimeException(txnId + " Key is not existed than two in local store");
                 }

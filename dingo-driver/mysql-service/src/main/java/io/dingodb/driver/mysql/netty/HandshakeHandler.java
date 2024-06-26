@@ -61,7 +61,6 @@ import javax.net.ssl.SSLEngine;
 
 import static io.dingodb.common.mysql.Versions.PROTOCOL_VERSION;
 import static io.dingodb.common.mysql.constant.ServerStatus.SERVER_STATUS_AUTOCOMMIT;
-import static io.dingodb.driver.ServerMeta.loadGlobalVariables;
 
 @ChannelHandler.Sharable
 @Slf4j
@@ -204,7 +203,6 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         env.getPrivilegeGatherMap().put(privilegeGather.key(), privilegeGather);
                         MysqlNettyServer.connections.put(mysqlConnection.getId(), mysqlConnection);
 
-                        loadGlobalVariables(dingoConnection);
                         if (StringUtils.isNotBlank(authPacket.database)) {
                             String usedSchema = authPacket.database.toUpperCase();
                             // todo: current version, ignore name case
@@ -259,8 +257,6 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         properties.setProperty("user", user);
         properties.setProperty("host", host);
         properties.setProperty("client", mysqlConnection.channel.remoteAddress().toString().substring(1));
-        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-        env.putAll(properties);
         java.sql.Connection connection;
         try {
             connection = DriverManager.getConnection("jdbc:dingo:", properties);

@@ -16,6 +16,7 @@
 
 package io.dingodb.meta;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.meta.SchemaInfo;
 
 import java.util.List;
@@ -123,6 +124,7 @@ public interface InfoSchemaService {
     List<SchemaInfo> listSchema(long tenantId);
 
     Object getTable(long tenantId, long schemaId, long tableId);
+    Object getTable(long tenantId, CommonId tableId);
 
     Object getTable(long tenantId, long schemaId, String tableName);
     Object getTable(long tenantId, String schemaName, String tableName);
@@ -131,10 +133,12 @@ public interface InfoSchemaService {
     List<Object> listTable(long tenantId, long schemaId);
 
     List<Object> listIndex(long tenantId, long schemaId, long tableId);
+    Object getIndex(long tenantId, long tableId, long indexId);
 
     void dropTenant(long tenantId);
     void dropSchema(long tenantId, long schemaId);
     void dropTable(long tenantId, long schemaId, long tableId);
+    void dropIndex(long tenantId, long tableId, long indexId);
 
     long genSchemaId();
 

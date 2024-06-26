@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.auto.service.AutoService;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.CodecKvUtil;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
@@ -305,6 +306,16 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
+    public Object getTable(long tenantId, CommonId tableId) {
+        if (tableId.type == CommonId.CommonType.TABLE) {
+            return getTable(tenantId, tableId.domain, tableId.seq);
+        } else if (tableId.type == CommonId.CommonType.INDEX) {
+            return getIndex(tenantId, tableId.domain, tableId.seq);
+        }
+        return null;
+    }
+
+    @Override
     public Object getTable(long tenantId, long schemaId, String tableName) {
         List<Object> tableList = listTable(tenantId, schemaId);
         return tableList.stream().map(object -> (TableDefinitionWithId)object)
@@ -369,6 +380,17 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
+    public Object getIndex(long tenantId, long tableId, long indexId) {
+        byte[] tableKey = tableKey(tableId);
+        byte[] indexKey = indexKey(indexId);
+        byte[] val = hGet(tableKey, indexKey);
+        if (val == null) {
+            return null;
+        }
+        return getObjFromBytes(val, TableDefinitionWithId.class);
+    }
+
+    @Override
     public void dropTenant(long tenantId) {
         byte[] tenantKey = tenantKey(tenantId);
         hDel(mTenants, tenantKey);
@@ -386,6 +408,13 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         byte[] schemaKey = schemaKey(schemaId);
         byte[] tableKey = tableKey(tableId);
         hDel(schemaKey, tableKey);
+    }
+
+    @Override
+    public void dropIndex(long tenantId, long tableId, long indexId) {
+        byte[] tableKey = tableKey(tableId);
+        byte[] indexKey = indexKey(indexId);
+        hDel(tableKey, indexKey);
     }
 
     @Override
