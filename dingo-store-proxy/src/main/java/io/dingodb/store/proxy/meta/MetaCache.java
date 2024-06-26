@@ -86,9 +86,7 @@ public class MetaCache {
         this.metaService = Services.metaService(coordinators);
         this.infoSchemaService = InfoSchemaService.root();
         this.tsoService = TsoService.INSTANCE.isAvailable() ? TsoService.INSTANCE : new TsoService(coordinators);
-//        this.tableIdCache = new ConcurrentSkipListMap<>();
         this.distributionCache = buildDistributionCache();
-//        this.cache = new ConcurrentHashMap<>();
         Executors.execute("watch-meta", () -> {
             while (!isClose) {
                 try {
@@ -105,9 +103,6 @@ public class MetaCache {
     }
 
     public synchronized void clear() {
-//        tableIdCache.clear();
-//        cache.clear();
-//        metaServices = null;
         distributionCache.invalidateAll();
     }
 
@@ -178,17 +173,11 @@ public class MetaCache {
             });
     }
 
-    private Table loadTable(CommonId tableId) {
-        TableDefinitionWithId tableWithId
-            = (TableDefinitionWithId) infoSchemaService.getTable(0, tableId.domain, tableId.seq);
-        if (tableWithId == null) {
-            return null;
-        }
-        return MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
-    }
-
     private List<TableDefinitionWithId> getIndexes(TableDefinitionWithId tableWithId, DingoCommonId tableId) {
         try {
+            if (tableWithId.getTableId().getEntityType() == EntityType.ENTITY_TYPE_INDEX) {
+                return new ArrayList<>();
+            }
              List<Object> indexList = infoSchemaService
                  .listIndex(0, tableId.getParentEntityId(), tableId.getEntityId());
              return indexList.stream().map(object -> (TableDefinitionWithId)object).collect(Collectors.toList());
@@ -205,7 +194,7 @@ public class MetaCache {
     @SneakyThrows
     private NavigableMap<ComparableByteArray, RangeDistribution> loadDistribution(CommonId tableId) {
         TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(
-            0, tableId.domain, tableId.seq
+            0, tableId
             );
         TableDefinition tableDefinition = tableWithId.getTableDefinition();
         List<ScanRegionWithPartId> rangeDistributionList = new ArrayList<>();
@@ -216,12 +205,9 @@ public class MetaCache {
                 regionList
                     .forEach(object -> {
                         ScanRegionInfo scanRegionInfo = (ScanRegionInfo) object;
-//                        RangeDistribution distribution
-//                            = mapping(scanRegionInfo, partition.getId().getEntityId());
                         rangeDistributionList.add(
                             new ScanRegionWithPartId(scanRegionInfo, partition.getId().getEntityId())
                             );
-                        //result.put(new ComparableByteArray(distribution.getStartKey(), 1), distribution);
                     });
             });
         NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
@@ -287,7 +273,24 @@ public class MetaCache {
 
     @SneakyThrows
     public Table getTable(CommonId tableId) {
-        return this.loadTable(tableId);
+        if (tableId.type == TABLE) {
+            TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(0, tableId);
+
+            if (tableWithId == null) {
+                return null;
+            }
+            return MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
+        } else if (tableId.type == INDEX) {
+            TableDefinitionWithId index = (TableDefinitionWithId) infoSchemaService.getIndex(0, tableId.domain, tableId.seq);
+            if (index == null) {
+                return null;
+            }
+            TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(0, tableId.domain);
+            Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
+            return table.getIndexes().stream()
+                .filter(indexTable -> indexTable.tableId.seq == tableId.seq).findFirst().orElse(null);
+        }
+        return null;
     }
 
     public io.dingodb.store.proxy.meta.MetaService getMetaService(long schemaId) {

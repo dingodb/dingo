@@ -23,6 +23,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.client.SessionVariableChange;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
@@ -30,6 +31,7 @@ import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
+import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.transaction.api.LockType;
 import io.dingodb.transaction.api.TableLock;
 import io.dingodb.transaction.api.TableLockService;
@@ -62,6 +64,7 @@ import java.sql.ResultSet;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
@@ -118,6 +121,14 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         if (user != null && host != null) {
             sessionVariables.setProperty("@user", user);
             sessionVariables.setProperty("@host", host);
+        }
+        try {
+            InfoSchemaService infoSchemaService = InfoSchemaService.root();
+            Map<String, String> globalVariableMap = infoSchemaService.getGlobalVariables();
+            Properties globalProp = ScopeVariables.putAllGlobalVar(globalVariableMap);
+            this.setClientInfo(globalProp);
+        } catch (Exception ignore) {
+
         }
     }
 

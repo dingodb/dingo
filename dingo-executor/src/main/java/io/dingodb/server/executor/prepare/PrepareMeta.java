@@ -18,6 +18,8 @@ package io.dingodb.server.executor.prepare;
 
 import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Maps;
+import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.Common;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.meta.SchemaInfo;
@@ -26,21 +28,21 @@ import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.DefinitionUtils;
-import io.dingodb.exec.Services;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.service.VersionService;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.sdk.service.entity.version.PutRequest;
-import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.proxy.meta.MetaService;
 import io.dingodb.store.service.InfoSchemaService;
 import io.dingodb.store.service.MetaStoreKvTxn;
+import io.dingodb.store.service.StoreKvTxn;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -66,7 +68,7 @@ public final class PrepareMeta {
     private static final String DYNAMIC = "Dynamic";
     private static final String FIXED = "Fixed";
     // engine
-    private static final String LSM = Common.Engine.LSM.name();
+    //private static final String LSM = Common.Engine.LSM.name();
     private static final String TXN_LSM = Common.Engine.TXN_LSM.name();
 
     private static int exceptionRetries = 0;
@@ -79,7 +81,7 @@ public final class PrepareMeta {
     }
 
     public static void main(String[] args) {
-        //PrepareMeta.prepare("172.30.14.203:22001,172.30.14.203:22002,172.30.14.203:22003");
+        PrepareMeta.prepare("172.30.14.203:22001,172.30.14.203:22002,172.30.14.203:22003");
     }
 
     public static void prepare(String coordinators) {
@@ -157,14 +159,14 @@ public final class PrepareMeta {
 
     public static void prepareMysql() throws IOException {
         String schemaName = "MYSQL";
-        createUserTable("MYSQL", "USER", BASE_TABLE, LSM, DYNAMIC);
-        initTableByTemplate(schemaName, "DB", BASE_TABLE, LSM, FIXED);
-        initTableByTemplate(schemaName, "TABLES_PRIV", BASE_TABLE, LSM, FIXED);
-        initTableByTemplate(schemaName, "ANALYZE_TASK", BASE_TABLE, LSM, DYNAMIC);
-        initTableByTemplate(schemaName, "CM_SKETCH", BASE_TABLE, LSM, DYNAMIC);
-        initTableByTemplate(schemaName, "TABLE_STATS", BASE_TABLE, LSM, DYNAMIC);
-        initTableByTemplate(schemaName, "TABLE_BUCKETS", BASE_TABLE, LSM, DYNAMIC);
-        initTableByTemplate(schemaName, "PROCS_PRIV", BASE_TABLE, LSM, DYNAMIC);
+        createUserTable("MYSQL", "USER", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "DB", BASE_TABLE, TXN_LSM, FIXED);
+        initTableByTemplate(schemaName, "TABLES_PRIV", BASE_TABLE, TXN_LSM, FIXED);
+        initTableByTemplate(schemaName, "ANALYZE_TASK", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "CM_SKETCH", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "TABLE_STATS", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "TABLE_BUCKETS", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "PROCS_PRIV", BASE_TABLE, TXN_LSM, DYNAMIC);
     }
 
     public static void prepareInformation(String coordinators) {
@@ -323,10 +325,15 @@ public final class PrepareMeta {
             if (rangeDistribution == null) {
                 return;
             }
+            io.dingodb.meta.MetaService metaService = io.dingodb.meta.MetaService.root();
+            io.dingodb.meta.entity.Table table = metaService.getTable(tableIdCommon);
+            KeyValueCodec codec = CodecService.getDefault()
+                .createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
+            KeyValue keyValue = codec.encode(values.get(0));
 
             CommonId regionId = rangeDistribution.firstEntry().getValue().getId();
-            StoreInstance store = Services.KV_STORE.getInstance(tableIdCommon, regionId);
-            store.insertWithIndex(System.identityHashCode(values.get(0)), values.get(0));
+            StoreKvTxn storeKvTxn = new StoreKvTxn(tableIdCommon, regionId);
+            storeKvTxn.insert(keyValue.getKey(), keyValue.getValue());
         } catch (Exception e) {
             if (e instanceof DingoClientException.InvalidRouteTableException) {
                 if (!continueRetry()) {
@@ -339,7 +346,7 @@ public final class PrepareMeta {
             }
         }
         exceptionRetries = 0;
-        log.info("init %s.%s success", schemaName, tableName);
+        log.info("init {}.{} success", schemaName, tableName);
     }
 
     private static Map<String, Object> getUserObjectMap(String tableName) {

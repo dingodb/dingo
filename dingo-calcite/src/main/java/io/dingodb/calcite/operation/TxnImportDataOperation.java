@@ -370,7 +370,7 @@ public class TxnImportDataOperation {
                 param.setTableId(tableId);
             }
         }
-        if (param.getKeys().size() > 0) {
+        if (!param.getKeys().isEmpty()) {
             boolean result = txnCommit(param, txnId, param.getTableId(), param.getPartId());
             if (!result) {
                 throw new RuntimeException(txnId + " " + param.getPartId()
