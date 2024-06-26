@@ -16,26 +16,19 @@
 
 package io.dingodb.store.service;
 
+import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.meta.InfoSchemaService;
+import io.dingodb.meta.MetaService;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
-import io.dingodb.sdk.common.serial.BufImpl;
-import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.StoreService;
 import io.dingodb.sdk.service.entity.common.Location;
-import io.dingodb.sdk.service.entity.common.Range;
-import io.dingodb.sdk.service.entity.common.RawEngine;
-import io.dingodb.sdk.service.entity.common.RegionType;
-import io.dingodb.sdk.service.entity.common.StorageEngine;
-import io.dingodb.sdk.service.entity.coordinator.CreateRegionRequest;
-import io.dingodb.sdk.service.entity.coordinator.CreateRegionResponse;
-import io.dingodb.sdk.service.entity.coordinator.ScanRegionInfo;
+import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.sdk.service.entity.store.TxnBatchRollbackResponse;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
@@ -48,10 +41,9 @@ import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.store.proxy.Configuration;
-import io.dingodb.store.proxy.meta.ScanRegionWithPartId;
-import io.dingodb.store.proxy.service.CodecService;
 import io.dingodb.store.proxy.service.TransactionStoreInstance;
 import io.dingodb.tso.TsoService;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -60,122 +52,56 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.Set;
-import java.util.TreeMap;
 
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 
 @Slf4j
-public class MetaStoreKvTxn {
-    CommonId metaId = null;
-    CommonId partId = null;
-    static final byte namespace = (byte) 't';
-    private static MetaStoreKvTxn instance;
-    Set<Location> coordinators = Services.parse(Configuration.coordinators());
-    int isolationLevel = 2;
-    // putAbsent
+public class StoreKvTxn implements io.dingodb.store.api.transaction.StoreKvTxn {
+    CommonId tableId;
+    CommonId partId;
+    @Getter
+    CommonId regionId;
     StoreService storeService;
-
+    Set<Location> coordinators = Services.parse(Configuration.coordinators());
     long statementTimeout = 50000;
+    int isolationLevel = 2;
 
-    public static void init() {
-        instance = new MetaStoreKvTxn();
+    public StoreKvTxn(CommonId tableId, CommonId regionId) {
+        this.tableId = tableId;
+        this.partId = new CommonId(CommonId.CommonType.PARTITION, tableId.seq, regionId.domain);
+        this.regionId = regionId;
+        storeService = Services.storeRegionService(coordinators, regionId.seq, 60);
     }
 
-    public static synchronized MetaStoreKvTxn getInstance() {
-        if (instance == null) {
-            init();
-        }
-        return instance;
-    }
-
-    private MetaStoreKvTxn() {
-        long metaPartId = checkMetaRegion();
-        metaId = new CommonId(CommonId.CommonType.META, 0, metaPartId);
-        partId = new CommonId(CommonId.CommonType.PARTITION, 0, 0);
-        storeService = Services.storeRegionService(coordinators, metaPartId, 60);
-    }
-
-    public long checkMetaRegion() {
-        CoordinatorService coordinatorService = Services.coordinatorService(coordinators);
-        long startTs = TsoService.getDefault().tso();
-        byte[] startKey = getMetaRegionKey();
-        byte[] endKey = getMetaRegionEndKey();
-
-        long regionId = getScanRegionId(startKey, endKey);
-        if (regionId > 0) {
-            return regionId;
-        }
-        Range range = Range.builder().startKey(startKey).endKey(endKey).build();
-        CreateRegionRequest createRegionRequest = CreateRegionRequest.builder()
-            .regionName("meta")
-            .range(range)
-            .replicaNum(3)
-            .rawEngine(RawEngine.RAW_ENG_ROCKSDB)
-            .storeEngine(StorageEngine.STORE_ENG_RAFT_STORE)
-            .regionType(RegionType.STORE_REGION)
-            .tenantId(0)
-            .build();
-        try {
-            CreateRegionResponse response = coordinatorService.createRegion(startTs, createRegionRequest);
-            return response.getRegionId();
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-        return 0;
-    }
-
-    public static long getScanRegionId(byte[] start, byte[] end) {
-        List<Object> regionList = InfoSchemaService.root().scanRegions(start, end);
-        if (regionList == null || regionList.isEmpty()) {
-            return 0;
-        } else {
-            ScanRegionInfo scanRegionInfo = (ScanRegionInfo) regionList.get(0);
-            return scanRegionInfo.getRegionId();
-        }
-    }
-
-
-    public byte[] mGet(byte[] key) {
-        long startTs = TsoService.getDefault().tso();
-        key = getMetaDataKey(key);
-
-        List<byte[]> keys = Collections.singletonList(key);
-        TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
-        List<KeyValue> keyValueList = storeInstance.getKeyValues(startTs, keys, statementTimeout);
-        if (keyValueList.isEmpty()) {
-            return null;
-        } else {
-            return keyValueList.get(0).getValue();
-        }
-    }
-
-    public List<byte[]> mRange(byte[] start, byte[] end) {
-        start = getMetaDataKey(start);
-        end = getMetaDataKey(end);
-        long startTs = TsoService.getDefault().tso();
-        TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
-        StoreInstance.Range range = new StoreInstance.Range(start, end, true, false);
-        Iterator<KeyValue> scanIterator = storeInstance.getScanIterator(startTs, range, statementTimeout, null);
-        List<byte[]> values = new ArrayList<>();
-        while (scanIterator.hasNext()) {
-            values.add(scanIterator.next().getValue());
-        }
-        return values;
-    }
-
-    public void mDel(byte[] key) {
-        key = getMetaDataKey(key);
+    public void del(byte[] key) {
         commit(key, null, Op.DELETE.getCode());
     }
 
-    public void mInsert(byte[] key, byte[] value) {
-        key = getMetaDataKey(key);
-        commit(key, value, Op.PUTIFABSENT.getCode());
+    public void insert(byte[] startKey, byte[] endKey) {
+        commit(startKey, endKey, Op.PUTIFABSENT.getCode());
     }
 
-    public void mUpdate(byte[] key, byte[] value) {
-        key = getMetaDataKey(key);
+    public void update(byte[] key, byte[] value) {
         commit(key, value, Op.PUT.getCode());
+    }
+
+    public KeyValue get(byte[] key) {
+        long startTs = TsoService.getDefault().tso();;
+        List<byte[]> keys = Collections.singletonList(key);
+        TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
+        List<KeyValue> keyValueList = storeInstance.txnGet(startTs, keys, statementTimeout);
+        if (keyValueList.isEmpty()) {
+            return null;
+        } else {
+            return keyValueList.get(0);
+        }
+    }
+
+    public Iterator<KeyValue> range(byte[] start, byte[] end) {
+        long startTs = TsoService.getDefault().tso();
+        TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
+        StoreInstance.Range range = new StoreInstance.Range(start, end, true, false);
+        return storeInstance.txnScan(startTs, range, statementTimeout, null);
     }
 
     public void commit(byte[] key, byte[] value, int opCode) {
@@ -205,32 +131,6 @@ public class MetaStoreKvTxn {
         }
     }
 
-    private byte[] getMetaDataKey(byte[] key) {
-        byte[] bytes = new byte[9 + key.length];
-        byte[] regionKey = getMetaRegionKey();
-        System.arraycopy(regionKey, 0, bytes, 0, regionKey.length);
-        System.arraycopy(key, 0, bytes, 9, key.length);
-        return bytes;
-    }
-
-    private static byte[] getMetaRegionEndKey() {
-        byte[] bytes = new byte[9];
-        BufImpl buf = new BufImpl(bytes);
-        // skip namespace
-        buf.skip(1);
-        // reset id
-        buf.writeLong(1);
-        bytes[0] = namespace;
-        return bytes;
-    }
-
-    private byte[] getMetaRegionKey() {
-        byte[] key = new byte[9];
-        CodecService.INSTANCE.setId(key, 0);
-        key[0] = namespace;
-        return key;
-    }
-
     private void preWritePrimaryKey(
         Mutation mutation,
         long startTs
@@ -253,7 +153,7 @@ public class MetaStoreKvTxn {
             .build();
         try {
             TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
-            storeInstance.txnPreWriteRealKey(txnPreWrite, statementTimeout);
+            storeInstance.txnPreWrite(txnPreWrite, statementTimeout);
         } catch (RegionSplitException e) {
             LogUtils.error(log, e.getMessage(), e);
 
@@ -262,17 +162,38 @@ public class MetaStoreKvTxn {
             while (!prewriteResult) {
                 i++;
                 try {
-                    CommonId regionIdNew = refreshRegionId(getMetaRegionKey(), getMetaRegionEndKey(), primaryKey);
+                    CommonId regionIdNew = refreshRegionId(tableId, primaryKey);
                     StoreService serviceNew = Services.storeRegionService(coordinators, regionIdNew.seq, 60);
                     TransactionStoreInstance storeInstanceNew = new TransactionStoreInstance(serviceNew, null, partId);
                     storeInstanceNew.txnPreWrite(txnPreWrite, statementTimeout);
                     prewriteResult = true;
                 } catch (RegionSplitException e1) {
                     sleep100();
-                    LogUtils.error(log, "prewrite primary region split, retry count:" + i);
+                    LogUtils.error(log, "preWrite primary region split, retry count:" + i);
                 }
             }
         }
+    }
+
+    public static CommonId refreshRegionId(CommonId tableId, byte[] key) {
+        MetaService root = MetaService.root();
+        InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
+        TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) infoSchemaService
+            .getTable(0, tableId.domain, tableId.seq);
+        int strategyNumber = tableDefinitionWithId.getTableDefinition().getTablePartition().getStrategy().number();
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
+            = root.getRangeDistribution(tableId);
+        if (strategyNumber == 0) {
+            CodecService.getDefault().setId(key, 0L);
+        }
+        String strategy = DingoPartitionServiceProvider.RANGE_FUNC_NAME;
+        if (strategyNumber != 0) {
+            strategy = DingoPartitionServiceProvider.HASH_FUNC_NAME;
+        }
+
+        return PartitionService.getService(
+                strategy)
+            .calcPartId(key, rangeDistribution);
     }
 
     public boolean commitPrimaryData(
@@ -290,7 +211,7 @@ public class MetaStoreKvTxn {
             .build();
         try {
             TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
-            return storeInstance.txnCommitRealKey(commitRequest);
+            return storeInstance.txnCommit(commitRequest);
         } catch (RuntimeException e) {
             LogUtils.error(log, e.getMessage(), e);
             // 2、regin split
@@ -299,7 +220,7 @@ public class MetaStoreKvTxn {
             while (!commitResult) {
                 i++;
                 try {
-                    CommonId regionIdNew = refreshRegionId(getMetaRegionKey(), getMetaRegionEndKey(), primaryKey);
+                    CommonId regionIdNew = refreshRegionId(tableId, primaryKey);
                     StoreService serviceNew = Services.storeRegionService(coordinators, regionIdNew.seq, 60);
                     TransactionStoreInstance storeInstanceNew = new TransactionStoreInstance(serviceNew, null, partId);
                     storeInstanceNew.txnCommit(commitRequest);
@@ -341,10 +262,9 @@ public class MetaStoreKvTxn {
         } catch (RuntimeException e) {
             LogUtils.error(log, e.getMessage(), e);
             // 2、regin split
-            CommonId regionIdNew = refreshRegionId(getMetaRegionKey(), getMetaRegionEndKey(), keys.get(0));
+            CommonId regionIdNew = refreshRegionId(tableId, keys.get(0));
             StoreService serviceNew = Services.storeRegionService(coordinators, regionIdNew.seq, 60);
-            TransactionStoreInstance storeInstanceNew
-               = new TransactionStoreInstance(serviceNew, null, partId);
+            TransactionStoreInstance storeInstanceNew = new TransactionStoreInstance(serviceNew, null, partId);
             if (!storeInstanceNew.txnBatchRollback(rollBackRequest)) {
                 throw new RuntimeException("txn rollback fail");
             }
@@ -354,46 +274,6 @@ public class MetaStoreKvTxn {
     public static CommonId getTxnId() {
         return new CommonId(CommonId.CommonType.TRANSACTION,
             0, TsoService.getDefault().tso());
-    }
-
-    public static CommonId refreshRegionId(byte[] startKey, byte[] endKey, byte[] key) {
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
-            = loadDistribution(startKey, endKey);
-        String strategy = DingoPartitionServiceProvider.RANGE_FUNC_NAME;
-
-        return PartitionService.getService(
-                strategy)
-            .calcPartId(key, rangeDistribution);
-    }
-
-    private static NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> loadDistribution(
-            byte[] startKey, byte[] endKey
-    ) {
-        InfoSchemaService infoSchemaService = io.dingodb.store.service.InfoSchemaService.ROOT;
-        List<Object> regionList = infoSchemaService
-            .scanRegions(startKey, endKey);
-        List<ScanRegionWithPartId> rangeDistributionList = new ArrayList<>();
-        regionList
-            .forEach(object -> {
-                ScanRegionInfo scanRegionInfo = (ScanRegionInfo) object;
-                rangeDistributionList.add(
-                    new ScanRegionWithPartId(scanRegionInfo, 0)
-                );
-            });
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> result = new TreeMap<>();
-
-        rangeDistributionList.forEach(scanRegionWithPartId -> {
-            ScanRegionInfo scanRegionInfo = scanRegionWithPartId.getScanRegionInfo();
-            byte[] startInner = scanRegionInfo.getRange().getStartKey();
-            byte[] endInner = scanRegionInfo.getRange().getEndKey();
-            RangeDistribution distribution = RangeDistribution.builder()
-                .id(new CommonId(CommonId.CommonType.DISTRIBUTION, scanRegionWithPartId.getPartId(), scanRegionInfo.getRegionId()))
-                .startKey(startInner)
-                .endKey(endInner)
-                .build();
-            result.put(new ByteArrayUtils.ComparableByteArray(distribution.getStartKey(), 1), distribution);
-        });
-        return result;
     }
 
 }

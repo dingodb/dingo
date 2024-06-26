@@ -27,14 +27,18 @@ public interface InfoSchemaServiceProvider {
     class Impl {
         private static final InfoSchemaServiceProvider.Impl INSTANCE = new InfoSchemaServiceProvider.Impl();
 
-        private final InfoSchemaServiceProvider serviceProvider;
+        private InfoSchemaServiceProvider serviceProvider;
 
         private Impl() {
             Iterator<InfoSchemaServiceProvider> iterator
                 = ServiceLoader.load(InfoSchemaServiceProvider.class).iterator();
-            this.serviceProvider = iterator.next();
-            if (iterator.hasNext()) {
-                log.warn("Load multi info schema service provider, use {}.", serviceProvider.getClass().getName());
+            try {
+                this.serviceProvider = iterator.next();
+                if (iterator.hasNext()) {
+                    log.warn("Load multi info schema service provider, use {}.", serviceProvider.getClass().getName());
+                }
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
             }
         }
     }

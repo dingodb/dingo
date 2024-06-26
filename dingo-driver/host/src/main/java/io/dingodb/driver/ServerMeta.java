@@ -672,7 +672,6 @@ public class ServerMeta implements Meta {
         properties.putAll(info);
         DingoConnection connection = DingoDriver.INSTANCE.createConnection(null, properties);
         ExecutionEnvironment.connectionMap.put(ch.id, connection);
-        loadGlobalVariables(connection);
         // connection with init db
         connectionUrlSync(ch, properties);
         if (SecurityConfiguration.isAuth()) {
@@ -688,13 +687,6 @@ public class ServerMeta implements Meta {
                 throw new RuntimeException(e);
             }
         }
-    }
-
-    public synchronized static void loadGlobalVariables(DingoConnection dingoConnection) {
-        InfoSchemaService infoSchemaService = InfoSchemaService.root();
-        Map<String, String> globalVariableMap = infoSchemaService.getGlobalVariables();
-        Properties globalProp = ScopeVariables.putAllGlobalVar(globalVariableMap);
-        dingoConnection.setClientInfo(globalProp);
     }
 
     @Override
