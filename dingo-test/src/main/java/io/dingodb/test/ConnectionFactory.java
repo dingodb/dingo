@@ -42,10 +42,10 @@ public final class ConnectionFactory {
     }
 
     public static void initLocalEnvironment() throws Exception {
-        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
         env.setRole(DingoRole.JDBC);
-        env.setInfo("user", "root");
-        env.setInfo("password", "");
+        env.clientIdentity.setInfo("user", "root");
+        env.clientIdentity.setInfo("password", "");
 
         // Configure for local test.
         DingoConfiguration.parse(

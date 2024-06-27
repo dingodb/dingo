@@ -16,95 +16,31 @@
 
 package io.dingodb.common.environment;
 
-import io.dingodb.common.CommonId;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.privilege.PrivilegeGather;
-import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.session.SessionManager;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.sql.Connection;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ExecutionEnvironment {
 
-    public static ExecutionEnvironment getExecutionEnvironment() {
-        return INSTANCE;
-    }
-
     public static ExecutionEnvironment INSTANCE = new ExecutionEnvironment();
 
-    public static Map<String, Connection> connectionMap = new ConcurrentHashMap<>();
+    public SessionManager sessionManager = new SessionManager();
 
-    public static Map<Object, Map<String, KeyValue>> memoryCache = new HashMap<>();
+    public LocalMemCacheFor2PC memCacheFor2PC = new LocalMemCacheFor2PC();
+
+    public ClientIdentity clientIdentity = new ClientIdentity();
 
     @Getter
     @Setter
     private DingoRole role;
 
-    public Properties properties = new Properties();
-
     @Setter
     @Getter
     private volatile Map<String, PrivilegeGather> privilegeGatherMap = new ConcurrentHashMap<>();
 
-    @Setter
-    @Getter
-    public volatile Map<String, CommonId> schemaIdMap = new ConcurrentHashMap<>();
-
-    @Setter
-    @Getter
-    private volatile Map<CommonId, Map<String, CommonId>> tableIdMap = new ConcurrentHashMap<>();
-
-    public boolean containsKey(String key) {
-        return properties.containsKey(key);
-    }
-
-    public Object getInfo(String field) {
-        if (properties.containsKey(field)) {
-            return properties.getProperty(field);
-        } else {
-            return null;
-        }
-    }
-
-    public String getUser() {
-        if (properties.containsKey("user")) {
-            return properties.getProperty("user");
-        } else {
-            return null;
-        }
-    }
-
-    public String getPassword() {
-        if (properties.containsKey("password")) {
-            return properties.getProperty("password");
-        } else {
-            return null;
-        }
-    }
-
-    public String getHost() {
-        if (properties.containsKey("host")) {
-            return properties.getProperty("host");
-        } else {
-            return null;
-        }
-    }
-
-    public void remove(String field) {
-        properties.remove(field);
-    }
-
-    public void setInfo(String key, Object value) {
-        properties.put(key, value);
-    }
-
-    public void putAll(Properties properties) {
-        this.properties.putAll(properties);
-    }
 }

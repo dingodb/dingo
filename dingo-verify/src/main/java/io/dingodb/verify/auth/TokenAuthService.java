@@ -32,7 +32,7 @@ import java.util.ServiceLoader;
 @Slf4j
 public class TokenAuthService implements AuthService<Authentication>  {
 
-    ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+    ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
 
     public TokenAuth tokenAuth;
 

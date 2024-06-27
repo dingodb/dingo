@@ -71,7 +71,7 @@ public class Starter {
         DingoConfiguration.instance().setServerId(serverId);
         Configuration.instance();
         PrepareMeta.prepare(io.dingodb.store.proxy.Configuration.coordinators());
-        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
         env.setRole(DingoRole.EXECUTOR);
 
         NetService.getDefault().listenPort(DingoConfiguration.host(), DingoConfiguration.port());

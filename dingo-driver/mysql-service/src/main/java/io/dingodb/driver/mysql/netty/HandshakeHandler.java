@@ -26,6 +26,7 @@ import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.common.mysql.constant.ServerConstant;
 import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.UserDefinition;
+import io.dingodb.common.session.SessionManager;
 import io.dingodb.common.util.ByteUtils;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.mysql.MysqlConnection;
@@ -65,7 +66,7 @@ import static io.dingodb.common.mysql.constant.ServerStatus.SERVER_STATUS_AUTOCO
 @ChannelHandler.Sharable
 @Slf4j
 public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
-    ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+    ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
     private static volatile AtomicInteger threadId = new AtomicInteger(0);
 
     public MysqlConnection mysqlConnection;
@@ -260,7 +261,8 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         java.sql.Connection connection;
         try {
             connection = DriverManager.getConnection("jdbc:dingo:", properties);
-            ExecutionEnvironment.connectionMap.put("mysql:" + (threadId.get() - 1), connection);
+            SessionManager sm = ExecutionEnvironment.INSTANCE.sessionManager;
+            sm.connectionMap.put("mysql:" + (threadId.get() - 1), connection);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

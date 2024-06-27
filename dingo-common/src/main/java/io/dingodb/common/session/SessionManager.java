@@ -24,12 +24,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.TimeZone;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public final class SessionManager {
-    private SessionManager() {
+    public Map<String, Connection> connectionMap = new ConcurrentHashMap<>();
+    public SessionManager() {
     }
 
     public static java.sql.Connection getInnerConnection() {

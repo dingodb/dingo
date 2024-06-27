@@ -1,0 +1,53 @@
+ [
+    {
+      "name": "job_id",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "data_type",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "element_id",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "default": 0,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "start_key",
+      "type": "varchar",
+      "scale": -2147483648,
+      "precision": -1,
+      "default": 0,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "end_key",
+      "type": "varchar",
+      "scale": -2147483648,
+      "precision": -1,
+      "default": 0,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "ts",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "default": 0,
+      "primary": -1,
+      "nullable": false
+    }
+  ]

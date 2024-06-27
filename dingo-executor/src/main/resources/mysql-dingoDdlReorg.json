@@ -1,0 +1,55 @@
+ [
+    {
+      "name": "job_id",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "ele_id",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "ele_type",
+      "type": "varbinary",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "start_key",
+      "type": "varbinary",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "end_key",
+      "type": "varbinary",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "physical_id",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "reorg_meta",
+      "type": "varbinary",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    }
+  ]

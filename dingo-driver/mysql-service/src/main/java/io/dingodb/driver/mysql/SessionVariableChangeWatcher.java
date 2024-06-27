@@ -24,6 +24,7 @@ import io.dingodb.driver.ServerMeta;
 import io.dingodb.driver.mysql.netty.MysqlNettyServer;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Observable;
@@ -70,12 +71,12 @@ public class SessionVariableChangeWatcher implements Observer {
                     }
                 }
             } else {
-                if (ExecutionEnvironment.connectionMap.containsKey(sessionVariable.getValue())) {
-                    DingoConnection dingoConnection = (DingoConnection) ExecutionEnvironment
-                        .connectionMap.get(sessionVariable.getValue());
+                Map<String, Connection> connectionMap = ExecutionEnvironment.INSTANCE.sessionManager.connectionMap;
+                if (connectionMap.containsKey(sessionVariable.getValue())) {
+                    DingoConnection dingoConnection = (DingoConnection) connectionMap.get(sessionVariable.getValue());
                     try {
                         dingoConnection.close();
-                        ExecutionEnvironment.connectionMap.remove(sessionVariable.getValue());
+                        connectionMap.remove(sessionVariable.getValue());
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
                     }
