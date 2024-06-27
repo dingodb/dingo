@@ -72,6 +72,7 @@ import io.dingodb.store.api.transaction.exception.PrimaryMismatchException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.store.proxy.Configuration;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -135,6 +136,10 @@ public class TransactionStoreInstance {
 
     public boolean txnPreWrite(TxnPreWrite txnPreWrite, long timeOut) {
         txnPreWrite.getMutations().stream().peek($ -> $.setKey(setId($.getKey()))).forEach($ -> $.getKey()[0] = 't');
+        return txnPreWriteRealKey(txnPreWrite, timeOut);
+    }
+
+    public boolean txnPreWriteRealKey(TxnPreWrite txnPreWrite, long timeOut) {
         int n = 1;
         IsolationLevel isolationLevel = txnPreWrite.getIsolationLevel();
         List<Long> resolvedLocks = new ArrayList<>();
@@ -181,7 +186,7 @@ public class TransactionStoreInstance {
     }
 
     // Join primary key values to string by mapping
-    private String joinPrimaryKey(Object[] keyValues, TupleMapping mapping) {
+    public static String joinPrimaryKey(Object[] keyValues, TupleMapping mapping) {
 
         if (keyValues == null || mapping == null) {
             throw new IllegalArgumentException("Parameters cannot be null");
@@ -199,7 +204,7 @@ public class TransactionStoreInstance {
             .orElse("");
     }
 
-    private String joinPrimaryKeys(String key1, String key2) {
+    private static String joinPrimaryKeys(String key1, String key2) {
         StringJoiner joiner = new StringJoiner(",");
         if (!key1.isEmpty()) {
             joiner.add(key1);
@@ -210,7 +215,7 @@ public class TransactionStoreInstance {
         return joiner.toString();
     }
 
-    public void getJoinedPrimaryKey(TxnPreWrite txnPreWrite, List<AlreadyExist> keysAlreadyExist) {
+    public static void getJoinedPrimaryKey(TxnPreWrite txnPreWrite, List<AlreadyExist> keysAlreadyExist) {
         CommonId tableId = LockExtraDataList.decode(txnPreWrite.getLockExtraDatas().get(0).getExtraData()).getTableId();
         Table table = MetaService.root().getTable(tableId);
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
@@ -237,6 +242,10 @@ public class TransactionStoreInstance {
 
     public boolean txnCommit(TxnCommit txnCommit) {
         txnCommit.getKeys().stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
+        return txnCommitRealKey(txnCommit);
+    }
+
+    public boolean txnCommitRealKey(TxnCommit txnCommit) {
         TxnCommitResponse response;
         if (indexService != null) {
             response = indexService.txnCommit(txnCommit.getStartTs(), MAPPER.commitTo(txnCommit));
@@ -360,11 +369,21 @@ public class TransactionStoreInstance {
     ) {
         Stream.of(range.start).peek(this::setId).forEach($ -> $[0] = 't');
         Stream.of(range.end).peek(this::setId).forEach($ -> $[0] = 't');
+        return getScanIterator(ts, range, timeOut, coprocessor);
+    }
+
+    @NonNull
+    public ScanIterator getScanIterator(long ts, StoreInstance.Range range, long timeOut, CoprocessorV2 coprocessor) {
         return new ScanIterator(ts, range, timeOut, coprocessor);
     }
 
     public List<io.dingodb.common.store.KeyValue> txnGet(long startTs, List<byte[]> keys, long timeOut) {
         keys.stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
+        return getKeyValues(startTs, keys, timeOut);
+    }
+
+    @NonNull
+    public List<io.dingodb.common.store.KeyValue> getKeyValues(long startTs, List<byte[]> keys, long timeOut) {
         int n = 1;
         List<Long> resolvedLocks = new ArrayList<>();
         while (true) {
@@ -430,7 +449,7 @@ public class TransactionStoreInstance {
         return response.getTxnResult() == null;
     }
 
-    public TxnCheckTxnStatusResponse txnCheckTxnStatus(TxnCheckStatus txnCheckStatus) {
+    public static TxnCheckTxnStatusResponse txnCheckTxnStatus(TxnCheckStatus txnCheckStatus) {
         byte[] primaryKey = txnCheckStatus.getPrimaryKey();
         StoreService storeService = Services.storeRegionService(Configuration.coordinatorSet(), primaryKey, 30);
         return storeService.txnCheckTxnStatus(txnCheckStatus.getCallerStartTs(), MAPPER.checkTxnTo(txnCheckStatus));
@@ -443,7 +462,7 @@ public class TransactionStoreInstance {
         return storeService.txnResolveLock(txnResolveLock.getStartTs(), MAPPER.resolveTxnTo(txnResolveLock));
     }
 
-    private ResolveLockStatus writeResolveConflict(List<TxnResultInfo> txnResult, int isolationLevel,
+    public ResolveLockStatus writeResolveConflict(List<TxnResultInfo> txnResult, int isolationLevel,
                                                    long startTs, List<Long> resolvedLocks, String funName) {
         ResolveLockStatus resolveLockStatus = ResolveLockStatus.NONE;
         for (TxnResultInfo txnResultInfo : txnResult) {

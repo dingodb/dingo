@@ -24,7 +24,7 @@ import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.UserDefinition;
 
 public interface UserService {
-    ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+    ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
 
     @ApiDeclaration
     boolean existsUser(UserDefinition userDefinition);

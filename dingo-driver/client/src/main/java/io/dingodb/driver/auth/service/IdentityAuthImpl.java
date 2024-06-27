@@ -30,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class IdentityAuthImpl implements IdentityAuth {
 
-    ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+    ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
 
     private UserService userService;
     private static final IdentityAuth INSTANCE = new IdentityAuthImpl();

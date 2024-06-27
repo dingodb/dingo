@@ -396,7 +396,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                 if (totalExecCount < 20) {
                     values[6] = StatsTaskState.PENDING.getState();
                 } else {
-                    delStats(analyzeTaskStore, analyzeTaskCodec, values);
+                    delStats("mysql.analyze_task", schemaName, tableName);
                 }
             } else {
                 values[6] = StatsTaskState.SUCCESS.getState();

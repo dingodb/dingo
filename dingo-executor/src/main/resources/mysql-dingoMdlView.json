@@ -1,0 +1,53 @@
+ [
+    {
+      "name": "job_id",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "schema_name",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "table_name",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "query",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "session_id",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "txnStart",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+     "name": "SQL_DIGESTS",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    }
+  ]

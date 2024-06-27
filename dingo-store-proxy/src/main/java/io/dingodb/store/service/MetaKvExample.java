@@ -19,22 +19,48 @@ package io.dingodb.store.service;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.meta.Tenant;
+import io.dingodb.sdk.service.entity.meta.DingoCommonId;
+import io.dingodb.sdk.service.entity.meta.EntityType;
+import io.dingodb.sdk.service.entity.meta.TableDefinition;
+import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.jsonwebtoken.lang.Assert;
 
 import java.util.List;
 
-public class MetaKvExample {
-    public static void main(String[] args) {
-        String coordinators = "172.30.14.203:22001,172.30.14.203:22002,172.30.14.203:22003";
-//        createTenant(coordinators);
-        createSchema(coordinators, 10001);
-        createTable(coordinators, 10001, 20003);
-        dropTable(coordinators, 10001, 20003);
-        dropSchema(coordinators, 10001, 20002);
-        dropTenant(coordinators, 10001);
+public final class MetaKvExample {
+    private MetaKvExample() {
+
     }
 
-    public static void createTenant(String coordinators) {
+    public static void main(String[] args) {
+//        String coordinators = "172.30.14.203:22001,172.30.14.203:22002,172.30.14.203:22003";
+//        long tenantId = createTenant(coordinators);
+//        System.out.println("create tenantId:" + tenantId);
+//        long schemaId = createSchema(coordinators, tenantId);
+//        System.out.println("create table use schemaId:" + schemaId);
+//        long tableId = createTable(coordinators, tenantId, schemaId);
+//        System.out.println("create index use tableId:" + tableId);
+//        createIndex(coordinators, tenantId, schemaId, tableId);
+//        System.out.println("drop table use tableId:" + tableId);
+//        dropTable(coordinators, tenantId, schemaId, tableId);
+//        System.out.println("test finished");
+    }
+
+    public static void listTable(String coordinators) {
+        InfoSchemaService infoSchemaService = new InfoSchemaService(coordinators);
+        List<SchemaInfo> schemaInfoList = infoSchemaService.listSchema(0);
+        long schemaId = schemaInfoList.stream()
+            .filter(schemaInfo -> schemaInfo.getName().equalsIgnoreCase("MYSQL"))
+            .map(SchemaInfo::getSchemaId)
+            .findFirst().orElse(0L);
+        System.out.println("----> get mysql schemaId:" + schemaId);
+        List<Object> tableList = infoSchemaService.listTable(0, schemaId);
+        tableList.forEach(o -> {
+            System.out.println("table:" + o);
+        });
+    }
+
+    public static long createTenant(String coordinators) {
         InfoSchemaService infoSchemaService = new InfoSchemaService(coordinators);
         long tenantId = 10001;
         Tenant tenant = Tenant.builder().id(10001).name("tenantId1").build();
@@ -48,45 +74,66 @@ public class MetaKvExample {
             System.out.println("tenant:" + tenantTmp);
         });
         Assert.isTrue(tenantList.size() == 2);
+        return tenantId;
     }
 
-    public static void createSchema(String coordinators, long tenantId) {
+    public static long createSchema(String coordinators, long tenantId) {
         InfoSchemaService infoSchemaService = new InfoSchemaService(coordinators);
         infoSchemaService.createSchema(tenantId, 20001, SchemaInfo.builder().schemaId(20001).name("20001").schemaState(SchemaState.PUBLIC).build());
         infoSchemaService.createSchema(tenantId, 20002, SchemaInfo.builder().schemaId(20002).name("20002").schemaState(SchemaState.PUBLIC).build());
         infoSchemaService.createSchema(tenantId, 20003, SchemaInfo.builder().schemaId(20003).name("20003").schemaState(SchemaState.PUBLIC).build());
-        List<Object> schemaList = infoSchemaService.listSchema(tenantId);
+        List<SchemaInfo> schemaList = infoSchemaService.listSchema(tenantId);
         schemaList.forEach(o -> {
-            SchemaInfo info = (SchemaInfo) o;
-            System.out.println("schema:" + info);
+            System.out.println("schema:" + o);
         });
         Assert.isTrue(schemaList.size() == 3);
+        return 20001;
     }
 
-    public static void createTable(String coordinators, long tenantId, long schemaId) {
+    public static long createTable(String coordinators, long tenantId, long schemaId) {
         InfoSchemaService infoSchemaService = new InfoSchemaService(coordinators);
-        infoSchemaService.createTableOrView(tenantId, schemaId, 30001, "table30001");
-        infoSchemaService.createTableOrView(tenantId, schemaId, 30002, "table30002");
-        infoSchemaService.createTableOrView(tenantId, schemaId, 30003, "table30003");
-        infoSchemaService.createTableOrView(tenantId, schemaId, 30004, "table30004");
-        infoSchemaService.createTableOrView(tenantId, schemaId, 30005, "table30005");
-        infoSchemaService.createTableOrView(tenantId, schemaId, 30006, "table30006");
+        TableDefinition t1 = TableDefinition.builder().name("t1").build();
+        TableDefinition t2 = TableDefinition.builder().name("t2").build();
+        TableDefinition t3 = TableDefinition.builder().name("t3").build();
+        TableDefinition t4 = TableDefinition.builder().name("t4").build();
+        TableDefinition t5 = TableDefinition.builder().name("t5").build();
+        TableDefinition t6 = TableDefinition.builder().name("t6").build();
+        infoSchemaService.createTableOrView(tenantId, schemaId, 30001, TableDefinitionWithId.builder().tableDefinition(t1).build());
+        infoSchemaService.createTableOrView(tenantId, schemaId, 30002, TableDefinitionWithId.builder().tableDefinition(t2).build());
+        infoSchemaService.createTableOrView(tenantId, schemaId, 30003, TableDefinitionWithId.builder().tableDefinition(t3).build());
+        infoSchemaService.createTableOrView(tenantId, schemaId, 30004, TableDefinitionWithId.builder().tableDefinition(t4).build());
+        infoSchemaService.createTableOrView(tenantId, schemaId, 30005, TableDefinitionWithId.builder().tableDefinition(t5).build());
+        infoSchemaService.createTableOrView(tenantId, schemaId, 30006, TableDefinitionWithId.builder().tableDefinition(t6).build());
         List<Object> tableList = infoSchemaService.listTable(tenantId, schemaId);
         tableList.forEach(o -> {
-            byte[] b = (byte[]) o;
-            System.out.println("table:" + new String(b));
+            System.out.println("table:" + o);
         });
         Assert.isTrue(tableList.size() == 6);
+        return 30006;
     }
 
-    public static void dropTable(String coordinators, long tenantId, long schemaId) {
-        long tableId = 30006;
+    public static void createIndex(String coordinators, long tenantId, long schemaId, long tableId) {
+        InfoSchemaService infoSchemaService = new InfoSchemaService(coordinators);
+        TableDefinition index = TableDefinition.builder().name("age_index").build();
+        DingoCommonId dingoCommonId = DingoCommonId.builder().parentEntityId(tableId).entityId(11111).entityType(EntityType.ENTITY_TYPE_INDEX).build();
+        TableDefinitionWithId tableDefinitionWithId = TableDefinitionWithId.builder().tableDefinition(index).tableId(dingoCommonId).build();
+        infoSchemaService.createIndex(tenantId, schemaId, tableId, tableDefinitionWithId);
+
+        Object t = infoSchemaService.listIndex(tenantId, schemaId, tableId);
+        if (t == null) {
+            System.out.println("xxx");
+        }
+        Assert.isTrue(t != null);
+    }
+
+    public static void dropTable(String coordinators, long tenantId, long schemaId, long tableId) {
         InfoSchemaService infoSchemaService = new InfoSchemaService(coordinators);
         infoSchemaService.dropTable(tenantId, schemaId, tableId);
+        Object obj = infoSchemaService.getTable(tenantId, schemaId, tableId);
+        Assert.isNull(obj);
         List<Object> tableList = infoSchemaService.listTable(tenantId, schemaId);
         tableList.forEach(o -> {
-            byte[] b = (byte[]) o;
-            System.out.println("table:" + new String(b));
+            System.out.println("table:" + o);
         });
         Assert.isTrue(tableList.size() == 5);
     }
@@ -94,10 +141,9 @@ public class MetaKvExample {
     public static void dropSchema(String coordinators, long tenantId, long schemaId) {
         InfoSchemaService infoSchemaService = new InfoSchemaService(coordinators);
         infoSchemaService.dropSchema(tenantId, schemaId);
-        List<Object> schemaList = infoSchemaService.listSchema(tenantId);
+        List<SchemaInfo> schemaList = infoSchemaService.listSchema(tenantId);
         schemaList.forEach(o -> {
-            SchemaInfo schemaInfo = (SchemaInfo) o;
-            System.out.println("schema:" + schemaInfo);
+            System.out.println("schema:" + o);
         });
         Assert.isTrue(schemaList.size() == 2);
     }

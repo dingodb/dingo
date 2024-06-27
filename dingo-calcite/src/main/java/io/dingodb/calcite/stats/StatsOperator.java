@@ -16,20 +16,22 @@
 
 package io.dingodb.calcite.stats;
 
-import io.dingodb.calcite.utils.RelNodeCache;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.session.SessionManager;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.Optional;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
-import io.dingodb.store.api.StoreInstance;
-import io.dingodb.store.api.StoreService;
+import io.dingodb.store.api.transaction.StoreKvTxn;
+import io.dingodb.store.api.transaction.StoreTxnService;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.Connection;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -37,11 +39,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 
-import static io.dingodb.common.util.Utils.calculatePrefixCount;
-
 @Slf4j
 public abstract class StatsOperator {
-    public static StoreService storeService;
+    public static StoreTxnService storeTxnService;
     public static MetaService metaService;
 
     public static final String ANALYZE_TASK = "analyze_task";
@@ -63,14 +63,14 @@ public abstract class StatsOperator {
     public static KeyValueCodec statsCodec;
     public static KeyValueCodec cmSketchCodec;
 
-    public static StoreInstance analyzeTaskStore;
-    public static StoreInstance bucketsStore;
-    public static StoreInstance statsStore;
-    public static StoreInstance cmSketchStore;
+    public static StoreKvTxn analyzeTaskStore;
+    public static StoreKvTxn bucketsStore;
+    public static StoreKvTxn statsStore;
+    public static StoreKvTxn cmSketchStore;
 
     static {
         try {
-            storeService = StoreService.getDefault();
+            storeTxnService = StoreTxnService.getDefault();
             metaService = MetaService.root().getSubMetaService("MYSQL");
             analyzeTaskTable = metaService.getTable(ANALYZE_TASK);
             bucketsTable = metaService.getTable(TABLE_BUCKETS);
@@ -88,13 +88,14 @@ public abstract class StatsOperator {
                 .createKeyValueCodec(statsTable.version, statsTable.tupleType(), statsTable.keyMapping());
             cmSketchCodec = CodecService.getDefault()
                 .createKeyValueCodec(cmSketchTable.version, cmSketchTable.tupleType(), cmSketchTable.keyMapping());
-            analyzeTaskStore = storeService.getInstance(analyzeTaskTblId,
+            analyzeTaskStore = storeTxnService.getInstance(analyzeTaskTblId,
                 getRegionId(analyzeTaskTblId));
-            bucketsStore = storeService.getInstance(bucketsTblId, getRegionId(bucketsTblId));
-            statsStore = storeService.getInstance(statsTblId, getRegionId(statsTblId));
-            cmSketchStore = storeService
+            bucketsStore = storeTxnService.getInstance(bucketsTblId, getRegionId(bucketsTblId));
+            statsStore = storeTxnService.getInstance(statsTblId, getRegionId(statsTblId));
+            cmSketchStore = storeTxnService
                 .getInstance(cmSketchTblId, getRegionId(cmSketchTblId));
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -106,51 +107,46 @@ public abstract class StatsOperator {
             .orElseThrow("Cannot get region for " + tableId);
     }
 
-    public void upsert(StoreInstance store, KeyValueCodec codec, List<Object[]> rowList) {
+    public void upsert(StoreKvTxn store, KeyValueCodec codec, List<Object[]> rowList) {
         rowList.forEach(row -> {
             KeyValue old = store.get(codec.encodeKey(row));
+            KeyValue keyValue = codec.encode(row);
             if (old == null || old.getValue() == null) {
-                store.insert(codec.encode(row));
+                store.insert(keyValue.getKey(), keyValue.getValue());
             } else {
-                store.update(codec.encode(row), old);
+                store.update(keyValue.getKey(), keyValue.getValue());
             }
-
         });
     }
 
     public static void delStats(String schemaName, String tableName) {
         try {
-            Object[] tuple = new Object[15];
-            tuple[0] = schemaName;
-            tuple[1] = tableName;
-            delStats(analyzeTaskStore, analyzeTaskCodec, tuple);
-
-            tuple = new Object[8];
-            tuple[0] = schemaName;
-            tuple[1] = tableName;
-            delStats(cmSketchStore, cmSketchCodec, tuple);
-            delStats(statsStore, statsCodec, tuple);
-
-            tuple = new Object[5];
-            tuple[0] = schemaName;
-            tuple[1] = tableName;
-            delStats(bucketsStore, bucketsCodec, tuple);
+            String delTemp = "delete from %s where schema_name='%s' and table_name='%s'";
+            List<String> sqlList = new ArrayList<>();
+            String sqlAnalyzeTask = String.format(delTemp, "mysql.analyze_task", schemaName, tableName);
+            String sqlStats = String.format(delTemp, "mysql.table_stats", schemaName, tableName);
+            String sqlBuckets = String.format(delTemp, "mysql.TABLE_BUCKETS", schemaName, tableName);
+            String sqlCmSketch = String.format(delTemp, "mysql.CM_SKETCH", schemaName, tableName);
+            sqlList.add(sqlAnalyzeTask);
+            sqlList.add(sqlBuckets);
+            sqlList.add(sqlStats);
+            sqlList.add(sqlCmSketch);
+            SessionManager.update(sqlList);
             StatsCache.removeCache(schemaName, tableName);
-            //RelNodeCache.clearRelNode(tableName);
         } catch (Exception ignored) {
         }
     }
 
-    public static void delStats(StoreInstance store, KeyValueCodec codec, Object[] tuples) {
-        byte[] prefix = codec.encodeKeyPrefix(tuples, calculatePrefixCount(tuples));
-        store.delete(new StoreInstance.Range(prefix, prefix, true, true));
+    public static void delStats(String table, String schemaName, String tableName) {
+        String sqlTemp = "delete from %s where schema_name='%s' and table_name='%s'";
+        String sql = String.format(sqlTemp, table, schemaName, tableName);
+        SessionManager.update(sql);
     }
 
-    public List<Object[]> scan(StoreInstance store, KeyValueCodec codec, RangeDistribution rangeDistribution) {
+    public List<Object[]> scan(StoreKvTxn store, KeyValueCodec codec, RangeDistribution rangeDistribution) {
         try {
-            Iterator<KeyValue> iterator = store.scan(
-                new StoreInstance.Range(rangeDistribution.getStartKey(), rangeDistribution.getEndKey(),
-                    rangeDistribution.isWithStart(), true)
+            Iterator<KeyValue> iterator = store.range(
+                rangeDistribution.getStartKey(), rangeDistribution.getEndKey()
             );
             List<Object[]> list = new ArrayList<>();
             while (iterator.hasNext()) {
@@ -162,7 +158,7 @@ public abstract class StatsOperator {
         }
     }
 
-    public static Object[] get(StoreInstance store, KeyValueCodec codec, Object[] key) {
+    public static Object[] get(StoreKvTxn store, KeyValueCodec codec, Object[] key) {
         try {
             KeyValue keyValue = store.get(codec.encodeKey(key));
             if (keyValue.getValue() == null || keyValue.getValue().length == 0) {
@@ -181,10 +177,10 @@ public abstract class StatsOperator {
         return values;
     }
 
-    public Object[] generateAnalyzeTask(String schemaName,
-                                        String tableName,
-                                        long totalCount,
-                                        long modifyCount) {
+    public static Object[] generateAnalyzeTask(String schemaName,
+                                               String tableName,
+                                               long totalCount,
+                                               long modifyCount) {
         return new Object[] {schemaName, tableName, "", totalCount, null, null,
             StatsTaskState.PENDING.getState(), null, DingoConfiguration.host(), modifyCount,
             new Timestamp(System.currentTimeMillis()), 0, 0, 0, 0};

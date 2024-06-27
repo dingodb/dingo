@@ -1,0 +1,196 @@
+ [
+    {
+      "name": "EVENT_CATALOG",
+      "type": "varchar",
+      "precision": 64,
+      "scale": -2147483648,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "EVENT_SCHEMA",
+      "type": "varchar",
+      "precision": 64,
+      "scale": -2147483648,
+      "primary": 1,
+      "nullable": false
+    },
+    {
+       "name": "EVENT_NAME",
+       "type": "varchar",
+       "precision": 64,
+       "scale": -2147483648,
+       "primary": 2,
+       "nullable": false
+    },
+   {
+     "name": "DEFINER",
+     "type": "varchar",
+     "precision": 93,
+     "scale": -2147483648,
+     "primary": 3,
+     "nullable": false
+   },
+   {
+     "name": "TIME_ZONE",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "EVENT_BODY",
+     "type": "varchar",
+     "precision": 8,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "EVENT_DEFINITION",
+     "type": "varchar",
+     "precision": 65536,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "EVENT_TYPE",
+     "type": "varchar",
+     "precision": 9,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "EXECUTE_AT",
+     "type": "timestamp",
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "INTERVAL_VALUE",
+     "type": "varchar",
+     "default": null,
+     "precision": 256,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "INTERVAL_FIELD",
+     "type": "varchar",
+     "default": null,
+     "precision": 18,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "SQL_MODE",
+     "type": "varchar",
+     "precision": 8192,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "STARTS",
+     "type": "timestamp",
+     "default": null,
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "ENDS",
+     "type": "timestamp",
+     "default": null,
+     "precision": 65536,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "STATUS",
+     "type": "varchar",
+     "precision": 18,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "ON_COMPLETION",
+     "type": "varchar",
+     "precision": 12,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "CREATED",
+     "type": "timestamp",
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "LAST_ALTERED",
+     "type": "timestamp",
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "LAST_EXECUTED",
+     "type": "timestamp",
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "EVENT_COMMENT",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "ORIGINATOR",
+     "type": "bigint",
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "CHARACTER_SET_CLIENT",
+     "type": "varchar",
+     "default": null,
+     "precision": 32,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "COLLATION_CONNECTION",
+     "type": "varchar",
+     "precision": 32,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "DATABASE_COLLATION",
+     "type": "varchar",
+     "precision": 32,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   }
+ ]

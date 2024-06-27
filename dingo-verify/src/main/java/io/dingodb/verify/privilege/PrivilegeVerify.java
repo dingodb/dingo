@@ -39,7 +39,7 @@ import java.util.List;
 @Slf4j
 public final class PrivilegeVerify {
 
-    static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+    static ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
 
     static {
         isVerify = SecurityConfiguration.isVerify();

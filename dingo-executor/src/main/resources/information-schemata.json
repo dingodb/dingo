@@ -1,0 +1,42 @@
+ [
+    {
+      "name": "CATALOG_NAME",
+      "type": "varchar",
+      "precision": 512,
+      "scale": -2147483648,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "SCHEMA_NAME",
+      "type": "varchar",
+      "precision": 64,
+      "scale": -2147483648,
+      "primary": 1,
+      "nullable": true
+    },
+   {
+     "name": "DEFAULT_CHARACTER_SET_NAME",
+     "type": "varchar",
+     "precision": 32,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "DEFAULT_COLLATION_NAME",
+     "type": "varchar",
+     "precision": 32,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "SQL_PATH",
+     "type": "varchar",
+     "precision": 512,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   }
+  ]

@@ -1,0 +1,127 @@
+ [
+    {
+      "name": "id",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "ddl_job_id",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "ele_id",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "ele_key",
+      "type": "varbinary",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "store_id",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "type",
+      "type": "integer",
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+     "name": "exec_id",
+     "type": "varbinary",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+     "name": "exec_lease",
+     "type": "timestamp",
+     "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+     "name": "state",
+     "type": "integer",
+     "precision": -1,
+     "primary": -1,
+     "nullable": true
+    },
+   {
+     "name": "curr_key",
+     "type": "varbinary",
+     "scale": -2147483648,
+     "precision": -1,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "start_key",
+     "type": "varbinary",
+     "scale": -2147483648,
+     "precision": -1,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "end_key",
+     "type": "varbinary",
+     "scale": -2147483648,
+     "precision": -1,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "start_ts",
+     "type": "bigint",
+     "scale": -2147483648,
+     "precision": -1,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "finish_ts",
+     "type": "bigint",
+     "scale": -2147483648,
+     "precision": -1,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "row_count",
+     "type": "bigint",
+     "scale": -2147483648,
+     "precision": -1,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "backfill_meta",
+     "type": "varbinary",
+     "scale": -2147483648,
+     "precision": -1,
+     "primary": -1,
+     "nullable": true
+   }
+ ]

@@ -69,7 +69,7 @@ public class TableModifyMonitorTask extends StatsOperator implements Runnable {
             });
         });
 
-        if (analyzeTaskList.size() > 0) {
+        if (!analyzeTaskList.isEmpty()) {
             upsert(analyzeTaskStore, analyzeTaskCodec, analyzeTaskList);
         }
     }
@@ -83,7 +83,7 @@ public class TableModifyMonitorTask extends StatsOperator implements Runnable {
      */
     protected boolean autoAnalyzeTriggerPolicy(String schemaName, String tableName, long commitCount) {
         long processRows = 0;
-        KeyValue old = null;
+        KeyValue old;
         Object[] oldValues = null;
         try {
             Object[] keys = getAnalyzeTaskKeys(schemaName, tableName);
@@ -123,7 +123,7 @@ public class TableModifyMonitorTask extends StatsOperator implements Runnable {
         if (!res && oldValues != null) {
             Object[] row = generateAnalyzeTask(schemaName, tableName, 0, commitCount);
             row[6] = StatsTaskState.INIT.getState();
-            mergeAnalyzeRecord(old, oldValues, row);
+            mergeAnalyzeRecord(oldValues, row);
         } else {
             if (!res) {
                 return false;
@@ -132,15 +132,16 @@ public class TableModifyMonitorTask extends StatsOperator implements Runnable {
             LogUtils.info(log, "{}.{} auto analyze start, modify:{}",
                 schemaName, tableName, commitCount);
             if (oldValues == null) {
-                analyzeTaskStore.insert(analyzeTaskCodec.encode(row));
+                KeyValue keyValue = analyzeTaskCodec.encode(row);
+                analyzeTaskStore.insert(keyValue.getKey(), keyValue.getValue());
             } else {
-                mergeAnalyzeRecord(old, oldValues, row);
+                mergeAnalyzeRecord(oldValues, row);
             }
         }
         return res;
     }
 
-    private static void mergeAnalyzeRecord(KeyValue old, Object[] oldValues, Object[] row) {
+    private static void mergeAnalyzeRecord(Object[] oldValues, Object[] row) {
         row[11] = oldValues[11];
         row[12] = oldValues[12];
         row[13] = oldValues[13];
@@ -155,7 +156,8 @@ public class TableModifyMonitorTask extends StatsOperator implements Runnable {
         if (rowsCount > 500000 && StatsTaskState.PENDING.getState().equalsIgnoreCase(state)) {
             return;
         }
-        analyzeTaskStore.update(analyzeTaskCodec.encode(row), old);
+        KeyValue keyValue = analyzeTaskCodec.encode(row);
+        analyzeTaskStore.update(keyValue.getKey(), keyValue.getValue());
     }
 
 }

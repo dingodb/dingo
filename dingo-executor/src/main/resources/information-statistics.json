@@ -1,0 +1,137 @@
+ [
+    {
+      "name": "TABLE_CATALOG",
+      "type": "varchar",
+      "precision": 512,
+      "scale": -2147483648,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "TABLE_SCHEMA",
+      "type": "varchar",
+      "precision": 64,
+      "scale": -2147483648,
+      "primary": 1,
+      "nullable": false
+    },
+    {
+       "name": "TABLE_NAME",
+       "type": "varchar",
+       "precision": 64,
+       "scale": -2147483648,
+       "primary": 2,
+       "nullable": false
+    },
+   {
+     "name": "NON_UNIQUE",
+     "type": "bigint",
+     "default": 0,
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": 3,
+     "nullable": false
+   },
+   {
+     "name": "INDEX_SCHEMA",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": 4,
+     "nullable": false
+   },
+   {
+     "name": "INDEX_NAME",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "SEQ_IN_INDEX",
+     "type": "bigint",
+     "precision": -1,
+     "default": 0,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "COLUMN_NAME",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "COLLATION",
+     "type": "varchar",
+     "precision": 1,
+     "scale": -2147483648,
+     "default": null,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "CARDINALITY",
+     "type": "bigint",
+     "default": null,
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "SUB_PART",
+     "type": "bigint",
+     "default": null,
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "PACKED",
+     "type": "varchar",
+     "default": null,
+     "precision": 10,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "NULLABLE",
+     "type": "varchar",
+     "precision": 3,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "INDEX_TYPE",
+     "type": "varchar",
+     "precision": 16,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "COMMENT",
+     "type": "varchar",
+     "precision": 16,
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "INDEX_COMMENT",
+     "type": "varchar",
+     "precision": 1024,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   }
+ ]
