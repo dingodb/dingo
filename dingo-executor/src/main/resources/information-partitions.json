@@ -1,0 +1,219 @@
+ [
+    {
+      "name": "TABLE_CATALOG",
+      "type": "varchar",
+      "precision": 512,
+      "scale": -2147483648,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "TABLE_SCHEMA",
+      "type": "varchar",
+      "precision": 64,
+      "scale": -2147483648,
+      "primary": 1,
+      "nullable": false
+    },
+    {
+       "name": "TABLE_NAME",
+       "type": "varchar",
+       "precision": 64,
+       "scale": -2147483648,
+       "primary": 2,
+       "nullable": false
+    },
+   {
+     "name": "PARTITION_NAME",
+     "type": "varchar",
+     "default": null,
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": 3,
+     "nullable": true
+   },
+   {
+     "name": "SUBPARTITION_NAME",
+     "type": "varchar",
+     "default": null,
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": 4,
+     "nullable": true
+   },
+   {
+     "name": "PARTITION_ORDINAL_POSITION",
+     "type": "bigint",
+     "default": null,
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "SUBPARTITION_ORDINAL_POSITION",
+     "type": "bigint",
+     "default": null,
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "PARTITION_METHOD",
+     "type": "varchar",
+     "precision": 18,
+     "scale": -2147483648,
+     "default": null,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "SUBPARTITION_METHOD",
+     "type": "varchar",
+     "precision": 12,
+     "scale": -2147483648,
+     "default": null,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "PARTITION_EXPRESSION",
+     "type": "varchar",
+     "default": null,
+     "precision": 65536,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "SUBPARTITION_EXPRESSION",
+     "type": "varchar",
+     "default": null,
+     "precision": 65536,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "PARTITION_DESCRIPTION",
+     "type": "varchar",
+     "default": null,
+     "precision": 65536,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "TABLE_ROWS",
+     "type": "bigint",
+     "default": 0,
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "AVG_ROW_LENGTH",
+     "type": "bigint",
+     "default": 0,
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "DATA_LENGTH",
+     "type": "bigint",
+     "precision": -1,
+     "default": 0,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "MAX_DATA_LENGTH",
+     "type": "bigint",
+     "default": null,
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "INDEX_LENGTH",
+     "type": "bigint",
+     "default": 0,
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "DATA_FREE",
+     "type": "bigint",
+     "default": 0,
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "create_time",
+     "type": "timestamp",
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "UPDATE_TIME",
+     "type": "timestamp",
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "CHECK_TIME",
+     "type": "timestamp",
+     "default": null,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "CHECKSUM",
+     "type": "bigint",
+     "default": null,
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "PARTITION_COMMENT",
+     "type": "varchar",
+     "precision": 80,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "NODEGROUP",
+     "type": "varchar",
+     "precision": 12,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "TABLESPACE_NAME",
+     "type": "varchar",
+     "default": null,
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   }
+ ]

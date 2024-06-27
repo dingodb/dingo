@@ -336,7 +336,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     SqlNode query = null;
     int ttl = -1;
     PartitionDefinition partitionDefinition = null;
-    int replica = 0;
+    int replica = 3;
     String engine = null;
     Properties properties = null;
     int autoIncrement = 1;

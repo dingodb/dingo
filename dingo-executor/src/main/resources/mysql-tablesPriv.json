@@ -1,0 +1,62 @@
+ [
+    {
+      "name": "Host",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "User",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": 1,
+      "nullable": false
+    },
+    {
+      "name": "Db",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": 2,
+      "nullable": false
+    },
+    {
+      "name": "Table_name",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": 3,
+      "nullable": false
+    },
+    {
+      "name": "Grantor",
+      "type": "varchar",
+      "default": "",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "Timestamp",
+      "type": "timestamp",
+      "scale": -2147483648,
+      "default": "",
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "Table_priv",
+      "type": "varchar",
+      "scale": -2147483648,
+      "default": "",
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "Column_priv",
+      "type": "varchar",
+      "default": "",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    }
+  ]

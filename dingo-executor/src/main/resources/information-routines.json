@@ -1,0 +1,264 @@
+ [
+    {
+      "name": "SPECIFIC_NAME",
+      "type": "varchar",
+      "precision": 64,
+      "scale": -2147483648,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "ROUTINE_CATALOG",
+      "type": "varchar",
+      "precision": 512,
+      "scale": -2147483648,
+      "primary": 1,
+      "nullable": false
+    },
+    {
+       "name": "ROUTINE_SCHEMA",
+       "type": "varchar",
+       "precision": 64,
+       "scale": -2147483648,
+       "primary": 2,
+       "nullable": false
+    },
+   {
+     "name": "ROUTINE_NAME",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": 3,
+     "nullable": false
+   },
+   {
+     "name": "ROUTINE_TYPE",
+     "type": "varchar",
+     "precision": 9,
+     "scale": -2147483648,
+     "primary": 4,
+     "nullable": false
+   },
+   {
+     "name": "DATA_TYPE",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "CHARACTER_MAXIMUM_LENGTH",
+     "type": "integer",
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "CHARACTER_OCTET_LENGTH",
+     "type": "integer",
+     "precision": -1,
+     "scale": -2147483648,
+     "default": null,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "NUMERIC_PRECISION",
+     "type": "bigint",
+     "precision": -1,
+     "scale": -2147483648,
+     "default": null,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "NUMERIC_SCALE",
+     "type": "int",
+     "default": null,
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "DATETIME_PRECISION",
+     "type": "bigint",
+     "default": null,
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "CHARACTER_SET_NAME",
+     "type": "varchar",
+     "default": null,
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "COLLATION_NAME",
+     "type": "varchar",
+     "default": null,
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "DTD_IDENTIFIER",
+     "type": "varchar",
+     "default": null,
+     "precision": 65536,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "ROUTINE_BODY",
+     "type": "varchar",
+     "precision": 8,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "ROUTINE_DEFINITION",
+     "type": "varchar",
+     "default": null,
+     "precision": 65536,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "EXTERNAL_NAME",
+     "type": "varchar",
+     "default": null,
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "EXTERNAL_LANGUAGE",
+     "type": "varchar",
+     "default": null,
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "PARAMETER_STYLE",
+     "type": "varchar",
+     "precision": 8,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "IS_DETERMINISTIC",
+     "type": "varchar",
+     "precision": 3,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "SQL_DATA_ACCESS",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "SQL_PATH",
+     "type": "varchar",
+     "default": null,
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "SECURITY_TYPE",
+     "type": "varchar",
+     "precision": 7,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "CREATED",
+     "type": "timestamp",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "LAST_ALTERED",
+     "type": "timestamp",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "SQL_MODE",
+     "type": "varchar",
+     "precision": 8192,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "ROUTINE_COMMENT",
+     "type": "varchar",
+     "precision": 65536,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "DEFINER",
+     "type": "varchar",
+     "default": null,
+     "precision": 93,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "CHARACTER_SET_CLIENT",
+     "type": "varchar",
+     "default": null,
+     "precision": 32,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "COLLATION_CONNECTION",
+     "type": "varchar",
+     "default": null,
+     "precision": 32,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "DATABASE_COLLATION",
+     "type": "varchar",
+     "precision": 32,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   }
+ ]

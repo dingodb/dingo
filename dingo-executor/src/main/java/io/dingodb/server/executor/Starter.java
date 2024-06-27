@@ -31,7 +31,7 @@ import io.dingodb.net.MysqlNetServiceProvider;
 import io.dingodb.net.NetService;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.scheduler.SchedulerService;
-import io.dingodb.sdk.service.JsonMessageUtils;
+import io.dingodb.server.executor.prepare.PrepareMeta;
 import io.dingodb.server.executor.schedule.SafePointUpdateTask;
 import io.dingodb.server.executor.service.ClusterService;
 import io.dingodb.store.proxy.service.AutoIncrementService;
@@ -70,6 +70,7 @@ public class Starter {
         }
         DingoConfiguration.instance().setServerId(serverId);
         Configuration.instance();
+        PrepareMeta.prepare(io.dingodb.store.proxy.Configuration.coordinators());
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         env.setRole(DingoRole.EXECUTOR);
 
