@@ -109,23 +109,27 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     @Setter
     private boolean isScan;
 
+    @Getter
+    private boolean isJoinConcurrency;
+
     private DingoJobVisitor(Job job, IdGenerator idGenerator, Location currentLocation,
-                            ITransaction transaction, SqlKind kind) {
+                            ITransaction transaction, SqlKind kind, boolean isJoinConcurrency) {
         this.job = job;
         this.idGenerator = idGenerator;
         this.currentLocation = currentLocation;
         this.transaction = transaction;
         this.kind = kind;
+        this.isJoinConcurrency = isJoinConcurrency;
     }
 
     public static void renderJob(Job job, RelNode input, Location currentLocation) {
-        renderJob(job, input, currentLocation, false, null, null);
+        renderJob(job, input, currentLocation, false, null, null, false);
     }
 
     public static void renderJob(Job job, RelNode input, Location currentLocation,
-                                 boolean checkRoot, ITransaction transaction, SqlKind kind) {
+                                 boolean checkRoot, ITransaction transaction, SqlKind kind, boolean isJoinConcurrency) {
         IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
-        DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation, transaction, kind);
+        DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation, transaction, kind, isJoinConcurrency);
         Collection<Vertex> outputs = dingo(input).accept(visitor);
         if (checkRoot && !outputs.isEmpty()) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");

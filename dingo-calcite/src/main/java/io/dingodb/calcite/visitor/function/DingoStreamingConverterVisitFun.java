@@ -81,7 +81,8 @@ public class DingoStreamingConverterVisitFun {
             dingo(rel.getInput()).accept(visitor),
             dingo(rel.getInput()).getStreaming(),
             rel.getStreaming(),
-            DefinitionMapper.mapToDingoType(rel.getRowType())
+            DefinitionMapper.mapToDingoType(rel.getRowType()),
+            visitor
         );
     }
 
@@ -91,7 +92,8 @@ public class DingoStreamingConverterVisitFun {
         @NonNull Collection<Vertex> inputs,
         @NonNull DingoRelStreaming srcStreaming,
         @NonNull DingoRelStreaming dstStreaming,
-        DingoType schema
+        DingoType schema,
+        DingoJobVisitor visitor
     ) {
         final Set<DingoRelPartition> dstPartitions = dstStreaming.getPartitions();
         final Set<DingoRelPartition> srcPartitions = srcStreaming.getPartitions();
@@ -107,7 +109,7 @@ public class DingoStreamingConverterVisitFun {
                     if (partition instanceof DingoRelPartitionByTable) {
                         outputs = partition(idGenerator, outputs, (DingoRelPartitionByTable) partition);
                     } else if (partition instanceof DingoRelPartitionByKeys) {
-                        outputs = hash(idGenerator, outputs, (DingoRelPartitionByKeys) partition);
+                        outputs = hash(idGenerator, outputs, (DingoRelPartitionByKeys) partition, visitor);
                     } else if (partition instanceof DingoRelPartitionByIndex) {
                         outputs = copy(idGenerator, outputs, (DingoRelPartitionByIndex) partition, transaction);
                     } else {
@@ -219,10 +221,14 @@ public class DingoStreamingConverterVisitFun {
     private static @NonNull Collection<Vertex> hash(
         IdGenerator idGenerator,
         @NonNull Collection<Vertex> inputs,
-        @NonNull DingoRelPartitionByKeys hash
+        @NonNull DingoRelPartitionByKeys hash,
+        DingoJobVisitor visitor
     ) {
         List<Vertex> outputs = new LinkedList<>();
-        final List<Location> locations = new ArrayList<>(ClusterService.getDefault().getComputingLocations());
+        List<Location> locations = new ArrayList<>();
+        if (visitor.isJoinConcurrency()) {
+            locations.addAll(ClusterService.getDefault().getComputingLocations());
+        }
         final HashStrategy hs = new SimpleHashStrategy();
         for (Vertex input : inputs) {
             Task task = input.getTask();

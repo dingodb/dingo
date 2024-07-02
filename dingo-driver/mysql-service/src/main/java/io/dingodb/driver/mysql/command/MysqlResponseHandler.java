@@ -16,6 +16,7 @@
 
 package io.dingodb.driver.mysql.command;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.ExtendedClientCapabilities;
 import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.constant.ServerStatus;
@@ -249,6 +250,9 @@ public final class MysqlResponseHandler {
         } else if (e.getMessage() != null && (e.getMessage().contains("TaskCancelException")
             || e.getMessage().contains("task is cancel"))) {
             return new SQLException("Query execution was interrupted", "70100", 1317);
+        } else if (e.getMessage() != null && e.getMessage().contains("Statement canceled")) {
+            LogUtils.info(log, e.getMessage(), e);
+            return new SQLException(e.getMessage(), "HY000", 1105);
         } else if (e.getErrorCode() == 9001 && e.getSQLState().equals("45000")) {
             return new SQLException(e.getMessage(), "HY000", 1105);
         } else {
