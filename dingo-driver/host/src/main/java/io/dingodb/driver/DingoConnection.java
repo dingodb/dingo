@@ -283,6 +283,10 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                     }
                 });
             }
+            if (transaction != null) {
+                LogUtils.info(log, "call dingoConnection close..., txnId:" + transaction.getTxnId());
+                transaction.cancel();
+            }
         } finally {
             getMeta().cleanTransaction();
             unlockTables();

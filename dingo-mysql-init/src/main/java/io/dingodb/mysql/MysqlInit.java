@@ -308,6 +308,7 @@ public final class MysqlInit {
         values.add(new Object[]{"metric_log_enable", "on"});
         values.add(new Object[]{"increment_backup", "off"});
         values.add(new Object[]{"dingo_audit_enable", "off"});
+        values.add(new Object[]{"dingo_join_concurrency_enable", "off"});
         return values;
     }
 

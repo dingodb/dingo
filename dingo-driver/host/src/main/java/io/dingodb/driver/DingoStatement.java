@@ -140,8 +140,6 @@ public class DingoStatement extends AvaticaStatement {
             LogUtils.info(log, "dingo statement cancel job:{}", job);
             jobManager.cancel(job.getJobId());
         }
-        // If there is an open result set, it probably just set the same flag.
-        cancelFlag.compareAndSet(false, true);
     }
 
     @NonNull
@@ -171,11 +169,20 @@ public class DingoStatement extends AvaticaStatement {
         } else if (signature instanceof MysqlSignature) {
             Operation operation = ((MysqlSignature) signature).getOperation();
             if (operation instanceof QueryOperation) {
-                return ((QueryOperation) operation).iterator();
+                Iterator<Object[]> iterator = ((QueryOperation) operation).iterator();
+                if (cancelFlag.get()) {
+                    LogUtils.info(log, "cancelFlag is true");
+                    throw new SQLException("Statement canceled");
+                }
+                return iterator;
             } else {
                 DmlOperation dmlOperation = (DmlOperation) operation;
                 Iterator<Object[]> iterator = dmlOperation.getIterator();
                 warning = dmlOperation.getWarning();
+                if (cancelFlag.get()) {
+                    LogUtils.info(log, "cancelFlag is true");
+                    throw new SQLException("Statement canceled");
+                }
                 return iterator;
             }
         }
