@@ -50,7 +50,7 @@ public class OptimisticRollBackOperator extends TransactionOperator {
             if (param.isClean()) {
                 StoreInstance store = Services.LOCAL_STORE.getInstance(null, null);
                 store.delete(keyValue.getKey());
-                LogUtils.info(log, "Optimistic clean key is {}", Arrays.toString(keyValue.getKey()));
+                LogUtils.debug(log, "Optimistic clean key is {}", Arrays.toString(keyValue.getKey()));
             } else {
                 Object[] decode = ByteUtils.decode(keyValue);
                 TxnLocalData txnLocalData = (TxnLocalData) decode[0];
@@ -90,7 +90,7 @@ public class OptimisticRollBackOperator extends TransactionOperator {
                     store.delete(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, deleteKey));
                 }
                 store.delete(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_EXTRA_DATA, Op.forNumber(op), deleteKey));
-                LogUtils.info(log, "Optimistic RollBack key is {}, jobId:{}", Arrays.toString(key), jobId);
+                LogUtils.debug(log, "Optimistic RollBack key is {}, jobId:{}", Arrays.toString(key), jobId);
             }
             return true;
         }
