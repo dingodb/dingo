@@ -273,12 +273,25 @@ public class PessimisticTransaction extends BaseTransaction {
                 throw new RuntimeException(txnId + " PrimaryKey is not existed than two in local store");
             }
             KeyValue value = keyValues.get(0);
+            byte[] valueKey = value.getKey();
+            byte[] valueValue = value.getValue();
+            int opCode = valueKey[valueKey.length - 2];
+            if (valueKey[0] == CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK.getCode()) {
+                StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, newPartId);
+                KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), key, getLockTimeOut());
+                if (kvKeyValue != null && kvKeyValue.getValue() != null) {
+                    LogUtils.info(log, "kvGet key is {}", Arrays.toString(key));
+                    opCode = Op.PUT.getCode();
+                    key = kvKeyValue.getKey();
+                    valueValue = kvKeyValue.getValue();
+                }
+            }
             KeyValue keyValue = cache.get(primaryKeyLock);
             Long forUpdateTs = PrimitiveCodec.decodeLong(keyValue.getValue());
             return new CacheToObject(TransactionCacheToMutation.cacheToMutation(
-                value.getKey()[value.getKey().length - 2],
+                opCode,
                 key,
-                value.getValue(),
+                valueValue,
                 forUpdateTs,
                 tableId,
                 newPartId), tableId, newPartId
