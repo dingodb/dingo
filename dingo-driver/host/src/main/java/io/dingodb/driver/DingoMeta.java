@@ -570,10 +570,7 @@ public class DingoMeta extends MetaImpl {
             } catch (Throwable e) {
                 LogUtils.error(log, "run job exception:{}", e, e);
                 if (transaction != null && transaction.isPessimistic() && transaction.getPrimaryKeyLock() != null
-                    && (sh.signature.statementType == StatementType.DELETE
-                    || sh.signature.statementType == StatementType.INSERT
-                    || sh.signature.statementType == StatementType.UPDATE
-                    || sh.signature.statementType == StatementType.IS_DML)) {
+                    && isDml(sh.signature)) {
                     if (e instanceof LockWaitException) {
                         return requireNonNull(
                             resolveLockWait(
@@ -605,11 +602,7 @@ public class DingoMeta extends MetaImpl {
                     transaction.rollBackPessimisticLock(jobManager);
                 } else if (transaction != null && transaction.isOptimistic()) {
                     try {
-                        if (!transaction.isAutoCommit() &&
-                            (sh.signature.statementType == StatementType.DELETE
-                                || sh.signature.statementType == StatementType.INSERT
-                                || sh.signature.statementType == StatementType.UPDATE
-                                || sh.signature.statementType == StatementType.IS_DML)) {
+                        if (!transaction.isAutoCommit() & isDml(sh.signature)) {
                             // rollback optimistic current job data
                             transaction.rollBackOptimisticCurrentJobData(jobManager);
                         }
@@ -622,7 +615,7 @@ public class DingoMeta extends MetaImpl {
                     transaction.addSql(signature.sql);
                     if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
                         // clean optimistic current job data
-                        if (transaction.isOptimistic()) {
+                        if (transaction.isOptimistic() && isDml(sh.signature)) {
                             transaction.cleanOptimisticCurrentJobData(jobManager);
                         }
                         cleanTransaction();
@@ -646,7 +639,7 @@ public class DingoMeta extends MetaImpl {
                 LogUtils.info(log, "{} sql:{} , txnAutoCommit:{}, txnType:{} ", transaction.getTxnId(),
                     signature.sql, transaction.isAutoCommit(), transaction.getType());
                 // clean optimistic current job data
-                if (transaction.isOptimistic()) {
+                if (transaction.isOptimistic() && isDml(signature)) {
                     transaction.cleanOptimisticCurrentJobData(jobManager);
                 }
                 transaction.addSql(signature.sql);
@@ -698,6 +691,13 @@ public class DingoMeta extends MetaImpl {
             SqlLogUtils.info("DingoMeta fetch, cost: {}ms.", System.currentTimeMillis() - startTime);
             MdcUtils.removeStmtId();
         }
+    }
+
+    private static boolean isDml(Signature signature) {
+        return signature.statementType == StatementType.DELETE
+            || signature.statementType == StatementType.INSERT
+            || signature.statementType == StatementType.UPDATE
+            || signature.statementType == StatementType.IS_DML;
     }
 
     private static SqlProfile getProfile(Iterator<Object[]> iterator, AvaticaStatement statement) {
