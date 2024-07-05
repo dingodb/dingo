@@ -1,0 +1,54 @@
+ [
+    {
+      "name": "job_id",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "default": 0,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "reorg",
+      "type": "integer",
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "schema_ids",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "table_ids",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "job_meta",
+      "type": "varbinary",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "type",
+      "type": "integer",
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "processing",
+      "type": "integer",
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    }
+  ]

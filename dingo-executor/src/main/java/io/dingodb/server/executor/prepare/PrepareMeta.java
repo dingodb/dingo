@@ -167,6 +167,14 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, "TABLE_STATS", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "TABLE_BUCKETS", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "PROCS_PRIV", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "GC_DELETE_RANGE", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "DINGO_DDL_JOB", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "DINGO_DDL_HISTORY", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "DINGO_DDL_BACKFILL", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "DINGO_DDL_BACKFILL_HISTORY", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "DINGO_DDL_REORG", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "DINGO_MDL_INFO", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "DINGO_MDL_VIEW", BASE_TABLE, TXN_LSM, DYNAMIC);
     }
 
     public static void prepareInformation(String coordinators) {
@@ -536,6 +544,30 @@ public final class PrepareMeta {
                 break;
             case "COLLATIONS":
                 jsonFile = "/information-collations.json";
+                break;
+            case "DINGO_DDL_JOB":
+                jsonFile = "/mysql-dingoDdlJob.json";
+                break;
+            case "GC_DELETE_RANGE":
+                jsonFile = "/mysql-gcDeleteRange.json";
+                break;
+            case "DINGO_DDL_BACKFILL":
+                jsonFile = "/mysql-dingoDdlBackfill.json";
+                break;
+            case "DINGO_DDL_BACKFILL_HISTORY":
+                jsonFile = "/mysql-dingoDdlBackfillHistory.json";
+                break;
+            case "DINGO_DDL_HISTORY":
+                jsonFile = "/mysql-dingoDdlHistory.json";
+                break;
+            case "DINGO_MDL_INFO":
+                jsonFile = "/mysql-dingoMdlInfo.json";
+                break;
+            case "DINGO_MDL_VIEW":
+                jsonFile = "/mysql-dingoMdlView.json";
+                break;
+            case "DINGO_DDL_REORG":
+                jsonFile = "/mysql-dingoDdlReorg.json";
                 break;
             default:
                 throw new RuntimeException("table not found");

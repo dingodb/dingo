@@ -488,7 +488,9 @@ public final class DingoDriverParser extends DingoParser {
                 statementType = Meta.StatementType.SELECT;
                 if (queryOperation instanceof ShowProcessListOperation) {
                     ShowProcessListOperation processListOperation = (ShowProcessListOperation) queryOperation;
-                    processListOperation.init(getProcessInfoList(ExecutionEnvironment.connectionMap));
+                    List<ProcessInfo> processInfoList
+                      = getProcessInfoList(ExecutionEnvironment.INSTANCE.sessionManager.connectionMap);
+                    processListOperation.init(processInfoList);
                 }
             } else if (sqlNode.getKind() == SqlKind.INSERT) {
                 columns = ((DmlOperation)operation).columns(typeFactory);
@@ -496,19 +498,21 @@ public final class DingoDriverParser extends DingoParser {
                 this.execProfile = new ExecProfile("dml");
                 ((DmlOperation) operation).doExecute(execProfile);
             } else {
+                Map<String, Connection> connectionMap
+                    = ExecutionEnvironment.INSTANCE.sessionManager.connectionMap;
                 if (operation instanceof KillConnection) {
                     KillConnection killConnection = (KillConnection) operation;
                     String threadId = killConnection.getThreadId();
-                    if (ExecutionEnvironment.connectionMap.containsKey(threadId)) {
-                        killConnection.initConnection(ExecutionEnvironment.connectionMap.get(threadId));
-                    } else if (ExecutionEnvironment.connectionMap.containsKey(killConnection.getMysqlThreadId())) {
+                    if (connectionMap.containsKey(threadId)) {
+                        killConnection.initConnection(connectionMap.get(threadId));
+                    } else if (connectionMap.containsKey(killConnection.getMysqlThreadId())) {
                         killConnection.initConnection(
-                            ExecutionEnvironment.connectionMap.get(killConnection.getMysqlThreadId())
+                            connectionMap.get(killConnection.getMysqlThreadId())
                         );
                     }
                 } else if (operation instanceof KillQuery) {
                     KillQuery killQuery = (KillQuery) operation;
-                    killQuery.init(ExecutionEnvironment.connectionMap);
+                    killQuery.init(connectionMap);
                 }
                 if (sqlNode instanceof SqlCommit) {
                     if (connection.getTransaction() != null) {

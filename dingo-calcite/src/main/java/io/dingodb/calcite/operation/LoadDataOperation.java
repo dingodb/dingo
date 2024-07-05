@@ -386,7 +386,8 @@ public class LoadDataOperation implements DmlOperation {
     boolean refreshTxnId = false;
 
     public void insertWithTxn(Object[] tuples) {
-        Map<String, KeyValue> caches = ExecutionEnvironment.memoryCache
+        ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
+        Map<String, KeyValue> caches = env.memCacheFor2PC.memoryCache
             .computeIfAbsent(statementId, e -> new TreeMap<>());
         KeyValue keyValue = codec.encode(tuples);
 
@@ -448,7 +449,7 @@ public class LoadDataOperation implements DmlOperation {
                 cacheSize = caches.size();
                 caches.clear();
             } finally {
-                ExecutionEnvironment.memoryCache.remove(statementId);
+                env.memCacheFor2PC.memoryCache.remove(statementId);
             }
             long end = System.currentTimeMillis();
             LogUtils.debug(log, "insert txn batch size:" + cacheSize + ", cost time:" + (end - start) + "ms");
@@ -476,13 +477,14 @@ public class LoadDataOperation implements DmlOperation {
 
     public void endWriteWithTxn() {
         long start = System.currentTimeMillis();
+        ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
         try {
             CommonId txnId = getTxnId();
             long startTs = txnId.seq;
             TxnImportDataOperation txnImportDataOperation = new TxnImportDataOperation(
                 startTs, txnId, txnRetry, txnRetryCnt, timeOut
             );
-            Map<String, KeyValue> caches = ExecutionEnvironment.memoryCache
+            Map<String, KeyValue> caches = env.memCacheFor2PC.memoryCache
                 .computeIfAbsent(statementId, e -> new TreeMap<>());
             List<Object[]> tupleList = getCacheTupleList(caches, txnId);
             if (tupleList.isEmpty()) {
@@ -492,7 +494,7 @@ public class LoadDataOperation implements DmlOperation {
             count.addAndGet(result);
             caches.clear();
         } finally {
-            ExecutionEnvironment.memoryCache.remove(statementId);
+            env.memCacheFor2PC.memoryCache.remove(statementId);
         }
         long end = System.currentTimeMillis();
         LogUtils.debug(log, "insert txn end batch, cost time:" + (end - start) + "ms");
