@@ -95,7 +95,7 @@ import static java.util.function.Function.identity;
 @Slf4j
 public final class StoreService implements io.dingodb.store.api.StoreService {
     public static final StoreService DEFAULT_INSTANCE = new StoreService();
-    public static final int RETRY = 60;
+    public static final int RETRY = 20;
 
     @AutoService(io.dingodb.store.api.StoreServiceProvider.class)
     public static final class StoreServiceProvider implements io.dingodb.store.api.StoreServiceProvider {
@@ -163,26 +163,14 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
     }
 
     public io.dingodb.sdk.service.IndexService indexService(CommonId tableId, CommonId regionId) {
-        return Services.indexRegionService(coordinators, MAPPER.idTo(tableId), MAPPER.idTo(regionId), RETRY);
+        return Services.indexRegionService(coordinators, regionId.seq, RETRY);
     }
 
     public io.dingodb.sdk.service.IndexService indexService(
         io.dingodb.sdk.service.entity.meta.DingoCommonId tableId,
         io.dingodb.sdk.service.entity.meta.DingoCommonId regionId
     ) {
-        return Services.indexRegionService(coordinators, tableId, regionId, RETRY);
-    }
-
-    public io.dingodb.sdk.service.IndexService indexService(CommonId tableId, CommonId regionId, int retry) {
-        return Services.indexRegionService(coordinators, MAPPER.idTo(tableId), MAPPER.idTo(regionId), retry);
-    }
-
-    public io.dingodb.sdk.service.IndexService indexService(
-        io.dingodb.sdk.service.entity.meta.DingoCommonId tableId,
-        io.dingodb.sdk.service.entity.meta.DingoCommonId regionId,
-        int retry
-    ) {
-        return Services.indexRegionService(coordinators, tableId, regionId, retry);
+        return Services.indexRegionService(coordinators, regionId.getEntityId(), RETRY);
     }
 
     public io.dingodb.sdk.service.StoreService storeService(CommonId tableId, CommonId regionId) {
@@ -194,18 +182,6 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         io.dingodb.sdk.service.entity.meta.DingoCommonId regionId
     ) {
         return Services.storeRegionService(coordinators, regionId.getEntityId(), RETRY);
-    }
-
-    public io.dingodb.sdk.service.StoreService storeService(CommonId tableId, CommonId regionId, int retry) {
-        return Services.storeRegionService(coordinators, MAPPER.idTo(tableId), MAPPER.idTo(regionId), retry);
-    }
-
-    public io.dingodb.sdk.service.StoreService storeService(
-        io.dingodb.sdk.service.entity.meta.DingoCommonId tableId,
-        io.dingodb.sdk.service.entity.meta.DingoCommonId regionId,
-        int retry
-    ) {
-        return Services.storeRegionService(coordinators, tableId, regionId, retry);
     }
 
     class StoreInstance implements io.dingodb.store.api.StoreInstance {
@@ -515,8 +491,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         @Override
         public Iterator<KeyValue> scan(long requestTs, Range range) {
             ChannelProvider channelProvider = Services.regionChannelProvider(
-                coordinators, MAPPER.idTo(tableId), MAPPER.idTo(regionId)
-            );
+                coordinators, CodecService.getDefault().setId(range.start, partitionId.seq));
             return Iterators.transform(new ScanIterator(
                 requestTs,
                 regionId,
@@ -530,8 +505,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         @Override
         public Iterator<KeyValue> scan(long requestTs, Range range, Coprocessor coprocessor) {
             ChannelProvider channelProvider = Services.regionChannelProvider(
-                coordinators, MAPPER.idTo(tableId), MAPPER.idTo(regionId)
-            );
+                coordinators, CodecService.getDefault().setId(range.start, partitionId.seq));
             return Iterators.transform(new ScanIterator(
                 requestTs,
                 regionId,
@@ -545,8 +519,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         @Override
         public Iterator<KeyValue> scan(long requestTs, Range range, CoprocessorV2 coprocessor) {
             ChannelProvider channelProvider = Services.regionChannelProvider(
-                coordinators, MAPPER.idTo(tableId), MAPPER.idTo(regionId)
-            );
+                coordinators, CodecService.getDefault().setId(range.start, partitionId.seq));
             return Iterators.transform(new ScanIteratorV2(
                 requestTs,
                 regionId,
