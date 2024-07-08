@@ -136,7 +136,7 @@ void TableElement(List<SqlNode> list) :
     Boolean autoIncrement = false;
     Properties properties = null;
     PartitionDefinition partitionDefinition = null;
-    int replica = 0;
+    int replica = 3;
     String engine = null;
     String indexType = "scalar";
 }
@@ -342,7 +342,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     int autoIncrement = 1;
     String charset = "utf8";
     String collate = "utf8_bin";
-    String comment = "";
+    String comment = null;
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()

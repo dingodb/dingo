@@ -32,6 +32,10 @@ public interface InfoSchemaService {
     String TEMPLATE = "%s:%d";
 
     static InfoSchemaService root() {
+        InfoSchemaServiceProvider provider = InfoSchemaServiceProvider.getDefault();
+        if (provider == null) {
+            return null;
+        }
         return InfoSchemaServiceProvider.getDefault().root();
     }
 
@@ -131,6 +135,7 @@ public interface InfoSchemaService {
     Object getTable(long tenantId, long tableId);
 
     List<Object> listTable(long tenantId, long schemaId);
+    List<Object> listTable(long tenantId, String schemaName);
 
     List<Object> listIndex(long tenantId, long schemaId, long tableId);
     Object getIndex(long tenantId, long tableId, long indexId);

@@ -98,9 +98,10 @@ public class StoreKvTxn implements io.dingodb.store.api.transaction.StoreKvTxn {
     }
 
     public Iterator<KeyValue> range(byte[] start, byte[] end) {
+        boolean withEnd = ByteArrayUtils.compare(end, start) <= 0;
         long startTs = TsoService.getDefault().tso();
         TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
-        StoreInstance.Range range = new StoreInstance.Range(start, end, true, false);
+        StoreInstance.Range range = new StoreInstance.Range(start, end, true, withEnd);
         return storeInstance.txnScan(startTs, range, statementTimeout, null);
     }
 

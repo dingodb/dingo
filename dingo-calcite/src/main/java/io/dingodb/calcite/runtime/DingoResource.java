@@ -125,4 +125,11 @@ public interface DingoResource {
 
     @BaseMessage("Error 1105 (HY000): Check illegalArgumentException")
     ExInst<DingoSqlException> illegalArgumentException();
+
+    @BaseMessage("Error 9001 (45000): Not enough regions is created")
+    ExInst<DingoSqlException> notEnoughRegion();
+
+    @BaseMessage("Error 9001 (45000): table definition illegal, multi auto_increment column")
+    ExInst<DingoSqlException> multiAutoInc();
+
 }

@@ -36,6 +36,7 @@ import io.dingodb.calcite.grammar.ddl.SqlRevoke;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
+import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.calcite.schema.DingoRootSchema;
 import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.calcite.stats.StatsOperator;
@@ -55,6 +56,7 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.DefinitionUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
+import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
@@ -100,13 +102,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -148,6 +148,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .filter(col -> col.getKind() == SqlKind.CREATE_INDEX)
             .map(col -> fromSqlIndexDeclaration((SqlIndexDeclaration) col, tableDefinition))
             .collect(Collectors.toCollection(ArrayList::new)));
+        long count = tableDefList.stream().map(TableDefinition::getName).distinct().count();
+        if (tableDefList.size() > count) {
+            throw new IllegalArgumentException("Duplicate index name");
+        }
         return tableDefList;
     }
 
@@ -403,12 +407,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
 
         // Obtaining id from method
-        if (scd.isAutoIncrement()) {
-            if (SqlTypeName.INT_TYPES.contains(typeName)) {
-                defaultValue = "";
-            } else {
-                throw DINGO_RESOURCE.specifierForColumn(name).ex();
-            }
+        if (scd.isAutoIncrement() && !SqlTypeName.INT_TYPES.contains(typeName)) {
+            throw DINGO_RESOURCE.specifierForColumn(name).ex();
         }
 
         if (!dataType.isNullable() && "NULL".equalsIgnoreCase(defaultValue)) {
@@ -731,7 +731,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             LogUtils.info(log, "DDL execute drop lock end lock: {}", lock);
             schema.dropTable(tableName);
             userService.dropTablePrivilege(schema.name(), tableName);
-            StatsOperator.delStats(schema.name(), tableName);
+            //StatsOperator.delStats(schema.name(), tableName);
         } catch (TimeoutException e) {
             future.cancel(true);
             throw new RuntimeException("Lock wait timeout exceeded.");
@@ -1092,11 +1092,26 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         // for example use mysql
     }
 
-    public void validatePartitionBy(
+    public static void validatePartitionBy(
         @NonNull List<String> keyList,
         @NonNull TableDefinition tableDefinition,
         PartitionDefinition partDefinition
     ) {
+        InfoSchemaService infoSchemaService = InfoSchemaService.root();
+        int replica = 3;
+        if (infoSchemaService != null) {
+            replica = infoSchemaService.getStoreReplica();
+        }
+        if (tableDefinition.getReplica() > replica) {
+            throw DingoResource.DINGO_RESOURCE.notEnoughRegion().ex();
+        }
+        long incCount = tableDefinition.getColumns()
+            .stream()
+            .filter(ColumnDefinition::isAutoIncrement)
+            .count();
+        if (incCount > 1) {
+            throw DINGO_RESOURCE.multiAutoInc().ex();
+        }
         if (partDefinition == null) {
             partDefinition = new PartitionDefinition();
             tableDefinition.setPartDefinition(partDefinition);
