@@ -26,7 +26,6 @@ public interface ToolService {
         return ToolServiceProvider.getDefault().get();
     }
 
-    List<List<Float>> vectorCalcDistance(CommonId indexId,
-                                         CommonId regionId,
+    List<List<Float>> vectorCalcDistance(CommonId regionId,
                                          io.dingodb.common.vector.VectorCalcDistance vectorCalcDistance);
 }

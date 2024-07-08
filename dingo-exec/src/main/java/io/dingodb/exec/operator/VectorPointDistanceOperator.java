@@ -78,7 +78,6 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
             .metricType(param.getMetricType())
             .build();
         List<Float> floatArray = ToolService.getDefault().vectorCalcDistance(
-            param.getIndexTableId(),
             param.getRangeDistribution().getId(),
             vectorCalcDistance).get(0);
 
