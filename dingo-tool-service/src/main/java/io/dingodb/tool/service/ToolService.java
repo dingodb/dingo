@@ -19,17 +19,20 @@ package io.dingodb.tool.service;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.sdk.common.DingoCommonId;
-import io.dingodb.sdk.common.SDKCommonId;
-import io.dingodb.sdk.common.index.VectorIndexParameter;
-import io.dingodb.sdk.common.vector.Vector;
-import io.dingodb.sdk.common.vector.VectorCalcDistance;
-import io.dingodb.sdk.common.vector.VectorDistance;
-import io.dingodb.sdk.common.vector.VectorDistanceRes;
-import io.dingodb.sdk.service.meta.MetaServiceClient;
-import io.dingodb.sdk.service.util.UtilServiceClient;
+import io.dingodb.common.vector.VectorCalcDistance;
+import io.dingodb.sdk.service.Services;
+import io.dingodb.sdk.service.UtilService;
+import io.dingodb.sdk.service.entity.common.Location;
+import io.dingodb.sdk.service.entity.common.MetricType;
+import io.dingodb.sdk.service.entity.common.ValueType;
+import io.dingodb.sdk.service.entity.common.Vector;
+import io.dingodb.sdk.service.entity.index.AlgorithmType;
+import io.dingodb.sdk.service.entity.index.VectorCalcDistanceRequest;
+import io.dingodb.sdk.service.entity.index.VectorCalcDistanceResponse;
+import io.dingodb.sdk.service.entity.index.VectorDistance;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ToolService implements io.dingodb.tool.api.ToolService {
@@ -44,63 +47,56 @@ public class ToolService implements io.dingodb.tool.api.ToolService {
             return DEFAULT_INSTANCE;
         }
     }
-
-    private final MetaServiceClient metaService;
-    private final UtilServiceClient utilService;
-
+    private final Set<Location> coordinators;
     private ToolService() {
-        String coordinators = DingoConfiguration.instance().find("coordinators", String.class);
-        metaService = new MetaServiceClient(coordinators);
-        utilService = new UtilServiceClient(metaService);
+        coordinators = Services.parse(DingoConfiguration.instance().find("coordinators", String.class));
     }
 
     @Override
-    public List<List<Float>> vectorCalcDistance(CommonId indexId,
-                                                CommonId regionId,
-                                                io.dingodb.common.vector.VectorCalcDistance vectorCalcDistance) {
-        VectorDistanceRes vectorDistanceRes = utilService.vectorCalcDistance(mapping(indexId),
-            mapping(regionId), mapping(vectorCalcDistance));
-        return vectorDistanceRes.getDistances().stream()
-            .map(VectorDistance::getInternalDistances).collect(Collectors.toList());
+    public List<List<Float>> vectorCalcDistance(CommonId region,
+                                                VectorCalcDistance distance) {
+        VectorCalcDistanceRequest request = buildRequest(distance);
+        UtilService utilService = Services.utilService(coordinators, region.seq, 30);
+        VectorCalcDistanceResponse response = utilService.vectorCalcDistance(request);
+
+        return response.getDistances().stream().map(VectorDistance::getInternalDistances).collect(Collectors.toList());
     }
 
-    public static DingoCommonId mapping(CommonId commonId) {
-        return new SDKCommonId(DingoCommonId.Type.values()[commonId.type.code], commonId.domain, commonId.seq);
-    }
-
-    public static VectorCalcDistance mapping(io.dingodb.common.vector.VectorCalcDistance vectorCalcDistance) {
-        VectorCalcDistance.AlgorithmType algorithmType;
-        switch (vectorCalcDistance.getAlgorithmType().toUpperCase()) {
+    private static VectorCalcDistanceRequest buildRequest(VectorCalcDistance distance) {
+        AlgorithmType algorithmType;
+        switch (distance.getAlgorithmType().toUpperCase()) {
             case "HNSW":
-                algorithmType = VectorCalcDistance.AlgorithmType.ALGORITHM_HNSWLIB;
+                algorithmType = AlgorithmType.ALGORITHM_HNSWLIB;
                 break;
             case "FLAT":
             default:
-                algorithmType = VectorCalcDistance.AlgorithmType.ALGORITHM_FAISS;
+                algorithmType = AlgorithmType.ALGORITHM_FAISS;
                 break;
         }
-        VectorIndexParameter.MetricType metricType;
-        switch (vectorCalcDistance.getMetricType().toUpperCase()) {
+        MetricType metricType;
+        switch (distance.getMetricType().toUpperCase()) {
             case "INNER_PRODUCT":
-                metricType = VectorIndexParameter.MetricType.METRIC_TYPE_INNER_PRODUCT;
+                metricType = MetricType.METRIC_TYPE_INNER_PRODUCT;
                 break;
             case "COSINE":
-                metricType = VectorIndexParameter.MetricType.METRIC_TYPE_COSINE;
+                metricType = MetricType.METRIC_TYPE_COSINE;
                 break;
             case "L2":
             default:
-                metricType = VectorIndexParameter.MetricType.METRIC_TYPE_L2;
+                metricType = MetricType.METRIC_TYPE_L2;
                 break;
         }
-
-        List<Vector> left = vectorCalcDistance.getLeftList().stream().map(e ->
-            Vector.getFloatInstance(vectorCalcDistance.getDimension(), e)
-        ).collect(Collectors.toList());
-
-        List<Vector> right = vectorCalcDistance.getRightList().stream().map(e ->
-            Vector.getFloatInstance(vectorCalcDistance.getDimension(), e)).collect(Collectors.toList());
-        return new VectorCalcDistance(vectorCalcDistance.getVectorId(), algorithmType, metricType,
-            left, right, false);
+        return VectorCalcDistanceRequest.builder()
+            .algorithmType(algorithmType)
+            .metricType(metricType)
+            .opLeftVectors(distance.getLeftList().stream()
+                .map(l -> Vector.builder().floatValues(l).dimension(distance.getDimension()).valueType(ValueType.FLOAT).build())
+                .collect(Collectors.toList()))
+            .opRightVectors(distance.getRightList().stream()
+                .map(r -> Vector.builder().valueType(ValueType.FLOAT).dimension(distance.getDimension()).floatValues(r).build())
+                .collect(Collectors.toList()))
+            .isReturnNormlize(false)
+            .build();
     }
 
 }
