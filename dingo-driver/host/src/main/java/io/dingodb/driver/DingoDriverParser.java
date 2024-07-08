@@ -789,6 +789,7 @@ public final class DingoDriverParser extends DingoParser {
         }
         List<String> tableList = new ArrayList<>();
         planProfile.setTableList(tableList);
+        String name = "";
         for (RelOptTable table : tables) {
             String engine = null;
             Table tableTarget;
@@ -798,13 +799,15 @@ public final class DingoDriverParser extends DingoParser {
                 engine = tableTarget.getEngine();
                 List<String> fullName = relOptTable.getQualifiedName();
                 if (fullName.size() == 3) {
-                    tableList.add(fullName.get(1) + "." + fullName.get(2));
+                    name = fullName.get(1) + "." + fullName.get(2);
+                    tableList.add(name);
                 }
             } else if (table instanceof DingoRelOptTable) {
                 DingoRelOptTable dingoRelOptTable = (DingoRelOptTable) table;
                 tableTarget = ((DingoTable) dingoRelOptTable.table()).getTable();
                 engine = tableTarget.getEngine();
-                tableList.add(dingoRelOptTable.getSchemaName() + "." + dingoRelOptTable.getTableName());
+                name = dingoRelOptTable.getSchemaName() + "." + dingoRelOptTable.getTableName();
+                tableList.add(name);
             }
             if (engine == null || !engine.contains("TXN")) {
                 isNotTransactionTable = true;
@@ -815,6 +818,7 @@ public final class DingoDriverParser extends DingoParser {
                 throw new RuntimeException("Transactional tables cannot be mixed with non-transactional tables");
             }
             if (transaction != null && transaction.getType() != NONE && isNotTransactionTable) {
+                LogUtils.info(log, "transaction txnId is {}, table name is {}", transaction.getTxnId(), name);
                 throw new RuntimeException("Non-transaction tables cannot be used in transactions");
             }
         }
