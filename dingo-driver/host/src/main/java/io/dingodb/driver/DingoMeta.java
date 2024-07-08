@@ -570,7 +570,7 @@ public class DingoMeta extends MetaImpl {
             } catch (Throwable e) {
                 LogUtils.error(log, "run job exception:{}", e, e);
                 if (transaction != null && transaction.isPessimistic() && transaction.getPrimaryKeyLock() != null
-                    && isDml(sh.signature)) {
+                    && isDml(signature)) {
                     if (e instanceof LockWaitException) {
                         return requireNonNull(
                             resolveLockWait(
@@ -602,7 +602,7 @@ public class DingoMeta extends MetaImpl {
                     transaction.rollBackPessimisticLock(jobManager);
                 } else if (transaction != null && transaction.isOptimistic()) {
                     try {
-                        if (!transaction.isAutoCommit() & isDml(sh.signature)) {
+                        if (!transaction.isAutoCommit() & isDml(signature)) {
                             // rollback optimistic current job data
                             transaction.rollBackOptimisticCurrentJobData(jobManager);
                         }
@@ -615,7 +615,7 @@ public class DingoMeta extends MetaImpl {
                     transaction.addSql(signature.sql);
                     if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
                         // clean optimistic current job data
-                        if (transaction.isOptimistic() && isDml(sh.signature)) {
+                        if (transaction.isOptimistic() && isDml(signature)) {
                             transaction.cleanOptimisticCurrentJobData(jobManager);
                         }
                         cleanTransaction();
