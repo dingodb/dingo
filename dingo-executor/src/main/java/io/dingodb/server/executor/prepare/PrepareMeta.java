@@ -154,6 +154,10 @@ public final class PrepareMeta {
         infoSchemaService.createSchema(tenantId, dingoSchemaId,
             SchemaInfo.builder().schemaId(dingoSchemaId).name("DINGO").schemaState(SchemaState.PUBLIC).build()
         );
+        long metaSchemaId = infoSchemaService.genSchemaId();
+        infoSchemaService.createSchema(tenantId, metaSchemaId,
+            SchemaInfo.builder().schemaId(metaSchemaId).name("META").schemaState(SchemaState.PUBLIC).build()
+        );
         return false;
     }
 
@@ -170,8 +174,9 @@ public final class PrepareMeta {
     }
 
     public static void prepareInformation(String coordinators) {
-        initGlobalVariables(coordinators);
         String schemaName = "INFORMATION_SCHEMA";
+        initTableByTemplate(schemaName, "GLOBAL_VARIABLES", SYSTEM_VIEW, TXN_LSM, DYNAMIC);
+        initGlobalVariables(coordinators);
         initTableByTemplate(schemaName, "COLUMNS", SYSTEM_VIEW, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "PARTITIONS", SYSTEM_VIEW, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "EVENTS", SYSTEM_VIEW, TXN_LSM, DYNAMIC);

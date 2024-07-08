@@ -326,6 +326,9 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     @Override
     public Object getTable(long tenantId, String schemaName, String tableName) {
         SchemaInfo schemaInfo = getSchema(tenantId, schemaName);
+        if (schemaInfo == null) {
+            return null;
+        }
         return getTable(tenantId, schemaInfo.getSchemaId(), tableName);
     }
 
@@ -346,6 +349,26 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     public List<Object> listTable(long tenantId, long schemaId) {
         byte[] tenantKey = tenantKey(tenantId);
         byte[] schemaKey = schemaKey(schemaId);
+        if (!checkDBExists(tenantKey, schemaKey)) {
+            throw new RuntimeException("schema is null");
+        }
+
+        byte[] dataPrefix = CodecKvUtil.hashDataKeyPrefix(schemaKey);
+        byte[] end = CodecKvUtil.hashDataKeyPrefixUpperBound(dataPrefix);
+        List<byte[]> valueList = MetaStoreKvTxn.getInstance().mRange(dataPrefix, end);
+        if (!valueList.isEmpty()) {
+            return valueList.stream().map(val -> getObjFromBytes(val, TableDefinitionWithId.class))
+                .map(object -> (TableDefinitionWithId)object)
+                .collect(Collectors.toList());
+        }
+        return new ArrayList<>();
+    }
+
+    @Override
+    public List<Object> listTable(long tenantId, String schemaName) {
+        byte[] tenantKey = tenantKey(tenantId);
+        SchemaInfo schemaInfo = getSchema(tenantId, schemaName);
+        byte[] schemaKey = schemaKey(schemaInfo.getSchemaId());
         if (!checkDBExists(tenantKey, schemaKey)) {
             throw new RuntimeException("schema is null");
         }
@@ -443,7 +466,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         ScanRegionsRequest request = ScanRegionsRequest.builder()
             .key(startKey)
             .rangeEnd(endKey)
-            .limit(1)
+            .limit(0)
             .build();
         CoordinatorService coordinatorService = Services.coordinatorService(coordinators);
         ScanRegionsResponse response = coordinatorService.scanRegions(startTs, request);

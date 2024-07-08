@@ -81,7 +81,7 @@ public class ShowTest {
         context.execSql(sql).test(is(
             new String[]{"Field", "Type", "Null", "Key", "Default"},
             ImmutableList.of(
-                new Object[]{"ID", "INTEGER", "NO", "PRI", " "},
+                new Object[]{"ID", "INTEGER", "NO", "PRI", "NULL"},
                 new Object[]{"NAME", "VARCHAR(32)", "YES", " ", "NULL"},
                 new Object[]{"AGE", "INTEGER", "YES", " ", "NULL"}
             )

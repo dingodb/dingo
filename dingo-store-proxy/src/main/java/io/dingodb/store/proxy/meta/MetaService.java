@@ -166,10 +166,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
         return cleanName(name, "Table");
     }
 
-    private String cleanColumnName(String name) {
-        return cleanName(name, "Column");
-    }
-
     private String cleanSchemaName(String name) {
         return cleanName(name, "Schema");
     }
@@ -334,11 +330,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .filter(ColumnDefinition::isAutoIncrement)
             .count();
         if (incrementColCount > 0) {
-            io.dingodb.sdk.service.MetaService metaService = Services.metaService(Configuration.coordinatorSet());
+            io.dingodb.sdk.service.MetaService metaService = Services.autoIncrementMetaService(Configuration.coordinatorSet());
             metaService.createAutoIncrement(
                 tso(), CreateAutoIncrementRequest.builder()
                     .tableId(tableId)
-                    .startId(1)
+                    .startId(tableDefinition.getAutoIncrement())
                     .build()
             );
         }
@@ -414,7 +410,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                         .regionName("I_" + id.getEntityId() + "_" + definition.getName() + "_part_" + partition.getId().getEntityId())
                         .regionType(definition.getIndexParameter().getIndexType() == IndexType.INDEX_TYPE_SCALAR ?
                             RegionType.STORE_REGION : RegionType.INDEX_REGION)
-                        .replicaNum(tableDefinition.getReplica())
+                        .replicaNum(withIdTableDefinition.getReplica())
                         .range(partition.getRange())
                         .rawEngine(RawEngine.RAW_ENG_ROCKSDB)
                         .storeEngine(definition.getStoreEngine())
@@ -429,7 +425,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 }
             }
         }
-
+        cache.getTable(name, tableName);
     }
 
     @Override
@@ -620,6 +616,18 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 .entityId(id).build())
             .collect(Collectors.toList());
 
+        io.dingodb.meta.MetaService metaService = io.dingodb.meta.MetaService.root();
+        io.dingodb.meta.MetaService metaService1 = metaService.getSubMetaService(name);
+        metaService1.getRangeDistribution(MAPPER.idFrom(table.getTableId())).values().forEach(rangeDistribution -> {
+            coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build());
+        });
+
+        for (TableDefinitionWithId index : indexes) {
+            metaService1.getRangeDistribution(MAPPER.idFrom(index.getTableId())).values().forEach(rangeDistribution -> {
+                coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build());
+            });
+        }
+
         List<DingoCommonId> oldIds = new ArrayList<>();
         oldIds.add(table.getTableId());
         indexes.stream().map(TableDefinitionWithId::getTableId)
@@ -631,15 +639,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
         TableIdWithPartIds newTableId =
             TableIdWithPartIds.builder().tableId(tableId).partIds(tablePartIds).build();
         oldIds.forEach(id -> infoSchemaService.dropTable(tenantId, id.getParentEntityId(), id.getEntityId()));
-
-        for (Partition partition : tableDefinition.getTablePartition().getPartitions()) {
-            coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(partition.getId().getEntityId()).build());
-        }
-        for (TableDefinitionWithId index : indexes) {
-            for (Partition partition : index.getTableDefinition().getTablePartition().getPartitions()) {
-                coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(partition.getId().getEntityId()).build());
-            }
-        }
 
         resetTableId(newTableId, table);
 
@@ -660,11 +659,24 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 .build();
             coordinatorService.createRegion(tso(), request);
         }
+        long incrementColCount = tableDefinition.getColumns()
+            .stream()
+            .filter(io.dingodb.sdk.service.entity.meta.ColumnDefinition::isAutoIncrement)
+            .count();
+        if (incrementColCount > 0) {
+            io.dingodb.sdk.service.MetaService autoIncMetaService = Services.autoIncrementMetaService(Configuration.coordinatorSet());
+            autoIncMetaService.createAutoIncrement(
+                tso(), CreateAutoIncrementRequest.builder()
+                    .tableId(tableId)
+                    .startId(tableDefinition.getAutoIncrement())
+                    .build()
+            );
+        }
 
         // create index id
         if (!indexes.isEmpty()) {
-            List<DingoCommonId> indexOldIds = indexes.stream().map(TableDefinitionWithId::getTableId).collect(Collectors.toList());
-            indexOldIds.forEach(oid -> infoSchemaService.dropTable(tenantId, id.getEntityId(), oid.getEntityId()));
+            //List<DingoCommonId> indexOldIds = indexes.stream().map(TableDefinitionWithId::getTableId).collect(Collectors.toList());
+            //indexOldIds.forEach(oid -> infoSchemaService.dropTable(tenantId, id.getEntityId(), oid.getEntityId()));
             List<DingoCommonId> indexIds = coordinatorService.createIds(
                     tso(),
                     CreateIdsRequest.builder().idEpochType(IdEpochType.ID_NEXT_TABLE).count(indexes.size()).build()
@@ -697,14 +709,13 @@ public class MetaService implements io.dingodb.meta.MetaService {
                     .partIds(indexPartIds)
                     .build();
 
+                resetTableId(indexIdWithPartIds, indexDefinitionWithId);
                 infoSchemaService.createIndex(
                     indexDefinitionWithId.getTenantId(),
                     id.getEntityId(),
                     tableEntityId,
                     indexDefinitionWithId
                 );
-                // reset indexes id.
-                resetTableId(indexIdWithPartIds, indexDefinitionWithId);
             }
             for (TableDefinitionWithId withId : indexes) {
                 io.dingodb.sdk.service.entity.meta.TableDefinition definition = withId.getTableDefinition();
@@ -719,7 +730,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                         .regionName("I_" + id.getEntityId() + "_" + definition.getName() + "_part_" + partition.getId().getEntityId())
                         .regionType(definition.getIndexParameter().getIndexType() == IndexType.INDEX_TYPE_SCALAR ?
                             RegionType.STORE_REGION : RegionType.INDEX_REGION)
-                        .replicaNum(definition.getReplica())
+                        .replicaNum(tableDefinition.getReplica())
                         .range(partition.getRange())
                         .rawEngine(RawEngine.RAW_ENG_ROCKSDB)
                         .storeEngine(definition.getStoreEngine())
@@ -734,7 +745,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 }
             }
         }
-
+        cache.invalidateTable(id.getEntityId(), table.getTableId().getEntityId());
+        cache.invalidateTable(name(), tableName);
+        indexes.forEach(index -> {
+            cache.invalidateIndex(index.getTableId().getParentEntityId(), index.getTableId().getEntityId());
+        });
         return true;
     }
 
@@ -760,21 +775,34 @@ public class MetaService implements io.dingodb.meta.MetaService {
             return false;
         }
         List<IndexTable> indexes = table.getIndexes();
-        List<CommonId> indexIds = indexes.stream().map(Table::getTableId).collect(Collectors.toList());
-        List<CommonId> tableIds = Stream.concat(
-            Stream.of(table.getTableId()), indexIds.stream()).collect(Collectors.toList()
-        );
-        // TODO tenant id
-        long tenantId = 0;
-        tableIds.forEach(tableId -> infoSchemaService.dropTable(tenantId, id.getEntityId(), tableId.seq));
-        for (io.dingodb.meta.entity.Partition partition : table.getPartitions()) {
-            coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(partition.id.seq).build());
-        }
+
+        io.dingodb.meta.MetaService metaService = io.dingodb.meta.MetaService.root();
+        io.dingodb.meta.MetaService metaService1 = metaService.getSubMetaService(name);
+        metaService1.getRangeDistribution(table.tableId).values().forEach(rangeDistribution -> {
+            coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build());
+        });
+
         for (IndexTable index : indexes) {
-            for (io.dingodb.meta.entity.Partition partition : index.getPartitions()) {
-                coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(partition.id.seq).build());
-            }
+            metaService1.getRangeDistribution(index.tableId).values().forEach(rangeDistribution -> {
+                coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build());
+            });
         }
+
+        List<CommonId> indexIds = indexes.stream().map(Table::getTableId).collect(Collectors.toList());
+        long tenantId = 0;
+        infoSchemaService.dropTable(tenantId, table.getTableId().domain, table.tableId.seq);
+        indexIds.forEach(indexId -> {
+            infoSchemaService.dropIndex(tenantId, indexId.domain, indexId.seq);
+        });
+        //List<CommonId> tableIds = Stream.concat(
+        //    Stream.of(table.getTableId()), indexIds.stream()).collect(Collectors.toList()
+        //);
+        //tableIds.forEach(tableId -> infoSchemaService.dropTable(tenantId, id.getEntityId(), tableId.seq));
+        cache.invalidateTable(table.getTableId().domain, table.getTableId().seq);
+        cache.invalidateTable(name(), tableName);
+        indexIds.forEach(indexId -> {
+            cache.invalidateIndex(indexId.domain, indexId.seq);
+        });
         return true;
     }
 

@@ -66,7 +66,7 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
             (List<Float>) e[param.getVectorIndex()]
         ).collect(Collectors.toList());
 
-        if (rightList.size() == 0) {
+        if (rightList.isEmpty()) {
             edge.fin(fin);
             return;
         }

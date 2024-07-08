@@ -290,7 +290,7 @@ public final class DingoDriverParser extends DingoParser {
                 } catch (IllegalArgumentException e) {
                     // Method not found: execute([class org.apache.calcite.sql.ddl.SqlCreateTable,org.apache.calcite.jdbc.CalcitePrepare$Context])
                     LogUtils.error(log, e.getMessage(), e);
-                    if (!(sqlNode instanceof DingoSqlCreateTable) || retry <= 0) {
+                    if (retry <= 0) {
                         throw e;
                     }
                 } catch (RuntimeException e) {

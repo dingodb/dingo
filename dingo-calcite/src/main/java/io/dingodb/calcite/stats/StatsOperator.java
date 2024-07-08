@@ -121,18 +121,18 @@ public abstract class StatsOperator {
 
     public static void delStats(String schemaName, String tableName) {
         try {
-            String delTemp = "delete from %s where schema_name='%s' and table_name='%s'";
-            List<String> sqlList = new ArrayList<>();
-            String sqlAnalyzeTask = String.format(delTemp, "mysql.analyze_task", schemaName, tableName);
-            String sqlStats = String.format(delTemp, "mysql.table_stats", schemaName, tableName);
-            String sqlBuckets = String.format(delTemp, "mysql.TABLE_BUCKETS", schemaName, tableName);
-            String sqlCmSketch = String.format(delTemp, "mysql.CM_SKETCH", schemaName, tableName);
-            sqlList.add(sqlAnalyzeTask);
-            sqlList.add(sqlBuckets);
-            sqlList.add(sqlStats);
-            sqlList.add(sqlCmSketch);
-            SessionManager.update(sqlList);
-            StatsCache.removeCache(schemaName, tableName);
+//            String delTemp = "delete from %s where schema_name='%s' and table_name='%s'";
+//            List<String> sqlList = new ArrayList<>();
+//            String sqlAnalyzeTask = String.format(delTemp, "mysql.analyze_task", schemaName, tableName);
+//            String sqlStats = String.format(delTemp, "mysql.table_stats", schemaName, tableName);
+//            String sqlBuckets = String.format(delTemp, "mysql.TABLE_BUCKETS", schemaName, tableName);
+//            String sqlCmSketch = String.format(delTemp, "mysql.CM_SKETCH", schemaName, tableName);
+//            sqlList.add(sqlAnalyzeTask);
+//            sqlList.add(sqlBuckets);
+//            sqlList.add(sqlStats);
+//            sqlList.add(sqlCmSketch);
+//            SessionManager.update(sqlList);
+//            StatsCache.removeCache(schemaName, tableName);
         } catch (Exception ignored) {
         }
     }

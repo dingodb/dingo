@@ -244,38 +244,43 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             updateTime = new Timestamp(td.getUpdateTime());
                         }
                         String createOptions = "";
-                        if (td.getProperties().size() > 0) {
+                        if (!td.getProperties().isEmpty()) {
                             createOptions = td.getProperties().toString();
                         }
                         boolean hasInc = td.getColumns().stream().anyMatch(Column::isAutoIncrement);
-                        return new Object[]{"def",
-                            e.getKey(),
-                            td.getName(),
-                            td.tableType,
-                            td.getEngine(),
-                            td.getVersion(),
-                            td.getRowFormat(),
-                            // table rows
-                            null,
-                            // avg row length
-                            0L,
-                            // data length
-                            0L,
-                            // max data length
-                            0L,
-                            // index length
-                            0L,
-                            // data free
-                            null,
-                            hasInc ? metaService.getLastId(td.tableId) : null,
-                            new Timestamp(td.getCreateTime()),
-                            updateTime,
-                            null,
-                            td.getCollate(),
-                            null,
-                            createOptions,
-                            td.getComment()
-                        };
+                        try {
+                            return new Object[]{"def",
+                                e.getKey(),
+                                td.getName(),
+                                td.tableType,
+                                td.getEngine(),
+                                td.getVersion(),
+                                td.getRowFormat(),
+                                // table rows
+                                null,
+                                // avg row length
+                                0L,
+                                // data length
+                                0L,
+                                // max data length
+                                0L,
+                                // index length
+                                0L,
+                                // data free
+                                null,
+                                hasInc ? metaService.getLastId(td.tableId) : null,
+                                new Timestamp(td.getCreateTime()),
+                                updateTime,
+                                null,
+                                td.getCollate(),
+                                null,
+                                createOptions,
+                                td.getComment()
+                            };
+                        } catch (Exception e1) {
+                            log.error(e1.getMessage(), e1);
+                            return null;
+                        }
                     })
                     .collect(Collectors.toList()).stream();
             })

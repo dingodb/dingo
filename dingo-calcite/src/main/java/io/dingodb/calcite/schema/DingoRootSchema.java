@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
-import io.dingodb.common.CommonId;
 import io.dingodb.common.util.Optional;
 import io.dingodb.meta.MetaService;
 import org.apache.calcite.schema.SchemaVersion;
@@ -50,11 +49,6 @@ public class DingoRootSchema extends AbstractSchema {
 
     @Override
     public DingoTable getTable(String name) {
-        return null;
-    }
-
-    @Override
-    public CommonId getTableId(String tableName) {
         return null;
     }
 
