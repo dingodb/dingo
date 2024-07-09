@@ -31,7 +31,6 @@ import io.dingodb.driver.mysql.packet.OKPacket;
 import io.dingodb.driver.mysql.packet.PreparePacket;
 import io.dingodb.driver.mysql.packet.PrepareResultSetRowPacket;
 import io.dingodb.driver.mysql.packet.ResultSetRowPacket;
-import io.dingodb.exec.exception.TaskFinException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.socket.SocketChannel;
@@ -118,12 +117,12 @@ public final class MysqlResponseHandler {
                 okEofPacket.write(buffer);
             } else {
                 // intermediate eof
-                factory.getEofPacket(packetId).write(buffer);
+                MysqlPacketFactory.getEofPacket(packetId).write(buffer);
                 // row packet...
                 handlerRowPacket(resultSet, packetId, mysqlConnection, buffer, columnCount);
                 // response EOF
                 //resultSetPacket.rowsEof = getEofPacket(packetId);
-                factory.getEofPacket(packetId).write(buffer);
+                MysqlPacketFactory.getEofPacket(packetId).write(buffer);
             }
 
             mysqlConnection.channel.writeAndFlush(buffer);
@@ -311,12 +310,12 @@ public final class MysqlResponseHandler {
                 okEofPacket.write(buffer);
             } else {
                 // intermediate eof
-                factory.getEofPacket(packetId).write(buffer);
+                MysqlPacketFactory.getEofPacket(packetId).write(buffer);
                 // row packet...
                 handlerPrepareRowPacket(resultSet, packetId, mysqlConnection, buffer, columnCount);
                 // response EOF
                 //resultSetPacket.rowsEof = getEofPacket(packetId);
-                factory.getEofPacket(packetId).write(buffer);
+                MysqlPacketFactory.getEofPacket(packetId).write(buffer);
             }
 
             mysqlConnection.channel.writeAndFlush(buffer);

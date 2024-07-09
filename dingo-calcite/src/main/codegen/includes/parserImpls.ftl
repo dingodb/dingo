@@ -124,8 +124,8 @@ void TableElement(List<SqlNode> list) :
     DingoSqlColumn columnDec;
     final SqlIdentifier id;
     final SqlDataTypeSpec type;
-    final boolean nullable;
-    final SqlNode e;
+    boolean nullable = true;
+    SqlNode e = null;
     final SqlNode constraint;
     SqlIdentifier name = null;
     final SqlNodeList columnList;
@@ -139,16 +139,21 @@ void TableElement(List<SqlNode> list) :
     int replica = 3;
     String engine = null;
     String indexType = "scalar";
+    Boolean primaryKey = false;
+    String comment = "";
 }
 {
     LOOKAHEAD(2) id = SimpleIdentifier()
     (
         type = DataType()
-        [ <AUTO_INCREMENT> {autoIncrement = true; } ]
-        nullable = NullableOptDefaultTrue()
-        [ <AUTO_INCREMENT> {autoIncrement = true; } ]
         (
-            [ <GENERATED> <ALWAYS> ] <AS> <LPAREN>
+           <AUTO_INCREMENT> {autoIncrement = true; }
+         |
+           <NULL> { nullable = true; }
+         |
+           <NOT> <NULL> { nullable = false; }
+         |
+           [ <GENERATED> <ALWAYS> ] <AS> <LPAREN>
             e = Expression(ExprContext.ACCEPT_SUB_QUERY) <RPAREN>
             (
                 <VIRTUAL> { strategy = ColumnStrategy.VIRTUAL; }
@@ -157,22 +162,25 @@ void TableElement(List<SqlNode> list) :
             |
                 { strategy = ColumnStrategy.VIRTUAL; }
             )
-        |
-          <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY) { strategy = ColumnStrategy.DEFAULT;}
-        |
-            {
-                e = null;
+         |
+           <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY) { strategy = ColumnStrategy.DEFAULT;}
+         |
+           <PRIMARY> <KEY> { primaryKey = true; }
+         |
+           <COMMENT> (<IDENTIFIER>|<QUOTED_STRING>) { comment = token.image; }
+         |
+          <ON> <UPDATE> <CURRENT_TIMESTAMP>
+        )*
+        {
+            if (e == null) {
                 strategy = nullable ? ColumnStrategy.NULLABLE
                     : ColumnStrategy.NOT_NULLABLE;
             }
-        )
-        {
             columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), id, type.withNullable(nullable), e, strategy, autoIncrement);
+            columnDec.setPrimaryKey(primaryKey);
+            columnDec.setComment(comment);
             list.add(columnDec);
         }
-        [ <PRIMARY> <KEY> { columnDec.setPrimaryKey(true); }]
-        [ <COMMENT> (<IDENTIFIER>|<QUOTED_STRING>) { columnDec.setComment(token.image); } ]
-        [ <ON> <UPDATE> <CURRENT_TIMESTAMP> ]
     )
 |
     [ <CONSTRAINT> { s.add(this); } name = SimpleIdentifier() ]

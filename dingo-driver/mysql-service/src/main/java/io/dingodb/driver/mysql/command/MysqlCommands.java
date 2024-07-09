@@ -17,6 +17,7 @@
 package io.dingodb.driver.mysql.command;
 
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.mysql.ExtendedClientCapabilities;
 import io.dingodb.common.mysql.MysqlByteUtil;
 import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.common.mysql.constant.ServerStatus;
@@ -26,6 +27,7 @@ import io.dingodb.driver.DingoStatement;
 import io.dingodb.driver.mysql.MysqlConnection;
 import io.dingodb.driver.mysql.MysqlType;
 import io.dingodb.driver.mysql.packet.ColumnPacket;
+import io.dingodb.driver.mysql.packet.EOFPacket;
 import io.dingodb.driver.mysql.packet.ExecuteStatementPacket;
 import io.dingodb.driver.mysql.packet.MysqlPacketFactory;
 import io.dingodb.driver.mysql.packet.OKPacket;
@@ -138,12 +140,22 @@ public class MysqlCommands {
 
                 paramColumnPackets.add(mysqlPacketFactory.getParamColumnPacket(packetId));
             }
+            boolean deprecateEof = (mysqlConnection.authPacket.extendClientFlags
+                & ExtendedClientCapabilities.CLIENT_DEPRECATE_EOF) != 0;
+            EOFPacket intermediate = null;
+            EOFPacket eofResponse = null;
+            if (!deprecateEof) {
+                intermediate = MysqlPacketFactory.getEofPacket(packetId);
+            }
             List<ColumnPacket> fieldColumnPackets = new ArrayList<>();
             int numberFields = 0;
             if (preparedStatement.getStatementType() == Meta.StatementType.SELECT) {
                 numberFields = statementHandle.signature.columns.size();
                 mysqlPacketFactory.addColumnPacketFromMeta(packetId, preparedStatement.getMetaData(),
                     fieldColumnPackets, "def");
+            }
+            if (!deprecateEof) {
+                eofResponse = MysqlPacketFactory.getEofPacket(packetId);
             }
 
             PrepareOkPacket prepareOkPacket = MysqlPacketFactory
@@ -154,6 +166,9 @@ public class MysqlCommands {
                 .prepareOkPacket(prepareOkPacket)
                 .paramColumnPackets(paramColumnPackets)
                 .fieldsColumnPackets(fieldColumnPackets)
+                .deprecateEof(deprecateEof)
+                .intermediate(intermediate)
+                .eofResponse(eofResponse)
                 .build();
             MysqlResponseHandler.responsePrepare(preparePacket, mysqlConnection.channel);
         } catch (SQLException e) {

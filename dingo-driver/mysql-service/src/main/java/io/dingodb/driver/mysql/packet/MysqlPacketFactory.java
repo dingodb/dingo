@@ -290,7 +290,7 @@ public class MysqlPacketFactory {
         return columnPacket;
     }
 
-    public EOFPacket getEofPacket(AtomicLong packetId) {
+    public static EOFPacket getEofPacket(AtomicLong packetId) {
         EOFPacket responseEof = new EOFPacket();
         responseEof.packetId = (byte) packetId.getAndIncrement();
         responseEof.header = (byte) NativeConstants.TYPE_ID_EOF;
