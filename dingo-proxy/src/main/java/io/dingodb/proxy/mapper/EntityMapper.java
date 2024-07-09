@@ -57,6 +57,7 @@ import io.dingodb.sdk.service.entity.common.CoprocessorV2;
 import io.dingodb.sdk.service.entity.common.ScalarValue;
 import io.dingodb.sdk.service.entity.common.Schema;
 import io.dingodb.sdk.service.entity.common.SchemaWrapper;
+import io.dingodb.sdk.service.entity.common.ValueType;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexParameterNest.BruteforceParameter;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexParameterNest.DiskannParameter;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexParameterNest.FlatParameter;
@@ -172,6 +173,18 @@ public interface EntityMapper {
         @Mapping(source = "binaryValuesList", target = "binaryValues")
     })
     io.dingodb.sdk.service.entity.common.Vector mapping(ProxyCommon.Vector vector);
+
+    default ValueType mapping(ProxyCommon.ValueType valueType) {
+        switch (valueType) {
+            case FLOAT:
+                return ValueType.FLOAT;
+            case UINT8:
+            case INT8_T:
+                return ValueType.UINT8;
+            default:
+                throw new IllegalStateException("Unexpected value: " + valueType);
+        }
+    }
 
     void mapping(io.dingodb.sdk.service.entity.common.Vector vector, @MappingTarget ProxyCommon.Vector.Builder target);
 
