@@ -23,7 +23,6 @@ import io.dingodb.exec.operator.params.InfoSchemaScanParam;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
-import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Partition;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
@@ -64,6 +63,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             case "EVENTS":
             case "TRIGGERS":
             case "STATISTICS":
+                return getInformationStatistics(metaService);
             case "ROUTINES":
             case "FILES":
             case "KEY_COLUMN_USAGE":
@@ -107,7 +107,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 .stream()
                 .flatMap(td -> {
                     List<Object[]> colRes = new ArrayList<>();
-                    for (int i = 0; i < td.getColumns().size(); i ++) {
+                    for (int i = 0; i < td.getColumns().size(); i++) {
                         Column column = td.columns.get(i);
                         colRes.add(new Object[]{
                             "def",
@@ -122,7 +122,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             column.isNullable() ? "YES" : "NO",
                             // type name
                             column.type,
-                            (long)column.precision,
+                            (long) column.precision,
                             null,
                             null,
                             null,
@@ -141,7 +141,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                     }
                     return colRes.stream();
                 })
-        ).iterator();
+            ).iterator();
     }
 
     private static Iterator<Object[]> getInformationPartitions(MetaService metaService) {
@@ -161,7 +161,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
     }
 
     private static Object[] getPartitionDetail(String schemaName, Table td, Partition partition) {
-        return new Object[] {
+        return new Object[]{
             "def",
             schemaName,
             td.getName(),
@@ -212,11 +212,12 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
 
     private static Iterator<Object[]> getGlobalVariables() {
         InfoSchemaService service = InfoSchemaService.root();
+        assert service != null;
         Map<String, String> response = service.getGlobalVariables();
         List<Object[]> resList = response
             .entrySet()
             .stream()
-            .map(e -> new Object[] {e.getKey(), e.getValue()})
+            .map(e -> new Object[]{e.getKey(), e.getValue()})
             .collect(Collectors.toList());
         return resList.iterator();
     }
@@ -296,13 +297,68 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 Set<Table> tables = e.getValue().getTables();
                 return tables.stream()
                     .map(td -> new Object[]{"def",
-                    e.getKey(),
-                    "PRIMARY",
-                    e.getKey(),
-                    td.getName(),
-                    "PRIMARY KEY"
-                   })
+                        e.getKey(),
+                        "PRIMARY",
+                        e.getKey(),
+                        td.getName(),
+                        "PRIMARY KEY"
+                    })
                     .collect(Collectors.toList()).stream();
+            })
+            .collect(Collectors.toList());
+        return tuples.iterator();
+    }
+
+    private static Iterator<Object[]> getInformationStatistics(MetaService metaService) {
+        Map<String, MetaService> metaServiceMap = metaService.getSubMetaServices();
+        List<Object[]> tuples = metaServiceMap.entrySet()
+            .stream()
+            .flatMap(e -> {
+                Set<Table> tables = e.getValue().getTables();
+                List<Object[]> priKeyList = tables.stream()
+                    .flatMap(table -> table.getColumns().stream().filter(Column::isPrimary).map(
+                        column -> new Object[]{
+                            "def",
+                            e.getKey(),
+                            table.name,
+                            0,
+                            e.getKey(),
+                            "primary",
+                            column.primaryKeyIndex,
+                            column.name,
+                            "A",
+                            0,
+                            null,
+                            null,
+                            column.isNullable() ? "YES" : "NO",
+                            table.getEngine(),
+                            column.getComment(),
+                            ""
+                        }
+                    )).collect(Collectors.toList());
+                List<Object[]> indexColList = tables.stream().flatMap(table -> table.getIndexes().stream()
+                    .flatMap(index -> index.getColumns().stream().filter(Column::isPrimary).map(
+                        column -> new Object[]{
+                            "def",
+                            e.getKey(),
+                            index.name,
+                            index.isUnique() ? 0 : 1,
+                            e.getKey(),
+                            index.getName(),
+                            column.primaryKeyIndex,
+                            column.name,
+                            "A",
+                            0,
+                            null,
+                            null,
+                            column.isNullable() ? "YES" : "NO",
+                            index.getEngine(),
+                            column.getComment(),
+                            ""
+                        }
+                    ))).collect(Collectors.toList());
+                priKeyList.addAll(indexColList);
+                return priKeyList.stream();
             })
             .collect(Collectors.toList());
         return tuples.iterator();

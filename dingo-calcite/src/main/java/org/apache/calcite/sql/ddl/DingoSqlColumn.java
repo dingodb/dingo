@@ -22,6 +22,7 @@ import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -46,5 +47,14 @@ public class DingoSqlColumn extends SqlColumnDeclaration {
     ) {
         super(pos, name, dataType, expression, strategy);
         this.autoIncrement = autoIncrement;
+    }
+
+    @Override
+    public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
+        name.unparse(writer, 0, 0);
+        dataType.unparse(writer, 0, 0);
+        if (Boolean.FALSE.equals(dataType.getNullable())) {
+            writer.keyword("NOT NULL");
+        }
     }
 }

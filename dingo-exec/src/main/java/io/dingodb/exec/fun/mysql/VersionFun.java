@@ -32,7 +32,7 @@ public class VersionFun extends NullaryOp {
 
     @Override
     public Object eval(EvalContext context, ExprConfig config) {
-        return "5.7.41";
+        return "DingoDB-v0.8.0";
     }
 
     @Override

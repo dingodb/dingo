@@ -23,11 +23,17 @@ import java.util.List;
 
 @Builder
 public class PreparePacket extends MysqlPacket {
+    boolean deprecateEof;
+
     public PrepareOkPacket prepareOkPacket;
 
     List<ColumnPacket> paramColumnPackets;
 
     List<ColumnPacket> fieldsColumnPackets;
+
+    EOFPacket intermediate;
+
+    EOFPacket eofResponse;
 
     @Override
     public int calcPacketSize() {
@@ -52,10 +58,16 @@ public class PreparePacket extends MysqlPacket {
                 columnPacket.write(buffer);
             });
         }
+        if (!deprecateEof && intermediate != null) {
+            intermediate.write(buffer);
+        }
         if (fieldsColumnPackets != null) {
             fieldsColumnPackets.forEach(columnPacket -> {
                 columnPacket.write(buffer);
             });
+        }
+        if (!deprecateEof && eofResponse != null) {
+            eofResponse.write(buffer);
         }
     }
 }
