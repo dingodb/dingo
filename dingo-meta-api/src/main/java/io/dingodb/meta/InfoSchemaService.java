@@ -109,11 +109,11 @@ public interface InfoSchemaService {
 
     boolean checkTableExists(byte[] schemaKey, byte[] tableKey);
 
-    void createTableOrView(long tenantId, long schemaId, long tableId, Object table);
+    void createTableOrView(long schemaId, long tableId, Object table);
 
-    void createIndex(long tenantId, long schemaId, long tableId, Object index);
+    void createIndex(long schemaId, long tableId, Object index);
 
-    void createSchema(long tenantId, long schemaId, SchemaInfo schema);
+    void createSchema(long schemaId, SchemaInfo schema);
 
     boolean createTenant(long tenantId, Object tenant);
 
@@ -121,29 +121,29 @@ public interface InfoSchemaService {
 
     List<Object> listTenant();
 
-    Object getSchema(long tenantId, long schemaId);
+    Object getSchema(long schemaId);
 
-    SchemaInfo getSchema(long tenantId, String schemaName);
+    SchemaInfo getSchema(String schemaName);
 
-    List<SchemaInfo> listSchema(long tenantId);
+    List<SchemaInfo> listSchema();
 
-    Object getTable(long tenantId, long schemaId, long tableId);
-    Object getTable(long tenantId, CommonId tableId);
+    Object getTable(long schemaId, long tableId);
+    Object getTable(CommonId tableId);
 
-    Object getTable(long tenantId, long schemaId, String tableName);
-    Object getTable(long tenantId, String schemaName, String tableName);
-    Object getTable(long tenantId, long tableId);
+    Object getTable(long schemaId, String tableName);
+    Object getTable(String schemaName, String tableName);
+    Object getTable(long tableId);
 
-    List<Object> listTable(long tenantId, long schemaId);
-    List<Object> listTable(long tenantId, String schemaName);
+    List<Object> listTable(long schemaId);
+    List<Object> listTable(String schemaName);
 
-    List<Object> listIndex(long tenantId, long schemaId, long tableId);
-    Object getIndex(long tenantId, long tableId, long indexId);
+    List<Object> listIndex(long schemaId, long tableId);
+    Object getIndex(long tableId, long indexId);
 
     void dropTenant(long tenantId);
-    void dropSchema(long tenantId, long schemaId);
-    void dropTable(long tenantId, long schemaId, long tableId);
-    void dropIndex(long tenantId, long tableId, long indexId);
+    void dropSchema(long schemaId);
+    void dropTable(long schemaId, long tableId);
+    void dropIndex(long tableId, long indexId);
 
     long genSchemaId();
 

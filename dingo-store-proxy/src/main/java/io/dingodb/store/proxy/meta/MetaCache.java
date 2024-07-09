@@ -193,7 +193,7 @@ public class MetaCache {
                 return new ArrayList<>();
             }
             List<Object> indexList = infoSchemaService
-                .listIndex(0, tableId.getParentEntityId(), tableId.getEntityId());
+                .listIndex(tableId.getParentEntityId(), tableId.getEntityId());
             return indexList.stream()
                 .map(object -> (TableDefinitionWithId) object)
                 .peek(indexWithId -> {
@@ -218,7 +218,7 @@ public class MetaCache {
     @SneakyThrows
     private NavigableMap<ComparableByteArray, RangeDistribution> loadDistribution(CommonId tableId) {
         TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(
-            0, tableId
+            tableId
         );
         TableDefinition tableDefinition = tableWithId.getTableDefinition();
         List<ScanRegionWithPartId> rangeDistributionList = new ArrayList<>();
@@ -305,7 +305,7 @@ public class MetaCache {
 
     private Map<String, Table> loadTables(String schema) {
         schema = schema.toUpperCase();
-        List<Object> objectList = infoSchemaService.listTable(0, schema);
+        List<Object> objectList = infoSchemaService.listTable(schema);
         return objectList.stream().map(obj -> (TableDefinitionWithId) obj)
             .map(tableWithId -> MAPPER.tableFrom(tableWithId,
                 getIndexes(tableWithId, tableWithId.getTableId()))
@@ -329,7 +329,7 @@ public class MetaCache {
 
             Table table1 = tableMap.get(table.toUpperCase());
             if (table1 == null) {
-                TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(0, schema, table);
+                TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(schema, table);
                 if (tableWithId == null) {
                     return null;
                 }
@@ -350,7 +350,7 @@ public class MetaCache {
             if (tableIdCache.containsKey(tableId)) {
                 return tableIdCache.get(tableId);
             }
-            TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(0, tableId);
+            TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(tableId);
 
             if (tableWithId == null) {
                 return null;
@@ -360,7 +360,7 @@ public class MetaCache {
             if (indexIdCache.containsKey(tableId)) {
                 return indexIdCache.get(tableId);
             }
-            TableDefinitionWithId index = (TableDefinitionWithId) infoSchemaService.getIndex(0, tableId.domain, tableId.seq);
+            TableDefinitionWithId index = (TableDefinitionWithId) infoSchemaService.getIndex(tableId.domain, tableId.seq);
             if (index == null) {
                 return null;
             }
@@ -387,25 +387,11 @@ public class MetaCache {
             return new HashSet<>(cache.get(schema).values());
         }
         return Collections.emptySet();
-//        SchemaInfo schemaInfo = infoSchemaService.getSchema(0, schema);
-//        long schemaId = schemaInfo.getSchemaId();
-//        List<Object> objectList = infoSchemaService.listTable(0, schemaId);
-//        if (objectList != null && !objectList.isEmpty()) {
-//            return objectList
-//                .stream()
-//                .map(object -> {
-//                    TableDefinitionWithId tableWithId = (TableDefinitionWithId) object;
-//                    CommonId tableId = MAPPER.idFrom(tableWithId.getTableId());
-//                    return getTable(tableId);
-//                }).collect(Collectors.toSet());
-//        }
-//
-//        return Collections.emptySet();
     }
 
     public synchronized Map<String, io.dingodb.store.proxy.meta.MetaService> getMetaServices() {
         if (metaServices == null) {
-            List<SchemaInfo> schemaInfoList = infoSchemaService.listSchema(0);
+            List<SchemaInfo> schemaInfoList = infoSchemaService.listSchema();
             metaServices =  schemaInfoList
                 .stream()
                 .filter(schemaInfo -> schemaInfo.getSchemaId() != 0)

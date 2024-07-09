@@ -209,14 +209,10 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 tso(),
                 CreateIdsRequest.builder().idEpochType(IdEpochType.ID_NEXT_SCHEMA).count(1).build())
             .getIds().get(0);
-        // TODO tenant id
-        long tenantId = 0;
         infoSchemaService.createSchema(
-            tenantId,
             schemaId,
             SchemaInfo
                 .builder()
-                .tenantId(tenantId)
                 .schemaId(schemaId)
                 .name(name)
                 .schemaState(SchemaState.PUBLIC)
@@ -255,9 +251,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         if (metaService == null) {
             return false;
         }
-        // TODO tenant id
-        long tenantId = 0;
-        infoSchemaService.dropSchema(tenantId, metaService.id.getEntityId());
+        infoSchemaService.dropSchema(metaService.id.getEntityId());
         cache.invalidateMetaServices();
         return true;
     }
@@ -301,7 +295,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
         TableDefinitionWithId tableDefinitionWithId = MAPPER.tableTo(tableIdWithPartIds, tableDefinition);
         // create table
         infoSchemaService.createTableOrView(
-            tableDefinitionWithId.getTenantId(),
             id.getEntityId(),
             tableDefinitionWithId.getTableId().getEntityId(),
             tableDefinitionWithId
@@ -388,7 +381,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 indexWithIds.add(indexWithId);
                 // create index
                 infoSchemaService.createIndex(
-                    indexWithId.getTenantId(),
                     id.getEntityId(),
                     tableEntityId,
                     indexWithId
@@ -586,10 +578,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
             throw new RuntimeException("Offline, please wait and retry.");
         }
         // Get old table and indexes
-        long tenantId = 0;
-        TableDefinitionWithId table = Optional.mapOrGet(infoSchemaService.getTable(tenantId, id.getEntityId(), tableName), __ -> (TableDefinitionWithId) __, () -> null);
+        TableDefinitionWithId table = Optional.mapOrGet(infoSchemaService.getTable(id.getEntityId(), tableName), __ -> (TableDefinitionWithId) __, () -> null);
 
-        List<Object> indexList = infoSchemaService.listIndex(tenantId, id.getEntityId(), table.getTableId().getEntityId());
+        List<Object> indexList = infoSchemaService.listIndex(id.getEntityId(), table.getTableId().getEntityId());
         List<TableDefinitionWithId> indexes = indexList.stream().map(object -> (TableDefinitionWithId) object).collect(Collectors.toList());
 
         // Generate new table ids.
@@ -632,18 +623,18 @@ public class MetaService implements io.dingodb.meta.MetaService {
         oldIds.add(table.getTableId());
         indexes.stream().map(TableDefinitionWithId::getTableId)
             .forEach(dingoCommonId -> {
-                infoSchemaService.dropIndex(tenantId, dingoCommonId.getParentEntityId(), dingoCommonId.getEntityId());
+                infoSchemaService.dropIndex(dingoCommonId.getParentEntityId(), dingoCommonId.getEntityId());
             });
 
         // Reset table id.
         TableIdWithPartIds newTableId =
             TableIdWithPartIds.builder().tableId(tableId).partIds(tablePartIds).build();
-        oldIds.forEach(id -> infoSchemaService.dropTable(tenantId, id.getParentEntityId(), id.getEntityId()));
+        oldIds.forEach(id -> infoSchemaService.dropTable(id.getParentEntityId(), id.getEntityId()));
 
         resetTableId(newTableId, table);
 
         // create table、table region
-        infoSchemaService.createTableOrView(tenantId, id.getEntityId(), table.getTableId().getEntityId(), table);
+        infoSchemaService.createTableOrView(id.getEntityId(), table.getTableId().getEntityId(), table);
         for (Partition partition : tableDefinition.getTablePartition().getPartitions()) {
             CreateRegionRequest request = CreateRegionRequest.builder()
                 .regionName("T_" + id.getEntityId() + "_" + tableDefinition.getName() + "_part_" + partition.getId().getEntityId())
@@ -711,7 +702,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
                 resetTableId(indexIdWithPartIds, indexDefinitionWithId);
                 infoSchemaService.createIndex(
-                    indexDefinitionWithId.getTenantId(),
                     id.getEntityId(),
                     tableEntityId,
                     indexDefinitionWithId
@@ -789,10 +779,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
 
         List<CommonId> indexIds = indexes.stream().map(Table::getTableId).collect(Collectors.toList());
-        long tenantId = 0;
-        infoSchemaService.dropTable(tenantId, table.getTableId().domain, table.tableId.seq);
+        infoSchemaService.dropTable(table.getTableId().domain, table.tableId.seq);
         indexIds.forEach(indexId -> {
-            infoSchemaService.dropIndex(tenantId, indexId.domain, indexId.seq);
+            infoSchemaService.dropIndex(indexId.domain, indexId.seq);
         });
         //List<CommonId> tableIds = Stream.concat(
         //    Stream.of(table.getTableId()), indexIds.stream()).collect(Collectors.toList()
