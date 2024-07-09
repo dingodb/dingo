@@ -180,7 +180,7 @@ public class StoreKvTxn implements io.dingodb.store.api.transaction.StoreKvTxn {
         MetaService root = MetaService.root();
         InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
         TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) infoSchemaService
-            .getTable(0, tableId.domain, tableId.seq);
+            .getTable(tableId.domain, tableId.seq);
         int strategyNumber = tableDefinitionWithId.getTableDefinition().getTablePartition().getStrategy().number();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
             = root.getRangeDistribution(tableId);

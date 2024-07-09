@@ -72,6 +72,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final VersionService versionService;
     Set<Location> coordinators;
+    private static final long tenantId = 0;
     public static final InfoSchemaService ROOT = new InfoSchemaService(Configuration.coordinators());
 
     @AutoService(InfoSchemaServiceProvider.class)
@@ -133,8 +134,8 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         return val != null;
     }
 
-    public boolean checkSchemaNameExists(long tenantId, String schemaName){
-        List<SchemaInfo> schemaInfoList = listSchema(tenantId);
+    public boolean checkSchemaNameExists(String schemaName){
+        List<SchemaInfo> schemaInfoList = listSchema();
         return schemaInfoList.stream()
             .anyMatch(schemaInfo -> schemaInfo.getName().equalsIgnoreCase(schemaName));
     }
@@ -145,8 +146,8 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         return value != null;
     }
 
-    public boolean checkTableNameExists(long tenantId, long schemaId, String tableName) {
-        List<Object> tableDefinitionWithIds = listTable(tenantId, schemaId);
+    public boolean checkTableNameExists(long schemaId, String tableName) {
+        List<Object> tableDefinitionWithIds = listTable(schemaId);
         return tableDefinitionWithIds.stream().map(object -> (TableDefinitionWithId)object)
             .anyMatch(tableDefinitionWithId ->
                 tableDefinitionWithId.getTableDefinition().getName().equalsIgnoreCase(tableName)
@@ -154,7 +155,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
-    public void createTableOrView(long tenantId, long schemaId, long tableId, Object table) {
+    public void createTableOrView(long schemaId, long tableId, Object table) {
         byte[] tenantKey = tenantKey(tenantId);
         byte[] schemaKey = schemaKey(schemaId);
         if (!checkDBExists(tenantKey, schemaKey)) {
@@ -162,7 +163,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         }
         byte[] tableKey = tableKey(tableId);
         TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) table;
-        if (checkTableNameExists(tenantId, schemaId, tableDefinitionWithId.getTableDefinition().getName())) {
+        if (checkTableNameExists(schemaId, tableDefinitionWithId.getTableDefinition().getName())) {
             throw new RuntimeException("table has exists");
         }
         byte[] val = getBytesFromObj(table);
@@ -170,7 +171,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
-    public void createIndex(long tenantId, long schemaId, long tableId, Object index) {
+    public void createIndex(long schemaId, long tableId, Object index) {
         byte[] tableKey = tableKey(tableId);
         TableDefinitionWithId indexWithId = (TableDefinitionWithId) index;
 
@@ -215,15 +216,16 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
-    public void createSchema(long tenantId, long schemaId, SchemaInfo schema) {
+    public void createSchema(long schemaId, SchemaInfo schema) {
         byte[] tenantKey = tenantKey(tenantId);
         if (!checkTenantExists(tenantKey)) {
             throw new RuntimeException("tenant is null");
         }
         byte[] schemaKey = schemaKey(schemaId);
-        if (checkSchemaNameExists(tenantId, schema.getName())) {
+        if (checkSchemaNameExists(schema.getName())) {
             return;
         }
+        schema.setTenantId(tenantId);
         byte[] val = getBytesFromObj(schema);
         hSet(tenantKey, schemaKey, val);
     }
@@ -258,7 +260,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
-    public Object getSchema(long tenantId, long schemaId) {
+    public Object getSchema(long schemaId) {
         byte[] tenantKey = tenantKey(tenantId);
         byte[] schemaKey = schemaKey(schemaId);
         byte[] val = hGet(tenantKey, schemaKey);
@@ -266,16 +268,15 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
-    public SchemaInfo getSchema(long tenantId, String schemaName) {
-        List<SchemaInfo> schemaList = listSchema(tenantId);
+    public SchemaInfo getSchema(String schemaName) {
+        List<SchemaInfo> schemaList = listSchema();
         return schemaList.stream()
-            .map(object -> (SchemaInfo) object)
             .filter(schemaInfo1 -> schemaInfo1.getName().equalsIgnoreCase(schemaName))
             .findFirst().orElse(null);
     }
 
     @Override
-    public List<SchemaInfo> listSchema(long tenantId) {
+    public List<SchemaInfo> listSchema() {
         byte[] tenantKey = tenantKey(tenantId);
 
         byte[] dataPrefix = CodecKvUtil.hashDataKeyPrefix(tenantKey);
@@ -291,7 +292,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
-    public Object getTable(long tenantId, long schemaId, long tableId) {
+    public Object getTable(long schemaId, long tableId) {
         byte[] tenantKey = tenantKey(tenantId);
         byte[] schemaKey = schemaKey(schemaId);
         if (!checkDBExists(tenantKey, schemaKey)) {
@@ -306,37 +307,37 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
-    public Object getTable(long tenantId, CommonId tableId) {
+    public Object getTable(CommonId tableId) {
         if (tableId.type == CommonId.CommonType.TABLE) {
-            return getTable(tenantId, tableId.domain, tableId.seq);
+            return getTable(tableId.domain, tableId.seq);
         } else if (tableId.type == CommonId.CommonType.INDEX) {
-            return getIndex(tenantId, tableId.domain, tableId.seq);
+            return getIndex(tableId.domain, tableId.seq);
         }
         return null;
     }
 
     @Override
-    public Object getTable(long tenantId, long schemaId, String tableName) {
-        List<Object> tableList = listTable(tenantId, schemaId);
+    public Object getTable(long schemaId, String tableName) {
+        List<Object> tableList = listTable(schemaId);
         return tableList.stream().map(object -> (TableDefinitionWithId)object)
             .filter(tableDefinitionWithId -> tableDefinitionWithId.getTableDefinition().getName().equalsIgnoreCase(tableName))
             .findFirst().orElse(null);
     }
 
     @Override
-    public Object getTable(long tenantId, String schemaName, String tableName) {
-        SchemaInfo schemaInfo = getSchema(tenantId, schemaName);
+    public Object getTable(String schemaName, String tableName) {
+        SchemaInfo schemaInfo = getSchema(schemaName);
         if (schemaInfo == null) {
             return null;
         }
-        return getTable(tenantId, schemaInfo.getSchemaId(), tableName);
+        return getTable(schemaInfo.getSchemaId(), tableName);
     }
 
     @Override
-    public Object getTable(long tenantId, long tableId) {
-        List<SchemaInfo> schemaList = listSchema(tenantId);
+    public Object getTable(long tableId) {
+        List<SchemaInfo> schemaList = listSchema();
         return schemaList.stream()
-            .map(schemaInfo -> listTable(tenantId, schemaInfo.getSchemaId()))
+            .map(schemaInfo -> listTable(schemaInfo.getSchemaId()))
             .map(tableList -> tableList.stream().filter(object -> {
                     TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) object;
                     return tableDefinitionWithId.getTableId().getEntityId() == tableId;
@@ -346,7 +347,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
-    public List<Object> listTable(long tenantId, long schemaId) {
+    public List<Object> listTable(long schemaId) {
         byte[] tenantKey = tenantKey(tenantId);
         byte[] schemaKey = schemaKey(schemaId);
         if (!checkDBExists(tenantKey, schemaKey)) {
@@ -365,9 +366,9 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
-    public List<Object> listTable(long tenantId, String schemaName) {
+    public List<Object> listTable(String schemaName) {
         byte[] tenantKey = tenantKey(tenantId);
-        SchemaInfo schemaInfo = getSchema(tenantId, schemaName);
+        SchemaInfo schemaInfo = getSchema(schemaName);
         byte[] schemaKey = schemaKey(schemaInfo.getSchemaId());
         if (!checkDBExists(tenantKey, schemaKey)) {
             throw new RuntimeException("schema is null");
@@ -385,7 +386,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
-    public List<Object> listIndex(long tenantId, long schemaId, long tableId) {
+    public List<Object> listIndex(long schemaId, long tableId) {
         byte[] tenantKey = tenantKey(tenantId);
         byte[] schemaKey = schemaKey(schemaId);
         if (!checkDBExists(tenantKey, schemaKey)) {
@@ -403,7 +404,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
-    public Object getIndex(long tenantId, long tableId, long indexId) {
+    public Object getIndex(long tableId, long indexId) {
         byte[] tableKey = tableKey(tableId);
         byte[] indexKey = indexKey(indexId);
         byte[] val = hGet(tableKey, indexKey);
@@ -420,21 +421,21 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
-    public void dropSchema(long tenantId, long schemaId) {
+    public void dropSchema(long schemaId) {
         byte[] tenantKey = tenantKey(tenantId);
         byte[] schemaKey = schemaKey(schemaId);
         hDel(tenantKey, schemaKey);
     }
 
     @Override
-    public void dropTable(long tenantId, long schemaId, long tableId) {
+    public void dropTable(long schemaId, long tableId) {
         byte[] schemaKey = schemaKey(schemaId);
         byte[] tableKey = tableKey(tableId);
         hDel(schemaKey, tableKey);
     }
 
     @Override
-    public void dropIndex(long tenantId, long tableId, long indexId) {
+    public void dropIndex(long tableId, long indexId) {
         byte[] tableKey = tableKey(tableId);
         byte[] indexKey = indexKey(indexId);
         hDel(tableKey, indexKey);

@@ -134,28 +134,28 @@ public final class PrepareMeta {
 
     public static boolean prepareSchema(long tenantId) {
         InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
-        boolean exists = infoSchemaService.checkSchemaNameExists(tenantId, "MYSQL");
+        boolean exists = infoSchemaService.checkSchemaNameExists("MYSQL");
         if (exists) {
             return true;
         }
         long rootMysqlSchemaId = infoSchemaService.genSchemaId();
-        infoSchemaService.createSchema(tenantId, rootMysqlSchemaId,
+        infoSchemaService.createSchema(rootMysqlSchemaId,
             SchemaInfo.builder().tenantId(tenantId)
                 .schemaId(rootMysqlSchemaId).name("MYSQL").schemaState(SchemaState.PUBLIC).build()
         );
 
         long rootIsSchemaId = infoSchemaService.genSchemaId();
-        infoSchemaService.createSchema(tenantId, rootIsSchemaId,
+        infoSchemaService.createSchema(rootIsSchemaId,
             SchemaInfo.builder().tenantId(tenantId)
                 .schemaId(rootIsSchemaId).name("INFORMATION_SCHEMA").schemaState(SchemaState.PUBLIC).build()
         );
 
         long dingoSchemaId = infoSchemaService.genSchemaId();
-        infoSchemaService.createSchema(tenantId, dingoSchemaId,
+        infoSchemaService.createSchema(dingoSchemaId,
             SchemaInfo.builder().schemaId(dingoSchemaId).name("DINGO").schemaState(SchemaState.PUBLIC).build()
         );
         long metaSchemaId = infoSchemaService.genSchemaId();
-        infoSchemaService.createSchema(tenantId, metaSchemaId,
+        infoSchemaService.createSchema(metaSchemaId,
             SchemaInfo.builder().schemaId(metaSchemaId).name("META").schemaState(SchemaState.PUBLIC).build()
         );
         return false;
@@ -295,14 +295,14 @@ public final class PrepareMeta {
                                           ) throws IOException {
         TableDefinition tableDefinition;
         io.dingodb.meta.InfoSchemaService infoSchemaService = io.dingodb.meta.InfoSchemaService.root();
-        TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(0, schemaName, tableName);
+        TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(schemaName, tableName);
         MetaService subMetaService = metaService.getSubMetaService(schemaName);
         DingoCommonId tableId;
         try {
             if (tableWithId == null) {
                 tableDefinition = getTableDefinition(tableName, tableType, engine, rowFormat);
                 subMetaService.createTables(tableDefinition, new ArrayList<>());
-                TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) infoSchemaService.getTable(0, schemaName, tableName);
+                TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) infoSchemaService.getTable(schemaName, tableName);
                 tableId = tableDefinitionWithId.getTableId();
             } else {
                 return;
@@ -357,7 +357,7 @@ public final class PrepareMeta {
     private static Map<String, Object> getUserObjectMap(String tableName) {
         InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
         TableDefinitionWithId tableWithId
-            = (TableDefinitionWithId) infoSchemaService.getTable(0, "MYSQL", tableName);
+            = (TableDefinitionWithId) infoSchemaService.getTable("MYSQL", tableName);
 
         List<io.dingodb.sdk.service.entity.meta.ColumnDefinition> columnList
             = tableWithId.getTableDefinition().getColumns();
@@ -576,7 +576,7 @@ public final class PrepareMeta {
                                            String engine,
                                            String rowFormat) {
         io.dingodb.meta.InfoSchemaService infoSchemaService = io.dingodb.meta.InfoSchemaService.root();
-        TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(0, schema, tableName);
+        TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(schema, tableName);
         try {
             if (tableWithId == null) {
                 TableDefinition tableDefinition = getTableDefinition(tableName, tableType, engine, rowFormat);
