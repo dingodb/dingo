@@ -688,6 +688,7 @@ SqlNode OrderByLimitOpt(SqlNode e) :
     final Span s = Span.of();
     SqlNode[] offsetFetch = {null, null};
     ExportOptions exportOptions = null;
+    boolean forUpdate=false;
 }
 {
     (
@@ -715,6 +716,7 @@ SqlNode OrderByLimitOpt(SqlNode e) :
         FetchClause(offsetFetch)
     ]
     [ exportOptions = exportOptions() ]
+    [ <FOR><UPDATE> { forUpdate = true;} ]
     {
         if (e instanceof SqlSelect && exportOptions != null) {
            SqlSelect sqlSelect = (SqlSelect)e;
@@ -1322,6 +1324,7 @@ SqlNode SqlSelect() :
     final SqlNodeList windowDecls;
     final List<SqlNode> hints = new ArrayList<SqlNode>();
     final Span s;
+    boolean forUpdate = false;
     ExportOptions exportOptions = null;
 }
 {
@@ -1354,6 +1357,7 @@ SqlNode SqlSelect() :
         ( having = Having() | { having = null; } )
         ( windowDecls = Window() | { windowDecls = null; } )
         [ exportOptions = exportOptions() ]
+        [ <FOR> <UPDATE> { forUpdate=true; }]
     |
         E() {
             fromClause = null;
