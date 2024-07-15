@@ -749,12 +749,81 @@ SqlDrop SqlDropIndex(Span s, boolean replace) :
 }
 {
     <INDEX> ifExists = IfExistsOpt()
-    ( <QUOTED_STRING> | <IDENTIFIER> )
-    { index = token.image.toUpperCase(); }
+    index = dingoIdentifier()
     <ON>
     id = CompoundIdentifier()
     {
       return new SqlDropIndex(s.end(this), ifExists, index, id);
+    }
+}
+
+String dingoIdentifier(): {
+    String id;
+    SqlParserPos pos;
+    Span span;
+    char unicodeEscapeChar = BACKSLASH;
+}
+{
+     (
+        <IDENTIFIER> {
+            id = unquotedIdentifier();
+            pos = getPos();
+        }
+    |
+        <HYPHENATED_IDENTIFIER> {
+            id = unquotedIdentifier();
+            pos = getPos();
+        }
+    |
+        <QUOTED_IDENTIFIER> {
+            id = SqlParserUtil.stripQuotes(getToken(0).image, DQ, DQ, DQDQ,
+                quotedCasing);
+            pos = getPos().withQuoting(true);
+        }
+    |
+        <BACK_QUOTED_IDENTIFIER> {
+            id = SqlParserUtil.stripQuotes(getToken(0).image, "`", "`", "``",
+                quotedCasing);
+            pos = getPos().withQuoting(true);
+        }
+    |
+        <BIG_QUERY_BACK_QUOTED_IDENTIFIER> {
+            id = SqlParserUtil.stripQuotes(getToken(0).image, "`", "`", "\\`",
+                quotedCasing);
+            pos = getPos().withQuoting(true);
+        }
+    |
+        <BRACKET_QUOTED_IDENTIFIER> {
+            id = SqlParserUtil.stripQuotes(getToken(0).image, "[", "]", "]]",
+                quotedCasing);
+            pos = getPos().withQuoting(true);
+        }
+    |
+        <UNICODE_QUOTED_IDENTIFIER> {
+            span = span();
+            String image = getToken(0).image;
+            image = image.substring(image.indexOf('"'));
+            image = SqlParserUtil.stripQuotes(image, DQ, DQ, DQDQ, quotedCasing);
+        }
+        [
+            <UESCAPE> <QUOTED_STRING> {
+                String s = SqlParserUtil.parseString(token.image);
+                unicodeEscapeChar = SqlParserUtil.checkUnicodeEscapeChar(s);
+            }
+        ]
+        {
+            pos = span.end(this).withQuoting(true);
+            SqlLiteral lit = SqlLiteral.createCharString(image, "UTF16", pos);
+            lit = lit.unescapeUnicode(unicodeEscapeChar);
+            id = lit.toValue();
+        }
+    |
+        id = NonReservedKeyWord() {
+            pos = getPos();
+        }
+    )
+    {
+      return id;
     }
 }
 

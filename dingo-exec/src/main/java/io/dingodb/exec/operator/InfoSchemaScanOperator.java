@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -121,7 +122,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             // is null
                             column.isNullable() ? "YES" : "NO",
                             // type name
-                            column.type,
+                            column.getSqlTypeName(),
                             (long) column.precision,
                             null,
                             null,
@@ -129,7 +130,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             null,
                             "utf8",
                             "utf8_bin",
-                            column.type.toString(),
+                            column.getSqlTypeName(),
                             // is key
                             column.isPrimary() ? "PRI" : "",
                             "",
@@ -282,7 +283,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             log.error(e1.getMessage(), e1);
                             return null;
                         }
-                    })
+                    }).filter(Objects::nonNull)
                     .collect(Collectors.toList()).stream();
             })
             .collect(Collectors.toList());
@@ -323,7 +324,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             table.name,
                             0,
                             e.getKey(),
-                            "primary",
+                            "PRIMARY",
                             column.primaryKeyIndex,
                             column.name,
                             "A",

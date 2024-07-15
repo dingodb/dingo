@@ -1030,7 +1030,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw new IllegalArgumentException("table " + tableName + " does not exist");
         }
         if (table.getIndexTableDefinitions().stream().map(IndexTable::getName).noneMatch(indexName::equalsIgnoreCase)) {
-            throw new RuntimeException("The index " + indexName + "not exist.");
+            throw new RuntimeException("The index " + indexName + " not exist.");
         }
     }
 

@@ -134,7 +134,13 @@ public interface DataConverter {
     }
 
     default byte[] convertBinaryFrom(@NonNull Object value) {
-        return (byte[]) value;
+        byte[] bytes;
+        if (value instanceof String) {
+            bytes = ((String) value).getBytes();
+        } else {
+            bytes = (byte[])value;
+        }
+        return bytes;
     }
 
     default Object convertObjectFrom(@NonNull Object value) {

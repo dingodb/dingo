@@ -388,6 +388,7 @@ data: {
     "EXCEPTION"
     "EXCLUDE"
     "EXCLUDING"
+    "EXPIRE"
     "FINAL"
     "FIRST"
     "FOLLOWING"
