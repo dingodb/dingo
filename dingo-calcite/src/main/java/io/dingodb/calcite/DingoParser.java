@@ -33,8 +33,6 @@ import io.dingodb.calcite.grammar.ddl.SqlUnLockTable;
 import io.dingodb.calcite.grammar.dml.SqlExecute;
 import io.dingodb.calcite.grammar.dml.SqlPrepare;
 import io.dingodb.calcite.grammar.dql.ExportOptions;
-import io.dingodb.calcite.grammar.dql.SqlDesc;
-import io.dingodb.calcite.grammar.dql.SqlDescTable;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
 import io.dingodb.calcite.grammar.dql.SqlShow;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
@@ -336,7 +334,7 @@ public class DingoParser {
             .orElseThrow(() -> DingoException.from(DingoError.UNKNOWN));
     }
 
-    private String processKeyWords(String sql) {
+    private static String processKeyWords(String sql) {
         if (sql.contains("\\r\\n") || sql.contains("\\n")) {
             sql = StringEscapeUtils.unescapeJson(sql);
         }

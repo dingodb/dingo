@@ -144,12 +144,12 @@ public class MysqlCommands {
                 & ExtendedClientCapabilities.CLIENT_DEPRECATE_EOF) != 0;
             EOFPacket intermediate = null;
             EOFPacket eofResponse = null;
-            if (!deprecateEof) {
-                intermediate = MysqlPacketFactory.getEofPacket(packetId);
-            }
             List<ColumnPacket> fieldColumnPackets = new ArrayList<>();
             int numberFields = 0;
             if (preparedStatement.getStatementType() == Meta.StatementType.SELECT) {
+                if (!deprecateEof) {
+                    intermediate = MysqlPacketFactory.getEofPacket(packetId);
+                }
                 numberFields = statementHandle.signature.columns.size();
                 mysqlPacketFactory.addColumnPacketFromMeta(packetId, preparedStatement.getMetaData(),
                     fieldColumnPackets, "def");

@@ -129,7 +129,7 @@ public class ExecuteStatementPacket extends MysqlPacket {
                 case MysqlType.FIELD_TYPE_VARCHAR:
                 case MysqlType.FIELD_TYPE_DECIMAL:
                 case MysqlType.FIELD_TYPE_NEWDECIMAL:
-                    length = message.read() & 0xff;
+                    length = (int) message.readLength();
                     break;
                 case MysqlType.FIELD_TYPE_BLOB:
                 case MysqlType.FIELD_TYPE_TINY_BLOB:
