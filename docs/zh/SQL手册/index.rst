@@ -6,3 +6,4 @@ SQL手册
    :glob:
 
    数据类型.md
+   DDL.md
