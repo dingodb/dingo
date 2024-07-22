@@ -77,7 +77,8 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
                 param.getScanTs(),
                 param.getTimeOut()
             );
-            param.setCoprocessor(null);
+            //param.setCoprocessor(null);
+            param.setNullCoprocessor(distribution.getId());
             profile.incrTime(start);
             if (storeIterator instanceof ProfileScanIterator) {
                 ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
@@ -99,6 +100,7 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
                 ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
                 profile.getChildren().add(profileScanIterator.getInitRpcProfile());
             }
+            param.setNullCoprocessor(distribution.getId());
             profile.end();
             return DingoTransformedIterator.transform(storeIterator, wrap(param.getCodec()::decode)::apply);
         }
@@ -109,6 +111,7 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
             param.getTimeOut(),
             coprocessor
         );
+        param.setCoprocessor(distribution.getId());
         profile.incrTime(start);
         if (storeIterator instanceof ProfileScanIterator) {
             ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
