@@ -210,7 +210,7 @@ public final class CodecKvUtil {
         int reallocSize = (dlen/ encGroupSize + 1) * (encGroupSize + 1);
         byte[] result = new byte[reallocSize];
         int loopCnt = 0;
-        for (int i = 0; i < dlen; i += encGroupSize)  {
+        for (int i = 0; i <= dlen; i += encGroupSize)  {
             int remain = dlen -i;
             int padCount = 0;
             if (remain >= encGroupSize) {

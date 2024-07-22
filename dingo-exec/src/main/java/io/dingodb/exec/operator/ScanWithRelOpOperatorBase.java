@@ -50,6 +50,7 @@ public abstract class ScanWithRelOpOperatorBase extends ScanOperatorBase {
         StoreInstance storeInstance = Services.KV_STORE.getInstance(param.getTableId(), rd.getId());
         CoprocessorV2 coprocessor = param.getCoprocessor();
         if (coprocessor == null) {
+            param.setNullCoprocessor(rd.getId());
             return Iterators.transform(
                 storeInstance.scan(
                     vertex.getTask().getJobId().seq,
@@ -58,6 +59,7 @@ public abstract class ScanWithRelOpOperatorBase extends ScanOperatorBase {
                 wrap(param.getCodec()::decode)::apply
             );
         }
+        param.setCoprocessor(rd.getId());
         return Iterators.transform(
             storeInstance.scan(
                 vertex.getTask().getJobId().seq,
