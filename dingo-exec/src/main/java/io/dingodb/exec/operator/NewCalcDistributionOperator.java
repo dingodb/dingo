@@ -26,6 +26,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.DistributionSourceParam;
 import io.dingodb.partition.PartitionService;
+import io.dingodb.store.api.transaction.exception.LockWaitException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -93,8 +94,8 @@ public class NewCalcDistributionOperator extends SourceOperator {
         }
         boolean parallel = Utils.parallel(param.getKeepOrder());
         //boolean rangePart = "range".equalsIgnoreCase(param.getTd().getPartitionStrategy());
-        boolean rangePart = false;
-        if (!parallel || distributions.size() == 1 || !rangePart) {
+        //boolean rangePart = false;
+        if (!parallel || distributions.size() == 1) {
             for (RangeDistribution distribution : distributions) {
                 if (log.isTraceEnabled()) {
                     log.trace("Push distribution: {}", distribution);
@@ -122,6 +123,8 @@ public class NewCalcDistributionOperator extends SourceOperator {
             } catch (ExecutionException | InterruptedException e) {
                 if (e.getMessage().contains("RegionSplitException")) {
                     throw new RegionSplitException("io.dingodb.sdk.common.DingoClientException$InvalidRouteTableException");
+                } else if (e.getCause() instanceof LockWaitException) {
+                    throw new LockWaitException("Lock wait");
                 } else {
                     throw new RuntimeException(e);
                 }
