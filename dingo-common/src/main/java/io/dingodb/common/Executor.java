@@ -14,32 +14,19 @@
  * limitations under the License.
  */
 
-package io.dingodb.cluster;
+package io.dingodb.common;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 
-import io.dingodb.common.CommonId;
-import io.dingodb.common.Executor;
-import io.dingodb.common.Location;
+@Builder
+@Data
+@AllArgsConstructor
+public class Executor {
 
-import java.util.List;
-
-public interface ClusterService {
-
-    static ClusterService getDefault() {
-        return ClusterServiceProvider.getDefault().get();
-    }
-
-    List<Location> getComputingLocations();
-
-    CommonId getServerId(Location location);
-
-    Location getLocation(CommonId serverId);
-
-    List<Executor> getExecutors();
-
-    int getStoreMap();
-
-    int getLocations();
-
-    void configCoordinator(boolean isReadOnly, String reason);
+    private String id;
+    private String host;
+    private int port;
+    private String state;
 }

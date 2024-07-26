@@ -23,11 +23,14 @@ import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterConvertCharset;
 import io.dingodb.calcite.grammar.ddl.SqlAlterIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
+import io.dingodb.calcite.grammar.ddl.SqlAlterTenant;
 import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlCreateSchema;
+import io.dingodb.calcite.grammar.ddl.SqlCreateTenant;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
 import io.dingodb.calcite.grammar.ddl.SqlDropIndex;
+import io.dingodb.calcite.grammar.ddl.SqlDropTenant;
 import io.dingodb.calcite.grammar.ddl.SqlDropUser;
 import io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
@@ -53,10 +56,12 @@ import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.DefinitionUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.InfoSchemaService;
+import io.dingodb.meta.TenantService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
@@ -544,6 +549,60 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else {
             throw new RuntimeException("Schema not empty.");
         }
+        timeCtx.stop();
+    }
+
+    public void execute(SqlCreateTenant createT, CalcitePrepare.Context context) {
+        final Timer.Context timeCtx = DingoMetrics.getTimeContext("createTenant");
+        LogUtils.info(log, "DDL execute: {}", createT);
+        TenantService tenantService = TenantService.getDefault();
+        if (TenantConstant.TENANT_ID != 0) {
+            throw new RuntimeException("Regular tenants are unable to create tenant.");
+        }
+        if (tenantService.getTenant(createT.name) == null) {
+            tenantService.createTenant(createT.name);
+        } else if (!createT.ifNotExists) {
+            throw SqlUtil.newContextException(
+                createT.getParserPosition(),
+                DINGO_RESOURCE.tenantExists(createT.name)
+            );
+        }
+        timeCtx.stop();
+    }
+
+    public void execute(@NonNull SqlAlterTenant sqlAlterTenant, CalcitePrepare.Context context) {
+        final Timer.Context timeCtx = DingoMetrics.getTimeContext("alterTenant");
+        LogUtils.info(log, "DDL execute: {}", sqlAlterTenant);
+        TenantService tenantService = TenantService.getDefault();
+        if (TenantConstant.TENANT_ID != 0) {
+            throw new RuntimeException("Regular tenants are unable to alter tenant.");
+        }
+        if (tenantService.getTenant(sqlAlterTenant.name) != null) {
+            // TODO
+            // tenantService.updateTenant()
+        }
+
+        timeCtx.stop();
+    }
+
+    public void execute(SqlDropTenant tenant, CalcitePrepare.Context context) {
+        final Timer.Context timeCtx = DingoMetrics.getTimeContext("dropTenant");
+        LogUtils.info(log, "DDL execute: {}", tenant);
+        TenantService tenantService = TenantService.getDefault();
+        if (TenantConstant.TENANT_ID != 0) {
+            throw new RuntimeException("Regular tenants are unable to drop tenant");
+        }
+        if (tenantService.getTenant(tenant.name) == null) {
+            if (!tenant.ifExists) {
+                throw SqlUtil.newContextException(
+                    tenant.getParserPosition(),
+                    DINGO_RESOURCE.tenantNotFound(tenant.name)
+                );
+            } else {
+                return;
+            }
+        }
+        tenantService.dropTenant(tenant.name);
         timeCtx.stop();
     }
 

@@ -22,6 +22,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.Common;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.meta.Tenant;
@@ -31,6 +32,7 @@ import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.DefinitionUtils;
 import io.dingodb.partition.DingoPartitionServiceProvider;
@@ -70,6 +72,7 @@ public final class PrepareMeta {
     // engine
     //private static final String LSM = Common.Engine.LSM.name();
     private static final String TXN_LSM = Common.Engine.TXN_LSM.name();
+    private static final long tenantId = TenantConstant.TENANT_ID;
 
     private static int exceptionRetries = 0;
     private static final Long retryInterval = 6000L;
@@ -80,27 +83,15 @@ public final class PrepareMeta {
     private PrepareMeta() {
     }
 
-    public static void main(String[] args) {
-        PrepareMeta.prepare("172.30.14.203:22001,172.30.14.203:22002,172.30.14.203:22003");
-    }
-
     public static void prepare(String coordinators) {
         long start = System.currentTimeMillis();
         MetaStoreKvTxn.init();
         initReplica();
-        long tenantId = 0;
-        try {
-            tenantId = prepareTenant();
-        } catch (Exception e) {
-            if (e.getMessage().contains("tenant is exists")) {
-                return;
-            } else {
-                retryCnt ++;
-                if (retryCnt > 20) {
-                    return;
-                }
-                prepare(coordinators);
-            }
+        InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
+        Object tenant = infoSchemaService.getTenant(tenantId);
+        if (tenant == null) {
+            LogUtils.error(log, "Tenant not exists :{}", tenantId);
+            return;
         }
         boolean exists = prepareSchema(tenantId);
         if (exists) {
@@ -124,12 +115,13 @@ public final class PrepareMeta {
         log.info("init replica success, store:{}, index:{}", storeReplica, indexReplica);
     }
 
-    public static long prepareTenant() {
+    public static void prepareTenant() {
         InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
-        long tenantId = 0;
-        Tenant tenant = Tenant.builder().id(tenantId).name("root").build();
-        infoSchemaService.createTenant(tenantId, tenant);
-        return tenantId;
+        Object tenantObj = infoSchemaService.getTenant(tenantId);
+        if (tenantObj == null) {
+            Tenant tenant = Tenant.builder().id(tenantId).name("root").build();
+            infoSchemaService.createTenant(tenantId, tenant);
+        }
     }
 
     public static boolean prepareSchema(long tenantId) {

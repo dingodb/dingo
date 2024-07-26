@@ -23,6 +23,7 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.Optional;
 import io.dingodb.net.Channel;
 import io.dingodb.net.Message;
@@ -83,7 +84,7 @@ public class MetaServiceApiImpl implements MetaServiceApi {
 
     private final io.dingodb.sdk.service.MetaService proxyService = metaService(Configuration.coordinatorSet());
     private final io.dingodb.sdk.service.LockService lockService = new io.dingodb.sdk.service.LockService(
-        "MetaNode", Configuration.coordinators()
+        "MetaNode#0#ExecutorCluster" + TenantConstant.TENANT_ID, Configuration.coordinators()
     );
 
     private final VersionService versionService = Services.versionService(Configuration.coordinatorSet());

@@ -19,12 +19,12 @@ package io.dingodb.server.executor.schedule;
 import com.google.auto.service.AutoService;
 import io.dingodb.calcite.stats.task.RefreshStatsTask;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.scheduler.SchedulerServiceProvider;
 import io.dingodb.sdk.service.LockService;
 import io.dingodb.server.executor.Configuration;
 import io.dingodb.server.executor.schedule.stats.AnalyzeProfileTask;
 import io.dingodb.server.executor.schedule.stats.AnalyzeScanTask;
-import io.dingodb.server.executor.schedule.stats.TableModifyMonitorTask;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.CronTrigger;
@@ -58,7 +58,7 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
         try {
             scheduler = StdSchedulerFactory.getDefaultScheduler();
             scheduler.setJobFactory(Job.FACTORY);
-            startScheduler(new LockService("executor-scheduler", Configuration.coordinators()));
+            startScheduler(new LockService("executor-scheduler-" + TenantConstant.TENANT_ID, Configuration.coordinators()));
         } catch (SchedulerException e) {
             throw new RuntimeException(e);
         }

@@ -14,32 +14,13 @@
  * limitations under the License.
  */
 
-package io.dingodb.cluster;
+package io.dingodb.common.tenant;
 
+public class TenantConstant {
 
-import io.dingodb.common.CommonId;
-import io.dingodb.common.Executor;
-import io.dingodb.common.Location;
+    public static long TENANT_ID;
 
-import java.util.List;
-
-public interface ClusterService {
-
-    static ClusterService getDefault() {
-        return ClusterServiceProvider.getDefault().get();
+    public static void tenant(long tenantId) {
+        TENANT_ID = tenantId;
     }
-
-    List<Location> getComputingLocations();
-
-    CommonId getServerId(Location location);
-
-    Location getLocation(CommonId serverId);
-
-    List<Executor> getExecutors();
-
-    int getStoreMap();
-
-    int getLocations();
-
-    void configCoordinator(boolean isReadOnly, String reason);
 }
