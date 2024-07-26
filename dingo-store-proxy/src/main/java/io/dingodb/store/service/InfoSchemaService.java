@@ -25,6 +25,7 @@ import io.dingodb.common.codec.CodecKvUtil;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.Tenant;
+import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.meta.InfoSchemaServiceProvider;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
@@ -72,7 +73,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final VersionService versionService;
     Set<Location> coordinators;
-    private static final long tenantId = 0;
+    private static final long tenantId = TenantConstant.TENANT_ID;
     public static final InfoSchemaService ROOT = new InfoSchemaService(Configuration.coordinators());
 
     @AutoService(InfoSchemaServiceProvider.class)
@@ -242,9 +243,23 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
+    public boolean updateTenant(long tenantId, Object tenant) {
+        byte[] tenantKey = tenantKey(tenantId);
+        if (!checkTenantExists(tenantKey)) {
+            return false;
+        }
+        byte[] val = getBytesFromObj(tenant);
+        hUpdate(mTenants, tenantKey, val);
+        return true;
+    }
+
+    @Override
     public Object getTenant(long tenantId) {
         byte[] tenantKey = tenantKey(tenantId);
         byte[] val = hGet(mTenants, tenantKey);
+        if (val == null) {
+            return null;
+        }
         return getObjFromBytes(val, Tenant.class);
     }
 
@@ -538,6 +553,11 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     public static void hDel(byte[] key, byte[] field) {
         byte[] dataKey = CodecKvUtil.encodeHashDataKey(key, field);
         MetaStoreKvTxn.getInstance().mDel(dataKey);
+    }
+
+    public static void hUpdate(byte[] key, byte[] field, byte[] value) {
+        byte[] dataKey = CodecKvUtil.encodeHashDataKey(key, field);
+        MetaStoreKvTxn.getInstance().mUpdate(dataKey, value);
     }
 
     private static PutRequest putRequest(String resourceKey, String value) {

@@ -24,8 +24,11 @@ import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
+import io.dingodb.common.tenant.TenantConstant;
+import io.dingodb.common.util.Optional;
 import io.dingodb.driver.mysql.SessionVariableChangeWatcher;
 import io.dingodb.exec.Services;
+import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.net.MysqlNetService;
 import io.dingodb.net.MysqlNetServiceProvider;
 import io.dingodb.net.NetService;
@@ -51,6 +54,9 @@ public class Starter {
     @Parameter(names = "--config", description = "Config file path.", order = 1, required = true)
     private String config;
 
+    @Parameter(names = "--tenant", description = "Tenant id.", order = 2)
+    private long tenant = 0;
+
     public static void main(String[] args) throws Exception {
         Starter starter = new Starter();
         JCommander commander = JCommander.newBuilder().addObject(starter).build();
@@ -64,12 +70,24 @@ public class Starter {
             return;
         }
         DingoConfiguration.parse(config);
+        String tenantStr = System.getenv().get("tenant");
+        if (tenantStr != null) {
+            tenant = Long.parseLong(tenantStr);
+        }
+        TenantConstant.tenant(tenant);
         CommonId serverId = ClusterService.DEFAULT_INSTANCE.getServerId(DingoConfiguration.location());
         if (serverId == null) {
             serverId = new CommonId(EXECUTOR, 1, TsoService.getDefault().tso());
         }
         DingoConfiguration.instance().setServerId(serverId);
         Configuration.instance();
+        if (tenant == 0) {
+            PrepareMeta.prepareTenant();
+        }
+        Object tenantObj = Optional.mapOrGet(InfoSchemaService.root(), __ -> __.getTenant(tenant), () -> null);
+        if (tenantObj == null) {
+            return;
+        }
         PrepareMeta.prepare(io.dingodb.store.proxy.Configuration.coordinators());
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         env.setRole(DingoRole.EXECUTOR);

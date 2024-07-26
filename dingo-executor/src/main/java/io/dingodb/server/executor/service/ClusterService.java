@@ -22,6 +22,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.entity.common.Executor;
@@ -77,6 +78,7 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
                 .build())
             .resourceTag(Configuration.resourceTag())
             .id(DingoConfiguration.serverId().toString())
+            .clusterName("ExecutorCluster_" + TenantConstant.TENANT_ID)
             .build();
     }
 
@@ -90,7 +92,8 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
     @Override
     public List<Location> getComputingLocations() {
         return coordinatorService.getExecutorMap(
-                TsoService.getDefault().tso(), GetExecutorMapRequest.builder().build()
+                TsoService.getDefault().tso(),
+                GetExecutorMapRequest.builder().clusterName("ExecutorCluster_" + TenantConstant.TENANT_ID).build()
             ).getExecutormap().getExecutors().stream()
             .filter($ -> $.getState() == ExecutorState.EXECUTOR_NORMAL)
             .map(io.dingodb.sdk.service.entity.common.Executor::getServerLocation)
@@ -101,7 +104,8 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
     @Override
     public CommonId getServerId(Location location) {
         return Optional.ofNullable(coordinatorService.getExecutorMap(
-                TsoService.getDefault().tso(), GetExecutorMapRequest.builder().build()
+                TsoService.getDefault().tso(),
+                GetExecutorMapRequest.builder().clusterName("ExecutorCluster_" + TenantConstant.TENANT_ID).build()
             )).map(GetExecutorMapResponse::getExecutormap)
             .map(ExecutorMap::getExecutors)
             .flatMap(executors -> executors.stream()
@@ -115,7 +119,8 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
     @Override
     public Location getLocation(CommonId serverId) {
         return Optional.ofNullable(coordinatorService.getExecutorMap(
-                TsoService.getDefault().tso(), GetExecutorMapRequest.builder().build()
+                TsoService.getDefault().tso(),
+                GetExecutorMapRequest.builder().clusterName("ExecutorCluster_" + TenantConstant.TENANT_ID).build()
             )).map(GetExecutorMapResponse::getExecutormap)
             .map(ExecutorMap::getExecutors)
             .flatMap(executors -> executors.stream()
@@ -125,6 +130,21 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
                 .map(this::url)
                 .map(Location::parseUrl)
             ).orElse(null);
+    }
+
+    @Override
+    public List<io.dingodb.common.Executor> getExecutors() {
+        return coordinatorService.getExecutorMap(
+            TsoService.getDefault().tso(),
+            GetExecutorMapRequest.builder().clusterName("ExecutorCluster_" + TenantConstant.TENANT_ID).build()
+        ).getExecutormap().getExecutors().stream()
+            .map(e -> io.dingodb.common.Executor.builder()
+                .id(e.getId())
+                .host(e.getServerLocation().getHost())
+                .port(e.getServerLocation().getPort())
+                .state(e.getState().name())
+                .build())
+            .collect(Collectors.toList());
     }
 
     @Override

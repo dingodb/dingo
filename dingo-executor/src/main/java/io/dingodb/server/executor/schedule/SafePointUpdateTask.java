@@ -20,6 +20,8 @@ import io.dingodb.calcite.operation.ShowLocksOperation;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.Optional;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.sdk.service.IndexService;
@@ -54,7 +56,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -77,7 +81,7 @@ public final class SafePointUpdateTask {
 
     private static final int PHYSICAL_SHIFT = 18;
 
-    private static final String lockKeyStr =  "safe_point_update";
+    private static final String lockKeyStr =  "safe_point_update_" + TenantConstant.TENANT_ID;
 
     private static final String enableKeyStr = GLOBAL_VAR_PREFIX_BEGIN + "enable_safe_point_update";
     private static final String txnDurationKeyStr = GLOBAL_VAR_PREFIX_BEGIN + "txn_history_duration";
@@ -97,14 +101,14 @@ public final class SafePointUpdateTask {
     }
 
     public static void run() {
-        Executors.execute("safe-point-update", () -> {
+        Executors.execute(lockKeyStr, () -> {
             try {
                 String value = DingoConfiguration.serverId() + "#" + DingoConfiguration.location();
                 LockService.Lock lock = lockService.newLock(value);
                 lock.lock();
-                log.info("Start safe point update task.");
+                LogUtils.info(log, "Start safe point update task.");
                 ScheduledFuture<?> future = Executors.scheduleWithFixedDelay(
-                    "safe-point-update", SafePointUpdateTask::safePointUpdate, 1, 600, TimeUnit.SECONDS
+                    lockKeyStr, SafePointUpdateTask::safePointUpdate, 1, 600, TimeUnit.SECONDS
                 );
                 lock.watchDestroy().thenRun(() -> {
                     future.cancel(true);
@@ -121,26 +125,26 @@ public final class SafePointUpdateTask {
             return;
         }
         try {
-            log.info("Run safe point update task.");
+            LogUtils.info(log, "Run safe point update task.");
             Set<Location> coordinators = coordinatorSet();
             long reqTs = tso();
             long safeTs = safeTs(coordinators, reqTs);
             List<Region> regions = Services.coordinatorService(coordinators).getRegionMap(
-                reqTs, GetRegionMapRequest.builder().build()
+                reqTs, GetRegionMapRequest.builder().tenantId(TenantConstant.TENANT_ID).build()
             ).getRegionmap().getRegions();
-            log.info("Run safe point update task, current ts: {}, safe ts: {}", reqTs, safeTs);
+            LogUtils.info(log, "Run safe point update task, current ts: {}, safe ts: {}", reqTs, safeTs);
             for (Region region : regions) {
                 long regionId = region.getId();
                 // skip non txn region
                 if (region.getDefinition().getRange().getStartKey()[0] != 't') {
                     continue;
                 }
-                log.info("Scan {} locks.", regionId);
+                LogUtils.info(log, "Scan {} locks.", regionId);
                 byte[] startKey = region.getDefinition().getRange().getStartKey();
                 byte[] endKey = region.getDefinition().getRange().getEndKey();
                 TxnScanLockResponse scanLockResponse;
                 do {
-                    log.info("Scan {} locks range: [{}, {}).", regionId, toHex(startKey), toHex(endKey));
+                    LogUtils.info(log, "Scan {} locks range: [{}, {}).", regionId, toHex(startKey), toHex(endKey));
                     TxnScanLockRequest req = TxnScanLockRequest.builder()
                         .startKey(startKey).endKey(endKey).maxTs(safeTs).limit(1024).build();
                     if (isIndexRegion(region)) {
@@ -159,19 +163,28 @@ public final class SafePointUpdateTask {
                 } while (true);
             }
 
-            log.info("Update safe point to: {}", safeTs);
+            LogUtils.info(log, "Update safe point to: {}", safeTs);
             if (isDisable(reqTs)) {
-                log.info("Safe point update task disabled, skip call coordinator.");
+                LogUtils.info(log, "Safe point update task disabled, skip call coordinator.");
                 Services.coordinatorService(coordinators).updateGCSafePoint(
                     reqTs, UpdateGCSafePointRequest.builder().gcFlag(GcFlagType.GC_STOP).build()
                 );
             } else {
+                UpdateGCSafePointRequest.UpdateGCSafePointRequestBuilder<?, ?> builder = UpdateGCSafePointRequest.builder()
+                    .gcFlag(GcFlagType.GC_START);
+                // TODO
+                builder.safePoint(0);
+                if (TenantConstant.TENANT_ID == 0) {
+                    builder.safePoint(safeTs - 1);
+                } else {
+                    builder.tenantSafePoints(Collections.singletonMap(TenantConstant.TENANT_ID, safeTs));
+                }
                 Services.coordinatorService(coordinators).updateGCSafePoint(
-                    reqTs, UpdateGCSafePointRequest.builder().gcFlag(GcFlagType.GC_START).safePoint(safeTs - 1).build()
+                    reqTs, builder.build()
                 );
             }
         } catch (Exception e) {
-            log.error("Update safe point error, skip this run.", e);
+            LogUtils.error(log, "Update safe point error, skip this run.", e);
             throw e;
         } finally {
             running.set(false);
@@ -240,7 +253,7 @@ public final class SafePointUpdateTask {
     private static boolean pessimisticRollback(
         long reqTs, LockInfo lock, Set<Location> coordinators, Region region
     ) {
-        log.info("Rollback pessimistic lock: {}, resolve ts: {}.", lock, reqTs);
+        LogUtils.info(log, "Rollback pessimistic lock: {}, resolve ts: {}.", lock, reqTs);
         TxnPessimisticRollbackRequest req = TxnPessimisticRollbackRequest.builder()
             .startTs(lock.getLockTs())
             .forUpdateTs(lock.getForUpdateTs())
@@ -255,7 +268,7 @@ public final class SafePointUpdateTask {
     private static boolean resolve(
         long reqTs, LockInfo lock, long commitTs, Set<Location> coordinators, Region region
     ) {
-        log.info("Resolve lock: {}, resolve ts: {}, commit ts: {}.", lock, reqTs, commitTs);
+        LogUtils.info(log, "Resolve lock: {}, resolve ts: {}, commit ts: {}.", lock, reqTs, commitTs);
         TxnResolveLockRequest req = TxnResolveLockRequest.builder()
             .startTs(lock.getLockTs())
             .commitTs(commitTs)
@@ -268,7 +281,7 @@ public final class SafePointUpdateTask {
     }
 
     private static TxnCheckTxnStatusResponse checkTxn(long safeTs, long reqTs, LockInfo lock) {
-        log.info("Check lock: {}, check ts: {}.", lock, reqTs);
+        LogUtils.info(log, "Check lock: {}, check ts: {}.", lock, reqTs);
         return Services.storeRegionService(coordinatorSet(), lock.getPrimaryLock(), 30).txnCheckTxnStatus(
             reqTs,
             TxnCheckTxnStatusRequest

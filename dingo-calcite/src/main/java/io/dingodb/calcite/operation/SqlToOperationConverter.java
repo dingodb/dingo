@@ -27,11 +27,9 @@ import io.dingodb.calcite.grammar.ddl.SqlLoadData;
 import io.dingodb.calcite.grammar.ddl.SqlLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlLockTable;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
-import io.dingodb.calcite.grammar.dql.SqlDescTable;
-import io.dingodb.calcite.grammar.dql.SqlShowTableIndex;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockTable;
-import io.dingodb.calcite.grammar.dql.SqlDesc;
+import io.dingodb.calcite.grammar.dql.SqlDescTable;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
 import io.dingodb.calcite.grammar.dql.SqlShowCharset;
 import io.dingodb.calcite.grammar.dql.SqlShowCollation;
@@ -40,6 +38,7 @@ import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
 import io.dingodb.calcite.grammar.dql.SqlShowCreateUser;
 import io.dingodb.calcite.grammar.dql.SqlShowDatabases;
 import io.dingodb.calcite.grammar.dql.SqlShowEngines;
+import io.dingodb.calcite.grammar.dql.SqlShowExecutors;
 import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
 import io.dingodb.calcite.grammar.dql.SqlShowLocks;
@@ -48,8 +47,10 @@ import io.dingodb.calcite.grammar.dql.SqlShowProcessList;
 import io.dingodb.calcite.grammar.dql.SqlShowStartTs;
 import io.dingodb.calcite.grammar.dql.SqlShowStatus;
 import io.dingodb.calcite.grammar.dql.SqlShowTableDistribution;
+import io.dingodb.calcite.grammar.dql.SqlShowTableIndex;
 import io.dingodb.calcite.grammar.dql.SqlShowTableStatus;
 import io.dingodb.calcite.grammar.dql.SqlShowTables;
+import io.dingodb.calcite.grammar.dql.SqlShowTenants;
 import io.dingodb.calcite.grammar.dql.SqlShowTriggers;
 import io.dingodb.calcite.grammar.dql.SqlShowVariables;
 import io.dingodb.calcite.grammar.dql.SqlShowWarnings;
@@ -231,6 +232,10 @@ public final class SqlToOperationConverter {
         } else if (sqlNode instanceof SqlShowStatus) {
             SqlShowStatus sqlShowStatus = (SqlShowStatus) sqlNode;
             return Optional.of(new ShowStatusOperation(sqlShowStatus.sqlLikePattern));
+        } else if (sqlNode instanceof SqlShowTenants) {
+            return Optional.of(new ShowTenantOperation());
+        } else if (sqlNode instanceof SqlShowExecutors) {
+            return Optional.of(new ShowExecutorsOperation());
         } else {
             return Optional.empty();
         }

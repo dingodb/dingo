@@ -26,6 +26,7 @@ import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
@@ -802,7 +803,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
         long tso = tso();
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
-        List<Region> regions = coordinatorService.getRegionMap(tso, GetRegionMapRequest.builder().build()).getRegionmap().getRegions().stream()
+        List<Region> regions = coordinatorService.getRegionMap(tso, GetRegionMapRequest.builder().tenantId(TenantConstant.TENANT_ID).build()).getRegionmap().getRegions().stream()
             .map(Region::getId)
             .map($ -> coordinatorService.queryRegion(tso, QueryRegionRequest.builder().regionId($).build()).getRegion())
             .collect(Collectors.toList());

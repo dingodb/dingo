@@ -117,6 +117,8 @@ public interface InfoSchemaService {
 
     boolean createTenant(long tenantId, Object tenant);
 
+    boolean updateTenant(long tenantId, Object tenant);
+
     Object getTenant(long tenantId);
 
     List<Object> listTenant();

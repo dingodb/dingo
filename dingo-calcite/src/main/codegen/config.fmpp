@@ -39,8 +39,10 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlAlterConvertCharset"
       "io.dingodb.calcite.grammar.ddl.SqlAlterUser"
       "io.dingodb.calcite.grammar.ddl.SqlAlterTable"
+      "io.dingodb.calcite.grammar.ddl.SqlAlterTenant"
       "io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution"
       "io.dingodb.calcite.grammar.ddl.SqlAnalyze"
+      "io.dingodb.calcite.grammar.ddl.SqlCreateTenant"
       "io.dingodb.calcite.grammar.ddl.SqlCreateSchema"
       "io.dingodb.calcite.grammar.ddl.SqlCreateUser"
       "io.dingodb.calcite.grammar.ddl.SqlCreateIndex"
@@ -48,6 +50,7 @@ data: {
       "io.dingodb.calcite.grammar.dql.SqlDescTable"
       "io.dingodb.calcite.grammar.ddl.SqlDropUser"
       "io.dingodb.calcite.grammar.ddl.SqlDropIndex"
+      "io.dingodb.calcite.grammar.ddl.SqlDropTenant"
       "io.dingodb.calcite.grammar.ddl.SqlEnd"
       "io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges"
       "io.dingodb.calcite.grammar.ddl.SqlGrant"
@@ -80,6 +83,8 @@ data: {
       "io.dingodb.calcite.grammar.dql.SqlShowLocks"
       "io.dingodb.calcite.grammar.dql.SqlShowTableDistribution"
       "io.dingodb.calcite.grammar.dql.SqlShowTables"
+      "io.dingodb.calcite.grammar.dql.SqlShowTenants"
+      "io.dingodb.calcite.grammar.dql.SqlShowExecutors"
       "io.dingodb.calcite.grammar.dql.SqlShowTableStatus"
       "io.dingodb.calcite.grammar.dql.SqlShowPlugins"
       "io.dingodb.calcite.grammar.dql.SqlShowProcessList"
@@ -135,6 +140,7 @@ data: {
       "ENGINE"
       "ENGINES"
       "EXECUTOR"
+      "EXECUTORS"
       "EXPIRE"
       "ESCAPED"
       "FIELDS"
@@ -191,6 +197,8 @@ data: {
       "TRIGGERS"
       "MONITOR"
       "REGIONS"
+      "TENANT"
+      "TENANTS"
     ]
 
     # List of non-reserved keywords to add;
@@ -218,6 +226,7 @@ data: {
       "SqlCreateView"
       "SqlCreateFunction"
       "SqlCreateIndex"
+      "SqlCreateTenant"
     ]
 
     # List of methods for parsing extensions to "DROP" calls.
@@ -232,11 +241,13 @@ data: {
       "SqlDropFunction"
       "SqlDropUser"
       "SqlDropIndex"
+      "SqlDropTenant"
     ]
 
     alterStatementParserMethods: [
        "SqlAlterTable"
        "SqlAlterUser"
+       "SqlAlterTenant"
     ]
 
     statementParserMethods: [
@@ -289,6 +300,7 @@ data: {
       "Kill.ftl"
       "LoadData.ftl"
       "Call.ftl"
+      "Tenant.ftl"
     ]
 
     includePosixOperators: false
