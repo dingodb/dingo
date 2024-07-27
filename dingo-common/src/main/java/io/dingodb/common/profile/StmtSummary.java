@@ -172,7 +172,7 @@ public class StmtSummary {
             }
         }
         if (tableList.isEmpty() && profile.getFullyTableList() != null) {
-            tableList.addAll(profile.getFullyTableList());
+            profile.getFullyTableList().forEach(tab -> tableList.add(tab));
         }
 
         this.statementType = profile.getStatementType();
