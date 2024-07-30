@@ -45,6 +45,7 @@ import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.calcite.stats.StatsOperator;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
@@ -560,7 +561,12 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw new RuntimeException("Regular tenants are unable to create tenant.");
         }
         if (tenantService.getTenant(createT.name) == null) {
-            tenantService.createTenant(createT.name);
+            Tenant tenant = Tenant.builder()
+                .name(createT.name)
+                .remarks(createT.remarks)
+                .createdTime(System.currentTimeMillis())
+                .build();
+            tenantService.createTenant(tenant);
         } else if (!createT.ifNotExists) {
             throw SqlUtil.newContextException(
                 createT.getParserPosition(),

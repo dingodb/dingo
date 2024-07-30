@@ -26,9 +26,11 @@ import lombok.Data;
 public class Tenant {
     private long id;
     private String name;
-    private String comment;
-    private long createTimestamp;
-    private long updateTimestamp;
+    private String remarks;
+    private long createdTime;
+    private long updatedTime;
+    private boolean isDelete;
+
 
     public Tenant() {
 

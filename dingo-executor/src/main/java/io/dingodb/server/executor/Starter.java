@@ -55,7 +55,7 @@ public class Starter {
     private String config;
 
     @Parameter(names = "--tenant", description = "Tenant id.", order = 2)
-    private long tenant = 0;
+    private Long tenant;
 
     public static void main(String[] args) throws Exception {
         Starter starter = new Starter();
@@ -70,9 +70,13 @@ public class Starter {
             return;
         }
         DingoConfiguration.parse(config);
-        String tenantStr = System.getenv().get("tenant");
-        if (tenantStr != null) {
-            tenant = Long.parseLong(tenantStr);
+        if (tenant == null) {
+            String tenantStr = System.getenv().get("tenant");
+            if (tenantStr != null) {
+                tenant = Long.parseLong(tenantStr);
+            } else {
+                tenant = 0L;
+            }
         }
         TenantConstant.tenant(tenant);
         CommonId serverId = ClusterService.DEFAULT_INSTANCE.getServerId(DingoConfiguration.location());
@@ -86,6 +90,7 @@ public class Starter {
         }
         Object tenantObj = Optional.mapOrGet(InfoSchemaService.root(), __ -> __.getTenant(tenant), () -> null);
         if (tenantObj == null) {
+            log.error("The tenant: {} was not found.", tenant);
             return;
         }
         PrepareMeta.prepare(io.dingodb.store.proxy.Configuration.coordinators());
