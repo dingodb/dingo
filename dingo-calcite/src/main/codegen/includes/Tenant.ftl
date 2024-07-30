@@ -19,12 +19,16 @@ SqlCreate SqlCreateTenant(Span s, boolean replace) :
 {
     final boolean ifNotExists;
     String name;
+    String remarks = null;
 }
 {
     <TENANT> ifNotExists = IfNotExistsOpt()
     name = dingoIdentifier()
+    (
+     <REMARKS> <EQ> { remarks = getNextToken().image; }
+    )*
     {
-        return new SqlCreateTenant(s.end(this), replace, ifNotExists, name);
+        return new SqlCreateTenant(s.end(this), replace, ifNotExists, name, remarks);
     }
 }
 

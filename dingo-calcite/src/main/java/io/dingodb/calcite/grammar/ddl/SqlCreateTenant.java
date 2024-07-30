@@ -29,12 +29,14 @@ import java.util.List;
 public class SqlCreateTenant extends SqlCreate {
 
     public String name;
+    public String remarks;
 
     private static final SqlOperator operator = new SqlSpecialOperator("CREATE TENANT", SqlKind.OTHER_DDL);
 
-    public SqlCreateTenant(SqlParserPos pos, boolean replace, boolean ifNotExists, String name) {
+    public SqlCreateTenant(SqlParserPos pos, boolean replace, boolean ifNotExists, String name, String remarks) {
         super(operator, pos, replace, ifNotExists);
         this.name = name;
+        this.remarks = remarks;
     }
 
     @Override

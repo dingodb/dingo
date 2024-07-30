@@ -199,6 +199,7 @@ data: {
       "REGIONS"
       "TENANT"
       "TENANTS"
+      "REMARKS"
     ]
 
     # List of non-reserved keywords to add;
@@ -507,6 +508,7 @@ data: {
     "QUARTERS"
     "READ"
     "RELATIVE"
+    "REMARKS"
     "REPEATABLE"
     "REPLACE"
     "REPLICA"

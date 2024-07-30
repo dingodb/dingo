@@ -57,7 +57,7 @@ public class TenantService implements io.dingodb.meta.TenantService {
     }
 
     @Override
-    public boolean createTenant(@NonNull String name) {
+    public boolean createTenant(@NonNull Tenant tenant) {
         Long tenantId = coordinatorService.createIds(
             tso(),
             CreateIdsRequest.builder()
@@ -65,9 +65,10 @@ public class TenantService implements io.dingodb.meta.TenantService {
                 .count(1)
                 .build()
         ).getIds().get(0);
+        tenant.setId(tenantId);
         return infoSchemaService.createTenant(
             tenantId,
-            Tenant.builder().id(tenantId).name(name).createTimestamp(System.currentTimeMillis()).build()
+            tenant
         );
     }
 
@@ -79,7 +80,7 @@ public class TenantService implements io.dingodb.meta.TenantService {
         }
         return infoSchemaService.updateTenant(
             tenantId,
-            Tenant.builder().id(tenantId).name(newName).updateTimestamp(System.currentTimeMillis()).build()
+            Tenant.builder().id(tenantId).name(newName).updatedTime(System.currentTimeMillis()).build()
         );
     }
 

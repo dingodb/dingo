@@ -28,7 +28,7 @@ public interface TenantService {
         return TenantServiceProvider.getDefault().get();
     }
 
-    boolean createTenant(@NonNull String name);
+    boolean createTenant(@NonNull Tenant tenant);
 
     void dropTenant(@NonNull String name);
 
