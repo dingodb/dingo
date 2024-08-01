@@ -23,11 +23,12 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Calendar;
 
-public class MysqlByteUtil {
+public final class MysqlByteUtil {
+    private MysqlByteUtil() {
+    }
+
     public static int bytesToIntLittleEndian(byte[] bytes) {
-        // byte数组中序号小的在右边
         return bytes[0] & 0xFF | //
             (bytes[1] & 0xFF) << 8 | //
             (bytes[2] & 0xFF) << 16 | //
@@ -35,7 +36,6 @@ public class MysqlByteUtil {
     }
 
     public static int bytesToIntBigEndian(byte[] bytes) {
-        // byte数组中序号大的在右边
         return bytes[3] & 0xFF | //
             (bytes[2] & 0xFF) << 8 | //
             (bytes[1] & 0xFF) << 16 | //
@@ -81,6 +81,19 @@ public class MysqlByteUtil {
 
     public static short bytesToShortBigEndian(byte[] bytes) {
         return (short) (((bytes[0] << 8) | bytes[1] & 0xff));
+    }
+
+    public static byte[] longToBytesBigEndian(long n) {
+        byte[] b = new byte[8];
+        b[7] = (byte) (n & 0xff);
+        b[6] = (byte) (n >> 8  & 0xff);
+        b[5] = (byte) (n >> 16 & 0xff);
+        b[4] = (byte) (n >> 24 & 0xff);
+        b[3] = (byte) (n >> 32 & 0xff);
+        b[2] = (byte) (n >> 40 & 0xff);
+        b[1] = (byte) (n >> 48 & 0xff);
+        b[0] = (byte) (n >> 56 & 0xff);
+        return b;
     }
 
     public static long bytesToLongLittleEndian(byte[] bytes) {

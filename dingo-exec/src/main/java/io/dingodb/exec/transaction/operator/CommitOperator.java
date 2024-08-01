@@ -34,6 +34,7 @@ import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.base.TxnLocalData;
+import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.params.CommitParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
@@ -102,7 +103,7 @@ public class CommitOperator extends TransactionOperator {
                 }
             }
             if (tableId.type == CommonId.CommonType.INDEX) {
-                IndexTable indexTable = TransactionUtil.getIndexDefinitions(tableId);
+                IndexTable indexTable = (IndexTable) TransactionManager.getIndex(txnId, tableId);
                 if (indexTable.indexType.isVector) {
                     KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
                     Object[] decodeKey = codec.decodeKeyPrefix(key);

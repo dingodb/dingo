@@ -16,9 +16,7 @@
 
 package io.dingodb.calcite;
 
-import io.dingodb.calcite.schema.DingoRootSchema;
-import io.dingodb.calcite.utils.TableUtils;
-import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.meta.entity.Column;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptTable;
@@ -57,7 +55,7 @@ class DingoInitializerExpressionFactory extends NullInitializerExpressionFactory
     private final SqlOperatorTable operatorTable;
 
     private DingoInitializerExpressionFactory() {
-        operatorTable = new DingoParserContext(DingoRootSchema.DEFAULT_SCHEMA_NAME)
+        operatorTable = new DingoParserContext(RootSnapshotSchema.DEFAULT_SCHEMA_NAME)
             .getSqlValidator()
             .getOperatorTable();
     }

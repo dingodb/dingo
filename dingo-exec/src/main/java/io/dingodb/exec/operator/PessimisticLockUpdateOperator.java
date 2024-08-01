@@ -36,6 +36,7 @@ import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PessimisticLockUpdateParam;
 import io.dingodb.exec.transaction.base.TxnLocalData;
+import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.MetaService;
@@ -99,7 +100,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
             boolean calcPartId = false;
             Object[] oldIndexTuple = tuple;
             if (context.getIndexId() != null) {
-                Table indexTable = MetaService.root().getTable(context.getIndexId());
+                Table indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
                 List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
                     .map(Column::getName)
                     .collect(Collectors.toList()));
@@ -113,7 +114,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                     tuple = columnIndices.stream().map(i -> finalNewIndexTuple[i]).toArray();
                 }
                 schema = indexTable.tupleType();
-                IndexTable index = TransactionUtil.getIndexDefinitions(tableId);
+                IndexTable index = (IndexTable) TransactionManager.getIndex(txnId, tableId);
                 if (index.indexType.isVector) {
                     isVector = true;
                 }

@@ -16,7 +16,7 @@
 
 package io.dingodb.test;
 
-import io.dingodb.calcite.schema.DingoRootSchema;
+import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.meta.MetaService;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.dsl.run.exec.SqlExecContext;
@@ -35,7 +35,7 @@ import static io.dingodb.test.dsl.builder.SqlTestCaseJavaBuilder.file;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class QueryMetaDataTest {
-    private static final String SCHEMA_NAME = DingoRootSchema.DEFAULT_SCHEMA_NAME;
+    private static final String SCHEMA_NAME = RootSnapshotSchema.DEFAULT_SCHEMA_NAME;
 
     private static SqlExecContext context;
 
@@ -78,7 +78,7 @@ public class QueryMetaDataTest {
                     new String[]{"TABLE_SCHEM", "TABLE_CATALOG"}
                 )
                 .isRecords(Collections.singletonList(
-                    new Object[]{DingoRootSchema.DEFAULT_SCHEMA_NAME, null}
+                    new Object[]{RootSnapshotSchema.DEFAULT_SCHEMA_NAME, null}
                 ));
         }
     }

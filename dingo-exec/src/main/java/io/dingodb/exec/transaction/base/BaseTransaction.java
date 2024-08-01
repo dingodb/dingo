@@ -22,6 +22,7 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.MdcUtils;
 import io.dingodb.common.profile.CommitProfile;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
@@ -32,6 +33,7 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.net.Channel;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
@@ -89,6 +91,7 @@ public abstract class BaseTransaction implements ITransaction {
     protected AtomicBoolean cancel;
     protected AtomicBoolean primaryKeyPreWrite;
     protected CommitProfile commitProfile;
+    protected InfoSchema is;
 
     protected CompletableFuture<Void> finishedFuture = new CompletableFuture<>();
 
@@ -150,11 +153,7 @@ public abstract class BaseTransaction implements ITransaction {
     }
 
     protected static void sleep() {
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException ex) {
-            throw new RuntimeException(ex);
-        }
+        Utils.sleep(100);
     }
 
     public void cleanUp(JobManager jobManager) {

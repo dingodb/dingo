@@ -21,6 +21,7 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.config.VariableConfiguration;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Utils;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.store.proxy.Configuration;
 import lombok.experimental.Delegate;
@@ -47,6 +48,9 @@ public class AutoIncrementService {
             .orElseThrow("The config autoIncrementCacheCount must be a positive integer greater than 0.");
 
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
+        while (!infoSchemaService.prepare()) {
+            Utils.sleep(1000L);
+        }
         Map<String, String> globalVariableMap = infoSchemaService.getGlobalVariables();
 
         Integer increment = Optional.ofNullable(DingoConfiguration.instance().getVariable())

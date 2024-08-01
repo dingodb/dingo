@@ -61,11 +61,14 @@ import java.util.stream.IntStream;
 
 
 @Slf4j
-public class TransactionUtil {
+public final class TransactionUtil {
     public static final long lock_ttl = 60000L;
     public static final int max_pre_write_count = 1024;
     public static final String snapshotIsolation = "REPEATABLE-READ";
     public static final String readCommitted = "READ-COMMITTED";
+
+    private TransactionUtil() {
+    }
 
     public static int convertIsolationLevel(String transactionIsolation) {
         // for local test
@@ -91,8 +94,8 @@ public class TransactionUtil {
 
     public static CommonId singleKeySplitRegionId(CommonId tableId, CommonId txnId, byte[] key) {
         // 2、regin split
+        Table table = (Table) TransactionManager.getTable(txnId, tableId);
         MetaService root = MetaService.root();
-        Table table = root.getTable(tableId);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution = root.getRangeDistribution(tableId);
         if (Optional.ofNullable(table.getPartitionStrategy())
             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME)
@@ -110,7 +113,7 @@ public class TransactionUtil {
     public static Map<CommonId, List<byte[]>> multiKeySplitRegionId(CommonId tableId, CommonId txnId, List<byte[]> keys) {
         // 2、regin split
         MetaService root = MetaService.root();
-        Table table = root.getTable(tableId);
+        Table table = (Table) TransactionManager.getTable(txnId, tableId);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution = root.getRangeDistribution(tableId);
         final PartitionService ps = PartitionService.getService(
             Optional.ofNullable(table.getPartitionStrategy())
@@ -125,21 +128,8 @@ public class TransactionUtil {
         return partMap;
     }
 
-    public static IndexTable getIndexDefinitions(CommonId tableId) {
-        MetaService root = MetaService.root();
-        Table table = root.getTable(tableId);
-        if (table == null) {
-            LogUtils.error(log, "expect indexTable, bug is not, indexTableId:{}, act table is null", tableId);
-        } else if (!(table instanceof IndexTable)) {
-            LogUtils.error(log, "expect indexTable, bug is not, indexTableId:{}, act table:{}", tableId, table);
-            List<IndexTable> indexTableList = table.getIndexes();
-            if (indexTableList != null && !indexTableList.isEmpty()) {
-                indexTableList.forEach(indexTable -> {
-                    LogUtils.error(log, "expect indexTable, bug is not, tableId:{}, loop indexId:{}", tableId, indexTable.getTableId());
-                });
-            }
-        }
-        return (IndexTable) table;
+    public static IndexTable getIndexDefinitions(CommonId txnId, CommonId tableId) {
+        return (IndexTable) TransactionManager.getIndex(txnId, tableId);
     }
     public static List<byte[]> mutationToKey(List<Mutation> mutations) {
         List<byte[]> keys = new ArrayList<>(mutations.size());
@@ -294,8 +284,8 @@ public class TransactionUtil {
             .orElse("");
     }
 
-    public static String duplicateEntryKey(CommonId tableId, byte[] key) {
-        Table table = MetaService.root().getTable(tableId);
+    public static String duplicateEntryKey(CommonId tableId, byte[] key, CommonId txnId) {
+        Table table = (Table) TransactionManager.getTable(txnId, tableId);
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
         TupleMapping keyMapping = table.keyMapping();
         return joinPrimaryKey(codec.decodeKeyPrefix(key), keyMapping);

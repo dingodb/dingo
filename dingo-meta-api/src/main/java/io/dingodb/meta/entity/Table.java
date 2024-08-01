@@ -26,9 +26,9 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -39,6 +39,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+@Slf4j
 @Getter
 @ToString
 @SuperBuilder
@@ -54,7 +55,6 @@ public class Table {
     @EqualsAndHashCode.Include
     public final String name;
 
-    @Setter
     @JsonProperty
     public final List<Column> columns;
 

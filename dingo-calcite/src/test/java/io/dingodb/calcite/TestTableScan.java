@@ -22,7 +22,7 @@ import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
 import io.dingodb.calcite.rel.logical.LogicalDingoRoot;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.rel.dingo.DingoScanWithRelOp;
-import io.dingodb.calcite.schema.DingoSchema;
+import io.dingodb.calcite.schema.SubSnapshotSchema;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
@@ -66,8 +66,8 @@ public class TestTableScan {
     public void setup() {
         // Create each time to clean the statistic info.
         parser = new DingoParser(context);
-        DingoSchema dingoSchema = (DingoSchema) context.getDefaultSchema().schema;
-        currentLocation = dingoSchema.getMetaService().currentLocation();
+        //SubSnapshotSchema dingoSchema = (SubSnapshotSchema) context.getDefaultSchema().schema;
+        currentLocation = new Location("host1", 26535);
         //tableTestPartNum = dingoSchema.getMetaService().getParts(MockMetaServiceProvider.TABLE_NAME).size();
         // The current version runs all operations in the same task.
         tableTestPartNum = 1;

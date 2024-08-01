@@ -59,6 +59,7 @@ import io.dingodb.expr.runtime.expr.Exprs;
 import io.dingodb.expr.runtime.type.TupleType;
 import io.dingodb.expr.coding.CodingFlag;
 import io.dingodb.expr.coding.RelOpCoder;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
@@ -122,7 +123,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             if (metaService == null) {
                 return;
             }
-            Table td = metaService.getTable(tableName);
+            Table td = (Table) DdlService.root().getTable(schemaName, tableName);
             if (td == null) {
                 return;
             }

@@ -17,7 +17,9 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import lombok.Setter;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -72,7 +74,8 @@ public class ShowCreateTableOperation extends QueryOperation {
     }
 
     private String getCreateTable() {
-        Table table = metaService.getTable(tableName);
+        InfoSchema is = DdlService.root().getIsLatest();
+        Table table = is.getTable(schemaName, tableName);
         if (table == null) {
             throw new RuntimeException("Table " + tableName + " doesn't exist");
         }

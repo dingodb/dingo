@@ -17,7 +17,7 @@
 package io.dingodb.test.dsl;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.schema.DingoRootSchema;
+import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.test.dsl.builder.SqlTestCaseJavaBuilder;
 
 public class BasicQueryCases extends SqlTestCaseJavaBuilder {
@@ -67,7 +67,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
         test("Select all with schema prefixed")
             .use("table", "i4k_vs_f80")
             .step(
-                "select * from " + DingoRootSchema.DEFAULT_SCHEMA_NAME + ".{table}",
+                "select * from " + RootSnapshotSchema.DEFAULT_SCHEMA_NAME + ".{table}",
                 csv(file("i4k_vs_f80/data.csv"))
             );
 

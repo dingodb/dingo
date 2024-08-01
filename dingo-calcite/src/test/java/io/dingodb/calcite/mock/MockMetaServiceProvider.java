@@ -16,7 +16,7 @@
 
 package io.dingodb.calcite.mock;
 
-import io.dingodb.calcite.schema.DingoRootSchema;
+import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.table.TableDefinition;
@@ -28,7 +28,7 @@ import java.io.IOException;
 
 public class MockMetaServiceProvider {
 
-    public static final String SCHEMA_NAME = DingoRootSchema.DEFAULT_SCHEMA_NAME;
+    public static final String SCHEMA_NAME = RootSnapshotSchema.DEFAULT_SCHEMA_NAME;
     public static final String TABLE_NAME = "TEST";
     public static final Location LOC_0 = new Location("host1", 26535);
     public static final Location LOC_1 = new Location("host1", 26535);

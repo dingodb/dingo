@@ -143,7 +143,7 @@ public class LocalMetaService implements MetaService {
     }
 
     @Override
-    public void createTables(@NonNull TableDefinition tableDefinition,
+    public long createTables(@NonNull TableDefinition tableDefinition,
                              @NonNull List<TableDefinition> indexTableDefinitions) {
         CommonId tableId = new CommonId(TABLE, id.seq, tableSeq.incrementAndGet());
         tableDefinitions.put(tableId, tableDefinition);
@@ -159,6 +159,7 @@ public class LocalMetaService implements MetaService {
             }
             createDistribution(tableId, start, null, codec);
         }
+        return tableId.seq;
     }
 
     @Override
@@ -178,13 +179,13 @@ public class LocalMetaService implements MetaService {
     }
 
     @Override
-    public boolean truncateTable(@NonNull String tableName) {
+    public long truncateTable(@NonNull String tableName, long tableEntityId) {
         TableDefinition tableDefinition = tableDefinitions.get(getTableId(tableName));
         if (tableDefinition != null) {
             dropTable(tableName);
         }
         createTables(tableDefinition, Collections.emptyList());
-        return true;
+        return 0;
     }
 
     public CommonId getTableId(@NonNull String tableName) {

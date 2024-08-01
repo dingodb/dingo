@@ -39,7 +39,7 @@ import java.util.List;
 @Slf4j
 public final class PrivilegeVerify {
 
-    static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+    static ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
 
     static {
         isVerify = SecurityConfiguration.isVerify();
@@ -163,6 +163,9 @@ public final class PrivilegeVerify {
             return true;
         }
         if (DingoRole.SQLLINE == env.getRole()) {
+            return true;
+        }
+        if ("root".equalsIgnoreCase(user)) {
             return true;
         }
         return StringUtils.isBlank(user);

@@ -21,16 +21,18 @@ import io.dingodb.calcite.stats.StatsTaskState;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Slf4j
 public class TableModifyMonitorTask extends StatsOperator implements Runnable {
@@ -46,24 +48,22 @@ public class TableModifyMonitorTask extends StatsOperator implements Runnable {
         MetaService metaService = MetaService.root();
         List<Object[]> analyzeTaskList = new ArrayList<>();
         Map<CommonId, Long> commitCountMap = metaService.getTableCommitCount();
-        Map<String, MetaService> subMetaServiceMap = metaService.getSubMetaServices();
-        subMetaServiceMap.forEach((key, subMetaService) -> {
+        InfoSchema is = DdlService.root().getIsLatest();
+        is.getSchemaMap().values().forEach(schemaTables -> {
+            String key = schemaTables.getSchemaInfo().getName();
             if (key.equalsIgnoreCase("mysql")
                 || key.equalsIgnoreCase("information_schema")) {
                 return;
             }
-            Set<Table> tables = subMetaService.getTables();
+            Collection<Table> tables = schemaTables.getTables().values();
             tables.forEach(t -> {
                 CommonId commonId = t.tableId;
                 Long commitCount = 0L;
                 if (commitCountMap.containsKey(commonId)) {
                     commitCount = commitCountMap.get(commonId);
                 }
-                Double totalCount = subMetaService.getTableStatistic(t.name).getRowCount();
+                Double totalCount = 0D;
                 if (autoAnalyzeTriggerPolicy(key, t.name, commitCount)) {
-                    if (totalCount > 0 && commitCount > totalCount) {
-                        commitCount = totalCount.longValue();
-                    }
                     analyzeTaskList.add(generateAnalyzeTask(key, t.name, totalCount.longValue(), commitCount));
                 }
             });

@@ -18,8 +18,9 @@ package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.grammar.dql.SqlShowColumns;
 import io.dingodb.common.util.SqlLikeUtils;
-import io.dingodb.meta.MetaService;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import lombok.Setter;
 import org.apache.calcite.sql.SqlNode;
@@ -34,8 +35,6 @@ public class ShowColumnsOperation extends QueryOperation {
     @Setter
     public SqlNode sqlNode;
 
-    private MetaService metaService;
-
     private String schemaName;
     private String tableName;
 
@@ -44,7 +43,6 @@ public class ShowColumnsOperation extends QueryOperation {
     public ShowColumnsOperation(SqlNode sqlNode) {
         SqlShowColumns showColumns = (SqlShowColumns) sqlNode;
         this.schemaName = showColumns.schemaName;
-        this.metaService = MetaService.root().getSubMetaService(schemaName);
         this.tableName = showColumns.tableName;
         this.sqlLikePattern = showColumns.sqlLikePattern;
     }
@@ -72,7 +70,8 @@ public class ShowColumnsOperation extends QueryOperation {
     }
 
     private List<List<String>> getColumnFields() {
-        Table table = metaService.getTable(tableName);
+        InfoSchema is = DdlService.root().getIsLatest();
+        Table table = is.getTable(schemaName, tableName);
         if (table == null) {
             throw new RuntimeException("Table " + tableName + " doesn't exist");
         }

@@ -17,6 +17,7 @@
 package io.dingodb.meta.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.NullableType;
@@ -25,6 +26,8 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
+
+import java.io.Serializable;
 
 @Getter
 @Builder
@@ -66,12 +69,32 @@ public class Column {
     @JsonProperty
     public final String defaultValueExpr;
 
+    @JsonProperty
+    public SchemaState schemaState;
+
     public boolean isNullable() {
         return type instanceof NullableType && ((NullableType) type).isNullable();
     }
 
     public boolean isPrimary() {
         return primaryKeyIndex >= 0;
+    }
+
+    public Column copy() {
+        return Column.builder()
+            .name(name)
+            .primaryKeyIndex(primaryKeyIndex)
+            .type(type)
+            .scale(scale)
+            .precision(precision)
+            .state(state)
+            .autoIncrement(autoIncrement)
+            .defaultValueExpr(defaultValueExpr)
+            .sqlTypeName(sqlTypeName)
+            .elementTypeName(elementTypeName)
+            .comment(comment)
+            .schemaState(schemaState)
+            .build();
     }
 
 }

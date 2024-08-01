@@ -131,7 +131,7 @@ public final class DingoDriverParser extends DingoParser {
     @Getter
     private CommitProfile commitProfile;
     @Getter
-    private DingoAudit dingoAudit;
+    private final DingoAudit dingoAudit;
 
     public DingoDriverParser(@NonNull DingoConnection connection) {
         super(connection.getContext());
@@ -271,6 +271,7 @@ public final class DingoDriverParser extends DingoParser {
         JavaTypeFactory typeFactory = connection.getTypeFactory();
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
         planProfile.setStmtType(sqlNode.getKind().lowerName);
+
         // for compatible mysql protocol
         MysqlSignature mysqlSignature = getMysqlSignature(SqlUtil.checkSql(sqlNode, sql), sqlNode, typeFactory, cursorFactory);
         if (mysqlSignature != null) {
@@ -319,6 +320,28 @@ public final class DingoDriverParser extends DingoParser {
             explain = (SqlExplain) sqlNode;
             sqlNode = explain.getExplicandum();
         }
+
+        long startTs;
+        CommonId txn_Id;
+        boolean pessimisticTxn;
+        ITransaction transaction;
+        boolean newTxn = false;
+        if (connection.getTransaction() != null) {
+            transaction = connection.getTransaction();
+            txn_Id = transaction.getTxnId();
+        } else {
+            // autocommit is true use current txn mode
+            transaction = connection.createTransaction(
+                "pessimistic".equalsIgnoreCase(connection.getClientInfo("txn_mode")) ?
+                    TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC,
+                connection.getAutoCommit());
+            txn_Id = transaction.getTxnId();
+            if (pointTs > 0) {
+                transaction.setPointStartTs(pointTs);
+            }
+            newTxn = true;
+        }
+        startTs = transaction.getStartTs();
         SqlValidator validator = getSqlValidator();
         try {
             sqlNode = validator.validate(sqlNode);
@@ -352,32 +375,15 @@ public final class DingoDriverParser extends DingoParser {
         Location currentLocation = MetaService.root().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
         Set<RelOptTable> tables = useTables(relNode, sqlNode);
-
         boolean isTxn = checkEngine(sqlNode, tables, connection.getTransaction(), planProfile);
-        // get startTs for jobSeqId, if transaction is not null ,transaction startTs is jobDomainId
-        long startTs;
-        CommonId txn_Id;
-        boolean pessimisticTxn;
-        ITransaction transaction;
-        if (connection.getTransaction() != null) {
-            transaction = connection.getTransaction();
-        } else {
-            // autocommit is true use current txn mode
-            transaction = connection.createTransaction(
-                isTxn ? ("pessimistic".equalsIgnoreCase(connection.getClientInfo("txn_mode")) ?
-                    TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC) : NONE,
-                connection.getAutoCommit());
-            if (pointTs > 0) {
-                transaction.setPointStartTs(pointTs);
-            }
-        }
+        transaction = connection.initTransaction(isTxn, newTxn);
+
         // get in transaction for mysql update/insert/delete res ok packet
         if (transaction.getType() != NONE) {
             inTransaction = true;
         }
         // mysql protocol dml response ok need in transaction flag
-        startTs = transaction.getStartTs();
-        txn_Id = transaction.getTxnId();
+
         pessimisticTxn = transaction.isPessimistic();
         if (pessimisticTxn) {
             transaction.setForUpdateTs(jobSeqId);
@@ -490,7 +496,9 @@ public final class DingoDriverParser extends DingoParser {
                 statementType = Meta.StatementType.SELECT;
                 if (queryOperation instanceof ShowProcessListOperation) {
                     ShowProcessListOperation processListOperation = (ShowProcessListOperation) queryOperation;
-                    processListOperation.init(getProcessInfoList(ExecutionEnvironment.connectionMap));
+                    List<ProcessInfo> processInfoList
+                      = getProcessInfoList(ExecutionEnvironment.INSTANCE.sessionUtil.connectionMap);
+                    processListOperation.init(processInfoList);
                 }
             } else if (sqlNode.getKind() == SqlKind.INSERT) {
                 columns = ((DmlOperation)operation).columns(typeFactory);
@@ -498,19 +506,21 @@ public final class DingoDriverParser extends DingoParser {
                 this.execProfile = new ExecProfile("dml");
                 ((DmlOperation) operation).doExecute(execProfile);
             } else {
+                Map<String, Connection> connectionMap
+                    = ExecutionEnvironment.INSTANCE.sessionUtil.connectionMap;
                 if (operation instanceof KillConnection) {
                     KillConnection killConnection = (KillConnection) operation;
                     String threadId = killConnection.getThreadId();
-                    if (ExecutionEnvironment.connectionMap.containsKey(threadId)) {
-                        killConnection.initConnection(ExecutionEnvironment.connectionMap.get(threadId));
-                    } else if (ExecutionEnvironment.connectionMap.containsKey(killConnection.getMysqlThreadId())) {
+                    if (connectionMap.containsKey(threadId)) {
+                        killConnection.initConnection(connectionMap.get(threadId));
+                    } else if (connectionMap.containsKey(killConnection.getMysqlThreadId())) {
                         killConnection.initConnection(
-                            ExecutionEnvironment.connectionMap.get(killConnection.getMysqlThreadId())
+                            connectionMap.get(killConnection.getMysqlThreadId())
                         );
                     }
                 } else if (operation instanceof KillQuery) {
                     KillQuery killQuery = (KillQuery) operation;
-                    killQuery.init(ExecutionEnvironment.connectionMap);
+                    killQuery.init(connectionMap);
                 }
                 if (sqlNode instanceof SqlCommit) {
                     if (connection.getTransaction() != null) {
@@ -782,7 +792,7 @@ public final class DingoDriverParser extends DingoParser {
                                        ITransaction transaction,
                                        PlanProfile planProfile) {
         boolean isTxn = false;
-        boolean isNotTransactionTable = false;
+//        boolean isNotTransactionTable = false;
         // for UT test
         if ((sqlNode.getKind() == SqlKind.SELECT || sqlNode.getKind() == SqlKind.DELETE) && tables.isEmpty()) {
             return false;
@@ -810,17 +820,17 @@ public final class DingoDriverParser extends DingoParser {
                 tableList.add(name);
             }
             if (engine == null || !engine.contains("TXN")) {
-                isNotTransactionTable = true;
+//                isNotTransactionTable = true;
             } else {
                 isTxn = true;
             }
-            if (isTxn && isNotTransactionTable) {
-                throw new RuntimeException("Transactional tables cannot be mixed with non-transactional tables");
-            }
-            if (transaction != null && transaction.getType() != NONE && isNotTransactionTable) {
-                LogUtils.info(log, "transaction txnId is {}, table name is {}", transaction.getTxnId(), name);
-                throw new RuntimeException("Non-transaction tables cannot be used in transactions");
-            }
+//            if (isTxn && isNotTransactionTable) {
+//                throw new RuntimeException("Transactional tables cannot be mixed with non-transactional tables");
+//            }
+//            if (transaction != null && transaction.getType() != NONE && isNotTransactionTable) {
+//                LogUtils.info(log, "transaction txnId is {}, table name is {}", transaction.getTxnId(), name);
+//                throw new RuntimeException("Non-transaction tables cannot be used in transactions");
+//            }
         }
         return isTxn;
     }

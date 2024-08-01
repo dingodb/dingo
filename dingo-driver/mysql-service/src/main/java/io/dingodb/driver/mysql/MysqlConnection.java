@@ -79,7 +79,7 @@ public class MysqlConnection {
                     connection.close();
                 }
             }
-            Map connectionMap = ExecutionEnvironment.connectionMap;
+            Map connectionMap = ExecutionEnvironment.INSTANCE.sessionUtil.connectionMap;
             connectionMap.remove("mysql:" + threadId);
         } catch (Exception e) {
             e.printStackTrace();

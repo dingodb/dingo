@@ -16,6 +16,7 @@
 
 package io.dingodb.web.bean;
 
+import io.dingodb.common.util.Utils;
 import io.dingodb.sdk.service.cluster.ClusterServiceClient;
 import io.dingodb.sdk.service.connector.CoordinatorServiceConnector;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
@@ -80,14 +81,14 @@ public class MonitorBean {
                 if ((line = br.readLine()) != null) {
                     logCache.put(line, line);
                 } else {
-                    Thread.sleep(1000L);
+                    Utils.sleep(1000);
                 }
                 long end = System.currentTimeMillis();
                 if (end - start > 3600000) {
                     break;
                 }
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (Exception e) {
             log.info(e.getMessage(), e);
         } finally {
             try {

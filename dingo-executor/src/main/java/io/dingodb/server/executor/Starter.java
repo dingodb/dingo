@@ -34,6 +34,7 @@ import io.dingodb.net.MysqlNetServiceProvider;
 import io.dingodb.net.NetService;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.scheduler.SchedulerService;
+import io.dingodb.server.executor.ddl.DdlServer;
 import io.dingodb.server.executor.prepare.PrepareMeta;
 import io.dingodb.server.executor.schedule.SafePointUpdateTask;
 import io.dingodb.server.executor.service.ClusterService;
@@ -94,7 +95,8 @@ public class Starter {
             return;
         }
         PrepareMeta.prepare(io.dingodb.store.proxy.Configuration.coordinators());
-        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
+
         env.setRole(DingoRole.EXECUTOR);
 
         NetService.getDefault().listenPort(DingoConfiguration.host(), DingoConfiguration.port());
@@ -110,16 +112,17 @@ public class Starter {
 
         SessionVariableWatched.getInstance().addObserver(new SessionVariableChangeWatcher());
 
-        // Initialize auto increment
-        AutoIncrementService.INSTANCE.resetAutoIncrement();
-
         SchedulerService schedulerService = SchedulerService.getDefault();
         schedulerService.init();
+        // Initialize auto increment
+        AutoIncrementService.INSTANCE.resetAutoIncrement();
 
         // TODO Use job/task implement api.
         ApiRegistry.getDefault().register(ShowLocksOperation.Api.class, new ShowLocksOperation.Api() { });
 
         SafePointUpdateTask.run();
+
+        DdlServer.startDispatchLoop();
     }
 
 }

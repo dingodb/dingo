@@ -22,6 +22,7 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Utils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
@@ -86,7 +87,7 @@ public class StoreKvTxn implements io.dingodb.store.api.transaction.StoreKvTxn {
     }
 
     public KeyValue get(byte[] key) {
-        long startTs = TsoService.getDefault().tso();;
+        long startTs = TsoService.getDefault().tso();
         List<byte[]> keys = Collections.singletonList(key);
         TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
         List<KeyValue> keyValueList = storeInstance.txnGet(startTs, keys, statementTimeout);
@@ -169,7 +170,7 @@ public class StoreKvTxn implements io.dingodb.store.api.transaction.StoreKvTxn {
                     storeInstanceNew.txnPreWrite(txnPreWrite, statementTimeout);
                     prewriteResult = true;
                 } catch (RegionSplitException e1) {
-                    sleep100();
+                    Utils.sleep(100);
                     LogUtils.error(log, "preWrite primary region split, retry count:" + i);
                 }
             }
@@ -227,7 +228,7 @@ public class StoreKvTxn implements io.dingodb.store.api.transaction.StoreKvTxn {
                     storeInstanceNew.txnCommit(commitRequest);
                     commitResult = true;
                 } catch (RegionSplitException e1) {
-                    sleep100();
+                    Utils.sleep(100);
                     LogUtils.error(log, "commit primary region split, retry count:" + i);
                 }
             }
@@ -235,14 +236,6 @@ public class StoreKvTxn implements io.dingodb.store.api.transaction.StoreKvTxn {
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
             return false;
-        }
-    }
-
-    private static void sleep100() {
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException ex) {
-            throw new RuntimeException(ex);
         }
     }
 

@@ -56,6 +56,7 @@ dependencies {
     implementation project(':dingo-driver:dingo-driver-host')
     implementation project(':dingo-driver:dingo-driver-client')
     implementation group: 'com.alibaba', name: 'fastjson', version: 'fastjson'.v()
+    implementation group: 'org.apache.commons', name: 'commons-pool2', version: 'commons-pool2'.v()
     testImplementation project(":dingo-store-local")
 }
 

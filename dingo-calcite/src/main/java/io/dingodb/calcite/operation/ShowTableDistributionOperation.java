@@ -20,7 +20,9 @@ import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import lombok.Setter;
@@ -72,8 +74,8 @@ public class ShowTableDistributionOperation extends QueryOperation {
     }
 
     private List<List<String>> getDistributions() {
-
-        Table table = metaService.getTable(tableName);
+        InfoSchema is = DdlService.root().getIsLatest();
+        Table table = is.getTable(usedSchemaName, tableName);
         if (table == null) {
             throw new RuntimeException("Table " + tableName + " doesn't exist");
         }

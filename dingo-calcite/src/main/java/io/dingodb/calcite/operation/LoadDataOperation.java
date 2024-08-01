@@ -19,6 +19,8 @@ package io.dingodb.calcite.operation;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.grammar.ddl.SqlLoadData;
 import io.dingodb.calcite.runtime.DingoResource;
+import io.dingodb.calcite.schema.RootCalciteSchema;
+import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
@@ -30,11 +32,13 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ImportFileConverter;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.transaction.api.LockType;
 import io.dingodb.transaction.api.TransactionService;
@@ -152,11 +156,11 @@ public class LoadDataOperation implements DmlOperation {
         this.schemaName = sqlLoadData.getSchemaName();
         this.lineStarting = sqlLoadData.getLineStarting();
         this.ignoreNum = sqlLoadData.getIgnoreNum();
-        metaService = MetaService.root().getSubMetaService(schemaName);
-        if (metaService == null) {
-            throw DingoResource.DINGO_RESOURCE.unknownSchema(schemaName).ex();
-        }
-        table = metaService.getTable(sqlLoadData.getTableName());
+        metaService = MetaService.root();
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getRootSchema().schema;
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        InfoSchema is = rootSnapshotSchema.getIs();
+        table = is.getTable(schemaName, sqlLoadData.getTableName());
         if (table == null) {
             throw DingoResource.DINGO_RESOURCE.unknownTable(schemaName + "." + sqlLoadData.getTableName()).ex();
         }
@@ -229,11 +233,7 @@ public class LoadDataOperation implements DmlOperation {
     @Override
     public Iterator<Object[]> getIterator() {
         while (!isDone) {
-            try {
-                Thread.sleep(1000L);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            Utils.sleep(1000L);
         }
         long insertCount = count.get();
         if (errMessage != null) {
@@ -386,7 +386,8 @@ public class LoadDataOperation implements DmlOperation {
     boolean refreshTxnId = false;
 
     public void insertWithTxn(Object[] tuples) {
-        Map<String, KeyValue> caches = ExecutionEnvironment.memoryCache
+        ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
+        Map<String, KeyValue> caches = env.memCacheFor2PC.memoryCache
             .computeIfAbsent(statementId, e -> new TreeMap<>());
         KeyValue keyValue = codec.encode(tuples);
 
@@ -448,7 +449,7 @@ public class LoadDataOperation implements DmlOperation {
                 cacheSize = caches.size();
                 caches.clear();
             } finally {
-                ExecutionEnvironment.memoryCache.remove(statementId);
+                env.memCacheFor2PC.memoryCache.remove(statementId);
             }
             long end = System.currentTimeMillis();
             LogUtils.debug(log, "insert txn batch size:" + cacheSize + ", cost time:" + (end - start) + "ms");
@@ -476,13 +477,14 @@ public class LoadDataOperation implements DmlOperation {
 
     public void endWriteWithTxn() {
         long start = System.currentTimeMillis();
+        ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
         try {
             CommonId txnId = getTxnId();
             long startTs = txnId.seq;
             TxnImportDataOperation txnImportDataOperation = new TxnImportDataOperation(
                 startTs, txnId, txnRetry, txnRetryCnt, timeOut
             );
-            Map<String, KeyValue> caches = ExecutionEnvironment.memoryCache
+            Map<String, KeyValue> caches = env.memCacheFor2PC.memoryCache
                 .computeIfAbsent(statementId, e -> new TreeMap<>());
             List<Object[]> tupleList = getCacheTupleList(caches, txnId);
             if (tupleList.isEmpty()) {
@@ -492,7 +494,7 @@ public class LoadDataOperation implements DmlOperation {
             count.addAndGet(result);
             caches.clear();
         } finally {
-            ExecutionEnvironment.memoryCache.remove(statementId);
+            env.memCacheFor2PC.memoryCache.remove(statementId);
         }
         long end = System.currentTimeMillis();
         LogUtils.debug(log, "insert txn end batch, cost time:" + (end - start) + "ms");
@@ -514,11 +516,7 @@ public class LoadDataOperation implements DmlOperation {
         if (exceptionRetries > maxRetries) {
             return false;
         }
-        try {
-            Thread.sleep(retryInterval);
-        } catch (InterruptedException ex) {
-            throw new RuntimeException(ex);
-        }
+        Utils.sleep(retryInterval);
         exceptionRetries ++;
         return true;
     }

@@ -17,7 +17,10 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.InfoSchema;
+import io.dingodb.meta.entity.Table;
 import org.apache.calcite.sql.SqlNode;
 
 import java.util.ArrayList;
@@ -42,7 +45,9 @@ public class ShowNextAutoIncrementOperation extends QueryOperation {
     @Override
     public Iterator getIterator() {
         List<Object[]> tuples = new ArrayList<>();
-        Long nextAutoIncrement = metaService.getNextAutoIncrement(metaService.getTable(tableName).getTableId());
+        InfoSchema is = DdlService.root().getIsLatest();
+        Table table = is.getTable(schemaName, tableName);
+        Long nextAutoIncrement = metaService.getNextAutoIncrement(table.getTableId());
         Object[] values = new Object[]{nextAutoIncrement};
         tuples.add(values);
         return tuples.iterator();

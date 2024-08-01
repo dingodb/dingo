@@ -18,10 +18,9 @@ package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
-import io.dingodb.calcite.schema.DingoSchema;
+import io.dingodb.calcite.schema.SubSnapshotSchema;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.util.Optional;
 import io.dingodb.meta.TableStatistic;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
@@ -44,7 +43,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
@@ -55,7 +53,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
     @Getter
     private final List<String> names;
 
-    private final TableStatistic tableStatistic;
+    private TableStatistic tableStatistic;
 
     @Getter
     @EqualsAndHashCode.Include
@@ -81,8 +79,13 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
         return table.getTableId();
     }
 
-    public DingoSchema getSchema() {
-        return (DingoSchema) context.getSchemaByNames(names).schema;
+    public SubSnapshotSchema getSchema() {
+        try {
+            return (SubSnapshotSchema) context.getSchemaByNames(names).schema;
+        } catch (Exception e) {
+            System.out.println("ss");
+            return null;
+        }
     }
 
     public CommonId getIndexId(String name) {
@@ -132,7 +135,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
         return new Statistic() {
             @Override
             public Double getRowCount() {
-                return tableStatistic.getRowCount();
+                return 100D;
             }
 
             @Override

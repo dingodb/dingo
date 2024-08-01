@@ -45,7 +45,6 @@ import io.dingodb.expr.runtime.expr.Expr;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
-import io.dingodb.tso.TsoService;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
@@ -77,7 +76,7 @@ public final class DingoIndexFullScanVisitFun {
         @NonNull IndexFullScan rel
     ) {
         final LinkedList<Vertex> outputs = new LinkedList<>();
-        MetaService metaService = MetaServiceUtils.getMetaService(rel.getTable());
+        MetaService metaService = MetaService.root();
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
 

@@ -26,7 +26,9 @@ import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.DocumentService;
@@ -73,6 +75,7 @@ import io.dingodb.store.api.transaction.exception.LockWaitException;
 import io.dingodb.store.api.transaction.exception.PrimaryMismatchException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.store.proxy.Configuration;
+import io.dingodb.store.service.InfoSchemaService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -232,7 +235,8 @@ public class TransactionStoreInstance {
 
     public static void getJoinedPrimaryKey(TxnPreWrite txnPreWrite, List<AlreadyExist> keysAlreadyExist) {
         CommonId tableId = LockExtraDataList.decode(txnPreWrite.getLockExtraDatas().get(0).getExtraData()).getTableId();
-        Table table = MetaService.root().getTable(tableId);
+        InfoSchemaService infoSchemaService = new InfoSchemaService(txnPreWrite.getStartTs());
+        Table table = infoSchemaService.getTableDef(tableId.domain, tableId.seq);
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
         AtomicReference<String> joinedKey = new AtomicReference<>("");
         TupleMapping keyMapping = table.keyMapping();

@@ -100,7 +100,10 @@ public final class Mapping {
             table.getTableType(),
             table.getRowFormat(),
             table.getCreateTime(),
-            table.getUpdateTime());
+            table.getUpdateTime(),
+            null,
+            null,
+            0);
     }
 
     public static io.dingodb.store.proxy.common.TableDefinition mapping(TableDefinition tableDefinition) {

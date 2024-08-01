@@ -16,7 +16,7 @@
 
 package io.dingodb.test;
 
-import io.dingodb.calcite.schema.DingoRootSchema;
+import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
@@ -42,10 +42,10 @@ public final class ConnectionFactory {
     }
 
     public static void initLocalEnvironment() throws Exception {
-        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
         env.setRole(DingoRole.JDBC);
-        env.setInfo("user", "root");
-        env.setInfo("password", "");
+        env.clientIdentity.setInfo("user", "root");
+        env.clientIdentity.setInfo("password", "");
 
         // Configure for local test.
         DingoConfiguration.parse(
@@ -68,7 +68,7 @@ public final class ConnectionFactory {
                 .build()
         );
         LocalMetaService metaService = LocalMetaService.ROOT;
-        metaService.createSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME);
+        metaService.createSubMetaService(RootSnapshotSchema.DEFAULT_SCHEMA_NAME);
         metaService.setRangeDistributions(defaultDistribution);
         LocalMetaService.setLocation(new FakeLocation(0, DingoConfiguration.port()));
     }

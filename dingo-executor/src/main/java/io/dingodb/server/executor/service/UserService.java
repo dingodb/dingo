@@ -28,21 +28,21 @@ import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.SchemaPrivDefinition;
 import io.dingodb.common.privilege.TablePrivDefinition;
 import io.dingodb.common.privilege.UserDefinition;
-import io.dingodb.common.session.SessionManager;
+import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Utils;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
-import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.service.StoreKvTxn;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
 import io.dingodb.verify.service.UserServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-import java.sql.Connection;
-import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -88,7 +88,11 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     private UserService() {
         try {
-            metaService = MetaService.root().getSubMetaService("MYSQL");
+            io.dingodb.meta.InfoSchemaService infoSchemaService = io.dingodb.meta.InfoSchemaService.root();
+            while (!infoSchemaService.prepare()) {
+                Utils.sleep(5000L);
+            }
+            metaService = MetaService.root();
             userTd = getTable(userTable);
             CommonId userTblId = userTd.getTableId();
             dbPrivTd = getTable(dbPrivilegeTable);
@@ -112,12 +116,16 @@ public class UserService implements io.dingodb.verify.service.UserService {
         }
     }
 
-    public Table getTable(String tableName) {
-        int times = 3;
+    public static Table getTable(String tableName) {
+        int times = 10;
+        DdlService ddlService = DdlService.root();
         while (times-- > 0) {
-            Table table = metaService.getTable(tableName);
-            if (table != null) {
-                return table;
+            InfoSchema is = ddlService.getIsLatest();
+            if (is != null) {
+                Table table = is.getTable("MYSQL", tableName);
+                if (table != null) {
+                    return table;
+                }
             }
             try {
                 Thread.sleep(10000L);
@@ -145,22 +153,15 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     @Override
     public void dropUser(UserDefinition userDefinition) {
-        Connection connection = null;
-        Statement statement = null;
-        try {
-            String condition = "user ='"+ userDefinition.getUser() +"' and host ='" + userDefinition.getHost() + "'";
-            connection = SessionManager.getInnerConnection();
-            connection.setAutoCommit(false);
-            statement = connection.createStatement();
-            statement.executeUpdate("delete from mysql.user where " + condition);
-            statement.executeUpdate("delete from mysql.db where " + condition);
-            statement.executeUpdate("delete from mysql.tables_priv where " + condition);
-            connection.commit();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            SessionManager.close(null, statement, connection);
-        }
+        String condition = "user ='" + userDefinition.getUser() + "' and host ='" + userDefinition.getHost() + "'";
+        String delUserSql = "delete from mysql.user where " + condition;
+        String delDbSql = "delete from mysql.db where " + condition;
+        String delTablesPrivSql = "delete from mysql.tables_priv where " + condition;
+        List<String> sqlList = new ArrayList<>();
+        sqlList.add(delUserSql);
+        sqlList.add(delDbSql);
+        sqlList.add(delTablesPrivSql);
+        SessionUtil.INSTANCE.executeUpdate(sqlList);
     }
 
     @Override
@@ -796,15 +797,6 @@ public class UserService implements io.dingodb.verify.service.UserService {
     public static void delete(StoreKvTxn store, KeyValueCodec codec, Object[] key) {
         try {
             store.del(codec.encodeKey(key));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static void deletePrefix(StoreInstance store, KeyValueCodec codec, Object[] key) {
-        try {
-            byte[] prefix = codec.encodeKeyPrefix(key, 2);
-            store.delete(new StoreInstance.Range(prefix, prefix, true, true));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
