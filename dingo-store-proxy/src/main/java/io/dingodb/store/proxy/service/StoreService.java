@@ -23,6 +23,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -35,6 +36,8 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.IndexType;
+import io.dingodb.meta.entity.InfoCache;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
@@ -216,6 +219,11 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             this.regionId = regionId;
             this.partitionId = new CommonId(CommonId.CommonType.PARTITION, tableId.seq, regionId.domain);
             this.table = metaService.getTable(tableId);
+            if (this.table == null) {
+                LogUtils.error(log, "[ddl] store service get table null, tableId:{}", tableId);
+                InfoSchema is = InfoCache.infoCache.getLatest();
+                LogUtils.error(log, "[ddl] store service tables:{}", is.getSortedTablesBuckets());
+            }
             if (table.getIndexes() != null) {
                 this.tableMap = table.getIndexes().stream().collect(Collectors.toMap(Table::getTableId, identity()));
             } else {

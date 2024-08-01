@@ -1,0 +1,25 @@
+ [
+    {
+      "name": "job_id",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "version",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "table_ids",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    }
+  ]

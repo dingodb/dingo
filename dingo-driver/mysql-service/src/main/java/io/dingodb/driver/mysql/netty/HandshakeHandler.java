@@ -16,7 +16,7 @@
 
 package io.dingodb.driver.mysql.netty;
 
-import io.dingodb.calcite.schema.DingoRootSchema;
+import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.MysqlMessage;
@@ -26,6 +26,7 @@ import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.common.mysql.constant.ServerConstant;
 import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.UserDefinition;
+import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.util.ByteUtils;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.mysql.MysqlConnection;
@@ -65,7 +66,7 @@ import static io.dingodb.common.mysql.constant.ServerStatus.SERVER_STATUS_AUTOCO
 @ChannelHandler.Sharable
 @Slf4j
 public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
-    ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+    ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
     private static volatile AtomicInteger threadId = new AtomicInteger(0);
 
     public MysqlConnection mysqlConnection;
@@ -251,7 +252,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
             throw new RuntimeException(e);
         }
         Properties properties = new Properties();
-        properties.setProperty("defaultSchema", DingoRootSchema.DEFAULT_SCHEMA_NAME);
+        properties.setProperty("defaultSchema", RootSnapshotSchema.DEFAULT_SCHEMA_NAME);
         TimeZone timeZone = TimeZone.getDefault();
         properties.setProperty("timeZone", timeZone.getID());
         properties.setProperty("user", user);
@@ -260,7 +261,8 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         java.sql.Connection connection;
         try {
             connection = DriverManager.getConnection("jdbc:dingo:", properties);
-            ExecutionEnvironment.connectionMap.put("mysql:" + (threadId.get() - 1), connection);
+            SessionUtil sm = ExecutionEnvironment.INSTANCE.sessionUtil;
+            sm.connectionMap.put("mysql:" + (threadId.get() - 1), connection);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

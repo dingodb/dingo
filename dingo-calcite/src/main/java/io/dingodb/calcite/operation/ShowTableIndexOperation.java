@@ -19,7 +19,10 @@ package io.dingodb.calcite.operation;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.util.Optional;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.InfoSchema;
+import io.dingodb.meta.entity.Table;
 import lombok.Setter;
 import org.apache.calcite.sql.SqlNode;
 
@@ -41,16 +44,21 @@ public class ShowTableIndexOperation extends QueryOperation {
 
     private String tableName;
 
+    private String schemaName;
+
     public ShowTableIndexOperation(SqlNode sqlNode, String tableName) {
         this.sqlNode = sqlNode;
-        metaService = MetaService.root().getSubMetaService(MetaServiceUtils.getSchemaName(tableName));
+        this.schemaName = MetaServiceUtils.getSchemaName(tableName);
+        metaService = MetaService.root().getSubMetaService(schemaName);
         this.tableName = tableName.toUpperCase();
     }
 
     @Override
-    public Iterator getIterator() {
+    public Iterator<Object[]> getIterator() {
         List<Object[]> tuples;
-        tuples = metaService.getTableIndexDefinitions(metaService.getTable(tableName).getTableId()).values().stream().filter(i -> !i.getName().equalsIgnoreCase(tableName)).map(
+        InfoSchema is = DdlService.root().getIsLatest();
+        Table table = is.getTable(schemaName, tableName);
+        tuples = metaService.getTableIndexDefinitions(table.getTableId()).values().stream().filter(i -> !i.getName().equalsIgnoreCase(tableName)).map(
             index -> new Object[] {
                 tableName,
                 index.getName().toUpperCase(),

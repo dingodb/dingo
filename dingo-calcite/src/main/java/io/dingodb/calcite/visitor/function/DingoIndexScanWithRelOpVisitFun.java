@@ -18,7 +18,6 @@ package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.calcite.rel.dingo.DingoIndexScanWithRelOp;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
-import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.RangeUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
@@ -293,7 +292,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
         byte[] endKey,
         boolean withEnd
     ) {
-        MetaService metaService = MetaServiceUtils.getMetaService(rel.getTable());
+        MetaService metaService = MetaService.root();
         final IndexTable td = rel.getIndexTable();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges = metaService
             .getRangeDistribution(td.tableId);
@@ -327,7 +326,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
         byte[] endKey,
         boolean withEnd
     ) {
-        MetaService metaService = MetaServiceUtils.getMetaService(rel.getTable());
+        MetaService metaService = MetaService.root();
         final IndexTable td = rel.getIndexTable();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges = metaService
             .getRangeDistribution(td.tableId);
@@ -369,7 +368,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
         byte[] endKey,
         boolean withEnd
     ) {
-        MetaService metaService = MetaServiceUtils.getMetaService(rel.getTable());
+        MetaService metaService = MetaService.root();
         final IndexTable td = rel.getIndexTable();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges = metaService
             .getRangeDistribution(td.tableId);

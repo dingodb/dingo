@@ -294,7 +294,8 @@ public class PessimisticTransaction extends BaseTransaction {
                 valueValue,
                 forUpdateTs,
                 tableId,
-                newPartId), tableId, newPartId
+                newPartId,
+                txnId), tableId, newPartId
             );
         } else {
             StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, newPartId);
@@ -309,7 +310,8 @@ public class PessimisticTransaction extends BaseTransaction {
                     kvKeyValue.getValue(),
                     forUpdateTs,
                     tableId,
-                    newPartId), tableId, newPartId
+                    newPartId,
+                    txnId), tableId, newPartId
                 );
             } else {
                 throw new RuntimeException(txnId + " PrimaryKey is not existed local store");

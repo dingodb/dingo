@@ -32,6 +32,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnPartUpdateParam;
+import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
@@ -93,7 +94,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             KeyValueCodec codec = param.getCodec();
             boolean calcPartId = false;
             if (context.getIndexId() != null) {
-                Table indexTable = MetaService.root().getTable(context.getIndexId());
+                Table indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
                 List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
                     .map(Column::getName)
                     .collect(Collectors.toList()));

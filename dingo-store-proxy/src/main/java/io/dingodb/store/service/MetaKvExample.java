@@ -44,10 +44,17 @@ public final class MetaKvExample {
 //        System.out.println("drop table use tableId:" + tableId);
 //        dropTable(coordinators, tenantId, schemaId, tableId);
 //        System.out.println("test finished");
+//        listSchema();
+    }
+
+    public static void listSchema() {
+        InfoSchemaService infoSchemaService = new InfoSchemaService();
+        List<SchemaInfo> schemaInfoList = infoSchemaService.listSchema();
+        System.out.println("---");
     }
 
     public static void listTable(String coordinators) {
-        InfoSchemaService infoSchemaService = new InfoSchemaService(coordinators);
+        InfoSchemaService infoSchemaService = new InfoSchemaService();
         List<SchemaInfo> schemaInfoList = infoSchemaService.listSchema();
         long schemaId = schemaInfoList.stream()
             .filter(schemaInfo -> schemaInfo.getName().equalsIgnoreCase("MYSQL"))
@@ -61,7 +68,7 @@ public final class MetaKvExample {
     }
 
     public static long createTenant(String coordinators) {
-        InfoSchemaService infoSchemaService = new InfoSchemaService(coordinators);
+        InfoSchemaService infoSchemaService = new InfoSchemaService();
         long tenantId = 10001;
         Tenant tenant = Tenant.builder().id(10001).name("tenantId1").build();
         infoSchemaService.createTenant(tenantId, tenant);
@@ -78,10 +85,10 @@ public final class MetaKvExample {
     }
 
     public static long createSchema(String coordinators, long tenantId) {
-        InfoSchemaService infoSchemaService = new InfoSchemaService(coordinators);
-        infoSchemaService.createSchema(20001, SchemaInfo.builder().schemaId(20001).name("20001").schemaState(SchemaState.PUBLIC).build());
-        infoSchemaService.createSchema( 20002, SchemaInfo.builder().schemaId(20002).name("20002").schemaState(SchemaState.PUBLIC).build());
-        infoSchemaService.createSchema( 20003, SchemaInfo.builder().schemaId(20003).name("20003").schemaState(SchemaState.PUBLIC).build());
+        InfoSchemaService infoSchemaService = new InfoSchemaService();
+        infoSchemaService.createSchema(20001, SchemaInfo.builder().schemaId(20001).name("20001").schemaState(SchemaState.SCHEMA_PUBLIC).build());
+        infoSchemaService.createSchema( 20002, SchemaInfo.builder().schemaId(20002).name("20002").schemaState(SchemaState.SCHEMA_PUBLIC).build());
+        infoSchemaService.createSchema( 20003, SchemaInfo.builder().schemaId(20003).name("20003").schemaState(SchemaState.SCHEMA_PUBLIC).build());
         List<SchemaInfo> schemaList = infoSchemaService.listSchema();
         schemaList.forEach(o -> {
             System.out.println("schema:" + o);
@@ -91,7 +98,7 @@ public final class MetaKvExample {
     }
 
     public static long createTable(String coordinators, long tenantId, long schemaId) {
-        InfoSchemaService infoSchemaService = new InfoSchemaService(coordinators);
+        InfoSchemaService infoSchemaService = new InfoSchemaService();
         TableDefinition t1 = TableDefinition.builder().name("t1").build();
         TableDefinition t2 = TableDefinition.builder().name("t2").build();
         TableDefinition t3 = TableDefinition.builder().name("t3").build();
@@ -113,7 +120,7 @@ public final class MetaKvExample {
     }
 
     public static void createIndex(String coordinators, long tenantId, long schemaId, long tableId) {
-        InfoSchemaService infoSchemaService = new InfoSchemaService(coordinators);
+        InfoSchemaService infoSchemaService = new InfoSchemaService();
         TableDefinition index = TableDefinition.builder().name("age_index").build();
         DingoCommonId dingoCommonId = DingoCommonId.builder().parentEntityId(tableId).entityId(11111).entityType(EntityType.ENTITY_TYPE_INDEX).build();
         TableDefinitionWithId tableDefinitionWithId = TableDefinitionWithId.builder().tableDefinition(index).tableId(dingoCommonId).build();
@@ -127,7 +134,7 @@ public final class MetaKvExample {
     }
 
     public static void dropTable(String coordinators, long tenantId, long schemaId, long tableId) {
-        InfoSchemaService infoSchemaService = new InfoSchemaService(coordinators);
+        InfoSchemaService infoSchemaService = new InfoSchemaService();
         infoSchemaService.dropTable(schemaId, tableId);
         Object obj = infoSchemaService.getTable(schemaId, tableId);
         Assert.isNull(obj);
@@ -139,7 +146,7 @@ public final class MetaKvExample {
     }
 
     public static void dropSchema(String coordinators, long tenantId, long schemaId) {
-        InfoSchemaService infoSchemaService = new InfoSchemaService(coordinators);
+        InfoSchemaService infoSchemaService = new InfoSchemaService();
         infoSchemaService.dropSchema(schemaId);
         List<SchemaInfo> schemaList = infoSchemaService.listSchema();
         schemaList.forEach(o -> {
@@ -149,7 +156,7 @@ public final class MetaKvExample {
     }
 
     public static void dropTenant(String coordinators, long tenantId) {
-        InfoSchemaService infoSchemaService = new InfoSchemaService(coordinators);
+        InfoSchemaService infoSchemaService = new InfoSchemaService();
         infoSchemaService.dropTenant(tenantId);
 
         List<Object> tenantList = infoSchemaService.listTenant();

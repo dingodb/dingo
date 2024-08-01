@@ -18,15 +18,16 @@ package io.dingodb.calcite.operation;
 
 import io.dingodb.common.mysql.util.DataTimeUtils;
 import io.dingodb.common.util.SqlLikeUtils;
-import io.dingodb.meta.MetaService;
+import io.dingodb.meta.DdlService;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import org.apache.commons.lang3.StringUtils;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ShowTableStatusOperation extends QueryOperation {
@@ -44,20 +45,19 @@ public class ShowTableStatusOperation extends QueryOperation {
 
     @Override
     public Iterator<Object[]> getIterator() {
-        MetaService metaService = MetaService.root();
-        List<Object[]> resList = metaService.getSubMetaServices()
+        InfoSchema is = DdlService.root().getIsLatest();
+        return is.getSchemaMap()
             .entrySet()
             .stream()
             .filter(e -> e.getKey().equalsIgnoreCase(schema))
             .flatMap(e -> {
-                Set<Table> tables = e.getValue().getTables();
+                Collection<Table> tables = e.getValue().getTables().values();
                 return tables.stream()
                     .filter(table -> (StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(table.getName(), sqlLikePattern)))
                     .map(table -> new Object[] {table.getName(), table.getEngine(), table.getVersion(), table.rowFormat, null, 0, 0, 16434816, 0, 0, null, DataTimeUtils.getTimeStamp(new Timestamp(table.getCreateTime())), null, null, table.getCollate(), null, null, ""})
-                   .collect(Collectors.toList()).stream();
-            }).collect(Collectors.toList());;
-
-        return resList.iterator();
+                    .collect(Collectors.toList()).stream();
+            })
+            .iterator();
     }
 
     @Override

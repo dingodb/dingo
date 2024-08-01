@@ -32,6 +32,7 @@ public final class CodecKvUtil {
     private static final byte[] prefix = "m".getBytes();
     private static final int prefixLen = prefix.length;
     private static final Long hashData = 104L;
+    private static final Long stringData = 115L;
     private static final byte endPad = 0x0;
 
     private CodecKvUtil() {
@@ -41,6 +42,16 @@ public final class CodecKvUtil {
         int mod = dataLen % encGroupSize;
         int padCount = encGroupSize - mod;
         return dataLen + padCount + 1 + dataLen / encGroupSize;
+    }
+
+    public static byte[] encodeStringDataKey(byte[] key) {
+        byte[] ek = new byte[1 + key.length + 24];
+        System.arraycopy(prefix, 0, ek, 0, prefixLen);
+        byte[] res = encodeBytes(key);
+        System.arraycopy(res, 0, ek, prefixLen, res.length);
+        byte[] stringDataBytes = MysqlByteUtil.longToBytesBigEndian(stringData);
+        System.arraycopy(stringDataBytes, 0, ek, prefixLen + res.length, stringDataBytes.length);
+        return ek;
     }
 
     public static byte[] encodeHashDataKey(byte[] key, byte[] data) {

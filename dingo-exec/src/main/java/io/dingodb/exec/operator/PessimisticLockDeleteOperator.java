@@ -31,9 +31,9 @@ import io.dingodb.exec.exception.TaskCancelException;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PessimisticLockDeleteParam;
+import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
-import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
@@ -72,7 +72,7 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
             KeyValueCodec codec = param.getCodec();
             boolean isVector = false;
             if (context.getIndexId() != null) {
-                Table indexTable = MetaService.root().getTable(context.getIndexId());
+                Table indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
                 List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
                     .map(Column::getName)
                     .collect(Collectors.toList()));
@@ -80,7 +80,7 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
                 Object[] finalTuple = tuple;
                 tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
                 schema = indexTable.tupleType();
-                IndexTable index = TransactionUtil.getIndexDefinitions(tableId);
+                IndexTable index = (IndexTable) TransactionManager.getIndex(txnId, tableId);
                 if (index.indexType.isVector) {
                     isVector = true;
                 }

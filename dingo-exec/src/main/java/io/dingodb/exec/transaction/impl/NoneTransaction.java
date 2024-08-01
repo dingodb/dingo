@@ -21,6 +21,7 @@ import io.dingodb.common.Location;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.transaction.base.BaseTransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.meta.entity.InfoSchema;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.Future;
@@ -98,6 +99,11 @@ public class NoneTransaction extends BaseTransaction {
     @Override
     public long getJobSeqId() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setIs(InfoSchema is) {
+
     }
 
     @Override

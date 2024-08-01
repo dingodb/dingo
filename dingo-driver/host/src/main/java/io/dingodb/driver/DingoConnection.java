@@ -18,7 +18,7 @@ package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
-import io.dingodb.calcite.schema.DingoRootSchema;
+import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.client.SessionVariableChange;
@@ -32,6 +32,7 @@ import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.meta.InfoSchemaService;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.transaction.api.LockType;
 import io.dingodb.transaction.api.TableLock;
 import io.dingodb.transaction.api.TableLockService;
@@ -63,6 +64,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -70,6 +72,8 @@ import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import static io.dingodb.exec.transaction.base.TransactionType.NONE;
 
 @Slf4j
 public class DingoConnection extends AvaticaConnection implements CalcitePrepare.Context{
@@ -110,9 +114,10 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         super(driver, factory, url, info);
         String defaultSchema = info.getProperty("defaultSchema");
         if (defaultSchema == null) {
-            defaultSchema = DingoRootSchema.DEFAULT_SCHEMA_NAME;
+            defaultSchema = RootSnapshotSchema.DEFAULT_SCHEMA_NAME;
         }
         LogUtils.info(log, "DingoConnection:" + id);
+        info.put("connId", id);
         LogUtils.trace(log, "Connection url = {}, properties = {}, default schema = {}.", url, info, defaultSchema);
         context = new DingoParserContext(defaultSchema, info);
         sessionVariables = new Properties();
@@ -208,7 +213,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             } else {
                 txIsolation = getClientInfo("transaction_isolation");
             }
-            if (type == TransactionType.OPTIMISTIC && txIsolation.equalsIgnoreCase("READ-COMMITTED")) {
+            if (type == TransactionType.OPTIMISTIC && "READ-COMMITTED".equalsIgnoreCase(txIsolation)) {
                 throw new RuntimeException("Optimistic transaction only support" +
                     " read committed transaction isolation level");
             }
@@ -218,11 +223,22 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 TransactionUtil.convertIsolationLevel(txIsolation));
             transaction.setTransactionConfig(sessionVariables);
             transaction.setAutoCommit(autoCommit);
+            InfoSchema is = getContext().getRootSchema().initTxn(transaction.getTxnId());
+            transaction.setIs(is);
         }
         return transaction;
     }
 
-    public synchronized void cleanTransaction() throws SQLException {
+    public ITransaction initTransaction(boolean isTxn, boolean once) {
+        if (!isTxn && once) {
+            cleanTransaction();
+            transaction = createTransaction(NONE, getAutoCommit());
+            return transaction;
+        }
+        return transaction;
+    }
+
+    public synchronized void cleanTransaction() {
         if (transaction != null) {
             this.commitProfile = transaction.getCommitProfile();
             transaction = null;
@@ -519,5 +535,30 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             return context.getUsedSchema().getName();
         }
         return "dingo";
+    }
+
+    public void removeLockDDLJobs(Map<Long, Long> jobsVerMap, Map<Long, String> jobsIdsMap) {
+        Map<Long, Long> relatedTableForMdl = this.context.getRootSchema().getRelatedTableForMdl();
+        for (Map.Entry<Long, Long> useRelated : relatedTableForMdl.entrySet()) {
+            Long tableId = useRelated.getKey();
+            long useSchemaVer = useRelated.getValue();
+            for (Map.Entry<Long, Long> jobIdVerEntry : jobsVerMap.entrySet()) {
+                long jobId = jobIdVerEntry.getKey();
+                long ver = jobIdVerEntry.getValue();
+                Map<Long, Long> ids = str2LongMap(jobsIdsMap.get(jobId));
+                if (ids.containsKey(tableId) && useSchemaVer < ver) {
+                    jobsVerMap.remove(jobId);
+                }
+            }
+        }
+    }
+
+    public static Map<Long, Long> str2LongMap(String ids) {
+        String[] strs = ids.split(",");
+        Map<Long, Long> res = new HashMap<>();
+        for (String str : strs) {
+            res.put(Long.parseLong(str), 0L);
+        }
+        return res;
     }
 }

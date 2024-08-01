@@ -63,14 +63,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 @Slf4j
 public final class PrepareMeta {
     private static final MetaService metaService = new MetaService();
-    private static int retryCnt = 0;
     private static final String BASE_TABLE = "BASE TABLE";
     private static final String SYSTEM_VIEW = "SYSTEM VIEW";
     // for format
     private static final String DYNAMIC = "Dynamic";
     private static final String FIXED = "Fixed";
-    // engine
-    //private static final String LSM = Common.Engine.LSM.name();
     private static final String TXN_LSM = Common.Engine.TXN_LSM.name();
     private static final long tenantId = TenantConstant.TENANT_ID;
 
@@ -84,35 +81,33 @@ public final class PrepareMeta {
     }
 
     public static void prepare(String coordinators) {
+        io.dingodb.meta.InfoSchemaService infoSchemaService = io.dingodb.meta.InfoSchemaService.root();
+        assert infoSchemaService != null;
+        if (infoSchemaService.prepare()) {
+            return;
+        }
         long start = System.currentTimeMillis();
         MetaStoreKvTxn.init();
         initReplica();
-        InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
         Object tenant = infoSchemaService.getTenant(tenantId);
         if (tenant == null) {
             LogUtils.error(log, "Tenant not exists :{}", tenantId);
             return;
         }
-        boolean exists = prepareSchema(tenantId);
-        if (exists) {
-            return;
-        }
-        try {
-            prepareMysql();
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return;
-        }
+        prepareSchema(tenantId);
+        prepareMysql();
+
         prepareInformation(coordinators);
+        infoSchemaService.prepareDone();
         long end = System.currentTimeMillis();
-        log.info("prepare finished, cost:" + (end - start));
+        log.info("prepare done, cost:" + (end - start));
     }
 
     public static void initReplica() {
         InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
         storeReplica = infoSchemaService.getStoreReplica();
         indexReplica = infoSchemaService.getIndexReplica();
-        log.info("init replica success, store:{}, index:{}", storeReplica, indexReplica);
+        log.info("init replica done, store:{}, index:{}", storeReplica, indexReplica);
     }
 
     public static void prepareTenant() {
@@ -124,36 +119,36 @@ public final class PrepareMeta {
         }
     }
 
-    public static boolean prepareSchema(long tenantId) {
+    public static void prepareSchema(long tenantId) {
         InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
         boolean exists = infoSchemaService.checkSchemaNameExists("MYSQL");
         if (exists) {
-            return true;
+            return;
         }
         long rootMysqlSchemaId = infoSchemaService.genSchemaId();
         infoSchemaService.createSchema(rootMysqlSchemaId,
             SchemaInfo.builder().tenantId(tenantId)
-                .schemaId(rootMysqlSchemaId).name("MYSQL").schemaState(SchemaState.PUBLIC).build()
+                .schemaId(rootMysqlSchemaId).name("MYSQL").schemaState(SchemaState.SCHEMA_PUBLIC).build()
         );
 
         long rootIsSchemaId = infoSchemaService.genSchemaId();
         infoSchemaService.createSchema(rootIsSchemaId,
             SchemaInfo.builder().tenantId(tenantId)
-                .schemaId(rootIsSchemaId).name("INFORMATION_SCHEMA").schemaState(SchemaState.PUBLIC).build()
+                .schemaId(rootIsSchemaId).name("INFORMATION_SCHEMA").schemaState(SchemaState.SCHEMA_PUBLIC).build()
         );
 
         long dingoSchemaId = infoSchemaService.genSchemaId();
         infoSchemaService.createSchema(dingoSchemaId,
-            SchemaInfo.builder().schemaId(dingoSchemaId).name("DINGO").schemaState(SchemaState.PUBLIC).build()
+            SchemaInfo.builder().schemaId(dingoSchemaId).name("DINGO").schemaState(SchemaState.SCHEMA_PUBLIC).build()
         );
         long metaSchemaId = infoSchemaService.genSchemaId();
         infoSchemaService.createSchema(metaSchemaId,
-            SchemaInfo.builder().schemaId(metaSchemaId).name("META").schemaState(SchemaState.PUBLIC).build()
+            SchemaInfo.builder().schemaId(metaSchemaId).name("META").schemaState(SchemaState.SCHEMA_PUBLIC).build()
         );
-        return false;
+        log.info("create schema done");
     }
 
-    public static void prepareMysql() throws IOException {
+    public static void prepareMysql() {
         String schemaName = "MYSQL";
         createUserTable("MYSQL", "USER", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DB", BASE_TABLE, TXN_LSM, FIXED);
@@ -163,6 +158,15 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, "TABLE_STATS", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "TABLE_BUCKETS", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "PROCS_PRIV", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "GC_DELETE_RANGE", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "DINGO_DDL_JOB", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "DINGO_DDL_HISTORY", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "DINGO_DDL_BACKFILL", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "DINGO_DDL_BACKFILL_HISTORY", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "DINGO_DDL_REORG", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "DINGO_MDL_INFO", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "DINGO_MDL_VIEW", BASE_TABLE, TXN_LSM, DYNAMIC);
+        log.info("prepare mysql meta table done");
     }
 
     public static void prepareInformation(String coordinators) {
@@ -188,6 +192,7 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, "COLUMN_PRIVILEGES", SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, "VIEWS", SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, "COLLATIONS", SYSTEM_VIEW, TXN_LSM, FIXED);
+        log.info("prepare information meta table done");
     }
 
     public static void initGlobalVariables(String coordinators) {
@@ -284,7 +289,7 @@ public final class PrepareMeta {
                                           String tableType,
                                           String engine,
                                           String rowFormat
-                                          ) throws IOException {
+                                          ) {
         TableDefinition tableDefinition;
         io.dingodb.meta.InfoSchemaService infoSchemaService = io.dingodb.meta.InfoSchemaService.root();
         TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(schemaName, tableName);
@@ -301,7 +306,7 @@ public final class PrepareMeta {
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw e;
+            return;
         }
 
         try {
@@ -313,7 +318,6 @@ public final class PrepareMeta {
                 return;
             }
 
-            assert tableId != null;
             CommonId tableIdCommon = new CommonId(CommonId.CommonType.TABLE,
                 tableId.getParentEntityId(), tableId.getEntityId());
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
@@ -322,8 +326,7 @@ public final class PrepareMeta {
             if (rangeDistribution == null) {
                 return;
             }
-            io.dingodb.meta.MetaService metaService = io.dingodb.meta.MetaService.root();
-            io.dingodb.meta.entity.Table table = metaService.getTable(tableIdCommon);
+            io.dingodb.meta.entity.Table table = infoSchemaService.getTableDef(tableIdCommon.domain, tableIdCommon.seq);
             KeyValueCodec codec = CodecService.getDefault()
                 .createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
             KeyValue keyValue = codec.encode(values.get(0));
@@ -433,17 +436,6 @@ public final class PrepareMeta {
             partDefinition.setDetails(new ArrayList<>());
             tableDefinition.setPartDefinition(partDefinition);
         }
-        switch (partDefinition.getFuncName().toUpperCase()) {
-            case DingoPartitionServiceProvider.RANGE_FUNC_NAME:
-                DefinitionUtils.checkAndConvertRangePartition(tableDefinition);
-                partDefinition.getDetails().add(new PartitionDetailDefinition(null, null, new Object[0]));
-                break;
-            case DingoPartitionServiceProvider.HASH_FUNC_NAME:
-                DefinitionUtils.checkAndConvertHashRangePartition(tableDefinition);
-                break;
-            default:
-                throw new IllegalStateException("Unsupported " + partDefinition.getFuncName());
-        }
         return tableDefinition;
     }
 
@@ -534,6 +526,30 @@ public final class PrepareMeta {
             case "COLLATIONS":
                 jsonFile = "/information-collations.json";
                 break;
+            case "DINGO_DDL_JOB":
+                jsonFile = "/mysql-dingoDdlJob.json";
+                break;
+            case "GC_DELETE_RANGE":
+                jsonFile = "/mysql-gcDeleteRange.json";
+                break;
+            case "DINGO_DDL_BACKFILL":
+                jsonFile = "/mysql-dingoDdlBackfill.json";
+                break;
+            case "DINGO_DDL_BACKFILL_HISTORY":
+                jsonFile = "/mysql-dingoDdlBackfillHistory.json";
+                break;
+            case "DINGO_DDL_HISTORY":
+                jsonFile = "/mysql-dingoDdlHistory.json";
+                break;
+            case "DINGO_MDL_INFO":
+                jsonFile = "/mysql-dingoMdlInfo.json";
+                break;
+            case "DINGO_MDL_VIEW":
+                jsonFile = "/mysql-dingoMdlView.json";
+                break;
+            case "DINGO_DDL_REORG":
+                jsonFile = "/mysql-dingoDdlReorg.json";
+                break;
             default:
                 throw new RuntimeException("table not found");
         }
@@ -578,7 +594,6 @@ public final class PrepareMeta {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
-        log.info("init %s.%s success %n", schema, tableName);
     }
 
     private static boolean continueRetry() {

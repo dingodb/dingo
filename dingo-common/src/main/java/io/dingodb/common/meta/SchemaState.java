@@ -17,14 +17,39 @@
 package io.dingodb.common.meta;
 
 public enum SchemaState {
-    NONE(0),
-    DELETE_ONLY(1),
-    WRITE_ONLY(2),
-    WRITE_REORG(3),
-    PUBLIC(4);
+    SCHEMA_NONE(0),
+    SCHEMA_DELETE_ONLY(1),
+    SCHEMA_WRITE_ONLY(2),
+    SCHEMA_WRITE_REORG(3),
+    SCHEMA_DELETE_REORG(4),
+    SCHEMA_PUBLIC(5),
+    SCHEMA_GLOBAL_TXN_ONLY(6);
 
-    public int code;
+    private final int code;
     SchemaState(int code) {
         this.code = code;
+    }
+
+    public int getCode() {
+        return code;
+    }
+
+    public static SchemaState get(int number) {
+        switch (number) {
+            case 0:
+                return SCHEMA_NONE;
+            case 1:
+                return SCHEMA_DELETE_ONLY;
+            case 2:
+                return SCHEMA_WRITE_ONLY;
+            case 3:
+                return SCHEMA_WRITE_REORG;
+            case 4:
+                return SCHEMA_DELETE_REORG;
+            case 5:
+                return SCHEMA_PUBLIC;
+            default:
+                throw new RuntimeException("invalid schemaState number");
+        }
     }
 }

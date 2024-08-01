@@ -26,6 +26,7 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.base.TransactionType;
@@ -129,7 +130,7 @@ public class TxnImportDataOperation {
         byte[] key = txnLocalData.getKey();
         byte[] value = txnLocalData.getValue();
         return new CacheToObject(TransactionCacheToMutation.cacheToMutation(
-            op, key, value,0L, tableId, newPartId), tableId, newPartId
+            op, key, value,0L, tableId, newPartId, txnLocalData.getTxnId()), tableId, newPartId
         );
     }
 
@@ -244,7 +245,7 @@ public class TxnImportDataOperation {
             int op = txnLocalData.getOp().getCode();
             byte[] key = txnLocalData.getKey();
             byte[] value = txnLocalData.getValue();
-            Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, 0L, tableId, newPartId);
+            Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, 0L, tableId, newPartId, txnId);
             CommonId partId = param.getPartId();
             if (partId == null) {
                 partId = newPartId;
@@ -330,7 +331,7 @@ public class TxnImportDataOperation {
             CommonId newPartId = txnLocalData.getPartId();
             byte[] key = txnLocalData.getKey();
             if (tableId.type == CommonId.CommonType.INDEX) {
-                IndexTable indexTable = TransactionUtil.getIndexDefinitions(tableId);
+                IndexTable indexTable = (IndexTable) TransactionManager.getIndex(txnId, tableId);
                 if (indexTable.indexType.isVector) {
                     KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
                     Object[] decodeKey = codec.decodeKeyPrefix(key);
@@ -425,11 +426,7 @@ public class TxnImportDataOperation {
     }
 
     private static void lookSleep() {
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException ex) {
-            throw new RuntimeException(ex);
-        }
+        Utils.sleep(100);
     }
 
     public void resolveWriteConflict(RuntimeException exception, List<Object[]> secondList, List<Object[]> tupleList) {
@@ -476,7 +473,7 @@ public class TxnImportDataOperation {
                 long forUpdateTs = 0;
 
                 if (tableId.type == CommonId.CommonType.INDEX) {
-                    IndexTable indexTable = TransactionUtil.getIndexDefinitions(tableId);
+                    IndexTable indexTable = (IndexTable) TransactionManager.getIndex(txnId, tableId);
                     if (indexTable.indexType.isVector) {
                         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
                         Object[] decodeKey = codec.decodeKeyPrefix(key);

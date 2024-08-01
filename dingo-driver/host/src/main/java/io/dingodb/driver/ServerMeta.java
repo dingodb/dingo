@@ -23,10 +23,9 @@ import io.dingodb.common.config.SecurityConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
-import io.dingodb.common.mysql.scope.ScopeVariables;
+import io.dingodb.common.session.SessionUtil;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionStatus;
-import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.verify.auth.IdentityAuthService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +37,7 @@ import org.apache.calcite.avatica.QueryState;
 import org.apache.calcite.avatica.remote.TypedValue;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +57,7 @@ public class ServerMeta implements Meta {
         DingoMetrics.metricRegistry.register("connection-count", new CachedGauge<Integer>(5, TimeUnit.MINUTES) {
             @Override
             protected Integer loadValue() {
-                return ExecutionEnvironment.connectionMap.size();
+                return ExecutionEnvironment.INSTANCE.sessionUtil.connectionMap.size();
             }
         });
     }
@@ -83,7 +83,8 @@ public class ServerMeta implements Meta {
     }
 
     private @NonNull Meta getConnectionMeta(@NonNull ConnectionHandle ch) {
-        DingoConnection connection = (DingoConnection) ExecutionEnvironment.connectionMap.get(ch.id);
+        DingoConnection connection = (DingoConnection) ExecutionEnvironment.INSTANCE
+            .sessionUtil.connectionMap.get(ch.id);
         return connection.getMeta();
     }
 
@@ -458,7 +459,8 @@ public class ServerMeta implements Meta {
     @SneakyThrows
     public StatementHandle prepare(@NonNull ConnectionHandle ch, String sql, long maxRowCount) {
         LogUtils.debug(log, "connection handle = {}, sql = {}, maxRowCount = {}.", ch, sql, maxRowCount);
-        DingoConnection connection = (DingoConnection) ExecutionEnvironment.connectionMap.get(ch.id);
+        SessionUtil sm = ExecutionEnvironment.INSTANCE.sessionUtil;
+        DingoConnection connection = (DingoConnection)sm.connectionMap.get(ch.id);
         DingoPreparedStatement prepareStatement = (DingoPreparedStatement) connection.prepareStatement(sql);
         StatementHandle handle = prepareStatement.handle;
         prepareStatement.setSignature(handle.signature);
@@ -487,7 +489,8 @@ public class ServerMeta implements Meta {
         LogUtils.debug(log, "statement handle = {}, sql = {}, maxRowCount = {}, maxRowsInFirstFrame = {}.",
             sh, sql, maxRowCount, maxRowsInFirstFrame);
         final String connectionId = sh.connectionId;
-        DingoConnection connection = (DingoConnection) ExecutionEnvironment.connectionMap.get(connectionId);
+        SessionUtil sm = ExecutionEnvironment.INSTANCE.sessionUtil;
+        DingoConnection connection = (DingoConnection) sm.connectionMap.get(connectionId);
         StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
         DingoStatement statement = (DingoStatement) connection.getStatement(newSh);
         ExecuteResult executeResult = connection.getMeta().prepareAndExecute(
@@ -530,7 +533,8 @@ public class ServerMeta implements Meta {
         @NonNull StatementHandle sh,
         List<String> sqlCommands
     ) throws NoSuchStatementException {
-        DingoConnection connection = (DingoConnection) ExecutionEnvironment.connectionMap.get(sh.connectionId);
+        SessionUtil sm = ExecutionEnvironment.INSTANCE.sessionUtil;
+        DingoConnection connection = (DingoConnection) sm.connectionMap.get(sh.connectionId);
         StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
         return connection.getMeta().prepareAndExecuteBatch(newSh, sqlCommands);
     }
@@ -540,7 +544,8 @@ public class ServerMeta implements Meta {
         @NonNull StatementHandle sh,
         List<List<TypedValue>> parameterValues
     ) throws NoSuchStatementException {
-        DingoConnection connection = (DingoConnection) ExecutionEnvironment.connectionMap.get(sh.connectionId);
+        SessionUtil sm = ExecutionEnvironment.INSTANCE.sessionUtil;
+        DingoConnection connection = (DingoConnection) sm.connectionMap.get(sh.connectionId);
         StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
         return connection.getMeta().executeBatch(newSh, parameterValues);
     }
@@ -552,7 +557,8 @@ public class ServerMeta implements Meta {
         int fetchMaxRowCount
     ) throws NoSuchStatementException {
         LogUtils.debug(log, "statement handle = {}, offset = {}, fetchMaxRowCount = {}.", sh, offset, fetchMaxRowCount);
-        DingoConnection connection = (DingoConnection) ExecutionEnvironment.connectionMap.get(sh.connectionId);
+        SessionUtil sm = ExecutionEnvironment.INSTANCE.sessionUtil;
+        DingoConnection connection = (DingoConnection) sm.connectionMap.get(sh.connectionId);
         StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
         Frame frame = connection.getMeta().fetch(newSh, offset, fetchMaxRowCount);
         connection.setCommandStartTime(0);
@@ -583,7 +589,8 @@ public class ServerMeta implements Meta {
             maxRowsInFirstFrame
         );
         final String connectionId = sh.connectionId;
-        DingoConnection connection = (DingoConnection) ExecutionEnvironment.connectionMap.get(connectionId);
+        SessionUtil sm = ExecutionEnvironment.INSTANCE.sessionUtil;
+        DingoConnection connection = (DingoConnection) sm.connectionMap.get(connectionId);
         // `sh.signature` may be `null` for the client is trying to save ser-des cost.
         StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
         try {
@@ -611,7 +618,8 @@ public class ServerMeta implements Meta {
     @Override
     public StatementHandle createStatement(@NonNull ConnectionHandle ch) {
         LogUtils.debug(log, "connection handle = {}.", ch);
-        DingoConnection connection = (DingoConnection) ExecutionEnvironment.connectionMap.get(ch.id);
+        SessionUtil sm = ExecutionEnvironment.INSTANCE.sessionUtil;
+        DingoConnection connection = (DingoConnection) sm.connectionMap.get(ch.id);
         try {
             AvaticaStatement statement = connection.createStatement();
             LogUtils.debug(log, "Statement created, handle = {}.", statement.handle);
@@ -625,7 +633,8 @@ public class ServerMeta implements Meta {
     @Override
     public void closeStatement(@NonNull StatementHandle sh) {
         LogUtils.info(log, "statement handle = {}.", sh);
-        DingoConnection connection = (DingoConnection) ExecutionEnvironment.connectionMap.get(sh.connectionId);
+        SessionUtil sm = ExecutionEnvironment.INSTANCE.sessionUtil;
+        DingoConnection connection = (DingoConnection) sm.connectionMap.get(sh.connectionId);
         StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
         try {
             AvaticaStatement statement = connection.getStatement(newSh);
@@ -638,7 +647,8 @@ public class ServerMeta implements Meta {
     }
 
     public void cancelStatement(@NonNull String connectionId, int id, Meta.Signature signature) {
-        DingoConnection connection = (DingoConnection) ExecutionEnvironment.connectionMap.get(connectionId);
+        SessionUtil sm = ExecutionEnvironment.INSTANCE.sessionUtil;
+        DingoConnection connection = (DingoConnection) sm.connectionMap.get(connectionId);
         StatementHandle newSh = new StatementHandle(connection.id, id, signature);
         try {
             LogUtils.info(log, "statement handle = {}.", newSh);
@@ -671,7 +681,8 @@ public class ServerMeta implements Meta {
         Properties properties = new Properties();
         properties.putAll(info);
         DingoConnection connection = DingoDriver.INSTANCE.createConnection(null, properties);
-        ExecutionEnvironment.connectionMap.put(ch.id, connection);
+        SessionUtil sm = ExecutionEnvironment.INSTANCE.sessionUtil;
+        sm.connectionMap.put(ch.id, connection);
         // connection with init db
         connectionUrlSync(ch, properties);
         if (SecurityConfiguration.isAuth()) {
@@ -692,7 +703,8 @@ public class ServerMeta implements Meta {
     @Override
     public void closeConnection(@NonNull ConnectionHandle ch) {
         LogUtils.debug(log, "connection handle = {}.", ch);
-        DingoConnection connection = (DingoConnection) ExecutionEnvironment.connectionMap.remove(ch.id);
+        SessionUtil sm = ExecutionEnvironment.INSTANCE.sessionUtil;
+        DingoConnection connection = (DingoConnection) sm.connectionMap.remove(ch.id);
         if (connection != null) {
             try {
                 connection.close();
@@ -710,7 +722,8 @@ public class ServerMeta implements Meta {
         QueryState state,
         long offset
     ) throws NoSuchStatementException {
-        DingoConnection connection = (DingoConnection) ExecutionEnvironment.connectionMap.get(sh.connectionId);
+        SessionUtil sm = ExecutionEnvironment.INSTANCE.sessionUtil;
+        DingoConnection connection = (DingoConnection) sm.connectionMap.get(sh.connectionId);
         StatementHandle newSh = new StatementHandle(connection.id, sh.id, sh.signature);
         return connection.getMeta().syncResults(newSh, state, offset);
     }

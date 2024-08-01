@@ -31,7 +31,6 @@ import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.OutputHint;
@@ -46,8 +45,6 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
-import io.dingodb.tso.TsoService;
-import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
@@ -80,7 +77,7 @@ public final class DingoGetByIndexVisitFun {
         @NonNull DingoGetByIndex rel
     ) {
         final LinkedList<Vertex> outputs = new LinkedList<>();
-        MetaService metaService = MetaServiceUtils.getMetaService(rel.getTable());
+        MetaService metaService = MetaService.root();
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         Map<CommonId, Set> indexSetMap = rel.getIndexSetMap();
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();

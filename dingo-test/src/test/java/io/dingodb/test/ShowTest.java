@@ -17,7 +17,7 @@
 package io.dingodb.test;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.schema.DingoRootSchema;
+import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.common.CommonId;
 import io.dingodb.meta.MetaService;
 import io.dingodb.test.dsl.run.exec.SqlExecContext;
@@ -102,7 +102,7 @@ public class ShowTest {
     @Test
     public void showTableDistribution() throws SQLException {
         String sql = "show table {table} distribution";
-        MetaService metaService = MetaService.root().getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME);
+        MetaService metaService = MetaService.root().getSubMetaService(RootSnapshotSchema.DEFAULT_SCHEMA_NAME);
         CommonId tableId = metaService.getTable(tableName).getTableId();
         context.execSql(sql).test(is(
             new String[]{"Id", "Type", "Value"},

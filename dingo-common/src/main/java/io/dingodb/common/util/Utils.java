@@ -269,8 +269,23 @@ public final class Utils {
         return -1;
     }
 
+    public static String quoteForSql(String value) {
+        return "'" + value + "'";
+    }
+
+    public static String quoteForSql(long value) {
+        return "'" + value + "'";
+    }
+
     public static boolean parallel(int keepOrder) {
         return keepOrder == 0 || keepOrder == 2;
+    }
+
+    public static void sleep(long waitTime) {
+        try {
+            Thread.sleep(waitTime);
+        } catch (InterruptedException ignored) {
+        }
     }
 
     public static final int INTEGER_LEN_IN_BYTES = 4;

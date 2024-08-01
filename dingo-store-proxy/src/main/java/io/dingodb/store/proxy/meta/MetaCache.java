@@ -28,7 +28,10 @@ import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Parameters;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.InfoSchemaService;
+import io.dingodb.meta.entity.InfoSchema;
+import io.dingodb.meta.entity.SchemaTables;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.service.MetaService;
 import io.dingodb.sdk.service.Services;
@@ -54,14 +57,11 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -81,11 +81,6 @@ public class MetaCache {
     private final InfoSchemaService infoSchemaService;
     private final TsoService tsoService;
 
-    private final Map<String, Map<String, Table>> cache;
-    private final Map<CommonId, Table> tableIdCache;
-    private final Map<CommonId, Table> indexIdCache;
-    private Map<String, io.dingodb.store.proxy.meta.MetaService> metaServices;
-
     private final LoadingCache<CommonId, NavigableMap<ComparableByteArray, RangeDistribution>> distributionCache;
 
     private boolean isClose = false;
@@ -94,9 +89,6 @@ public class MetaCache {
         this.metaService = Services.metaService(coordinators);
         this.infoSchemaService = InfoSchemaService.root();
         this.tsoService = TsoService.INSTANCE.isAvailable() ? TsoService.INSTANCE : new TsoService(coordinators);
-        this.tableIdCache = new ConcurrentSkipListMap<>();
-        this.indexIdCache = new ConcurrentSkipListMap<>();
-        this.cache = new ConcurrentHashMap<>();
         this.distributionCache = buildDistributionCache();
         Executors.execute("watch-meta", () -> {
             while (!isClose) {
@@ -114,9 +106,6 @@ public class MetaCache {
     }
 
     public synchronized void clear() {
-        tableIdCache.clear();
-        cache.clear();
-        metaServices = null;
         distributionCache.invalidateAll();
     }
 
@@ -217,33 +206,38 @@ public class MetaCache {
 
     @SneakyThrows
     private NavigableMap<ComparableByteArray, RangeDistribution> loadDistribution(CommonId tableId) {
-        TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(
-            tableId
-        );
-        TableDefinition tableDefinition = tableWithId.getTableDefinition();
-        List<ScanRegionWithPartId> rangeDistributionList = new ArrayList<>();
-        tableDefinition.getTablePartition().getPartitions()
-            .forEach(partition -> {
-                List<Object> regionList = infoSchemaService
-                    .scanRegions(partition.getRange().getStartKey(), partition.getRange().getEndKey());
-                regionList
-                    .forEach(object -> {
-                        ScanRegionInfo scanRegionInfo = (ScanRegionInfo) object;
-                        rangeDistributionList.add(
-                            new ScanRegionWithPartId(scanRegionInfo, partition.getId().getEntityId())
-                        );
-                    });
+        try {
+            TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(
+                tableId
+            );
+            TableDefinition tableDefinition = tableWithId.getTableDefinition();
+            List<ScanRegionWithPartId> rangeDistributionList = new ArrayList<>();
+            tableDefinition.getTablePartition().getPartitions()
+                .forEach(partition -> {
+                    List<Object> regionList = infoSchemaService
+                        .scanRegions(partition.getRange().getStartKey(), partition.getRange().getEndKey());
+                    regionList
+                        .forEach(object -> {
+                            ScanRegionInfo scanRegionInfo = (ScanRegionInfo) object;
+                            rangeDistributionList.add(
+                                new ScanRegionWithPartId(scanRegionInfo, partition.getId().getEntityId())
+                            );
+                        });
+                });
+            NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
+            Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
+            KeyValueCodec codec = CodecService.getDefault()
+                .createKeyValueCodec(tableDefinition.getVersion(), table.tupleType(), table.keyMapping());
+            boolean isOriginalKey = tableDefinition.getTablePartition().getStrategy().number() == 1;
+            rangeDistributionList.forEach(scanRegionWithPartId -> {
+                RangeDistribution distribution = mapping(scanRegionWithPartId, codec, isOriginalKey);
+                result.put(new ComparableByteArray(distribution.getStartKey(), 1), distribution);
             });
-        NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
-        Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
-        KeyValueCodec codec = CodecService.getDefault()
-            .createKeyValueCodec(tableDefinition.getVersion(), table.tupleType(), table.keyMapping());
-        boolean isOriginalKey = tableDefinition.getTablePartition().getStrategy().number() == 1;
-        rangeDistributionList.forEach(scanRegionWithPartId -> {
-            RangeDistribution distribution = mapping(scanRegionWithPartId, codec, isOriginalKey);
-            result.put(new ComparableByteArray(distribution.getStartKey(), 1), distribution);
-        });
-        return result;
+            return result;
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            return null;
+        }
     }
 
 
@@ -264,32 +258,6 @@ public class MetaCache {
             .build();
     }
 
-    public void invalidateTable(long schema, long table) {
-        LogUtils.info(log, "Invalid table {}.{}", schema, table);
-        CommonId tableId = new CommonId(TABLE, schema, table);
-        Table tableEntity = tableIdCache.get(tableId);
-        tableIdCache.remove(tableId);
-        SchemaInfo schemaInfo = (SchemaInfo) infoSchemaService.getSchema(schema);
-        if (schemaInfo != null && tableEntity != null) {
-            if (cache.containsKey(schemaInfo.getName())) {
-                cache.get(schemaInfo.getName()).remove(tableEntity.name);
-            }
-        }
-    }
-
-    public void invalidateTable(String schemaName, String tableName) {
-        LogUtils.info(log, "Invalid tableMap cache {}.{}", schemaName, tableName);
-        schemaName = schemaName.toUpperCase();
-        tableName = tableName.toUpperCase();
-        if (cache.containsKey(schemaName)) {
-            cache.get(schemaName).remove(tableName);
-        }
-    }
-
-    public void invalidateIndex(long table, long index) {
-        indexIdCache.remove(new CommonId(INDEX, table, index));
-    }
-
     public void invalidateDistribution(MetaEventRegion metaEventRegion) {
         RegionDefinition definition = metaEventRegion.getDefinition();
         LogUtils.info(log, "Invalid table distribution {}", definition);
@@ -297,126 +265,34 @@ public class MetaCache {
         distributionCache.invalidate(new CommonId(INDEX, definition.getSchemaId(), definition.getTableId()));
     }
 
-    public void invalidateMetaServices() {
-        LogUtils.info(log, "Invalid meta services");
-        metaServices = null;
-    }
-
-    public synchronized void refreshSchema(String schema) {
-        LogUtils.info(log, "Invalid schema {}", schema);
-        try {
-            cache.compute(schema, (k, v) -> loadTables(schema));
-        } catch (Exception e) {
-            LogUtils.error(log, "refresh schema error. " + e.getMessage(), e);
-        }
-    }
-
-    private Map<String, Table> loadTables(String schema) {
-        schema = schema.toUpperCase();
-        List<Object> objectList = infoSchemaService.listTable(schema);
-        return objectList.stream().map(obj -> (TableDefinitionWithId) obj)
-            .map(tableWithId -> MAPPER.tableFrom(tableWithId,
-                getIndexes(tableWithId, tableWithId.getTableId()))
-            ).collect(Collectors.toMap(Table::getName, table -> table));
-    }
-
-    @SneakyThrows
-    public Table getTable(String schema, String table) {
-        schema = schema.toUpperCase();
-        if (getMetaServices().containsKey(schema)) {
-            if (cache.get(schema) == null) {
-                refreshSchema(schema);
-            }
-
-            table = table.toUpperCase();
-            Map<String, Table> tableMap = cache.get(schema);
-            if (tableMap == null) {
-                log.error("get schema map error, name:" + schema + ", cache:" + cache);
-                return null;
-            }
-
-            Table table1 = tableMap.get(table.toUpperCase());
-            if (table1 == null) {
-                TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(schema, table);
-                if (tableWithId == null) {
-                    return null;
-                }
-                table1 = MAPPER.tableFrom(tableWithId,
-                    getIndexes(tableWithId, tableWithId.getTableId()));
-                tableIdCache.put(table1.tableId, table1);
-                table1.getIndexes().forEach($ -> indexIdCache.put($.getTableId(), $));
-                cache.get(schema).put(table1.name, table1);
-            }
-            return table1;
-        }
-        return null;
-    }
-
-    @SneakyThrows
-    public Table getTable(CommonId tableId) {
-        if (tableId.type == TABLE) {
-            if (tableIdCache.containsKey(tableId)) {
-                return tableIdCache.get(tableId);
-            }
-            TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(tableId);
-
-            if (tableWithId == null) {
-                return null;
-            }
-            return MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
-        } else if (tableId.type == INDEX) {
-            if (indexIdCache.containsKey(tableId)) {
-                return indexIdCache.get(tableId);
-            }
-            TableDefinitionWithId index = (TableDefinitionWithId) infoSchemaService.getIndex(tableId.domain, tableId.seq);
-            if (index == null) {
-                return null;
-            }
-            TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(tableId.domain);
-            Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
-            return table.getIndexes().stream()
-                .filter(indexTable -> indexTable.tableId.seq == tableId.seq).findFirst().orElse(null);
-        }
-        return null;
-    }
-
-    public io.dingodb.store.proxy.meta.MetaService getMetaService(long schemaId) {
-        return getMetaServices().values().stream().filter($ -> $.id.getEntityId() == schemaId).findAny().orElse(null);
-    }
-
-    @SneakyThrows
-    public Set<Table> getTables(String schema) {
-        schema = schema.toUpperCase();
-
-        if (getMetaServices().containsKey(schema)) {
-            if (cache.get(schema) == null) {
-                refreshSchema(schema);
-            }
-            return new HashSet<>(cache.get(schema).values());
-        }
-        return Collections.emptySet();
-    }
-
     public synchronized Map<String, io.dingodb.store.proxy.meta.MetaService> getMetaServices() {
-        if (metaServices == null) {
-            List<SchemaInfo> schemaInfoList = infoSchemaService.listSchema();
-            metaServices =  schemaInfoList
-                .stream()
-                .filter(schemaInfo -> schemaInfo.getSchemaId() != 0)
-                .map(schemaInfo -> {
-                    DingoCommonId dingoCommonId = DingoCommonId
-                        .builder()
-                        .entityId(schemaInfo.getSchemaId())
-                        .entityType(EntityType.ENTITY_TYPE_SCHEMA)
-                        .parentEntityId(0)
-                        .build();
-                    return new io.dingodb.store.proxy.meta.MetaService(dingoCommonId,
-                        schemaInfo.getName().toUpperCase(), metaService, this);
-                })
-                .collect(Collectors.toMap(io.dingodb.store.proxy.meta.MetaService::name, Function.identity()));
+        InfoSchema infoSchema = DdlService.root().getIsLatest();
+        List<SchemaInfo> schemaInfoList;
+        if (infoSchema == null) {
+            schemaInfoList = infoSchemaService.listSchema();
+        } else {
+            schemaInfoList
+                = infoSchema.getSchemaMap().values().stream()
+                .map(SchemaTables::getSchemaInfo).collect(Collectors.toList());
         }
-        return metaServices;
+        return getMetaServices(schemaInfoList);
+    }
 
+    public Map<String, io.dingodb.store.proxy.meta.MetaService> getMetaServices(List<SchemaInfo> schemaInfoList) {
+        return schemaInfoList
+            .stream()
+            .filter(schemaInfo -> schemaInfo.getSchemaId() != 0)
+            .map(schemaInfo -> {
+                DingoCommonId dingoCommonId = DingoCommonId
+                    .builder()
+                    .entityId(schemaInfo.getSchemaId())
+                    .entityType(EntityType.ENTITY_TYPE_SCHEMA)
+                    .parentEntityId(0)
+                    .build();
+                return new io.dingodb.store.proxy.meta.MetaService(dingoCommonId,
+                    schemaInfo.getName().toUpperCase(), metaService, this);
+            })
+            .collect(Collectors.toMap(io.dingodb.store.proxy.meta.MetaService::name, Function.identity()));
     }
 
     @SneakyThrows

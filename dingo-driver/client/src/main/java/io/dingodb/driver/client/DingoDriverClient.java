@@ -103,13 +103,13 @@ public class DingoDriverClient extends Driver {
 
     @Override
     public Connection connect(String url, Properties info) throws SQLException {
-        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
         //env.setRole(DingoRole.JDBC);
         if ((props = this.parseURL(url, info)) == null) {
             return null;
         } else {
             log.info("info:" + props);
-            env.putAll(props);
+            env.clientIdentity.putAll(props);
             try {
                 return super.connect(url, info);
             } catch (Throwable e) {
