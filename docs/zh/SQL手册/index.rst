@@ -7,3 +7,4 @@ SQL手册
 
    数据类型.md
    DDL.md
+   DQL.md
