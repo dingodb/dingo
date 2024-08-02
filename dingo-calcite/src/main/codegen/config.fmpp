@@ -200,6 +200,7 @@ data: {
       "TENANT"
       "TENANTS"
       "REMARKS"
+      "RENAME"
     ]
 
     # List of non-reserved keywords to add;

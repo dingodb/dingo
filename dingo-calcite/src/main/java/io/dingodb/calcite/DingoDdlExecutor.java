@@ -583,9 +583,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (TenantConstant.TENANT_ID != 0) {
             throw new RuntimeException("Regular tenants are unable to alter tenant.");
         }
-        if (tenantService.getTenant(sqlAlterTenant.name) != null) {
-            // TODO
-            // tenantService.updateTenant()
+        if (tenantService.getTenant(sqlAlterTenant.oldName) != null) {
+            tenantService.updateTenant(sqlAlterTenant.oldName, sqlAlterTenant.newName);
         }
 
         timeCtx.stop();

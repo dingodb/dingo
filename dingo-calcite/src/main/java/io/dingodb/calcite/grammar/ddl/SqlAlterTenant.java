@@ -28,13 +28,15 @@ import java.util.List;
 
 public class SqlAlterTenant extends SqlAlter {
 
-    public String name;
+    public String oldName;
+    public String newName;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator("ALTER TENANT", SqlKind.OTHER_DDL);
 
-    public SqlAlterTenant(String name, SqlParserPos pos) {
+    public SqlAlterTenant(String oldName, String newName, SqlParserPos pos) {
         super(pos);
-        this.name = name.contains("'") ? name.replace("'", "") : name;
+        this.oldName = oldName.contains("'") ? oldName.replace("'", "") : oldName;
+        this.newName = newName.contains("'") ? newName.replace("'", "") : newName;
     }
 
     @Override
