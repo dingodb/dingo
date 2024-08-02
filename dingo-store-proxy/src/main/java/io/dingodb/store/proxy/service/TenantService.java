@@ -74,13 +74,20 @@ public class TenantService implements io.dingodb.meta.TenantService {
 
     @Override
     public boolean updateTenant(@NonNull String oldName, String newName) {
-        Long tenantId = getTenantId(oldName);
-        if (tenantId == null) {
+        Tenant tenant = getTenant(oldName);
+        if (tenant == null) {
             return false;
         }
         return infoSchemaService.updateTenant(
-            tenantId,
-            Tenant.builder().id(tenantId).name(newName).updatedTime(System.currentTimeMillis()).build()
+            tenant.getId(),
+            Tenant.builder()
+                .id(tenant.getId())
+                .name(newName)
+                .createdTime(tenant.getCreatedTime())
+                .updatedTime(System.currentTimeMillis())
+                .remarks(tenant.getRemarks())
+                .isDelete(tenant.isDelete())
+                .build()
         );
     }
 

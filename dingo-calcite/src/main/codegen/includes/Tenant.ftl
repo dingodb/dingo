@@ -49,13 +49,15 @@ SqlDrop SqlDropTenant(Span s, boolean replace) :
 
 SqlAlterTenant SqlAlterTenant(Span s, String scope) :
 {
-    final String name;
+    final String oldName;
+    String newName;
 }
 {
     <TENANT>
     ( <QUOTED_STRING> | <IDENTIFIER> )
-    { s = span(); name = token.image; }
+    { s = span(); oldName = token.image; }
+    <RENAME> <AS> (<QUOTED_STRING> | <IDENTIFIER>) { newName = token.image; }
     {
-        return new SqlAlterTenant(name, s.end(this));
+        return new SqlAlterTenant(oldName, newName, s.end(this));
     }
 }
