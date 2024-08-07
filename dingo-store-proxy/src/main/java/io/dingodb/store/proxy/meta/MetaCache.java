@@ -372,7 +372,7 @@ public class MetaCache {
             if (index == null) {
                 return null;
             }
-            TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(0, tableId.domain);
+            TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(tableId.domain);
             Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
             return table.getIndexes().stream()
                 .filter(indexTable -> indexTable.tableId.seq == tableId.seq).findFirst().orElse(null);
