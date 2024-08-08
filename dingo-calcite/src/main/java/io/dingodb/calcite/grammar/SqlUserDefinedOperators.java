@@ -21,6 +21,7 @@ import io.dingodb.exec.fun.vector.VectorIPDistanceFun;
 import io.dingodb.exec.fun.vector.VectorL2DistanceFun;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql2rel.SqlCosineSimilarityOperator;
+import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
 import org.apache.calcite.sql2rel.SqlIPDistanceOperator;
 import org.apache.calcite.sql2rel.SqlL2DistanceOperator;
@@ -38,6 +39,8 @@ public class SqlUserDefinedOperators {
     public static SqlFunctionScanOperator SCAN = new SqlFunctionScanOperator("SCAN", SqlKind.COLLECTION_TABLE);
 
     public static SqlVectorOperator VECTOR = new SqlVectorOperator("VECTOR", SqlKind.COLLECTION_TABLE);
+
+    public static SqlDocumentOperator DOCUMENT = new SqlDocumentOperator("TEXT", SqlKind.COLLECTION_TABLE);
 
     public static SqlCosineSimilarityOperator COSINE_SIMILARITY
         = new SqlCosineSimilarityOperator(VectorCosineDistanceFun.NAME, SqlKind.OTHER_FUNCTION);
