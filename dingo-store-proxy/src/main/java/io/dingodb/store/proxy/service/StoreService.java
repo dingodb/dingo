@@ -638,6 +638,9 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     .parameter(MAPPER.documentSearchParamTo(documentSearchParameter))
                     .build()
             ).getDocumentWithScores();
+            if (documentWithScores == null || documentWithScores.isEmpty()) {
+                return new ArrayList<io.dingodb.store.api.transaction.data.DocumentWithScore>();
+            }
 
             return documentWithScores.stream().map(MAPPER::documentWithScoreTo).collect(Collectors.toList());
         }

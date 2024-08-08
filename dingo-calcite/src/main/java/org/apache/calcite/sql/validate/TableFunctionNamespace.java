@@ -25,6 +25,7 @@ import io.dingodb.common.type.scalar.FloatType;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import org.apache.calcite.rel.type.RelDataType;
@@ -32,7 +33,9 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
+import org.apache.calcite.sql2rel.SqlVectorOperator;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
@@ -79,33 +82,62 @@ public class TableFunctionNamespace extends AbstractNamespace {
         if (function.getOperator() instanceof SqlFunctionScanOperator) {
             this.rowType = DefinitionMapper.mapToRelDataType(dingoTable.getTable(), validator.typeFactory);
             return rowType;
+        } else if (function.getOperator() instanceof SqlVectorOperator) {
+            if (operandList.size() < 4) {
+                throw new RuntimeException("Incorrect parameter count for vector function.");
+            }
+            SqlIdentifier columnIdentifier = (SqlIdentifier) operandList.get(1);
+            // Get all index table definition
+            Table table = dingoTable.getTable();
+
+            this.index = getVectorIndexTable(table, columnIdentifier.getSimple().toUpperCase());
+            cols.add(Column
+                .builder()
+                .name(index.getName().concat("$distance"))
+                .sqlTypeName("FLOAT")
+                .type(new FloatType(false))
+                .precision(-1)
+                .scale(-2147483648)
+                .build()
+            );
+
+            RelDataTypeFactory typeFactory = validator.typeFactory;
+            RelDataType rowType = typeFactory.createStructType(
+                cols.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
+                cols.stream().map(Column::getName).map(String::toUpperCase).collect(Collectors.toList())
+            );
+            this.rowType = rowType;
+            return rowType;
+        } else if (function.getOperator() instanceof SqlDocumentOperator) {
+            if (operandList.size() != 4) {
+                throw new RuntimeException("Incorrect parameter count for text search function.");
+            }
+            SqlIdentifier columnIdentifier = (SqlIdentifier) operandList.get(1);
+            // Get all index table definition
+            Table table = dingoTable.getTable();
+
+            this.index = getDocumentIndexTable(table, columnIdentifier.getSimple().toUpperCase());
+            cols.add(Column
+                .builder()
+                .name(index.getName().concat("$rank_bm25"))
+                .sqlTypeName("FLOAT")
+                .type(new FloatType(false))
+                .precision(-1)
+                .scale(-2147483648)
+                .build()
+            );
+
+            RelDataTypeFactory typeFactory = validator.typeFactory;
+            RelDataType rowType = typeFactory.createStructType(
+                cols.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
+                cols.stream().map(Column::getName).map(String::toUpperCase).collect(Collectors.toList())
+            );
+            this.rowType = rowType;
+            return rowType;
+        } else {
+            throw new RuntimeException("unsupported operator type.");
         }
 
-        if (operandList.size() < 4) {
-            throw new RuntimeException("Incorrect parameter count for vector function.");
-        }
-        SqlIdentifier columnIdentifier = (SqlIdentifier) operandList.get(1);
-        // Get all index table definition
-        Table table = dingoTable.getTable();
-
-        this.index = getVectorIndexTable(table, columnIdentifier.getSimple().toUpperCase());
-        cols.add(Column
-            .builder()
-            .name(index.getName().concat("$distance"))
-            .sqlTypeName("FLOAT")
-            .type(new FloatType(false))
-            .precision(-1)
-            .scale(-2147483648)
-            .build()
-        );
-
-        RelDataTypeFactory typeFactory = validator.typeFactory;
-        RelDataType rowType = typeFactory.createStructType(
-            cols.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-            cols.stream().map(Column::getName).map(String::toUpperCase).collect(Collectors.toList())
-        );
-        this.rowType = rowType;
-        return rowType;
     }
 
     @Override
@@ -128,5 +160,15 @@ public class TableFunctionNamespace extends AbstractNamespace {
             return index;
         }
         throw new RuntimeException(vectorColName + " vector not found.");
+    }
+
+    public static IndexTable getDocumentIndexTable(Table table, String documentColName) {
+        for (IndexTable index : table.getIndexes()) {
+            if (index.getIndexType() != IndexType.DOCUMENT) {
+                continue;
+            }
+            return index;
+        }
+        throw new RuntimeException(documentColName + " document index not found.");
     }
 }

@@ -112,7 +112,8 @@ import lombok.Setter;
     @JsonSubTypes.Type(TxnGetByIndexParam.class),
     @JsonSubTypes.Type(PessimisticLockParam.class),
     @JsonSubTypes.Type(PessimisticResidualLockParam.class),
-    @JsonSubTypes.Type(ScanCacheResidualLockParam.class)
+    @JsonSubTypes.Type(ScanCacheResidualLockParam.class),
+    @JsonSubTypes.Type(TxnPartDocumentParam.class)
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class AbstractParams {
