@@ -29,11 +29,31 @@ import lombok.ToString;
 @AllArgsConstructor
 @EqualsAndHashCode
 @ToString
-public class Mutation {
-    private Op op;
-    private byte[] key;
-    private byte[] value;
-    private long forUpdateTs;
-    private VectorWithId vector;
-    private DocumentWithId document;
+public class DocumentValue {
+
+    private ScalarFieldType fieldType;
+    private ScalarField fieldValue;
+
+    public enum ScalarFieldType {
+        NONE(0),
+        BOOL(1),
+        INTEGER(4),
+        LONG(5),
+        FLOAT(6),
+        DOUBLE(7),
+        STRING(8),
+        BYTES(9);
+
+        private final int code;
+
+        ScalarFieldType(int code) {
+            this.code = code;
+        }
+
+        public int getCode() {
+            return code;
+        }
+
+
+    }
 }

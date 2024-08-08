@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-package io.dingodb.meta.entity;
+package io.dingodb.store.api.transaction.data;
 
-public enum IndexType {
-    SCALAR(false),
-    DOCUMENT(false),
-    VECTOR_FLAT(true),
-    VECTOR_IVF_FLAT(true),
-    VECTOR_IVF_PQ(true),
-    VECTOR_HNSW(true),
-    VECTOR_DISKANN(true),
-    VECTOR_BRUTEFORCE(true);
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
-    public final boolean isVector;
+@Getter
+@Setter
+@Builder
+@EqualsAndHashCode
+@ToString
+public class DocumentWithId {
 
-    IndexType(boolean isVector) {
-        this.isVector = isVector;
-    }
+    private Document document;
+    private long id;
+
 }

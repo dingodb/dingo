@@ -28,6 +28,7 @@ import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.TableFunctionNamespace;
+import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
 import org.apache.calcite.sql2rel.SqlVectorOperator;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -64,7 +65,8 @@ public class DingoSqlValidator extends SqlValidatorImpl {
         SqlNode enclosingNode = ns.getEnclosingNode();
         if (enclosingNode instanceof SqlBasicCall
             && (((SqlBasicCall) enclosingNode).getOperator() instanceof SqlFunctionScanOperator
-            || ((SqlBasicCall) enclosingNode).getOperator() instanceof SqlVectorOperator)
+            || ((SqlBasicCall) enclosingNode).getOperator() instanceof SqlVectorOperator
+            || ((SqlBasicCall) enclosingNode).getOperator() instanceof SqlDocumentOperator)
         ) {
             super.registerNamespace(
                 usingScope, alias,

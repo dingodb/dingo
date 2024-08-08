@@ -199,6 +199,10 @@ void TableElement(List<SqlNode> list) :
         |
             [<SCALAR>]
             columnList = ParenthesizedSimpleIdentifierList()
+        |
+            [<TEXT>]
+            { indexType = "text"; }
+            columnList = ParenthesizedSimpleIdentifierList()
         )
         ( <WITH> withColumnList = ParenthesizedSimpleIdentifierList()
          |

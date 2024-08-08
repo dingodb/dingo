@@ -282,6 +282,59 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     .build();
                 indexColumnDefinitions.add(indexColumnDefinition);
             }
+        } else if (indexDeclaration.getIndexType().equalsIgnoreCase("text")) {
+            properties.put("indexType", "document");
+            if (columns.size() <= 1) {
+                throw new RuntimeException("Index column includes at least two columns, The first one must be text_id");
+            }
+            int primary = 0;
+            for (int i = 0; i < columns.size(); i++) {
+                String columnName = columns.get(i);
+                if (!tableColumnNames.contains(columnName)) {
+                    throw new RuntimeException("Invalid column name: " + columnName);
+                }
+
+                ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
+                    .findFirst().get();
+                if (i == 0) {
+                    if (!columnDefinition.getTypeName().equals("INTEGER")
+                        && !columnDefinition.getTypeName().equals("BIGINT")) {
+                        throw new RuntimeException("Invalid column type: " + columnName);
+                    }
+
+                    if (columnDefinition.isNullable()) {
+                        throw new RuntimeException("Column must be not null, column name: " + columnName);
+                    }
+                } else {
+                    if (!columnDefinition.getTypeName().equals("BIGINT")
+                        && !columnDefinition.getTypeName().equals("INTEGER")
+                        && !columnDefinition.getTypeName().equals("DOUBLE")
+                        && !columnDefinition.getTypeName().equals("VARCHAR")
+                        && !columnDefinition.getTypeName().equals("STRING")
+                        && !columnDefinition.getTypeName().equals("BYTES")) {
+                        throw new RuntimeException("Invalid column type: " + columnDefinition.getTypeName());
+                    }
+                    if (columnDefinition.isNullable()) {
+                        throw new RuntimeException("Column must be not null, column name: " + columnName);
+                    }
+                    primary = -1;
+                }
+                ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
+                    .name(columnDefinition.getName())
+                    .type(columnDefinition.getTypeName())
+                    .elementType(columnDefinition.getElementType())
+                    .precision(columnDefinition.getPrecision())
+                    .scale(columnDefinition.getScale())
+                    .nullable(columnDefinition.isNullable())
+                    .primary(primary)
+                    .build();
+                indexColumnDefinitions.add(indexColumnDefinition);
+            }
+            if (properties.get("text_fields") != null) {
+                String fields = String.valueOf(properties.get("text_fields"));
+                fields = fields.startsWith("'") ? fields.substring(1, fields.length() - 1) : fields;
+                properties.setProperty("text_fields", fields);
+            }
         } else {
             properties.put("indexType", "vector");
             int primary = 0;

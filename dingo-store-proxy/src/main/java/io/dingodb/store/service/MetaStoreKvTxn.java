@@ -183,7 +183,7 @@ public class MetaStoreKvTxn {
         long startTs = TsoService.getDefault().tso();
         try {
             Mutation mutation = new Mutation(
-                io.dingodb.store.api.transaction.data.Op.forNumber(opCode), key, value, 0, null
+                io.dingodb.store.api.transaction.data.Op.forNumber(opCode), key, value, 0, null, null
             );
             preWritePrimaryKey(mutation, startTs);
         } catch (WriteConflictException e) {
