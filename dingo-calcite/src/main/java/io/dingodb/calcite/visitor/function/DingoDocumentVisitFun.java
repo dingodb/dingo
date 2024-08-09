@@ -18,7 +18,7 @@ package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
-import io.dingodb.calcite.rel.DingoVector;
+import io.dingodb.calcite.rel.DingoDocument;
 import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.utils.VisitUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
@@ -43,11 +43,11 @@ import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.fun.vector.VectorImageFun;
-import io.dingodb.exec.fun.vector.VectorTextFun;
-import io.dingodb.exec.operator.params.PartVectorParam;
-import io.dingodb.exec.operator.params.TxnPartVectorParam;
-import io.dingodb.exec.restful.VectorExtract;
+import io.dingodb.exec.fun.document.DocumentImageFun;
+import io.dingodb.exec.fun.document.DocumentTextFun;
+import io.dingodb.exec.operator.params.PartDocumentParam;
+import io.dingodb.exec.operator.params.TxnPartDocumentParam;
+import io.dingodb.exec.restful.DocumentExtract;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.rel.op.RelOpBuilder;
@@ -92,7 +92,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.PART_VECTOR;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_VECTOR;
 
 @Slf4j
-public final class DingoVectorVisitFun {
+public final class DingoDocumentVisitFun {
 
     // tmp use
     public static List<Object> pushDownSchemaList = new ArrayList<>();
@@ -107,13 +107,13 @@ public final class DingoVectorVisitFun {
         pushDownSchemaList.add(StringType.class);
     }
 
-    private DingoVectorVisitFun() {
+    private DingoDocumentVisitFun() {
 
     }
 
     public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation,
-        ITransaction transaction, DingoJobVisitor visitor, DingoVector rel
+        ITransaction transaction, DingoJobVisitor visitor, DingoDocument rel
     ) {
         DingoRelOptTable relTable = rel.getTable();
         DingoTable dingoTable = relTable.unwrap(DingoTable.class);
@@ -126,12 +126,12 @@ public final class DingoVectorVisitFun {
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = metaService.getRangeDistribution(tableId);
         List<Object> operandsList = rel.getOperands();
 
-        SqlIdentifier vectorColNmIdf = (SqlIdentifier) operandsList.get(1);
-        String vectorColNm = "";
-        if (vectorColNmIdf != null) {
-            vectorColNm = vectorColNmIdf.getSimple();
+        SqlIdentifier documentColNmIdf = (SqlIdentifier) operandsList.get(1);
+        String documentColNm = "";
+        if (documentColNmIdf != null) {
+            documentColNm = documentColNmIdf.getSimple();
         }
-        Float[] floatArray = getVectorFloats(operandsList);
+        Float[] floatArray = getDocumentFloats(operandsList);
 
         if (!(operandsList.get(3) instanceof SqlNumericLiteral)) {
             throw new IllegalArgumentException("Top n not number.");
@@ -153,7 +153,7 @@ public final class DingoVectorVisitFun {
             .map(dingoTable.getTable().columns::indexOf)
             .collect(Collectors.toList());
         int priKeyCount = priKeySecList.size();
-        // vector index cols in pri table selection
+        // document index cols in pri table selection
         List<Integer> indexLookupSelectionList = columnNames
             .stream()
             .filter(col -> !col.isPrimary() && col.getState() == 1)
@@ -206,7 +206,7 @@ public final class DingoVectorVisitFun {
         for (RangeDistribution rangeDistribution : indexRanges.values()) {
             Vertex vertex;
             if (transaction == null) {
-                PartVectorParam param = new PartVectorParam(
+                PartDocumentParam param = new PartDocumentParam(
                     tableId,
                     rangeDistribution.id(),
                     rel.tupleType(),
@@ -222,14 +222,14 @@ public final class DingoVectorVisitFun {
                 );
                 vertex = new Vertex(PART_VECTOR, param);
             } else {
-                String finalVectorColNm = vectorColNm;
-                int vectorIdx = dingoTable.getTable()
+                String finalDocumentColNm = documentColNm;
+                int documentIdx = dingoTable.getTable()
                     .columns
                     .stream()
-                    .filter(col -> col.getName().equalsIgnoreCase(finalVectorColNm))
+                    .filter(col -> col.getName().equalsIgnoreCase(finalDocumentColNm))
                     .map(col -> dingoTable.getTable().columns.indexOf(col))
                     .findFirst().orElse(10000);
-                String metricType = getIndexMetricType(dingoTable, vectorColNm);
+                String metricType = getIndexMetricType(dingoTable, documentColNm);
 
                 RelOp relOp = null;
                 if (rexFilter != null) {
@@ -238,7 +238,7 @@ public final class DingoVectorVisitFun {
                         .filter(expr)
                         .build();
                 }
-                TxnPartVectorParam param = new TxnPartVectorParam(
+                TxnPartDocumentParam param = new TxnPartDocumentParam(
                     rangeDistribution.id(),
                     Optional.mapOrNull(filter, SqlExpr::copy),
                     pushDownSelection,
@@ -256,7 +256,7 @@ public final class DingoVectorVisitFun {
                     transaction.getIsolationLevel(),
                     transaction.getLockTimeOut(),
                     resultSelection,
-                    vectorIdx,
+                    documentIdx,
                     metricType
                 );
                 vertex = new Vertex(TXN_PART_VECTOR, param);
@@ -273,14 +273,14 @@ public final class DingoVectorVisitFun {
         return outputs;
     }
 
-    public static Float[] getVectorFloats(List<Object> operandsList) {
+    public static Float[] getDocumentFloats(List<Object> operandsList) {
         Float[] floatArray = null;
         Object call = operandsList.get(2);
         if (call instanceof RexCall) {
             RexCall rexCall = (RexCall) call;
             floatArray = new Float[rexCall.getOperands().size()];
-            int vectorDimension = rexCall.getOperands().size();
-            for (int i = 0; i < vectorDimension; i++) {
+            int documentDimension = rexCall.getOperands().size();
+            for (int i = 0; i < documentDimension; i++) {
                 RexLiteral literal = (RexLiteral) rexCall.getOperands().get(i);
                 floatArray[i] = literal.getValueAs(Float.class);
             }
@@ -298,7 +298,7 @@ public final class DingoVectorVisitFun {
         } else {
             List<SqlNode> sqlNodes = basicCall.getOperandList();
             if (sqlNodes.size() < 2) {
-                throw new RuntimeException("vector load param error");
+                throw new RuntimeException("document load param error");
             }
             List<Object> paramList = sqlNodes.stream().map(e -> {
                 if (e instanceof SqlLiteral) {
@@ -310,27 +310,27 @@ public final class DingoVectorVisitFun {
                 }
             }).collect(Collectors.toList());
             if (paramList.get(1) == null || paramList.get(0) == null) {
-                throw new RuntimeException("vector load param error");
+                throw new RuntimeException("document load param error");
             }
             String param = paramList.get(1).toString();
             if (param.contains("'")) {
                 param = param.replace("'", "");
             }
             String funcName = basicCall.getOperator().getName();
-            if (funcName.equalsIgnoreCase(VectorTextFun.NAME)) {
-                floatArray = VectorExtract.getTxtVector(
+            if (funcName.equalsIgnoreCase(DocumentTextFun.NAME)) {
+                floatArray = DocumentExtract.getTxtDocument(
                     basicCall.getOperator().getName(),
                     paramList.get(0).toString(),
                     param);
-            } else if (funcName.equalsIgnoreCase(VectorImageFun.NAME)) {
+            } else if (funcName.equalsIgnoreCase(DocumentImageFun.NAME)) {
                 if (paramList.size() < 3) {
-                    throw new RuntimeException("vector load param error");
+                    throw new RuntimeException("document load param error");
                 }
                 Object localPath = paramList.get(2);
                 if (!(localPath instanceof Boolean)) {
-                    throw new RuntimeException("vector load param error");
+                    throw new RuntimeException("document load param error");
                 }
-                floatArray = VectorExtract.getImgVector(
+                floatArray = DocumentExtract.getImgDocument(
                     basicCall.getOperator().getName(),
                     paramList.get(0).toString(),
                     paramList.get(1),
@@ -338,7 +338,7 @@ public final class DingoVectorVisitFun {
             }
         }
         if (floatArray == null) {
-            throw new RuntimeException("vector load error");
+            throw new RuntimeException("document load error");
         }
         return floatArray;
     }
@@ -398,7 +398,7 @@ public final class DingoVectorVisitFun {
             return false;
         }
 
-        // vector index only with field can push down
+        // document index only with field can push down
         List<Column> filterIndexCols = indexTable.getColumns().stream()
             .filter(col -> !col.isPrimary() && !(col.getType() instanceof ListType))
             .collect(Collectors.toList());

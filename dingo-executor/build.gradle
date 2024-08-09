@@ -56,7 +56,7 @@ dependencies {
     implementation project(':dingo-driver:dingo-driver-host')
     implementation project(':dingo-driver:dingo-driver-client')
     implementation group: 'com.alibaba', name: 'fastjson', version: 'fastjson'.v()
-    testImplementation project(":dingo-store-local")
+    implementation project(":dingo-store-local")
 }
 
 task fatJar(type: Jar) {

@@ -46,6 +46,11 @@ public class SqlDocumentOperator extends SqlFunction implements SqlTableFunction
             });
     }
 
+    /**
+     * Creates a SqlDocumentOperator.
+     *
+     * @param name        Operator name
+     */
     public SqlDocumentOperator(String name, SqlKind kind) {
         super(
             name,
