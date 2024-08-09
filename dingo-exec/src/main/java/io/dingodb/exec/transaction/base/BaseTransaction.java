@@ -152,10 +152,6 @@ public abstract class BaseTransaction implements ITransaction {
         return Objects.requireNonNull(type) == TransactionType.OPTIMISTIC;
     }
 
-    protected static void sleep() {
-        Utils.sleep(100);
-    }
-
     public void cleanUp(JobManager jobManager) {
         MdcUtils.setTxnId(txnId.toString());
         if (future != null) {
@@ -256,7 +252,7 @@ public abstract class BaseTransaction implements ITransaction {
                     // 2、regin split
                     CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, primaryKey);
                     cacheToObject.setPartId(regionId);
-                    sleep();
+                    Utils.sleep(100);
                 } catch (CommitTsExpiredException e) {
                     LogUtils.error(log, e.getMessage(), e);
                     this.commitTs = TransactionManager.getCommitTs();

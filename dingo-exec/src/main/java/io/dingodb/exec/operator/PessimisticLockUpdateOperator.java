@@ -39,6 +39,7 @@ import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.exec.utils.OpStateUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
@@ -101,6 +102,13 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
             Object[] oldIndexTuple = tuple;
             if (context.getIndexId() != null) {
                 Table indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
+                if (indexTable == null) {
+                    LogUtils.error(log, "[ddl] Pessimistic update get index table null, indexId:{}", context.getIndexId());
+                    return false;
+                }
+                if (!OpStateUtils.allowWrite(indexTable.getSchemaState())) {
+                    return true;
+                }
                 List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
                     .map(Column::getName)
                     .collect(Collectors.toList()));

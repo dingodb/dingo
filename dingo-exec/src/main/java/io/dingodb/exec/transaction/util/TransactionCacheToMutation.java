@@ -28,6 +28,7 @@ import io.dingodb.common.type.scalar.BinaryType;
 import io.dingodb.common.type.scalar.DoubleType;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.exec.transaction.impl.TransactionManager;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.IndexType;
@@ -73,6 +74,9 @@ public final class TransactionCacheToMutation {
         DocumentWithId documentWithId = null;
         if (tableId.type == CommonId.CommonType.INDEX) {
             IndexTable index = (IndexTable) TransactionManager.getIndex(txnId, tableId);
+            if (index == null) {
+                index = (IndexTable) DdlService.root().getTable(tableId);
+            }
             if (!index.indexType.isVector && index.indexType != IndexType.DOCUMENT) {
                 return new Mutation(Op.forNumber(op), key, value, forUpdateTs, null, null);
             }
@@ -80,6 +84,9 @@ public final class TransactionCacheToMutation {
                 index.tableId, index.tupleType(), index.keyMapping()
             );
             Table table = (Table) TransactionManager.getTable(txnId, index.primaryId);
+            if (table == null) {
+                throw new RuntimeException("txn cache to mutation get table is null");
+            }
             Object[] record = keyValueCodec.decode(new KeyValue(key, value));
             Object[] tableRecord = new Object[table.columns.size()];
             for (int i = 0; i < record.length; i++) {

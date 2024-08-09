@@ -22,8 +22,6 @@ import io.dingodb.meta.MetaService;
 import org.apache.calcite.plan.RelOptTable;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.List;
-
 public final class MetaServiceUtils {
 
     public static final String SCHEMA_NAME = "DINGO";
@@ -44,21 +42,6 @@ public final class MetaServiceUtils {
             tableId,
             metaService.getRangeDistribution(tableId)
         );
-    }
-
-    private static String getTableName(@NonNull RelOptTable table) {
-        List<String> names = table.getQualifiedName();
-        return names.get(names.size() - 1);
-    }
-
-    public static MetaService getMetaService(@NonNull RelOptTable table) {
-        List<String> names = table.getQualifiedName();
-        // ignore 0 root schema
-        MetaService metaService = MetaService.root();
-        for (int i = 1; i < names.size() - 1; i++) {
-            metaService = metaService.getSubMetaService(names.get(i));
-        }
-        return metaService;
     }
 
     public static String getSchemaName(String tableName) {

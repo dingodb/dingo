@@ -16,9 +16,11 @@
 
 package io.dingodb.common.mysql;
 
+import io.dingodb.common.ddl.DdlUtil;
+
 public final class InformationSchemaConstant {
-    public static final String GLOBAL_VAR_PREFIX_BEGIN = "global_variables|0|";
-    public static final String GLOBAL_VAR_PREFIX_END = "global_variables|1|";
+    public static final String GLOBAL_VAR_PREFIX_BEGIN = String.format("%s:%s", DdlUtil.tenantPrefix, "global_variables|0|");
+    public static final String GLOBAL_VAR_PREFIX_END = String.format("%s:%s", DdlUtil.tenantPrefix, "global_variables|1|");
 
     private InformationSchemaConstant() {
     }

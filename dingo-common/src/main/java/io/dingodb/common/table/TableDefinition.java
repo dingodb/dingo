@@ -333,7 +333,7 @@ public class TableDefinition {
     }
 
     public TableDefinition copyWithName(String name) {
-        TableDefinition tableDefinition = new TableDefinition(
+        return new TableDefinition(
             name,
             this.columns,
             this.version,
@@ -355,6 +355,9 @@ public class TableDefinition {
             this.indices,
             prepareTableId
         );
-        return tableDefinition;
+    }
+
+    public List<String> getKeyNames() {
+        return getKeyColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList());
     }
 }

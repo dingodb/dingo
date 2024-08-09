@@ -16,9 +16,11 @@
 
 package io.dingodb.server.executor.ddl;
 
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.JobState;
+import io.dingodb.common.ddl.ReorgInfo;
 import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
@@ -29,16 +31,26 @@ import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Table;
+import io.dingodb.store.proxy.mapper.Mapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_DELETE_ONLY;
+import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_DELETE_REORG;
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_NONE;
+import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_PUBLIC;
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_WRITE_ONLY;
+import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_WRITE_REORG;
 
 @Slf4j
 public class DdlWorker {
@@ -218,8 +230,10 @@ public class DdlWorker {
                 res = onTruncateTable(dc, job);
                 break;
             case ActionAddIndex:
+                res = onCreateIndex(dc, job);
                 break;
             case ActionDropIndex:
+                res = onDropIndex(dc, job);
                 break;
             default:
                 job.setState(JobState.jobStateCancelled);
@@ -354,9 +368,18 @@ public class DdlWorker {
         if (job.getArgs() != null) {
             newTableId = (long) job.getArgs().get(0);
         }
+        Pair<Long, String> res;
+        if (job.getSchemaState() == SchemaState.SCHEMA_PUBLIC) {
+            job.setSchemaState(SchemaState.SCHEMA_GLOBAL_TXN_ONLY);
+            return updateSchemaVersion(dc, job);
+        }
+        if ("Lock wait timeout exceeded".equalsIgnoreCase(job.getError())) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, job.getError());
+        }
         ms.truncateTable(job.getTableName(), newTableId);
         //job.setTableId(tableId);
-        Pair<Long, String> res = updateSchemaVersion(dc, job);
+        res = updateSchemaVersion(dc, job);
         if (res.getValue() != null) {
             return res;
         }
@@ -412,6 +435,138 @@ public class DdlWorker {
         return res;
     }
 
+    public Pair<Long, String> onCreateIndex(DdlContext dc, DdlJob job) {
+        if (job.isRollingback()) {
+            return onDropIndex(dc, job);
+        }
+        long schemaId = job.getSchemaId();
+        Pair<TableDefinitionWithId, String> tableInfoRes = TableUtil.getTableInfoAndCancelFaultJob(job, schemaId);
+        if (tableInfoRes.getValue() != null) {
+            return Pair.of(0L, tableInfoRes.getValue());
+        }
+        String error = job.decodeArgs();
+        if (error != null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, error);
+        }
+        // get indexInfoWithId
+        TableDefinition indexInfo = (TableDefinition) job.getArgs().get(0);
+        //TableDefinitionWithId indexDef = null;
+        // check index exists
+        Table table = InfoSchemaService.root().getTableDef(job.getSchemaId(), job.getTableId());
+        if (table == null) {
+            return Pair.of(0L, "table not exists");
+        }
+        // check index column too many
+        // check too many indexes
+        SchemaState originState = indexInfo.getSchemaState();
+        switch (indexInfo.getSchemaState()) {
+            case SCHEMA_NONE:
+                boolean exists = table.getIndexes().stream()
+                    .anyMatch(indexTable -> indexTable.getName().equalsIgnoreCase(indexInfo.getName()));
+                if (exists) {
+                    return Pair.of(0L, "index exists");
+                }
+                IndexUtil.pickBackFillType(job);
+                indexInfo.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
+                // update index def
+                MetaService.root().createIndex(table.tableId, table.getName(), indexInfo);
+                job.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
+                return updateSchemaVersion(dc, job);
+            case SCHEMA_DELETE_ONLY:
+                indexInfo.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
+                TableDefinitionWithId indexWithId = IndexUtil.getIndexWithId(table, indexInfo.getName());
+                indexWithId.getTableDefinition().setSchemaState(SCHEMA_WRITE_ONLY);
+                job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
+                return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId, indexInfo.getSchemaState() != originState);
+            case SCHEMA_WRITE_ONLY:
+                indexInfo.setSchemaState(SchemaState.SCHEMA_WRITE_REORG);
+                indexWithId = IndexUtil.getIndexWithId(table, indexInfo.getName());
+                indexWithId.getTableDefinition().setSchemaState(SCHEMA_WRITE_REORG);
+                job.setSnapshotVer(0);
+                job.setSchemaState(SchemaState.SCHEMA_WRITE_REORG);
+                return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId, indexInfo.getSchemaState() != originState);
+            case SCHEMA_WRITE_REORG:
+                Pair<Boolean, Long> reorgRes;
+                try {
+                    IndexUtil index = IndexUtil.INSTANCE;
+                    indexWithId = IndexUtil.getIndexWithId(table, indexInfo.getName());
+                    reorgRes = index.doReorgWorkForCreateIndex(dc, job, this, table.tableId, indexWithId);
+                } catch (Exception e) {
+                    log.error(e.getMessage(), e);
+                    return Pair.of(0L, e.getMessage());
+                }
+                assert reorgRes != null;
+                if (!reorgRes.getKey()) {
+                    return Pair.of(reorgRes.getValue(), "[ddl] doReorg failed");
+                }
+                indexInfo.setSchemaState(SchemaState.SCHEMA_PUBLIC);
+                job.setSchemaState(SchemaState.SCHEMA_PUBLIC);
+                job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+                indexWithId.getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
+                // update version and index info
+                return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId, originState != indexInfo.getSchemaState());
+            default:
+                error = "ErrInvalidDDLState";
+                break;
+        }
+        return Pair.of(0L, error);
+    }
+
+    public static Pair<Long, String> onDropIndex(DdlContext dc, DdlJob job) {
+        String error = job.decodeArgs();
+        if (error != null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, error);
+        }
+        Table table = InfoSchemaService.root().getTableDef(job.getSchemaId(), job.getTableId());
+        String indexName = job.getArgs().get(0).toString();
+        boolean notExists = table.getIndexes().stream()
+            .noneMatch(indexTable -> indexTable.getName().equalsIgnoreCase(indexName));
+        if (notExists) {
+            return Pair.of(0L, "index not exists");
+        }
+        TableDefinitionWithId indexWithId = IndexUtil.getIndexWithId(table, indexName);
+        io.dingodb.sdk.service.entity.common.SchemaState originState = indexWithId.getTableDefinition().getSchemaState();
+        switch (indexWithId.getTableDefinition().getSchemaState()) {
+            case SCHEMA_PUBLIC:
+                indexWithId.getTableDefinition().setSchemaState(SCHEMA_WRITE_ONLY);
+                job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
+                return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId,
+                    originState != indexWithId.getTableDefinition().getSchemaState()
+                );
+            case SCHEMA_WRITE_ONLY:
+                indexWithId.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
+                job.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
+                return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId,
+                    originState != indexWithId.getTableDefinition().getSchemaState()
+                );
+            case SCHEMA_DELETE_ONLY:
+                indexWithId.getTableDefinition().setSchemaState(SCHEMA_DELETE_REORG);
+                job.setSchemaState(SchemaState.SCHEMA_DELETE_REORG);
+                return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId,
+                    originState != indexWithId.getTableDefinition().getSchemaState()
+                );
+            case SCHEMA_DELETE_REORG:
+                indexWithId.getTableDefinition().setSchemaState(SCHEMA_NONE);
+                job.setSchemaState(SchemaState.SCHEMA_NONE);
+                MetaService.root().dropIndex(table.getTableId(), Mapper.MAPPER.idFrom(indexWithId.getTableId()));
+                if (job.isRollingback()) {
+                    job.finishTableJob(JobState.jobStateRollbackDone, SchemaState.SCHEMA_NONE);
+                } else {
+                    job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_NONE);
+                }
+                return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId,
+                    originState != indexWithId.getTableDefinition().getSchemaState()
+                );
+            default:
+                error = "ErrInvalidDDLState";
+                break;
+        }
+
+        return Pair.of(0L, error);
+    }
+
     public static Pair<SchemaInfo, String> checkSchemaExistAndCancelNotExistJob(DdlJob job) {
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         assert infoSchemaService != null;
@@ -425,7 +580,6 @@ public class DdlWorker {
 
     public static Pair<TableDefinitionWithId, String> checkTableExistAndCancelNonExistJob(DdlJob job, long schemaId) {
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
-        assert infoSchemaService != null;
         try {
             Object tableObj = infoSchemaService.getTable(schemaId, job.getTableId());
             if (tableObj != null) {
@@ -454,7 +608,7 @@ public class DdlWorker {
         long schemaVersion;
         try {
             schemaVersion = dc.getSv().setSchemaVersion(ddlJob);
-            LogUtils.debug(log, "update version value:" + schemaVersion + ", jobId:" + ddlJob.getId());
+            LogUtils.info(log, "update version value:" + schemaVersion + ", jobId:" + ddlJob.getId());
         } catch (Exception e) {
             LogUtils.error(log, "updateSchemaVersion: setSchemaVer failed, reason:{}", e.getMessage());
             return Pair.of(0L, e.getMessage());
@@ -484,7 +638,7 @@ public class DdlWorker {
                     break;
             }
             InfoSchemaService infoSchemaService = InfoSchemaService.root();
-            LogUtils.debug(log, "put schemaDiff:{}", schemaDiff);
+            LogUtils.info(log, "put schemaDiff:{}", schemaDiff);
             infoSchemaService.setSchemaDiff(schemaDiff);
             return Pair.of(schemaVersion, null);
         } catch (Exception e) {
@@ -527,7 +681,68 @@ public class DdlWorker {
             LogUtils.error(log, e.getMessage(), e);
             return e.getMessage();
         }
+    }
 
+    public String runReorgJob(
+        DdlContext dc,
+        ReorgInfo reorgInfo,
+        Function<Void, String> function
+    ) {
+        DdlJob job = reorgInfo.getDdlJob();
+        ReorgCtx rc = dc.getReorgCtx1(job.getId());
+        if (rc == null) {
+            if (job.isCancelling()) {
+                return "ErrCancelledDDLJob";
+            }
+            rc = newReorgCtx(reorgInfo);
+            CompletableFuture<String> done = rc.getDone();
+            Executors.execute("reorg", () -> {
+                String error = function.apply(null);
+                done.complete(error);
+            });
+        }
+
+        try {
+            String error = rc.getDone().get(100, TimeUnit.SECONDS);
+            if (rc.isReorgCanceled() || "ErrCancelledDDLJob".equalsIgnoreCase(error)) {
+                dc.removeReorgCtx(job.getId());
+                return "ErrCancelledDDLJob";
+            }
+            long rowCount = rc.getRowCount();
+            if (error != null) {
+                LogUtils.warn(log, "[ddl] run reorg job done, rows:{}, error:{}", rowCount, error);
+            } else {
+                LogUtils.debug(log, "[ddl] run reorg job done, rows:{}", rowCount);
+            }
+            job.setRowCount(rowCount);
+            dc.removeReorgCtx(job.getId());
+            if (error != null) {
+                return error;
+            }
+        } catch (TimeoutException e1) {
+            long rowCount = rc.getRowCount();
+            job.setRowCount(rowCount);
+            LogUtils.error(log, "run reorg job wait timeout, addCount:{}", rowCount);
+            return "ErrWaitReorgTimeout";
+        } catch (ExecutionException e) {
+            long rowCount = rc.getRowCount();
+            job.setRowCount(rowCount);
+            LogUtils.error(log, "run reorg job execution error, addCount:{}", rowCount);
+            return "ErrReorgExecution";
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return null;
+    }
+
+    public ReorgCtx newReorgCtx(ReorgInfo reorgInfo) {
+        ReorgCtx reorgCtx = ReorgCtx.builder()
+            .done(new CompletableFuture<>())
+            .rowCount(reorgInfo.getDdlJob().getRowCount())
+            .build();
+        reorgCtx.setRowCount(reorgInfo.getDdlJob().getRowCount());
+        DdlContext.INSTANCE.getReorgCtx().putReorg(reorgInfo.getDdlJob().getId(), reorgCtx);
+        return reorgCtx;
     }
 
 }

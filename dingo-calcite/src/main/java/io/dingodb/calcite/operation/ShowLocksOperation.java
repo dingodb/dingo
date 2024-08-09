@@ -27,6 +27,7 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.transaction.base.TxnLocalData;
+import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.InfoCache;
@@ -69,6 +70,12 @@ public class ShowLocksOperation extends QueryOperation {
         default List<TableLock> tableLocks() {
             return TableLockService.getDefault().allTableLocks();
         }
+
+        @ApiDeclaration
+        default long getMinTs() {
+            return TransactionManager.getMinTs();
+        }
+
     }
 
     public static final List<String> COLUMNS = Arrays.asList(

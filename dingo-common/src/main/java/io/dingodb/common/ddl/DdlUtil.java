@@ -37,6 +37,9 @@ public final class DdlUtil {
     public static final String MDL_TEMPLATE = "%s:%s:%d:|0|-%s";
     public static final String ALL_SCHEMA_VER_SYNC_NORMAL_TEMPLATE = "%s:%s:%s";
 
+    public static final byte[] indexElementKey = "_idx_".getBytes();
+    public static final String tenantPrefix = String.format("tenant:%d", TenantConstant.TENANT_ID);
+
     public static boolean mdlEnable = true;
 
     public static int errorCountLimit = 5;

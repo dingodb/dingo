@@ -30,7 +30,6 @@ import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.operator.PessimisticLockInsertOperator;
 import io.dingodb.exec.operator.params.PartDeleteParam;
 import io.dingodb.exec.operator.params.PartInsertParam;
 import io.dingodb.exec.operator.params.PartUpdateParam;
@@ -62,7 +61,10 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_UPDATE;
 
-public class DingoTableModifyVisitFun {
+public final class DingoTableModifyVisitFun {
+    private DingoTableModifyVisitFun() {
+    }
+
     public static Collection<Vertex> visit(Job job, IdGenerator idGenerator, Location currentLocation,
                                            ITransaction transaction, DingoJobVisitor visitor, DingoTableModify rel
     ) {
@@ -95,6 +97,7 @@ public class DingoTableModifyVisitFun {
                                     transaction.getLockTimeOut(),
                                     true,
                                     isScan,
+                                    "insert",
                                     td
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
@@ -127,9 +130,9 @@ public class DingoTableModifyVisitFun {
                                     td.keyMapping(),
                                     true,
                                     transaction.getIsolationLevel(),
-                                    pessimisticTxn ? transaction.getPrimaryKeyLock() : null,
+                                    transaction.getPrimaryKeyLock(),
                                     transaction.getStartTs(),
-                                    pessimisticTxn ? transaction.getForUpdateTs() : 0L,
+                                    transaction.getForUpdateTs(),
                                     transaction.getLockTimeOut(),
                                     td,
                                     rel.isHasAutoIncrement(),
@@ -151,9 +154,9 @@ public class DingoTableModifyVisitFun {
                                     td.keyMapping(),
                                     false,
                                     transaction.getIsolationLevel(),
-                                    pessimisticTxn ? transaction.getPrimaryKeyLock() : null,
+                                    null,
                                     transaction.getStartTs(),
-                                    pessimisticTxn ? transaction.getForUpdateTs() : 0L,
+                                    0L,
                                     transaction.getLockTimeOut(),
                                     td,
                                     rel.isHasAutoIncrement(),
@@ -210,6 +213,7 @@ public class DingoTableModifyVisitFun {
                                     transaction.getLockTimeOut(),
                                     false,
                                     isScan,
+                                    "update",
                                     td
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
@@ -250,9 +254,9 @@ public class DingoTableModifyVisitFun {
                                         .collect(Collectors.toList()),
                                     true,
                                     transaction.getIsolationLevel(),
-                                    pessimisticTxn ? transaction.getPrimaryKeyLock() : null,
+                                    transaction.getPrimaryKeyLock(),
                                     transaction.getStartTs(),
-                                    pessimisticTxn ? transaction.getForUpdateTs() : 0L,
+                                    transaction.getForUpdateTs(),
                                     transaction.getLockTimeOut(),
                                     td,
                                     rel.isHasAutoIncrement(),
@@ -280,9 +284,9 @@ public class DingoTableModifyVisitFun {
                                         .collect(Collectors.toList()),
                                     false,
                                     transaction.getIsolationLevel(),
-                                    pessimisticTxn ? transaction.getPrimaryKeyLock() : null,
+                                    null,
                                     transaction.getStartTs(),
-                                    pessimisticTxn ? transaction.getForUpdateTs() : 0L,
+                                    0L,
                                     transaction.getLockTimeOut(),
                                     td,
                                     rel.isHasAutoIncrement(),
@@ -345,6 +349,7 @@ public class DingoTableModifyVisitFun {
                                     transaction.getLockTimeOut(),
                                     false,
                                     isScan,
+                                    "delete",
                                     td
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
@@ -377,9 +382,9 @@ public class DingoTableModifyVisitFun {
                                     td.keyMapping(),
                                     true,
                                     transaction.getIsolationLevel(),
-                                    pessimisticTxn ? transaction.getPrimaryKeyLock() : null,
+                                    transaction.getPrimaryKeyLock(),
                                     transaction.getStartTs(),
-                                    pessimisticTxn ? transaction.getForUpdateTs() : 0L,
+                                    transaction.getForUpdateTs(),
                                     transaction.getLockTimeOut(),
                                     td
                                 )
@@ -401,9 +406,9 @@ public class DingoTableModifyVisitFun {
                                     td.keyMapping(),
                                     false,
                                     transaction.getIsolationLevel(),
-                                    pessimisticTxn ? transaction.getPrimaryKeyLock() : null,
+                                    null,
                                     transaction.getStartTs(),
-                                    pessimisticTxn ? transaction.getForUpdateTs() : 0L,
+                                    0L,
                                     transaction.getLockTimeOut(),
                                     td
                                 )

@@ -17,6 +17,7 @@
 package io.dingodb.common.meta;
 
 public enum SchemaState {
+    UNRECOGNIZED(-1),
     SCHEMA_NONE(0),
     SCHEMA_DELETE_ONLY(1),
     SCHEMA_WRITE_ONLY(2),

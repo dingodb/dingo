@@ -27,14 +27,12 @@ import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.partition.PartitionDefinition;
-import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.DefinitionUtils;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.service.VersionService;
@@ -165,7 +163,6 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, "DINGO_DDL_BACKFILL_HISTORY", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_DDL_REORG", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_MDL_INFO", BASE_TABLE, TXN_LSM, DYNAMIC);
-        initTableByTemplate(schemaName, "DINGO_MDL_VIEW", BASE_TABLE, TXN_LSM, DYNAMIC);
         log.info("prepare mysql meta table done");
     }
 
@@ -192,6 +189,7 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, "COLUMN_PRIVILEGES", SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, "VIEWS", SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, "COLLATIONS", SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(schemaName, "DINGO_MDL_VIEW", SYSTEM_VIEW, TXN_LSM, FIXED);
         log.info("prepare information meta table done");
     }
 
@@ -415,6 +413,7 @@ public final class PrepareMeta {
             .charset("utf8")
             .collate("utf8_bin")
             .tableType(tableType)
+            .schemaState(SchemaState.SCHEMA_PUBLIC)
             .rowFormat(rowFormat);
 
         if (storeReplica > 0) {
@@ -545,7 +544,7 @@ public final class PrepareMeta {
                 jsonFile = "/mysql-dingoMdlInfo.json";
                 break;
             case "DINGO_MDL_VIEW":
-                jsonFile = "/mysql-dingoMdlView.json";
+                jsonFile = "/information-dingoMdlView.json";
                 break;
             case "DINGO_DDL_REORG":
                 jsonFile = "/mysql-dingoDdlReorg.json";

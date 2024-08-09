@@ -638,7 +638,7 @@ public class DingoMeta extends MetaImpl {
             }
             done = fetchMaxRowCount == 0 || !iterator.hasNext();
             if (transaction != null) {
-                LogUtils.info(log, "{} sql:{} , txnAutoCommit:{}, txnType:{} ", transaction.getTxnId(),
+                LogUtils.debug(log, "{} sql:{} , txnAutoCommit:{}, txnType:{} ", transaction.getTxnId(),
                     signature.sql, transaction.isAutoCommit(), transaction.getType());
                 // clean optimistic current job data
                 if (transaction.isOptimistic() && isDml(signature)) {

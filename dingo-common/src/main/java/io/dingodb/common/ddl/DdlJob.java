@@ -55,6 +55,7 @@ public class DdlJob {
     private String connId;
 
     private byte[] rawArgs;
+    private DdlReorgMeta reorgMeta;
 
     @JsonIgnore
     private List<Object> args;
@@ -224,6 +225,10 @@ public class DdlJob {
                 t = new TypeReference<List<SchemaInfo>>() {};
             } else if (actionType == ActionType.ActionTruncateTable) {
                 t = new TypeReference<List<Long>>() {};
+            } else if (actionType == ActionType.ActionAddIndex) {
+                t = new TypeReference<List<TableDefinition>>() {};
+            } else if (actionType == ActionType.ActionDropIndex) {
+                t = new TypeReference<List<String>>() {};
             }
 
             this.args = (List<Object>) objectMapper.readValue(rawArgs, t);

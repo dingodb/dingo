@@ -49,7 +49,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public final class LoadInfoSchemaTask {
-    //private static final Long tenantId = io.dingodb.meta.InfoSchemaService.tenantId;
 
     private LoadInfoSchemaTask() {
     }
@@ -69,11 +68,7 @@ public final class LoadInfoSchemaTask {
         //long lease = DdlContext.INSTANCE.getLease();
         while (!Thread.interrupted()) {
             loadInfo();
-            try {
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
-                LogUtils.error(log, "reload schema in loop sleep failed, reason:{}", e.getMessage());
-            }
+            Utils.sleep(10000);
         }
         LogUtils.info(log, "[ddl] scheduler interrupted, start in loop");
         scheduler();
@@ -108,7 +103,7 @@ public final class LoadInfoSchemaTask {
         try {
             long startTs = TsoService.getDefault().tso();
             InfoSchemaService infoSchemaService = new InfoSchemaService(startTs);
-            LogUtils.info(log, "[ddl] loadInfoSchema start");
+            //LogUtils.info(log, "[ddl] loadInfoSchema start");
             LoadIsResponse response = loadInfoSchema(infoSchemaService, startTs);
             if (!response.hitCache) {
                 if (response.oldSchemaVersion < response.is.schemaMetaVersion) {
@@ -127,7 +122,7 @@ public final class LoadInfoSchemaTask {
             long end = System.currentTimeMillis();
             long sub = end - start;
             long lease = DdlContext.INSTANCE.getLease();
-            if (sub > (lease / 2) && lease > 0) {
+            if (sub > 2000 && lease > 0) {
                 LogUtils.info(log, "[ddl] loading schema takes a long time, cost:{} ms", sub);
             }
         } catch (Exception e) {
@@ -135,8 +130,6 @@ public final class LoadInfoSchemaTask {
         } finally {
             env.lock.unlock();
         }
-        //end = System.currentTimeMillis();
-        //LogUtils.info(log, "loading schema end, cost:{}", (end - start));
     }
 
     public static LoadIsResponse loadInfoSchema(InfoSchemaService infoSchemaService, long startTs) {
@@ -237,7 +230,7 @@ public final class LoadInfoSchemaTask {
         try {
             resList = session.executeQuery(sql);
             if (resList.isEmpty()) {
-                LogUtils.warn(log, "[ddl] load mdl table info empty, ver:{}", schemaVer);
+                LogUtils.debug(log, "[ddl] load mdl table info empty, ver:{}", schemaVer);
                 return;
             }
         } catch (SQLException e) {

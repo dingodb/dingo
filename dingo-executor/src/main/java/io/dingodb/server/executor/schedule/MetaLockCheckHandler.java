@@ -52,7 +52,7 @@ public final class MetaLockCheckHandler {
                     saveMaxSchemaVersion = maxVer;
                 } else if (!jobNeedToSync) {
                     mdlCheckTableInfo.wUnlock();
-                    LogUtils.info(log, "[ddl] mdl check not need to sync,max ver:{} saveMaxSchema ver:{}", maxVer, saveMaxSchemaVersion);
+                    //LogUtils.info(log, "[ddl] mdl check not need to sync,max ver:{} saveMaxSchema ver:{}", maxVer, saveMaxSchemaVersion);
                     continue;
                 }
                 int jobNeedToCheckCnt = mdlCheckTableInfo.getJobsVerMap().size();
@@ -83,11 +83,11 @@ public final class MetaLockCheckHandler {
                         DdlContext.INSTANCE.getSchemaSyncer().updateSelfVersion(System.identityHashCode(entry), entry.getKey(), entry.getValue());
                         jobCache.put(entry.getKey(), entry.getValue());
                     } catch (Exception e) {
-                        LogUtils.warn(log, "update self version failed");
+                        LogUtils.warn(log, "update self version failed, reason:{}", e.getMessage());
                     }
                 }
             } catch (Exception e) {
-                LogUtils.warn(log, "mdlCheckLoop error, error:" + e.getMessage());
+                LogUtils.error(log, "mdlCheckLoop error, error:" + e.getMessage());
             }
         }
     }

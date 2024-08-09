@@ -20,6 +20,7 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.logical.LogicalIndexScanWithRelOp;
 import io.dingodb.calcite.rel.logical.LogicalScanWithRelOp;
 import io.dingodb.calcite.visitor.RexConverter;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.rel.op.ProjectOp;
 import io.dingodb.expr.rel.op.RelOpBuilder;
@@ -79,6 +80,7 @@ public class DingoFullScanProjectRule extends RelRule<RelRule.Config> {
 
         List<IndexTable> indexTableList = table.getIndexes();
         List<IndexTable> indexTableList1 = indexTableList.stream()
+            .filter(indexTable -> indexTable.getSchemaState() == SchemaState.SCHEMA_PUBLIC)
             .filter(indexTable -> indexTable.getIndexType() == IndexType.SCALAR)
             .filter(indexTable ->
                 exprList.stream().allMatch(expr -> {

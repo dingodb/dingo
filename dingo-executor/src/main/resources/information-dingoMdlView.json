@@ -1,0 +1,25 @@
+ [
+    {
+      "name": "job_id",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "txnStart",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+     "name": "SQL_DIGESTS",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    }
+  ]

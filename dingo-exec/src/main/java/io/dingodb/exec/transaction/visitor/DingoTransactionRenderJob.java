@@ -92,13 +92,13 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
             transaction
         );
         Element element;
-        if (transaction.getChannelMap().size() > 0) {
+        if (!transaction.getChannelMap().isEmpty()) {
             element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_PRE_WRITE);
         } else {
             element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_PRE_WRITE);
         }
         Collection<Vertex> outputs = element.accept(visitor);
-        if (checkRoot && outputs.size() > 0) {
+        if (checkRoot && !outputs.isEmpty()) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
         LogUtils.debug(log, "job = {}", job);
@@ -114,13 +114,13 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
             transaction
         );
         Element element;
-        if (transaction.getChannelMap().size() > 0) {
+        if (!transaction.getChannelMap().isEmpty()) {
             element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_COMMIT);
         } else {
             element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_COMMIT);
         }
         Collection<Vertex> outputs = element.accept(visitor);
-        if (checkRoot && outputs.size() > 0) {
+        if (checkRoot && !outputs.isEmpty()) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
         LogUtils.debug(log, "job = {}", job);
@@ -136,13 +136,13 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
             transaction
         );
         Element element;
-        if (transaction.getChannelMap().size() > 0) {
+        if (!transaction.getChannelMap().isEmpty()) {
             element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_ROLLBACK);
         } else {
             element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_ROLLBACK);
         }
         Collection<Vertex> outputs = element.accept(visitor);
-        if (checkRoot && outputs.size() > 0) {
+        if (checkRoot && !outputs.isEmpty()) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
         LogUtils.debug(log, "job = {}", job);
@@ -158,13 +158,13 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
             transaction
         );
         Element element;
-        if (transaction.getChannelMap().size() > 0) {
+        if (!transaction.getChannelMap().isEmpty()) {
             element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_PESSIMISTIC_ROLLBACK);
         } else {
             element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_PESSIMISTIC_ROLLBACK);
         }
         Collection<Vertex> outputs = element.accept(visitor);
-        if (checkRoot && outputs.size() > 0) {
+        if (checkRoot && !outputs.isEmpty()) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
         LogUtils.debug(log, "job = {}", job);
@@ -180,13 +180,13 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
             transaction
         );
         Element element;
-        if (transaction.getChannelMap().size() > 0) {
+        if (!transaction.getChannelMap().isEmpty()) {
             element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_OPTIMISTIC_ROLLBACK);
         } else {
             element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_OPTIMISTIC_ROLLBACK);
         }
         Collection<Vertex> outputs = element.accept(visitor);
-        if (checkRoot && outputs.size() > 0) {
+        if (checkRoot && !outputs.isEmpty()) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
         LogUtils.debug(log, "job = {}", job);
@@ -202,13 +202,13 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
             transaction
         );
         Element element;
-        if (transaction.getChannelMap().size() > 0) {
+        if (!transaction.getChannelMap().isEmpty()) {
             element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_RESIDUAL_LOCK);
         } else {
             element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_RESIDUAL_LOCK);
         }
         Collection<Vertex> outputs = element.accept(visitor);
-        if (checkRoot && outputs.size() > 0) {
+        if (checkRoot && !outputs.isEmpty()) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
         LogUtils.debug(log, "job = {}", job);
@@ -224,13 +224,13 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
             transaction
         );
         Element element;
-        if (transaction.getChannelMap().size() > 0) {
+        if (!transaction.getChannelMap().isEmpty()) {
             element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_CLEAN_CACHE);
         } else {
             element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_CLEAN_CACHE);
         }
         Collection<Vertex> outputs = element.accept(visitor);
-        if (checkRoot && outputs.size() > 0) {
+        if (checkRoot && !outputs.isEmpty()) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");
         }
         LogUtils.debug(log, "job = {}", job);

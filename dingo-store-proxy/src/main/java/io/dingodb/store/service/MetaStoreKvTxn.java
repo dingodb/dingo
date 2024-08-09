@@ -183,11 +183,6 @@ public class MetaStoreKvTxn {
         commit(key, value, Op.PUT.getCode(), startTs);
     }
 
-    public void commit(byte[] key, byte[] value, int opCode) {
-        long startTs = TsoService.getDefault().tso();
-        commit(key, value, opCode, startTs);
-    }
-
     public void commit(byte[] key, byte[] value, int opCode, long startTs) {
         CommonId txnId = getTxnId(startTs);
         try {
@@ -214,7 +209,7 @@ public class MetaStoreKvTxn {
         }
     }
 
-    private byte[] getMetaDataKey(byte[] key) {
+    private static byte[] getMetaDataKey(byte[] key) {
         byte[] bytes = new byte[9 + key.length];
         byte[] regionKey = getMetaRegionKey();
         System.arraycopy(regionKey, 0, bytes, 0, regionKey.length);
@@ -233,7 +228,7 @@ public class MetaStoreKvTxn {
         return bytes;
     }
 
-    private byte[] getMetaRegionKey() {
+    private static byte[] getMetaRegionKey() {
         byte[] key = new byte[9];
         CodecService.INSTANCE.setId(key, 0);
         key[0] = namespace;
@@ -278,7 +273,7 @@ public class MetaStoreKvTxn {
                     prewriteResult = true;
                 } catch (RegionSplitException e1) {
                     Utils.sleep(100);
-                    LogUtils.error(log, "prewrite primary region split, retry count:" + i);
+                    LogUtils.error(log, "preWrite primary region split, retry count:" + i);
                 }
             }
         }

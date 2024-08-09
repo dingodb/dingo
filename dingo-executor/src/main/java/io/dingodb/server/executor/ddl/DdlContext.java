@@ -41,6 +41,8 @@ public class DdlContext {
 
     private RunningJobs runningJobs = new RunningJobs();
 
+    private ReorgContext reorgCtx = new ReorgContext();
+
     private WaitSchemaSyncedController wc = new WaitSchemaSyncedController();
 
     private SchemaSyncerService schemaSyncer = SchemaSyncerService.root();
@@ -101,6 +103,24 @@ public class DdlContext {
 
     public void rUnlock() {
         lock.readLock().unlock();
+    }
+
+    public void removeReorgCtx(long jobId) {
+        reorgCtx.lock();
+        try {
+            reorgCtx.reorgCtxMap.remove(jobId);
+        } finally {
+            reorgCtx.unLock();
+        }
+    }
+
+    public ReorgCtx getReorgCtx1(long jobId) {
+        getReorgCtx().rLock();
+        try {
+            return getReorgCtx().reorgCtxMap.get(jobId);
+        } finally {
+            getReorgCtx().rUnlock();
+        }
     }
 
 }

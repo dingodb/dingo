@@ -32,7 +32,8 @@ public final class TxnScanWithPipeOpOperator extends TxnScanWithRelOpOperatorBas
 
     @Override
     protected @NonNull Scanner getScanner(@NonNull Context context, @NonNull Vertex vertex) {
-        if (((ScanWithRelOpParam) vertex.getParam()).getCoprocessorMap().get(context.getDistribution().getId()) != null) {
+        ScanWithRelOpParam param = vertex.getParam();
+        if (param.getCoprocessor(context.getDistribution().getId()) != null) {
             return RelOpUtils::doScan;
         }
         return RelOpUtils::doScanWithPipeOp;

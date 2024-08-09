@@ -33,11 +33,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static io.dingodb.common.ddl.DdlUtil.tenantPrefix;
+
 @Slf4j
 public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService {
 
     // prefix is tenant
-    public static String tenantPrefix = String.format("tenant:%d", TenantConstant.TENANT_ID);
     String resource = String.format("tenant:%d:schemaVersion", TenantConstant.TENANT_ID);
 
     LockService lockService = new LockService(resource, Configuration.coordinators(), 180);
@@ -113,9 +114,9 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
             if (kvList.isEmpty()) {
                 long end = System.currentTimeMillis();
                 long cost = end - start;
-                if (cost > 180000) {
+                if (cost > 50000) {
                     LogUtils.error(log, "[ddl] ownerCheckAllVersions take long time, jobId:{}, latestVer:{}", jobId, latestVer);
-                    return "[ddl] take long time, jobId:" + jobId;
+                    return "Lock wait timeout exceeded";
                 }
                 Utils.sleep(100);
                 continue;
@@ -166,11 +167,6 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
 
             Utils.sleep(100);
         }
-    }
-
-    @Override
-    public void watchGlobalSchemaVer() {
-
     }
 
     @Override

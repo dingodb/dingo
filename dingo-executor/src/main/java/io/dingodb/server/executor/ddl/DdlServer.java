@@ -54,11 +54,11 @@ public final class DdlServer {
     }
 
     public static void watchDdlKey() {
-//        String resourceKey = String.format("tenantId:{%d}", TenantConstant.TENANT_ID);
-//        LockService lockService = new LockService(resourceKey, Configuration.coordinators(), 45000);
-//        Kv kv = Kv.builder().kv(KeyValue.builder()
-//            .key(DdlUtil.ADDING_DDL_JOB_CONCURRENT_KEY.getBytes()).build()).build();
-//        lockService.watchAllOpLock(kv, DdlServer::startLoadDDLAndRunByEtcd);
+        String resourceKey = String.format("tenantId:{%d}", TenantConstant.TENANT_ID);
+        LockService lockService = new LockService(resourceKey, Configuration.coordinators(), 45000);
+        Kv kv = Kv.builder().kv(KeyValue.builder()
+            .key(DdlUtil.ADDING_DDL_JOB_CONCURRENT_KEY.getBytes()).build()).build();
+        lockService.watchAllOpLock(kv, DdlServer::startLoadDDLAndRunByEtcd);
     }
 
     public static void startLoadDDLAndRunByEtcd() {
@@ -153,7 +153,7 @@ public final class DdlServer {
                         }
                     } else {
                         try {
-                            waitSchemaSynced(dc, ddlJob, 2 * dc.getLease());
+                            waitSchemaSynced(dc, ddlJob, 2 * dc.getLease(), worker);
                         } catch (Exception e) {
                             pool.returnObject(worker);
                             LogUtils.error(log, "[ddl] wait ddl job sync failed, reason:" + e.getMessage() + ", job:" + ddlJob);
@@ -164,19 +164,19 @@ public final class DdlServer {
                     }
                 }
                 Pair<Long, String> res = worker.handleDDLJobTable(dc, ddlJob);
-                pool.returnObject(worker);
                 if (res.getValue() != null) {
                     LogUtils.error(log, "[ddl] handle ddl job failed, jobId:{}, error:{}", ddlJob.getId(), res.getValue());
                 } else {
                     long schemaVer = res.getKey();
-                    waitSchemaChanged(dc, 2 * dc.getLease(), schemaVer, ddlJob);
+                    waitSchemaChanged(dc, 2 * dc.getLease(), schemaVer, ddlJob, worker);
                     JobTableUtil.cleanMDLInfo(ddlJob.getId());
                     dc.getWc().synced(ddlJob);
                 }
             } catch (Exception e) {
-                LogUtils.error(log, "delivery2worker failed, reason:{}", e.getMessage());
+                LogUtils.error(log, "delivery2worker failed", e);
             } finally {
                 dc.deleteRunningDDLJobMap(ddlJob.getId());
+                pool.returnObject(worker);
                 DdlHandler.asyncNotify(1);
             }
         });
@@ -197,16 +197,22 @@ public final class DdlServer {
         }
     }
 
-    static void waitSchemaSynced(DdlContext ddlContext, DdlJob job, long waitTime) {
+    static void waitSchemaSynced(DdlContext ddlContext, DdlJob job, long waitTime, DdlWorker worker) {
         if (!job.isRunning() && !job.isRollingback() && !job.isDone() && !job.isRollbackDone()) {
             return;
         }
         InfoSchemaService infoSchemaService = new io.dingodb.store.service.InfoSchemaService(0L);
         long latestSchemaVersion = infoSchemaService.getSchemaVersionWithNonEmptyDiff();
-        waitSchemaChanged(ddlContext, waitTime, latestSchemaVersion, job);
+        waitSchemaChanged(ddlContext, waitTime, latestSchemaVersion, job, worker);
     }
 
-    public static void waitSchemaChanged(DdlContext dc, long waitTime, long latestSchemaVersion, DdlJob job) {
+    public static void waitSchemaChanged(
+        DdlContext dc,
+        long waitTime,
+        long latestSchemaVersion,
+        DdlJob job,
+        DdlWorker ddlWorker
+    ) {
         if (!job.isRunning() && !job.isRollingback() && !job.isDone() && !job.isRollbackDone()) {
             return;
         }
@@ -215,7 +221,7 @@ public final class DdlServer {
         }
         long start = System.currentTimeMillis();
         if (latestSchemaVersion == 0) {
-            LogUtils.info(log, "[ddl] schema version doesn't change, jobId:{}", job.getId());
+            LogUtils.error(log, "[ddl] schema version doesn't change, jobId:{}", job.getId());
         }
         try {
             dc.getSchemaSyncer().ownerUpdateGlobalVersion(latestSchemaVersion);
@@ -226,6 +232,10 @@ public final class DdlServer {
         try {
             String error = dc.getSchemaSyncer().ownerCheckAllVersions(job.getId(), latestSchemaVersion);
             if (error != null) {
+                if ("Lock wait timeout exceeded".equalsIgnoreCase(error)) {
+                    job.setError(error);
+                    ddlWorker.updateDDLJob(job, false);
+                }
                 LogUtils.error(log, "[ddl] wait latest schema version encounter error, latest version:{}, jobId:{}" , latestSchemaVersion, job.getId());
                 return;
             }

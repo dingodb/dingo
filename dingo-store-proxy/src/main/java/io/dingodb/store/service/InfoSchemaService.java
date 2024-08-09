@@ -582,6 +582,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         try {
             schemaDiff = this.getSchemaDiff(version);
         } catch (Exception e) {
+            log.error("get schema ver diff error,reason:" + e.getMessage(), e);
             return 0;
         }
         if (schemaDiff == null && version > 0) {
@@ -668,6 +669,15 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         byte[] tableKey = tableKey(tableDefinitionWithId.getTableId().getEntityId());
         byte[] val = getBytesFromObj(table);
         this.txn.hPut(schemaKey, tableKey, val);
+    }
+
+    @Override
+    public void updateIndex(long tableId, Object index) {
+        byte[] tableKey = tableKey(tableId);
+        TableDefinitionWithId indexInfo = (TableDefinitionWithId) index;
+        byte[] indexKey = indexKey(indexInfo.getTableId().getEntityId());
+        byte[] val = getBytesFromObj(index);
+        this.txn.hPut(tableKey, indexKey, val);
     }
 
     @Override

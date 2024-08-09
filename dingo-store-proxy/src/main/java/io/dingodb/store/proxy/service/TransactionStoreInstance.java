@@ -26,9 +26,6 @@ import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.meta.DdlService;
-import io.dingodb.meta.MetaService;
-import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.DocumentService;
@@ -240,18 +237,16 @@ public class TransactionStoreInstance {
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
         AtomicReference<String> joinedKey = new AtomicReference<>("");
         TupleMapping keyMapping = table.keyMapping();
-        keysAlreadyExist.stream().forEach(
-            i -> {
-                Optional.ofNullable(codec.decodeKeyPrefix(i.getKey()))
-                    .ifPresent(keyValues -> {
-                        joinedKey.set(joinPrimaryKeys(joinedKey.get(), joinPrimaryKey(keyValues, keyMapping)));
-                    });
-            }
+        keysAlreadyExist.forEach(
+            i -> Optional.ofNullable(codec.decodeKeyPrefix(i.getKey()))
+                .ifPresent(keyValues -> {
+                    joinedKey.set(joinPrimaryKeys(joinedKey.get(), joinPrimaryKey(keyValues, keyMapping)));
+                })
         );
         throw new DuplicateEntryException("Duplicate entry " + joinedKey.get() + " for key '" + table.getName() + ".PRIMARY'");
     }
 
-    public Future txnPreWritePrimaryKey(TxnPreWrite txnPreWrite, long timeOut) {
+    public Future<?> txnPreWritePrimaryKey(TxnPreWrite txnPreWrite, long timeOut) {
         if (txnPreWrite(txnPreWrite, timeOut)) {
             LogUtils.info(log, "txn heartbeat, startTs:{}", txnPreWrite.getStartTs());
             return Executors.scheduleWithFixedDelayAsync("txn-heartbeat-" + txnPreWrite.getStartTs(), () -> heartbeat(txnPreWrite), 1, 1, SECONDS);
@@ -598,7 +593,7 @@ public class TransactionStoreInstance {
                     if (funName.equalsIgnoreCase("txnPessimisticLock")) {
                         continue;
                     }
-                    throw new WriteConflictException(writeConflict.toString());
+                    throw new WriteConflictException(writeConflict.toString(), writeConflict.getKey());
                 }
             }
         }
@@ -725,7 +720,7 @@ public class TransactionStoreInstance {
                 WriteConflict writeConflict = txnResultInfo.getWriteConflict();
                 LogUtils.info(log, "{} writeConflict : {}", funName, writeConflict);
                 if (writeConflict != null) {
-                    throw new WriteConflictException(writeConflict.toString());
+                    throw new WriteConflictException(writeConflict.toString(), writeConflict.getKey());
                 }
             }
         }
