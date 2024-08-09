@@ -122,7 +122,7 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
                 param.getScanTs(),
                 param.getTimeout()
             );
-            param.setCoprocessor(null);
+            param.setNullCoprocessor(distribution.getId());
             Iterator<Object[]> iterator = createMergedIterator(localIterator, storeIterator, param.getCodec());
             if (param.getRelOp() != null && param.getRelOp() instanceof PipeOp) {
                 PipeOp op = (PipeOp) param.getRelOp();

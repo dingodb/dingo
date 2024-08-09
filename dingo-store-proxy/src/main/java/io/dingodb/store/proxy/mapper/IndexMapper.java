@@ -16,9 +16,12 @@
 
 package io.dingodb.store.proxy.mapper;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.sdk.service.entity.common.DocumentIndexParameter;
 import io.dingodb.sdk.service.entity.common.IndexParameter;
 import io.dingodb.sdk.service.entity.common.IndexType;
 import io.dingodb.sdk.service.entity.common.MetricType;
@@ -26,6 +29,8 @@ import io.dingodb.sdk.service.entity.common.ScalarField;
 import io.dingodb.sdk.service.entity.common.ScalarFieldType;
 import io.dingodb.sdk.service.entity.common.ScalarIndexParameter;
 import io.dingodb.sdk.service.entity.common.ScalarIndexType;
+import io.dingodb.sdk.service.entity.common.ScalarSchema;
+import io.dingodb.sdk.service.entity.common.ScalarSchemaItem;
 import io.dingodb.sdk.service.entity.common.ScalarValue;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexParameterNest.DiskannParameter;
@@ -34,8 +39,12 @@ import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexPara
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexParameterNest.IvfFlatParameter;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexParameterNest.IvfPqParameter;
 import io.dingodb.sdk.service.entity.common.VectorIndexType;
+import io.dingodb.sdk.service.entity.meta.ColumnDefinition;
 import io.dingodb.sdk.service.entity.meta.TableDefinition;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -70,6 +79,8 @@ public interface IndexMapper {
                         "Unexpected value: " + indexParameter.getVectorIndexParameter().getVectorIndexType()
                     );
             }
+        } else if (indexParameter.getIndexType() == IndexType.INDEX_TYPE_DOCUMENT) {
+            builder.indexType(io.dingodb.meta.entity.IndexType.DOCUMENT);
         } else {
             builder.indexType(io.dingodb.meta.entity.IndexType.SCALAR);
         }
@@ -97,6 +108,58 @@ public interface IndexMapper {
                         .scalarIndexType(ScalarIndexType.SCALAR_INDEX_TYPE_LSM)
                         .build()
                     ).build()
+            );
+        } else if (indexType.equals("document")) {
+            DocumentIndexParameter documentIndexParameter;
+            List<String> columnNames = indexDefinition.getColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList());
+            String json = properties.get("text_fields");
+            try {
+                JsonNode jsonNode = JSON.readTree(json);
+                Iterator<Map.Entry<String, JsonNode>> fields = jsonNode.fields();
+                List<ScalarSchemaItem> scalarSchemaItems = new ArrayList<>();
+                while (fields.hasNext()) {
+                    Map.Entry<String, JsonNode> next = fields.next();
+                    if (!columnNames.contains(next.getKey().toUpperCase())) {
+                        throw new RuntimeException("The field: [" + next.getKey() + "] does not exist in the document index");
+                    }
+                    String type = next.getValue().get("tokenizer").get("type").asText();
+                    ScalarFieldType scalarFieldType;
+                    switch (type.toLowerCase()) {
+                        case "default":
+                        case "raw":
+                        case "simple":
+                        case "stem":
+                        case "whitespace":
+                        case "ngram":
+                        case "chinese":
+                            scalarFieldType = ScalarFieldType.STRING;
+                            break;
+                        case "i64":
+                            scalarFieldType = ScalarFieldType.INT64;
+                            break;
+                        case "f64":
+                            scalarFieldType = ScalarFieldType.DOUBLE;
+                            break;
+                        case "bytes":
+                            scalarFieldType = ScalarFieldType.BYTES;
+                            break;
+                        default:
+                            throw new IllegalStateException("Unsupported type: " + type);
+                    }
+                    scalarSchemaItems.add(ScalarSchemaItem.builder().key(next.getKey().toUpperCase()).fieldType(scalarFieldType).build());
+                }
+                documentIndexParameter = DocumentIndexParameter.builder()
+                    .scalarSchema(ScalarSchema.builder().fields(scalarSchemaItems).build())
+                    .jsonParameter(json)
+                    .build();
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+            indexDefinition.setIndexParameter(
+                IndexParameter.builder()
+                    .indexType(IndexType.INDEX_TYPE_DOCUMENT)
+                    .documentIndexParameter(documentIndexParameter)
+                    .build()
             );
         } else {
             VectorIndexParameter vectorIndexParameter;

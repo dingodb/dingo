@@ -35,10 +35,10 @@ import org.apache.calcite.sql.validate.TableFunctionNamespace;
 
 import java.util.Collections;
 
-public class SqlVectorOperator extends SqlFunction implements SqlTableFunction {
+public class SqlDocumentOperator extends SqlFunction implements SqlTableFunction {
 
     public static void register(DingoParserContext context) {
-        StandardConvertletTable.INSTANCE.registerOp(SqlUserDefinedOperators.VECTOR,
+        StandardConvertletTable.INSTANCE.registerOp(SqlUserDefinedOperators.DOCUMENT,
             (cx, call) -> {
                 RexBuilder rexBuilder = cx.getRexBuilder();
                 TableFunctionNamespace namespace = (TableFunctionNamespace) cx.getValidator().getNamespace(call);
@@ -46,12 +46,7 @@ public class SqlVectorOperator extends SqlFunction implements SqlTableFunction {
             });
     }
 
-    /**
-     * Creates a SqlVectorOperator.
-     *
-     * @param name        Operator name
-     */
-    public SqlVectorOperator(String name, SqlKind kind) {
+    public SqlDocumentOperator(String name, SqlKind kind) {
         super(
             name,
             kind,
@@ -62,7 +57,8 @@ public class SqlVectorOperator extends SqlFunction implements SqlTableFunction {
         );
     }
 
-    @Override public SqlReturnTypeInference getRowTypeInference() {
+    @Override
+    public SqlReturnTypeInference getRowTypeInference() {
         return this::inferRowType;
     }
 
@@ -73,7 +69,6 @@ public class SqlVectorOperator extends SqlFunction implements SqlTableFunction {
     }
 
     private TranslatableTable getTable(DingoParserContext context, String tableName) {
-        return  (TranslatableTable) context.getDefaultSchema().getTable(tableName, false).getTable();
+        return (TranslatableTable) context.getDefaultSchema().getTable(tableName, false).getTable();
     }
-
 }

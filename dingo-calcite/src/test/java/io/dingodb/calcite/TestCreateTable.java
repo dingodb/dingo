@@ -73,6 +73,20 @@ public class TestCreateTable {
     }
 
     @Test
+    public void createTenant() {
+        String sql = "CREATE TENANT test_tenant";
+        SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
+        SqlParser parser = SqlParser.create(sql, config);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            System.out.println("---> sqlNode: " + sqlNode);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException();
+        }
+    }
+
+    @Test
     public void createUserWithLocation() {
         String sql = "CREATE USER 'gj'@localhost IDENTIFIED BY 'abc'";
         SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);

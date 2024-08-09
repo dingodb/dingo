@@ -39,7 +39,6 @@ sed -i 's/COORDINATORS/'"$COORDINATORS"'/g' ${ROOT}/conf/application-proxy-dev.y
 
 if [[ $ROLE == "executor" ]]
 then
-    ./bin/mysql_init.sh
     ./bin/start-executor.sh
 elif [[ $ROLE == "proxy" ]]
 then

@@ -266,7 +266,15 @@ public class MetaCache {
 
     public void invalidateTable(long schema, long table) {
         LogUtils.info(log, "Invalid table {}.{}", schema, table);
-        tableIdCache.remove(new CommonId(TABLE, schema, table));
+        CommonId tableId = new CommonId(TABLE, schema, table);
+        Table tableEntity = tableIdCache.get(tableId);
+        tableIdCache.remove(tableId);
+        SchemaInfo schemaInfo = (SchemaInfo) infoSchemaService.getSchema(schema);
+        if (schemaInfo != null && tableEntity != null) {
+            if (cache.containsKey(schemaInfo.getName())) {
+                cache.get(schemaInfo.getName()).remove(tableEntity.name);
+            }
+        }
     }
 
     public void invalidateTable(String schemaName, String tableName) {
@@ -364,7 +372,7 @@ public class MetaCache {
             if (index == null) {
                 return null;
             }
-            TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(0, tableId.domain);
+            TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(tableId.domain);
             Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
             return table.getIndexes().stream()
                 .filter(indexTable -> indexTable.tableId.seq == tableId.seq).findFirst().orElse(null);

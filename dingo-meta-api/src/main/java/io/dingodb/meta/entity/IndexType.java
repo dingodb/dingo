@@ -18,6 +18,7 @@ package io.dingodb.meta.entity;
 
 public enum IndexType {
     SCALAR(false),
+    DOCUMENT(false),
     VECTOR_FLAT(true),
     VECTOR_IVF_FLAT(true),
     VECTOR_IVF_PQ(true),

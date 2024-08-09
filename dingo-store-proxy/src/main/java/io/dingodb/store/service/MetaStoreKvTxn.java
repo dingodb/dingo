@@ -183,7 +183,7 @@ public class MetaStoreKvTxn {
         long startTs = TsoService.getDefault().tso();
         try {
             Mutation mutation = new Mutation(
-                io.dingodb.store.api.transaction.data.Op.forNumber(opCode), key, value, 0, null
+                io.dingodb.store.api.transaction.data.Op.forNumber(opCode), key, value, 0, null, null
             );
             preWritePrimaryKey(mutation, startTs);
         } catch (WriteConflictException e) {
@@ -237,7 +237,7 @@ public class MetaStoreKvTxn {
     ) {
         byte[] primaryKey = mutation.getKey();
         // 2、call sdk preWritePrimaryKey
-        long lockTtl = TsoService.getDefault().timestamp() + 60;
+        long lockTtl = TsoService.getDefault().timestamp() + 60000;
 
         TxnPreWrite txnPreWrite = TxnPreWrite.builder()
             .isolationLevel(IsolationLevel.of(

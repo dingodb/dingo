@@ -29,6 +29,7 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.common.utils.Optional;
+import io.dingodb.sdk.service.DocumentService;
 import io.dingodb.sdk.service.IndexService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.StoreService;
@@ -36,6 +37,7 @@ import io.dingodb.sdk.service.entity.common.KeyValue;
 import io.dingodb.sdk.service.entity.store.Action;
 import io.dingodb.sdk.service.entity.store.AlreadyExist;
 import io.dingodb.sdk.service.entity.store.LockInfo;
+import io.dingodb.sdk.service.entity.store.Mutation;
 import io.dingodb.sdk.service.entity.store.Op;
 import io.dingodb.sdk.service.entity.store.TxnBatchGetRequest;
 import io.dingodb.sdk.service.entity.store.TxnBatchGetResponse;
@@ -95,13 +97,19 @@ public class TransactionStoreInstance {
     private final StoreService storeService;
     private final IndexService indexService;
     private final CommonId partitionId;
+    private final DocumentService documentService;
 
     private final static int VectorKeyLen = 17;
 
     public TransactionStoreInstance(StoreService storeService, IndexService indexService, CommonId partitionId) {
+        this(storeService, indexService, null, partitionId);
+    }
+
+    public TransactionStoreInstance(StoreService storeService, IndexService indexService, DocumentService documentService, CommonId partitionId) {
         this.storeService = storeService;
         this.partitionId = partitionId;
         this.indexService = indexService;
+        this.documentService = documentService;
     }
 
     private byte[] setId(byte[] key) {
@@ -116,6 +124,8 @@ public class TransactionStoreInstance {
             .build();
         if (indexService != null) {
             indexService.txnHeartBeat(request.getStartTs(), request);
+        } else if (documentService != null) {
+            documentService.txnHeartBeat(request.getStartTs(), request);
         } else {
             storeService.txnHeartBeat(request.getStartTs(), request);
         }
@@ -129,6 +139,8 @@ public class TransactionStoreInstance {
             .build();
         if (indexService != null) {
             indexService.txnHeartBeat(request.getStartTs(), request);
+        } else if (documentService != null) {
+            documentService.txnHeartBeat(request.getStartTs(), request);
         } else {
             storeService.txnHeartBeat(request.getStartTs(), request);
         }
@@ -146,8 +158,11 @@ public class TransactionStoreInstance {
         while (true) {
             TxnPrewriteRequest request = MAPPER.preWriteTo(txnPreWrite);
             TxnPrewriteResponse response;
-            if (request.getMutations().get(0).getVector() == null) {
+            Mutation mutation = request.getMutations().get(0);
+            if (mutation.getVector() == null && mutation.getDocument() == null) {
                 response = storeService.txnPrewrite(txnPreWrite.getStartTs(), request);
+            } else if (mutation.getDocument() != null) {
+                response = documentService.txnPrewrite(txnPreWrite.getStartTs(), request);
             } else {
                 response = indexService.txnPrewrite(txnPreWrite.getStartTs(), request);
             }
@@ -249,6 +264,8 @@ public class TransactionStoreInstance {
         TxnCommitResponse response;
         if (indexService != null) {
             response = indexService.txnCommit(txnCommit.getStartTs(), MAPPER.commitTo(txnCommit));
+        } else if (documentService != null) {
+            response = documentService.txnCommit(txnCommit.getCommitTs(), MAPPER.commitTo(txnCommit));
         } else {
             response = storeService.txnCommit(txnCommit.getStartTs(), MAPPER.commitTo(txnCommit));
         }
@@ -278,6 +295,9 @@ public class TransactionStoreInstance {
             if (indexService != null) {
                 txnPessimisticLock.getMutations().stream().forEach( $ -> $.setKey(Arrays.copyOf($.getKey(), VectorKeyLen)));
                 response = indexService.txnPessimisticLock(txnPessimisticLock.getStartTs(), MAPPER.pessimisticLockTo(txnPessimisticLock));
+            } else if (documentService != null) {
+
+                response = documentService.txnPessimisticLock(txnPessimisticLock.getLockTtl(), MAPPER.pessimisticLockTo(txnPessimisticLock));
             } else {
                 response = storeService.txnPessimisticLock(txnPessimisticLock.getStartTs(), MAPPER.pessimisticLockTo(txnPessimisticLock));
             }
@@ -330,6 +350,9 @@ public class TransactionStoreInstance {
                 .collect(Collectors.toList());
             txnPessimisticRollBack.setKeys(newKeys);
             response = indexService.txnPessimisticRollback(startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
+        } else if (documentService != null) {
+
+            response = documentService.txnPessimisticRollback(startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
         } else {
             response = storeService.txnPessimisticRollback(startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
         }
@@ -440,6 +463,8 @@ public class TransactionStoreInstance {
         if (indexService != null) {
             txnBatchRollBack.getKeys().stream().forEach( $ -> Arrays.copyOf($, VectorKeyLen));
             response = indexService.txnBatchRollback(txnBatchRollBack.getStartTs(), MAPPER.rollbackTo(txnBatchRollBack));
+        } else if (documentService != null) {
+            response = documentService.txnBatchRollback(txnBatchRollBack.getStartTs(), MAPPER.rollbackTo(txnBatchRollBack));
         } else {
             response = storeService.txnBatchRollback(txnBatchRollBack.getStartTs(), MAPPER.rollbackTo(txnBatchRollBack));
         }
@@ -458,6 +483,9 @@ public class TransactionStoreInstance {
     public TxnResolveLockResponse txnResolveLock(TxnResolveLock txnResolveLock) {
         if (indexService != null) {
             return indexService.txnResolveLock(txnResolveLock.getStartTs(), MAPPER.resolveTxnTo(txnResolveLock));
+        }
+        if (documentService != null) {
+            return documentService.txnResolveLock(txnResolveLock.getStartTs(), MAPPER.resolveTxnTo(txnResolveLock));
         }
         return storeService.txnResolveLock(txnResolveLock.getStartTs(), MAPPER.resolveTxnTo(txnResolveLock));
     }

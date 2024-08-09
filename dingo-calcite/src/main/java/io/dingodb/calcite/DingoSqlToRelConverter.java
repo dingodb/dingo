@@ -35,6 +35,7 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.TableFunctionNamespace;
+import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.SqlVectorOperator;
@@ -103,7 +104,7 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
     @Override
     protected void convertCollectionTable(Blackboard bb, SqlCall call) {
         final SqlOperator operator = call.getOperator();
-        if (!(operator instanceof SqlFunctionScanOperator) && !(operator instanceof SqlVectorOperator)) {
+        if (!(operator instanceof SqlFunctionScanOperator) && !(operator instanceof SqlVectorOperator) && !(operator instanceof SqlDocumentOperator)) {
             super.convertCollectionTable(bb, call);
             return;
         }

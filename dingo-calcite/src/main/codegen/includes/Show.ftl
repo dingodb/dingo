@@ -61,6 +61,10 @@ SqlShow SqlShow(): {
     show = SqlShowStarTs(s)
     |
     show = SqlShowStatus(s)
+    |
+    show = SqlShowTenants(s)
+    |
+    show = SqlShowExecutors(s)
   )
   {
     return show;
@@ -265,4 +269,18 @@ SqlShow SqlShowStatus(Span s): {
 } {
   <STATUS> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
   { return new SqlShowStatus(s.end(this), pattern); }
+}
+
+SqlShow SqlShowTenants(Span s): {
+  String pattern = null;
+} {
+  <TENANTS> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  { return new SqlShowTenants(s.end(this), pattern); }
+}
+
+SqlShow SqlShowExecutors(Span s): {
+  String pattern = null;
+} {
+  <EXECUTORS> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  { return new SqlShowExecutors(s.end(this), pattern); }
 }

@@ -43,6 +43,7 @@ import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
 import io.dingodb.sdk.common.serial.schema.DingoSchema;
 import io.dingodb.sdk.common.serial.schema.LongSchema;
 import io.dingodb.sdk.service.ChannelProvider;
+import io.dingodb.sdk.service.DocumentService;
 import io.dingodb.sdk.service.IndexService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.entity.common.Location;
@@ -95,7 +96,7 @@ import static java.util.function.Function.identity;
 @Slf4j
 public final class StoreService implements io.dingodb.store.api.StoreService {
     public static final StoreService DEFAULT_INSTANCE = new StoreService();
-    public static final int RETRY = 20;
+    public static final int RETRY = 40;
 
     @AutoService(io.dingodb.store.api.StoreServiceProvider.class)
     public static final class StoreServiceProvider implements io.dingodb.store.api.StoreServiceProvider {
@@ -173,6 +174,10 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         return Services.indexRegionService(coordinators, regionId.getEntityId(), RETRY);
     }
 
+    public DocumentService documentService(CommonId tableId, CommonId regionId) {
+        return Services.documentRegionService(coordinators, regionId.seq, RETRY);
+    }
+
     public io.dingodb.sdk.service.StoreService storeService(CommonId tableId, CommonId regionId) {
         return Services.storeRegionService(coordinators, regionId.seq, RETRY);
     }
@@ -202,6 +207,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
         private final TransactionStoreInstance transactionStoreInstance;
         private final io.dingodb.sdk.service.StoreService storeService;
         private IndexService indexService;
+        private DocumentService documentService;
 
         public StoreInstance(CommonId tableId, CommonId regionId) {
             this.storeTableId = MAPPER.idTo(tableId);
@@ -223,7 +229,11 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 && ((IndexTable) table).indexType.isVector) {
                 indexService = indexService(tableId, regionId);
             }
-            this.transactionStoreInstance = new TransactionStoreInstance(storeService, indexService, partitionId);
+            if (tableId.type == CommonId.CommonType.INDEX && table instanceof IndexTable
+                && (((IndexTable) table).indexType == IndexType.DOCUMENT)) {
+                documentService = documentService(tableId, regionId);
+            }
+            this.transactionStoreInstance = new TransactionStoreInstance(storeService, indexService, documentService, partitionId);
         }
 
         public StoreInstance(CommonId tableId, CommonId regionId, CommonId indexId) {

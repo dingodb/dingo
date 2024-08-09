@@ -26,6 +26,7 @@ import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
@@ -57,7 +58,6 @@ import io.dingodb.sdk.service.entity.coordinator.SplitRegionRequest;
 import io.dingodb.sdk.service.entity.meta.AddIndexOnTableRequest;
 import io.dingodb.sdk.service.entity.meta.CreateAutoIncrementRequest;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
-import io.dingodb.sdk.service.entity.meta.DropIndexOnTableRequest;
 import io.dingodb.sdk.service.entity.meta.EntityType;
 import io.dingodb.sdk.service.entity.meta.GenerateTableIdsRequest;
 import io.dingodb.sdk.service.entity.meta.GetSchemasRequest;
@@ -66,7 +66,6 @@ import io.dingodb.sdk.service.entity.meta.GetTableByNameRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableMetricsRequest;
 import io.dingodb.sdk.service.entity.meta.GetTableMetricsResponse;
 import io.dingodb.sdk.service.entity.meta.GetTableRequest;
-import io.dingodb.sdk.service.entity.meta.GetTablesRequest;
 import io.dingodb.sdk.service.entity.meta.Partition;
 import io.dingodb.sdk.service.entity.meta.ReservedSchemaIds;
 import io.dingodb.sdk.service.entity.meta.Schema;
@@ -162,15 +161,15 @@ public class MetaService implements io.dingodb.meta.MetaService {
         cache.clear();
     }
 
-    private String cleanTableName(String name) {
+    private static String cleanTableName(String name) {
         return cleanName(name, "Table");
     }
 
-    private String cleanSchemaName(String name) {
+    private static String cleanSchemaName(String name) {
         return cleanName(name, "Schema");
     }
 
-    private String cleanName(String name, String source) {
+    private static String cleanName(String name, String source) {
         if (warnPattern.matcher(name).matches()) {
             LogUtils.warn(log, "{} name currently only supports uppercase letters, LowerCase -> UpperCase", source);
             name = name.toUpperCase();
@@ -493,34 +492,29 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public void dropIndex(CommonId table, CommonId index) {
-        api.dropIndexOnTable(
-            tso(),
-            name,
-            DropIndexOnTableRequest.builder()
-                .tableId(MAPPER.idTo(table))
-                .indexId(MAPPER.idTo(index))
-                .build()
-        );
+        CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
+        ((io.dingodb.meta.MetaService) MetaService.ROOT).getRangeDistribution(index).values().forEach(rangeDistribution -> {
+            coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build());
+        });
+        infoSchemaService.dropIndex(table.seq, index.seq);
+        cache.invalidateIndex(index.domain, index.seq);
+        cache.invalidateTable(table.domain, table.seq);
     }
 
     @Override
     public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id) {
-        // infoSchemaService.getTable()
-
-        return service.getTables(
-            tso(),
-            GetTablesRequest.builder()
-                .tableId(MAPPER.idTo(id))
-                .build()
-        ).getTableDefinitionWithIds().stream().collect(Collectors.toMap(entry -> MAPPER.idFrom(entry.getTableId()), entry -> {
-            TableDefinition table = mapping1(entry);
-            String tableName = table.getName();
-            String[] split = tableName.split("\\.");
-                if (split.length > 1) {
-                    tableName = split[split.length - 1];
-                }
-                return table.copyWithName(tableName);
-            }));
+         return infoSchemaService.listIndex(id.domain, id.seq)
+             .stream()
+             .map(obj -> (TableDefinitionWithId)obj)
+             .collect(Collectors.toMap(entry -> MAPPER.idFrom(entry.getTableId()), entry -> {
+                 TableDefinition table = mapping1(entry);
+                 String tableName = table.getName();
+                 String[] split = tableName.split("\\.");
+                 if (split.length > 1) {
+                     tableName = split[split.length - 1];
+                 }
+                 return table.copyWithName(tableName);
+             }));
     }
 
     private TableDefinition mapping1(TableDefinitionWithId tableDefinitionWithId) {
@@ -609,22 +603,16 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
         io.dingodb.meta.MetaService metaService = io.dingodb.meta.MetaService.root();
         io.dingodb.meta.MetaService metaService1 = metaService.getSubMetaService(name);
-        metaService1.getRangeDistribution(MAPPER.idFrom(table.getTableId())).values().forEach(rangeDistribution -> {
-            coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build());
-        });
+        metaService1.getRangeDistribution(MAPPER.idFrom(table.getTableId())).values().forEach(rangeDistribution -> coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build()));
 
         for (TableDefinitionWithId index : indexes) {
-            metaService1.getRangeDistribution(MAPPER.idFrom(index.getTableId())).values().forEach(rangeDistribution -> {
-                coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build());
-            });
+            metaService1.getRangeDistribution(MAPPER.idFrom(index.getTableId())).values().forEach(rangeDistribution -> coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build()));
         }
 
         List<DingoCommonId> oldIds = new ArrayList<>();
         oldIds.add(table.getTableId());
         indexes.stream().map(TableDefinitionWithId::getTableId)
-            .forEach(dingoCommonId -> {
-                infoSchemaService.dropIndex(dingoCommonId.getParentEntityId(), dingoCommonId.getEntityId());
-            });
+            .forEach(dingoCommonId -> infoSchemaService.dropIndex(dingoCommonId.getParentEntityId(), dingoCommonId.getEntityId()));
 
         // Reset table id.
         TableIdWithPartIds newTableId =
@@ -737,13 +725,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
         cache.invalidateTable(id.getEntityId(), table.getTableId().getEntityId());
         cache.invalidateTable(name(), tableName);
-        indexes.forEach(index -> {
-            cache.invalidateIndex(index.getTableId().getParentEntityId(), index.getTableId().getEntityId());
-        });
+        indexes.forEach(index -> cache.invalidateIndex(index.getTableId().getParentEntityId(), index.getTableId().getEntityId()));
         return true;
     }
 
-    private void resetTableId(TableIdWithPartIds newTableId, TableDefinitionWithId table) {
+    private static void resetTableId(TableIdWithPartIds newTableId, TableDefinitionWithId table) {
         table.setTableId(newTableId.getTableId());
         List<Partition> partitions = table.getTableDefinition().getTablePartition().getPartitions();
         for (int i = 0; i < newTableId.getPartIds().size(); i++) {
@@ -773,9 +759,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         });
 
         for (IndexTable index : indexes) {
-            metaService1.getRangeDistribution(index.tableId).values().forEach(rangeDistribution -> {
-                coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build());
-            });
+            metaService1.getRangeDistribution(index.tableId).values().forEach(rangeDistribution -> coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build()));
         }
 
         List<CommonId> indexIds = indexes.stream().map(Table::getTableId).collect(Collectors.toList());
@@ -783,10 +767,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
         indexIds.forEach(indexId -> {
             infoSchemaService.dropIndex(indexId.domain, indexId.seq);
         });
-        //List<CommonId> tableIds = Stream.concat(
-        //    Stream.of(table.getTableId()), indexIds.stream()).collect(Collectors.toList()
-        //);
-        //tableIds.forEach(tableId -> infoSchemaService.dropTable(tenantId, id.getEntityId(), tableId.seq));
         cache.invalidateTable(table.getTableId().domain, table.getTableId().seq);
         cache.invalidateTable(name(), tableName);
         indexIds.forEach(indexId -> {
@@ -823,7 +803,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
         long tso = tso();
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
-        List<Region> regions = coordinatorService.getRegionMap(tso, GetRegionMapRequest.builder().build()).getRegionmap().getRegions().stream()
+        List<Region> regions = coordinatorService.getRegionMap(tso, GetRegionMapRequest.builder().tenantId(TenantConstant.TENANT_ID).build()).getRegionmap().getRegions().stream()
             .map(Region::getId)
             .map($ -> coordinatorService.queryRegion(tso, QueryRegionRequest.builder().regionId($).build()).getRegion())
             .collect(Collectors.toList());
@@ -886,9 +866,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             return;
         }
         LogUtils.warn(log, "Add distribution wait timeout, refresh distributions run in the background.");
-        Executors.execute("wait-split", () -> {
-            Utils.loop(() -> !checkSplitFinish(comparableKey, table), TimeUnit.SECONDS.toNanos(1));
-        });
+        Executors.execute("wait-split", () -> Utils.loop(() -> !checkSplitFinish(comparableKey, table), TimeUnit.SECONDS.toNanos(1)));
     }
 
     private boolean checkSplitFinish(ComparableByteArray comparableKey, Table table) {

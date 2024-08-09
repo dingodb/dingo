@@ -23,11 +23,14 @@ import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterConvertCharset;
 import io.dingodb.calcite.grammar.ddl.SqlAlterIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
+import io.dingodb.calcite.grammar.ddl.SqlAlterTenant;
 import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlCreateSchema;
+import io.dingodb.calcite.grammar.ddl.SqlCreateTenant;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
 import io.dingodb.calcite.grammar.ddl.SqlDropIndex;
+import io.dingodb.calcite.grammar.ddl.SqlDropTenant;
 import io.dingodb.calcite.grammar.ddl.SqlDropUser;
 import io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
@@ -42,6 +45,7 @@ import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.calcite.stats.StatsOperator;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
@@ -53,10 +57,12 @@ import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.DefinitionUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.InfoSchemaService;
+import io.dingodb.meta.TenantService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
@@ -275,6 +281,59 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     .state(i >= keySize ? ColumnDefinition.HIDE_STATE : ColumnDefinition.NORMAL_STATE)
                     .build();
                 indexColumnDefinitions.add(indexColumnDefinition);
+            }
+        } else if (indexDeclaration.getIndexType().equalsIgnoreCase("text")) {
+            properties.put("indexType", "document");
+            if (columns.size() <= 1) {
+                throw new RuntimeException("Index column includes at least two columns, The first one must be text_id");
+            }
+            int primary = 0;
+            for (int i = 0; i < columns.size(); i++) {
+                String columnName = columns.get(i);
+                if (!tableColumnNames.contains(columnName)) {
+                    throw new RuntimeException("Invalid column name: " + columnName);
+                }
+
+                ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
+                    .findFirst().get();
+                if (i == 0) {
+                    if (!columnDefinition.getTypeName().equals("INTEGER")
+                        && !columnDefinition.getTypeName().equals("BIGINT")) {
+                        throw new RuntimeException("Invalid column type: " + columnName);
+                    }
+
+                    if (columnDefinition.isNullable()) {
+                        throw new RuntimeException("Column must be not null, column name: " + columnName);
+                    }
+                } else {
+                    if (!columnDefinition.getTypeName().equals("BIGINT")
+                        && !columnDefinition.getTypeName().equals("INTEGER")
+                        && !columnDefinition.getTypeName().equals("DOUBLE")
+                        && !columnDefinition.getTypeName().equals("VARCHAR")
+                        && !columnDefinition.getTypeName().equals("STRING")
+                        && !columnDefinition.getTypeName().equals("BYTES")) {
+                        throw new RuntimeException("Invalid column type: " + columnDefinition.getTypeName());
+                    }
+                    if (columnDefinition.isNullable()) {
+                        throw new RuntimeException("Column must be not null, column name: " + columnName);
+                    }
+                    primary = -1;
+                }
+                ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
+                    .name(columnDefinition.getName())
+                    .type(columnDefinition.getTypeName())
+                    .elementType(columnDefinition.getElementType())
+                    .precision(columnDefinition.getPrecision())
+                    .scale(columnDefinition.getScale())
+                    .nullable(columnDefinition.isNullable())
+                    .primary(primary)
+                    .build();
+                indexColumnDefinitions.add(indexColumnDefinition);
+            }
+            if (properties.get("text_fields") != null) {
+                String fields = String.valueOf(properties.get("text_fields"));
+                fields = fields.startsWith("'") ? fields.substring(1, fields.length() - 1) : fields;
+                properties.setProperty("text_fields", fields);
             }
         } else {
             properties.put("indexType", "vector");
@@ -544,6 +603,64 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else {
             throw new RuntimeException("Schema not empty.");
         }
+        timeCtx.stop();
+    }
+
+    public void execute(SqlCreateTenant createT, CalcitePrepare.Context context) {
+        final Timer.Context timeCtx = DingoMetrics.getTimeContext("createTenant");
+        LogUtils.info(log, "DDL execute: {}", createT);
+        TenantService tenantService = TenantService.getDefault();
+        if (TenantConstant.TENANT_ID != 0) {
+            throw new RuntimeException("Regular tenants are unable to create tenant.");
+        }
+        if (tenantService.getTenant(createT.name) == null) {
+            Tenant tenant = Tenant.builder()
+                .name(createT.name)
+                .remarks(createT.remarks)
+                .createdTime(System.currentTimeMillis())
+                .build();
+            tenantService.createTenant(tenant);
+        } else if (!createT.ifNotExists) {
+            throw SqlUtil.newContextException(
+                createT.getParserPosition(),
+                DINGO_RESOURCE.tenantExists(createT.name)
+            );
+        }
+        timeCtx.stop();
+    }
+
+    public void execute(@NonNull SqlAlterTenant sqlAlterTenant, CalcitePrepare.Context context) {
+        final Timer.Context timeCtx = DingoMetrics.getTimeContext("alterTenant");
+        LogUtils.info(log, "DDL execute: {}", sqlAlterTenant);
+        TenantService tenantService = TenantService.getDefault();
+        if (TenantConstant.TENANT_ID != 0) {
+            throw new RuntimeException("Regular tenants are unable to alter tenant.");
+        }
+        if (tenantService.getTenant(sqlAlterTenant.oldName) != null) {
+            tenantService.updateTenant(sqlAlterTenant.oldName, sqlAlterTenant.newName);
+        }
+
+        timeCtx.stop();
+    }
+
+    public void execute(SqlDropTenant tenant, CalcitePrepare.Context context) {
+        final Timer.Context timeCtx = DingoMetrics.getTimeContext("dropTenant");
+        LogUtils.info(log, "DDL execute: {}", tenant);
+        TenantService tenantService = TenantService.getDefault();
+        if (TenantConstant.TENANT_ID != 0) {
+            throw new RuntimeException("Regular tenants are unable to drop tenant");
+        }
+        if (tenantService.getTenant(tenant.name) == null) {
+            if (!tenant.ifExists) {
+                throw SqlUtil.newContextException(
+                    tenant.getParserPosition(),
+                    DINGO_RESOURCE.tenantNotFound(tenant.name)
+                );
+            } else {
+                return;
+            }
+        }
+        tenantService.dropTenant(tenant.name);
         timeCtx.stop();
     }
 
@@ -1030,7 +1147,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw new IllegalArgumentException("table " + tableName + " does not exist");
         }
         if (table.getIndexTableDefinitions().stream().map(IndexTable::getName).noneMatch(indexName::equalsIgnoreCase)) {
-            throw new RuntimeException("The index " + indexName + "not exist.");
+            throw new RuntimeException("The index " + indexName + " not exist.");
         }
     }
 

@@ -254,7 +254,9 @@ public final class MysqlResponseHandler {
             return new SQLException(e.getMessage(), "HY000", 1105);
         } else if (e.getErrorCode() == 9001 && e.getSQLState().equals("45000")) {
             return new SQLException(e.getMessage(), "HY000", 1105);
-        } else {
+        } else if (e.getErrorCode() == 1054 && e.getSQLState().equals("42S22")) {
+            return new SQLException(e.getMessage(), "HY000", 1105);
+        } {
             return e;
         }
     }

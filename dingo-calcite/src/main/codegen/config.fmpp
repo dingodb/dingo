@@ -199,6 +199,8 @@ data: {
       "REGIONS"
       "TENANT"
       "TENANTS"
+      "REMARKS"
+      "RENAME"
       "TEXT_SEARCH"
     ]
 
@@ -508,6 +510,7 @@ data: {
     "QUARTERS"
     "READ"
     "RELATIVE"
+    "REMARKS"
     "REPEATABLE"
     "REPLACE"
     "REPLICA"
