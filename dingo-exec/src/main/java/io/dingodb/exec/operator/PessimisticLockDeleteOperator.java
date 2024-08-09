@@ -34,6 +34,7 @@ import io.dingodb.exec.operator.params.PessimisticLockDeleteParam;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.exec.utils.OpStateUtils;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
@@ -73,6 +74,13 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
             boolean isVector = false;
             if (context.getIndexId() != null) {
                 Table indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
+                if (indexTable == null) {
+                    LogUtils.error(log, "[ddl] Pessimistic delete get index table null, indexId:{}", context.getIndexId());
+                    return false;
+                }
+                if (!OpStateUtils.allowDeleteOnly(indexTable.getSchemaState())) {
+                    return true;
+                }
                 List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
                     .map(Column::getName)
                     .collect(Collectors.toList()));

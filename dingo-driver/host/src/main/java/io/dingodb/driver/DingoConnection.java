@@ -65,11 +65,13 @@ import java.sql.ResultSet;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -104,6 +106,9 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
 
     @Getter
     private CommitProfile commitProfile;
+
+    @Getter
+    private Map<Long, Long> mdlLockJobMap = new ConcurrentHashMap<>();
 
     protected DingoConnection(
         DingoDriver driver,
@@ -196,6 +201,18 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         });
     }
 
+    @Override
+    public void commit() throws SQLException {
+        super.commit();
+        this.mdlLockJobMap.clear();
+    }
+
+    @Override
+    public void rollback() throws SQLException {
+        super.rollback();
+        this.mdlLockJobMap.clear();
+    }
+
     public void unlockTables() {
         if (unlockFuture != null) {
             unlockFuture.complete(null);
@@ -217,7 +234,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 throw new RuntimeException("Optimistic transaction only support" +
                     " read committed transaction isolation level");
             }
-            LogUtils.info(log, "create transaction, startTs:{}, type:{}, txIsolation:{}, autoCommit:{}",
+            LogUtils.debug(log, "create transaction, startTs:{}, type:{}, txIsolation:{}, autoCommit:{}",
                 startTs, type, txIsolation, autoCommit);
             this.transaction = TransactionManager.createTransaction(type, startTs,
                 TransactionUtil.convertIsolationLevel(txIsolation));
@@ -542,12 +559,23 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         for (Map.Entry<Long, Long> useRelated : relatedTableForMdl.entrySet()) {
             Long tableId = useRelated.getKey();
             long useSchemaVer = useRelated.getValue();
-            for (Map.Entry<Long, Long> jobIdVerEntry : jobsVerMap.entrySet()) {
+            Iterator<Map.Entry<Long, Long>> jobVerIterator = jobsVerMap.entrySet().iterator();
+            while (jobVerIterator.hasNext()) {
+                Map.Entry<Long, Long> jobIdVerEntry = jobVerIterator.next();
                 long jobId = jobIdVerEntry.getKey();
                 long ver = jobIdVerEntry.getValue();
                 Map<Long, Long> ids = str2LongMap(jobsIdsMap.get(jobId));
                 if (ids.containsKey(tableId) && useSchemaVer < ver) {
-                    jobsVerMap.remove(jobId);
+                    jobVerIterator.remove();
+                    mdlLockJobMap.put(jobId, jobId);
+                    if (transaction != null) {
+                        List<String> sqlList = transaction.getSqlList();
+                        StringBuilder sqlBuilder = new StringBuilder();
+                        for (String sql : sqlList) {
+                            sqlBuilder.append(sql).append(";");
+                        }
+                        log.info("[ddl] conn remove mdl lock,jobId:" + jobId + ", sql:" + sqlBuilder.toString());
+                    }
                 }
             }
         }

@@ -163,7 +163,7 @@ public class LocalMetaService implements MetaService {
     }
 
     @Override
-    public boolean dropTable(@NonNull String tableName) {
+    public boolean dropTable(String tableName) {
         tableName = tableName.toUpperCase();
         CommonId tableId = getTable(tableName).getTableId();
         if (tableId != null) {

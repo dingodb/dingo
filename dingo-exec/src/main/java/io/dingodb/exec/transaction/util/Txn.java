@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.operation;
+package io.dingodb.exec.transaction.util;
 
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
@@ -35,8 +35,7 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.params.CommitParam;
 import io.dingodb.exec.transaction.params.PreWriteParam;
 import io.dingodb.exec.transaction.params.RollBackParam;
-import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
-import io.dingodb.exec.transaction.util.TransactionUtil;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
@@ -56,11 +55,11 @@ import java.util.Map;
 import java.util.concurrent.Future;
 
 @Slf4j
-public class TxnImportDataOperation {
+public class Txn {
     int isolationLevel = IsolationLevel.ReadCommitted.getCode();
     long startTs;
     CommonId txnId;
-    Future future;
+    Future<?> future;
     long commitTs;
     byte[] primaryKey;
     DingoType dingoType;
@@ -69,22 +68,23 @@ public class TxnImportDataOperation {
     int retryCnt;
     long timeOut;
 
-    public TxnImportDataOperation(Long startTs, CommonId txnId, boolean retry, int retryCnt, long timeOut) {
+    CacheToObject primaryObj = null;
+
+    public Txn(CommonId txnId, boolean retry, int retryCnt, long timeOut) {
         dingoType = new BooleanType(true);
-        this.startTs = startTs;
+        this.startTs = txnId.seq;
         this.txnId = txnId;
         this.retry = retry;
         this.retryCnt = retryCnt;
         this.timeOut = timeOut;
     }
 
-    public int insertByTxn(List<Object[]> tupleList) {
-        CacheToObject primaryObj = null;
+    public int commit(List<Object[]> tupleList) {
         List<Object[]> secondList = null;
         try {
             // get local mem data first data and transform to cacheToObject
             Object[] primary = tupleList.get(0);
-            primaryObj = getCacheToObject(primary);
+            primaryObj = getCacheToObject((TxnLocalData) primary[0]);
 
             preWritePrimaryKey(primaryObj);
             // pre write second key
@@ -122,8 +122,7 @@ public class TxnImportDataOperation {
         }
     }
 
-    public static CacheToObject getCacheToObject(Object[] tuples) {
-        TxnLocalData txnLocalData = (TxnLocalData) tuples[0];
+    public static CacheToObject getCacheToObject(TxnLocalData txnLocalData) {
         CommonId tableId = txnLocalData.getTableId();
         CommonId newPartId = txnLocalData.getPartId();
         int op = txnLocalData.getOp().getCode();
@@ -138,7 +137,7 @@ public class TxnImportDataOperation {
         primaryKey = cacheToObject.getMutation().getKey();
         // 2、call sdk preWritePrimaryKey
         TxnPreWrite txnPreWrite = TxnPreWrite.builder()
-                .isolationLevel(IsolationLevel.of(
+            .isolationLevel(IsolationLevel.of(
                 isolationLevel
             ))
             .mutations(Collections.singletonList(cacheToObject.getMutation()))
@@ -171,7 +170,7 @@ public class TxnImportDataOperation {
                     this.future = store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
                     prewriteResult = true;
                 } catch (RegionSplitException e1) {
-                    lookSleep();
+                    Utils.sleep(100);
                     LogUtils.error(log, "prewrite primary region split, retry count:" + i);
                 }
             }
@@ -183,11 +182,11 @@ public class TxnImportDataOperation {
         }
     }
 
-    private static boolean txnPreWrite(PreWriteParam param, CommonId txnId, CommonId tableId, CommonId partId) {
+    public static boolean txnPreWrite(PreWriteParam param, CommonId txnId, CommonId tableId, CommonId partId) {
         // 1、call sdk TxnPreWrite
         param.setTxnSize(param.getMutations().size());
         TxnPreWrite txnPreWrite = TxnPreWrite.builder()
-                .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
+            .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
             .mutations(param.getMutations())
             .primaryLock(param.getPrimaryKey())
             .startTs(param.getStartTs())
@@ -224,7 +223,7 @@ public class TxnImportDataOperation {
                     }
                     prewriteSecondResult = true;
                 } catch (RegionSplitException e1) {
-                    lookSleep();
+                    Utils.sleep(100);
                     LogUtils.error(log, "prewrite second region split, retry count:" + i);
                 }
             }
@@ -276,7 +275,7 @@ public class TxnImportDataOperation {
             }
         }
 
-        if (param.getMutations().size() > 0) {
+        if (!param.getMutations().isEmpty()) {
             boolean result = txnPreWrite(param, txnId, param.getTableId(), param.getPartId());
             if (!result) {
                 throw new RuntimeException(txnId + " " + param.getPartId() + ",txnPreWrite false,PrimaryKey:"
@@ -309,7 +308,7 @@ public class TxnImportDataOperation {
                     StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
                     commitResult = store.txnCommit(commitRequest);
                 } catch (RegionSplitException e1) {
-                    lookSleep();
+                    Utils.sleep(100);
                     LogUtils.error(log, "commit primary region split, retry count:" + i);
                 }
             }
@@ -332,6 +331,9 @@ public class TxnImportDataOperation {
             byte[] key = txnLocalData.getKey();
             if (tableId.type == CommonId.CommonType.INDEX) {
                 IndexTable indexTable = (IndexTable) TransactionManager.getIndex(txnId, tableId);
+                if (indexTable == null) {
+                    indexTable = (IndexTable) DdlService.root().getTable(tableId);
+                }
                 if (indexTable.indexType.isVector) {
                     KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
                     Object[] decodeKey = codec.decodeKeyPrefix(key);
@@ -380,14 +382,14 @@ public class TxnImportDataOperation {
         }
     }
 
-    private static boolean txnCommit(CommitParam param, CommonId txnId, CommonId tableId, CommonId newPartId) {
+    public static boolean txnCommit(CommitParam param, CommonId txnId, CommonId tableId, CommonId newPartId) {
         // 1、Async call sdk TxnCommit
         TxnCommit commitRequest = TxnCommit.builder()
-                .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
-                .startTs(param.getStartTs())
-                .commitTs(param.getCommitTs())
-                .keys(param.getKeys())
-                .build();
+            .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
+            .startTs(param.getStartTs())
+            .commitTs(param.getCommitTs())
+            .keys(param.getKeys())
+            .build();
         try {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
             return store.txnCommit(commitRequest);
@@ -416,17 +418,13 @@ public class TxnImportDataOperation {
                     }
                     commitSecondResult = true;
                 } catch (RegionSplitException e1) {
-                    lookSleep();
+                    Utils.sleep(100);
                     LogUtils.error(log, "commit second region split, retry count:" + i);
                 }
             }
 
             return true;
         }
-    }
-
-    private static void lookSleep() {
-        Utils.sleep(100);
     }
 
     public void resolveWriteConflict(RuntimeException exception, List<Object[]> secondList, List<Object[]> tupleList) {
@@ -455,10 +453,13 @@ public class TxnImportDataOperation {
     }
 
     public synchronized void rollback(List<Object[]> tupleList) {
-        if (tupleList.isEmpty()) {
-            return;
-        }
         try {
+            if (primaryObj != null) {
+                rollBackPrimaryKey(primaryObj);
+            }
+            if (tupleList.isEmpty()) {
+                return;
+            }
             // 1、get commit_ts
             // 2、generator job、task、RollBackOperator
             // 3、run RollBack
@@ -474,6 +475,9 @@ public class TxnImportDataOperation {
 
                 if (tableId.type == CommonId.CommonType.INDEX) {
                     IndexTable indexTable = (IndexTable) TransactionManager.getIndex(txnId, tableId);
+                    if (indexTable == null) {
+                        indexTable = (IndexTable) DdlService.root().getTable(tableId);
+                    }
                     if (indexTable.indexType.isVector) {
                         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
                         Object[] decodeKey = codec.decodeKeyPrefix(key);
@@ -532,13 +536,27 @@ public class TxnImportDataOperation {
         }
     }
 
+    private void rollBackPrimaryKey(CacheToObject cacheToObject) {
+        boolean result = TransactionUtil.rollBackPrimaryKey(
+            txnId,
+            cacheToObject.getTableId(),
+            cacheToObject.getPartId(),
+            isolationLevel,
+            startTs,
+            primaryKey
+        );
+        if (!result) {
+            throw new RuntimeException(txnId + ",rollBackPrimaryKey false");
+        }
+    }
+
     private static boolean txnRollBack(RollBackParam param, CommonId txnId, CommonId tableId, CommonId newPartId) {
         // 1、Async call sdk TxnRollBack
         TxnBatchRollBack rollBackRequest = TxnBatchRollBack.builder()
-                .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
-                .startTs(param.getStartTs())
-                .keys(param.getKeys())
-                .build();
+            .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
+            .startTs(param.getStartTs())
+            .keys(param.getKeys())
+            .build();
         try {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
             return store.txnBatchRollback(rollBackRequest);
@@ -563,5 +581,4 @@ public class TxnImportDataOperation {
             return true;
         }
     }
-
 }

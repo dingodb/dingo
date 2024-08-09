@@ -29,7 +29,6 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.meta.MetaService;
-import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
@@ -50,11 +49,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -83,18 +80,13 @@ public final class TransactionUtil {
             throw new RuntimeException("The set transaction isolation level is not currently supported.");
         }
     }
-    public static <T> List<Set<T>> splitSetIntoSubsets(Set<T> set, int batchSize) {
-        List<T> tempList = new ArrayList<>(set);
-        List<Set<T>> subsets = new ArrayList<>();
-        for (int i = 0; i < tempList.size(); i += batchSize) {
-            subsets.add(new HashSet<>(tempList.subList(i, Math.min(i + batchSize, tempList.size()))));
-        }
-        return subsets;
-    }
 
     public static CommonId singleKeySplitRegionId(CommonId tableId, CommonId txnId, byte[] key) {
         // 2、regin split
         Table table = (Table) TransactionManager.getTable(txnId, tableId);
+        if (table == null) {
+            throw new RuntimeException("singleKeySplitRegionId get table by txn is null, tableId:" + tableId);
+        }
         MetaService root = MetaService.root();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution = root.getRangeDistribution(tableId);
         if (Optional.ofNullable(table.getPartitionStrategy())
@@ -114,6 +106,9 @@ public final class TransactionUtil {
         // 2、regin split
         MetaService root = MetaService.root();
         Table table = (Table) TransactionManager.getTable(txnId, tableId);
+        if (table == null) {
+            throw new RuntimeException("multiKeySplitRegionId get table by txn is null, tableId:" + tableId);
+        }
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution = root.getRangeDistribution(tableId);
         final PartitionService ps = PartitionService.getService(
             Optional.ofNullable(table.getPartitionStrategy())
@@ -128,9 +123,6 @@ public final class TransactionUtil {
         return partMap;
     }
 
-    public static IndexTable getIndexDefinitions(CommonId txnId, CommonId tableId) {
-        return (IndexTable) TransactionManager.getIndex(txnId, tableId);
-    }
     public static List<byte[]> mutationToKey(List<Mutation> mutations) {
         List<byte[]> keys = new ArrayList<>(mutations.size());
         for (Mutation mutation:mutations) {
@@ -158,10 +150,9 @@ public final class TransactionUtil {
             .txnId(txnId)
             .transactionType(transactionType).build();
         byte[] encode = lockExtraData.encode();
-        List<LockExtraData> lockExtraDataList = IntStream.range(0, size)
+        return IntStream.range(0, size)
             .mapToObj(i -> new LockExtraData(i, encode))
             .collect(Collectors.toList());
-        return lockExtraDataList;
     }
 
     public static byte[] toLockExtraData(CommonId tableId, CommonId partId,
@@ -182,10 +173,9 @@ public final class TransactionUtil {
     }
 
     public static List<ForUpdateTsCheck> toForUpdateTsChecks(List<Mutation> mutations) {
-        List<ForUpdateTsCheck> forUpdateTsChecks = IntStream.range(0, mutations.size())
+        return IntStream.range(0, mutations.size())
             .mapToObj(i -> new ForUpdateTsCheck(i, mutations.get(i).getForUpdateTs()))
             .collect(Collectors.toList());
-        return forUpdateTsChecks;
     }
 
     public static void pessimisticLock(TxnPessimisticLock txnPessimisticLock,
@@ -222,7 +212,7 @@ public final class TransactionUtil {
                                                            long startTs,
                                                            long forUpdateTs,
                                                            int isolationLevel) {
-        TxnPessimisticLock txnPessimisticLock = TxnPessimisticLock.builder()
+        return TxnPessimisticLock.builder()
             .isolationLevel(IsolationLevel.of(isolationLevel))
             .primaryLock(primaryLockKey)
             .mutations(Collections.singletonList(
@@ -241,7 +231,6 @@ public final class TransactionUtil {
             .startTs(startTs)
             .forUpdateTs(forUpdateTs)
             .build();
-        return txnPessimisticLock;
     }
 
     public static boolean pessimisticPrimaryLockRollBack(CommonId txnId, CommonId tableId,
@@ -286,6 +275,9 @@ public final class TransactionUtil {
 
     public static String duplicateEntryKey(CommonId tableId, byte[] key, CommonId txnId) {
         Table table = (Table) TransactionManager.getTable(txnId, tableId);
+        if (table == null) {
+            throw new RuntimeException("duplicateEntryKey get table by txn is null, tableId:" + tableId);
+        }
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
         TupleMapping keyMapping = table.keyMapping();
         return joinPrimaryKey(codec.decodeKeyPrefix(key), keyMapping);

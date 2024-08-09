@@ -562,7 +562,7 @@ public final class DingoDriverParser extends DingoParser {
     private void lockTables(
         Set<RelOptTable> tables, long startTs, long jobSeqId, CompletableFuture<Void> finishedFuture
     ) {
-        if (!DingoConfiguration.instance().getVariable().getEnableTableLock()) {
+        if (!DingoConfiguration.instance().getVariable().getEnableTableLock() || true) {
             return;
         }
         List<RelOptTable> waitLocktableList = new ArrayList<>();

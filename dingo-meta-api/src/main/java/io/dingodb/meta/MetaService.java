@@ -123,7 +123,7 @@ public interface MetaService {
      * @param tableName table name
      * @return true if success
      */
-    boolean dropTable(@NonNull String tableName);
+    boolean dropTable(String tableName);
 
     long truncateTable(@NonNull String tableName, long tableEntityId);
 
@@ -178,7 +178,7 @@ public interface MetaService {
         throw new UnsupportedOperationException();
     }
 
-    default void createIndex(CommonId tableId, TableDefinition table, TableDefinition index) {
+    default void createIndex(CommonId tableId, String tableName, TableDefinition index) {
         throw new UnsupportedOperationException();
     }
 

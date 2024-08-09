@@ -26,6 +26,7 @@ import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SqlCreateIndex extends SqlCreate {
 
@@ -33,7 +34,7 @@ public class SqlCreateIndex extends SqlCreate {
 
     public SqlIdentifier table;
 
-    public List<SqlIdentifier> columns;
+    public List<String> columns;
 
     public boolean isUnique;
 
@@ -48,7 +49,9 @@ public class SqlCreateIndex extends SqlCreate {
         super(OPERATOR, pos, replace, ifNotExists);
         this.index = index;
         this.table = table;
-        this.columns = columns;
+        this.columns = columns.stream()
+            .map(SqlIdentifier::getSimple)
+            .map(String::toUpperCase).collect(Collectors.toList());
         this.isUnique = isUnique;
     }
 
@@ -63,11 +66,4 @@ public class SqlCreateIndex extends SqlCreate {
         writer.keyword(index);
     }
 
-    public String[] getColumnNames() {
-        String[] columnNames = columns.stream()
-            .map(SqlIdentifier::getSimple)
-            .map(String::toUpperCase)
-            .toArray(String[]::new);
-        return columnNames;
-    }
 }

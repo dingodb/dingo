@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -83,13 +84,37 @@ public class ScanWithRelOpParam extends ScanParam {
 
     @Getter
     protected transient Map<CommonId, CoprocessorV2> coprocessorMap = new HashMap<>();
+    private transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public void setNullCoprocessor(CommonId regionId) {
-        coprocessorMap.put(regionId, null);
+        lock.writeLock().lock();
+        try {
+            coprocessorMap.put(regionId, null);
+        } finally {
+            if (lock.writeLock().isHeldByCurrentThread()) {
+                lock.writeLock().unlock();
+            }
+        }
     }
 
     public void setCoprocessor(CommonId regionId) {
-        coprocessorMap.put(regionId, coprocessor);
+        lock.writeLock().lock();
+        try {
+            coprocessorMap.put(regionId, coprocessor);
+        } finally {
+            if (lock.writeLock().isHeldByCurrentThread()) {
+                lock.writeLock().unlock();
+            }
+        }
+    }
+
+    public CoprocessorV2 getCoprocessor(CommonId regionId) {
+        lock.readLock().lock();
+        try {
+            return coprocessorMap.get(regionId);
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     public ScanWithRelOpParam(

@@ -20,6 +20,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
@@ -35,6 +36,7 @@ import io.dingodb.exec.operator.params.TxnPartInsertParam;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.exec.utils.OpStateUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
@@ -82,6 +84,10 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             Table indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
             if (indexTable == null) {
                 LogUtils.error(log, "[ddl] TxnPartInsert get index table null, indexId:{}", context.getIndexId());
+                return false;
+            }
+            if (!OpStateUtils.allowWrite(indexTable.getSchemaState())) {
+                return true;
             }
             List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
                 .map(Column::getName)

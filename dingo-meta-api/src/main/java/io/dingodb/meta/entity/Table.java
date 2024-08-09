@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
@@ -97,9 +98,11 @@ public class Table {
     @JsonProperty
     public final String comment;
 
-    // TODO Remove field
     @JsonProperty
     public final String createSql;
+
+    @JsonProperty
+    public SchemaState schemaState;
 
     public TupleType tupleType() {
         return DingoTypeFactory.tuple(columns.stream().map(Column::getType).toArray(DingoType[]::new));

@@ -27,6 +27,7 @@ import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Partition;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.transaction.api.TransactionService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -81,6 +82,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 return getInformationTableConstraints();
             case "STATEMENTS_SUMMARY":
                 return StmtSummaryMap.iterator();
+            case "DINGO_MDL_VIEW":
+                return getMdlView();
             default:
                 throw new RuntimeException("no source");
         }
@@ -366,6 +369,10 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 priKeyList.addAll(indexColList);
                 return priKeyList.stream();
             }).iterator();
+    }
+
+    private static Iterator<Object[]> getMdlView() {
+        return TransactionService.getDefault().getMdlInfo();
     }
 
 }

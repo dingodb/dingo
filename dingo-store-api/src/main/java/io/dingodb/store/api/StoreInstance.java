@@ -66,7 +66,6 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    @Deprecated
     default boolean put(KeyValue row) {
         return put(System.identityHashCode(row), row);
     }
@@ -75,7 +74,6 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    @Deprecated
     default boolean delete(byte[] key) {
         return delete(System.identityHashCode(key), key);
     }
@@ -84,7 +82,6 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    @Deprecated
     default long delete(Range range) {
         return delete(System.identityHashCode(range), range);
     }
@@ -120,7 +117,6 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    @Deprecated
     default Iterator<KeyValue> scan(byte[] prefix) {
         return scan(System.identityHashCode(prefix), prefix);
     }
@@ -178,7 +174,6 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    @Deprecated
     default boolean insertWithIndex(Object[] record) {
         return insertWithIndex(System.identityHashCode(record), record);
     }
@@ -187,7 +182,6 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    @Deprecated
     default boolean insertIndex(Object[] record) {
         return insertIndex(System.identityHashCode(record), record);
     }
@@ -196,7 +190,6 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    @Deprecated
     default boolean updateWithIndex(Object[] newRecord, Object[] oldRecord) {
         return updateWithIndex(System.identityHashCode(newRecord), newRecord, oldRecord);
     }
@@ -252,7 +245,6 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    @Deprecated
     default boolean txnPreWrite(TxnPreWrite txnPreWrite, long timeOut) {
         return txnPreWrite(txnPreWrite.getStartTs(), txnPreWrite, timeOut);
     }
@@ -261,16 +253,14 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    @Deprecated
-    default Future txnPreWritePrimaryKey(TxnPreWrite txnPreWrite, long timeOut) {
+    default Future<?> txnPreWritePrimaryKey(TxnPreWrite txnPreWrite, long timeOut) {
         return txnPreWritePrimaryKey(txnPreWrite.getStartTs(), txnPreWrite, timeOut);
     }
 
-    default Future txnPreWritePrimaryKey(long requestTs, TxnPreWrite txnPreWrite, long timeOut) {
+    default Future<?> txnPreWritePrimaryKey(long requestTs, TxnPreWrite txnPreWrite, long timeOut) {
         throw new UnsupportedOperationException();
     }
 
-    @Deprecated
     default boolean txnCommit(TxnCommit txnCommit) {
         return txnCommit(txnCommit.getStartTs(), txnCommit);
     }
@@ -279,7 +269,7 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default Future txnPessimisticLockPrimaryKey(TxnPessimisticLock txnPessimisticLock, long timeOut, boolean ignoreLockWait) {
+    default Future<?> txnPessimisticLockPrimaryKey(TxnPessimisticLock txnPessimisticLock, long timeOut, boolean ignoreLockWait) {
         return txnPessimisticLockPrimaryKey(txnPessimisticLock.getStartTs(), txnPessimisticLock, timeOut, ignoreLockWait);
     }
 

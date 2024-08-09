@@ -215,6 +215,8 @@ public interface InfoSchemaService {
 
     void updateTable(long schemaId, Object table);
 
+    default void updateIndex(long tableId, Object index) {}
+
     DdlJob getHistoryDDLJob(long jobId);
 
     void addHistoryDDLJob(DdlJob job, boolean updateRawArgs);

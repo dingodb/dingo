@@ -145,7 +145,7 @@ public final class JobManagerImpl implements JobManager {
     }
 
     private void cancel(@NonNull Job job) {
-        LogUtils.info(log, "Cancel job \"{}\". # of jobs: {}.", job.getJobId(), jobMap.size());
+        LogUtils.debug(log, "Cancel job \"{}\". # of jobs: {}.", job.getJobId(), jobMap.size());
         for (Task task : job.getTasks().values()) {
             if (task.getRoot() != null) {
                 task.cancel();

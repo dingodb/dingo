@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlUtil;
+import io.dingodb.common.ddl.MetaElement;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
@@ -27,7 +28,6 @@ import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.meta.InfoSchemaService;
-import io.dingodb.store.service.SchemaSyncerService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Date;
@@ -80,9 +80,9 @@ public final class JobTableUtil {
 
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         String template = DdlUtil.MDL_PREFIX_TEMPLATE;
-        String key = String.format(template, SchemaSyncerService.tenantPrefix, DdlUtil.DDLAllSchemaVersionsByJob, jobId);
+        String key = String.format(template, DdlUtil.tenantPrefix, DdlUtil.DDLAllSchemaVersionsByJob, jobId);
         String endTemplate = DdlUtil.MDL_PREFIX_TEMPLATE_END;
-        String keyEnd = String.format(endTemplate, SchemaSyncerService.tenantPrefix, DdlUtil.DDLAllSchemaVersionsByJob, jobId);
+        String keyEnd = String.format(endTemplate, DdlUtil.tenantPrefix, DdlUtil.DDLAllSchemaVersionsByJob, jobId);
         infoSchemaService.delKvFromCoordinator(key, keyEnd);
     }
 
@@ -171,7 +171,37 @@ public final class JobTableUtil {
     }
 
     public static Pair<DdlJob, String> getReorgJob(Session session) {
-        return null;
+        try {
+            return getJob(session, reorg, job1 -> {
+                String sql = "select job_id from mysql.dingo_ddl_job where "
+                    + "(schema_ids = %s and type = %d and processing) "
+                    + " or (table_ids = %s and processing) "
+                    + " limit 1";
+                sql = String.format(sql, Utils.quoteForSql(job1.getSchemaId()), job1.getActionType().getCode(), Utils.quoteForSql(job1.getTableId()));
+                return checkJobIsRunnable(session, sql);
+            });
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            return Pair.of(null, e.getMessage());
+        }
+    }
+
+    public static String removeDDLReorgHandle(Session session, long jobId, MetaElement[] elements) {
+        if (elements.length == 0) {
+            return null;
+        }
+        String sqlTmp = "delete from mysql.tidb_ddl_reorg where job_id = %d";
+        String sql = String.format(sqlTmp, jobId);
+        try {
+            session.runInTxn(t -> {
+                t.executeUpdate(sql);
+                return null;
+            });
+            return null;
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage());
+            return "removeDDLReorg error";
+        }
     }
 
 }

@@ -77,11 +77,10 @@ public class TransactionElements {
             .name(ElementName.ROLLBACK)
             .data(scanCacheLeaf)
             .build();
-        RootLeaf root = RootLeaf.builder()
+        return RootLeaf.builder()
             .name(ElementName.ROOT)
             .data(rollBackLeaf)
             .build();
-        return root;
     }
 
     private static Element createMultiTransactionPreWrite() {

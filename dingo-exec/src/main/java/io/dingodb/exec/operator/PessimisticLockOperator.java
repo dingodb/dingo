@@ -35,9 +35,9 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.exec.utils.OpStateUtils;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
-import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Op;
@@ -84,7 +84,14 @@ public class PessimisticLockOperator extends SoleOutOperator {
                 if (primaryLockKey == null) {
                     return true;
                 }
-                Table indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
+                IndexTable indexTable = (IndexTable) TransactionManager.getIndex(txnId, context.getIndexId());
+                if (indexTable == null) {
+                    LogUtils.error(log, "[ddl] Pessimistic lock get index table null, indexId:{}", context.getIndexId());
+                    return false;
+                }
+                if (!OpStateUtils.allowOpContinue(param.getOpType(), indexTable.schemaState)) {
+                    return false;
+                }
                 List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
                     .map(Column::getName)
                     .collect(Collectors.toList()));
@@ -92,8 +99,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
                 Object[] finalTuple = tuple;
                 tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
                 schema = indexTable.tupleType();
-                IndexTable index = (IndexTable) TransactionManager.getIndex(txnId, tableId);
-                if (index.indexType.isVector) {
+                if (indexTable.indexType.isVector) {
                     isVector = true;
                 }
                 localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);

@@ -106,13 +106,13 @@ public class InfoSchemaBuilder {
             case ActionCreateTables:
                 return applyCreateTables(infoSchemaService, schemaDiff);
             case ActionAddIndex:
-                break;
+                return applyAddIndex(infoSchemaService, schemaDiff);
             case ActionDropSchema:
                 return applyDropSchema(schemaDiff);
             case ActionDropTable:
                 return applyDropTable(schemaDiff);
             case ActionDropIndex:
-                break;
+                return applyDropIndex(infoSchemaService, schemaDiff);
             case ActionCreateTable:
                 return applyCreateTable(infoSchemaService, schemaDiff);
             case ActionTruncateTable:
@@ -156,7 +156,6 @@ public class InfoSchemaBuilder {
             Table table = infoSchemaService.getTableDef(diff.getSchemaId(), diff.getTableId());
             SchemaInfo schemaInfo = (SchemaInfo) infoSchemaService.getSchema(diff.getSchemaId());
             this.is.putTable(schemaInfo.getName(), table.name, table);
-            //this.is.schemaMap.get(schemaInfo.getName()).getTables().put(table.name, table);
             int idx = bucketIdx(diff.getTableId());
             TableInfoCache tmp = new TableInfoCache(table.tableId.seq, table.name, schemaInfo.getSchemaId(), schemaInfo.getName());
             if (is.sortedTablesBuckets.containsKey(idx)) {
@@ -224,21 +223,21 @@ public class InfoSchemaBuilder {
         }
     }
 
-    public Pair<List<Long>, Exception> applyAddIndex(InfoSchemaService infoSchemaService, SchemaDiff diff) {
+    public Pair<List<Long>, String> applyAddIndex(InfoSchemaService infoSchemaService, SchemaDiff diff) {
         try {
-            // todo
-            return null;
+            dropTable(diff.getOldSchemaId(), diff.getOldTableId());
+            return applyCreateTable(infoSchemaService, diff);
         } catch (Exception e) {
-            return Pair.of(null, e);
+            return Pair.of(null, e.getMessage());
         }
     }
 
-    public Pair<List<Long>, Exception> applyDropIndex(InfoSchemaService infoSchemaService, SchemaDiff diff) {
+    public Pair<List<Long>, String> applyDropIndex(InfoSchemaService infoSchemaService, SchemaDiff diff) {
         try {
-            // todo
-            return null;
+            dropTable(diff.getOldSchemaId(), diff.getOldTableId());
+            return applyCreateTable(infoSchemaService, diff);
         } catch (Exception e) {
-            return Pair.of(null, e);
+            return Pair.of(null, e.getMessage());
         }
     }
 

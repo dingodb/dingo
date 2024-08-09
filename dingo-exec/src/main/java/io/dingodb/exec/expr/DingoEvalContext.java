@@ -18,8 +18,10 @@ package io.dingodb.exec.expr;
 
 import io.dingodb.expr.runtime.TupleEvalContext;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+@Slf4j
 public class DingoEvalContext implements TupleEvalContext {
     private static final long serialVersionUID = -5336801318047905367L;
 
@@ -37,7 +39,12 @@ public class DingoEvalContext implements TupleEvalContext {
     public Object get(Object id) {
         int index = (Integer) id;
         if (index >= 0) {
-            return tuple.get()[index];
+            Object[] val = tuple.get();
+            try {
+                return val[index];
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
         }
         // id < 0 means it is a sql parameter.
         assert paras != null : "Parameters are not available in this context.";

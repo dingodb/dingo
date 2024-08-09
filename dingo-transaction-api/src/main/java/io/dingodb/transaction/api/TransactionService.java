@@ -20,6 +20,7 @@ import io.dingodb.common.CommonId;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Iterator;
 import java.util.List;
 
 public interface TransactionService {
@@ -33,4 +34,6 @@ public interface TransactionService {
 
     void lockTable(Connection connection, List<CommonId> locks, LockType type);
     void unlockTable(Connection connection);
+
+    Iterator<Object[]> getMdlInfo();
 }

@@ -68,7 +68,8 @@ public class ShowTableIndexOperation extends QueryOperation {
                     .map(ColumnDefinition::getName).collect(Collectors.toList()),
                 Optional.of(new Properties())
                     .ifPresent(__ -> __.putAll(index.getProperties()))
-                    .ifPresent(__ -> __.remove("indexType")).get()
+                    .ifPresent(__ -> __.remove("indexType")).get(),
+                index.getSchemaState()
             }
         ).collect(Collectors.toList());
         return tuples.iterator();
@@ -82,6 +83,7 @@ public class ShowTableIndexOperation extends QueryOperation {
         columns.add("Index_type");
         columns.add("Column_name");
         columns.add("Parameters");
+        columns.add("State");
         return columns;
     }
 

@@ -68,6 +68,16 @@ public class DdlService implements io.dingodb.meta.DdlService {
     }
 
     @Override
+    public void createIndex(String schemaName, String tableName, TableDefinition indexDef) {
+        DdlHandler.createIndex(schemaName, tableName, indexDef);
+    }
+
+    @Override
+    public void dropIndex(String schemaName, String tableName, String indexName) {
+        DdlHandler.dropIndex(schemaName, tableName, indexName);
+    }
+
+    @Override
     public InfoSchema getIsLatest() {
         return InfoCache.infoCache.getLatest();
     }

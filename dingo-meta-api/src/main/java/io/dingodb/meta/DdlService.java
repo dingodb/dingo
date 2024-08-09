@@ -38,6 +38,12 @@ public interface DdlService {
 
     void truncateTable(SchemaInfo schemaInfo, Table table, String connId);
 
+    default void createIndex(String schemaName, String tableName, TableDefinition indexDef) {
+
+    }
+
+    default void dropIndex(String schemaName, String tableName, String indexName) {}
+
     InfoSchema getIsLatest();
 
     Table getTable(String schemaName, String tableName);

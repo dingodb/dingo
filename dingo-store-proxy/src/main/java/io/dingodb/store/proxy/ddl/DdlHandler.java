@@ -17,7 +17,6 @@
 package io.dingodb.store.proxy.ddl;
 
 import com.google.common.collect.Queues;
-import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlJobEventSource;
@@ -26,6 +25,7 @@ import io.dingodb.common.ddl.JobState;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Pair;
@@ -36,6 +36,7 @@ import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.entity.coordinator.CreateIdsRequest;
 import io.dingodb.sdk.service.entity.coordinator.IdEpochType;
+import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.store.proxy.Configuration;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +49,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class DdlHandler {
+public final class DdlHandler {
 
     public static final DdlHandler INSTANCE = new DdlHandler();
 
@@ -68,7 +69,7 @@ public class DdlHandler {
         while (!Thread.interrupted()) {
             List<DdlJob> jobList = new ArrayList<>();
             try {
-                Queues.drain(asyncJobQueue, jobList, 5, 300, TimeUnit.MILLISECONDS);
+                Queues.drain(asyncJobQueue, jobList, 2, 100, TimeUnit.MILLISECONDS);
             } catch (InterruptedException ignored) {
             }
             insertDDLJobs2Table(jobList, true);
@@ -143,7 +144,9 @@ public class DdlHandler {
     }
 
     public static void createSchema(String schemaName, String connId) {
-        SchemaInfo schemaInfo = SchemaInfo.builder().name(schemaName).build();
+        SchemaInfo schemaInfo = SchemaInfo.builder()
+            .name(schemaName)
+            .build();
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         assert infoSchemaService != null;
         long schemaId = infoSchemaService.genSchemaId();
@@ -197,12 +200,60 @@ public class DdlHandler {
         doDdlJob(job);
     }
 
-    public void createIndex() {
-
+    public static void createIndex(String schemaName, String tableName, TableDefinition indexDef) {
+        SchemaInfo schemaInfo = InfoSchemaService.root().getSchema(schemaName);
+        if (schemaInfo == null) {
+            throw new RuntimeException("schema not exists");
+        }
+        long schemaId = schemaInfo.getSchemaId();
+        TableDefinitionWithId tableInfo = (TableDefinitionWithId) InfoSchemaService.root().getTable(schemaId, tableName);
+        if (tableInfo == null) {
+            throw new RuntimeException("table not exists");
+        }
+        long tableId = tableInfo.getTableId().getEntityId();
+        DdlJob job = DdlJob.builder()
+            .schemaId(schemaId)
+            .tableId(tableId)
+            .schemaName(schemaName)
+            .tableName(tableName)
+            .actionType(ActionType.ActionAddIndex)
+            .build();
+        List<Object> args = new ArrayList<>();
+        indexDef.setSchemaState(SchemaState.SCHEMA_NONE);
+        args.add(indexDef);
+        job.setArgs(args);
+        doDdlJob(job);
     }
 
-    public void dropIndex() {
+    public static void dropIndex(String schemaName, String tableName, String indexName) {
+        SchemaInfo schemaInfo = InfoSchemaService.root().getSchema(schemaName);
+        if (schemaInfo == null) {
+            throw new RuntimeException("schema not exists");
+        }
+        long schemaId = schemaInfo.getSchemaId();
+        Table table = InfoSchemaService.root().getTableDef(schemaId, tableName);
+        if (table == null) {
+            throw new RuntimeException("table not exists");
+        }
+        boolean notExists = table.getIndexes()
+            .stream()
+            .noneMatch(indexTable -> indexTable.getName().equalsIgnoreCase(indexName));
+        if (notExists) {
+            throw new RuntimeException("index not exists");
+        }
 
+        long tableId = table.tableId.seq;
+        DdlJob job = DdlJob.builder()
+            .schemaId(schemaId)
+            .tableId(tableId)
+            .schemaName(schemaName)
+            .tableName(tableName)
+            .actionType(ActionType.ActionDropIndex)
+            .build();
+        List<Object> args = new ArrayList<>();
+        args.add(indexName);
+        job.setArgs(args);
+        doDdlJob(job);
     }
 
     public static DdlJob createTableWithInfoJob(String schemaName, TableDefinition tableDefinition) {

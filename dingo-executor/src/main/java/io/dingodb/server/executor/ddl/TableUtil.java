@@ -88,11 +88,35 @@ public final class TableUtil {
         return Pair.of(version, null);
     }
 
+    public static Pair<Long, String> updateVersionAndIndexInfos(
+        DdlContext dc,
+        DdlJob job,
+        TableDefinitionWithId indexInfo,
+        boolean shouldUpdateVer
+    ) {
+        Long version = 0L;
+        if (shouldUpdateVer) {
+            Pair<Long, String> res= DdlWorker.updateSchemaVersion(dc, job);
+            if (res.getValue() != null) {
+                return res;
+            }
+            version = res.getKey();
+        }
+        updateIndex(indexInfo);
+        return Pair.of(version, null);
+    }
+
     public static void updateTable(long schemaId, TableDefinitionWithId tableInfo) {
         // to set startTs
         InfoSchemaService infoSchemaService =InfoSchemaService.root();
-        assert infoSchemaService != null;
         infoSchemaService.updateTable(schemaId, tableInfo);
+    }
+
+    public static void updateIndex(TableDefinitionWithId indexInfo) {
+        long tableId = indexInfo.getTableId().getParentEntityId();
+
+        InfoSchemaService infoSchemaService =InfoSchemaService.root();
+        infoSchemaService.updateIndex(tableId, indexInfo);
     }
 
     public static Pair<TableDefinitionWithId, String> getTableInfoAndCancelFaultJob(DdlJob ddlJob, long schemaId) {
@@ -101,7 +125,7 @@ public final class TableUtil {
             return res;
         }
         if (res.getKey().getTableDefinition().getSchemaState()
-              == io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_PUBLIC) {
+              != io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_PUBLIC) {
             ddlJob.setState(JobState.jobStateCancelled);
             return Pair.of(null, "table is not in public");
         }

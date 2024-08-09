@@ -60,7 +60,6 @@ import io.dingodb.sdk.service.entity.coordinator.IdEpochType;
 import io.dingodb.sdk.service.entity.coordinator.QueryRegionRequest;
 import io.dingodb.sdk.service.entity.coordinator.RegionCmd.RequestNest.SplitRequest;
 import io.dingodb.sdk.service.entity.coordinator.SplitRegionRequest;
-import io.dingodb.sdk.service.entity.meta.AddIndexOnTableRequest;
 import io.dingodb.sdk.service.entity.meta.CreateAutoIncrementRequest;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.EntityType;
@@ -481,33 +480,51 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public void createIndex(CommonId tableId, TableDefinition table, TableDefinition index) {
+    public void createIndex(CommonId tableId, String tableName, TableDefinition index) {
         if (!MetaServiceApiImpl.INSTANCE.isReady()) {
             throw new RuntimeException("Offline, please wait and retry.");
         }
-        String tableName = cleanTableName(table.getName());
-        TableIdWithPartIds tableIdWithPartIds = service.generateTableIds(
+        validatePartBy(index);
+        CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
+        long indexEntityId = coordinatorService.createIds(
             tso(),
-            GenerateTableIdsRequest.builder()
-                .schemaId(id)
-                .count(
-                    TableWithPartCount.builder()
-                        .indexCount(1)
-                        .indexPartCount(Collections.singletonList(index.getPartDefinition().getDetails().size()))
-                        .build()
-                ).build()).getIds().get(0);
-        TableDefinitionWithId tableDefinitionWithId = Stream.of(index).map(i -> MAPPER.tableTo(tableIdWithPartIds, i))
+            CreateIdsRequest.builder()
+                .idEpochType(IdEpochType.ID_NEXT_TABLE).count(1)
+                .build()
+        ).getIds().get(0);
+        DingoCommonId indexId = DingoCommonId.builder()
+            .entityType(EntityType.ENTITY_TYPE_INDEX)
+            .parentEntityId(tableId.seq)
+            .entityId(indexEntityId)
+            .build();
+        int count = 0;
+        for (PartitionDetailDefinition detail : index.getPartDefinition().getDetails()) {
+            count += detail.getOperand().length == 0 ? 1 : detail.getOperand().length;
+        }
+        List<DingoCommonId> indexPartIds = coordinatorService.createIds(
+                tso(),
+                CreateIdsRequest.builder()
+                    .idEpochType(IdEpochType.ID_NEXT_TABLE)
+                    .count(count == 0 ? 1 : count)
+                    .build())
+            .getIds()
+            .stream()
+            .map(id -> DingoCommonId.builder()
+                .entityType(EntityType.ENTITY_TYPE_PART)
+                .parentEntityId(indexId.getEntityId())
+                .entityId(id).build())
+            .collect(Collectors.toList());
+        TableIdWithPartIds indexIdWithPartIds = TableIdWithPartIds.builder()
+            .tableId(indexId)
+            .partIds(indexPartIds)
+            .build();
+
+        TableDefinitionWithId indexWithId = Stream.of(index).map(i -> MAPPER.tableTo(indexIdWithPartIds, i))
             .peek(td -> MAPPER.resetIndexParameter(td.getTableDefinition()))
             .peek(td -> td.getTableDefinition().setName(tableName + "." + td.getTableDefinition().getName()))
             .findAny().get();
-
-        api.addIndexOnTable(
-            tso(),
-            name,
-            AddIndexOnTableRequest.builder()
-                .tableId(MAPPER.idTo(tableId))
-                .tableDefinitionWithId(tableDefinitionWithId)
-                .build());
+        io.dingodb.meta.InfoSchemaService.root().createIndex(tableId.domain, tableId.seq, indexWithId);
+        createIndexRegion(indexWithId, indexEntityId, index.getReplica());
     }
 
     @Override
@@ -600,6 +617,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .replica(table.getReplica())
             .autoIncrement(table.getAutoIncrement())
             .createSql(table.getCreateSql())
+            .schemaState(SchemaState.get(table.getSchemaState().number))
             .properties(prop)
             .build();
     }
@@ -804,7 +822,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public boolean dropTable(@NonNull String tableName) {
+    public boolean dropTable(String tableName) {
         if (!MetaServiceApiImpl.INSTANCE.isReady()) {
             throw new RuntimeException("Offline, please wait and retry.");
         }
@@ -818,13 +836,19 @@ public class MetaService implements io.dingodb.meta.MetaService {
         List<IndexTable> indexes = table.getIndexes();
 
         io.dingodb.meta.MetaService metaService = io.dingodb.meta.MetaService.root();
-        io.dingodb.meta.MetaService metaService1 = metaService.getSubMetaService(name);
-        metaService1.getRangeDistribution(table.tableId).values().forEach(rangeDistribution -> {
+        metaService.getRangeDistribution(table.tableId).values().forEach(rangeDistribution -> {
             coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build());
         });
 
         for (IndexTable index : indexes) {
-            metaService1.getRangeDistribution(index.tableId).values().forEach(rangeDistribution -> coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build()));
+            metaService.getRangeDistribution(index.tableId)
+                .values()
+                .forEach(rangeDistribution ->
+                    coordinatorService.dropRegion(
+                        tso(),
+                        DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build()
+                    )
+                );
         }
 
         List<CommonId> indexIds = indexes.stream().map(Table::getTableId).collect(Collectors.toList());
@@ -1051,6 +1075,36 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 break;
             default:
                 throw new IllegalStateException("Unsupported " + partDefinition.getFuncName());
+        }
+    }
+
+    public void createIndexRegion(TableDefinitionWithId withId, long tableId, int replica) {
+        CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
+        io.dingodb.sdk.service.entity.meta.TableDefinition definition = withId.getTableDefinition();
+        for (Partition partition : definition.getTablePartition().getPartitions()) {
+            IndexParameter indexParameter = definition.getIndexParameter();
+            if (indexParameter.getVectorIndexParameter() != null) {
+                indexParameter.setIndexType(IndexType.INDEX_TYPE_VECTOR);
+            } else if (indexParameter.getDocumentIndexParameter() != null) {
+                indexParameter.setIndexType(IndexType.INDEX_TYPE_DOCUMENT);
+            }
+            CreateRegionRequest request = CreateRegionRequest
+                .builder()
+                .regionName("I_" + id.getEntityId() + "_" + definition.getName() + "_part_" + partition.getId().getEntityId())
+                .regionType(definition.getIndexParameter().getIndexType() == IndexType.INDEX_TYPE_SCALAR ?
+                    RegionType.STORE_REGION : RegionType.INDEX_REGION)
+                .replicaNum(replica)
+                .range(partition.getRange())
+                .rawEngine(RawEngine.RAW_ENG_ROCKSDB)
+                .storeEngine(definition.getStoreEngine())
+                .schemaId(id.getEntityId())
+                .tableId(tableId)
+                .partId(partition.getId().getEntityId())
+                .tenantId(withId.getTenantId())
+                .indexId(withId.getTableId().getEntityId())
+                .indexParameter(indexParameter)
+                .build();
+            coordinatorService.createRegion(tso(), request);
         }
     }
 }

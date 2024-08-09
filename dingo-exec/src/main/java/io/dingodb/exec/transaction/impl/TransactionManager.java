@@ -40,22 +40,6 @@ public final class TransactionManager {
     private TransactionManager() {
     }
 
-    public static @NonNull ITransaction createTransaction(boolean pessimistic, long startTs, int isolationLevel) {
-        if (pessimistic) {
-            return createTransaction(TransactionType.PESSIMISTIC, startTs, isolationLevel);
-        } else {
-            return createTransaction(TransactionType.OPTIMISTIC, startTs, isolationLevel);
-        }
-    }
-
-    public static @NonNull ITransaction createTransaction(boolean pessimistic, @NonNull CommonId txnId, int isolationLevel) {
-        if (pessimistic) {
-            return createTransaction(TransactionType.PESSIMISTIC, txnId, isolationLevel);
-        } else {
-            return createTransaction(TransactionType.OPTIMISTIC, txnId, isolationLevel);
-        }
-    }
-
     public static @NonNull ITransaction createTransaction(@NonNull TransactionType trxType, long startTs, int isolationLevel) {
         ITransaction tran;
         switch (trxType) {
@@ -166,5 +150,9 @@ public final class TransactionManager {
             return is.getIndex(indexId.domain, indexId.seq);
         }
         return null;
+    }
+
+    public static long getMinTs() {
+        return trans.keySet().stream().mapToLong(txnId -> txnId.seq).min().orElse(Long.MAX_VALUE);
     }
 }

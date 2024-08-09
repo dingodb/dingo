@@ -32,6 +32,7 @@ import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.common.serial.RecordEncoder;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.entity.common.Range;
+import io.dingodb.sdk.service.entity.common.SchemaState;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.Partition;
 import io.dingodb.sdk.service.entity.meta.PartitionRule;
@@ -51,6 +52,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import javax.xml.bind.ValidationException;
 
 import static io.dingodb.partition.DingoPartitionServiceProvider.HASH_FUNC_NAME;
 import static io.dingodb.partition.DingoPartitionServiceProvider.RANGE_FUNC_NAME;
@@ -195,6 +198,7 @@ public interface TableMapper {
             codec,
             fromPartitionStrategy(partitionRule.getStrategy()))
         );
+        builder.schemaState(io.dingodb.common.meta.SchemaState.get(tableWithId.getTableDefinition().getSchemaState().number));
         builder.tableId(MAPPER.idFrom(tableWithId.getTableId()));
         builder.indexes(indexes.stream().map($ -> indexTableFrom(builder, $, Collections.emptyList()))
             .collect(Collectors.toList()));
@@ -226,6 +230,7 @@ public interface TableMapper {
             .collect(Collectors.toList());
         List<Integer> columnIndices = table.getColumnIndices(names);
         builder.mapping(TupleMapping.of(columnIndices));
+        builder.schemaState(io.dingodb.common.meta.SchemaState.get(tableWithId.getTableDefinition().getSchemaState().number));
         MAPPER.setIndex(builder, definition.getIndexParameter());
         return builder.build();
     }
@@ -250,8 +255,27 @@ public interface TableMapper {
             partitionTo(tableDefinition.getPartDefinition(), ids.getPartIds(), encoder, namespace)
         );
         definition.setName(definition.getName().toUpperCase());
-        // TODO tenant id
-        return TableDefinitionWithId.builder().tenantId(0).tableDefinition(definition).tableId(ids.getTableId()).build();
+        definition.setSchemaState(convertSchemaState(tableDefinition.getSchemaState()));
+        return TableDefinitionWithId.builder().tableDefinition(definition).tableId(ids.getTableId()).build();
+    }
+
+    default SchemaState convertSchemaState(io.dingodb.common.meta.SchemaState schemaState) {
+        switch (schemaState) {
+            case SCHEMA_NONE:
+                return SchemaState.SCHEMA_NONE;
+            case SCHEMA_DELETE_ONLY:
+                return SchemaState.SCHEMA_DELETE_ONLY;
+            case SCHEMA_WRITE_ONLY:
+                return SchemaState.SCHEMA_WRITE_ONLY;
+            case SCHEMA_WRITE_REORG:
+                return SchemaState.SCHEMA_WRITE_REORG;
+            case SCHEMA_DELETE_REORG:
+                return SchemaState.SCHEMA_DELETE_REORG;
+            case SCHEMA_PUBLIC:
+                return SchemaState.SCHEMA_PUBLIC;
+            default:
+                return SchemaState.SCHEMA_PUBLIC;
+        }
     }
 
     default byte[] realKey(byte[] key, DingoCommonId id, byte namespace) {

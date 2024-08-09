@@ -35,6 +35,8 @@ public class PessimisticLockParam extends TxnPartModifyParam {
     protected final boolean isInsert;
     @JsonProperty("isScan")
     private final boolean isScan;
+    @JsonProperty("opType")
+    private final String opType;
     public PessimisticLockParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
@@ -47,12 +49,14 @@ public class PessimisticLockParam extends TxnPartModifyParam {
         @JsonProperty("lockTimeOut") long lockTimeOut,
         @JsonProperty("isInsert") boolean isInsert,
         @JsonProperty("isScan") boolean isScan,
+        @JsonProperty("opType") String opType,
         Table table
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
         this.isInsert = isInsert;
         this.isScan = isScan;
+        this.opType = opType;
     }
     public void inc() {
         count++;

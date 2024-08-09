@@ -24,6 +24,7 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.MdcUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.transaction.base.BaseTransaction;
@@ -368,7 +369,7 @@ public class PessimisticTransaction extends BaseTransaction {
                     cacheToObject.getMutation().getKey()
                 );
                 cacheToObject.setPartId(regionId);
-                sleep();
+                Utils.sleep(100);
             }
         }
     }
