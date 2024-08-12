@@ -688,9 +688,12 @@ public class DingoMeta extends MetaImpl {
             LogUtils.error(log, "Fetch catch exception:{}", e, e);
             throw ExceptionUtils.toRuntime(e);
         } finally {
-            ((DingoConnection) connection).setCommandStartTime(0);
+            DingoConnection connection1 = (DingoConnection) connection;
+            connection1.setCommandStartTime(0);
             addSqlProfile(sqlProfile, connection);
-            SqlLogUtils.info("DingoMeta fetch, cost: {}ms.", System.currentTimeMillis() - startTime);
+            if (connection1.getContext().getOption("sql_log").equalsIgnoreCase("")) {
+                SqlLogUtils.info("DingoMeta fetch, cost: {}ms.", System.currentTimeMillis() - startTime);
+            }
             MdcUtils.removeStmtId();
         }
     }

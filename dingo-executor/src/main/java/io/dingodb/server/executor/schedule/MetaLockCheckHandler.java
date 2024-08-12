@@ -21,6 +21,7 @@ import io.dingodb.common.ddl.MdlCheckTableInfo;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.util.Utils;
+import io.dingodb.meta.entity.InfoCache;
 import io.dingodb.server.executor.ddl.DdlContext;
 import io.dingodb.server.executor.session.SessionManager;
 import lombok.extern.slf4j.Slf4j;
@@ -75,7 +76,9 @@ public final class MetaLockCheckHandler {
                 }
 
                 for (Map.Entry<Long, Long> entry : jobsVerMap.entrySet()) {
-                    if (jobCache.containsKey(entry.getKey()) && jobCache.get(entry.getKey()) >= entry.getValue()) {
+                    if (jobCache.containsKey(entry.getKey())
+                        && jobCache.get(entry.getKey()) >= entry.getValue()
+                        && DdlContext.INSTANCE.getNewVer().get() >= entry.getValue()) {
                         continue;
                     }
                     LogUtils.info(log, "mdl gets lock, update to owner, jobId:{}, version:{}", entry.getKey(), entry.getValue());

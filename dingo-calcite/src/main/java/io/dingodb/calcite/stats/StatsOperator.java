@@ -20,6 +20,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.store.KeyValue;
@@ -144,7 +145,10 @@ public abstract class StatsOperator {
     public static void delStats(String table, String schemaName, String tableName) {
         String sqlTemp = "delete from %s where schema_name='%s' and table_name='%s'";
         String sql = String.format(sqlTemp, table, schemaName, tableName);
-        SessionUtil.INSTANCE.exeUpdateInTxn(sql);
+        String error = SessionUtil.INSTANCE.exeUpdateInTxn(sql);
+        if (error != null) {
+            LogUtils.error(log, "delStats error:{}, table:{}, schema:{}, tableName:{}", error, table, schemaName, tableName);
+        }
     }
 
     public List<Object[]> scan(StoreKvTxn store, KeyValueCodec codec, RangeDistribution rangeDistribution) {

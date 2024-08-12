@@ -26,6 +26,7 @@ import java.sql.Time;
 import java.util.Collection;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.LockSupport;
@@ -285,6 +286,15 @@ public final class Utils {
         try {
             Thread.sleep(waitTime);
         } catch (InterruptedException ignored) {
+        }
+    }
+
+    public static <T> @NonNull T forceTake(@NonNull BlockingQueue<T> queue) {
+        while (true) {
+            try {
+                return queue.take();
+            } catch (InterruptedException ignored) {
+            }
         }
     }
 

@@ -23,6 +23,7 @@ import com.codahale.metrics.Timer;
 import com.codahale.metrics.UniformReservoir;
 import com.codahale.metrics.jmx.JmxReporter;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.ddl.RunningJobs;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -90,6 +91,19 @@ public final class DingoMetrics {
                 long totalMemory = runtime.totalMemory();
                 long freeMemory = runtime.freeMemory();
                 return  (double) (totalMemory - freeMemory) / totalMemory * 100;
+            }
+        });
+        metricRegistry.register("runningJobs", new CachedGauge<Double>(1, TimeUnit.MINUTES) {
+            @Override
+            protected Double loadValue() {
+                return (double) RunningJobs.runningJobs.size();
+            }
+        });
+
+        metricRegistry.register("activeSessionCount", new CachedGauge<Double>(1, TimeUnit.MINUTES) {
+            @Override
+            protected Double loadValue() {
+                return (double) RunningJobs.runningJobs.size();
             }
         });
         metricRegistry.register("select-latency", new CachedGauge<Double>(5, TimeUnit.MINUTES) {

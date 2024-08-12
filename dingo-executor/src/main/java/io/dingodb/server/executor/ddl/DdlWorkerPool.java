@@ -16,11 +16,14 @@
 
 package io.dingodb.server.executor.ddl;
 
+import com.codahale.metrics.CachedGauge;
 import io.dingodb.common.log.LogUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class DdlWorkerPool extends GenericObjectPool<DdlWorker> {

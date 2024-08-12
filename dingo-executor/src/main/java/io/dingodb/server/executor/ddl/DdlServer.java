@@ -16,6 +16,7 @@
 
 package io.dingodb.server.executor.ddl;
 
+import com.codahale.metrics.Timer;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlJobEvent;
@@ -24,6 +25,7 @@ import io.dingodb.common.ddl.DdlJobListenerImpl;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.tenant.TenantConstant;
@@ -58,7 +60,11 @@ public final class DdlServer {
         LockService lockService = new LockService(resourceKey, Configuration.coordinators(), 45000);
         Kv kv = Kv.builder().kv(KeyValue.builder()
             .key(DdlUtil.ADDING_DDL_JOB_CONCURRENT_KEY.getBytes()).build()).build();
-        lockService.watchAllOpLock(kv, DdlServer::startLoadDDLAndRunByEtcd);
+        lockService.watchAllOpLock(kv, DdlServer::asyncStartDdl);
+    }
+
+    public static void asyncStartDdl() {
+        Executors.execute("notify_ddl_worker_etcd", DdlServer::startLoadDDLAndRunByEtcd, true);
     }
 
     public static void startLoadDDLAndRunByEtcd() {
@@ -104,12 +110,14 @@ public final class DdlServer {
         ) {
             DdlContext.INSTANCE.getWc().setOnceVal(true);
             Utils.sleep(1000);
+            return;
         }
         loadDDLJobAndRun(session, JobTableUtil::getGenerateJob, DdlContext.INSTANCE.getDdlJobPool());
         loadDDLJobAndRun(session, JobTableUtil::getReorgJob, DdlContext.INSTANCE.getDdlReorgPool());
     }
 
     static synchronized void loadDDLJobAndRun(Session session, Function<Session, Pair<DdlJob, String>> getJob, DdlWorkerPool pool) {
+        long start = System.currentTimeMillis();
         Pair<DdlJob, String> res = getJob.apply(session);
         if (res == null || res.getValue() != null) {
             return;
@@ -118,6 +126,8 @@ public final class DdlServer {
         if (ddlJob == null) {
             return;
         }
+        long end = System.currentTimeMillis();
+        DingoMetrics.timer("loadDdlJob").update((end - start), TimeUnit.MILLISECONDS);
         try {
             DdlWorker worker = pool.borrowObject();
             delivery2worker(worker, ddlJob, pool);
@@ -130,6 +140,7 @@ public final class DdlServer {
         DdlContext dc = DdlContext.INSTANCE;
         dc.insertRunningDDLJobMap(ddlJob.getId());
         Executors.submit("ddl-worker", () -> {
+            Timer.Context timeCtx = DingoMetrics.getTimeContext("ddlJobRun");
             try {
                 if (!dc.getWc().isSynced(ddlJob.getId()) || dc.getWc().getOnce().get()) {
                     if (DdlUtil.mdlEnable) {
@@ -177,6 +188,7 @@ public final class DdlServer {
             } finally {
                 dc.deleteRunningDDLJobMap(ddlJob.getId());
                 pool.returnObject(worker);
+                timeCtx.stop();
                 DdlHandler.asyncNotify(1);
             }
         });
@@ -201,7 +213,7 @@ public final class DdlServer {
         if (!job.isRunning() && !job.isRollingback() && !job.isDone() && !job.isRollbackDone()) {
             return;
         }
-        InfoSchemaService infoSchemaService = new io.dingodb.store.service.InfoSchemaService(0L);
+        InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
         long latestSchemaVersion = infoSchemaService.getSchemaVersionWithNonEmptyDiff();
         waitSchemaChanged(ddlContext, waitTime, latestSchemaVersion, job, worker);
     }
@@ -225,7 +237,7 @@ public final class DdlServer {
         }
         try {
             dc.getSchemaSyncer().ownerUpdateGlobalVersion(latestSchemaVersion);
-            LogUtils.debug(log, "owner update global ver:{}", latestSchemaVersion);
+            LogUtils.info(log, "owner update global ver:{}", latestSchemaVersion);
         } catch (Exception e) {
             LogUtils.error(log, "[ddl] update latest schema version failed, version:" + latestSchemaVersion, e);
         }

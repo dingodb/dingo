@@ -106,6 +106,7 @@ public class Session {
         try {
             this.connection.setAutoCommit(false);
         } catch (SQLException e) {
+            LogUtils.error(log, "session set autocommit false error", e);
             throw new RuntimeException(e);
         }
         Exception exception = f.apply(this);
@@ -113,14 +114,23 @@ public class Session {
             try {
                 connection.rollback();
             } catch (SQLException e) {
+                LogUtils.error(log, "session rollback error", e);
                 throw new RuntimeException(e);
             }
         }
 
         try {
-            this.connection.setAutoCommit(true);
+            this.connection.commit();
         } catch (SQLException e) {
+            LogUtils.error(log, "session commit error", e);
             throw new RuntimeException(e);
+        } finally {
+            try {
+                this.connection.setAutoCommit(true);
+            } catch (SQLException e) {
+                LogUtils.error(log, "session set autocommit true error", e);
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -128,6 +138,7 @@ public class Session {
         try {
             connection.rollback();
         } catch (SQLException e) {
+            LogUtils.error(log, "session rollback error", e);
             throw new RuntimeException(e);
         }
     }
@@ -137,6 +148,7 @@ public class Session {
             connection.commit();
             connection.setAutoCommit(true);
         } catch (SQLException e) {
+            LogUtils.error(log, "session commit error", e);
             throw new RuntimeException(e);
         }
     }

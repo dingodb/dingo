@@ -25,10 +25,10 @@ public interface SchemaSyncerService {
 
     String ownerCheckAllVersions(long jobId, long latestVer);
 
-    default void watchGlobalSchemaVer() {}
-
     void ownerUpdateGlobalVersion(long version);
 
     void removeSelfVersionPath();
+
+    void ownerUpdateExpVersion(long version);
 
 }

@@ -201,9 +201,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public synchronized void createSubMetaService(String name) {
-        if (!MetaServiceApiImpl.INSTANCE.isReady()) {
-            throw new RuntimeException("Offline, please wait and retry.");
-        }
         if (id != ROOT_SCHEMA_ID) {
             throw new UnsupportedOperationException();
         }
@@ -243,9 +240,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public boolean dropSubMetaService(String name) {
-        if (!MetaServiceApiImpl.INSTANCE.isReady()) {
-            throw new RuntimeException("Offline, please wait and retry.");
-        }
         if (id != ROOT_SCHEMA_ID) {
             throw new UnsupportedOperationException();
         }
@@ -262,9 +256,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
     public long createTables(
         @NonNull TableDefinition tableDefinition, @NonNull List<TableDefinition> indexTableDefinitions
     ) {
-        if (!MetaServiceApiImpl.INSTANCE.isReady()) {
-            throw new RuntimeException("Offline, please wait and retry.");
-        }
         validatePartBy(tableDefinition);
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
 
@@ -481,9 +472,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public void createIndex(CommonId tableId, String tableName, TableDefinition index) {
-        if (!MetaServiceApiImpl.INSTANCE.isReady()) {
-            throw new RuntimeException("Offline, please wait and retry.");
-        }
         validatePartBy(index);
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
         long indexEntityId = coordinatorService.createIds(
@@ -643,9 +631,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public long truncateTable(@NonNull String tableName, long tableEntityId) {
-        if (!MetaServiceApiImpl.INSTANCE.isReady()) {
-            throw new RuntimeException("Offline, please wait and retry.");
-        }
         // Get old table and indexes
         TableDefinitionWithId table = Optional.mapOrGet(infoSchemaService.getTable(id.getEntityId(), tableName), __ -> (TableDefinitionWithId) __, () -> null);
 
@@ -823,9 +808,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public boolean dropTable(String tableName) {
-        if (!MetaServiceApiImpl.INSTANCE.isReady()) {
-            throw new RuntimeException("Offline, please wait and retry.");
-        }
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
         io.dingodb.meta.InfoSchemaService schemaService = io.dingodb.meta.InfoSchemaService.root();
         Table table = schemaService.getTableDef(id.getEntityId(), tableName);

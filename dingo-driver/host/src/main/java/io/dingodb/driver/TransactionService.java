@@ -65,6 +65,7 @@ public class TransactionService implements io.dingodb.transaction.api.Transactio
         return connectionMap.values().stream()
             .map(conn -> (DingoConnection)conn)
             .filter(dc -> !dc.getMdlLockJobMap().isEmpty())
+            .filter(dc -> dc.getTransaction() != null)
             .map(dc -> {
                 long jobId = dc.getMdlLockJobMap().keySet().stream().findFirst().orElse(0L);
                 ITransaction transaction = dc.getTransaction();

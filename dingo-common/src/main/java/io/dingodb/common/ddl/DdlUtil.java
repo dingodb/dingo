@@ -24,12 +24,12 @@ import java.util.UUID;
 
 public final class DdlUtil {
     public static final String DDLGlobalSchemaVersion = "/dingo/ddl/global_schema_version";
+    public static final String DDLExpSchemaVersion = "/dingo/ddl/exp_schema_version";
     public static final String DDLAllSchemaVersionsByJob = "/dingo/ddl/all_schema_by_job_versions";
     public static final String DDLAllSchemaVersions = "/dingo/ddl/all_schema_versions|0|";
     public static final String DDLAllSchemaVersionsEnd = "/dingo/ddl/all_schema_versions|1|";
 
-    public static final String ADDING_DDL_JOB_CONCURRENT = "/tidb/ddl/add_ddl_job_general";
-    public static final String ADDING_DDL_JOB_CONCURRENT_KEY = String.format("%s:%s", TenantConstant.TENANT_ID, ADDING_DDL_JOB_CONCURRENT);
+    public static final String ADDING_DDL_JOB_CONCURRENT = "/dingo/ddl/add_ddl_job_general";
 
     public static final String MDL_PREFIX_TEMPLATE = "%s:%s:%d:|0|";
     public static final String MDL_PREFIX_TEMPLATE_END = "%s:%s:%d:|1|";
@@ -39,6 +39,7 @@ public final class DdlUtil {
 
     public static final byte[] indexElementKey = "_idx_".getBytes();
     public static final String tenantPrefix = String.format("tenant:%d", TenantConstant.TENANT_ID);
+    public static final String ADDING_DDL_JOB_CONCURRENT_KEY = String.format("%s:%s", tenantPrefix, ADDING_DDL_JOB_CONCURRENT);
 
     public static boolean mdlEnable = true;
 

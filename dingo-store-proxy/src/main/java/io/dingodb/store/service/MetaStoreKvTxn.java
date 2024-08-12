@@ -47,6 +47,7 @@ import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
+import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
@@ -69,10 +70,12 @@ import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 
 @Slf4j
 public class MetaStoreKvTxn {
+    boolean ddl;
     CommonId metaId = null;
-    CommonId partId = null;
+    CommonId partId;
     static final byte namespace = (byte) 't';
     private static MetaStoreKvTxn instance;
+    private static MetaStoreKvTxn instanceDdl;
     Set<Location> coordinators = Services.parse(Configuration.coordinators());
     int isolationLevel = 2;
     // putAbsent
@@ -81,7 +84,8 @@ public class MetaStoreKvTxn {
     long statementTimeout = 50000;
 
     public static void init() {
-        instance = new MetaStoreKvTxn();
+        instance = new MetaStoreKvTxn(false);
+        instanceDdl = new MetaStoreKvTxn(true);
     }
 
     public static synchronized MetaStoreKvTxn getInstance() {
@@ -91,11 +95,25 @@ public class MetaStoreKvTxn {
         return instance;
     }
 
-    private MetaStoreKvTxn() {
-        long metaPartId = checkMetaRegion();
-        metaId = new CommonId(CommonId.CommonType.META, 0, metaPartId);
-        partId = new CommonId(CommonId.CommonType.PARTITION, 0, 0);
-        storeService = Services.storeRegionService(coordinators, metaPartId, 60);
+    public static synchronized MetaStoreKvTxn getDdlInstance() {
+        if (instanceDdl == null) {
+            init();
+        }
+        return instanceDdl;
+    }
+
+    private MetaStoreKvTxn(boolean ddl) {
+        if (!ddl) {
+            partId = new CommonId(CommonId.CommonType.PARTITION, 0, 0);
+            long metaPartId = checkMetaRegion();
+            metaId = new CommonId(CommonId.CommonType.META, 0, metaPartId);
+            storeService = Services.storeRegionService(coordinators, metaPartId, 60);
+        } else {
+            partId = new CommonId(CommonId.CommonType.PARTITION, 0, 3);
+            long metaPartId = checkMetaRegion();
+            metaId = new CommonId(CommonId.CommonType.META, 0, metaPartId);
+            storeService = Services.storeRegionService(coordinators, metaPartId, 60);
+        }
     }
 
     public long checkMetaRegion() {
@@ -109,8 +127,12 @@ public class MetaStoreKvTxn {
             return regionId;
         }
         Range range = Range.builder().startKey(startKey).endKey(endKey).build();
+        String regionName = "meta";
+        if (ddl) {
+            regionName = "ddl";
+        }
         CreateRegionRequest createRegionRequest = CreateRegionRequest.builder()
-            .regionName("meta")
+            .regionName(regionName)
             .range(range)
             .replicaNum(3)
             .rawEngine(RawEngine.RAW_ENG_ROCKSDB)
@@ -152,6 +174,23 @@ public class MetaStoreKvTxn {
             return null;
         } else {
             return keyValueList.get(0).getValue();
+        }
+    }
+
+    public byte[] mGetImmediately(byte[] key, long startTs) {
+        key = getMetaDataKey(key);
+
+        List<byte[]> keys = Collections.singletonList(key);
+        TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
+        try {
+            List<KeyValue> keyValueList = storeInstance.getKeyValues(startTs, keys, 1000);
+            if (keyValueList.isEmpty()) {
+                return null;
+            } else {
+                return keyValueList.get(0).getValue();
+            }
+        } catch (Exception e) {
+            return null;
         }
     }
 
@@ -209,7 +248,7 @@ public class MetaStoreKvTxn {
         }
     }
 
-    private static byte[] getMetaDataKey(byte[] key) {
+    private byte[] getMetaDataKey(byte[] key) {
         byte[] bytes = new byte[9 + key.length];
         byte[] regionKey = getMetaRegionKey();
         System.arraycopy(regionKey, 0, bytes, 0, regionKey.length);
@@ -217,20 +256,21 @@ public class MetaStoreKvTxn {
         return bytes;
     }
 
-    private static byte[] getMetaRegionEndKey() {
+    private byte[] getMetaRegionEndKey() {
         byte[] bytes = new byte[9];
         BufImpl buf = new BufImpl(bytes);
         // skip namespace
         buf.skip(1);
         // reset id
-        buf.writeLong(1);
+        long part = partId.seq;
+        buf.writeLong(part + 1);
         bytes[0] = namespace;
         return bytes;
     }
 
-    private static byte[] getMetaRegionKey() {
+    private byte[] getMetaRegionKey() {
         byte[] key = new byte[9];
-        CodecService.INSTANCE.setId(key, 0);
+        CodecService.INSTANCE.setId(key, partId.seq);
         key[0] = namespace;
         return key;
     }
@@ -292,25 +332,45 @@ public class MetaStoreKvTxn {
             .commitTs(commitTs)
             .keys(Collections.singletonList(primaryKey))
             .build();
+        TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
         try {
-            TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
+            //TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
             return storeInstance.txnCommitRealKey(commitRequest);
         } catch (RuntimeException e) {
             LogUtils.error(log, e.getMessage(), e);
-            // 2、regin split
-            boolean commitResult = false;
-            int i = 0;
-            while (!commitResult) {
-                i++;
-                try {
-                    CommonId regionIdNew = refreshRegionId(getMetaRegionKey(), getMetaRegionEndKey(), primaryKey);
-                    StoreService serviceNew = Services.storeRegionService(coordinators, regionIdNew.seq, 60);
-                    TransactionStoreInstance storeInstanceNew = new TransactionStoreInstance(serviceNew, null, partId);
-                    storeInstanceNew.txnCommit(commitRequest);
-                    commitResult = true;
-                } catch (RegionSplitException e1) {
-                    Utils.sleep(100);
-                    LogUtils.error(log, "commit primary region split, retry count:" + i);
+            if (e instanceof CommitTsExpiredException) {
+                int retry = 3;
+                boolean retryRes = false;
+                while (retry -- > 0) {
+                    Utils.sleep(1000);
+                    try {
+                        commitRequest.setCommitTs(TsoService.getDefault().tso());
+                        storeInstance.txnCommitRealKey(commitRequest);
+                        retryRes = true;
+                        break;
+                    } catch (CommitTsExpiredException ignored) {
+                        continue;
+                    }
+                }
+                if (!retryRes) {
+                    throw e;
+                }
+            } else {
+                // 2、regin split
+                boolean commitResult = false;
+                int i = 0;
+                while (!commitResult) {
+                    i++;
+                    try {
+                        CommonId regionIdNew = refreshRegionId(getMetaRegionKey(), getMetaRegionEndKey(), primaryKey);
+                        StoreService serviceNew = Services.storeRegionService(coordinators, regionIdNew.seq, 60);
+                        TransactionStoreInstance storeInstanceNew = new TransactionStoreInstance(serviceNew, null, partId);
+                        storeInstanceNew.txnCommit(commitRequest);
+                        commitResult = true;
+                    } catch (RegionSplitException e1) {
+                        Utils.sleep(100);
+                        LogUtils.error(log, "commit primary region split, retry count:" + i);
+                    }
                 }
             }
             return true;

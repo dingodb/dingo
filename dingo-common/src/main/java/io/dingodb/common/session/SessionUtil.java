@@ -39,6 +39,12 @@ public final class SessionUtil {
     private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     private SessionUtil() {
+    }
+
+    public synchronized void initPool() {
+        if (this.sessionPool != null) {
+            return;
+        }
         SessionFactory sessionFactory = new SessionFactory();
         GenericObjectPoolConfig<Session> config = new GenericObjectPoolConfig<>();
         config.setMaxTotal(10000);
@@ -64,7 +70,11 @@ public final class SessionUtil {
         this.sessionPool.returnObject(session);
     }
 
-    public void exeUpdateInTxn(String sql) {
+    public String exeUpdateInTxn(String sql) {
+        return exeUpdateInTxn(sql, 1);
+    }
+
+    public String exeUpdateInTxn(String sql, int retry) {
         Session session = null;
         try {
             session = getSession();
@@ -72,8 +82,15 @@ public final class SessionUtil {
                 se.executeUpdate(sql);
                 return null;
             });
+            return null;
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage());
+            retry --;
+            if (retry == 0) {
+                return e.getMessage();
+            } else {
+                return exeUpdateInTxn(sql, retry);
+            }
         } finally {
             closeSession(session);
         }

@@ -63,7 +63,7 @@ public final class TableUtil {
                 return Pair.of(tableInfo, null);
             } catch (Exception e) {
                 subMs.rollbackCreateTable(tableInfo, indices);
-                LogUtils.error(log, e.getMessage(), e);
+                LogUtils.error(log, "[ddl-error]" + e.getMessage(), e);
                 ddlJob.setState(JobState.jobStateCancelled);
                 String error = "[ddl] meta service createTables error";
                 return Pair.of(null, error);

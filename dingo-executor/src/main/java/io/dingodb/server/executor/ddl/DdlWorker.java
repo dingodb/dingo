@@ -396,6 +396,17 @@ public class DdlWorker {
         if (tableInfo == null) {
             return Pair.of(0L, "table not exists");
         }
+        if ("Lock wait timeout exceeded".equalsIgnoreCase(job.getError())
+            && tableInfo.getTableDefinition().getSchemaState() != SCHEMA_PUBLIC) {
+            tableInfo.getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
+            ActionType originType = job.getActionType();
+            job.setActionType(ActionType.ActionCreateTable);
+            job.setState(JobState.jobStateCancelling);
+            Pair<Long, String> res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo, true);
+            job.setActionType(originType);
+            DdlContext.INSTANCE.getSchemaSyncer().ownerUpdateExpVersion(res.getKey());
+            return res;
+        }
         SchemaState originalState = job.getSchemaState();
         Pair<Long, String> res;
         switch (tableInfo.getTableDefinition().getSchemaState()) {
@@ -638,11 +649,11 @@ public class DdlWorker {
                     break;
             }
             InfoSchemaService infoSchemaService = InfoSchemaService.root();
-            LogUtils.info(log, "put schemaDiff:{}", schemaDiff);
+            LogUtils.info(log, "[ddl] put schemaDiff:{}", schemaDiff);
             infoSchemaService.setSchemaDiff(schemaDiff);
             return Pair.of(schemaVersion, null);
         } catch (Exception e) {
-            LogUtils.error(log, "put schemaDiff error, reason:{}, jobId:{}", e.getMessage(), ddlJob.getId());
+            LogUtils.error(log, "[ddl-error] put schemaDiff error, jobId:" + ddlJob.getId() + ", version:" + schemaVersion, e);
             return Pair.of(0L, e.getMessage());
         } finally {
             LogUtils.info(log, "[ddl] updateSchemaVersion done, jobId:{}", ddlJob.getId());
