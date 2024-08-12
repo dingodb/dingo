@@ -17,6 +17,7 @@
 package io.dingodb.calcite.visitor;
 
 import io.dingodb.calcite.rel.DingoAggregate;
+import io.dingodb.calcite.rel.DingoDocument;
 import io.dingodb.calcite.rel.DingoExportData;
 import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoFunctionScan;
@@ -35,6 +36,7 @@ import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.DingoVector;
+import io.dingodb.calcite.rel.DocumentStreamConvertor;
 import io.dingodb.calcite.rel.VectorStreamConvertor;
 import io.dingodb.calcite.rel.dingo.DingoHashJoin;
 import io.dingodb.calcite.rel.dingo.DingoIndexScanWithRelOp;
@@ -48,6 +50,8 @@ import io.dingodb.calcite.rel.dingo.IndexFullScan;
 import io.dingodb.calcite.rel.dingo.IndexRangeScan;
 import io.dingodb.calcite.visitor.function.DingoAggregateVisitFun;
 import io.dingodb.calcite.visitor.function.DingoCountDeleteVisitFun;
+import io.dingodb.calcite.visitor.function.DingoDocumentStreamingVisitFun;
+import io.dingodb.calcite.visitor.function.DingoDocumentVisitFun;
 import io.dingodb.calcite.visitor.function.DingoExportDataVisitFun;
 import io.dingodb.calcite.visitor.function.DingoFilterVisitFun;
 import io.dingodb.calcite.visitor.function.DingoFunctionScanVisitFun;
@@ -238,6 +242,11 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
         return DingoVectorVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel);
     }
 
+    @Override
+    public Collection<Vertex> visit(@NonNull DingoDocument rel) {
+        return DingoDocumentVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel);
+    }
+
 
     public Collection<Vertex> visit(@NonNull DingoGetVectorByDistance rel) {
         return DingoGetVectorByDistanceVisitFun.visit(job, idGenerator, currentLocation, this, rel);
@@ -246,6 +255,11 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     @Override
     public Collection<Vertex> visit(@NonNull VectorStreamConvertor rel) {
         return DingoVectorStreamingVisitFun.visit(job, idGenerator, currentLocation, this, rel);
+    }
+
+    @Override
+    public Collection<Vertex> visit(@NonNull DocumentStreamConvertor rel) {
+        return DingoDocumentStreamingVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
 
     @Override

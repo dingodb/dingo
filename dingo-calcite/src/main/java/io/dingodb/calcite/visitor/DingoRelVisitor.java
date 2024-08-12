@@ -17,6 +17,7 @@
 package io.dingodb.calcite.visitor;
 
 import io.dingodb.calcite.rel.DingoAggregate;
+import io.dingodb.calcite.rel.DingoDocument;
 import io.dingodb.calcite.rel.DingoExportData;
 import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoFunctionScan;
@@ -41,6 +42,7 @@ import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.rel.VectorStreamConvertor;
+import io.dingodb.calcite.rel.DocumentStreamConvertor;
 import io.dingodb.calcite.rel.dingo.DingoReduceAggregate;
 import io.dingodb.calcite.rel.dingo.DingoRelOp;
 import io.dingodb.calcite.rel.dingo.DingoScanWithRelOp;
@@ -71,6 +73,8 @@ public interface DingoRelVisitor<T> {
 
     T visit(@NonNull DingoStreamingConverter rel);
 
+    T visit(@NonNull DocumentStreamConvertor rel);
+
     T visit(@NonNull DingoTableScan rel);
 
     T visit(@NonNull DingoUnion rel);
@@ -86,6 +90,8 @@ public interface DingoRelVisitor<T> {
     T visit(@NonNull DingoFunctionScan rel);
 
     T visit(@NonNull DingoVector rel);
+
+    T visit(@NonNull DingoDocument rel);
 
     T visit(@NonNull DingoGetVectorByDistance rel);
 

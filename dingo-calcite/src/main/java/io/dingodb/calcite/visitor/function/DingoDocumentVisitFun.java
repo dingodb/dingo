@@ -43,11 +43,10 @@ import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.fun.document.DocumentImageFun;
 import io.dingodb.exec.fun.document.DocumentTextFun;
 import io.dingodb.exec.operator.params.PartDocumentParam;
 import io.dingodb.exec.operator.params.TxnPartDocumentParam;
-import io.dingodb.exec.restful.DocumentExtract;
+//import io.dingodb.exec.restful.DocumentExtract;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.rel.op.RelOpBuilder;
@@ -315,26 +314,6 @@ public final class DingoDocumentVisitFun {
             String param = paramList.get(1).toString();
             if (param.contains("'")) {
                 param = param.replace("'", "");
-            }
-            String funcName = basicCall.getOperator().getName();
-            if (funcName.equalsIgnoreCase(DocumentTextFun.NAME)) {
-                floatArray = DocumentExtract.getTxtDocument(
-                    basicCall.getOperator().getName(),
-                    paramList.get(0).toString(),
-                    param);
-            } else if (funcName.equalsIgnoreCase(DocumentImageFun.NAME)) {
-                if (paramList.size() < 3) {
-                    throw new RuntimeException("document load param error");
-                }
-                Object localPath = paramList.get(2);
-                if (!(localPath instanceof Boolean)) {
-                    throw new RuntimeException("document load param error");
-                }
-                floatArray = DocumentExtract.getImgDocument(
-                    basicCall.getOperator().getName(),
-                    paramList.get(0).toString(),
-                    paramList.get(1),
-                    (Boolean) paramList.get(2));
             }
         }
         if (floatArray == null) {

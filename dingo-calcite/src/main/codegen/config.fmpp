@@ -195,7 +195,6 @@ data: {
       "TENANTS"
       "REMARKS"
       "RENAME"
-      "TEXT_SEARCH"
     ]
 
     # List of non-reserved keywords to add;

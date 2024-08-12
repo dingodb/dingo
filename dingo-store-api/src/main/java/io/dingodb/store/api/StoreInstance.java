@@ -19,6 +19,7 @@ package io.dingodb.store.api;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.CoprocessorV2;
+import io.dingodb.common.document.DocumentSearchResponse;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.vector.VectorSearchResponse;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
@@ -164,6 +165,18 @@ public interface StoreInstance {
     }
 
     default List<VectorSearchResponse> vectorSearch(
+        long requestTs, CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap, CoprocessorV2 coprocessorV2
+    ) {
+        throw new UnsupportedOperationException();
+    }
+
+    default List<DocumentSearchResponse> documentSearch(
+        CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap
+    ) {
+        return documentSearch(System.identityHashCode(floatArray), indexId, floatArray, topN, parameterMap, null);
+    }
+
+    default List<DocumentSearchResponse> documentSearch(
         long requestTs, CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap, CoprocessorV2 coprocessorV2
     ) {
         throw new UnsupportedOperationException();

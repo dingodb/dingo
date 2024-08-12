@@ -32,15 +32,13 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 
-import javax.swing.text.Document;
-
 public class DocumentStreamConvertor extends SingleRel implements DingoRel {
 
     @Getter
     private CommonId indexId;
 
     @Getter
-    private Integer DocumentIdIndex;
+    private Integer documentIdIndex;
 
     @Getter
     private Table indexTableDefinition;
@@ -64,7 +62,7 @@ public class DocumentStreamConvertor extends SingleRel implements DingoRel {
                                  boolean needRoute) {
         super(cluster, traits, input);
         this.indexId = indexId;
-        this.documentrIdIndex = documentIdIndex;
+        this.documentIdIndex = documentIdIndex;
         this.indexTableDefinition = indexTableDefinition;
         this.needRoute = needRoute;
     }
