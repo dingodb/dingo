@@ -339,7 +339,7 @@ public class MetaStoreKvTxn {
         } catch (RuntimeException e) {
             LogUtils.error(log, e.getMessage(), e);
             if (e instanceof CommitTsExpiredException) {
-                int retry = 3;
+                int retry = 30;
                 boolean retryRes = false;
                 while (retry -- > 0) {
                     Utils.sleep(1000);

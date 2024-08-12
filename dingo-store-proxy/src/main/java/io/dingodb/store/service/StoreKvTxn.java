@@ -38,6 +38,7 @@ import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
+import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
@@ -204,39 +205,51 @@ public class StoreKvTxn implements io.dingodb.store.api.transaction.StoreKvTxn {
         long commitTs,
         byte[] primaryKey
     ) {
-        // 1、call sdk commitPrimaryKey
-        TxnCommit commitRequest = TxnCommit.builder()
-            .isolationLevel(IsolationLevel.of(isolationLevel))
-            .startTs(startTs)
-            .commitTs(commitTs)
-            .keys(Collections.singletonList(primaryKey))
-            .build();
         try {
-            TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
-            return storeInstance.txnCommit(commitRequest);
-        } catch (RuntimeException e) {
-            LogUtils.error(log, e.getMessage(), e);
-            // 2、regin split
-            boolean commitResult = false;
-            int i = 0;
-            while (!commitResult) {
-                i++;
+            long start = System.currentTimeMillis();
+            while (true) {
+                // 1、call sdk commitPrimaryKey
+                TxnCommit commitRequest = TxnCommit.builder()
+                    .isolationLevel(IsolationLevel.of(isolationLevel))
+                    .startTs(startTs)
+                    .commitTs(commitTs)
+                    .keys(Collections.singletonList(primaryKey))
+                    .build();
                 try {
-                    CommonId regionIdNew = refreshRegionId(tableId, primaryKey);
-                    StoreService serviceNew = Services.storeRegionService(coordinators, regionIdNew.seq, 60);
-                    TransactionStoreInstance storeInstanceNew = new TransactionStoreInstance(serviceNew, null, partId);
-                    storeInstanceNew.txnCommit(commitRequest);
-                    commitResult = true;
-                } catch (RegionSplitException e1) {
-                    Utils.sleep(100);
-                    LogUtils.error(log, "commit primary region split, retry count:" + i);
+                    TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
+                    return storeInstance.txnCommit(commitRequest);
+                } catch (RegionSplitException e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                    // 2、regin split
+                    boolean commitResult = false;
+                    int i = 0;
+                    while (!commitResult) {
+                        i++;
+                        try {
+                            CommonId regionIdNew = refreshRegionId(tableId, primaryKey);
+                            StoreService serviceNew = Services.storeRegionService(coordinators, regionIdNew.seq, 60);
+                            TransactionStoreInstance storeInstanceNew = new TransactionStoreInstance(serviceNew, null, partId);
+                            storeInstanceNew.txnCommit(commitRequest);
+                            commitResult = true;
+                        } catch (RegionSplitException e1) {
+                            Utils.sleep(100);
+                            LogUtils.error(log, "commit primary region split, retry count:" + i);
+                        }
+                    }
+                    return true;
+                } catch (CommitTsExpiredException e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                    commitTs = TsoService.getDefault().tso();
+                }
+                long elapsed = System.currentTimeMillis() - start;
+                if (elapsed > statementTimeout) {
+                    return false;
                 }
             }
-            return true;
-        } catch (Exception e) {
-            LogUtils.error(log, e.getMessage(), e);
-            return false;
+        } catch (Throwable throwable) {
+            LogUtils.error(log, throwable.getMessage(), throwable);
         }
+        return false;
     }
 
     private synchronized void txnRollBack(int isolationLevel, long startTs, List<byte[]> keys, CommonId txnId) {
