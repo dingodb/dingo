@@ -43,6 +43,7 @@ import io.dingodb.store.api.transaction.data.Mutation;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
+import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
@@ -89,7 +90,9 @@ public class Txn {
             preWritePrimaryKey(primaryObj);
             // pre write second key
             secondList = tupleList.subList(1, tupleList.size());
-            preWriteSecondKey(secondList);
+            if (!secondList.isEmpty()) {
+                preWriteSecondKey(secondList);
+            }
         } catch (WriteConflictException e) {
             LogUtils.error(log, e.getMessage(), e);
             // rollback or retry
@@ -113,7 +116,9 @@ public class Txn {
             }
             // commit second key
             assert secondList != null;
-            commitSecondData(secondList);
+            if (!secondList.isEmpty()) {
+                commitSecondData(secondList);
+            }
             return tupleList.size();
         } finally {
             if (future != null) {
@@ -287,36 +292,38 @@ public class Txn {
 
     public boolean commitPrimaryData(CacheToObject cacheToObject) {
         // 1、call sdk commitPrimaryKey
-        TxnCommit commitRequest = TxnCommit.builder()
-            .isolationLevel(IsolationLevel.of(isolationLevel))
-            .startTs(startTs)
-            .commitTs(commitTs)
-            .keys(Collections.singletonList(primaryKey))
-            .build();
         try {
-            StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
-            return store.txnCommit(commitRequest);
-        } catch (RuntimeException e) {
-            LogUtils.error(log, e.getMessage(), e);
-            // 2、regin split
-            boolean commitResult = false;
-            int i = 0;
-            while (!commitResult) {
-                i ++;
+            // 1、call sdk commitPrimaryKey
+            long start = System.currentTimeMillis();
+            while (true) {
+                TxnCommit commitRequest = TxnCommit.builder()
+                    .isolationLevel(IsolationLevel.of(isolationLevel))
+                    .startTs(startTs)
+                    .commitTs(commitTs)
+                    .keys(Collections.singletonList(primaryKey))
+                    .build();
                 try {
+                    StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
+                    return store.txnCommit(commitRequest);
+                } catch (RegionSplitException e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                    // 2、regin split
                     CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, primaryKey);
-                    StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
-                    commitResult = store.txnCommit(commitRequest);
-                } catch (RegionSplitException e1) {
+                    cacheToObject.setPartId(regionId);
                     Utils.sleep(100);
-                    LogUtils.error(log, "commit primary region split, retry count:" + i);
+                } catch (CommitTsExpiredException e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                    this.commitTs = TransactionManager.getCommitTs();
+                }
+                long elapsed = System.currentTimeMillis() - start;
+                if (elapsed > timeOut) {
+                    return false;
                 }
             }
-            return true;
-        } catch (Exception e) {
-            LogUtils.error(log, e.getMessage(), e);
-            return false;
+        } catch (Throwable throwable) {
+            LogUtils.error(log, throwable.getMessage(), throwable);
         }
+        return false;
     }
 
     public void commitSecondData(List<Object[]> secondData) {

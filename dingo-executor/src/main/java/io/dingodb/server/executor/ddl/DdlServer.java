@@ -60,12 +60,12 @@ public final class DdlServer {
         LockService lockService = new LockService(resourceKey, Configuration.coordinators(), 45000);
         Kv kv = Kv.builder().kv(KeyValue.builder()
             .key(DdlUtil.ADDING_DDL_JOB_CONCURRENT_KEY.getBytes()).build()).build();
-        lockService.watchAllOpLock(kv, DdlServer::asyncStartDdl);
+        lockService.watchAllOpLock(kv, DdlServer::startLoadDDLAndRunByEtcd);
     }
 
-    public static void asyncStartDdl() {
-        Executors.execute("notify_ddl_worker_etcd", DdlServer::startLoadDDLAndRunByEtcd, true);
-    }
+//    public static void asyncStartDdl() {
+//        Executors.execute("notify_ddl_worker_etcd", DdlServer::startLoadDDLAndRunByEtcd, true);
+//    }
 
     public static void startLoadDDLAndRunByEtcd() {
         Session session = SessionUtil.INSTANCE.getSession();
@@ -94,6 +94,10 @@ public final class DdlServer {
 
     public static void startDispatchLoop() {
         // ticker/watchDdlJobEvent/watchDdlJobCoordinator
+        ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
+        while (!env.ddlOwner.get()) {
+            Utils.sleep(1000);
+        }
         watchDdlJob();
         watchDdlKey();
         Session session = SessionUtil.INSTANCE.getSession();
