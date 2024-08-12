@@ -90,15 +90,15 @@ public class InfoCache {
         if (is == null) {
             return false;
         }
-        if (is.schemaMap.containsKey("DINGO")) {
-            int size = is.schemaMap.get("DINGO").getTables().size();
-            LogUtils.info(log, "is dingo table size:{}, schemaVer:{}", size, is.schemaMetaVersion);
-        }
+//        if (is.schemaMap.containsKey("DINGO")) {
+//            int size = is.schemaMap.get("DINGO").getTables().size();
+//            LogUtils.info(log, "is dingo table size:{}, schemaVer:{}", size, is.schemaMetaVersion);
+//        }
         lock.writeLock().lock();
         long version = is.getSchemaMetaVersion();
         try {
             int ix = getIsIndex(version, cache.length);
-            LogUtils.info(log, "is insert before schemaVer:{}, get index:{}, cache size:{}", version, ix, getCacheCount());
+            //LogUtils.info(log, "is insert before schemaVer:{}, get index:{}, cache size:{}", version, ix, getCacheCount());
             if (ix == -1) {
                 ix = 0;
             }
@@ -123,7 +123,7 @@ public class InfoCache {
             return false;
         } finally {
             lock.writeLock().unlock();
-            LogUtils.info(log, "is insert after schemaVer:{}, cache size:{}", version, getCacheCount());
+            //LogUtils.info(log, "is insert after schemaVer:{}, cache size:{}", version, getCacheCount());
         }
     }
 

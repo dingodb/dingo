@@ -63,7 +63,7 @@ public final class DdlRollBack {
             job.addErrorCount(1);
             if ("ErrCancelledDDLJob".equals(error)) {
                 if (!"ErrCancelledDDLJob".equals(job.getError())) {
-                    job.setError("DDL job rollback, error msg:" +  job.getError());
+                    job.setError(job.getError());
                 }
             } else {
                 if (job.getErrorCount() > DdlUtil.errorCountLimit) {

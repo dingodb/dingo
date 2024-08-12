@@ -39,6 +39,7 @@ import io.dingodb.sdk.service.VersionService;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.sdk.service.entity.version.PutRequest;
+import io.dingodb.server.executor.ddl.DdlContext;
 import io.dingodb.store.proxy.meta.MetaService;
 import io.dingodb.store.service.InfoSchemaService;
 import io.dingodb.store.service.MetaStoreKvTxn;
@@ -60,13 +61,13 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Slf4j
 public final class PrepareMeta {
-    private static final MetaService metaService = new MetaService();
     private static final String BASE_TABLE = "BASE TABLE";
     private static final String SYSTEM_VIEW = "SYSTEM VIEW";
     // for format
     private static final String DYNAMIC = "Dynamic";
     private static final String FIXED = "Fixed";
     private static final String TXN_LSM = Common.Engine.TXN_LSM.name();
+    private static final String TXN_BREE = Common.Engine.TXN_BTREE.name();
     private static final long tenantId = TenantConstant.TENANT_ID;
 
     private static int exceptionRetries = 0;
@@ -80,7 +81,9 @@ public final class PrepareMeta {
 
     public static void prepare(String coordinators) {
         io.dingodb.meta.InfoSchemaService infoSchemaService = io.dingodb.meta.InfoSchemaService.root();
-        assert infoSchemaService != null;
+        if (TenantConstant.TENANT_ID == 0) {
+            PrepareMeta.prepareTenant();
+        }
         if (infoSchemaService.prepare()) {
             return;
         }
@@ -97,6 +100,7 @@ public final class PrepareMeta {
 
         prepareInformation(coordinators);
         infoSchemaService.prepareDone();
+        DdlContext.prepareDone();
         long end = System.currentTimeMillis();
         log.info("prepare done, cost:" + (end - start));
     }
@@ -113,7 +117,11 @@ public final class PrepareMeta {
         Object tenantObj = infoSchemaService.getTenant(tenantId);
         if (tenantObj == null) {
             Tenant tenant = Tenant.builder().id(tenantId).name("root").build();
-            infoSchemaService.createTenant(tenantId, tenant);
+            try {
+                infoSchemaService.createTenant(tenantId, tenant);
+            } catch (Exception e) {
+                LogUtils.warn(log, "create tenant conflict", e);
+            }
         }
     }
 
@@ -157,7 +165,7 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, "TABLE_BUCKETS", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "PROCS_PRIV", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "GC_DELETE_RANGE", BASE_TABLE, TXN_LSM, DYNAMIC);
-        initTableByTemplate(schemaName, "DINGO_DDL_JOB", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "DINGO_DDL_JOB", BASE_TABLE, TXN_BREE, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_DDL_HISTORY", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_DDL_BACKFILL", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_DDL_BACKFILL_HISTORY", BASE_TABLE, TXN_LSM, DYNAMIC);
@@ -265,6 +273,7 @@ public final class PrepareMeta {
         values.add(new Object[]{"metric_log_enable", "on"});
         values.add(new Object[]{"increment_backup", "off"});
         values.add(new Object[]{"dingo_audit_enable", "off"});
+        values.add(new Object[]{"ddl_inner_profile", "off"});
         return values;
     }
 
@@ -291,6 +300,7 @@ public final class PrepareMeta {
         TableDefinition tableDefinition;
         io.dingodb.meta.InfoSchemaService infoSchemaService = io.dingodb.meta.InfoSchemaService.root();
         TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(schemaName, tableName);
+        MetaService metaService = MetaService.ROOT;
         MetaService subMetaService = metaService.getSubMetaService(schemaName);
         DingoCommonId tableId;
         try {
@@ -587,6 +597,7 @@ public final class PrepareMeta {
         try {
             if (tableWithId == null) {
                 TableDefinition tableDefinition = getTableDefinition(tableName, tableType, engine, rowFormat);
+                MetaService metaService = MetaService.ROOT;
                 MetaService subMetaService = metaService.getSubMetaService(schema);
                 subMetaService.createTables(tableDefinition, new ArrayList<>());
             }

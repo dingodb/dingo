@@ -53,10 +53,12 @@ public class SessionFactory extends BasePooledObjectFactory<Session> {
         properties.setProperty("timeZone", timeZone.getID());
         properties.setProperty("user", user);
         properties.setProperty("host", host);
+        //properties.setProperty("sql_log", "off");
         java.sql.Connection connection = null;
         try {
             connection = DriverManager.getConnection("jdbc:dingo:", properties);
             connection.setClientInfo("sql_profile_enable", "off");
+            connection.setClientInfo("ddl_inner_profile", "on");
         } catch (SQLException e) {
             log.error(e.getMessage(), e);
         }

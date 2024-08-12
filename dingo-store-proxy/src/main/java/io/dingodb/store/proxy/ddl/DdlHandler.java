@@ -16,7 +16,6 @@
 
 package io.dingodb.store.proxy.ddl;
 
-import com.google.common.collect.Queues;
 import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlJobEventSource;
@@ -46,7 +45,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public final class DdlHandler {
@@ -67,13 +65,46 @@ public final class DdlHandler {
 
     public static void limitDdlJobs() {
         while (!Thread.interrupted()) {
-            List<DdlJob> jobList = new ArrayList<>();
+            //List<DdlJob> jobList = new ArrayList<>();
+            DdlJob ddlJob = Utils.forceTake(asyncJobQueue);
             try {
-                Queues.drain(asyncJobQueue, jobList, 2, 100, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException ignored) {
+                insertDDLJobs2Table(ddlJob, true);
+            } catch (Exception e) {
+                LogUtils.error(log, "[ddl] insert ddl into table error", e);
             }
-            insertDDLJobs2Table(jobList, true);
         }
+        LogUtils.error(log, "[ddl] limitDdlJobs exit");
+        limitDdlJobs();
+    }
+
+    public static void insertDDLJobs2Table(DdlJob job, boolean updateRawArgs) {
+        if (job == null) {
+            return;
+        }
+        InfoSchemaService service = InfoSchemaService.root();
+        List<Long> ids = service.genGlobalIDs(1);
+        // jdbc insert into ddlJob to table
+        // insert into dingo_ddl_job
+        StringBuilder sqlBuilder = new StringBuilder(INSERT_JOB);
+        String format = "(%d, %b, %s, %s, %s, %d, %b)";
+        long jobId = 0;
+        job.setId(ids.get(0));
+        jobId = job.getId();
+        job.setState(JobState.jobStateQueueing);
+        byte[] meta = job.encode(updateRawArgs);
+        String jobMeta = new String(meta);
+        sqlBuilder.append(
+            String.format(
+                format, job.getId(), job.mayNeedReorg(), Utils.quoteForSql(job.job2SchemaIDs()),
+                Utils.quoteForSql(job.job2TableIDs()), Utils.quoteForSql(jobMeta), job.getActionType().getCode(), !job.notStarted()
+            )
+        );
+        String sql = sqlBuilder.toString();
+        String error = SessionUtil.INSTANCE.exeUpdateInTxn(sql);
+        if (error != null) {
+            LogUtils.error(log, "[ddl-error] insert ddl to table,sql:{}", sql);
+        }
+        asyncNotify(1, jobId);
     }
 
     public static void insertDDLJobs2Table(List<DdlJob> ddlJobList, boolean updateRawArgs) {
@@ -86,9 +117,11 @@ public final class DdlHandler {
         // insert into dingo_ddl_job
         StringBuilder sqlBuilder = new StringBuilder(INSERT_JOB);
         String format = "(%d, %b, %s, %s, %s, %d, %b)";
+        long jobId = 0;
         for (int i = 0; i < ddlJobList.size(); i++) {
             DdlJob job = ddlJobList.get(i);
             job.setId(ids.get(i));
+            jobId = job.getId();
             if (i != 0) {
                 sqlBuilder.append(",");
             }
@@ -103,9 +136,24 @@ public final class DdlHandler {
             );
         }
         String sql = sqlBuilder.toString();
-        SessionUtil.INSTANCE.exeUpdateInTxn(sql);
-        asyncNotify(ddlJobList.size());
+        String error = SessionUtil.INSTANCE.exeUpdateInTxn(sql);
+        if (error != null) {
+            LogUtils.error(log, "[ddl-error] insert ddl to table,sql:{}", sql);
+        }
+        asyncNotify(ddlJobList.size(), jobId);
     }
+
+    public static void asyncNotify(int size, long jobId) {
+        ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
+        if (env.ddlOwner.get()) {
+            DdlJobEventSource ddlJobEventSource = DdlJobEventSource.ddlJobEventSource;
+            forcePut(ddlJobEventSource.ownerJobQueue, size);
+        } else {
+            InfoSchemaService infoSchemaService = InfoSchemaService.root();
+            infoSchemaService.putKvToCoordinator(DdlUtil.ADDING_DDL_JOB_CONCURRENT_KEY, String.valueOf(jobId));
+        }
+    }
+
 
     public static void asyncNotify(int size) {
         ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
@@ -125,7 +173,7 @@ public final class DdlHandler {
         try {
             doDdlJob(ddlJob);
         } catch (Exception e) {
-            LogUtils.error(log, e.getMessage());
+            LogUtils.error(log, "[ddl-error] create table error,reason:" + e.getMessage() + ", tabDef" + tableDefinition, e);
             throw e;
         }
     }
@@ -140,7 +188,12 @@ public final class DdlHandler {
             .schemaState(schemaInfo.getSchemaState())
             .build();
         job.setConnId(connId);
-        doDdlJob(job);
+        try {
+            doDdlJob(job);
+        } catch (Exception e) {
+            LogUtils.error(log, "[ddl-error] drop table error,reason:" + e.getMessage() + ", tabDef" + tableName, e);
+            throw e;
+        }
     }
 
     public static void createSchema(String schemaName, String connId) {
@@ -162,7 +215,7 @@ public final class DdlHandler {
         try {
             doDdlJob(job);
         } catch (Exception e) {
-            LogUtils.error(log, e.getMessage());
+            LogUtils.error(log, "[ddl-error] createSchema error, reason:" + e.getMessage(), e);
             throw e;
         }
     }
@@ -174,7 +227,12 @@ public final class DdlHandler {
             .schemaName(schemaInfo.getName())
             .schemaId(schemaInfo.getSchemaId()).build();
         job.setConnId(connId);
-        doDdlJob(job);
+        try {
+            doDdlJob(job);
+        } catch (Exception e) {
+            LogUtils.error(log, "[ddl-error] dropSchema error, schema:" + schemaInfo.getName(), e);
+            throw e;
+        }
     }
 
     public static void truncateTable(SchemaInfo schemaInfo, Table table, String connId) {
@@ -196,8 +254,12 @@ public final class DdlHandler {
         List<Object> args = new ArrayList<>();
         args.add(tableEntityId);
         job.setArgs(args);
-
-        doDdlJob(job);
+        try {
+            doDdlJob(job);
+        } catch (Exception e) {
+            LogUtils.error(log, "[ddl-error] truncate table error, table:" + table.getName(), e);
+            throw e;
+        }
     }
 
     public static void createIndex(String schemaName, String tableName, TableDefinition indexDef) {
@@ -222,7 +284,12 @@ public final class DdlHandler {
         indexDef.setSchemaState(SchemaState.SCHEMA_NONE);
         args.add(indexDef);
         job.setArgs(args);
-        doDdlJob(job);
+        try {
+            doDdlJob(job);
+        } catch (Exception e) {
+            LogUtils.error(log, "[ddl-error] createIndex error, tableName:" + tableName, e);
+            throw e;
+        }
     }
 
     public static void dropIndex(String schemaName, String tableName, String indexName) {
@@ -253,7 +320,12 @@ public final class DdlHandler {
         List<Object> args = new ArrayList<>();
         args.add(indexName);
         job.setArgs(args);
-        doDdlJob(job);
+        try {
+            doDdlJob(job);
+        } catch (Exception e) {
+            LogUtils.error(log, "[ddl-error] dropIndex error, tableName:" + tableName + ", indexName:" + indexName, e);
+            throw e;
+        }
     }
 
     public static DdlJob createTableWithInfoJob(String schemaName, TableDefinition tableDefinition) {
@@ -291,6 +363,7 @@ public final class DdlHandler {
             if (res.getKey()) {
                 return;
             } else if (res.getValue() != null) {
+                LogUtils.error(log, "[ddl-error] doDdlJob error, reason: {}, job: {}", res.getValue(), job);
                 throw new RuntimeException(res.getValue());
             }
             Utils.sleep(100);
@@ -313,7 +386,6 @@ public final class DdlHandler {
 
     public static DdlJob getHistoryJobById(long jobId) {
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
-        assert infoSchemaService != null;
         return infoSchemaService.getHistoryDDLJob(jobId);
     }
 

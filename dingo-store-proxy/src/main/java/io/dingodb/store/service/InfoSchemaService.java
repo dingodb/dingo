@@ -582,7 +582,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         try {
             schemaDiff = this.getSchemaDiff(version);
         } catch (Exception e) {
-            log.error("get schema ver diff error,reason:" + e.getMessage(), e);
+            log.error("[ddl-error] get schema ver diff error,version:" + version, e);
             return 0;
         }
         if (schemaDiff == null && version > 0) {
@@ -655,7 +655,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     public void setSchemaDiff(SchemaDiff schemaDiff) {
         byte[] data = getBytesFromObj(schemaDiff);
         byte[] key = schemaDiffKey(schemaDiff.getVersion());
-        txn.put(key, data);
+        this.txn.ddlPut(key, data);
     }
 
     @Override
@@ -682,7 +682,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public DdlJob getHistoryDDLJob(long jobId) {
-        byte[] val = this.txn.hGet(mDDLJobHistoryKey, jobIdKey(jobId));
+        byte[] val = this.txn.ddlHGet(mDDLJobHistoryKey, jobIdKey(jobId));
         if (val == null) {
             return null;
         }
@@ -692,7 +692,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     @Override
     public void addHistoryDDLJob(DdlJob job, boolean updateRawArgs) {
         byte[] data = job.encode(updateRawArgs);
-        this.txn.hPut(mDDLJobHistoryKey, jobIdKey(job.getId()), data);
+        this.txn.ddlHPut(mDDLJobHistoryKey, jobIdKey(job.getId()), data);
     }
 
     @Override
@@ -715,13 +715,15 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public synchronized List<Long> genGlobalIDs(int n) {
-        long newId = this.txn.inc(nextGlobalID(), n);
-        long origId = newId - n;
-        List<Long> res = new ArrayList<>();
-        for (long i = origId + 1; i <= newId; i ++) {
-            res.add(i);
-        }
-        return res;
+        CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
+        CreateIdsRequest request = CreateIdsRequest.builder()
+            .idEpochType(IdEpochType.ID_DDL_JOB).count(n)
+            .build();
+        long ts = System.identityHashCode(request);
+        return coordinatorService.createIds(
+            ts,
+            request
+        ).getIds();
     }
 
     private long genId(IdEpochType idEpochType) {
@@ -756,7 +758,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     public SchemaDiff getSchemaDiff(long schemaVersion) {
         byte[] key = schemaDiffKey(schemaVersion);
-        byte[] val = this.txn.get(key);
+        byte[] val = this.txn.ddlGet(key);
         if (val == null) {
             return null;
         }

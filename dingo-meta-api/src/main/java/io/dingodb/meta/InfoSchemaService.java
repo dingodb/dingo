@@ -44,17 +44,14 @@ public interface InfoSchemaService {
     String nextGlobalID = "NextGlobalID";
     byte[] mDDLJobHistoryKey = "DDLJobHistory".getBytes();
 
-    String mDdlTemplate = "%d:%s:%d";
+    String mDdlTemplate = "%s:%s:%d";
 
-    String mSchemaVerTemplate = "%s:%d:%s";
+    String mSchemaVerTemplate = "%s:%s";
 
-    String globalSchemaVer = String.format(mSchemaVerTemplate, "tenant", tenantId, DdlUtil.DDLGlobalSchemaVersion);
+    String globalSchemaVer = String.format(mSchemaVerTemplate, DdlUtil.tenantPrefix, DdlUtil.DDLGlobalSchemaVersion);
+    String expSchemaVer = String.format(mSchemaVerTemplate, DdlUtil.tenantPrefix, DdlUtil.DDLExpSchemaVersion);
 
     static InfoSchemaService root() {
-        //InfoSchemaServiceProvider provider = InfoSchemaServiceProvider.getDefault();
-//        if (provider == null) {
-//            return null;
-//        }
         return InfoSchemaServiceProvider.getDefault().root();
     }
 
@@ -123,17 +120,17 @@ public interface InfoSchemaService {
     }
 
     default byte[] schemaDiffKey(long schemaVersion) {
-        String schemaDiffKey = String.format(mDdlTemplate, tenantId, mSchemaDiffPrefix, schemaVersion);
+        String schemaDiffKey = String.format(mDdlTemplate, DdlUtil.tenantPrefix, mSchemaDiffPrefix, schemaVersion);
         return schemaDiffKey.getBytes();
     }
 
     default byte[] schemaVerKey() {
-        String schemaVerKey = String.format(mSchemaVerTemplate, "tenant", tenantId, mSchemaVersionKey);
+        String schemaVerKey = String.format(mSchemaVerTemplate, DdlUtil.tenantPrefix, mSchemaVersionKey);
         return schemaVerKey.getBytes();
     }
 
     default byte[] nextGlobalID() {
-        String globalId = String.format(mSchemaVerTemplate, "tenant", tenantId, nextGlobalID);
+        String globalId = String.format(mSchemaVerTemplate, DdlUtil.tenantPrefix, nextGlobalID);
         return globalId.getBytes();
     }
 

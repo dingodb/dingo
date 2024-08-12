@@ -663,6 +663,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     @SuppressWarnings({"unused"})
     public void execute(SqlCreateTable createT, CalcitePrepare.Context context) {
         final Timer.Context timeCtx = DingoMetrics.getTimeContext("createTable");
+        long start = System.currentTimeMillis();
         DingoSqlCreateTable create = (DingoSqlCreateTable) createT;
         LogUtils.info(log, "DDL execute: {}", create);
         String connId = (String) context.getDataContext().get("connId");
@@ -798,6 +799,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         DdlService ddlService = DdlService.root();
         ddlService.createTableWithInfo(schema.getSchemaName(), tableName, tableDefinition, connId, create.getOriginalCreateSql());
         timeCtx.stop();
+        long end = System.currentTimeMillis();
+        long cost = end - start;
+        if (cost > 10000) {
+            LogUtils.info(log, "[ddl] create table take long time, schemaName:{} tableName:{}", schema.getSchemaName(), tableName);
+        }
     }
 
     private static boolean isNotTxnEngine(String engine) {
@@ -807,6 +813,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     @SuppressWarnings({"unused", "MethodMayBeStatic"})
     public void execute(SqlDropTable drop, CalcitePrepare.Context context) throws Exception {
         final Timer.Context timeCtx = DingoMetrics.getTimeContext("dropTable");
+        long start = System.currentTimeMillis();
         LogUtils.info(log, "DDL execute: {}", drop);
         String connId = (String) context.getDataContext().get("connId");
         final SubSnapshotSchema schema = getSnapShotSchema(drop.name, context, drop.ifExists);
@@ -826,9 +833,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         DdlService ddlService = DdlService.root();
         ddlService.dropTable(schemaInfo, table.tableId.seq, tableName, connId);
         timeCtx.stop();
+        long cost = System.currentTimeMillis() - start;
+        if (cost > 10000) {
+            LogUtils.info(log, "drop table take long time, schemaName:{}, tableName:{}", schemaInfo.getName(), tableName);
+        }
     }
 
     public void execute(@NonNull SqlTruncate truncate, CalcitePrepare.Context context) throws Exception {
+        long start = System.currentTimeMillis();
         final Timer.Context timeCtx = DingoMetrics.getTimeContext("truncateTable");
         LogUtils.info(log, "DDL execute: {}", truncate);
         String connId = (String) context.getDataContext().get("connId");
@@ -845,6 +857,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         DdlService ddlService = DdlService.root();
         ddlService.truncateTable(schemaInfo, table, connId);
         timeCtx.stop();
+        long cost = System.currentTimeMillis() - start;
+        if (cost > 10000) {
+            LogUtils.info(log, "truncate table cost long time, schemaName:{}, tableName:{}", schemaInfo.getName(), tableName);
+        }
     }
 
     public void execute(@NonNull SqlGrant sqlGrant, CalcitePrepare.Context context) {

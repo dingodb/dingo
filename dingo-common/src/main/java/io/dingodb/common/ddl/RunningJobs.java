@@ -24,10 +24,21 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Data
 public class RunningJobs {
+    public static final RunningJobs runningJobs = new RunningJobs();
+
+    private RunningJobs() {
+
+    }
+
     private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private Map<Long, Long> runningJobMap = new ConcurrentHashMap<>();
 
     public int size() {
         return runningJobMap.size();
     }
+
+    public boolean containJobId(long jobId) {
+        return runningJobMap.containsKey(jobId);
+    }
+
 }

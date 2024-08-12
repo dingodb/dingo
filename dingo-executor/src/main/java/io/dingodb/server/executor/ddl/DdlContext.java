@@ -16,17 +16,25 @@
 
 package io.dingodb.server.executor.ddl;
 
+import com.codahale.metrics.CachedGauge;
 import io.dingodb.common.ddl.RunningJobs;
 import io.dingodb.common.ddl.WaitSchemaSyncedController;
+import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.SchemaSyncerService;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+@Slf4j
 @Data
 public class DdlContext {
     public static final DdlContext INSTANCE = new DdlContext();
@@ -39,7 +47,7 @@ public class DdlContext {
 
     private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-    private RunningJobs runningJobs = new RunningJobs();
+    private RunningJobs runningJobs = RunningJobs.runningJobs;
 
     private ReorgContext reorgCtx = new ReorgContext();
 
@@ -51,6 +59,8 @@ public class DdlContext {
 
     private DdlWorkerPool ddlJobPool;
     private DdlWorkerPool ddlReorgPool;
+
+    private AtomicLong newVer = new AtomicLong(0);
 
     public static final String getJobSQL = "select job_meta, processing from mysql.dingo_ddl_job where job_id in (select min(job_id) from mysql.dingo_ddl_job group by schema_ids, table_ids, processing) and %s reorg %s order by processing desc, job_id";
 
@@ -64,10 +74,28 @@ public class DdlContext {
 
         DdlWorkerFactory factory1 = new DdlWorkerFactory();
         ddlReorgPool = new DdlWorkerPool(factory1, config);
+
+        DingoMetrics.metricRegistry.register("activeDdlWorkerCount", new CachedGauge<Double>(1, TimeUnit.MINUTES) {
+            @Override
+            protected Double loadValue() {
+                return (double) ddlJobPool.getNumActive();
+            }
+        });
+
+        DingoMetrics.metricRegistry.register("activeReorgWorkerCount", new CachedGauge<Double>(1, TimeUnit.MINUTES) {
+            @Override
+            protected Double loadValue() {
+                return (double) ddlReorgPool.getNumActive();
+            }
+        });
+
     }
 
     public void insertRunningDDLJobMap(long id) {
         runningJobs.getLock().writeLock().lock();
+        if (runningJobs.containJobId(id)) {
+            LogUtils.info(log, "[ddl] insertRunningDDLJobMap duplicate jobId:{}", id);
+        }
         runningJobs.getRunningJobMap().put(id, id);
         runningJobs.getLock().writeLock().unlock();
     }
@@ -120,6 +148,26 @@ public class DdlContext {
             return getReorgCtx().reorgCtxMap.get(jobId);
         } finally {
             getReorgCtx().rUnlock();
+        }
+    }
+
+    public static void prepareDone() {
+        INSTANCE.prepare.set(true);
+    }
+
+    public static synchronized boolean getPrepare() {
+        if (!INSTANCE.prepare.get()) {
+            InfoSchemaService service = InfoSchemaService.root();
+            INSTANCE.prepare.set(service.prepare());
+            return INSTANCE.prepare.get();
+        } else {
+            return true;
+        }
+    }
+
+    public synchronized void incrementNewVer(long ver) {
+        if (ver > newVer.get()) {
+            newVer.set(ver);
         }
     }
 

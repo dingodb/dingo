@@ -110,14 +110,14 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
                 }
             }
 
+            long end = System.currentTimeMillis();
+            long cost = end - start;
+            if (cost > 50000) {
+                LogUtils.error(log, "[ddl] ownerCheckAllVersions take long time, jobId:{}, latestVer:{}", jobId, latestVer);
+                return "Lock wait timeout exceeded";
+            }
             List<KeyValue> kvList = infoSchemaService.getByKey(path, pathEnd);
             if (kvList.isEmpty()) {
-                long end = System.currentTimeMillis();
-                long cost = end - start;
-                if (cost > 50000) {
-                    LogUtils.error(log, "[ddl] ownerCheckAllVersions take long time, jobId:{}, latestVer:{}", jobId, latestVer);
-                    return "Lock wait timeout exceeded";
-                }
                 Utils.sleep(100);
                 continue;
             }
@@ -136,7 +136,7 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
                         break;
                     }
                     String updateKey = key.substring(key.lastIndexOf("-") + 1);
-                    LogUtils.info(log, "update key: {}, key:{}", updateKey, key);
+                    //LogUtils.info(log, "update key: {}, key:{}", updateKey, key);
                     updateMap.remove(updateKey);
                 }
                 if (!updateMap.isEmpty()) {
@@ -172,7 +172,7 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
     @Override
     public synchronized void ownerUpdateGlobalVersion(long version) {
         InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
-        LogUtils.debug(log, "owner update global path:{}, ver:{}", io.dingodb.meta.InfoSchemaService.globalSchemaVer, version);
+        LogUtils.info(log, "owner update global path:{}, ver:{}", io.dingodb.meta.InfoSchemaService.globalSchemaVer, version);
         infoSchemaService.putKvToCoordinator(io.dingodb.meta.InfoSchemaService.globalSchemaVer, String.valueOf(version));
     }
 
@@ -180,6 +180,13 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
     public void removeSelfVersionPath() {
         String path = String.format(DdlUtil.ALL_SCHEMA_VER_SYNC_NORMAL_TEMPLATE, tenantPrefix, DdlUtil.DDLAllSchemaVersions, DdlUtil.ddlId);
         lockService.delete(System.identityHashCode(path), path);
+    }
+
+    @Override
+    public void ownerUpdateExpVersion(long version) {
+        InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
+        LogUtils.info(log, "owner update exp path:{}, ver:{}", io.dingodb.meta.InfoSchemaService.expSchemaVer, version);
+        infoSchemaService.putKvToCoordinator(io.dingodb.meta.InfoSchemaService.expSchemaVer, String.valueOf(version));
     }
 
     public void close() {

@@ -49,14 +49,20 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public final class LoadInfoSchemaTask {
+    private static long saveMaxVer = 0;
 
     private LoadInfoSchemaTask() {
     }
 
+    public static void watchExpSchemaVer() {
+        Kv kv = Kv.builder().kv(KeyValue.builder()
+            .key(io.dingodb.meta.InfoSchemaService.expSchemaVer.getBytes()).build()).build();
+        String resourceKey = String.format("tenantId:{%d}", TenantConstant.TENANT_ID);
+        LockService lockService = new LockService(resourceKey, Configuration.coordinators(), 45000);
+        lockService.watchAllOpLock(kv, LoadInfoSchemaTask::loadInfo);
+    }
+
     public static void watchGlobalSchemaVer() {
-        if (!DdlContext.INSTANCE.prepare.get()) {
-            Utils.sleep(5000);
-        }
         Kv kv = Kv.builder().kv(KeyValue.builder()
             .key(io.dingodb.meta.InfoSchemaService.globalSchemaVer.getBytes()).build()).build();
         String resourceKey = String.format("tenantId:{%d}", TenantConstant.TENANT_ID);
@@ -75,15 +81,6 @@ public final class LoadInfoSchemaTask {
     }
 
     public static void loadInfo() {
-        if (!DdlContext.INSTANCE.prepare.get()) {
-            io.dingodb.meta.InfoSchemaService service = io.dingodb.meta.InfoSchemaService.root();
-            boolean prepare = service.prepare();
-            DdlContext.INSTANCE.prepare.set(prepare);
-            if (prepare) {
-                loadInfo();
-            }
-            return;
-        }
         try {
             reload();
         } catch (Exception e) {
@@ -126,7 +123,7 @@ public final class LoadInfoSchemaTask {
                 LogUtils.info(log, "[ddl] loading schema takes a long time, cost:{} ms", sub);
             }
         } catch (Exception e) {
-            LogUtils.error(log, "[ddl] load info schema error, reason:{}", e.getMessage());
+            LogUtils.error(log, "[ddl] load info schema error", e);
         } finally {
             env.lock.unlock();
         }
@@ -158,9 +155,10 @@ public final class LoadInfoSchemaTask {
             LoadSchemaDiffs loadSchemaDiffs = tryLoadSchemaDiffs(infoSchemaService, currentSchemaVersion, neededSchemaVersion);
             if (loadSchemaDiffs.getError() == null) {
                 infoCache.insert(loadSchemaDiffs.getIs(), startTs);
+                DdlContext.INSTANCE.incrementNewVer(loadSchemaDiffs.getIs().getSchemaMetaVersion());
                 return new LoadIsResponse(loadSchemaDiffs.getIs(), false, currentSchemaVersion, loadSchemaDiffs.getRelatedChange(), null);
             }
-            LogUtils.info(log, "failed to load schema diff, reason:{}", loadSchemaDiffs.getError());
+            LogUtils.error(log, "[ddl-error] failed to load schema diff, reason:{}", loadSchemaDiffs.getError());
         }
         List<SchemaInfo> schemaInfoList = infoSchemaService.listSchema();
 
@@ -168,9 +166,9 @@ public final class LoadInfoSchemaTask {
         builder.initWithSchemaInfos(schemaInfoList, neededSchemaVersion, infoSchemaService);
         InfoSchema newIs = builder.build();
         infoCache.insert(newIs, startTs);
-
+        DdlContext.INSTANCE.incrementNewVer(newIs.schemaMetaVersion);
         long end = System.currentTimeMillis();
-        LogUtils.info(log, "full load InfoSchema success,currentSchemaVersion: {}, " +
+        LogUtils.info(log, "[ddl] full load InfoSchema success,currentSchemaVersion: {}, " +
             "neededSchemaVersion: {}, cost:{}ms, " +
             "is schemaMap size: {}"
             , currentSchemaVersion, neededSchemaVersion, (end - start), newIs.getSchemaMap().size());
@@ -180,7 +178,7 @@ public final class LoadInfoSchemaTask {
 
     public static LoadSchemaDiffs tryLoadSchemaDiffs(InfoSchemaService infoSchemaService, long usedVersion, long newVersion) {
         List<SchemaDiff> schemaDiffList = new ArrayList<>();
-        LogUtils.info(log, "start try load schema diff, use ver:{}, new ver:{}", usedVersion, newVersion);
+        LogUtils.info(log, "[ddl] start try load schema diff, use ver:{}, new ver:{}", usedVersion, newVersion);
         long usedVerTmp = usedVersion;
         while (usedVerTmp < newVersion) {
             usedVerTmp ++;
@@ -188,7 +186,7 @@ public final class LoadInfoSchemaTask {
             if (schemaDiff == null) {
                 continue;
             }
-            LogUtils.info(log, "load schemaDiff:{}", schemaDiff);
+            LogUtils.info(log, "[ddl] load schemaDiff:{}", schemaDiff);
             schemaDiffList.add(schemaDiff);
         }
 
@@ -223,6 +221,11 @@ public final class LoadInfoSchemaTask {
             return;
         }
         long schemaVer = is.schemaMetaVersion;
+//        if (schemaVer > saveMaxVer) {
+//            saveMaxVer = schemaVer;
+//        } else {
+//            return;
+//        }
         String sql = "select job_id, version, table_ids from mysql.dingo_mdl_info where version <= %d";
         sql = String.format(sql, schemaVer);
         MdlCheckTableInfo mdlCheckTableInfo = ExecutionEnvironment.INSTANCE.mdlCheckTableInfo;

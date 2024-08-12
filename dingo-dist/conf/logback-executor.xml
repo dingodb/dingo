@@ -424,6 +424,9 @@
     <logger name="io.dingodb.server.executor.schedule.MetaLockCheckHandler" level="${log.level}" additivity="false">
         <appender-ref ref="ASYNC-Ddl"/>
     </logger>
+    <logger name="io.dingodb.store.proxy.ddl.DdlHandler" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Ddl"/>
+    </logger>
 
     <appender name="ASYNC-Sql" class="ch.qos.logback.classic.AsyncAppender">
         <includeCallerData>true</includeCallerData>

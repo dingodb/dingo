@@ -37,6 +37,7 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.server.executor.ddl.DdlContext;
 import io.dingodb.store.service.StoreKvTxn;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
 import io.dingodb.verify.service.UserServiceProvider;
@@ -89,7 +90,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
     private UserService() {
         try {
             io.dingodb.meta.InfoSchemaService infoSchemaService = io.dingodb.meta.InfoSchemaService.root();
-            while (!infoSchemaService.prepare()) {
+            while (!infoSchemaService.prepare() || DdlContext.INSTANCE.waiting.get()) {
                 Utils.sleep(5000L);
             }
             metaService = MetaService.root();

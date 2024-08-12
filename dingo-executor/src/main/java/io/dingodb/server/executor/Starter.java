@@ -26,6 +26,7 @@ import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Utils;
 import io.dingodb.driver.mysql.SessionVariableChangeWatcher;
 import io.dingodb.exec.Services;
 import io.dingodb.meta.InfoSchemaService;
@@ -34,6 +35,7 @@ import io.dingodb.net.MysqlNetServiceProvider;
 import io.dingodb.net.NetService;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.scheduler.SchedulerService;
+import io.dingodb.server.executor.ddl.DdlContext;
 import io.dingodb.server.executor.ddl.DdlServer;
 import io.dingodb.server.executor.prepare.PrepareMeta;
 import io.dingodb.server.executor.schedule.SafePointUpdateTask;
@@ -86,43 +88,50 @@ public class Starter {
         }
         DingoConfiguration.instance().setServerId(serverId);
         Configuration.instance();
-        if (tenant == 0) {
-            PrepareMeta.prepareTenant();
-        }
-        Object tenantObj = Optional.mapOrGet(InfoSchemaService.root(), __ -> __.getTenant(tenant), () -> null);
-        if (tenantObj == null) {
-            log.error("The tenant: {} was not found.", tenant);
-            return;
-        }
-        PrepareMeta.prepare(io.dingodb.store.proxy.Configuration.coordinators());
-        ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
-
-        env.setRole(DingoRole.EXECUTOR);
-
         NetService.getDefault().listenPort(DingoConfiguration.host(), DingoConfiguration.port());
         DriverProxyServer driverProxyServer = new DriverProxyServer();
         driverProxyServer.start();
         // Register cluster heartbeat.
         ClusterService.DEFAULT_INSTANCE.register();
+        // Register cluster heartbeat.
         log.info("Executor Configuration:{}", DingoConfiguration.instance());
         Services.initControlMsgService();
         Services.initNetService();
+
+        ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
+        env.setRole(DingoRole.EXECUTOR);
+        SchedulerService schedulerService = SchedulerService.getDefault();
+        checkContinue();
+        schedulerService.init();
+        Object tenantObj = Optional.mapOrGet(InfoSchemaService.root(), __ -> __.getTenant(tenant), () -> null);
+        if (tenantObj == null) {
+            log.error("The tenant: {} was not found.", tenant);
+            return;
+        }
+
         MysqlNetService mysqlNetService = ServiceLoader.load(MysqlNetServiceProvider.class).iterator().next().get();
         mysqlNetService.listenPort(Configuration.mysqlPort());
 
         SessionVariableWatched.getInstance().addObserver(new SessionVariableChangeWatcher());
 
-        SchedulerService schedulerService = SchedulerService.getDefault();
-        schedulerService.init();
         // Initialize auto increment
         AutoIncrementService.INSTANCE.resetAutoIncrement();
 
-        // TODO Use job/task implement api.
         ApiRegistry.getDefault().register(ShowLocksOperation.Api.class, new ShowLocksOperation.Api() { });
 
         SafePointUpdateTask.run();
 
         DdlServer.startDispatchLoop();
+    }
+
+    public static void checkContinue() {
+        boolean ready = false;
+        while (!ready) {
+            if (DdlContext.getPrepare()) {
+                ready = true;
+            }
+            Utils.sleep(500);
+        }
     }
 
 }

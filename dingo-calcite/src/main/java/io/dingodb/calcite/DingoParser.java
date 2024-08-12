@@ -84,6 +84,7 @@ import org.apache.calcite.tools.Programs;
 import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.Pair;
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.File;
@@ -200,7 +201,9 @@ public class DingoParser {
         sql = processKeyWords(sql);
         SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
         SqlNode sqlNode = parser.parseQuery();
-        SqlLogUtils.info("Input Query: {}", SqlUtil.checkSql(sqlNode, sql));
+        if (StringUtils.isEmpty(context.getOption("sql_log"))) {
+            SqlLogUtils.info("Input Query: {}", SqlUtil.checkSql(sqlNode, sql));
+        }
         LogUtils.trace(log, "==DINGO==>:[Parsed Query]: {}", sqlNode.toString());
         return sqlNode;
     }

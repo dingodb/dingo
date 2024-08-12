@@ -203,14 +203,14 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
 
     @Override
     public void commit() throws SQLException {
-        super.commit();
         this.mdlLockJobMap.clear();
+        super.commit();
     }
 
     @Override
     public void rollback() throws SQLException {
-        super.rollback();
         this.mdlLockJobMap.clear();
+        super.rollback();
     }
 
     public void unlockTables() {

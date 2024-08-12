@@ -16,12 +16,14 @@
 
 package io.dingodb.server.executor.ddl;
 
+import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.MetaElement;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.util.Pair;
@@ -33,12 +35,13 @@ import lombok.extern.slf4j.Slf4j;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 @Slf4j
 public final class JobTableUtil {
     private static final String updateDDLJobSQL = "update mysql.dingo_ddl_job set job_meta = '%s' where job_id = %d";
-    private static final String getJobSQL = "select job_meta, processing from mysql.dingo_ddl_job where job_id in (select min(job_id) from mysql.dingo_ddl_job group by schema_ids, table_ids, processing) and %s reorg %s order by processing desc, job_id";
+    private static final String getJobSQL = "select job_meta, processing, job_id from mysql.dingo_ddl_job where job_id in (select min(job_id) from mysql.dingo_ddl_job group by schema_ids, table_ids, processing) and %s reorg %s order by processing desc, job_id";
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final int general = 0;
     private static final int reorg = 1;
@@ -76,7 +79,10 @@ public final class JobTableUtil {
 
     public static void cleanMDLInfo(long jobId) {
         String sql = "delete from mysql.dingo_mdl_info where job_id = " + jobId;
-        SessionUtil.INSTANCE.exeUpdateInTxn(sql);
+        String error = SessionUtil.INSTANCE.exeUpdateInTxn(sql);
+        if (error != null) {
+            LogUtils.error(log, "[ddl] cleanMDLInfo error:{}, jobId:{}", error, jobId);
+        }
 
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         String template = DdlUtil.MDL_PREFIX_TEMPLATE;
@@ -108,7 +114,9 @@ public final class JobTableUtil {
     public static Pair<Boolean, String> checkJobIsRunnable(Session session, String sql) {
         List<Object[]> resList;
         try {
+            Timer.Context timeCtx = DingoMetrics.getTimeContext("checkJobIsRunnable");
             resList = session.executeQuery(sql);
+            timeCtx.stop();
         } catch (SQLException e) {
             return Pair.of(false, e.getMessage());
         }
@@ -122,7 +130,16 @@ public final class JobTableUtil {
         }
         String sql = String.format(getJobSQL, not, DdlContext.INSTANCE.excludeJobIDs());
         try {
+            long start = System.currentTimeMillis();
             List<Object[]> resList = session.executeQuery(sql);
+            long cost = System.currentTimeMillis() - start;
+
+            if (!resList.isEmpty()) {
+                DingoMetrics.metricRegistry.timer("getJobSql").update(cost, TimeUnit.MILLISECONDS);
+            }
+            LogUtils.info(log, "get job size:{}", resList.size()
+                + ", runningJobs:" + DdlContext.INSTANCE.getRunningJobs().size()
+                + ", query job sql cost:" + cost);
             for (Object[] rows : resList) {
                 byte[] bytes = (byte[]) rows[0];
                 DdlJob ddlJob;
@@ -134,7 +151,13 @@ public final class JobTableUtil {
                 }
                 boolean processing = Boolean.parseBoolean(rows[1].toString());
                 if (processing) {
-                    return Pair.of(ddlJob, null);
+                    if (DdlContext.INSTANCE.getRunningJobs().containJobId(ddlJob.getId())) {
+                        //LogUtils.info(log, "get job process check has running,jobId:{}", ddlJob.getId());
+                        continue;
+                    } else {
+                        //LogUtils.info(log, "get job processing true, jobId:{}", ddlJob.getId());
+                        return Pair.of(ddlJob, null);
+                    }
                 }
                 Pair<Boolean, String> res = filter.apply(ddlJob);
                 if (res.getValue() != null) {
@@ -154,15 +177,18 @@ public final class JobTableUtil {
     }
 
     public static String markJobProcessing(Session session, DdlJob job) {
+        Timer.Context timeCtx = DingoMetrics.getTimeContext("markJobProcessing");
         String sql = "update mysql.dingo_ddl_job set processing = true where job_id = " + job.getId();
-        return markJobProcessing(session, sql, 3);
+        String res = markJobProcessing(session, sql, 3);
+        timeCtx.stop();
+        return res;
     }
 
     public static String markJobProcessing(Session session, String sql, int retry) {
         try {
             return session.executeUpdate(sql);
         } catch (Exception e) {
-            LogUtils.error(log, e.getMessage(), e);
+            LogUtils.error(log, "[ddl] mark job processing error", e);
             if (retry-- >= 0) {
                 return markJobProcessing(session, sql, retry);
             }
@@ -172,7 +198,8 @@ public final class JobTableUtil {
 
     public static Pair<DdlJob, String> getReorgJob(Session session) {
         try {
-            return getJob(session, reorg, job1 -> {
+            Timer.Context timeCtx = DingoMetrics.getTimeContext("reorgJob");
+            Pair<DdlJob, String> res = getJob(session, reorg, job1 -> {
                 String sql = "select job_id from mysql.dingo_ddl_job where "
                     + "(schema_ids = %s and type = %d and processing) "
                     + " or (table_ids = %s and processing) "
@@ -180,6 +207,8 @@ public final class JobTableUtil {
                 sql = String.format(sql, Utils.quoteForSql(job1.getSchemaId()), job1.getActionType().getCode(), Utils.quoteForSql(job1.getTableId()));
                 return checkJobIsRunnable(session, sql);
             });
+            timeCtx.stop();
+            return res;
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
             return Pair.of(null, e.getMessage());

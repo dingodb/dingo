@@ -102,6 +102,12 @@ public class MetaServiceApiImpl implements MetaServiceApi {
     private final LinkedRunner lockRunner = new LinkedRunner("lock-runner");
 
     private MetaServiceApiImpl() {
+        try {
+            throw new RuntimeException("xxxx");
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+        }
+        LogUtils.info(log, "MetaServiceApiImpl init");
         lock = lockService.newLock(ID + "#" + DingoConfiguration.location().url());
         lock.watchDestroy().thenRunAsync(() -> {
             lock = lockService.newLock(ID + "#" + DingoConfiguration.location().url());
