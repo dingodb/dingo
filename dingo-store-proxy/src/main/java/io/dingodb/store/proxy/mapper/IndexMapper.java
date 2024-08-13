@@ -122,6 +122,10 @@ public interface IndexMapper {
                     if (!columnNames.contains(next.getKey().toUpperCase())) {
                         throw new RuntimeException("The field: [" + next.getKey() + "] does not exist in the document index");
                     }
+                    JsonNode tokenizer = next.getValue().get("tokenizer");
+                    if (tokenizer == null) {
+                        throw new RuntimeException("Tokenizer parameters not found");
+                    }
                     String type = next.getValue().get("tokenizer").get("type").asText();
                     ScalarFieldType scalarFieldType;
                     switch (type.toLowerCase()) {

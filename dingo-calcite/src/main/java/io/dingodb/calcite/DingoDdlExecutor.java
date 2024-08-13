@@ -314,9 +314,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                         && !columnDefinition.getTypeName().equals("BYTES")) {
                         throw new RuntimeException("Invalid column type: " + columnDefinition.getTypeName());
                     }
-                    if (columnDefinition.isNullable()) {
-                        throw new RuntimeException("Column must be not null, column name: " + columnName);
-                    }
                     primary = -1;
                 }
                 ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
