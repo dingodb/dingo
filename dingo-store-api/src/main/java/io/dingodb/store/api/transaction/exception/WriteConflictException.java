@@ -21,6 +21,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class WriteConflictException extends RuntimeException {
     public byte[] key;
+    public int doneCnt;
     public WriteConflictException(String message, byte[] key) {
         super(message);
         this.key = key;

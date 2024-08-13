@@ -116,7 +116,7 @@ public class Profile {
             if (child != null) {
                 dumpTree(child, prefix1);
             } else {
-                log.info("child is null:" + profile);
+                //log.info("child is null:" + profile);
             }
         }
 

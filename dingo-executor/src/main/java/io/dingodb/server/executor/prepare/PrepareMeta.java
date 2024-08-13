@@ -42,7 +42,7 @@ import io.dingodb.sdk.service.entity.version.PutRequest;
 import io.dingodb.server.executor.ddl.DdlContext;
 import io.dingodb.store.proxy.meta.MetaService;
 import io.dingodb.store.service.InfoSchemaService;
-import io.dingodb.store.service.MetaStoreKvTxn;
+import io.dingodb.store.service.MetaStoreKv;
 import io.dingodb.store.service.StoreKvTxn;
 import lombok.extern.slf4j.Slf4j;
 
@@ -88,7 +88,7 @@ public final class PrepareMeta {
             return;
         }
         long start = System.currentTimeMillis();
-        MetaStoreKvTxn.init();
+        MetaStoreKv.init();
         initReplica();
         Object tenant = infoSchemaService.getTenant(tenantId);
         if (tenant == null) {

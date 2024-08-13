@@ -31,7 +31,6 @@ import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.server.executor.service.BackFiller;
-import io.dingodb.server.executor.service.addindex.IndexAddFiller;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -103,6 +102,7 @@ public final class BackFilling {
             }
         }
         LogUtils.info(log, "[ddl] pre write primary key done, bf type:{}, jobId:{}", bfWorkerType, job.getId());
+        long start = System.currentTimeMillis();
 
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(destTaskList.stream().map(task -> {
             Callable<BackFillResult> callable = () -> run(filler, task);
@@ -110,17 +110,22 @@ public final class BackFilling {
         }).toArray(CompletableFuture[]::new));
         try {
             allFutures.get();
+            long end = System.currentTimeMillis();
             LogUtils.info(log, "[ddl] pre second key done, " +
-                "bf type:{}, jobId:{}, scanCount:{}, addCount:{}",
-                ", conflict count:{}",
-                bfWorkerType, job.getId(), filler.getScanCount(), filler.getAddCount(), filler.getConflictCount());
+                "bf type:{}, jobId:{}, scanCount:{}, addCount:{}, conflict count:{}, cost:{}ms",
+                bfWorkerType, job.getId(), filler.getScanCount(),
+                filler.getAddCount(), filler.getConflictCount(), (end - start));
         } catch (InterruptedException | ExecutionException e) {
+            LogUtils.error(log, "pre write second error", e);
             return e.getMessage();
         } finally {
+            start = System.currentTimeMillis();
             boolean commitPriRes = filler.commitPrimary();
             boolean commitSecondRes = filler.commitSecond();
-            LogUtils.info(log, "[ddl] commit done, primary:{}, second:{}, bf type:{}, jobId:{}, commitCnt:{}",
-                commitPriRes, commitSecondRes, bfWorkerType, job.getId(), filler.getCommitCount());
+            long end = System.currentTimeMillis();
+            long sub = (end - start);
+            LogUtils.info(log, "[ddl] commit done, primary:{}, second:{}, bf type:{}, jobId:{}, commitCnt:{}, cost:{}ms",
+                commitPriRes, commitSecondRes, bfWorkerType, job.getId(), filler.getCommitCount(), sub);
         }
         return null;
     }

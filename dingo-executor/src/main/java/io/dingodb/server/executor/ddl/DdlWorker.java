@@ -447,9 +447,9 @@ public class DdlWorker {
     }
 
     public Pair<Long, String> onCreateIndex(DdlContext dc, DdlJob job) {
-        if (job.isRollingback()) {
-            return onDropIndex(dc, job);
-        }
+        //if (job.isRollingback()) {
+            //return onDropIndex(dc, job);
+        //}
         long schemaId = job.getSchemaId();
         Pair<TableDefinitionWithId, String> tableInfoRes = TableUtil.getTableInfoAndCancelFaultJob(job, schemaId);
         if (tableInfoRes.getValue() != null) {
@@ -714,7 +714,7 @@ public class DdlWorker {
         }
 
         try {
-            String error = rc.getDone().get(100, TimeUnit.SECONDS);
+            String error = rc.getDone().get(3600, TimeUnit.SECONDS);
             if (rc.isReorgCanceled() || "ErrCancelledDDLJob".equalsIgnoreCase(error)) {
                 dc.removeReorgCtx(job.getId());
                 return "ErrCancelledDDLJob";

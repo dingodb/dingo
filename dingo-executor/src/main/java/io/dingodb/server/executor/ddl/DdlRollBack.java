@@ -21,9 +21,14 @@ import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.JobState;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Pair;
+import io.dingodb.meta.InfoSchemaService;
+import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.service.entity.common.SchemaState;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
+import io.dingodb.store.proxy.mapper.Mapper;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -38,6 +43,7 @@ public final class DdlRollBack {
         Pair<Long, String> res = null;
         switch (job.getActionType()) {
             case ActionAddIndex:
+                error = rollingbackAddIndex(job);
                 break;
             case ActionDropIndex:
                 break;
@@ -92,6 +98,18 @@ public final class DdlRollBack {
             return "ErrCancelledDDLJob";
         }
         ddlJob.setState(JobState.jobStateRunning);
+        return null;
+    }
+
+    public static String rollingbackAddIndex(DdlJob job) {
+        Table table = InfoSchemaService.root().getTableDef(job.getSchemaId(), job.getTableId());
+        String error = job.decodeArgs();
+        if (error != null) {
+            return error;
+        }
+        TableDefinition indexInfo = (TableDefinition) job.getArgs().get(0);
+        TableDefinitionWithId indexWithId = IndexUtil.getIndexWithId(table, indexInfo.getName());
+        MetaService.root().dropIndex(table.getTableId(), Mapper.MAPPER.idFrom(indexWithId.getTableId()));
         return null;
     }
 

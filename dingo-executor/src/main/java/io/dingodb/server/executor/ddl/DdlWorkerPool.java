@@ -34,8 +34,8 @@ public class DdlWorkerPool extends GenericObjectPool<DdlWorker> {
 
     @Override
     public DdlWorker borrowObject() throws Exception {
-        LogUtils.info(log, "[ddl] ddlWorkerPool active count: {}, borrow count:{}, return count:{}",
-            this.getNumActive(), this.getBorrowedCount(), this.getReturnedCount());
+        //LogUtils.info(log, "[ddl] ddlWorkerPool active count: {}, borrow count:{}, return count:{}",
+        //    this.getNumActive(), this.getBorrowedCount(), this.getReturnedCount());
         DdlWorker ddlWorker = super.borrowObject();
         ddlWorker.beginTxn();
         return ddlWorker;

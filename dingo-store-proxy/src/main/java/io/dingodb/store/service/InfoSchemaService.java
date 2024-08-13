@@ -573,6 +573,24 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
+    public int getDocumentReplica() {
+        CoordinatorService coordinatorService = Services.coordinatorService(coordinators);
+        GetStoreMapRequest storeMapRequest = GetStoreMapRequest.builder().epoch(0).build();
+        GetStoreMapResponse response = coordinatorService.getStoreMap(
+            System.identityHashCode(storeMapRequest), storeMapRequest
+        );
+        if (response.getStoremap() == null) {
+            return 3;
+        }
+        long storeCount = response.getStoremap().getStores()
+            .stream()
+            .filter(store -> store.getStoreType() == StoreType.NODE_TYPE_DOCUMENT
+                && store.getState() == StoreState.STORE_NORMAL)
+            .count();
+        return (int) storeCount;
+    }
+
+    @Override
     public long getSchemaVersionWithNonEmptyDiff() {
         long version = this.getSchemaVer();
         if (version == 100) {
