@@ -67,7 +67,7 @@ public final class LoadInfoSchemaTask {
             .key(io.dingodb.meta.InfoSchemaService.globalSchemaVer.getBytes()).build()).build();
         String resourceKey = String.format("tenantId:{%d}", TenantConstant.TENANT_ID);
         LockService lockService = new LockService(resourceKey, Configuration.coordinators(), 45000);
-        lockService.watchAllOpLock(kv, LoadInfoSchemaTask::loadInfo);
+        lockService.watchAllOpLock(kv, LoadInfoSchemaTask::loadInfoByEtcd);
     }
 
     public static void scheduler() {
@@ -81,7 +81,7 @@ public final class LoadInfoSchemaTask {
     }
 
     public static void loadInfoByEtcd() {
-        Utils.sleep(1000);
+        Utils.sleep(400);
         loadInfo();
     }
 

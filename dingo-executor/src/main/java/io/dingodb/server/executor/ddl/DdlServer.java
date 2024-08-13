@@ -68,6 +68,7 @@ public final class DdlServer {
 //    }
 
     public static void startLoadDDLAndRunByEtcd() {
+        Utils.sleep(1000);
         Session session = SessionUtil.INSTANCE.getSession();
         try {
             session.setAutoCommit(true);

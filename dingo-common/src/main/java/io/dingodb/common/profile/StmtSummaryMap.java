@@ -109,7 +109,7 @@ public final class StmtSummaryMap {
         }
         sqlProfile.end();
         if ((slowQueryEnabled && sqlProfile.duration > slowQueryThreshold)
-            || (ddlInnerProfile && sqlProfile.duration > 500)) {
+            || (ddlInnerProfile && sqlProfile.duration > 100)) {
             log.info(sqlProfile.dumpTree());
         }
         if (ddlInnerProfile) {

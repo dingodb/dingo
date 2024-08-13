@@ -20,9 +20,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.entity.InfoSchema;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.Function;
@@ -41,6 +43,7 @@ import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
+@Slf4j
 public class RootSnapshotSchema implements Schema {
     public static final String ROOT_SCHEMA_NAME = "DINGO_ROOT";
     public static final String DEFAULT_SCHEMA_NAME = "DINGO";
@@ -115,9 +118,16 @@ public class RootSnapshotSchema implements Schema {
         if (is == null) {
             InfoSchema isTmp = DdlService.root().getIsLatest();
             if (isTmp == null) {
+                LogUtils.info(log, "get sub schema null, name:" + schemaName + ", isTmp is null");
                 return null;
             }
-            return getSubSchema(isTmp, schemaName);
+            SubSnapshotSchema sub = getSubSchema(isTmp, schemaName);
+            if (sub == null) {
+                String schemaStr = String.join(",", isTmp.getSchemaMap().keySet());
+                LogUtils.info(log, "get sub schema null by tmp, isTmp schemaMap:"
+                    + schemaStr + ", isTmp version:" + isTmp.getSchemaMetaVersion());
+            }
+            return sub;
         }
         return getSubSchema(is, schemaName);
     }

@@ -31,7 +31,7 @@ public class SessionFactory extends BasePooledObjectFactory<Session> {
 
     @Override
     public Session create() throws Exception {
-        return new Session(new SessionContext(), getInnerConnection());
+        return new Session(new SessionContext(), getInternalConnection());
     }
 
     @Override
@@ -39,7 +39,7 @@ public class SessionFactory extends BasePooledObjectFactory<Session> {
         return new DefaultPooledObject<>(o);
     }
 
-    public java.sql.Connection getInnerConnection() {
+    public java.sql.Connection getInternalConnection() {
         try {
             Class.forName("io.dingodb.driver.DingoDriver");
         } catch (ClassNotFoundException e) {
@@ -53,11 +53,10 @@ public class SessionFactory extends BasePooledObjectFactory<Session> {
         properties.setProperty("timeZone", timeZone.getID());
         properties.setProperty("user", user);
         properties.setProperty("host", host);
-        //properties.setProperty("sql_log", "off");
+        properties.setProperty("sql_log", "off");
         java.sql.Connection connection = null;
         try {
             connection = DriverManager.getConnection("jdbc:dingo:", properties);
-            //connection.setClientInfo("sql_profile_enable", "off");
             connection.setClientInfo("ddl_inner_profile", "on");
         } catch (SQLException e) {
             log.error(e.getMessage(), e);
