@@ -93,11 +93,21 @@ public class TenantService implements io.dingodb.meta.TenantService {
 
     @Override
     public void dropTenant(@NonNull String name) {
-        Long tenantId = getTenantId(name);
-        if (tenantId == null) {
+        Tenant tenant = getTenant(name);
+        if (tenant == null) {
             return;
         }
-        infoSchemaService.dropTenant(tenantId);
+        infoSchemaService.updateTenant(
+            tenant.getId(),
+            Tenant.builder()
+                .id(tenant.getId())
+                .name(name)
+                .createdTime(tenant.getCreatedTime())
+                .updatedTime(System.currentTimeMillis())
+                .remarks(tenant.getRemarks())
+                .isDelete(true)
+                .build()
+        );
     }
 
     @Override
