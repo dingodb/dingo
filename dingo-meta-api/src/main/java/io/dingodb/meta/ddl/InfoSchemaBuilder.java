@@ -22,6 +22,7 @@ import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.ddl.TableInfoCache;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.util.Pair;
+import io.dingodb.common.util.Utils;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.SchemaTables;
@@ -101,30 +102,39 @@ public class InfoSchemaBuilder {
         this.is.schemaMetaVersion = schemaDiff.getVersion();
         switch (schemaDiff.getType()) {
             case ActionCreateSchema:
-                String error = applyCreateSchema(infoSchemaService, schemaDiff);
+                String error = applyCreateSchema(schemaDiff);
                 return Pair.of(null, error);
             case ActionCreateTables:
                 return applyCreateTables(infoSchemaService, schemaDiff);
             case ActionAddIndex:
-                return applyAddIndex(infoSchemaService, schemaDiff);
+                return applyAddIndex(schemaDiff);
             case ActionDropSchema:
                 return applyDropSchema(schemaDiff);
             case ActionDropTable:
                 return applyDropTable(schemaDiff);
             case ActionDropIndex:
-                return applyDropIndex(infoSchemaService, schemaDiff);
+                return applyDropIndex(schemaDiff);
             case ActionCreateTable:
-                return applyCreateTable(infoSchemaService, schemaDiff);
+                return applyCreateTable(schemaDiff);
             case ActionTruncateTable:
-                return applyTruncateTable(infoSchemaService, schemaDiff);
+                return applyTruncateTable(schemaDiff);
             default:
                 break;
         }
         return null;
     }
 
-    public String applyCreateSchema(InfoSchemaService infoSchemaService, SchemaDiff diff) {
-        SchemaInfo schemaInfo = (SchemaInfo) infoSchemaService.getSchema(diff.getSchemaId());
+    public String applyCreateSchema(SchemaDiff diff) {
+        int retry = 0;
+        SchemaInfo schemaInfo = null;
+        InfoSchemaService schemaService = InfoSchemaService.root();
+        while (retry ++ < 10) {
+            schemaInfo = (SchemaInfo) schemaService.getSchema(diff.getSchemaId());
+            if (schemaInfo != null) {
+                break;
+            }
+            Utils.sleep(500);
+        }
         if (schemaInfo == null) {
             return "schemaId not exists, schemaId:" + diff.getSchemaId();
         }
@@ -151,10 +161,11 @@ public class InfoSchemaBuilder {
         return Pair.of(tableIdList, null);
     }
 
-    public Pair<List<Long>, String> applyCreateTable(InfoSchemaService infoSchemaService, SchemaDiff diff) {
+    public Pair<List<Long>, String> applyCreateTable(SchemaDiff diff) {
         try {
-            Table table = infoSchemaService.getTableDef(diff.getSchemaId(), diff.getTableId());
-            SchemaInfo schemaInfo = (SchemaInfo) infoSchemaService.getSchema(diff.getSchemaId());
+            InfoSchemaService schemaService = InfoSchemaService.root();
+            Table table = schemaService.getTableDef(diff.getSchemaId(), diff.getTableId());
+            SchemaInfo schemaInfo = (SchemaInfo) schemaService.getSchema(diff.getSchemaId());
             this.is.putTable(schemaInfo.getName(), table.name, table);
             int idx = bucketIdx(diff.getTableId());
             TableInfoCache tmp = new TableInfoCache(table.tableId.seq, table.name, schemaInfo.getSchemaId(), schemaInfo.getName());
@@ -223,28 +234,28 @@ public class InfoSchemaBuilder {
         }
     }
 
-    public Pair<List<Long>, String> applyAddIndex(InfoSchemaService infoSchemaService, SchemaDiff diff) {
+    public Pair<List<Long>, String> applyAddIndex(SchemaDiff diff) {
         try {
             dropTable(diff.getOldSchemaId(), diff.getOldTableId());
-            return applyCreateTable(infoSchemaService, diff);
+            return applyCreateTable(diff);
         } catch (Exception e) {
             return Pair.of(null, e.getMessage());
         }
     }
 
-    public Pair<List<Long>, String> applyDropIndex(InfoSchemaService infoSchemaService, SchemaDiff diff) {
+    public Pair<List<Long>, String> applyDropIndex(SchemaDiff diff) {
         try {
             dropTable(diff.getOldSchemaId(), diff.getOldTableId());
-            return applyCreateTable(infoSchemaService, diff);
+            return applyCreateTable(diff);
         } catch (Exception e) {
             return Pair.of(null, e.getMessage());
         }
     }
 
-    public Pair<List<Long>, String> applyTruncateTable(InfoSchemaService infoSchemaService, SchemaDiff diff) {
+    public Pair<List<Long>, String> applyTruncateTable(SchemaDiff diff) {
         try {
             dropTable(diff.getOldSchemaId(), diff.getOldTableId());
-            return applyCreateTable(infoSchemaService, diff);
+            return applyCreateTable(diff);
         } catch (Exception e) {
             return Pair.of(null, e.getMessage());
         }

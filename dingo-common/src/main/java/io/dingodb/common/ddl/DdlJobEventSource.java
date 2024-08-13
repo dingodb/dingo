@@ -44,10 +44,11 @@ public final class DdlJobEventSource {
                 }
                 try {
                     int jobNotify = take();
+                    ddlJob(jobNotify);
                     //Executors.execute("notify_ddl_worker", () -> ddlJob(jobNotify), true);
-                    for (int i = 0; i < jobNotify; i ++) {
-                        Executors.execute("notify_ddl_worker", () -> ddlJob(jobNotify), true);
-                    }
+                    //for (int i = 0; i < jobNotify; i ++) {
+                    //    Executors.execute("notify_ddl_worker", () -> ddlJob(jobNotify), true);
+                    //}
                 } catch (Exception e) {
                     LogUtils.error(log, e.getMessage());
                 }

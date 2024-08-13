@@ -367,11 +367,15 @@ public class DingoMeta extends MetaImpl {
         ITransaction transaction = dingoConnection.getTransaction();
         DingoAudit dingoAudit;
         if (transaction != null) {
+            String schemaName = "DINGO";
+            if (dingoConnection.getContext().getUsedSchema() != null) {
+                schemaName = dingoConnection.getContext().getUsedSchema().getName();
+            }
             dingoAudit = DingoAudit.builder()
                 .serverId(DingoConfiguration.serverId())
                 .connId(sh.toString())
                 .jobSeqId(jobSeqId)
-                .schema(dingoConnection.getContext().getUsedSchema().getName())
+                .schema(schemaName)
                 .client(client)
                 .user(user)
                 .startTs(transaction.getStartTs())

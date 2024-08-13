@@ -65,6 +65,7 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.TenantService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
@@ -584,6 +585,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         SubSnapshotSchema subSchema = rootSchema.getSubSchema(schemaName);
         if (subSchema == null) {
             if (!schema.ifExists) {
+                InfoSchema is = rootSchema.getIs();
+                LogUtils.error(log, "drop schema but get null, name:"
+                    + schemaName + ", info schema is null:" + (is == null));
+                if (is != null) {
+                    String schemaStr = String.join(",", is.getSchemaMap().keySet());
+                    LogUtils.error(log, "drop schema but get null, name:"
+                        + schemaName + ", is schemaMap:" + schemaStr + ", is ver:" + is.getSchemaMetaVersion());
+                }
                 throw SqlUtil.newContextException(
                     schema.name.getParserPosition(),
                     RESOURCE.schemaNotFound(schemaName)
