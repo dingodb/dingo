@@ -17,9 +17,11 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.common.meta.Tenant;
+import io.dingodb.common.mysql.util.DataTimeUtils;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.meta.InfoSchemaService;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -45,8 +47,8 @@ public class ShowTenantOperation extends QueryOperation {
             .map(t -> new Object[] {
                 t.getId(),
                 t.getName().toLowerCase(),
-                t.getCreatedTime(),
-                t.getUpdatedTime(),
+                DataTimeUtils.getTimeStamp(new Timestamp(t.getCreatedTime())),
+                DataTimeUtils.getTimeStamp(new Timestamp(t.getUpdatedTime())),
                 t.isDelete(),
                 t.getRemarks()})
             .iterator();
