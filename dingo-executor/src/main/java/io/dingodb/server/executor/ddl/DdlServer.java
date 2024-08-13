@@ -26,6 +26,7 @@ import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.tenant.TenantConstant;
@@ -112,6 +113,7 @@ public final class DdlServer {
         if (!env.ddlOwner.get()
             || DdlContext.INSTANCE.waiting.get()
             || !DdlContext.INSTANCE.prepare.get()
+            || !ScopeVariables.runDdl()
         ) {
             DdlContext.INSTANCE.getWc().setOnceVal(true);
             Utils.sleep(1000);

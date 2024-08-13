@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package io.dingodb.server.executor.service.addindex;
+package io.dingodb.server.executor.ddl;
 
+import com.codahale.metrics.Timer;
 import com.google.common.collect.Iterators;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.ddl.ReorgBackFillTask;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
@@ -52,7 +54,6 @@ import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Mutation;
 import io.dingodb.store.api.transaction.data.Op;
-import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
@@ -121,7 +122,6 @@ public class IndexAddFiller implements BackFiller {
             Optional.ofNullable(indexTable.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         // reorging when region split
-        // todo
         StoreInstance kvStore = Services.KV_STORE.getInstance(task.getTableId(), task.getRegionId());
         KeyValueCodec codec  = CodecService.getDefault().createKeyValueCodec(table.getVersion(), table.tupleType(), table.keyMapping());
         Iterator<KeyValue> iterator = kvStore.txnScan(
@@ -215,6 +215,8 @@ public class IndexAddFiller implements BackFiller {
     public BackFillResult backFillDataInTxn(ReorgBackFillTask task) {
         CommonId tableId = task.getTableId();
         Iterator<Object[]> tupleIterator;
+        //Utils.sleep(30000);
+        long start = System.currentTimeMillis();
         if (task.getRegionId().seq != ownerRegionId) {
             StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, task.getRegionId());
             KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.getVersion(), table.tupleType(), table.keyMapping());
@@ -229,6 +231,8 @@ public class IndexAddFiller implements BackFiller {
         } else {
             tupleIterator = this.tupleIterator;
         }
+        long end = System.currentTimeMillis();
+        LogUtils.info(log, "pre write second, init iterator cost:{}ms", (end - start));
         Map<String, TxnLocalData> caches = new TreeMap<>();
         int batchCnt = 1024;
         long scanCount = 0;
@@ -242,8 +246,10 @@ public class IndexAddFiller implements BackFiller {
             }
             if (caches.size() % batchCnt == 0) {
                 try {
+                    Timer.Context timeCtx = DingoMetrics.getTimeContext("index_reorg_prewrite");
                     List<TxnLocalData> txnLocalDataList = new ArrayList<>(caches.values());
                     preWriteSecondSkipConflict(txnLocalDataList);
+                    timeCtx.stop();
                 } finally {
                     caches.clear();
                 }
@@ -259,47 +265,20 @@ public class IndexAddFiller implements BackFiller {
         List<TxnLocalData> txnLocalDataList = new ArrayList<>(tupleList);
         preWriteSecondSkipConflict(txnLocalDataList);
         backFillResult.addCount(tupleList.size());
+        LogUtils.info(log, "pre write second, iterator cost:{}ms", (System.currentTimeMillis() - end));
         return backFillResult;
     }
 
     @Override
     public boolean commitPrimary() {
-        return commitPrimaryData(primaryObj);
-    }
-
-    public boolean commitPrimaryData(CacheToObject cacheToObject) {
-            // 1、call sdk commitPrimaryKey
-            long commitTs = TsoService.getDefault().tso();
-            TxnCommit commitRequest = TxnCommit.builder()
-                .isolationLevel(IsolationLevel.of(isolationLevel))
-                .startTs(txnId.seq)
-                .commitTs(commitTs)
-                .keys(Collections.singletonList(primaryKey))
-                .build();
-            try {
-                StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
-                return store.txnCommit(commitRequest);
-            } catch (RuntimeException e) {
-                LogUtils.error(log, e.getMessage(), e);
-                // 2、regin split
-                boolean commitResult = false;
-                int i = 0;
-                while (!commitResult) {
-                    i ++;
-                    try {
-                        CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, primaryKey);
-                        StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
-                        commitResult = store.txnCommit(commitRequest);
-                    } catch (RegionSplitException e1) {
-                        Utils.sleep(100);
-                        LogUtils.error(log, "commit primary region split, retry count:" + i);
-                    }
-                }
-                return true;
-            } catch (Exception e) {
-                LogUtils.error(log, e.getMessage(), e);
-                return false;
-            }
+        Txn txn = new Txn(txnId, false, 0, timeOut);
+        txn.setPrimaryKey(primaryKey);
+        txn.setCommitTs(this.commitTs);
+        boolean res = txn.commitPrimaryData(primaryObj);
+        if (res) {
+            this.commitTs = txn.getCommitTs();
+        }
+        return res;
     }
 
     @Override
@@ -426,6 +405,9 @@ public class IndexAddFiller implements BackFiller {
             preWriteSecondKey(secondList);
         } catch (WriteConflictException e) {
             conflict.incrementAndGet();
+            if (e.doneCnt > 0) {
+                secondList = secondList.subList(e.doneCnt, secondList.size());
+            }
             handleConflict(secondList, e.key);
             preWriteSecondSkipConflict(secondList);
         }
@@ -441,7 +423,7 @@ public class IndexAddFiller implements BackFiller {
     private void removeDoneKey(List<TxnLocalData> secondList, List<Mutation> mutationList) {
         StoreInstance localStore = Services.LOCAL_STORE.getInstance(null, null);
         addCount.addAndGet(mutationList.size());
-        secondList.removeIf(txnLocalData -> {
+        secondList.forEach(txnLocalData -> {
             byte[] doneKey = txnLocalData.getKey();
             boolean res =  mutationList.stream()
                 .anyMatch(mutation -> ByteArrayUtils.compare(mutation.getKey(), doneKey) == 0);
@@ -456,7 +438,6 @@ public class IndexAddFiller implements BackFiller {
                 KeyValue extraKeyValue = new KeyValue(ek, null);
                 localStore.put(extraKeyValue);
             }
-            return res;
         });
     }
 
@@ -467,52 +448,70 @@ public class IndexAddFiller implements BackFiller {
         PreWriteParam param = new PreWriteParam(dingoType, primaryKey, txnId.seq,
             isolationLevel, TransactionType.OPTIMISTIC, timeOut);
         param.init(null);
-        for (TxnLocalData txnLocalData : secondList) {
-            CommonId newPartId = txnLocalData.getPartId();
-            int op = txnLocalData.getOp().getCode();
-            byte[] key = txnLocalData.getKey();
-            byte[] value = txnLocalData.getValue();
-            Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, 0L, indexTable.tableId, newPartId, txnId);
-            CommonId partId = param.getPartId();
-            if (partId == null) {
-                partId = newPartId;
-                param.setPartId(partId);
-                param.setTableId(indexTable.tableId);
-                param.addMutation(mutation);
-            } else if (partId.equals(newPartId)) {
-                param.addMutation(mutation);
-                if (param.getMutations().size() == TransactionUtil.max_pre_write_count) {
-                    boolean result = Txn.txnPreWrite(param, txnId, indexTable.tableId, partId);
+        int preDoneCnt = 0;
+        try {
+            for (int i = 0; i < secondList.size(); i++) {
+                TxnLocalData txnLocalData = secondList.get(i);
+                CommonId newPartId = txnLocalData.getPartId();
+                int op = txnLocalData.getOp().getCode();
+                byte[] key = txnLocalData.getKey();
+                byte[] value = txnLocalData.getValue();
+                Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, 0L, indexTable.tableId, newPartId, txnId);
+                CommonId partId = param.getPartId();
+                if (partId == null) {
+                    partId = newPartId;
+                    param.setPartId(partId);
+                    param.setTableId(indexTable.tableId);
+                    param.addMutation(mutation);
+                } else if (partId.equals(newPartId)) {
+                    param.addMutation(mutation);
+                    if (param.getMutations().size() == TransactionUtil.max_pre_write_count) {
+                        boolean result = Txn.txnPreWrite(param, txnId, indexTable.tableId, partId);
+                        if (!result) {
+                            throw new RuntimeException(txnId + " " + partId + ",txnPreWrite false,PrimaryKey:"
+                                + Arrays.toString(param.getPrimaryKey()));
+                        }
+                        preDoneCnt += param.getMutations().size();
+                        removeDoneKey(secondList, param.getMutations());
+                        //addCount.addAndGet(param.getMutations().size());
+                        param.getMutations().clear();
+                        param.setPartId(null);
+                    }
+                } else {
+                    boolean result = Txn.txnPreWrite(param, txnId, param.getTableId(), partId);
                     if (!result) {
                         throw new RuntimeException(txnId + " " + partId + ",txnPreWrite false,PrimaryKey:"
                             + Arrays.toString(param.getPrimaryKey()));
                     }
+                    preDoneCnt += param.getMutations().size();
+                    //addCount.addAndGet(param.getMutations().size());
                     removeDoneKey(secondList, param.getMutations());
                     param.getMutations().clear();
-                    param.setPartId(null);
+                    param.addMutation(mutation);
+                    param.setPartId(newPartId);
+                    param.setTableId(indexTable.tableId);
                 }
-            } else {
-                boolean result = Txn.txnPreWrite(param, txnId, param.getTableId(), partId);
-                if (!result) {
-                    throw new RuntimeException(txnId + " " + partId + ",txnPreWrite false,PrimaryKey:"
-                        + Arrays.toString(param.getPrimaryKey()));
-                }
-                removeDoneKey(secondList, param.getMutations());
-                param.getMutations().clear();
-                param.addMutation(mutation);
-                param.setPartId(newPartId);
-                param.setTableId(indexTable.tableId);
             }
+        } catch (WriteConflictException e) {
+            e.doneCnt += preDoneCnt;
+            throw e;
         }
 
         if (!param.getMutations().isEmpty()) {
-            boolean result = Txn.txnPreWrite(param, txnId, param.getTableId(), param.getPartId());
-            if (!result) {
-                throw new RuntimeException(txnId + " " + param.getPartId() + ",txnPreWrite false,PrimaryKey:"
-                    + Arrays.toString(param.getPrimaryKey()));
+            try {
+                boolean result = Txn.txnPreWrite(param, txnId, param.getTableId(), param.getPartId());
+                if (!result) {
+                    throw new RuntimeException(txnId + " " + param.getPartId() + ",txnPreWrite false,PrimaryKey:"
+                        + Arrays.toString(param.getPrimaryKey()));
+                }
+                preDoneCnt += param.getMutations().size();
+                //addCount.addAndGet(param.getMutations().size());
+                removeDoneKey(secondList, param.getMutations());
+                param.getMutations().clear();
+            } catch (WriteConflictException e) {
+                e.doneCnt += preDoneCnt;
+                throw e;
             }
-            removeDoneKey(secondList, param.getMutations());
-            param.getMutations().clear();
         }
     }
 }

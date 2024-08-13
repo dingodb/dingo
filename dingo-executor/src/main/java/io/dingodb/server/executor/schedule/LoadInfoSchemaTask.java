@@ -21,6 +21,7 @@ import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.tenant.TenantConstant;
@@ -49,7 +50,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public final class LoadInfoSchemaTask {
-    private static long saveMaxVer = 0;
 
     private LoadInfoSchemaTask() {
     }
@@ -226,11 +226,9 @@ public final class LoadInfoSchemaTask {
             return;
         }
         long schemaVer = is.schemaMetaVersion;
-//        if (schemaVer > saveMaxVer) {
-//            saveMaxVer = schemaVer;
-//        } else {
-//            return;
-//        }
+        if (!ScopeVariables.runDdl()) {
+            return;
+        }
         String sql = "select job_id, version, table_ids from mysql.dingo_mdl_info where version <= %d";
         sql = String.format(sql, schemaVer);
         MdlCheckTableInfo mdlCheckTableInfo = ExecutionEnvironment.INSTANCE.mdlCheckTableInfo;

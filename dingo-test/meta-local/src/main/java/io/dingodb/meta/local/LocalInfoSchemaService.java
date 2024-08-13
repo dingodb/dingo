@@ -223,6 +223,11 @@ public class LocalInfoSchemaService implements InfoSchemaService {
     }
 
     @Override
+    public int getDocumentReplica() {
+        return 3;
+    }
+
+    @Override
     public long getSchemaVersionWithNonEmptyDiff() {
         return 0;
     }

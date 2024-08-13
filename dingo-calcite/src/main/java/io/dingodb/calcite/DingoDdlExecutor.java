@@ -39,7 +39,6 @@ import io.dingodb.calcite.grammar.ddl.SqlRevoke;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
-import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.calcite.schema.SubSnapshotSchema;
 import io.dingodb.common.log.LogUtils;

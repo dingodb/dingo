@@ -47,6 +47,9 @@ import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
+import io.dingodb.tso.TsoService;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
@@ -61,7 +64,10 @@ public class Txn {
     long startTs;
     CommonId txnId;
     Future<?> future;
+    @Getter
+    @Setter
     long commitTs;
+    @Setter
     byte[] primaryKey;
     DingoType dingoType;
 
@@ -80,12 +86,12 @@ public class Txn {
         this.timeOut = timeOut;
     }
 
-    public int commit(List<Object[]> tupleList) {
-        List<Object[]> secondList = null;
+    public int commit(List<TxnLocalData> tupleList) {
+        List<TxnLocalData> secondList = null;
         try {
             // get local mem data first data and transform to cacheToObject
-            Object[] primary = tupleList.get(0);
-            primaryObj = getCacheToObject((TxnLocalData) primary[0]);
+            TxnLocalData primary = tupleList.get(0);
+            primaryObj = getCacheToObject(primary);
 
             preWritePrimaryKey(primaryObj);
             // pre write second key
@@ -237,12 +243,11 @@ public class Txn {
         }
     }
 
-    private void preWriteSecondKey(List<Object[]> secondList) {
+    private void preWriteSecondKey(List<TxnLocalData> secondList) {
         PreWriteParam param = new PreWriteParam(dingoType, primaryKey, startTs,
             isolationLevel, TransactionType.OPTIMISTIC, timeOut);
         param.init(null);
-        for (Object[] tuples : secondList) {
-            TxnLocalData txnLocalData = (TxnLocalData) tuples[0];
+        for (TxnLocalData txnLocalData : secondList) {
             CommonId txnId = txnLocalData.getTxnId();
             CommonId tableId = txnLocalData.getTableId();
             CommonId newPartId = txnLocalData.getPartId();
@@ -291,7 +296,6 @@ public class Txn {
     }
 
     public boolean commitPrimaryData(CacheToObject cacheToObject) {
-        // 1、call sdk commitPrimaryKey
         try {
             // 1、call sdk commitPrimaryKey
             long start = System.currentTimeMillis();
@@ -326,12 +330,11 @@ public class Txn {
         return false;
     }
 
-    public void commitSecondData(List<Object[]> secondData) {
+    public void commitSecondData(List<TxnLocalData> secondData) {
         CommitParam param = new CommitParam(dingoType, isolationLevel, startTs,
             commitTs, primaryKey, TransactionType.OPTIMISTIC);
         param.init(null);
-        for (Object[] tuples : secondData) {
-            TxnLocalData txnLocalData = (TxnLocalData) tuples[0];
+        for (TxnLocalData txnLocalData : secondData) {
             CommonId txnId = txnLocalData.getTxnId();
             CommonId tableId = txnLocalData.getTableId();
             CommonId newPartId = txnLocalData.getPartId();
@@ -434,7 +437,7 @@ public class Txn {
         }
     }
 
-    public void resolveWriteConflict(RuntimeException exception, List<Object[]> secondList, List<Object[]> tupleList) {
+    public void resolveWriteConflict(RuntimeException exception, List<TxnLocalData> secondList, List<TxnLocalData> tupleList) {
         rollback(tupleList);
         int txnRetryLimit = retryCnt;
         RuntimeException conflictException = exception;
@@ -459,7 +462,7 @@ public class Txn {
         }
     }
 
-    public synchronized void rollback(List<Object[]> tupleList) {
+    public synchronized void rollback(List<TxnLocalData> tupleList) {
         try {
             if (primaryObj != null) {
                 rollBackPrimaryKey(primaryObj);
@@ -472,8 +475,7 @@ public class Txn {
             // 3、run RollBack
             RollBackParam param = new RollBackParam(dingoType, isolationLevel, startTs, TransactionType.OPTIMISTIC, primaryKey);
             param.init(null);
-            for (Object[] tuples : tupleList) {
-                TxnLocalData txnLocalData = (TxnLocalData) tuples[0];
+            for (TxnLocalData txnLocalData : tupleList) {
                 CommonId txnId = txnLocalData.getTxnId();
                 CommonId tableId = txnLocalData.getTableId();
                 CommonId newPartId = txnLocalData.getPartId();

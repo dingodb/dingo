@@ -94,8 +94,8 @@ public class NewCalcDistributionOperator extends SourceOperator {
         }
         boolean parallel = Utils.parallel(param.getKeepOrder());
         //boolean rangePart = "range".equalsIgnoreCase(param.getTd().getPartitionStrategy());
-        boolean rangePart = false;
-        if (!parallel || distributions.size() == 1 || !rangePart) {
+        //boolean rangePart = false;
+        if (!parallel || distributions.size() == 1) {
             for (RangeDistribution distribution : distributions) {
                 if (log.isTraceEnabled()) {
                     log.trace("Push distribution: {}", distribution);

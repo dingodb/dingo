@@ -19,7 +19,6 @@ package io.dingodb.calcite.operation;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.grammar.ddl.SqlLoadData;
 import io.dingodb.calcite.runtime.DingoResource;
-import io.dingodb.calcite.schema.RootCalciteSchema;
 import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
@@ -35,6 +34,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ImportFileConverter;
+import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.Txn;
 import io.dingodb.exec.utils.ByteUtils;
@@ -156,9 +156,8 @@ public class LoadDataOperation implements DmlOperation {
         this.lineStarting = sqlLoadData.getLineStarting();
         this.ignoreNum = sqlLoadData.getIgnoreNum();
         metaService = MetaService.root();
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getRootSchema().schema;
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        InfoSchema is = rootSnapshotSchema.getIs();
+        //RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) context.getRootSchema().schema;
+        InfoSchema is = DdlService.root().getIsLatest();
         table = is.getTable(schemaName, sqlLoadData.getTableName());
         if (table == null) {
             throw DingoResource.DINGO_RESOURCE.unknownTable(schemaName + "." + sqlLoadData.getTableName()).ex();
@@ -437,7 +436,7 @@ public class LoadDataOperation implements DmlOperation {
             long start = System.currentTimeMillis();
             int cacheSize;
             try {
-                List<Object[]> tupleList = getCacheTupleList(caches, txnId);
+                List<TxnLocalData> tupleList = getCacheTupleList(caches, txnId);
                 Txn txn = new Txn(
                     txnId, txnRetry, txnRetryCnt, timeOut
                 );
@@ -482,7 +481,7 @@ public class LoadDataOperation implements DmlOperation {
             );
             Map<String, KeyValue> caches = env.memCacheFor2PC.memoryCache
                 .computeIfAbsent(statementId, e -> new TreeMap<>());
-            List<Object[]> tupleList = getCacheTupleList(caches, txnId);
+            List<TxnLocalData> tupleList = getCacheTupleList(caches, txnId);
             if (tupleList.isEmpty()) {
                 return;
             }
@@ -496,16 +495,20 @@ public class LoadDataOperation implements DmlOperation {
         LogUtils.debug(log, "insert txn end batch, cost time:" + (end - start) + "ms");
     }
 
-    public static List<Object[]> getCacheTupleList(Map<String, KeyValue> keyValueMap, CommonId txnId) {
-        List<Object[]> tupleCacheList = new ArrayList<>();
+    public static List<TxnLocalData> getCacheTupleList(Map<String, KeyValue> keyValueMap, CommonId txnId) {
+        List<TxnLocalData> tupleCacheList = new ArrayList<>();
         for (KeyValue keyValue : keyValueMap.values()) {
-            tupleCacheList.add(getCacheTuples(keyValue));
+            TxnLocalData txnLocalData = getCacheTuples(keyValue);
+            if (txnLocalData != null) {
+                tupleCacheList.add(txnLocalData);
+            }
         }
         return tupleCacheList;
     }
 
-    public static Object[] getCacheTuples(KeyValue keyValue) {
-        return io.dingodb.exec.utils.ByteUtils.decode(keyValue);
+    public static TxnLocalData getCacheTuples(KeyValue keyValue) {
+        Object[] caches = io.dingodb.exec.utils.ByteUtils.decode(keyValue);
+        return (TxnLocalData) caches[0];
     }
 
     private static boolean continueRetry() {

@@ -20,12 +20,12 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.logical.LogicalIndexScanWithRelOp;
 import io.dingodb.calcite.rel.logical.LogicalScanWithRelOp;
 import io.dingodb.calcite.visitor.RexConverter;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.expr.rel.CacheOp;
 import io.dingodb.expr.rel.PipeOp;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.rel.op.ProjectOp;
 import io.dingodb.expr.rel.op.RelOpBuilder;
-import io.dingodb.expr.rel.op.TandemCacheCacheOp;
 import io.dingodb.expr.rel.op.TandemPipeCacheOp;
 import io.dingodb.expr.rel.op.UngroupedAggregateOp;
 import io.dingodb.expr.runtime.expr.Expr;
@@ -156,6 +156,9 @@ public class DingoAggTransformRule extends RelRule<DingoAggTransformRule.Config>
         int index = -1;
         for (int i = 0; i < indexTableList.size(); i ++) {
             IndexTable indexTable = indexTableList.get(i);
+            if (indexTable.getSchemaState() != SchemaState.SCHEMA_PUBLIC) {
+                continue;
+            }
             if (indexTable.getIndexType() != IndexType.SCALAR) {
                 continue;
             }
@@ -173,6 +176,7 @@ public class DingoAggTransformRule extends RelRule<DingoAggTransformRule.Config>
 
     public static IndexTable matchIndex(List<Column> columnList, List<IndexTable> indexTableList) {
         return indexTableList.stream()
+            .filter(indexTable -> indexTable.getSchemaState() == SchemaState.SCHEMA_PUBLIC)
             .filter(indexTable -> indexTable.getColumns().containsAll(columnList))
             .findFirst().orElse(null);
     }

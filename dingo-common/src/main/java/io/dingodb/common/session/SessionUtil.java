@@ -55,8 +55,8 @@ public final class SessionUtil {
 
     public Session getSession() {
         try {
-            LogUtils.info(log, "[ddl] sessionPool active count: {}, borrow count:{}, return count:{}",
-                this.sessionPool.getNumActive(), this.sessionPool.getBorrowedCount(), this.sessionPool.getReturnedCount());
+            //LogUtils.info(log, "[ddl] sessionPool active count: {}, borrow count:{}, return count:{}",
+            //    this.sessionPool.getNumActive(), this.sessionPool.getBorrowedCount(), this.sessionPool.getReturnedCount());
             return this.sessionPool.borrowObject();
         } catch (Exception e) {
             throw new RuntimeException(e);

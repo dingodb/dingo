@@ -196,6 +196,8 @@ public interface InfoSchemaService {
 
     int getIndexReplica();
 
+    int getDocumentReplica();
+
     long getSchemaVersionWithNonEmptyDiff();
 
     Map<String, Table> listTableDef(long schemaId);

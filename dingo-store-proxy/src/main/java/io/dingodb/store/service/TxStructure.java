@@ -22,14 +22,14 @@ import io.dingodb.tso.TsoService;
 import java.util.List;
 
 public class TxStructure {
-    MetaStoreKvTxn txn;
-    MetaStoreKvTxn ddlTxn;
+    MetaStoreKv txn;
+    MetaStoreKv ddlTxn;
     private final Long startTs;
 
     public TxStructure(long startTs) {
         this.startTs = startTs;
-        this.txn = MetaStoreKvTxn.getInstance();
-        this.ddlTxn = MetaStoreKvTxn.getDdlInstance();
+        this.txn = MetaStoreKv.getInstance();
+        this.ddlTxn = MetaStoreKv.getDdlInstance();
     }
 
     public long getLong(byte[] key) {

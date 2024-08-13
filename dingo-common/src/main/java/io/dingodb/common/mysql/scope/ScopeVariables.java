@@ -93,6 +93,11 @@ public final class ScopeVariables {
         return (Double) executorProp.getOrDefault("request_factor", 15000D);
     }
 
+    public static boolean runDdl() {
+        String runDdl = executorProp.getOrDefault("run_ddl", "on").toString();
+        return runDdl.equalsIgnoreCase("on");
+    }
+
     public static synchronized void setExecutorProp(String key, String val) {
         if ("rpc_batch_size".equalsIgnoreCase(key)) {
             int rpcBatchSize = Integer.parseInt(val);
