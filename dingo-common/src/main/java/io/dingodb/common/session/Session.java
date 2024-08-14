@@ -134,12 +134,13 @@ public class Session {
         }
     }
 
-    public void rollback() {
+    public boolean rollback() {
         try {
             connection.rollback();
+            return true;
         } catch (SQLException e) {
             LogUtils.error(log, "session rollback error", e);
-            throw new RuntimeException(e);
+            return false;
         }
     }
 

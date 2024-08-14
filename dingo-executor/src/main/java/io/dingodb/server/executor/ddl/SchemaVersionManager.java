@@ -17,13 +17,15 @@
 package io.dingodb.server.executor.ddl;
 
 import io.dingodb.common.ddl.DdlJob;
-import io.dingodb.common.util.Pair;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.meta.InfoSchemaService;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+@Slf4j
 @Data
 public class SchemaVersionManager {
     private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -35,6 +37,7 @@ public class SchemaVersionManager {
             lockOwner.set(0);
             if (this.lock.writeLock().isHeldByCurrentThread()) {
                 lock.writeLock().unlock();
+                LogUtils.info(log, "[ddl] lock schema ver unlock, jobId:{}", jobId);
             }
         }
     }
@@ -50,6 +53,7 @@ public class SchemaVersionManager {
         if (ownId != jobId) {
             this.lock.writeLock().lock();
             this.lockOwner.set(jobId);
+            LogUtils.info(log, "[ddl] lock schema ver get lock, jobId:{}", jobId);
         }
     }
 }

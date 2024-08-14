@@ -254,10 +254,8 @@ public final class TaskImpl implements Task {
                     }
                     operator.fin(0, null, vertex);
                 } catch (RuntimeException e) {
-                    if (!(e instanceof TaskCancelException)) {
-                        LogUtils.error(log, "Run Task:{} catch operator:{} run Exception:{}",
-                            getId().toString(), vertex.getId(), e, e);
-                    }
+                    LogUtils.error(log, "Run Task:{} catch operator:{} run Exception:{}",
+                        getId().toString(), vertex.getId(), e, e);
                     status.compareAndSet(Status.RUNNING, Status.STOPPED);
                     TaskStatus taskStatus = new TaskStatus();
                     taskStatus.setStatus(false);
@@ -277,10 +275,8 @@ public final class TaskImpl implements Task {
                     try {
                         operator.fin(0, FinWithException.of(taskStatus), vertex);
                     } catch (RuntimeException exception) {
-                        if (!(exception instanceof TaskCancelException)) {
-                            LogUtils.error(log, "Run Task Fin:{} catch operator:{} run Exception:{}",
-                                getId().toString(), vertex.getId(), exception, exception);
-                        }
+                        LogUtils.error(log, "Run Task Fin:{} catch operator:{} run Exception:{}",
+                            getId().toString(), vertex.getId(), exception, exception);
                         throw exception;
                     }
                 } finally {

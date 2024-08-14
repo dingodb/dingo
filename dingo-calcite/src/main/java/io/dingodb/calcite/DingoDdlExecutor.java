@@ -21,6 +21,7 @@ import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterConvertCharset;
+import io.dingodb.calcite.grammar.ddl.SqlAlterDropIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTenant;
@@ -248,7 +249,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
 
         List<ColumnDefinition> indexColumnDefinitions = new ArrayList<>();
-        boolean isScalar = true;
+        //boolean isScalar = true;
+        int type = 1;
         if (indexDeclaration.getIndexType().equalsIgnoreCase("scalar")) {
             properties.put("indexType", "scalar");
             for (int i = 0; i < columns.size(); i++) {
@@ -280,6 +282,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             if (columns.size() <= 2) {
                 throw new RuntimeException("Index column includes at least two columns, The first one must be text_id");
             }
+            type = 3;
             int primary = 0;
             for (int i = 0; i < columns.size(); i++) {
                 String columnName = columns.get(i);
@@ -327,7 +330,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         } else {
             properties.put("indexType", "vector");
-            isScalar = false;
+            type = 2;
             int primary = 0;
             for (int i = 0; i < columns.size(); i++) {
                 String columnName = columns.get(i);
@@ -410,7 +413,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         TableDefinition indexTableDefinition = tableDefinition.copyWithName(indexDeclaration.index);
         indexTableDefinition.setColumns(indexColumnDefinitions);
         indexTableDefinition.setPartDefinition(indexDeclaration.getPartDefinition());
-        int replica = getReplica(indexDeclaration.getReplica(), isScalar);
+        int replica = getReplica(indexDeclaration.getReplica(), type);
         indexTableDefinition.setReplica(replica);
         indexTableDefinition.setProperties(properties);
         indexTableDefinition.setEngine(indexDeclaration.getEngine());
@@ -765,7 +768,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 return;
             }
         }
-        int replica = getReplica(create.getReplica(), true);
+        int replica = getReplica(create.getReplica(), 1);
 
         TableDefinition tableDefinition = TableDefinition.builder()
             .name(tableName)
@@ -1128,6 +1131,15 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         DdlService.root().dropIndex(schema.getSchemaName(), tableName, sqlDropIndex.index);
     }
 
+    public void execute(@NonNull SqlAlterDropIndex sqlDropIndex, CalcitePrepare.Context context) {
+        final Pair<SubSnapshotSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlDropIndex.table, context);
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        validateDropIndex(schema, tableName, sqlDropIndex.getIndexNm());
+        DdlService.root().dropIndex(schema.getSchemaName(), tableName, sqlDropIndex.getIndexNm());
+    }
+
     public static void validateDropIndex(SubSnapshotSchema schema, String tableName, String indexName) {
         DingoTable table = schema.getTable(tableName);
         if (table == null) {
@@ -1260,9 +1272,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         return privilegeDefinition;
     }
 
-    public static int getReplica(int targetReplica, boolean isScalar) {
+    public static int getReplica(int targetReplica, int type) {
         int replica;
-        if (isScalar) {
+        if (type == 1) {
             replica = InfoSchemaService.root().getStoreReplica();
             if (targetReplica == 0) {
                 return replica;
@@ -1270,8 +1282,16 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             if (targetReplica > 0 && replica < targetReplica) {
                 throw DINGO_RESOURCE.notEnoughRegion().ex();
             }
-        } else {
+        } else if (type == 2) {
             replica = InfoSchemaService.root().getIndexReplica();
+            if (targetReplica == 0) {
+                return replica;
+            }
+            if (targetReplica > 0 && replica < targetReplica) {
+                throw DINGO_RESOURCE.notEnoughRegion().ex();
+            }
+        } else if (type == 3) {
+            replica = InfoSchemaService.root().getDocumentReplica();
             if (targetReplica == 0) {
                 return replica;
             }

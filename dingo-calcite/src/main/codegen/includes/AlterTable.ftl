@@ -30,6 +30,13 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
             alterTable = addColumn(s, scope, id)
 	    )
 	  |
+         <DROP>
+         (
+           alterTable = dropIndex(s, scope, id)
+           |
+           alterTable = dropColumn(s, scope, id)
+         )
+        |
         <ALTER>
         alterTable = alterIndex(s, scope, id)
 	    <CONVERT> <TO>
@@ -83,6 +90,27 @@ SqlAlterTable addColumn(Span s, String scope, SqlIdentifier id): {
         ));
     }
 }
+
+SqlAlterTable dropIndex(Span s, String scope, SqlIdentifier id): {
+  String index;
+} {
+   <INDEX> { s.add(this); }
+   { index = getNextToken().image; }
+   {
+     return new SqlAlterDropIndex(s.end(this), id, index);
+   }
+}
+
+SqlAlterTable dropColumn(Span s, String scope, SqlIdentifier id): {
+  String column;
+} {
+   <COLUMN> { s.add(this); }
+   { column = getNextToken().image; }
+   {
+     return new SqlAlterDropColumn(s.end(this), id, column);
+   }
+}
+
 
 SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
     final String index;
