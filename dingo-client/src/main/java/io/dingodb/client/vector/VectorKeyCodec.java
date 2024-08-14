@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.client.vector;
+package io.dingodb.client.vec tor;
 
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.scalar.LongType;

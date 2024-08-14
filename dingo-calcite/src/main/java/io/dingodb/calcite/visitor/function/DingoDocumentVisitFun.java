@@ -43,7 +43,6 @@ import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.fun.document.DocumentTextFun;
 import io.dingodb.exec.operator.params.PartDocumentParam;
 import io.dingodb.exec.operator.params.TxnPartDocumentParam;
 //import io.dingodb.exec.restful.DocumentExtract;
@@ -55,8 +54,6 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
-import io.dingodb.store.api.transaction.data.IsolationLevel;
-import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
@@ -66,7 +63,6 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNumericLiteral;
@@ -89,7 +85,6 @@ import static io.dingodb.calcite.rel.LogicalDingoTableScan.getIndexMetricType;
 import static io.dingodb.common.util.Utils.isNeedLookUp;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_VECTOR;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_DOCUMENT;
-import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_VECTOR;
 
 @Slf4j
 public final class DingoDocumentVisitFun {
@@ -131,7 +126,7 @@ public final class DingoDocumentVisitFun {
         if (documentColNmIdf != null) {
             documentColNm = documentColNmIdf.getSimple();
         }
-        String[] tokenArray = getDocumentTokens(operandsList);
+        String[] keyword = getDocumentKeyword(operandsList);
 
         if (!(operandsList.get(3) instanceof SqlNumericLiteral)) {
             throw new IllegalArgumentException("Top n not number.");
@@ -216,7 +211,7 @@ public final class DingoDocumentVisitFun {
                     td,
                     ranges,
                     rel.getIndexTableId(),
-                    tokenArray,
+                    keyword,
                     topN,
                     parameterMap
                 );
@@ -245,7 +240,7 @@ public final class DingoDocumentVisitFun {
                     rel.tupleType(),
                     td,
                     ranges,
-                    tokenArray,
+                    keyword,
                     topN,
                     parameterMap,
                     indexTable,
@@ -273,26 +268,20 @@ public final class DingoDocumentVisitFun {
         return outputs;
     }
 
-    public static String[] getDocumentTokens(List<Object> operandsList) {
-        String[] tokenArray = null;
+    public static String[] getDocumentKeyword(List<Object> operandsList) {
+        String[] keyword = new String[2];
         Object call = operandsList.get(2);
         if (call instanceof RexCall) {
             RexCall rexCall = (RexCall) call;
-            int documentDimension = rexCall.getOperands().size();
-            tokenArray = new String[documentDimension];
-            for (int i = 0; i < documentDimension; i++) {
-                RexLiteral literal = (RexLiteral) rexCall.getOperands().get(i);
-                tokenArray[i] = literal.getValueAs(String.class);
-            }
-            return tokenArray;
+            String keywordStr = rexCall.getOperands().toString();
+            keyword = keywordStr.split(":");
+            return keyword;
         }
         SqlBasicCall basicCall = (SqlBasicCall) operandsList.get(2);
         if (basicCall.getOperator() instanceof SqlArrayValueConstructor) {
-            List<SqlNode> operands = basicCall.getOperandList();
-            tokenArray = new String[operands.size()];
-            for (int i = 0; i < operands.size(); i++) {
-                tokenArray[i] = Objects.requireNonNull(((SqlNumericLiteral) operands.get(i)).getValue()).toString();
-            }
+            String operands = basicCall.getOperandList().toString();
+            keyword = operands.split(":");
+            return keyword;
         } else {
             List<SqlNode> sqlNodes = basicCall.getOperandList();
             if (sqlNodes.size() < 2) {
@@ -315,10 +304,10 @@ public final class DingoDocumentVisitFun {
                 param = param.replace("'", "");
             }
         }
-        if (tokenArray == null) {
+        if (keyword == null) {
             throw new RuntimeException("document load error");
         }
-        return tokenArray;
+        return keyword;
     }
 
     private static Map<String, Object> getParameterMap(List<Object> operandsList) {

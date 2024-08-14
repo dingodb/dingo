@@ -51,7 +51,7 @@ public final class PartDocumentOperator extends FilterProjectSourceOperator {
         // Get all table data response
         List<DocumentSearchResponse> searchResponseList = instance.documentSearch(
             param.getIndexId(),
-            param.getTokenArray(),
+            param.getkeywords(),
             param.getTopN(),
             param.getParameterMap());
         for (DocumentSearchResponse response : searchResponseList) {
