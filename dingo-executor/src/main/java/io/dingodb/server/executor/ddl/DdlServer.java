@@ -241,6 +241,7 @@ public final class DdlServer {
         long start = System.currentTimeMillis();
         if (latestSchemaVersion == 0) {
             LogUtils.error(log, "[ddl] schema version doesn't change, jobId:{}", job.getId());
+            return;
         }
         try {
             dc.getSchemaSyncer().ownerUpdateGlobalVersion(latestSchemaVersion);

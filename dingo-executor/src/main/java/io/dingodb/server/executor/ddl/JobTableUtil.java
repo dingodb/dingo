@@ -137,9 +137,11 @@ public final class JobTableUtil {
             if (!resList.isEmpty()) {
                 DingoMetrics.metricRegistry.timer("getJobSql").update(cost, TimeUnit.MILLISECONDS);
             }
-            LogUtils.info(log, "get job size:{}", resList.size()
-                + ", runningJobs:" + DdlContext.INSTANCE.getRunningJobs().size()
-                + ", query job sql cost:" + cost);
+            if (cost > 200) {
+                LogUtils.info(log, "get job size:{}", resList.size()
+                    + ", runningJobs:" + DdlContext.INSTANCE.getRunningJobs().size()
+                    + ", query job sql cost:" + cost);
+            }
             for (Object[] rows : resList) {
                 byte[] bytes = (byte[]) rows[0];
                 DdlJob ddlJob;

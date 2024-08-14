@@ -82,15 +82,18 @@ public class DdlWorker {
         // onJobRunBefore
         onJobRunBefore(job);
         dc.rUnlock();
-
         Pair<Long, String> res = runDdlJob(dc, job);
+        if (res == null) {
+            LogUtils.error(log, "");
+            return Pair.of(0L, "run ddl job get res null, job:{}");
+        }
         long schemaVer = res.getKey();
         if (job.isCancelled()) {
             LogUtils.warn(log, "[ddl] job is cancelled, txn will rollback, jobId:{}", job.getId());
-            dc.getSv().unlockSchemaVersion(job.getId());
             // session reset
             session.rollback();
             String error = handleJobDone(job);
+            dc.getSv().unlockSchemaVersion(job.getId());
             LogUtils.warn(log, "[ddl] job is cancelled, handleJobDone, jobId:{}", job.getId());
             return Pair.of(0L, error);
         }
@@ -117,10 +120,15 @@ public class DdlWorker {
             LogUtils.warn(log, "[ddl] update ddl job failed, reason:{}, jobId:{}", error, job.getId());
             return Pair.of(0L, error);
         }
-        // session commit;
-        session.commit();
-        // unlockSchemaVersion
-        dc.getSv().unlockSchemaVersion(job.getId());
+        try {
+            // session commit;
+            session.commit();
+        } catch (Exception e) {
+            LogUtils.error(log, "[ddl] run and update ddl job commit error," + e.getMessage(), e);
+        } finally {
+            // unlockSchemaVersion
+            dc.getSv().unlockSchemaVersion(job.getId());
+        }
 
         registerSync(dc, job);
         if (res.getValue() != null) {
@@ -377,7 +385,11 @@ public class DdlWorker {
             job.setState(JobState.jobStateCancelled);
             return Pair.of(0L, job.getError());
         }
-        ms.truncateTable(job.getTableName(), newTableId);
+        try {
+            ms.truncateTable(job.getTableName(), newTableId);
+        } catch (Exception e) {
+            LogUtils.error(log, "truncate table error", e);
+        }
         //job.setTableId(tableId);
         res = updateSchemaVersion(dc, job);
         if (res.getValue() != null) {
@@ -436,7 +448,11 @@ public class DdlWorker {
                 }
                 MetaService rootMs = MetaService.root();
                 MetaService ms = rootMs.getSubMetaService(job.getSchemaName());
-                ms.dropTable(tableInfo.getTableDefinition().getName());
+                try {
+                    ms.dropTable(tableInfo.getTableDefinition().getName());
+                } catch (Exception e) {
+                    LogUtils.error(log, "drop table error", e);
+                }
                 job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_NONE);
                 break;
             default:
@@ -561,15 +577,20 @@ public class DdlWorker {
             case SCHEMA_DELETE_REORG:
                 indexWithId.getTableDefinition().setSchemaState(SCHEMA_NONE);
                 job.setSchemaState(SchemaState.SCHEMA_NONE);
-                MetaService.root().dropIndex(table.getTableId(), Mapper.MAPPER.idFrom(indexWithId.getTableId()));
                 if (job.isRollingback()) {
                     job.finishTableJob(JobState.jobStateRollbackDone, SchemaState.SCHEMA_NONE);
                 } else {
                     job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_NONE);
                 }
-                return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId,
+                Pair<Long, String> res = TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId,
                     originState != indexWithId.getTableDefinition().getSchemaState()
                 );
+                try {
+                    MetaService.root().dropIndex(table.getTableId(), Mapper.MAPPER.idFrom(indexWithId.getTableId()));
+                } catch (Exception e) {
+                    LogUtils.error(log, "drop index error", e);
+                }
+                return res;
             default:
                 error = "ErrInvalidDDLState";
                 break;

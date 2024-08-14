@@ -16,10 +16,12 @@
 
 package io.dingodb.exec.transaction.util;
 
+import com.codahale.metrics.Timer;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
@@ -195,6 +197,8 @@ public class Txn {
 
     public static boolean txnPreWrite(PreWriteParam param, CommonId txnId, CommonId tableId, CommonId partId) {
         // 1、call sdk TxnPreWrite
+        int size = param.getMutations().size();
+        Timer.Context timeCtx = DingoMetrics.getTimeContext("preWriteSize" + size);
         param.setTxnSize(param.getMutations().size());
         TxnPreWrite txnPreWrite = TxnPreWrite.builder()
             .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
@@ -240,6 +244,8 @@ public class Txn {
             }
 
             return true;
+        } finally {
+            timeCtx.stop();
         }
     }
 

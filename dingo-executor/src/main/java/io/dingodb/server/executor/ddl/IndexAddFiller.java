@@ -23,7 +23,6 @@ import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.ddl.ReorgBackFillTask;
 import io.dingodb.common.log.LogUtils;
-import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
@@ -47,7 +46,6 @@ import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
-import io.dingodb.server.executor.ddl.BackFillResult;
 import io.dingodb.server.executor.service.BackFiller;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.meta.entity.Table;
@@ -59,6 +57,7 @@ import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
+import io.dingodb.common.metrics.DingoMetrics;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -88,6 +87,7 @@ public class IndexAddFiller implements BackFiller {
     byte[] primaryKey;
     long timeOut = 50000;
     Future<?> future;
+    private static final long preBatch = 1024;
 
     long ownerRegionId;
     Iterator<Object[]> tupleIterator;
@@ -220,11 +220,21 @@ public class IndexAddFiller implements BackFiller {
         if (task.getRegionId().seq != ownerRegionId) {
             StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, task.getRegionId());
             KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.getVersion(), table.tupleType(), table.keyMapping());
-            Iterator<KeyValue> iterator = kvStore.txnScan(
-                task.getStartTs(),
-                new StoreInstance.Range(task.getStart(), task.getEnd(), task.isWithStart(), task.isWithEnd()),
-                50000
-            );
+            Iterator<KeyValue> iterator = null;
+            int retry = 3;
+            while (retry -- > 0) {
+                try {
+                    iterator = kvStore.txnScan(
+                        task.getStartTs(),
+                        new StoreInstance.Range(task.getStart(), task.getEnd(), task.isWithStart(), task.isWithEnd()),
+                        50000
+                    );
+                } catch (RegionSplitException ignored) {
+                }
+            }
+            if (iterator == null) {
+                throw new RuntimeException("index reorg scan error");
+            }
             tupleIterator = Iterators.transform(iterator,
                 wrap(codec::decode)::apply
             );
@@ -234,7 +244,7 @@ public class IndexAddFiller implements BackFiller {
         long end = System.currentTimeMillis();
         LogUtils.info(log, "pre write second, init iterator cost:{}ms", (end - start));
         Map<String, TxnLocalData> caches = new TreeMap<>();
-        int batchCnt = 1024;
+        //int batchCnt = 1024;
         long scanCount = 0;
         while (tupleIterator.hasNext()) {
             scanCount += 1;
@@ -244,12 +254,10 @@ public class IndexAddFiller implements BackFiller {
             if (!caches.containsKey(cacheKey)) {
                 caches.put(cacheKey, txnLocalData);
             }
-            if (caches.size() % batchCnt == 0) {
+            if (caches.size() % preBatch == 0) {
                 try {
-                    Timer.Context timeCtx = DingoMetrics.getTimeContext("index_reorg_prewrite");
                     List<TxnLocalData> txnLocalDataList = new ArrayList<>(caches.values());
                     preWriteSecondSkipConflict(txnLocalDataList);
-                    timeCtx.stop();
                 } finally {
                     caches.clear();
                 }
@@ -402,7 +410,9 @@ public class IndexAddFiller implements BackFiller {
 
     private void preWriteSecondSkipConflict(List<TxnLocalData> secondList) {
         try {
+            Timer.Context timeCtx = DingoMetrics.getTimeContext("indexReorgPreSecond" + secondList.size());
             preWriteSecondKey(secondList);
+            timeCtx.stop();
         } catch (WriteConflictException e) {
             conflict.incrementAndGet();
             if (e.doneCnt > 0) {
@@ -421,6 +431,7 @@ public class IndexAddFiller implements BackFiller {
     }
 
     private void removeDoneKey(List<TxnLocalData> secondList, List<Mutation> mutationList) {
+        Timer.Context timeCtx = DingoMetrics.getTimeContext("removeDoneKey");
         StoreInstance localStore = Services.LOCAL_STORE.getInstance(null, null);
         addCount.addAndGet(mutationList.size());
         secondList.forEach(txnLocalData -> {
@@ -439,12 +450,14 @@ public class IndexAddFiller implements BackFiller {
                 localStore.put(extraKeyValue);
             }
         });
+        timeCtx.stop();
     }
 
     private void preWriteSecondKey(List<TxnLocalData> secondList) {
         if (secondList.isEmpty()) {
             return;
         }
+        long start = System.currentTimeMillis();
         PreWriteParam param = new PreWriteParam(dingoType, primaryKey, txnId.seq,
             isolationLevel, TransactionType.OPTIMISTIC, timeOut);
         param.init(null);
@@ -465,26 +478,34 @@ public class IndexAddFiller implements BackFiller {
                     param.addMutation(mutation);
                 } else if (partId.equals(newPartId)) {
                     param.addMutation(mutation);
-                    if (param.getMutations().size() == TransactionUtil.max_pre_write_count) {
+                    if (param.getMutations().size() == preBatch) {
+                        long sub = System.currentTimeMillis() - start;
+                        LogUtils.debug(log, "pre write 1024 cost:{}", sub);
                         boolean result = Txn.txnPreWrite(param, txnId, indexTable.tableId, partId);
+                        sub = System.currentTimeMillis() - start;
+                        LogUtils.debug(log, "pre write 1024 cost:{}", sub);
+
                         if (!result) {
                             throw new RuntimeException(txnId + " " + partId + ",txnPreWrite false,PrimaryKey:"
                                 + Arrays.toString(param.getPrimaryKey()));
                         }
                         preDoneCnt += param.getMutations().size();
                         removeDoneKey(secondList, param.getMutations());
-                        //addCount.addAndGet(param.getMutations().size());
                         param.getMutations().clear();
                         param.setPartId(null);
+                        long tmp = System.currentTimeMillis();
+                        sub = tmp - start;
+                        LogUtils.debug(log, "pre write and remove doen key 1024 cost:{}", sub);
+                        start = tmp;
                     }
                 } else {
+                    LogUtils.info(log, "pre write diff partId");
                     boolean result = Txn.txnPreWrite(param, txnId, param.getTableId(), partId);
                     if (!result) {
                         throw new RuntimeException(txnId + " " + partId + ",txnPreWrite false,PrimaryKey:"
                             + Arrays.toString(param.getPrimaryKey()));
                     }
                     preDoneCnt += param.getMutations().size();
-                    //addCount.addAndGet(param.getMutations().size());
                     removeDoneKey(secondList, param.getMutations());
                     param.getMutations().clear();
                     param.addMutation(mutation);
@@ -496,7 +517,7 @@ public class IndexAddFiller implements BackFiller {
             e.doneCnt += preDoneCnt;
             throw e;
         }
-
+        long end1 = System.currentTimeMillis();
         if (!param.getMutations().isEmpty()) {
             try {
                 boolean result = Txn.txnPreWrite(param, txnId, param.getTableId(), param.getPartId());
@@ -505,7 +526,6 @@ public class IndexAddFiller implements BackFiller {
                         + Arrays.toString(param.getPrimaryKey()));
                 }
                 preDoneCnt += param.getMutations().size();
-                //addCount.addAndGet(param.getMutations().size());
                 removeDoneKey(secondList, param.getMutations());
                 param.getMutations().clear();
             } catch (WriteConflictException e) {
@@ -513,5 +533,6 @@ public class IndexAddFiller implements BackFiller {
                 throw e;
             }
         }
+        LogUtils.debug(log, "index reorg mod done, cost:{}", (System.currentTimeMillis() - end1));
     }
 }
