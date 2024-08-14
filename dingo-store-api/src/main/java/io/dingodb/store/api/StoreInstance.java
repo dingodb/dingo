@@ -171,13 +171,13 @@ public interface StoreInstance {
     }
 
     default List<DocumentSearchResponse> documentSearch(
-        CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap
+        CommonId indexId, String[] tokenArray, int topN, Map<String, Object> parameterMap
     ) {
-        return documentSearch(System.identityHashCode(floatArray), indexId, floatArray, topN, parameterMap, null);
+        return documentSearch(System.identityHashCode(tokenArray), indexId, tokenArray, topN, parameterMap, null);
     }
 
     default List<DocumentSearchResponse> documentSearch(
-        long requestTs, CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap, CoprocessorV2 coprocessorV2
+        long requestTs, CommonId indexId, String[] tokenArray, int topN, Map<String, Object> parameterMap, CoprocessorV2 coprocessorV2
     ) {
         throw new UnsupportedOperationException();
     }

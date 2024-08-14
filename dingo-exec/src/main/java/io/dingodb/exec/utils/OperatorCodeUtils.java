@@ -34,12 +34,15 @@ public final class OperatorCodeUtils {
     public static final CommonId RECEIVE = new CommonId(CommonId.CommonType.OP, SOURCE, 7);
     public static final CommonId REMOVE_PART = new CommonId(CommonId.CommonType.OP, SOURCE, 8);
     public static final CommonId VALUES = new CommonId(CommonId.CommonType.OP, SOURCE, 9);
+    public static final CommonId PART_DOCUMENT = new CommonId(CommonId.CommonType.OP, SOURCE, 10);
     // txn source
     public static final CommonId TXN_LIKE_SCAN = new CommonId(CommonId.CommonType.OP, SOURCE, 11);
     public static final CommonId SCAN_CACHE = new CommonId(CommonId.CommonType.OP, SOURCE, 12);
     public static final CommonId INFO_SCHEMA_SCAN = new CommonId(CommonId.CommonType.OP, SOURCE, 13);
     public static final CommonId TXN_PART_VECTOR = new CommonId(CommonId.CommonType.OP, SOURCE, 14);
     public static final CommonId CALC_DISTRIBUTION_1 = new CommonId(CommonId.CommonType.OP, SOURCE, 15);
+    public static final CommonId TXN_PART_DOCUMENT = new CommonId(CommonId.CommonType.OP, SOURCE, 16);
+
 
     // op
     public static final CommonId PROJECT = new CommonId(CommonId.CommonType.OP, OP, 20);

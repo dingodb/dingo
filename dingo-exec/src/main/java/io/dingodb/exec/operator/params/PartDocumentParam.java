@@ -43,7 +43,7 @@ public class PartDocumentParam extends FilterProjectSourceParam {
     private final Table table;
     private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     private final CommonId indexId;
-    private final Float[] floatArray;
+    private final String[] tokenArray;
     private final int topN;
     private final Map<String, Object> parameterMap;
 
@@ -57,7 +57,7 @@ public class PartDocumentParam extends FilterProjectSourceParam {
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
         CommonId indexId,
-        Float[] floatArray,
+        String[] tokenArray,
         int topN,
         Map<String, Object> parameterMap
     ) {
@@ -66,7 +66,7 @@ public class PartDocumentParam extends FilterProjectSourceParam {
         this.table = table;
         this.distributions = distributions;
         this.indexId = indexId;
-        this.floatArray = floatArray;
+        this.tokenArray= tokenArray;
         this.topN = topN;
         this.parameterMap = parameterMap;
     }

@@ -88,6 +88,7 @@ import java.util.stream.Collectors;
 import static io.dingodb.calcite.rel.LogicalDingoTableScan.getIndexMetricType;
 import static io.dingodb.common.util.Utils.isNeedLookUp;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_VECTOR;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_DOCUMENT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_VECTOR;
 
 @Slf4j
@@ -130,7 +131,7 @@ public final class DingoDocumentVisitFun {
         if (documentColNmIdf != null) {
             documentColNm = documentColNmIdf.getSimple();
         }
-        Float[] floatArray = getDocumentFloats(operandsList);
+        String[] tokenArray = getDocumentTokens(operandsList);
 
         if (!(operandsList.get(3) instanceof SqlNumericLiteral)) {
             throw new IllegalArgumentException("Top n not number.");
@@ -215,7 +216,7 @@ public final class DingoDocumentVisitFun {
                     td,
                     ranges,
                     rel.getIndexTableId(),
-                    floatArray,
+                    tokenArray,
                     topN,
                     parameterMap
                 );
@@ -244,7 +245,7 @@ public final class DingoDocumentVisitFun {
                     rel.tupleType(),
                     td,
                     ranges,
-                    floatArray,
+                    tokenArray,
                     topN,
                     parameterMap,
                     indexTable,
@@ -258,7 +259,7 @@ public final class DingoDocumentVisitFun {
                     documentIdx,
                     metricType
                 );
-                vertex = new Vertex(TXN_PART_VECTOR, param);
+                vertex = new Vertex(TXN_PART_DOCUMENT, param);
             }
             Task task = job.getOrCreate(currentLocation, idGenerator);
             OutputHint hint = new OutputHint();
@@ -272,27 +273,25 @@ public final class DingoDocumentVisitFun {
         return outputs;
     }
 
-    public static Float[] getDocumentFloats(List<Object> operandsList) {
-        Float[] floatArray = null;
+    public static String[] getDocumentTokens(List<Object> operandsList) {
+        String[] tokenArray = null;
         Object call = operandsList.get(2);
         if (call instanceof RexCall) {
             RexCall rexCall = (RexCall) call;
-            floatArray = new Float[rexCall.getOperands().size()];
             int documentDimension = rexCall.getOperands().size();
+            tokenArray = new String[documentDimension];
             for (int i = 0; i < documentDimension; i++) {
                 RexLiteral literal = (RexLiteral) rexCall.getOperands().get(i);
-                floatArray[i] = literal.getValueAs(Float.class);
+                tokenArray[i] = literal.getValueAs(String.class);
             }
-            return floatArray;
+            return tokenArray;
         }
         SqlBasicCall basicCall = (SqlBasicCall) operandsList.get(2);
         if (basicCall.getOperator() instanceof SqlArrayValueConstructor) {
             List<SqlNode> operands = basicCall.getOperandList();
-            floatArray = new Float[operands.size()];
+            tokenArray = new String[operands.size()];
             for (int i = 0; i < operands.size(); i++) {
-                floatArray[i] = (
-                    (Number) Objects.requireNonNull(((SqlNumericLiteral) operands.get(i)).getValue())
-                ).floatValue();
+                tokenArray[i] = Objects.requireNonNull(((SqlNumericLiteral) operands.get(i)).getValue()).toString();
             }
         } else {
             List<SqlNode> sqlNodes = basicCall.getOperandList();
@@ -316,10 +315,10 @@ public final class DingoDocumentVisitFun {
                 param = param.replace("'", "");
             }
         }
-        if (floatArray == null) {
+        if (tokenArray == null) {
             throw new RuntimeException("document load error");
         }
-        return floatArray;
+        return tokenArray;
     }
 
     private static Map<String, Object> getParameterMap(List<Object> operandsList) {

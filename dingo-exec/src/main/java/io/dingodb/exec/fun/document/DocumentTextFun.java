@@ -29,7 +29,7 @@ import java.util.Arrays;
 public class DocumentTextFun extends BinaryOp {
     public static final DocumentTextFun INSTANCE = new DocumentTextFun();
 
-    public static final String NAME = "txt2vec";
+    public static final String NAME = "txt2token";
 
     private static final long serialVersionUID = 8043535092918925720L;
 
@@ -38,7 +38,7 @@ public class DocumentTextFun extends BinaryOp {
 
     @Override
     public Type getType() {
-        return Types.LIST_FLOAT;
+        return Types.LIST_STRING;
     }
 
     @Override

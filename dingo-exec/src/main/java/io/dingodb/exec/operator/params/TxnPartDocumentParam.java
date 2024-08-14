@@ -60,7 +60,7 @@ public class TxnPartDocumentParam extends FilterProjectSourceParam {
 
     private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     private final CommonId indexId;
-    private final Float[] floatArray;
+    private final String[] tokenArray;
     private final int topN;
     private final Map<String, Object> parameterMap;
     private final IndexTable indexTable;
@@ -93,7 +93,7 @@ public class TxnPartDocumentParam extends FilterProjectSourceParam {
         DingoType schema,
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
-        Float[] floatArray,
+        String[] tokenArray,
         int topN,
         Map<String, Object> parameterMap,
         Table indexTable,
@@ -111,7 +111,7 @@ public class TxnPartDocumentParam extends FilterProjectSourceParam {
         this.table = table;
         this.distributions = distributions;
         this.indexId = indexTable.tableId;
-        this.floatArray = floatArray;
+        this.tokenArray = tokenArray;
         this.topN = topN;
         this.parameterMap = parameterMap;
         this.indexTable = (IndexTable) indexTable;
