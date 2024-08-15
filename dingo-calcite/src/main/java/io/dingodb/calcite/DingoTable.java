@@ -21,11 +21,13 @@ import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.schema.SubSnapshotSchema;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.meta.TableStatistic;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelDistribution;
@@ -45,6 +47,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
 public class DingoTable extends AbstractTable implements TranslatableTable {
 
@@ -83,17 +86,9 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
         try {
             return (SubSnapshotSchema) context.getSchemaByNames(names).schema;
         } catch (Exception e) {
-            System.out.println("ss");
+            LogUtils.error(log, e.getMessage(), e);
             return null;
         }
-    }
-
-    public CommonId getIndexId(String name) {
-        return indexTableDefinitions.stream()
-            .filter(i -> i.getName().equalsIgnoreCase(name))
-            .findAny()
-            .map(IndexTable::getTableId)
-            .orElse(null);
     }
 
     public IndexTable getIndexDefinition(String name) {
