@@ -284,7 +284,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         } else if (indexDeclaration.getIndexType().equalsIgnoreCase("text")) {
             properties.put("indexType", "document");
-            if (columns.size() <= 1) {
+            if (columns.size() <= 2) {
                 throw new RuntimeException("Index column includes at least two columns, The first one must be text_id");
             }
             int primary = 0;
@@ -297,7 +297,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
                     .findFirst().get();
                 if (i == 0) {
-                    if (!columnDefinition.getTypeName().equals("INTEGER")
+                    if (!columnDefinition.getTypeName().equals("LONG")
                         && !columnDefinition.getTypeName().equals("BIGINT")) {
                         throw new RuntimeException("Invalid column type: " + columnName);
                     }
@@ -307,7 +307,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     }
                 } else {
                     if (!columnDefinition.getTypeName().equals("BIGINT")
-                        && !columnDefinition.getTypeName().equals("INTEGER")
+                        && !columnDefinition.getTypeName().equals("LONG")
                         && !columnDefinition.getTypeName().equals("DOUBLE")
                         && !columnDefinition.getTypeName().equals("VARCHAR")
                         && !columnDefinition.getTypeName().equals("STRING")
