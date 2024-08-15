@@ -445,7 +445,11 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         String sql,
         long maxRowCount
     ) throws SQLException, NoSuchStatementException {
-        this.command = sql;
+        if (sql.length() > 1000) {
+            this.command = sql.substring(0, 1000);
+        } else {
+            this.command = sql;
+        }
         this.commandStartTime = System.currentTimeMillis();
         try {
             return super.prepareAndExecuteInternal(statement, sql, maxRowCount);
@@ -568,14 +572,14 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 if (ids.containsKey(tableId) && useSchemaVer < ver) {
                     jobVerIterator.remove();
                     mdlLockJobMap.put(jobId, jobId);
-                    if (transaction != null) {
-                        List<String> sqlList = transaction.getSqlList();
-                        StringBuilder sqlBuilder = new StringBuilder();
-                        for (String sql : sqlList) {
-                            sqlBuilder.append(sql).append(";");
-                        }
-                        log.info("[ddl] conn remove mdl lock,jobId:" + jobId + ", sql:" + sqlBuilder.toString());
-                    }
+                    //if (transaction != null) {
+                    //    List<String> sqlList = transaction.getSqlList();
+                    //    StringBuilder sqlBuilder = new StringBuilder();
+                    //    for (String sql : sqlList) {
+                    //        sqlBuilder.append(sql).append(";");
+                    //    }
+                    //    log.info("[ddl] conn remove mdl lock,jobId:" + jobId + ", sql:" + sqlBuilder.toString());
+                    //}
                 }
             }
         }

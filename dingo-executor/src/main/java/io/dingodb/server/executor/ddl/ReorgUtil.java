@@ -27,12 +27,12 @@ public final class ReorgUtil {
     private ReorgUtil() {
     }
 
-    public static void cleanupDDLReorgHandles(DdlJob job, Session session) {
+    public static void cleanupDDLReorgHandles(DdlJob job) {
         if (job != null && !job.isFinished() && !job.isSynced()) {
             return;
         }
         try {
-            JobTableUtil.cleanDDLReorgHandles(session, job);
+            JobTableUtil.cleanDDLReorgHandles(job);
         } catch (Exception e) {
             LogUtils.warn(log, "Failed removing the DDL reorg entry in dingo_ddl_reorg");
         }

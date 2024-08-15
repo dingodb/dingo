@@ -47,4 +47,12 @@ public class MdlCheckTableInfo {
         lock.readLock().unlock();
     }
 
+    @Override
+    public String toString() {
+        return "MdlCheckTableInfo{" +
+            "newestVer=" + newestVer +
+            ", jobsVerMap=" + jobsVerMap +
+            ", jobsIdsMap=" + jobsIdsMap +
+            '}';
+    }
 }

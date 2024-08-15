@@ -23,6 +23,7 @@ import io.dingodb.common.ddl.DdlJobEvent;
 import io.dingodb.common.ddl.DdlJobEventSource;
 import io.dingodb.common.ddl.DdlJobListenerImpl;
 import io.dingodb.common.ddl.DdlUtil;
+import io.dingodb.common.ddl.JobState;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
@@ -69,7 +70,7 @@ public final class DdlServer {
 //    }
 
     public static void startLoadDDLAndRunByEtcd() {
-        Utils.sleep(1000);
+        Utils.sleep(100);
         Session session = SessionUtil.INSTANCE.getSession();
         try {
             session.setAutoCommit(true);
@@ -84,6 +85,7 @@ public final class DdlServer {
     public static boolean startLoadDDLAndRun(DdlJobEvent ddlJobEvent) {
         Session session = SessionUtil.INSTANCE.getSession();
         try {
+            LogUtils.info(log, "start job by local event");
             session.setAutoCommit(true);
             startLoadDDLAndRun(session);
         } catch (Exception e) {
@@ -146,6 +148,7 @@ public final class DdlServer {
     public static void delivery2worker(DdlWorker worker, DdlJob ddlJob, DdlWorkerPool pool) {
         DdlContext dc = DdlContext.INSTANCE;
         dc.insertRunningDDLJobMap(ddlJob.getId());
+        LogUtils.info(log, "delivery 2 worker");
         Executors.submit("ddl-worker", () -> {
             Timer.Context timeCtx = DingoMetrics.getTimeContext("ddlJobRun");
             try {
@@ -193,6 +196,15 @@ public final class DdlServer {
             } catch (Exception e) {
                 LogUtils.error(log, "delivery2worker failed", e);
             } finally {
+                if (ddlJob.isDone() || ddlJob.isRollbackDone()) {
+                    if (ddlJob.isDone()) {
+                        ddlJob.setState(JobState.jobStateSynced);
+                    }
+                    String error = worker.handleJobDone(ddlJob);
+                    if (error != null) {
+                        LogUtils.error(log, "[ddl-error] handle job done error:{}", error);
+                    }
+                }
                 dc.deleteRunningDDLJobMap(ddlJob.getId());
                 pool.returnObject(worker);
                 timeCtx.stop();

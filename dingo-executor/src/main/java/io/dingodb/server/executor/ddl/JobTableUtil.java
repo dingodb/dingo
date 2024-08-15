@@ -56,12 +56,17 @@ public final class JobTableUtil {
         return session.executeUpdate(sql);
     }
 
-    public static void cleanDDLReorgHandles(Session session, DdlJob job) {
+    public static void cleanDDLReorgHandles(DdlJob job) {
         String sql = "delete from mysql.dingo_ddl_reorg where job_id = " + job.getId();
-        session.runInTxn(session1 -> {
-            session1.executeUpdate(sql);
-            return null;
-        });
+        Session session = SessionUtil.INSTANCE.getSession();
+        try {
+            session.runInTxn(session1 -> {
+                session1.executeUpdate(sql);
+                return null;
+            });
+        } finally {
+            SessionUtil.INSTANCE.closeSession(session);
+        }
     }
 
     public static String deleteDDLJob(Session session, DdlJob job) {
