@@ -81,7 +81,7 @@ public final class LoadInfoSchemaTask {
     }
 
     public static void loadInfoByEtcd() {
-        Utils.sleep(400);
+        Utils.sleep(40);
         loadInfo();
     }
 
@@ -254,8 +254,8 @@ public final class LoadInfoSchemaTask {
                 Long jobId = (Long) objects[0];
                 mdlCheckTableInfo.getJobsIdsMap().put(jobId, (String) objects[2]);
                 mdlCheckTableInfo.getJobsVerMap().put(jobId, (Long) objects[1]);
-                LogUtils.info(log, "[ddl] load mdl table info:{}", mdlCheckTableInfo);
             });
+            LogUtils.info(log, "[ddl] load mdl table info:{}", mdlCheckTableInfo);
         } finally {
             mdlCheckTableInfo.wUnlock();
         }

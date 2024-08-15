@@ -21,7 +21,6 @@ import io.dingodb.common.ddl.MdlCheckTableInfo;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.util.Utils;
-import io.dingodb.meta.entity.InfoCache;
 import io.dingodb.server.executor.ddl.DdlContext;
 import io.dingodb.server.executor.session.SessionManager;
 import lombok.extern.slf4j.Slf4j;
@@ -47,20 +46,29 @@ public final class MetaLockCheckHandler {
             try {
                 Utils.sleep(50);
                 MdlCheckTableInfo mdlCheckTableInfo = ExecutionEnvironment.INSTANCE.mdlCheckTableInfo;
+                if (DdlUtil.timeOutError.get()) {
+                    LogUtils.info(log, "mdl check continue, save ver:{}", saveMaxSchemaVersion);
+                }
                 mdlCheckTableInfo.wLock();
                 long maxVer = mdlCheckTableInfo.getNewestVer();
+                if (DdlUtil.timeOutError.get()) {
+                    LogUtils.info(log, "mdl check maxVer:{}, save ver:{}, jobNeedToSync:{}", maxVer, saveMaxSchemaVersion, jobNeedToSync);
+                }
                 if (maxVer > saveMaxSchemaVersion) {
                     saveMaxSchemaVersion = maxVer;
                 } else if (!jobNeedToSync) {
                     mdlCheckTableInfo.wUnlock();
-                    //LogUtils.info(log, "[ddl] mdl check not need to sync,max ver:{} saveMaxSchema ver:{}", maxVer, saveMaxSchemaVersion);
+                    if (DdlUtil.timeOutError.get()) {
+                        LogUtils.info(log, "[ddl] mdl check not need to sync,max ver:{} saveMaxSchema ver:{}", maxVer, saveMaxSchemaVersion);
+                        //DdlUtil.timeOutError.set(false);
+                    }
                     continue;
                 }
                 int jobNeedToCheckCnt = mdlCheckTableInfo.getJobsVerMap().size();
                 if (jobNeedToCheckCnt == 0) {
                     jobNeedToSync = false;
-                    mdlCheckTableInfo.wUnlock();
                     LogUtils.info(log, "[ddl] mdl check job need to check cnt is 0,max ver:{} saveMaxSchema ver:{}", maxVer, saveMaxSchemaVersion);
+                    mdlCheckTableInfo.wUnlock();
                     continue;
                 }
                 Map<Long, String> jobsIdsMap = new HashMap<>(mdlCheckTableInfo.getJobsIdsMap());
@@ -74,14 +82,33 @@ public final class MetaLockCheckHandler {
                 if (jobCache.size() > 1000) {
                     jobCache = new HashMap<>();
                 }
+                if (DdlUtil.timeOutError.get()) {
+                    LogUtils.info(log, "[ddl] mdl check jobs id map size:{}, "
+                        + "jobs ver map size:{}, job cache:{}, jobNeedToSync:{}", jobsIdsMap.size(),
+                        jobsVerMap.size(), jobCache, jobNeedToSync);
+                }
 
+                if (jobsVerMap.isEmpty()) {
+                    if (DdlUtil.timeOutError.get()) {
+                        LogUtils.info(log, "[ddl] mdl check jobs ver map is empty, save ver:{}, max ver:{}", saveMaxSchemaVersion, maxVer);
+                        //DdlUtil.timeOutError.set(false);
+                    }
+                    continue;
+                }
                 for (Map.Entry<Long, Long> entry : jobsVerMap.entrySet()) {
                     if (jobCache.containsKey(entry.getKey())
                         && jobCache.get(entry.getKey()) >= entry.getValue()
-                        && DdlContext.INSTANCE.getNewVer().get() >= entry.getValue()) {
+                    ) {
+                        if (DdlUtil.timeOutError.get()) {
+                            LogUtils.info(log, "[ddl] mdl check skip, max ver:{},"
+                             +" saveMaxSchema ver:{}, new ver:{}, jobs ver:{}", maxVer,
+                              saveMaxSchemaVersion, DdlContext.INSTANCE.getNewVer(), entry.getValue());
+                            //DdlUtil.timeOutError.set(false);
+                        }
                         continue;
                     }
-                    LogUtils.info(log, "mdl gets lock, update to owner, jobId:{}, version:{}", entry.getKey(), entry.getValue());
+                    LogUtils.info(log, "mdl gets lock, update to owner, jobId:{}, version:{}, save ver:{}",
+                        entry.getKey(), entry.getValue(), saveMaxSchemaVersion);
                     try {
                         DdlContext.INSTANCE.getSchemaSyncer().updateSelfVersion(System.identityHashCode(entry), entry.getKey(), entry.getValue());
                         jobCache.put(entry.getKey(), entry.getValue());

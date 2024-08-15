@@ -112,8 +112,13 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
 
             long end = System.currentTimeMillis();
             long cost = end - start;
+            if (cost > 30000) {
+                DdlUtil.timeOutError.set(true);
+            }
             if (cost > 50000) {
-                LogUtils.error(log, "[ddl] ownerCheckAllVersions take long time, jobId:{}, latestVer:{}", jobId, latestVer);
+                DdlUtil.timeOutError.set(false);
+                LogUtils.error(log, "[ddl] ownerCheckAllVersions take long time, "
+                    + "jobId:{}, latestVer:{}", jobId, latestVer);
                 return "Lock wait timeout exceeded";
             }
             List<KeyValue> kvList = infoSchemaService.getByKey(path, pathEnd);

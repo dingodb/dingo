@@ -84,8 +84,8 @@ public class DdlWorker {
         dc.rUnlock();
         Pair<Long, String> res = runDdlJob(dc, job);
         if (res == null) {
-            LogUtils.error(log, "");
-            return Pair.of(0L, "run ddl job get res null, job:{}");
+            LogUtils.error(log, "run ddl job get res null");
+            return Pair.of(0L, "run ddl job get res null");
         }
         long schemaVer = res.getKey();
         if (job.isCancelled()) {
@@ -133,7 +133,7 @@ public class DdlWorker {
         registerSync(dc, job);
         if (res.getValue() != null) {
             LogUtils.info(log, "[ddl] run DDL job failed, sleeps a while then retries it, error:" + res.getValue());
-            Utils.sleep(1000);
+            Utils.sleep(100);
         }
         return Pair.of(schemaVer, null);
     }
@@ -200,7 +200,7 @@ public class DdlWorker {
         }
         this.session.commit();
         // clean ddl reorg
-        ReorgUtil.cleanupDDLReorgHandles(job, session);
+        ReorgUtil.cleanupDDLReorgHandles(job);
         return null;
     }
 
@@ -286,23 +286,22 @@ public class DdlWorker {
         schemaInfo.setSchemaState(SchemaState.SCHEMA_NONE);
         // checkSchemaNotExists
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
-        assert infoSchemaService != null;
         if (infoSchemaService.getSchema(schemaId) != null) {
             job.setState(JobState.jobStateCancelled);
             return Pair.of(0L, "The database already exists");
         }
-        // updateSchemaVersion();
-        Pair<Long, String> res = updateSchemaVersion(dc, job);
-        if (res.getValue() != null) {
-            return res;
-        }
-        long version = res.getKey();
 
         if (schemaInfo.getSchemaState() == SchemaState.SCHEMA_NONE) {
             schemaInfo.setSchemaState(SchemaState.SCHEMA_PUBLIC);
             InfoSchemaService service = InfoSchemaService.root();
             service.createSchema(schemaId, schemaInfo);
             // finish job
+            Pair<Long, String> res = updateSchemaVersion(dc, job);
+            if (res.getValue() != null) {
+                LogUtils.error(log, "onCreateSchema update schema version error:{}", res.getValue());
+                return res;
+            }
+            long version = res.getKey();
             job.finishDBJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC, version, schemaInfo);
             return Pair.of(version, null);
         }
@@ -432,14 +431,14 @@ public class DdlWorker {
                 }
                 break;
             case SCHEMA_WRITE_ONLY:
-                tableInfo.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
-                res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo,
-                    originalState.getCode() != tableInfo.getTableDefinition().getSchemaState().number());
-                if (res.getValue() != null) {
-                    return res;
-                }
-                break;
-            case SCHEMA_DELETE_ONLY:
+//                tableInfo.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
+//                res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo,
+//                    originalState.getCode() != tableInfo.getTableDefinition().getSchemaState().number());
+//                if (res.getValue() != null) {
+//                    return res;
+//                }
+//                break;
+//            case SCHEMA_DELETE_ONLY:
                 tableInfo.getTableDefinition().setSchemaState(SCHEMA_NONE);
                 res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo,
                     originalState.getCode() != tableInfo.getTableDefinition().getSchemaState().number());
