@@ -84,8 +84,8 @@ public final class MetaLockCheckHandler {
                 }
                 if (DdlUtil.timeOutError.get()) {
                     LogUtils.info(log, "[ddl] mdl check jobs id map size:{}, "
-                        + "jobs ver map size:{}, job cache:{}, jobNeedToSync:{}", jobsIdsMap.size(),
-                        jobsVerMap.size(), jobCache, jobNeedToSync);
+                        + "jobs ver map size:{}, jobNeedToSync:{}", jobsIdsMap.size(),
+                        jobsVerMap.size(), jobNeedToSync);
                 }
 
                 if (jobsVerMap.isEmpty()) {

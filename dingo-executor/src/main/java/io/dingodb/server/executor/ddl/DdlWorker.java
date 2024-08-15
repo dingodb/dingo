@@ -25,6 +25,7 @@ import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Pair;
@@ -485,6 +486,7 @@ public class DdlWorker {
         }
         // check index column too many
         // check too many indexes
+        ScopeVariables.testIndexBlock();
         SchemaState originState = indexInfo.getSchemaState();
         switch (indexInfo.getSchemaState()) {
             case SCHEMA_NONE:

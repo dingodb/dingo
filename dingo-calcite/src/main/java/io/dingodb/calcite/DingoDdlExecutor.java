@@ -41,6 +41,7 @@ import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
 import io.dingodb.calcite.schema.RootSnapshotSchema;
+import io.dingodb.calcite.schema.SubCalciteSchema;
 import io.dingodb.calcite.schema.SubSnapshotSchema;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.Tenant;
@@ -1252,12 +1253,24 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 .build();
             privilegeType = PrivilegeType.SCHEMA;
         } else {
-            // todo: current version, ignore name case
             CalciteSchema schema = context.getRootSchema().getSubSchema(schemaName, false);
             if (schema == null) {
                 throw new RuntimeException("schema " + schemaName + " does not exist");
             }
-            if (schema.getTable(tableName, true) == null) {
+            InfoSchema is = null;
+            if (schema instanceof SubCalciteSchema) {
+                SubCalciteSchema sub = (SubCalciteSchema) schema;
+                SubSnapshotSchema subSnapshotSchema = (SubSnapshotSchema) sub.schema;
+                is = subSnapshotSchema.getIs();
+            }
+            if (is == null) {
+                is = DdlService.root().getIsLatest();
+                if (is == null) {
+                    LogUtils.error(log, "getPrivilegeDefinition get is null");
+                    throw new RuntimeException("table " + tableName + " does not exist");
+                }
+            }
+            if (is.getTable(schemaName, tableName) == null) {
                 throw new RuntimeException("table " + tableName + " does not exist");
             }
             privilegeDefinition = TablePrivDefinition.builder()
