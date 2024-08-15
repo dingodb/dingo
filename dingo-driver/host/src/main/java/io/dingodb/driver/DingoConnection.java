@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.client.SessionVariableChange;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
@@ -572,6 +573,10 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 if (ids.containsKey(tableId) && useSchemaVer < ver) {
                     jobVerIterator.remove();
                     mdlLockJobMap.put(jobId, jobId);
+                    if (DdlUtil.timeOutError.get()) {
+                        LogUtils.info(log, "[ddl] conn remove mdl lock,jobId:{}, use ver:{}, "
+                        + "ver:{}, tableId:{}" , jobId, useSchemaVer, ver, tableId);
+                    }
                     //if (transaction != null) {
                     //    List<String> sqlList = transaction.getSqlList();
                     //    StringBuilder sqlBuilder = new StringBuilder();

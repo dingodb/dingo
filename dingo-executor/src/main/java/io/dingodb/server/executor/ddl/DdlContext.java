@@ -21,8 +21,10 @@ import io.dingodb.common.ddl.RunningJobs;
 import io.dingodb.common.ddl.WaitSchemaSyncedController;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.SchemaSyncerService;
+import io.dingodb.meta.entity.InfoSchema;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -86,6 +88,30 @@ public class DdlContext {
             @Override
             protected Double loadValue() {
                 return (double) ddlReorgPool.getNumActive();
+            }
+        });
+
+        DingoMetrics.metricRegistry.register("tableCount", new CachedGauge<Double>(1, TimeUnit.MINUTES) {
+            @Override
+            protected Double loadValue() {
+                InfoSchema is = DdlService.root().getIsLatest();
+                if (is != null) {
+                    return (double) is.getSchemaMap().values().stream().mapToInt(i -> i.getTables().size()).count();
+                } else {
+                    return 0D;
+                }
+            }
+        });
+
+        DingoMetrics.metricRegistry.register("newVersion", new CachedGauge<Double>(1, TimeUnit.MINUTES) {
+            @Override
+            protected Double loadValue() {
+                InfoSchema is = DdlService.root().getIsLatest();
+                if (is != null) {
+                    return (double) is.getSchemaMetaVersion();
+                } else {
+                    return 0D;
+                }
             }
         });
 

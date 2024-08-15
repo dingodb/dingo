@@ -65,10 +65,6 @@ public final class DdlServer {
         lockService.watchAllOpLock(kv, DdlServer::startLoadDDLAndRunByEtcd);
     }
 
-//    public static void asyncStartDdl() {
-//        Executors.execute("notify_ddl_worker_etcd", DdlServer::startLoadDDLAndRunByEtcd, true);
-//    }
-
     public static void startLoadDDLAndRunByEtcd() {
         Utils.sleep(100);
         Session session = SessionUtil.INSTANCE.getSession();
