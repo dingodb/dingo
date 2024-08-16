@@ -988,8 +988,10 @@ public class DingoMeta extends MetaImpl {
 
     public synchronized void cleanTransaction() throws SQLException {
         try {
-            ITransaction transaction = ((DingoConnection) connection).getTransaction();
+            DingoConnection dingoConnection = (DingoConnection) connection;
+            ITransaction transaction = dingoConnection.getTransaction();
             if (transaction != null) {
+                dingoConnection.getContext().getRootSchema().closeTxn();
                 transaction.close(jobManager);
             }
         } catch (Throwable e) {

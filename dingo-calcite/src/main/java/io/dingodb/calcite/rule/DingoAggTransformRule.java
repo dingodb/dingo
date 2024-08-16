@@ -176,7 +176,8 @@ public class DingoAggTransformRule extends RelRule<DingoAggTransformRule.Config>
 
     public static IndexTable matchIndex(List<Column> columnList, List<IndexTable> indexTableList) {
         return indexTableList.stream()
-            .filter(indexTable -> indexTable.getSchemaState() == SchemaState.SCHEMA_PUBLIC)
+            .filter(indexTable -> indexTable.getSchemaState() == SchemaState.SCHEMA_PUBLIC
+                && indexTable.getIndexType() == IndexType.SCALAR)
             .filter(indexTable -> indexTable.getColumns().containsAll(columnList))
             .findFirst().orElse(null);
     }

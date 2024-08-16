@@ -63,10 +63,10 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 return getInformationColumns();
             case "PARTITIONS":
                 return getInformationPartitions();
-            case "EVENTS":
-            case "TRIGGERS":
             case "STATISTICS":
                 return getInformationStatistics();
+            case "EVENTS":
+            case "TRIGGERS":
             case "ROUTINES":
             case "FILES":
             case "KEY_COLUMN_USAGE":
