@@ -57,7 +57,6 @@ public class TxnPartDocumentOperator extends FilterProjectSourceOperator {
         OperatorProfile profile = param.getProfile("partDocument");
         long start = System.currentTimeMillis();
         int vecIdx = param.getDocumentIndex();
-        String distanceType = param.getDistanceType();
         KeyValueCodec tableCodec;
         tableCodec = CodecService.getDefault().createKeyValueCodec(
             param.getTable().version, param.getTableDataSchema(), param.tableDataKeyMapping()
@@ -66,7 +65,7 @@ public class TxnPartDocumentOperator extends FilterProjectSourceOperator {
         List<DocumentSearchResponse> searchResponseList = instance.documentSearch(
             param.getScanTs(),
             param.getIndexId(),
-            param.getFloatArray(),
+            param.getKeyword(),
             param.getTopN(),
             param.getParameterMap(),
             param.getCoprocessor());

@@ -106,6 +106,10 @@ public final class OperatorCodeUtils {
     public static final CommonId ROOT = new CommonId(CommonId.CommonType.OP, SINK, 80);
     public static final CommonId SEND = new CommonId(CommonId.CommonType.OP, SINK, 81);
 
+    //document
+    public static final CommonId DOCUMENT_PARTITION = new CommonId(CommonId.CommonType.OP, OP, 90);
+    public static final CommonId DOCUMENT_TOKEN = new CommonId(CommonId.CommonType.OP, OP, 91);
+
     private OperatorCodeUtils() {
     }
 }

@@ -33,6 +33,7 @@ import io.dingodb.calcite.operation.QueryOperation;
 import io.dingodb.calcite.operation.ShowProcessListOperation;
 import io.dingodb.calcite.rel.AutoIncrementShuttle;
 import io.dingodb.calcite.rel.DingoBasicCall;
+import io.dingodb.calcite.rel.DingoDocument;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.SqlUtil;
@@ -730,18 +731,18 @@ public final class DingoDriverParser extends DingoParser {
             RelOptTable table = input.getTable();
             tables.add(table);
         }
-        RelOptTable vectorTable = findVectorFunction(relNode);
-        if (vectorTable != null) {
-            tables.add(vectorTable);
+        RelOptTable functionTable = findUserDefindedFunction(relNode);
+        if (functionTable != null) {
+            tables.add(functionTable);
         }
         return tables;
     }
 
-    private static RelOptTable findVectorFunction(RelNode relNode) {
+    private static RelOptTable findUserDefindedFunction(RelNode relNode) {
         RelShuttleImpl relShuttle = new RelShuttleImpl() {
             @Override
             public RelNode visit(RelNode other) {
-                if (other instanceof DingoVector) {
+                if (other instanceof DingoVector || other instanceof  DingoDocument) {
                     return other;
                 }
                 if (!other.getInputs().isEmpty()) {
@@ -773,6 +774,9 @@ public final class DingoDriverParser extends DingoParser {
         if (relNode1 instanceof DingoVector) {
             DingoVector vector = (DingoVector) relNode1;
             return vector.getTable();
+        } else if(relNode1 instanceof DingoDocument){
+            DingoDocument document = (DingoDocument) relNode1;
+            return document.getTable();
         }
         return null;
     }

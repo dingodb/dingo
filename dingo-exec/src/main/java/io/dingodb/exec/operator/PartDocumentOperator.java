@@ -22,7 +22,6 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.common.document.DocumentSearchResponse;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.PartDocumentParam;
-import io.dingodb.exec.operator.params.PartVectorParam;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
@@ -51,7 +50,7 @@ public final class PartDocumentOperator extends FilterProjectSourceOperator {
         // Get all table data response
         List<DocumentSearchResponse> searchResponseList = instance.documentSearch(
             param.getIndexId(),
-            param.getkeywords(),
+            param.getKeyword(),
             param.getTopN(),
             param.getParameterMap());
         for (DocumentSearchResponse response : searchResponseList) {

@@ -19,6 +19,7 @@ package io.dingodb.calcite.visitor.function;
 import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoDocument;
+import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.utils.VisitUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
@@ -43,9 +44,13 @@ import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.fun.document.DocumentTextFun;
+import io.dingodb.exec.operator.TxnPartDocumentOperator;
 import io.dingodb.exec.operator.params.PartDocumentParam;
+import io.dingodb.exec.operator.params.PartVectorParam;
 import io.dingodb.exec.operator.params.TxnPartDocumentParam;
-//import io.dingodb.exec.restful.DocumentExtract;
+import io.dingodb.exec.operator.params.TxnPartVectorParam;
+import io.dingodb.exec.restful.DocumentExtract;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.rel.op.RelOpBuilder;
@@ -83,8 +88,9 @@ import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rel.LogicalDingoTableScan.getIndexMetricType;
 import static io.dingodb.common.util.Utils.isNeedLookUp;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PART_DOCUMENT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_VECTOR;
-import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_DOCUMENT;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_VECTOR;
 
 @Slf4j
 public final class DingoDocumentVisitFun {
@@ -126,7 +132,7 @@ public final class DingoDocumentVisitFun {
         if (documentColNmIdf != null) {
             documentColNm = documentColNmIdf.getSimple();
         }
-        String[] keyword = getDocumentKeyword(operandsList);
+        String[] documents = getDocumentString(operandsList);
 
         if (!(operandsList.get(3) instanceof SqlNumericLiteral)) {
             throw new IllegalArgumentException("Top n not number.");
@@ -211,11 +217,11 @@ public final class DingoDocumentVisitFun {
                     td,
                     ranges,
                     rel.getIndexTableId(),
-                    keyword,
+                    documents,
                     topN,
                     parameterMap
                 );
-                vertex = new Vertex(PART_VECTOR, param);
+                vertex = new Vertex(PART_DOCUMENT, param);
             } else {
                 String finalDocumentColNm = documentColNm;
                 int documentIdx = dingoTable.getTable()
@@ -240,7 +246,7 @@ public final class DingoDocumentVisitFun {
                     rel.tupleType(),
                     td,
                     ranges,
-                    keyword,
+                    documents,
                     topN,
                     parameterMap,
                     indexTable,
@@ -251,10 +257,9 @@ public final class DingoDocumentVisitFun {
                     transaction.getIsolationLevel(),
                     transaction.getLockTimeOut(),
                     resultSelection,
-                    documentIdx,
-                    metricType
+                    documentIdx
                 );
-                vertex = new Vertex(TXN_PART_DOCUMENT, param);
+                vertex = new Vertex(TXN_PART_VECTOR, param);
             }
             Task task = job.getOrCreate(currentLocation, idGenerator);
             OutputHint hint = new OutputHint();
@@ -268,20 +273,25 @@ public final class DingoDocumentVisitFun {
         return outputs;
     }
 
-    public static String[] getDocumentKeyword(List<Object> operandsList) {
-        String[] keyword = new String[2];
+    public static String[] getDocumentString(List<Object> operandsList) {
+        String[] stringArray = null;
         Object call = operandsList.get(2);
         if (call instanceof RexCall) {
             RexCall rexCall = (RexCall) call;
-            String keywordStr = rexCall.getOperands().toString();
-            keyword = keywordStr.split(":");
-            return keyword;
+            int documentCount = rexCall.getOperands().size();
+            for (int i = 0; i < documentCount; i++) {
+                RexLiteral literal = (RexLiteral) rexCall.getOperands().get(i);
+                stringArray[i] = literal.getValueAs(String.class);
+            }
+            return stringArray;
         }
         SqlBasicCall basicCall = (SqlBasicCall) operandsList.get(2);
         if (basicCall.getOperator() instanceof SqlArrayValueConstructor) {
-            String operands = basicCall.getOperandList().toString();
-            keyword = operands.split(":");
-            return keyword;
+            List<SqlNode> operands = basicCall.getOperandList();
+            for (int i = 0; i < operands.size(); i++) {
+                stringArray[i] = Objects.requireNonNull(((SqlNumericLiteral) operands.get(i)).getValue())
+                .toString();
+            }
         } else {
             List<SqlNode> sqlNodes = basicCall.getOperandList();
             if (sqlNodes.size() < 2) {
@@ -303,11 +313,16 @@ public final class DingoDocumentVisitFun {
             if (param.contains("'")) {
                 param = param.replace("'", "");
             }
+            String funcName = basicCall.getOperator().getName();
+            if (funcName.equalsIgnoreCase(DocumentTextFun.NAME)) {
+                stringArray = DocumentExtract.getTxtDocument(
+                    basicCall.getOperator().getName(),
+                    paramList.get(0).toString(),
+                    param);
+            }
         }
-        if (keyword == null) {
-            throw new RuntimeException("document load error");
-        }
-        return keyword;
+        /* keyword can be null */
+        return stringArray;
     }
 
     private static Map<String, Object> getParameterMap(List<Object> operandsList) {

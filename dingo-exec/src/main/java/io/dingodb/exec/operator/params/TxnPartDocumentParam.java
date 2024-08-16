@@ -60,7 +60,7 @@ public class TxnPartDocumentParam extends FilterProjectSourceParam {
 
     private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     private final CommonId indexId;
-    private final String[] tokenArray;
+    private final String[] keyword;
     private final int topN;
     private final Map<String, Object> parameterMap;
     private final IndexTable indexTable;
@@ -80,7 +80,6 @@ public class TxnPartDocumentParam extends FilterProjectSourceParam {
     private final long timeOut;
 
     private int documentIndex;
-    private String distanceType;
     private CoprocessorV2 coprocessor = null;
     private final boolean isLookUp;
     private final DingoType tableDataSchema;
@@ -93,7 +92,7 @@ public class TxnPartDocumentParam extends FilterProjectSourceParam {
         DingoType schema,
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
-        String[] tokenArray,
+        String[] keyword,
         int topN,
         Map<String, Object> parameterMap,
         Table indexTable,
@@ -104,14 +103,13 @@ public class TxnPartDocumentParam extends FilterProjectSourceParam {
         int isolationLevel,
         long timeOut,
         TupleMapping resultSelection,
-        int documentIndex,
-        String distanceType
+        int documentIndex
     ) {
         super(table.tableId, partId, schema, table.version, filter, selection, table.keyMapping());
         this.table = table;
         this.distributions = distributions;
         this.indexId = indexTable.tableId;
-        this.tokenArray = tokenArray;
+        this.keyword = keyword;
         this.topN = topN;
         this.parameterMap = parameterMap;
         this.indexTable = (IndexTable) indexTable;
@@ -130,7 +128,6 @@ public class TxnPartDocumentParam extends FilterProjectSourceParam {
         List<DingoType> priType = tableDataColList.stream().map(Column::getType).collect(Collectors.toList());
         this.tableDataSchema = DingoTypeFactory.tuple(priType.toArray(new DingoType[]{}));
         this.documentIndex = documentIndex;
-        this.distanceType = distanceType;
     }
 
     @Override

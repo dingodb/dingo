@@ -18,7 +18,7 @@ package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
-import io.dingodb.calcite.rel.DingoGetDocumentByDistance;
+import io.dingodb.calcite.rel.DingoGetDocumentByToken;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
@@ -27,6 +27,7 @@ import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.dag.Vertex;
 // import io.dingodb.exec.operator.params.DocumentPointDistanceParam;
+import io.dingodb.exec.operator.params.DocumentTokenParam;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.IndexType;
@@ -39,19 +40,19 @@ import java.util.NavigableMap;
 import java.util.function.Supplier;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
-import static io.dingodb.calcite.visitor.function.DingoDocumentVisitFun.getDocumentFloats;
-import static io.dingodb.exec.utils.OperatorCodeUtils.VECTOR_POINT_DISTANCE;
+import static io.dingodb.calcite.visitor.function.DingoDocumentVisitFun.getDocumentString;
+import static io.dingodb.exec.utils.OperatorCodeUtils.DOCUMENT_TOKEN;
 
-public final class DingoGetDocumentByDistanceVisitFun {
+public final class DingoGetDocumentByTokenVisitFun {
 
-    private DingoGetDocumentByDistanceVisitFun() {
+    private DingoGetDocumentByTokenVisitFun() {
     }
 
     public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator,
         Location currentLocation,
         DingoJobVisitor visitor,
-        DingoGetDocumentByDistance rel
+        DingoGetDocumentByToken rel
     ) {
         Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
         return DingoBridge.bridge(idGenerator, inputs, new OperatorSupplier(rel));
@@ -60,12 +61,12 @@ public final class DingoGetDocumentByDistanceVisitFun {
     @AllArgsConstructor
     static class OperatorSupplier implements Supplier<Vertex> {
 
-        final DingoGetDocumentByDistance rel;
+        final DingoGetDocumentByToken rel;
 
         @Override
         public Vertex get() {
             DingoRelOptTable dingoRelOptTable = (DingoRelOptTable) rel.getTable();
-            List<Float> targetDocument = getTargetDocument(rel.getOperands());
+            List<String> targetDocument = getTargetDocument(rel.getOperands());
             IndexTable indexTable = getDocumentIndexTable(dingoRelOptTable, targetDocument.size());
             if (indexTable == null) {
                 throw new RuntimeException("not found document index");
@@ -74,33 +75,28 @@ public final class DingoGetDocumentByDistanceVisitFun {
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
                 = metaService.getRangeDistribution(rel.getIndexTableId());
 
-            int dimension = Integer.parseInt(indexTable.getProperties()
-                .getOrDefault("dimension", targetDocument.size()).toString());
             String algType;
-            if (indexTable.indexType == IndexType.VECTOR_FLAT) {
-                algType = "FLAT";
-            } else if (indexTable.indexType == IndexType.VECTOR_HNSW) {
-                algType = "HNSW";
+            if (indexTable.indexType == IndexType.DOCUMENT) {
+                algType = "DOCUMENT";
             } else {
                 algType = "";
             }
-            DocumentPointDistanceParam param = new DocumentPointDistanceParam(
+            DocumentTokenParam param = new DocumentTokenParam(
                 distributions.firstEntry().getValue(),
                 rel.getDocumentIndex(),
                 rel.getIndexTableId(),
                 targetDocument,
-                dimension,
                 algType,
                 indexTable.getProperties().getProperty("metricType"),
                 rel.getSelection()
             );
 
-            return new Vertex(VECTOR_POINT_DISTANCE, param);
+            return new Vertex(DOCUMENT_TOKEN, param);
         }
     }
 
-    public static List<Float> getTargetDocument(List<Object> operandList) {
-        Float[] document = getDocumentFloats(operandList);
+    public static List<String> getTargetDocument(List<Object> operandList) {
+        String[] document = getDocumentString(operandList);
         return Arrays.asList(document);
     }
 
@@ -108,7 +104,7 @@ public final class DingoGetDocumentByDistanceVisitFun {
         DingoTable dingoTable = dingoRelOptTable.unwrap(DingoTable.class);
         List<IndexTable> indexes = dingoTable.getTable().getIndexes();
         for (IndexTable index : indexes) {
-            if (!index.getIndexType().isDocument) {
+            if (!index.getIndexType().isVector) {
                 continue;
             }
             int dimension1 = Integer.parseInt(index.getProperties().getProperty("dimension"));

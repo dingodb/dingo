@@ -48,7 +48,7 @@ import java.util.Set;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COALESCE;
-import static io.dingodb.exec.utils.OperatorCodeUtils.VECTOR_PARTITION;
+import static io.dingodb.exec.utils.OperatorCodeUtils.DOCUMENT_PARTITION;
 
 public final class DingoDocumentStreamingVisitFun {
 
@@ -89,7 +89,7 @@ public final class DingoDocumentStreamingVisitFun {
                 indexId,
                 rel.getDocumentIdIndex(),
                 rel.getIndexTableDefinition());
-            Vertex vertex = new Vertex(VECTOR_PARTITION, param);
+            Vertex vertex = new Vertex(DOCUMENT_PARTITION, param);
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             OutputHint hint = new OutputHint();
             hint.setLocation(MetaService.root().currentLocation());

@@ -24,6 +24,7 @@ import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
+import io.dingodb.calcite.rel.DingoGetDocumentByToken;
 import io.dingodb.calcite.rel.DingoGetVectorByDistance;
 import io.dingodb.calcite.rel.dingo.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoInfoSchemaScan;
@@ -114,4 +115,6 @@ public interface DingoRelVisitor<T> {
     T visit(@NonNull IndexRangeScan indexRangeScan);
 
     T visitDingoIndexScanWithRelOp(@NonNull DingoIndexScanWithRelOp rel);
+
+    T visit(DingoGetDocumentByToken dingoGetDocumentByToken);
 }

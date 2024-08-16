@@ -43,7 +43,7 @@ public class PartDocumentParam extends FilterProjectSourceParam {
     private final Table table;
     private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     private final CommonId indexId;
-    private final Map<String, String> keyword;
+    private final String[] keyword;
     private final int topN;
     private final Map<String, Object> parameterMap;
 

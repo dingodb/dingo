@@ -38,7 +38,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 
-public class DingoDocument extends LogicalDingoVector implements DingoRel {
+public class DingoDocument extends LogicalDingoDocument implements DingoRel {
     @Getter
     private double rowCount;
 

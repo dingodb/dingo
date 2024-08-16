@@ -17,6 +17,7 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.rel.DingoFunctionScan;
+import io.dingodb.calcite.rel.LogicalDingoDocument;
 import io.dingodb.calcite.rel.LogicalDingoVector;
 import io.dingodb.calcite.traits.DingoConvention;
 import org.apache.calcite.plan.RelOptCluster;
@@ -127,6 +128,21 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
             assert namespace != null;
             List<Object> operands = new ArrayList<>(call.getOperandList());
             callRel = new LogicalDingoVector(
+                cluster,
+                traits,
+                (RexCall) rexCall,
+                namespace.getTable(),
+                operands,
+                namespace.getIndex().getTableId(),
+                namespace.getIndex(),
+                null,
+                null,
+                new ArrayList<>()
+            );
+        }else if (operator instanceof SqlDocumentOperator) {
+            assert namespace != null;
+            List<Object> operands = new ArrayList<>(call.getOperandList());
+            callRel = new LogicalDingoDocument(
                 cluster,
                 traits,
                 (RexCall) rexCall,
