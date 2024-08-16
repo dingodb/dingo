@@ -44,19 +44,19 @@ public class LockTableOperation implements DdlOperation {
 
     @Override
     public void execute() {
-        List<CommonId> tables = new ArrayList<>(tableList.size());
-        for (SqlIdentifier sqlIdentifier : tableList) {
-            ImmutableList<String> names = sqlIdentifier.names;
-            MetaService metaService = MetaService.root();
-            String tableName = names.get(0);
-            if (names.size() > 1) {
-                metaService = metaService.getSubMetaService(names.get(0));
-                tableName = names.get(1);
-            } else {
-                metaService = metaService.getSubMetaService(usedSchemaName);
-            }
-            tables.add(Parameters.nonNull(metaService.getTable(tableName), "table not found").getTableId());
-        }
-        TransactionService.getDefault().lockTable(connection, tables, LockType.TABLE);
+//        List<CommonId> tables = new ArrayList<>(tableList.size());
+//        for (SqlIdentifier sqlIdentifier : tableList) {
+//            ImmutableList<String> names = sqlIdentifier.names;
+//            MetaService metaService = MetaService.root();
+//            String tableName = names.get(0);
+//            if (names.size() > 1) {
+//                metaService = metaService.getSubMetaService(names.get(0));
+//                tableName = names.get(1);
+//            } else {
+//                metaService = metaService.getSubMetaService(usedSchemaName);
+//            }
+//            tables.add(Parameters.nonNull(metaService.getTable(tableName), "table not found").getTableId());
+//        }
+//        TransactionService.getDefault().lockTable(connection, tables, LockType.TABLE);
     }
 }

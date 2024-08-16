@@ -27,8 +27,11 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.transaction.base.TxnLocalData;
+import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.InfoCache;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.transaction.api.TableLock;
@@ -42,15 +45,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import static io.dingodb.common.CommonId.CommonType.TRANSACTION;
 import static io.dingodb.common.CommonId.CommonType.TXN_CACHE_BLOCK_LOCK;
 import static io.dingodb.common.CommonId.CommonType.TXN_CACHE_LOCK;
 import static io.dingodb.exec.Services.LOCAL_STORE;
-import static io.dingodb.transaction.api.LockType.ROW;
-import static io.dingodb.transaction.api.LockType.TABLE;
 
 @Slf4j
 public class ShowLocksOperation extends QueryOperation {
@@ -71,6 +70,12 @@ public class ShowLocksOperation extends QueryOperation {
         default List<TableLock> tableLocks() {
             return TableLockService.getDefault().allTableLocks();
         }
+
+        @ApiDeclaration
+        default long getMinTs() {
+            return TransactionManager.getMinTs();
+        }
+
     }
 
     public static final List<String> COLUMNS = Arrays.asList(
@@ -131,7 +136,7 @@ public class ShowLocksOperation extends QueryOperation {
             .collect(Collectors.toCollection(ArrayList::new));
         addTxnBlock(tso, locks);
         addTxnLocked(tso, locks);
-        addTableLocks(tso, locks);
+        //addTableLocks(tso, locks);
         return locks.stream().filter($ -> filterDuration(Long.parseLong($[DURATION_INDEX]))).iterator();
     }
 
@@ -162,18 +167,19 @@ public class ShowLocksOperation extends QueryOperation {
         Iterator<KeyValue> iterator = LOCAL_STORE.getInstance(null, null).scan(
             tso, new byte[]{(byte) TXN_CACHE_BLOCK_LOCK.code}
         );
+        InfoSchema is = InfoCache.infoCache.getLatest();
         while (iterator.hasNext()) {
             Object[] lockKeyTuple = ByteUtils.decode(iterator.next());
             TxnLocalData txnLocalData = (TxnLocalData) lockKeyTuple[0];
             CommonId txnId = txnLocalData.getTxnId();
             CommonId tableId = txnLocalData.getTableId();
-            Table table = MetaService.root().getTable(tableId);
-            if (table == null) {
-                return;
-            }
             String[] lock = new String[COLUMNS.size()];
             lock[SERVER_INDEX] = DingoConfiguration.serverId().toString();
-            lock[TABLE_INDEX] = MetaService.root().getTable(tableId).name;
+            Table table = is.getTable(tableId.seq);
+            if (table == null) {
+                continue;
+            }
+            lock[TABLE_INDEX] = table.name;
             lock[SCHEMA_INDEX] = getSchema(tableId);
             lock[TXN_INDEX] = txnId.toString();
             lock[STATUS_INDEX] = BLOCK;
@@ -189,19 +195,20 @@ public class ShowLocksOperation extends QueryOperation {
         iterator = LOCAL_STORE.getInstance(null, null).scan(
             tso, new byte[]{(byte) TXN_CACHE_LOCK.code}
         );
+        InfoSchema is = InfoCache.infoCache.getLatest();
         while (iterator.hasNext()) {
             Object[] lockKeyTuple = ByteUtils.decode(iterator.next());
             TxnLocalData txnLocalData = (TxnLocalData) lockKeyTuple[0];
             String[] lock = new String[COLUMNS.size()];
             CommonId txnId = txnLocalData.getTxnId();
             CommonId tableId = txnLocalData.getTableId();
-            Table table = MetaService.root().getTable(tableId);
+            Table table = is.getTable(tableId.seq);
             if (table == null) {
                 continue;
             }
             lock[SERVER_INDEX] = DingoConfiguration.serverId().toString();
             lock[TXN_INDEX] = txnId.toString();
-            lock[TABLE_INDEX] = MetaService.root().getTable(tableId).name;
+            lock[TABLE_INDEX] = table.name;
             lock[SCHEMA_INDEX] = getSchema(tableId);
             lock[STATUS_INDEX] = LOCKED;
             lock[KEY_INDEX] = lockKey(tableId, txnLocalData.getKey());
@@ -211,50 +218,54 @@ public class ShowLocksOperation extends QueryOperation {
         }
     }
 
-    private static void addTableLocks(long tso, List<String[]> locks) {
-        List<TableLock> tableLocks = TableLockService.getDefault().allTableLocks();
-        List<Location> locations = ClusterService.getDefault().getComputingLocations();
-        locations.remove(DingoConfiguration.location());
-        tableLocks.addAll(locations.stream()
-            .map($ -> ApiRegistry.getDefault().proxy(Api.class, $))
-            .flatMap($ -> {
-                    try {
-                        return $.tableLocks().stream();
-                    } catch (Throwable throwable) {
-                        Throwable extractThrowable = Utils.extractThrowable(throwable);
-                        LogUtils.error(log, extractThrowable.getMessage(), extractThrowable);
-                        throw new RuntimeException($.toString() + " connection refused, retry in 20 seconds.");
-                    }
-                })
-            .filter($ -> $.getType() == ROW)
-            .collect(Collectors.toCollection(ArrayList::new)));
-        tableLocks.stream().distinct().forEach(tableLock -> {
-            // todo require filter?
-//            if (tableLock.getType() == ROW && tableLock.lockFuture.isDone()) {
+//    private static void addTableLocks(long tso, List<String[]> locks) {
+//        List<TableLock> tableLocks = TableLockService.getDefault().allTableLocks();
+//        List<Location> locations = ClusterService.getDefault().getComputingLocations();
+//        locations.remove(DingoConfiguration.location());
+//        tableLocks.addAll(locations.stream()
+//            .map($ -> ApiRegistry.getDefault().proxy(Api.class, $))
+//            .flatMap($ -> {
+//                    try {
+//                        return $.tableLocks().stream();
+//                    } catch (Throwable throwable) {
+//                        Throwable extractThrowable = Utils.extractThrowable(throwable);
+//                        LogUtils.error(log, extractThrowable.getMessage(), extractThrowable);
+//                        throw new RuntimeException($.toString() + " connection refused, retry in 20 seconds.");
+//                    }
+//                })
+//            .filter($ -> $.getType() == ROW)
+//            .collect(Collectors.toCollection(ArrayList::new)));
+//        tableLocks.stream().distinct().forEach(tableLock -> {
+//            // todo require filter?
+////            if (tableLock.getType() == ROW && tableLock.lockFuture.isDone()) {
+////                return;
+////            }
+//            CompletableFuture<Boolean> lockFuture = tableLock.getLockFuture();
+//            String[] lock = new String[COLUMNS.size()];
+//            CommonId txnId = new CommonId(TRANSACTION, tableLock.lockTs, tableLock.currentTs);
+//            CommonId tableId = tableLock.tableId;
+//            Table table = MetaService.root().getTable(tableId);
+//            if (table == null) {
 //                return;
 //            }
-            CompletableFuture<Boolean> lockFuture = tableLock.getLockFuture();
-            String[] lock = new String[COLUMNS.size()];
-            CommonId txnId = new CommonId(TRANSACTION, tableLock.lockTs, tableLock.currentTs);
-            CommonId tableId = tableLock.tableId;
-            Table table = MetaService.root().getTable(tableId);
-            if (table == null) {
-                return;
-            }
-            lock[SERVER_INDEX] = tableLock.getServerId().toString();
-            lock[TXN_INDEX] = txnId.toString();
-            lock[TABLE_INDEX] = MetaService.root().getTable(tableId).name;
-            lock[SCHEMA_INDEX] = getSchema(tableId);
-            lock[STATUS_INDEX] = lockFuture == null ? "-" : lockFuture.isDone() && !lockFuture.isCancelled() ? LOCKED : BLOCK;
-            lock[KEY_INDEX] = "-";
-            lock[TYPE_INDEX] = tableLock.getType() == TABLE ? TABLE_TYPE : ROW_TYPE;
-            lock[DURATION_INDEX] = String.valueOf(tsoService.timestamp(tso) - tsoService.timestamp(txnId.seq));
-            locks.add(lock);
-        });
-    }
+//            lock[SERVER_INDEX] = tableLock.getServerId().toString();
+//            lock[TXN_INDEX] = txnId.toString();
+//            lock[TABLE_INDEX] = MetaService.root().getTable(tableId).name;
+//            lock[SCHEMA_INDEX] = getSchema(tableId);
+//            lock[STATUS_INDEX] = lockFuture == null ? "-" : lockFuture.isDone() && !lockFuture.isCancelled() ? LOCKED : BLOCK;
+//            lock[KEY_INDEX] = "-";
+//            lock[TYPE_INDEX] = tableLock.getType() == TABLE ? TABLE_TYPE : ROW_TYPE;
+//            lock[DURATION_INDEX] = String.valueOf(tsoService.timestamp(tso) - tsoService.timestamp(txnId.seq));
+//            locks.add(lock);
+//        });
+//    }
 
     private static String lockKey(CommonId tableId, byte[] keyBytes) {
-        Table table = MetaService.root().getTable(tableId);
+        InfoSchema is = InfoCache.infoCache.getLatest();;
+        Table table = is.getTable(tableId.seq);
+        if (table == null) {
+            return "";
+        }
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
         return Utils.buildKeyStr(table.keyMapping(), codec.decodeKeyPrefix(keyBytes));
     }

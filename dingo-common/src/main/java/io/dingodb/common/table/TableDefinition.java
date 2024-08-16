@@ -17,10 +17,12 @@
 package io.dingodb.common.table;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
@@ -33,7 +35,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,12 +42,9 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -128,6 +126,18 @@ public class TableDefinition {
     @Setter
     private long updateTime;
 
+    @Getter
+    @Setter
+    private SchemaState schemaState;
+
+    @Getter
+    @Setter
+    private List<TableDefinition> indices;
+
+    @Getter
+    @Setter
+    private long prepareTableId;
+
     @JsonCreator
     public TableDefinition(@JsonProperty("name") String name) {
         this.name = name;
@@ -159,20 +169,6 @@ public class TableDefinition {
 
     public ColumnDefinition getColumn(int index) {
         return columns.get(index);
-    }
-
-    public @Nullable ColumnDefinition getColumn(String name) {
-        for (ColumnDefinition column : columns) {
-            // `name` may be uppercase.
-            if (column.getName().equalsIgnoreCase(name)) {
-                return column;
-            }
-        }
-        return null;
-    }
-
-    public int getColumnIndexOfValue(String name) {
-        return getColumnIndex(name) - getPrimaryKeyCount();
     }
 
     public int getColumnIndex(String name) {
@@ -220,6 +216,8 @@ public class TableDefinition {
         return indices;
     }
 
+
+    @JsonIgnore
     public int getPrimaryKeyCount() {
         int count = 0;
         for (ColumnDefinition column : columns) {
@@ -230,45 +228,41 @@ public class TableDefinition {
         return count;
     }
 
+    @JsonIgnore
     public int getColumnsCount() {
         return columns.size();
     }
 
+    @JsonIgnore
     public TupleMapping getKeyMapping() {
         return TupleMapping.of(getKeyColumnIndices());
     }
 
+    @JsonIgnore
     public TupleMapping getRevKeyMapping() {
         return getKeyMapping().reverse(getColumnsCount());
     }
 
+    @JsonIgnore
     public TupleMapping getValueMapping() {
         return getColumnMapping(false);
     }
 
+    @JsonIgnore
     public TupleMapping getMapping() {
         return TupleMapping.of(IntStream.range(0, columns.size()).toArray());
-    }
-
-    public int getFirstPrimaryColumnIndex() {
-        int index = 0;
-        for (ColumnDefinition column : columns) {
-            if (column.getPrimary() == 0) {
-                return index;
-            }
-            ++index;
-        }
-        return -1;
     }
 
     private @NonNull TupleMapping getColumnMapping(boolean keyOrValue) {
         return TupleMapping.of(getColumnIndices(keyOrValue));
     }
 
+    @JsonIgnore
     public @NonNull List<Integer> getKeyColumnIndices() {
         return getColumnIndices(true);
     }
 
+    @JsonIgnore
     public List<ColumnDefinition> getKeyColumns() {
         List<ColumnDefinition> keyCols = new LinkedList<>();
         for (ColumnDefinition column : columns) {
@@ -279,6 +273,7 @@ public class TableDefinition {
         return keyCols;
     }
 
+    @JsonIgnore
     public DingoType getKeyType() {
         return DingoTypeFactory.tuple(
             columns.stream()
@@ -289,6 +284,7 @@ public class TableDefinition {
         );
     }
 
+    @JsonIgnore
     public List<DingoSchema> getDingoSchemaOfValue() {
         List<DingoSchema> valueSchema = new ArrayList<>();
         int index = 0;
@@ -300,6 +296,7 @@ public class TableDefinition {
         return valueSchema;
     }
 
+    @JsonIgnore
     public DingoType getDingoType() {
         return DingoTypeFactory.tuple(
             columns.stream()
@@ -317,6 +314,7 @@ public class TableDefinition {
         );
     }
 
+    @JsonIgnore
     public String toJson() throws JsonProcessingException {
         return PARSER.stringify(this);
     }
@@ -335,7 +333,7 @@ public class TableDefinition {
     }
 
     public TableDefinition copyWithName(String name) {
-        TableDefinition tableDefinition = new TableDefinition(
+        return new TableDefinition(
             name,
             this.columns,
             this.version,
@@ -352,8 +350,14 @@ public class TableDefinition {
             this.tableType,
             this.rowFormat,
             this.createTime,
-            this.updateTime
+            this.updateTime,
+            this.schemaState,
+            this.indices,
+            prepareTableId
         );
-        return tableDefinition;
+    }
+
+    public List<String> getKeyNames() {
+        return getKeyColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList());
     }
 }

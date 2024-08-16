@@ -107,7 +107,7 @@ public final class PreWriteOperator extends TransactionOperator {
                 }
             }
             // cache to mutations
-            Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, forUpdateTs, tableId, newPartId);
+            Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, forUpdateTs, tableId, newPartId, txnId);
             LogUtils.debug(log, "mutation: {}", mutation);
             CommonId partId = param.getPartId();
             if (partId == null) {

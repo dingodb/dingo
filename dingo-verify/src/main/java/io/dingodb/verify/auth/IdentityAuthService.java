@@ -37,7 +37,7 @@ import java.util.ServiceLoader;
 @Slf4j
 public class IdentityAuthService implements AuthService<Authentication> {
 
-    ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+    ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
 
     public IdentityAuth identityAuth;
 
@@ -98,9 +98,9 @@ public class IdentityAuthService implements AuthService<Authentication> {
 
     @Override
     public Authentication createCertificate() {
-        String user = env.getUser();
+        String user = env.clientIdentity.getUser();
         String host = getHost();
-        String password = env.getPassword();
+        String password = env.clientIdentity.getPassword();
         if (StringUtils.isNotBlank(user)) {
             return Authentication.builder()
                 .username(user)

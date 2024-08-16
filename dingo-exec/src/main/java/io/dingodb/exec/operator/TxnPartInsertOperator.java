@@ -19,8 +19,9 @@ package io.dingodb.exec.operator;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.profile.OperatorProfile;
-import io.dingodb.common.profile.Profile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.Services;
@@ -32,8 +33,10 @@ import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnPartInsertParam;
+import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.exec.utils.OpStateUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
@@ -78,7 +81,14 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
         KeyValueCodec codec = param.getCodec();
         if (context.getIndexId() != null) {
-            Table indexTable = MetaService.root().getTable(context.getIndexId());
+            Table indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
+            if (indexTable == null) {
+                LogUtils.error(log, "[ddl] TxnPartInsert get index table null, indexId:{}", context.getIndexId());
+                return false;
+            }
+            if (!OpStateUtils.allowWrite(indexTable.getSchemaState())) {
+                return true;
+            }
             List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
                 .map(Column::getName)
                 .collect(Collectors.toList()));
@@ -127,7 +137,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 if (oldKey[oldKey.length - 2] == Op.PUTIFABSENT.getCode()
                     || oldKey[oldKey.length - 2] == Op.PUT.getCode()) {
                     throw new DuplicateEntryException("Duplicate entry " +
-                        TransactionUtil.duplicateEntryKey(tableId, key) + " for key 'PRIMARY'");
+                        TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
                 } else {
                     // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
                     byte[] extraKey = ByteUtils.encode(
@@ -208,7 +218,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 if (oldKey[oldKey.length - 2] == Op.PUTIFABSENT.getCode()
                     || oldKey[oldKey.length - 2] == Op.PUT.getCode()) {
                     throw new DuplicateEntryException("Duplicate entry " +
-                        TransactionUtil.duplicateEntryKey(tableId, key) + " for key 'PRIMARY'");
+                        TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
                 } else {
                     // delete  ->  insert  convert --> put
                     insertKey[updateKey.length - 2] = (byte) Op.PUT.getCode();

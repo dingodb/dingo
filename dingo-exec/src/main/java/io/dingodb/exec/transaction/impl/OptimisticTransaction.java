@@ -22,6 +22,7 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.MdcUtils;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
@@ -40,10 +41,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.Future;
 
 @Slf4j
@@ -249,7 +248,7 @@ public class OptimisticTransaction extends BaseTransaction {
                 LogUtils.error(log, e.getMessage(), e);
                 CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, cacheToObject.getMutation().getKey());
                 cacheToObject.setPartId(regionId);
-                sleep();
+                Utils.sleep(100);
             }
         }
         if (future == null) {

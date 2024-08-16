@@ -22,6 +22,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.sdk.service.entity.common.DocumentIndexParameter;
+import io.dingodb.sdk.service.entity.common.Engine;
 import io.dingodb.sdk.service.entity.common.IndexParameter;
 import io.dingodb.sdk.service.entity.common.IndexType;
 import io.dingodb.sdk.service.entity.common.MetricType;
@@ -43,6 +44,7 @@ import io.dingodb.sdk.service.entity.meta.ColumnDefinition;
 import io.dingodb.sdk.service.entity.meta.TableDefinition;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -111,22 +113,30 @@ public interface IndexMapper {
             );
         } else if (indexType.equals("document")) {
             DocumentIndexParameter documentIndexParameter;
-            List<String> columnNames = indexDefinition.getColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList());
+            List<ColumnDefinition> columns = indexDefinition.getColumns();
             String json = properties.get("text_fields");
+            if (json == null) {
+                throw new RuntimeException("argument \"text_fields\" is null");
+            }
             try {
                 JsonNode jsonNode = JSON.readTree(json);
                 Iterator<Map.Entry<String, JsonNode>> fields = jsonNode.fields();
                 List<ScalarSchemaItem> scalarSchemaItems = new ArrayList<>();
                 while (fields.hasNext()) {
                     Map.Entry<String, JsonNode> next = fields.next();
-                    if (!columnNames.contains(next.getKey().toUpperCase())) {
+                    if (!columns.stream().map(ColumnDefinition::getName).collect(Collectors.toList()).contains(next.getKey().toUpperCase())) {
                         throw new RuntimeException("The field: [" + next.getKey() + "] does not exist in the document index");
                     }
+
                     JsonNode tokenizer = next.getValue().get("tokenizer");
                     if (tokenizer == null) {
                         throw new RuntimeException("Tokenizer parameters not found");
                     }
                     String type = next.getValue().get("tokenizer").get("type").asText();
+                    ColumnDefinition columnDefinition = columns.stream().filter(c -> c.getName().equalsIgnoreCase(next.getKey())).findFirst().orElse(null);
+                    if (columnDefinition != null && !checkType(type.toUpperCase(), columnDefinition.getSqlType().toUpperCase())) {
+                        throw new RuntimeException("Table field type: " + columnDefinition.getSqlType() + " and Tokenizer type : " + type + " do not match");
+                    }
                     ScalarFieldType scalarFieldType;
                     switch (type.toLowerCase()) {
                         case "default":
@@ -259,6 +269,24 @@ public interface IndexMapper {
                     .vectorIndexParameter(vectorIndexParameter)
                     .build()
             );
+        }
+    }
+
+    default boolean checkType(String tantivyType, String sqlType) {
+        List<String> strTypes = Arrays.asList("DEFAULT", "RAW", "SIMPLE", "STEM", "WHITESPACE", "NGRAM", "CHINESE");
+        switch (sqlType) {
+            case "STRING":
+            case "VARCHAR":
+                return strTypes.contains(tantivyType);
+            case "BIGINT":
+            case "LONG":
+                return tantivyType.equals("I64");
+            case "DOUBLE":
+                return tantivyType.equals("F64");
+            case "BYTES":
+                return tantivyType.equals("BYTES");
+            default:
+                throw new IllegalStateException("Unexpected value: " + tantivyType);
         }
     }
 

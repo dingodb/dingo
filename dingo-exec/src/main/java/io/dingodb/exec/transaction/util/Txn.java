@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.operation;
+package io.dingodb.exec.transaction.util;
 
+import com.codahale.metrics.Timer;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.base.TransactionType;
@@ -34,8 +37,7 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.params.CommitParam;
 import io.dingodb.exec.transaction.params.PreWriteParam;
 import io.dingodb.exec.transaction.params.RollBackParam;
-import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
-import io.dingodb.exec.transaction.util.TransactionUtil;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
@@ -43,9 +45,13 @@ import io.dingodb.store.api.transaction.data.Mutation;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
+import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
+import io.dingodb.tso.TsoService;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
@@ -55,12 +61,15 @@ import java.util.Map;
 import java.util.concurrent.Future;
 
 @Slf4j
-public class TxnInsertIndexOperation {
+public class Txn {
     int isolationLevel = IsolationLevel.ReadCommitted.getCode();
     long startTs;
     CommonId txnId;
-    Future future;
+    Future<?> future;
+    @Getter
+    @Setter
     long commitTs;
+    @Setter
     byte[] primaryKey;
     DingoType dingoType;
 
@@ -68,27 +77,30 @@ public class TxnInsertIndexOperation {
     int retryCnt;
     long timeOut;
 
-    public TxnInsertIndexOperation(Long startTs, CommonId txnId, long timeOut) {
+    CacheToObject primaryObj = null;
+
+    public Txn(CommonId txnId, boolean retry, int retryCnt, long timeOut) {
         dingoType = new BooleanType(true);
-        this.startTs = startTs;
+        this.startTs = txnId.seq;
         this.txnId = txnId;
-        this.retry = true;
-        this.retryCnt = 10;
+        this.retry = retry;
+        this.retryCnt = retryCnt;
         this.timeOut = timeOut;
     }
 
-    public int insertByTxn(List<Object[]> tupleList) {
-        CacheToObject primaryObj = null;
-        List<Object[]> secondList = null;
+    public int commit(List<TxnLocalData> tupleList) {
+        List<TxnLocalData> secondList = null;
         try {
             // get local mem data first data and transform to cacheToObject
-            Object[] primary = tupleList.get(0);
+            TxnLocalData primary = tupleList.get(0);
             primaryObj = getCacheToObject(primary);
 
             preWritePrimaryKey(primaryObj);
             // pre write second key
             secondList = tupleList.subList(1, tupleList.size());
-            preWriteSecondKey(secondList);
+            if (!secondList.isEmpty()) {
+                preWriteSecondKey(secondList);
+            }
         } catch (WriteConflictException e) {
             LogUtils.error(log, e.getMessage(), e);
             // rollback or retry
@@ -112,7 +124,9 @@ public class TxnInsertIndexOperation {
             }
             // commit second key
             assert secondList != null;
-            commitSecondData(secondList);
+            if (!secondList.isEmpty()) {
+                commitSecondData(secondList);
+            }
             return tupleList.size();
         } finally {
             if (future != null) {
@@ -121,15 +135,14 @@ public class TxnInsertIndexOperation {
         }
     }
 
-    public static CacheToObject getCacheToObject(Object[] tuples) {
-        TxnLocalData txnLocalData = (TxnLocalData) tuples[0];
+    public static CacheToObject getCacheToObject(TxnLocalData txnLocalData) {
         CommonId tableId = txnLocalData.getTableId();
         CommonId newPartId = txnLocalData.getPartId();
         int op = txnLocalData.getOp().getCode();
         byte[] key = txnLocalData.getKey();
         byte[] value = txnLocalData.getValue();
         return new CacheToObject(TransactionCacheToMutation.cacheToMutation(
-            op, key, value,0L, tableId, newPartId), tableId, newPartId
+            op, key, value,0L, tableId, newPartId, txnLocalData.getTxnId()), tableId, newPartId
         );
     }
 
@@ -137,7 +150,7 @@ public class TxnInsertIndexOperation {
         primaryKey = cacheToObject.getMutation().getKey();
         // 2、call sdk preWritePrimaryKey
         TxnPreWrite txnPreWrite = TxnPreWrite.builder()
-                .isolationLevel(IsolationLevel.of(
+            .isolationLevel(IsolationLevel.of(
                 isolationLevel
             ))
             .mutations(Collections.singletonList(cacheToObject.getMutation()))
@@ -170,7 +183,7 @@ public class TxnInsertIndexOperation {
                     this.future = store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
                     prewriteResult = true;
                 } catch (RegionSplitException e1) {
-                    lookSleep();
+                    Utils.sleep(100);
                     LogUtils.error(log, "prewrite primary region split, retry count:" + i);
                 }
             }
@@ -182,11 +195,13 @@ public class TxnInsertIndexOperation {
         }
     }
 
-    private static boolean txnPreWrite(PreWriteParam param, CommonId txnId, CommonId tableId, CommonId partId) {
+    public static boolean txnPreWrite(PreWriteParam param, CommonId txnId, CommonId tableId, CommonId partId) {
         // 1、call sdk TxnPreWrite
+        int size = param.getMutations().size();
+        Timer.Context timeCtx = DingoMetrics.getTimeContext("preWriteSize" + size);
         param.setTxnSize(param.getMutations().size());
         TxnPreWrite txnPreWrite = TxnPreWrite.builder()
-                .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
+            .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
             .mutations(param.getMutations())
             .primaryLock(param.getPrimaryKey())
             .startTs(param.getStartTs())
@@ -223,28 +238,29 @@ public class TxnInsertIndexOperation {
                     }
                     prewriteSecondResult = true;
                 } catch (RegionSplitException e1) {
-                    lookSleep();
+                    Utils.sleep(100);
                     LogUtils.error(log, "prewrite second region split, retry count:" + i);
                 }
             }
 
             return true;
+        } finally {
+            timeCtx.stop();
         }
     }
 
-    private void preWriteSecondKey(List<Object[]> secondList) {
+    private void preWriteSecondKey(List<TxnLocalData> secondList) {
         PreWriteParam param = new PreWriteParam(dingoType, primaryKey, startTs,
             isolationLevel, TransactionType.OPTIMISTIC, timeOut);
         param.init(null);
-        for (Object[] tuples : secondList) {
-            TxnLocalData txnLocalData = (TxnLocalData) tuples[0];
+        for (TxnLocalData txnLocalData : secondList) {
             CommonId txnId = txnLocalData.getTxnId();
             CommonId tableId = txnLocalData.getTableId();
             CommonId newPartId = txnLocalData.getPartId();
             int op = txnLocalData.getOp().getCode();
             byte[] key = txnLocalData.getKey();
             byte[] value = txnLocalData.getValue();
-            Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, 0L, tableId, newPartId);
+            Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, 0L, tableId, newPartId, txnId);
             CommonId partId = param.getPartId();
             if (partId == null) {
                 partId = newPartId;
@@ -275,7 +291,7 @@ public class TxnInsertIndexOperation {
             }
         }
 
-        if (param.getMutations().size() > 0) {
+        if (!param.getMutations().isEmpty()) {
             boolean result = txnPreWrite(param, txnId, param.getTableId(), param.getPartId());
             if (!result) {
                 throw new RuntimeException(txnId + " " + param.getPartId() + ",txnPreWrite false,PrimaryKey:"
@@ -286,51 +302,54 @@ public class TxnInsertIndexOperation {
     }
 
     public boolean commitPrimaryData(CacheToObject cacheToObject) {
-        // 1、call sdk commitPrimaryKey
-        TxnCommit commitRequest = TxnCommit.builder()
-            .isolationLevel(IsolationLevel.of(isolationLevel))
-            .startTs(startTs)
-            .commitTs(commitTs)
-            .keys(Collections.singletonList(primaryKey))
-            .build();
         try {
-            StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
-            return store.txnCommit(commitRequest);
-        } catch (RuntimeException e) {
-            LogUtils.error(log, e.getMessage(), e);
-            // 2、regin split
-            boolean commitResult = false;
-            int i = 0;
-            while (!commitResult) {
-                i ++;
+            // 1、call sdk commitPrimaryKey
+            long start = System.currentTimeMillis();
+            while (true) {
+                TxnCommit commitRequest = TxnCommit.builder()
+                    .isolationLevel(IsolationLevel.of(isolationLevel))
+                    .startTs(startTs)
+                    .commitTs(commitTs)
+                    .keys(Collections.singletonList(primaryKey))
+                    .build();
                 try {
+                    StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
+                    return store.txnCommit(commitRequest);
+                } catch (RegionSplitException e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                    // 2、regin split
                     CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, primaryKey);
-                    StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
-                    commitResult = store.txnCommit(commitRequest);
-                } catch (RegionSplitException e1) {
-                    lookSleep();
-                    LogUtils.error(log, "commit primary region split, retry count:" + i);
+                    cacheToObject.setPartId(regionId);
+                    Utils.sleep(100);
+                } catch (CommitTsExpiredException e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                    this.commitTs = TransactionManager.getCommitTs();
+                }
+                long elapsed = System.currentTimeMillis() - start;
+                if (elapsed > timeOut) {
+                    return false;
                 }
             }
-            return true;
-        } catch (Exception e) {
-            LogUtils.error(log, e.getMessage(), e);
-            return false;
+        } catch (Throwable throwable) {
+            LogUtils.error(log, throwable.getMessage(), throwable);
         }
+        return false;
     }
 
-    public void commitSecondData(List<Object[]> secondData) {
+    public void commitSecondData(List<TxnLocalData> secondData) {
         CommitParam param = new CommitParam(dingoType, isolationLevel, startTs,
             commitTs, primaryKey, TransactionType.OPTIMISTIC);
         param.init(null);
-        for (Object[] tuples : secondData) {
-            TxnLocalData txnLocalData = (TxnLocalData) tuples[0];
+        for (TxnLocalData txnLocalData : secondData) {
             CommonId txnId = txnLocalData.getTxnId();
             CommonId tableId = txnLocalData.getTableId();
             CommonId newPartId = txnLocalData.getPartId();
             byte[] key = txnLocalData.getKey();
             if (tableId.type == CommonId.CommonType.INDEX) {
-                IndexTable indexTable = TransactionUtil.getIndexDefinitions(tableId);
+                IndexTable indexTable = (IndexTable) TransactionManager.getIndex(txnId, tableId);
+                if (indexTable == null) {
+                    indexTable = (IndexTable) DdlService.root().getTable(tableId);
+                }
                 if (indexTable.indexType.isVector) {
                     KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
                     Object[] decodeKey = codec.decodeKeyPrefix(key);
@@ -370,7 +389,7 @@ public class TxnInsertIndexOperation {
                 param.setTableId(tableId);
             }
         }
-        if (param.getKeys().size() > 0) {
+        if (!param.getKeys().isEmpty()) {
             boolean result = txnCommit(param, txnId, param.getTableId(), param.getPartId());
             if (!result) {
                 throw new RuntimeException(txnId + " " + param.getPartId()
@@ -379,14 +398,14 @@ public class TxnInsertIndexOperation {
         }
     }
 
-    private static boolean txnCommit(CommitParam param, CommonId txnId, CommonId tableId, CommonId newPartId) {
+    public static boolean txnCommit(CommitParam param, CommonId txnId, CommonId tableId, CommonId newPartId) {
         // 1、Async call sdk TxnCommit
         TxnCommit commitRequest = TxnCommit.builder()
-                .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
-                .startTs(param.getStartTs())
-                .commitTs(param.getCommitTs())
-                .keys(param.getKeys())
-                .build();
+            .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
+            .startTs(param.getStartTs())
+            .commitTs(param.getCommitTs())
+            .keys(param.getKeys())
+            .build();
         try {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
             return store.txnCommit(commitRequest);
@@ -415,7 +434,7 @@ public class TxnInsertIndexOperation {
                     }
                     commitSecondResult = true;
                 } catch (RegionSplitException e1) {
-                    lookSleep();
+                    Utils.sleep(100);
                     LogUtils.error(log, "commit second region split, retry count:" + i);
                 }
             }
@@ -424,15 +443,7 @@ public class TxnInsertIndexOperation {
         }
     }
 
-    private static void lookSleep() {
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    public void resolveWriteConflict(RuntimeException exception, List<Object[]> secondList, List<Object[]> tupleList) {
+    public void resolveWriteConflict(RuntimeException exception, List<TxnLocalData> secondList, List<TxnLocalData> tupleList) {
         rollback(tupleList);
         int txnRetryLimit = retryCnt;
         RuntimeException conflictException = exception;
@@ -457,18 +468,20 @@ public class TxnInsertIndexOperation {
         }
     }
 
-    public synchronized void rollback(List<Object[]> tupleList) {
-        if (tupleList.size() == 0) {
-            return;
-        }
+    public synchronized void rollback(List<TxnLocalData> tupleList) {
         try {
+            if (primaryObj != null) {
+                rollBackPrimaryKey(primaryObj);
+            }
+            if (tupleList.isEmpty()) {
+                return;
+            }
             // 1、get commit_ts
             // 2、generator job、task、RollBackOperator
             // 3、run RollBack
             RollBackParam param = new RollBackParam(dingoType, isolationLevel, startTs, TransactionType.OPTIMISTIC, primaryKey);
             param.init(null);
-            for (Object[] tuples : tupleList) {
-                TxnLocalData txnLocalData = (TxnLocalData) tuples[0];
+            for (TxnLocalData txnLocalData : tupleList) {
                 CommonId txnId = txnLocalData.getTxnId();
                 CommonId tableId = txnLocalData.getTableId();
                 CommonId newPartId = txnLocalData.getPartId();
@@ -476,7 +489,10 @@ public class TxnInsertIndexOperation {
                 long forUpdateTs = 0;
 
                 if (tableId.type == CommonId.CommonType.INDEX) {
-                    IndexTable indexTable = TransactionUtil.getIndexDefinitions(tableId);
+                    IndexTable indexTable = (IndexTable) TransactionManager.getIndex(txnId, tableId);
+                    if (indexTable == null) {
+                        indexTable = (IndexTable) DdlService.root().getTable(tableId);
+                    }
                     if (indexTable.indexType.isVector) {
                         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
                         Object[] decodeKey = codec.decodeKeyPrefix(key);
@@ -518,7 +534,7 @@ public class TxnInsertIndexOperation {
                     param.addForUpdateTs(forUpdateTs);
                 }
             }
-            if (param.getKeys().size() > 0) {
+            if (!param.getKeys().isEmpty()) {
                 boolean result = txnRollBack(param, txnId, param.getTableId(), param.getPartId());
                 if (!result) {
                     throw new RuntimeException(txnId + " " + param.getPartId() + ",txnBatchRollback false");
@@ -535,13 +551,27 @@ public class TxnInsertIndexOperation {
         }
     }
 
+    private void rollBackPrimaryKey(CacheToObject cacheToObject) {
+        boolean result = TransactionUtil.rollBackPrimaryKey(
+            txnId,
+            cacheToObject.getTableId(),
+            cacheToObject.getPartId(),
+            isolationLevel,
+            startTs,
+            primaryKey
+        );
+        if (!result) {
+            throw new RuntimeException(txnId + ",rollBackPrimaryKey false");
+        }
+    }
+
     private static boolean txnRollBack(RollBackParam param, CommonId txnId, CommonId tableId, CommonId newPartId) {
         // 1、Async call sdk TxnRollBack
         TxnBatchRollBack rollBackRequest = TxnBatchRollBack.builder()
-                .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
-                .startTs(param.getStartTs())
-                .keys(param.getKeys())
-                .build();
+            .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
+            .startTs(param.getStartTs())
+            .keys(param.getKeys())
+            .build();
         try {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
             return store.txnBatchRollback(rollBackRequest);
@@ -566,5 +596,4 @@ public class TxnInsertIndexOperation {
             return true;
         }
     }
-
 }

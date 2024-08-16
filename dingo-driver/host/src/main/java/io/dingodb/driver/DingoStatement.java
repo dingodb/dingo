@@ -134,10 +134,10 @@ public class DingoStatement extends AvaticaStatement {
 
     @Override
     public synchronized void cancel() throws SQLException {
-        LogUtils.info(log, "dingo statement cancel," + this.handle.id);
+        //LogUtils.info(log, "dingo statement cancel," + this.handle.id);
         super.cancel();
         if (jobManager != null && job != null) {
-            LogUtils.info(log, "dingo statement cancel job:{}", job);
+            //LogUtils.info(log, "dingo statement cancel job:{}", job);
             jobManager.cancel(job.getJobId());
         }
     }
@@ -220,7 +220,9 @@ public class DingoStatement extends AvaticaStatement {
     public void initSqlProfile() {
         sqlProfile = new SqlProfile("statement", false);
         DingoConnection connection1 = (DingoConnection) connection;
-        sqlProfile.setSchema(connection1.getContext().getUsedSchema().getName());
+        if (connection1.getContext().getUsedSchema() != null) {
+            sqlProfile.setSchema(connection1.getContext().getUsedSchema().getName());
+        }
         String user = connection1.getContext().getOption("user");
         String host = connection1.getContext().getOption("host");
         sqlProfile.setSimpleUser(user + "@" + host);

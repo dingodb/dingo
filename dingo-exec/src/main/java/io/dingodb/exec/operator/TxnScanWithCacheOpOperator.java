@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.ScanWithRelOpParam;
@@ -32,8 +33,12 @@ public final class TxnScanWithCacheOpOperator extends TxnScanWithRelOpOperatorBa
 
     @Override
     protected @NonNull Scanner getScanner(@NonNull Context context, @NonNull Vertex vertex) {
-
-        if (((ScanWithRelOpParam) vertex.getParam()).getCoprocessorMap().get(context.getDistribution().getId()) != null) {
+        ScanWithRelOpParam param = vertex.getParam();
+        if (context.getDistribution().getId().seq != 80012) {
+            int i = 0;
+            LogUtils.debug(log, "for debug");
+        }
+        if (param.getCoprocessor(context.getDistribution().getId()) != null) {
             return RelOpUtils::doScan;
         }
         return RelOpUtils::doScanWithCacheOp;

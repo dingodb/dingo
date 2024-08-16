@@ -17,6 +17,7 @@
 package io.dingodb.exec.fun.mysql;
 
 import io.dingodb.common.environment.ExecutionEnvironment;
+import io.dingodb.common.session.SessionUtil;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
 
@@ -32,7 +33,8 @@ public class UserFun extends BinaryOp {
 
     @Override
     public Object evalValue(Object value0, Object value1, ExprConfig config) {
-        Connection connection = ExecutionEnvironment.connectionMap
+        SessionUtil sm = ExecutionEnvironment.INSTANCE.sessionUtil;
+        Connection connection = sm.connectionMap
             .values()
             .stream()
             .filter(v -> v.toString().equalsIgnoreCase(value1.toString()))

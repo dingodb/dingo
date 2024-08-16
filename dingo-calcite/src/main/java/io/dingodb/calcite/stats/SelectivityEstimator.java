@@ -135,7 +135,8 @@ public class SelectivityEstimator extends RexVisitorImpl<Double> {
     private static Pair<String, Column> extractCol(TableScan tableScan, RexCall pred) {
         RexInputRef rexInputRef = (RexInputRef) pred.getOperands().get(0);
         DingoTable dingoTable = tableScan.getTable().unwrap(DingoTable.class);
-        String schemaName = dingoTable.getSchema().name();
+        assert dingoTable != null;
+        String schemaName = dingoTable.getSchema().getSchemaName();
         String tableName = schemaName + "." + dingoTable.getTable().getName();
         return Pair.of(tableName, dingoTable.getTable().getColumns().get(rexInputRef.getIndex()));
     }

@@ -20,7 +20,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Longs;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
-import io.dingodb.calcite.schema.DingoSchema;
+import io.dingodb.calcite.schema.SubCalciteSchema;
+import io.dingodb.calcite.schema.SubSnapshotSchema;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.audit.DingoAudit;
@@ -167,8 +168,8 @@ public class DingoMeta extends MetaImpl {
         }
         return usedSchema.getSubSchemaMap().values().stream()
             .flatMap(s -> Stream.concat(getMatchedSubSchema(s, pat).stream(), Stream.of(s)))
-            .filter(s -> filter.test(((DingoSchema) s.schema).name()))
-            .filter(s -> verifyPrivilege(((DingoSchema) s.schema)))
+            .filter(s -> filter.test(((SubSnapshotSchema) s.schema).getSchemaName()))
+            .filter(s -> verifyPrivilege(((SubSnapshotSchema) s.schema)))
             .collect(Collectors.toSet());
     }
 
@@ -178,23 +179,24 @@ public class DingoMeta extends MetaImpl {
     ) {
         final Predicate<String> filter = patToFilter(pat, true);
         return schemas.stream()
+            .map(schema -> (SubCalciteSchema)schema)
             .flatMap(s -> s.getTableNames().stream()
                 .filter(filter)
-                .filter(name -> verifyPrivilege((DingoSchema) s.schema, name, "getTables"))
-                .map(name -> s.getTable(name, false)))
+                .filter(name -> verifyPrivilege((SubSnapshotSchema) s.schema, name, "getTables"))
+                .map(name -> s.getImplicitTable(name, false)))
             .collect(Collectors.toList());
     }
 
-    private boolean verifyPrivilege(DingoSchema schema) {
+    private boolean verifyPrivilege(SubSnapshotSchema schema) {
         return verifyPrivilege(schema, null, "getSchemas");
     }
 
-    private boolean verifyPrivilege(DingoSchema schema, String tableName, String command) {
+    private boolean verifyPrivilege(SubSnapshotSchema schema, String tableName, String command) {
         try {
             DingoConnection dingoConnection = (DingoConnection) connection;
             String user = dingoConnection.getContext().getOption("user");
             String host = dingoConnection.getContext().getOption("host");
-            return PrivilegeVerify.verify(user, host, schema.name(), tableName, command);
+            return PrivilegeVerify.verify(user, host, schema.getSchemaName(), tableName, command);
         } catch (Exception e) {
             return true;
         }
@@ -365,11 +367,15 @@ public class DingoMeta extends MetaImpl {
         ITransaction transaction = dingoConnection.getTransaction();
         DingoAudit dingoAudit;
         if (transaction != null) {
+            String schemaName = "DINGO";
+            if (dingoConnection.getContext().getUsedSchema() != null) {
+                schemaName = dingoConnection.getContext().getUsedSchema().getName();
+            }
             dingoAudit = DingoAudit.builder()
                 .serverId(DingoConfiguration.serverId())
                 .connId(sh.toString())
                 .jobSeqId(jobSeqId)
-                .schema(dingoConnection.getContext().getUsedSchema().getName())
+                .schema(schemaName)
                 .client(client)
                 .user(user)
                 .startTs(transaction.getStartTs())
@@ -636,7 +642,7 @@ public class DingoMeta extends MetaImpl {
             }
             done = fetchMaxRowCount == 0 || !iterator.hasNext();
             if (transaction != null) {
-                LogUtils.info(log, "{} sql:{} , txnAutoCommit:{}, txnType:{} ", transaction.getTxnId(),
+                LogUtils.debug(log, "{} sql:{} , txnAutoCommit:{}, txnType:{} ", transaction.getTxnId(),
                     signature.sql, transaction.isAutoCommit(), transaction.getType());
                 // clean optimistic current job data
                 if (transaction.isOptimistic() && isDml(signature)) {
@@ -686,9 +692,12 @@ public class DingoMeta extends MetaImpl {
             LogUtils.error(log, "Fetch catch exception:{}", e, e);
             throw ExceptionUtils.toRuntime(e);
         } finally {
-            ((DingoConnection) connection).setCommandStartTime(0);
+            DingoConnection connection1 = (DingoConnection) connection;
+            connection1.setCommandStartTime(0);
             addSqlProfile(sqlProfile, connection);
-            SqlLogUtils.info("DingoMeta fetch, cost: {}ms.", System.currentTimeMillis() - startTime);
+            if (connection1.getContext().getOption("sql_log").equalsIgnoreCase("")) {
+                SqlLogUtils.info("DingoMeta fetch, cost: {}ms.", System.currentTimeMillis() - startTime);
+            }
             MdcUtils.removeStmtId();
         }
     }
@@ -979,8 +988,10 @@ public class DingoMeta extends MetaImpl {
 
     public synchronized void cleanTransaction() throws SQLException {
         try {
-            ITransaction transaction = ((DingoConnection) connection).getTransaction();
+            DingoConnection dingoConnection = (DingoConnection) connection;
+            ITransaction transaction = dingoConnection.getTransaction();
             if (transaction != null) {
+                dingoConnection.getContext().getRootSchema().closeTxn();
                 transaction.close(jobManager);
             }
         } catch (Throwable e) {
@@ -996,6 +1007,7 @@ public class DingoMeta extends MetaImpl {
     public void commit(ConnectionHandle ch) {
         try {
             DingoConnection dingoConnection = (DingoConnection) connection;
+            dingoConnection.getContext().getRootSchema().closeTxn();
             if (dingoConnection.getCommitProfile() != null) {
                 dingoConnection.getCommitProfile().reset();
             }
@@ -1172,8 +1184,10 @@ public class DingoMeta extends MetaImpl {
         final CalciteSchema rootSchema = context.getRootSchema();
         // todo: current version, ignore name case
         final CalciteSchema schema = rootSchema.getSubSchema(schemaName, false);
-        final CalciteSchema.TableEntry table = schema.getTable(tableName, false);
-        final Table tableDefinition = ((DingoTable) table.getTable()).getTable();
+        SubCalciteSchema subCalciteSchema = (SubCalciteSchema) schema;
+        //final CalciteSchema.TableEntry table = schema.getTable(tableName, false);
+        assert subCalciteSchema != null;
+        final Table tableDefinition = subCalciteSchema.getTable(tableName);
         final TupleMapping mapping = tableDefinition.keyMapping();
         return createArrayResultSet(
             Linq4j.asEnumerable(IntStream.range(0, mapping.size())
@@ -1211,7 +1225,6 @@ public class DingoMeta extends MetaImpl {
             if (calciteSchema == null) {
                 throw ExceptionUtils.toRuntime(new IllegalArgumentException("schema does not exist"));
             }
-            DingoSchema schema  = (DingoSchema) calciteSchema.schema;
             // TODO scan index for {{schema}}
         }
 

@@ -406,6 +406,27 @@
     <logger name="io.dingodb.calcite.DingoDdlExecutor" level="${log.level}" additivity="false">
         <appender-ref ref="ASYNC-Ddl"/>
     </logger>
+    <logger name="io.dingodb.server.executor.ddl" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Ddl"/>
+    </logger>
+    <logger name="io.dingodb.calcite.ddl" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Ddl"/>
+    </logger>
+    <logger name="io.dingodb.store.service.SchemaSyncerService" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Ddl"/>
+    </logger>
+    <logger name="io.dingodb.server.executor.schedule.LoadInfoSchemaTask" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Ddl"/>
+    </logger>
+    <logger name="io.dingodb.meta.entity.InfoCache" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Ddl"/>
+    </logger>
+    <logger name="io.dingodb.server.executor.schedule.MetaLockCheckHandler" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Ddl"/>
+    </logger>
+    <logger name="io.dingodb.store.proxy.ddl.DdlHandler" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Ddl"/>
+    </logger>
 
     <appender name="ASYNC-Sql" class="ch.qos.logback.classic.AsyncAppender">
         <includeCallerData>true</includeCallerData>

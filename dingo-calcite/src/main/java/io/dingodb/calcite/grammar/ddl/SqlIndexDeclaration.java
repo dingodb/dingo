@@ -19,6 +19,7 @@ package io.dingodb.calcite.grammar.ddl;
 import io.dingodb.common.partition.PartitionDefinition;
 import lombok.Getter;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -27,16 +28,19 @@ import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 public class SqlIndexDeclaration extends SqlCall {
 
     public String index;
 
-    public SqlNodeList columnList;
+    public List<String> columnList;
 
-    public SqlNodeList withColumnList;
+    public List<String> withColumnList;
 
     @Getter
     Properties properties;
@@ -61,6 +65,42 @@ public class SqlIndexDeclaration extends SqlCall {
         String index,
         SqlNodeList columnList,
         SqlNodeList withColumnList,
+        Properties properties,
+        PartitionDefinition partDefinition,
+        int replica,
+        String indexType,
+        String engine
+    ) {
+        super(pos);
+        this.index = index;
+        if (columnList != null) {
+            this.columnList = columnList.getList().stream()
+                .filter(Objects::nonNull)
+                .map(SqlIdentifier.class::cast)
+                .map(SqlIdentifier::getSimple)
+                .map(String::toUpperCase)
+                .collect(Collectors.toCollection(ArrayList::new));
+        }
+        if (withColumnList != null) {
+            this.withColumnList = withColumnList.getList().stream()
+                .filter(Objects::nonNull)
+                .map(SqlIdentifier.class::cast)
+                .map(SqlIdentifier::getSimple)
+                .map(String::toUpperCase)
+                .collect(Collectors.toCollection(ArrayList::new));
+        }
+        this.properties = properties;
+        this.partDefinition = partDefinition;
+        this.replica = replica;
+        this.indexType = indexType;
+        this.engine = engine;
+    }
+
+    public SqlIndexDeclaration(
+        SqlParserPos pos,
+        String index,
+        List<String> columnList,
+        List<String> withColumnList,
         Properties properties,
         PartitionDefinition partDefinition,
         int replica,

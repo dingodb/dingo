@@ -22,8 +22,6 @@ import io.dingodb.meta.MetaService;
 import org.apache.calcite.plan.RelOptTable;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.List;
-
 public final class MetaServiceUtils {
 
     public static final String SCHEMA_NAME = "DINGO";
@@ -32,38 +30,18 @@ public final class MetaServiceUtils {
     }
 
     public static @NonNull CommonId getTableId(RelOptTable table) {
-        //String tableName = getTableName(table);
-        //MetaService metaService = getMetaService(table);
-        //return metaService.getTable(tableName).getTableId();
         DingoTable dingoTable = table.unwrapOrThrow(DingoTable.class);
         return dingoTable.getTable().tableId;
     }
 
     public static @NonNull TableInfo getTableInfo(RelOptTable table) {
-        //String tableName = getTableName(table);
-        MetaService metaService = getMetaService(table);
+        MetaService metaService = MetaService.root();
         DingoTable dingoTable = table.unwrapOrThrow(DingoTable.class);
         CommonId tableId = dingoTable.getTable().tableId;
-        //CommonId tableId = metaService.getTable(tableName).getTableId();
         return new TableInfo(
             tableId,
             metaService.getRangeDistribution(tableId)
         );
-    }
-
-    private static String getTableName(@NonNull RelOptTable table) {
-        List<String> names = table.getQualifiedName();
-        return names.get(names.size() - 1);
-    }
-
-    public static MetaService getMetaService(@NonNull RelOptTable table) {
-        List<String> names = table.getQualifiedName();
-        // ignore 0 root schema
-        MetaService metaService = MetaService.root();
-        for (int i = 1; i < names.size() - 1; i++) {
-            metaService = metaService.getSubMetaService(names.get(i));
-        }
-        return metaService;
     }
 
     public static String getSchemaName(String tableName) {

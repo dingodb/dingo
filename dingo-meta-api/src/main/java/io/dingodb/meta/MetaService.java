@@ -42,7 +42,6 @@ public interface MetaService {
 
     String ROOT_NAME = "DINGO_ROOT";
     String DINGO_NAME = "DINGO";
-    String META_NAME = "META";
 
     /**
      * Returns this meta service id.
@@ -107,7 +106,11 @@ public interface MetaService {
         createTables(tableDefinition, Collections.emptyList());
     }
 
-    void createTables(@NonNull TableDefinition tableDefinition, @NonNull List<TableDefinition> indexTableDefinitions);
+    long createTables(@NonNull TableDefinition tableDefinition, @NonNull List<TableDefinition> indexTableDefinitions);
+
+    default void rollbackCreateTable(@NonNull TableDefinition tableDefinition, @NonNull List<TableDefinition> indexTableDefinitions) {
+
+    }
 
     default void updateTable(CommonId tableId, @NonNull Table table) {
         throw new UnsupportedOperationException();
@@ -120,9 +123,9 @@ public interface MetaService {
      * @param tableName table name
      * @return true if success
      */
-    boolean dropTable(@NonNull String tableName);
+    boolean dropTable(String tableName);
 
-    boolean truncateTable(@NonNull String tableName);
+    long truncateTable(@NonNull String tableName, long tableEntityId);
 
 //    boolean dropTables(@NonNull Collection<CommonId> tableIds);
 
@@ -144,7 +147,7 @@ public interface MetaService {
      */
     Set<Table> getTables();
 
-    default void addDistribution(String tableName, PartitionDetailDefinition detail) {
+    default void addDistribution(String schemaName, String tableName, PartitionDetailDefinition detail) {
     }
 
     default Map<CommonId, Long> getTableCommitCount() {
@@ -175,7 +178,7 @@ public interface MetaService {
         throw new UnsupportedOperationException();
     }
 
-    default void createIndex(CommonId tableId, TableDefinition table, TableDefinition index) {
+    default void createIndex(CommonId tableId, String tableName, TableDefinition index) {
         throw new UnsupportedOperationException();
     }
 

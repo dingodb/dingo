@@ -21,6 +21,7 @@ import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.transaction.impl.TransactionCache;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.net.Channel;
 
 import java.util.List;
@@ -110,5 +111,9 @@ public interface ITransaction {
     long getPointStartTs();
 
     long getJobSeqId();
+
+    void setIs(InfoSchema is);
+
+    InfoSchema getIs();
 
 }

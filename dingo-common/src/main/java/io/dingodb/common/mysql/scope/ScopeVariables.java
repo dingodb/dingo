@@ -17,6 +17,7 @@
 package io.dingodb.common.mysql.scope;
 
 import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.common.util.Utils;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -91,6 +92,27 @@ public final class ScopeVariables {
 
     public static Double getRequestFactor() {
         return (Double) executorProp.getOrDefault("request_factor", 15000D);
+    }
+
+    public static boolean runDdl() {
+        String runDdl = executorProp.getOrDefault("run_ddl", "on").toString();
+        return runDdl.equalsIgnoreCase("on");
+    }
+
+    public static void testIndexBlock() {
+        while (true) {
+            String testRun = executorProp.getOrDefault("test_index", "off").toString();
+            if (testRun.equalsIgnoreCase("off")) {
+                break;
+            } else {
+                Utils.sleep(1000);
+                testRun = executorProp.getOrDefault("test_continue", "off").toString();
+                if (testRun.equalsIgnoreCase("on")) {
+                    executorProp.setProperty("test_continue", "off");
+                    break;
+                }
+            }
+        }
     }
 
     public static synchronized void setExecutorProp(String key, String val) {

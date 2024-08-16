@@ -142,7 +142,7 @@ public class TransactionCache {
                 value,
                 0L,
                 tableId,
-                newPartId), tableId, newPartId
+                newPartId, txnId), tableId, newPartId
             );
             LogUtils.debug(log, "txnId:{} primary key is {}" , txnId, primaryKey);
             if (op != Op.CheckNotExists.getCode()) {

@@ -18,13 +18,15 @@ package io.dingodb.driver;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.meta.entity.Table;
+import io.dingodb.common.session.SessionUtil;
+import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.transaction.api.LockType;
-import io.dingodb.transaction.api.TableLock;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class TransactionService implements io.dingodb.transaction.api.TransactionService {
 
@@ -55,6 +57,30 @@ public class TransactionService implements io.dingodb.transaction.api.Transactio
     @Override
     public void unlockTable(Connection connection) {
         ((DingoConnection) connection).unlockTables();
+    }
+
+    @Override
+    public Iterator<Object[]> getMdlInfo() {
+        Map<String, Connection> connectionMap = SessionUtil.INSTANCE.getConnectionMap();
+        return connectionMap.values().stream()
+            .map(conn -> (DingoConnection)conn)
+            .filter(dc -> !dc.getMdlLockJobMap().isEmpty())
+            .filter(dc -> dc.getTransaction() != null)
+            .map(dc -> {
+                long jobId = dc.getMdlLockJobMap().keySet().stream().findFirst().orElse(0L);
+                ITransaction transaction = dc.getTransaction();
+                List<String> sqlList = dc.getTransaction().getSqlList();
+                Object[] res = new Object[3];
+                res[0] = jobId;
+                res[1] = transaction.getStartTs();
+                StringBuilder sqlBuilder = new StringBuilder();
+                for (String sql : sqlList) {
+                    sqlBuilder.append(sql).append(";");
+                }
+                res[2] = sqlBuilder.toString();
+                return res;
+            })
+            .iterator();
     }
 
     @AutoService(io.dingodb.transaction.api.TransactionServiceProvider.class)

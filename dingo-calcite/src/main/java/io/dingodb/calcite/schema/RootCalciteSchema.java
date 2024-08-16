@@ -19,8 +19,11 @@ package io.dingodb.calcite.schema;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
-import io.dingodb.common.util.Optional;
+import io.dingodb.common.CommonId;
+import io.dingodb.meta.DdlService;
+import io.dingodb.meta.entity.InfoSchema;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.schema.Function;
@@ -33,16 +36,20 @@ import org.apache.calcite.util.NameSet;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public class DingoCalciteSchema extends CalciteSchema {
+public class RootCalciteSchema extends CalciteSchema {
 
-    public final AbstractSchema schema;
+    @Getter
+    private Map<Long, Long> relatedTableForMdl = new ConcurrentHashMap<>();
 
     @Builder
-    public DingoCalciteSchema(
+    protected RootCalciteSchema(
         CalciteSchema parent,
-        AbstractSchema schema,
+        RootSnapshotSchema schema,
         String name,
         NameMap<CalciteSchema> subSchemas,
         NameMap<TableEntry> tables,
@@ -56,68 +63,68 @@ public class DingoCalciteSchema extends CalciteSchema {
         super(
             parent, schema, name, subSchemas, tables, lattices, types, functions, functionNames, nullaryFunctions, path
         );
-        this.schema = schema;
     }
 
     @Override
     protected @Nullable CalciteSchema getImplicitSubSchema(String schemaName, boolean caseSensitive) {
         String name = schemaName.toUpperCase();
-        return Optional.mapOrNull(
-            schema.getSubSchema(name),
-            $ -> builder().schema($).name(name).build()
-        );
+        Schema subSchema = schema.getSubSchema(name);
+        if (subSchema == null) {
+            return null;
+        }
+        return SubCalciteSchema.builder().rootCalciteSchema(this).schema(subSchema).name(schemaName).build();
     }
 
     @Override
-    protected TableEntry getImplicitTable(String tableName, boolean caseSensitive) {
-        String name = tableName.toUpperCase();
-        return Optional.mapOrNull(
-            schema.getTable(name),
-            $ -> new TableEntryImpl(this, name, $, ImmutableList.of())
-        );
-    }
-
-    @Override
-    protected TypeEntry getImplicitType(String name, boolean caseSensitive) {
+    protected @Nullable TableEntry getImplicitTable(String tableName, boolean caseSensitive) {
         return null;
     }
 
     @Override
-    protected TableEntry getImplicitTableBasedOnNullaryFunction(String tableName, boolean caseSensitive) {
+    protected @Nullable TypeEntry getImplicitType(String name, boolean caseSensitive) {
+        return null;
+    }
+
+    @Override
+    protected @Nullable TableEntry getImplicitTableBasedOnNullaryFunction(String tableName, boolean caseSensitive) {
         return null;
     }
 
     @Override
     protected void addImplicitSubSchemaToBuilder(ImmutableSortedMap.Builder<String, CalciteSchema> builder) {
-        if (schema instanceof DingoRootSchema) {
-            DingoRootSchema rootSchema = (DingoRootSchema) schema;
-            rootSchema.getSubSchemas().forEach((k, v) -> builder.put(k, builder().schema(v).name(k).build()));
-        }
+        RootSnapshotSchema rootSchema = (RootSnapshotSchema) schema;
+        Set<String> subSchemaNames = schema.getSubSchemaNames();
+        subSchemaNames.forEach(name -> {
+            SubSnapshotSchema subSnapshotSchema = new SubSnapshotSchema(
+                rootSchema.is, name, rootSchema.context, ImmutableList.of(RootSnapshotSchema.ROOT_SCHEMA_NAME, name)
+            );
+            builder.put(name, SubCalciteSchema.builder().rootCalciteSchema(this).name(name).schema(subSnapshotSchema).build());
+        });
     }
 
     @Override
-    protected void addImplicitTableToBuilder(ImmutableSortedSet.Builder<String> builder) {
+    public void addImplicitTableToBuilder(ImmutableSortedSet.Builder<String> builder) {
         schema.getTableNames().forEach(builder::add);
     }
 
     @Override
     protected void addImplicitFunctionsToBuilder(ImmutableList.Builder<Function> builder, String name, boolean caseSensitive) {
-        // ignore
+
     }
 
     @Override
     protected void addImplicitFuncNamesToBuilder(ImmutableSortedSet.Builder<String> builder) {
-        // ignore
+
     }
 
     @Override
     protected void addImplicitTypeNamesToBuilder(ImmutableSortedSet.Builder<String> builder) {
-        // ignore
+
     }
 
     @Override
     protected void addImplicitTablesBasedOnNullaryFunctionsToBuilder(ImmutableSortedMap.Builder<String, Table> builder) {
-        // ignore
+
     }
 
     @Override
@@ -132,7 +139,7 @@ public class DingoCalciteSchema extends CalciteSchema {
 
     @Override
     public void setCache(boolean cache) {
-        // ignore
+
     }
 
     @Override
@@ -140,4 +147,25 @@ public class DingoCalciteSchema extends CalciteSchema {
         return null;
     }
 
+    public InfoSchema initTxn(CommonId txnId) {
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) schema;
+        DdlService ddlService = DdlService.root();
+        InfoSchema is = ddlService.getIsLatest();
+        rootSnapshotSchema.initTxn(is, txnId);
+        return is;
+    }
+
+    public void closeTxn() {
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) schema;
+        rootSnapshotSchema.destoryTxn();
+        this.relatedTableForMdl.clear();
+    }
+
+    public void putRelatedTable(long tableId, long ver) {
+        this.relatedTableForMdl.put(tableId, ver);
+    }
+
+    public void removeRelatedTable(long tableId) {
+        this.relatedTableForMdl.remove(tableId);
+    }
 }

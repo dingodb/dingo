@@ -90,7 +90,10 @@ public final class StmtSummaryMap {
     public static void addProfileQueue(SqlProfile sqlProfile, Connection connection) {
         boolean slowQueryEnabled = false;
         long slowQueryThreshold = 5000;
+        boolean ddlInnerProfile = false;
         try {
+            String ddlProfile = connection.getClientInfo("ddl_inner_profile");
+            ddlInnerProfile = "on".equalsIgnoreCase(ddlProfile);
             String enable = connection.getClientInfo("sql_profile_enable");
             if ("off".equals(enable)) {
                 return;
@@ -105,8 +108,12 @@ public final class StmtSummaryMap {
             log.error(ignored.getMessage(), ignored);
         }
         sqlProfile.end();
-        if (slowQueryEnabled && sqlProfile.duration > slowQueryThreshold) {
+        if ((slowQueryEnabled && sqlProfile.duration > slowQueryThreshold)
+            || (ddlInnerProfile && sqlProfile.duration > 100)) {
             log.info(sqlProfile.dumpTree());
+        }
+        if (ddlInnerProfile) {
+            return;
         }
         try {
             if (sqlProfile.getStatementType() != null) {

@@ -56,8 +56,6 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
-import io.dingodb.store.api.transaction.data.IsolationLevel;
-import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
@@ -67,7 +65,6 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNumericLiteral;
@@ -118,7 +115,7 @@ public final class DingoVectorVisitFun {
         DingoRelOptTable relTable = rel.getTable();
         DingoTable dingoTable = relTable.unwrap(DingoTable.class);
 
-        MetaService metaService = MetaService.root().getSubMetaService(relTable.getSchemaName());
+        MetaService metaService = MetaService.root();
         assert dingoTable != null;
         CommonId tableId = dingoTable.getTableId();
         Table td = dingoTable.getTable();

@@ -26,7 +26,6 @@ import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.DocumentService;
@@ -73,6 +72,7 @@ import io.dingodb.store.api.transaction.exception.LockWaitException;
 import io.dingodb.store.api.transaction.exception.PrimaryMismatchException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.store.proxy.Configuration;
+import io.dingodb.store.service.InfoSchemaService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -232,22 +232,21 @@ public class TransactionStoreInstance {
 
     public static void getJoinedPrimaryKey(TxnPreWrite txnPreWrite, List<AlreadyExist> keysAlreadyExist) {
         CommonId tableId = LockExtraDataList.decode(txnPreWrite.getLockExtraDatas().get(0).getExtraData()).getTableId();
-        Table table = MetaService.root().getTable(tableId);
+        InfoSchemaService infoSchemaService = new InfoSchemaService(txnPreWrite.getStartTs());
+        Table table = infoSchemaService.getTableDef(tableId.domain, tableId.seq);
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
         AtomicReference<String> joinedKey = new AtomicReference<>("");
         TupleMapping keyMapping = table.keyMapping();
-        keysAlreadyExist.stream().forEach(
-            i -> {
-                Optional.ofNullable(codec.decodeKeyPrefix(i.getKey()))
-                    .ifPresent(keyValues -> {
-                        joinedKey.set(joinPrimaryKeys(joinedKey.get(), joinPrimaryKey(keyValues, keyMapping)));
-                    });
-            }
+        keysAlreadyExist.forEach(
+            i -> Optional.ofNullable(codec.decodeKeyPrefix(i.getKey()))
+                .ifPresent(keyValues -> {
+                    joinedKey.set(joinPrimaryKeys(joinedKey.get(), joinPrimaryKey(keyValues, keyMapping)));
+                })
         );
         throw new DuplicateEntryException("Duplicate entry " + joinedKey.get() + " for key '" + table.getName() + ".PRIMARY'");
     }
 
-    public Future txnPreWritePrimaryKey(TxnPreWrite txnPreWrite, long timeOut) {
+    public Future<?> txnPreWritePrimaryKey(TxnPreWrite txnPreWrite, long timeOut) {
         if (txnPreWrite(txnPreWrite, timeOut)) {
             LogUtils.info(log, "txn heartbeat, startTs:{}", txnPreWrite.getStartTs());
             return Executors.scheduleWithFixedDelayAsync("txn-heartbeat-" + txnPreWrite.getStartTs(), () -> heartbeat(txnPreWrite), 1, 1, SECONDS);
@@ -594,7 +593,7 @@ public class TransactionStoreInstance {
                     if (funName.equalsIgnoreCase("txnPessimisticLock")) {
                         continue;
                     }
-                    throw new WriteConflictException(writeConflict.toString());
+                    throw new WriteConflictException(writeConflict.toString(), writeConflict.getKey());
                 }
             }
         }
@@ -721,7 +720,7 @@ public class TransactionStoreInstance {
                 WriteConflict writeConflict = txnResultInfo.getWriteConflict();
                 LogUtils.info(log, "{} writeConflict : {}", funName, writeConflict);
                 if (writeConflict != null) {
-                    throw new WriteConflictException(writeConflict.toString());
+                    throw new WriteConflictException(writeConflict.toString(), writeConflict.getKey());
                 }
             }
         }

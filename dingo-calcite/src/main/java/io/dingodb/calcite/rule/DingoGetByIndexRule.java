@@ -28,6 +28,7 @@ import io.dingodb.calcite.utils.IndexValueMapSet;
 import io.dingodb.calcite.utils.IndexValueMapSetVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
@@ -241,6 +242,9 @@ public class DingoGetByIndexRule extends ConverterRule {
         assert dingoTable != null;
         List<IndexTable> indexes = dingoTable.getTable().getIndexes();
         for (IndexTable index : indexes) {
+            if (index.getSchemaState() != SchemaState.SCHEMA_PUBLIC) {
+                continue;
+            }
             if (index.getProperties() == null) {
                 continue;
             }

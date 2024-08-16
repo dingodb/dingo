@@ -58,8 +58,10 @@ import io.dingodb.meta.entity.Table;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rex.RexNode;
+import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -93,8 +95,12 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
         if (rel.getFilter() != null) {
             info = rel.getFilter().toString();
         }
-        String table = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable().getName();
-        return new Explain("dingoGetByKeys", rel.getRowCount(), "root", table, info);
+        List<String> nameList = rel.getIndexTdMap().values()
+            .stream()
+            .map(Table::getName)
+            .collect(Collectors.toList());
+        String table = StringUtils.join(nameList);
+        return new Explain("dingoGetByIndex", rel.getRowCount(), "root", table, info);
     }
 
     @Override

@@ -20,7 +20,10 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 public class WriteConflictException extends RuntimeException {
-    public WriteConflictException(String message) {
+    public byte[] key;
+    public int doneCnt;
+    public WriteConflictException(String message, byte[] key) {
         super(message);
+        this.key = key;
     }
 }

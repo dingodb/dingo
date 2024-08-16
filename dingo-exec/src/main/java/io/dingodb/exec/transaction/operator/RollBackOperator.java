@@ -34,9 +34,11 @@ import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.base.TxnLocalData;
+import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.params.RollBackParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
@@ -107,7 +109,10 @@ public class RollBackOperator extends TransactionOperator {
             }
             byte[] keyBytes = Arrays.copyOf(key, key.length);
             if (tableId.type == CommonId.CommonType.INDEX) {
-                IndexTable indexTable = TransactionUtil.getIndexDefinitions(tableId);
+                IndexTable indexTable = (IndexTable) TransactionManager.getIndex(txnId, tableId);
+                if (indexTable == null) {
+                    indexTable = (IndexTable) DdlService.root().getTable(tableId);
+                }
                 if (indexTable.indexType.isVector) {
                     KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
                     Object[] decodeKey = codec.decodeKeyPrefix(key);
@@ -274,7 +279,7 @@ public class RollBackOperator extends TransactionOperator {
         synchronized (vertex) {
             if (!(fin instanceof FinWithException)) {
                 RollBackParam param = vertex.getParam();
-                if (param.getKeys().size() > 0) {
+                if (!param.getKeys().isEmpty()) {
                     CommonId txnId = vertex.getTask().getTxnId();
                     boolean result = txnRollBack(
                         param,

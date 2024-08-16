@@ -20,21 +20,24 @@ import io.dingodb.common.profile.StmtSummaryMap;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.InfoSchemaScanParam;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Partition;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.transaction.api.TransactionService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -49,22 +52,21 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
     protected @NonNull Iterator<Object[]> createSourceIterator(Vertex vertex) {
         InfoSchemaScanParam param = vertex.getParam();
         String target = param.getTarget();
-        MetaService metaService = MetaService.root();
         switch (target.toUpperCase()) {
             case "GLOBAL_VARIABLES":
                 return getGlobalVariables();
             case "TABLES":
-                return getInformationTables(metaService);
+                return getInformationTables();
             case "SCHEMATA":
-                return getInformationSchemata(metaService);
+                return getInformationSchemata();
             case "COLUMNS":
-                return getInformationColumns(metaService);
+                return getInformationColumns();
             case "PARTITIONS":
-                return getInformationPartitions(metaService);
+                return getInformationPartitions();
+            case "STATISTICS":
+                return getInformationStatistics();
             case "EVENTS":
             case "TRIGGERS":
-            case "STATISTICS":
-                return getInformationStatistics(metaService);
             case "ROUTINES":
             case "FILES":
             case "KEY_COLUMN_USAGE":
@@ -77,9 +79,11 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             case "COLLATIONS":
                 return getEmpty();
             case "TABLE_CONSTRAINTS":
-                return getInformationTableConstraints(metaService);
+                return getInformationTableConstraints();
             case "STATEMENTS_SUMMARY":
                 return StmtSummaryMap.iterator();
+            case "DINGO_MDL_VIEW":
+                return getMdlView();
             default:
                 throw new RuntimeException("no source");
         }
@@ -99,12 +103,13 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         };
     }
 
-    private static Iterator<Object[]> getInformationColumns(MetaService metaService) {
-        Map<String, MetaService> metaServiceMap = metaService.getSubMetaServices();
-        return metaServiceMap
-            .entrySet()
+    private static Iterator<Object[]> getInformationColumns() {
+        InfoSchema is = DdlService.root().getIsLatest();
+        return is.getSchemaMap()
+            .values()
             .stream()
-            .flatMap(schema -> schema.getValue().getTables()
+            .flatMap(schemaTables -> schemaTables.getTables()
+                .values()
                 .stream()
                 .flatMap(td -> {
                     List<Object[]> colRes = new ArrayList<>();
@@ -112,7 +117,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                         Column column = td.columns.get(i);
                         colRes.add(new Object[]{
                             "def",
-                            schema.getKey(),
+                            schemaTables.getSchemaInfo().getName(),
                             td.getName(),
                             column.name,
                             // ordinal position
@@ -141,24 +146,28 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                         });
                     }
                     return colRes.stream();
-                })
-            ).iterator();
+                })).iterator();
     }
 
-    private static Iterator<Object[]> getInformationPartitions(MetaService metaService) {
-        Map<String, MetaService> metaServiceMap = metaService.getSubMetaServices();
-        return metaServiceMap.entrySet().stream().flatMap(schema -> schema.getValue().getTables()
+    private static Iterator<Object[]> getInformationPartitions() {
+        InfoSchema is = DdlService.root().getIsLatest();
+        return is.getSchemaMap()
+            .values()
             .stream()
-            .flatMap(table -> {
-                if (table.partitions == null || table.getPartitions().isEmpty()) {
-                    LogUtils.warn(log, "The table {} not have partition, please check meta.", table.name);
-                    return Stream.<Object[]>of(getPartitionDetail(schema.getKey(), table, null));
-                } else {
-                    return table.getPartitions()
-                        .stream()
-                        .map(partition -> getPartitionDetail(schema.getKey(), table, partition));
-                }
-            })).iterator();
+            .flatMap(schemaTables -> schemaTables.getTables()
+                .values()
+                .stream()
+                .flatMap(table -> {
+                    if (table.partitions == null || table.getPartitions().isEmpty()) {
+                        LogUtils.warn(log, "The table {} not have partition, please check meta.", table.name);
+                        return Stream.<Object[]>of(getPartitionDetail(schemaTables.getSchemaInfo().getName(), table, null));
+                    } else {
+                        return table.getPartitions()
+                            .stream()
+                            .map(partition -> getPartitionDetail(schemaTables.getSchemaInfo().getName(), table, partition));
+                    }
+                }))
+            .iterator();
     }
 
     private static Object[] getPartitionDetail(String schemaName, Table td, Partition partition) {
@@ -223,22 +232,22 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         return resList.iterator();
     }
 
-    private static Iterator<Object[]> getInformationSchemata(MetaService metaService) {
-        Map<String, MetaService> metaServiceMap = metaService.getSubMetaServices();
-        List<Object[]> schemaList = metaServiceMap
+    private static Iterator<Object[]> getInformationSchemata() {
+        InfoSchema is = DdlService.root().getIsLatest();
+        return is.getSchemaMap()
             .keySet()
             .stream()
             .map(service -> new Object[]{"def", service, "utf8", "utf8_bin", null})
-            .collect(Collectors.toList());
-        return schemaList.iterator();
+            .iterator();
     }
 
-    private static Iterator<Object[]> getInformationTables(MetaService metaService) {
-        Map<String, MetaService> metaServiceMap = metaService.getSubMetaServices();
-        List<Object[]> tuples = metaServiceMap.entrySet()
+    private static Iterator<Object[]> getInformationTables() {
+        MetaService metaService = MetaService.root();
+        InfoSchema is = DdlService.root().getIsLatest();
+        return is.getSchemaMap().values()
             .stream()
             .flatMap(e -> {
-                Set<Table> tables = e.getValue().getTables();
+                Collection<Table> tables = e.getTables().values();
                 return tables.stream()
                     .map(td -> {
                         Timestamp updateTime = null;
@@ -252,7 +261,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                         boolean hasInc = td.getColumns().stream().anyMatch(Column::isAutoIncrement);
                         try {
                             return new Object[]{"def",
-                                e.getKey(),
+                                e.getSchemaInfo().getName(),
                                 td.getName(),
                                 td.tableType,
                                 td.getEngine(),
@@ -286,44 +295,43 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                     }).filter(Objects::nonNull)
                     .collect(Collectors.toList()).stream();
             })
-            .collect(Collectors.toList());
-        return tuples.iterator();
+            .iterator();
     }
 
-    private static Iterator<Object[]> getInformationTableConstraints(MetaService metaService) {
-        Map<String, MetaService> metaServiceMap = metaService.getSubMetaServices();
-        List<Object[]> tuples = metaServiceMap.entrySet()
+    private static Iterator<Object[]> getInformationTableConstraints() {
+        InfoSchema is = DdlService.root().getIsLatest();
+        return is.getSchemaMap()
+            .values()
             .stream()
             .flatMap(e -> {
-                Set<Table> tables = e.getValue().getTables();
+                Collection<Table> tables = e.getTables().values();
                 return tables.stream()
                     .map(td -> new Object[]{"def",
-                        e.getKey(),
+                        e.getSchemaInfo().getName(),
                         "PRIMARY",
-                        e.getKey(),
+                        e.getSchemaInfo().getName(),
                         td.getName(),
                         "PRIMARY KEY"
                     })
                     .collect(Collectors.toList()).stream();
-            })
-            .collect(Collectors.toList());
-        return tuples.iterator();
+            }).iterator();
     }
 
-    private static Iterator<Object[]> getInformationStatistics(MetaService metaService) {
-        Map<String, MetaService> metaServiceMap = metaService.getSubMetaServices();
-        List<Object[]> tuples = metaServiceMap.entrySet()
+    private static Iterator<Object[]> getInformationStatistics() {
+        InfoSchema is = DdlService.root().getIsLatest();
+        return is.getSchemaMap()
+            .values()
             .stream()
             .flatMap(e -> {
-                Set<Table> tables = e.getValue().getTables();
+                Collection<Table> tables = e.getTables().values();
                 List<Object[]> priKeyList = tables.stream()
                     .flatMap(table -> table.getColumns().stream().filter(Column::isPrimary).map(
                         column -> new Object[]{
                             "def",
-                            e.getKey(),
+                            e.getSchemaInfo().getName(),
                             table.name,
                             0,
-                            e.getKey(),
+                            e.getSchemaInfo().getName(),
                             "PRIMARY",
                             column.primaryKeyIndex,
                             column.name,
@@ -341,10 +349,10 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                     .flatMap(index -> index.getColumns().stream().filter(Column::isPrimary).map(
                         column -> new Object[]{
                             "def",
-                            e.getKey(),
+                            e.getSchemaInfo().getName(),
                             index.name,
                             index.isUnique() ? 0 : 1,
-                            e.getKey(),
+                            e.getSchemaInfo().getName(),
                             index.getName(),
                             column.primaryKeyIndex,
                             column.name,
@@ -360,9 +368,11 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                     ))).collect(Collectors.toList());
                 priKeyList.addAll(indexColList);
                 return priKeyList.stream();
-            })
-            .collect(Collectors.toList());
-        return tuples.iterator();
+            }).iterator();
+    }
+
+    private static Iterator<Object[]> getMdlView() {
+        return TransactionService.getDefault().getMdlInfo();
     }
 
 }

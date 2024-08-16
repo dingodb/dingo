@@ -86,6 +86,13 @@ public class Profile {
         }
     }
 
+    public long getDuration() {
+        if (duration == 0 && end > start) {
+            duration = end - start;
+        }
+        return duration;
+    }
+
     public String dumpTree(Profile profile, byte[] prefix) {
         String node;
         try {
@@ -95,11 +102,12 @@ public class Profile {
         }
         if (!"base".equals(profile.type)) {
             dagText.append(node).append(profile.type)
-                .append(",duration:").append(profile.duration)
+                .append(",duration:").append(profile.getDuration())
                 .append(",count:").append(profile.count)
                 .append(",start:").append(profile.start)
                 .append(",end:").append(profile.end)
-                .append("  ").append(profile.location).append("\r\n");
+                .append("\r\n");
+                //.append("  ").append(profile.location).append("\r\n");
         }
         for (Profile child : profile.children) {
             byte[] prefix1 = new byte[prefix.length + 2];
@@ -108,7 +116,7 @@ public class Profile {
             if (child != null) {
                 dumpTree(child, prefix1);
             } else {
-                log.info("child is null:" + profile);
+                //log.info("child is null:" + profile);
             }
         }
 

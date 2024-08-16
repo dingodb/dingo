@@ -17,25 +17,41 @@
 package io.dingodb.meta;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ddl.DdlJob;
+import io.dingodb.common.ddl.DdlUtil;
+import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.mysql.MysqlByteUtil;
+
+import io.dingodb.common.tenant.TenantConstant;
+import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.Table;
 
 import java.util.List;
 import java.util.Map;
 
 public interface InfoSchemaService {
+    long tenantId = TenantConstant.TENANT_ID;
     byte[] mTenants = "tenants".getBytes();
     String mTenantPrefix= "tenant";
     //byte[] mDBs = "DBs".getBytes();
     String mDBPrefix= "DB";
     String mTablePrefix= "Table";
     String mIndexPrefix= "Index";
+    String mSchemaDiffPrefix = "Diff";
     String TEMPLATE = "%s:%d";
+    String mSchemaVersionKey = "SchemaVersionKey";
+    String nextGlobalID = "NextGlobalID";
+    byte[] mDDLJobHistoryKey = "DDLJobHistory".getBytes();
+
+    String mDdlTemplate = "%s:%s:%d";
+
+    String mSchemaVerTemplate = "%s:%s";
+
+    String globalSchemaVer = String.format(mSchemaVerTemplate, DdlUtil.tenantPrefix, DdlUtil.DDLGlobalSchemaVersion);
+    String expSchemaVer = String.format(mSchemaVerTemplate, DdlUtil.tenantPrefix, DdlUtil.DDLExpSchemaVersion);
 
     static InfoSchemaService root() {
-        InfoSchemaServiceProvider provider = InfoSchemaServiceProvider.getDefault();
-        if (provider == null) {
-            return null;
-        }
         return InfoSchemaServiceProvider.getDefault().root();
     }
 
@@ -99,8 +115,27 @@ public interface InfoSchemaService {
     }
 
     default byte[] IndexKey(long indexId) {
-        String indexKeyStr = String.format(TEMPLATE, mIndexPrefix, indexId);;
+        String indexKeyStr = String.format(TEMPLATE, mIndexPrefix, indexId);
         return indexKeyStr.getBytes();
+    }
+
+    default byte[] schemaDiffKey(long schemaVersion) {
+        String schemaDiffKey = String.format(mDdlTemplate, DdlUtil.tenantPrefix, mSchemaDiffPrefix, schemaVersion);
+        return schemaDiffKey.getBytes();
+    }
+
+    default byte[] schemaVerKey() {
+        String schemaVerKey = String.format(mSchemaVerTemplate, DdlUtil.tenantPrefix, mSchemaVersionKey);
+        return schemaVerKey.getBytes();
+    }
+
+    default byte[] nextGlobalID() {
+        String globalId = String.format(mSchemaVerTemplate, DdlUtil.tenantPrefix, nextGlobalID);
+        return globalId.getBytes();
+    }
+
+    default byte[] jobIdKey(Long jobId) {
+        return MysqlByteUtil.longToBytesBigEndian(jobId);
     }
 
     boolean checkTenantExists(byte[] tenantKey);
@@ -127,10 +162,16 @@ public interface InfoSchemaService {
 
     SchemaInfo getSchema(String schemaName);
 
+    void updateSchema(SchemaInfo schemaInfo);
+
     List<SchemaInfo> listSchema();
 
     Object getTable(long schemaId, long tableId);
     Object getTable(CommonId tableId);
+
+    Table getTableDef(long schemaId, long tableId);
+    Table getTableDef(long schemaId, String tableName);
+    IndexTable getIndexDef(long tableId, long indexId);
 
     Object getTable(long schemaId, String tableName);
     Object getTable(String schemaName, String tableName);
@@ -149,16 +190,40 @@ public interface InfoSchemaService {
 
     long genSchemaId();
 
-    long genTenantId();
-
-    long genTableId();
-
-    long genIndexId();
-
     List<Object> scanRegions(byte[] startKey, byte[] endKey);
 
     int getStoreReplica();
 
     int getIndexReplica();
+
+    int getDocumentReplica();
+
+    long getSchemaVersionWithNonEmptyDiff();
+
+    Map<String, Table> listTableDef(long schemaId);
+
+    void putKvToCoordinator(String key, String val);
+
+    void delKvFromCoordinator(String key, String keyEnd);
+
+    List<io.dingodb.common.store.KeyValue> getByKey(String key, String keyEnd);
+
+    Long genSchemaVersion(long step);
+
+    void setSchemaDiff(SchemaDiff schemaDiff);
+
+    void updateTable(long schemaId, Object table);
+
+    default void updateIndex(long tableId, Object index) {}
+
+    DdlJob getHistoryDDLJob(long jobId);
+
+    void addHistoryDDLJob(DdlJob job, boolean updateRawArgs);
+
+    void prepareDone();
+
+    boolean prepare();
+
+    List<Long> genGlobalIDs(int n);
 
 }

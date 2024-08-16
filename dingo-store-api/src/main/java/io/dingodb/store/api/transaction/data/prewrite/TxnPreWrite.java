@@ -16,6 +16,7 @@
 
 package io.dingodb.store.api.transaction.data.prewrite;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Mutation;
 import lombok.Builder;
@@ -64,4 +65,6 @@ public class TxnPreWrite {
     // the extra_data executor want to store in lock
     @Builder.Default
     List<LockExtraData> lockExtraDatas = Collections.emptyList();
+
+    CommonId txnId;
 }

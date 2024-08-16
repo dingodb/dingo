@@ -24,7 +24,6 @@ import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoValues;
-import io.dingodb.calcite.schema.DingoSchema;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.common.Location;
@@ -71,8 +70,8 @@ public class TestDingoJobVisitor {
     @BeforeEach
     public void setup() {
         parser = new DingoParser(context);
-        DingoSchema dingoSchema = (DingoSchema) context.getDefaultSchema().schema;
-        currentLocation = dingoSchema.getMetaService().currentLocation();
+        //SubSnapshotSchema dingoSchema = (SubSnapshotSchema) context.getDefaultSchema().schema;
+        currentLocation = new Location("host1", 26535);
         table = context.getCatalogReader().getTable(ImmutableList.of(FULL_TABLE_NAME));
         RelDataTypeFactory typeFactory = parser.getContext().getTypeFactory();
         rowType = typeFactory.createStructType(
@@ -106,7 +105,7 @@ public class TestDingoJobVisitor {
         DingoJobVisitor.renderJob(job, scan, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(1);
         /*CommonId tableId = MetaService.root()
-            .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME)
+            .getSubMetaService(RootSnapshotSchema.DEFAULT_SCHEMA_NAME)
             .getTableId(FULL_TABLE_NAME);*/
         assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0)
             .source(0).isCalcDistribution().outputNum(1);
@@ -145,7 +144,7 @@ public class TestDingoJobVisitor {
         assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
         assertTask.source(0).isCalcDistribution().outputNum(1);
         /*CommonId tableId = MetaService.root()
-            .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME)
+            .getSubMetaService(RootSnapshotSchema.DEFAULT_SCHEMA_NAME)
             .getTableId(FULL_TABLE_NAME);*/
         // assertTask.source(0).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 1))
         //    .soleOutput().isNull();
@@ -183,7 +182,7 @@ public class TestDingoJobVisitor {
         assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
         assertTask.source(0).isCalcDistribution().outputNum(1);
         /*CommonId tableId = MetaService.root()
-            .getSubMetaService(DingoRootSchema.DEFAULT_SCHEMA_NAME)
+            .getSubMetaService(RootSnapshotSchema.DEFAULT_SCHEMA_NAME)
             .getTableId(FULL_TABLE_NAME);*/
         // assertTask.source(0).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 1))
         //    .soleOutput().isA(CoalesceOperator.class);

@@ -32,4 +32,8 @@ public class SchemaInfo {
     public SchemaInfo() {
 
     }
+
+    public SchemaInfo copy() {
+        return new SchemaInfo(tenantId, name, schemaId, schemaState);
+    }
 }

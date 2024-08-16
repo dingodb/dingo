@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
@@ -26,8 +27,9 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnPartDeleteParam;
+import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.utils.ByteUtils;
-import io.dingodb.meta.MetaService;
+import io.dingodb.exec.utils.OpStateUtils;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
@@ -60,7 +62,14 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
         StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
         KeyValueCodec codec = param.getCodec();
         if (context.getIndexId() != null) {
-            Table indexTable = MetaService.root().getTable(context.getIndexId());
+            Table indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
+            if (indexTable == null) {
+                LogUtils.error(log, "[ddl] TxnPartDelete get index table null, indexId:{}", context.getIndexId());
+                return false;
+            }
+            if (!OpStateUtils.allowDeleteOnly(indexTable.getSchemaState())) {
+                return true;
+            }
             List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
                 .map(Column::getName)
                 .collect(Collectors.toList()));

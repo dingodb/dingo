@@ -23,6 +23,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.util.TransactionUtil;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -31,25 +32,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public class TransactionManager {
+public final class TransactionManager {
 
     // connectionId -> Transaction
     private static final Map<CommonId, ITransaction> trans = new ConcurrentHashMap<>();
 
-    public static @NonNull ITransaction createTransaction(boolean pessimistic, long startTs, int isolationLevel) {
-        if (pessimistic) {
-            return createTransaction(TransactionType.PESSIMISTIC, startTs, isolationLevel);
-        } else {
-            return createTransaction(TransactionType.OPTIMISTIC, startTs, isolationLevel);
-        }
-    }
-
-    public static @NonNull ITransaction createTransaction(boolean pessimistic, @NonNull CommonId txnId, int isolationLevel) {
-        if (pessimistic) {
-            return createTransaction(TransactionType.PESSIMISTIC, txnId, isolationLevel);
-        } else {
-            return createTransaction(TransactionType.OPTIMISTIC, txnId, isolationLevel);
-        }
+    private TransactionManager() {
     }
 
     public static @NonNull ITransaction createTransaction(@NonNull TransactionType trxType, long startTs, int isolationLevel) {
@@ -125,5 +113,46 @@ public class TransactionManager {
 
     public static long lockTtlTm() {
         return TsoService.getDefault().timestamp() + TransactionUtil.lock_ttl;
+    }
+
+    public static Object getTable(CommonId txnId, CommonId tableId) {
+        ITransaction transaction = trans.get(txnId);
+        if (transaction == null) {
+            return null;
+        }
+        InfoSchema is = transaction.getIs();
+        if (is == null) {
+            return null;
+        }
+        if (tableId.type == CommonId.CommonType.TABLE) {
+            return is.getTable(tableId.seq);
+        } else if (tableId.type == CommonId.CommonType.INDEX) {
+            return is.getIndex(tableId.domain, tableId.seq);
+        }
+        return null;
+    }
+
+    public static Object getIndex(CommonId txnId, CommonId indexId) {
+        ITransaction transaction = trans.get(txnId);
+        if (transaction == null) {
+            LogUtils.error(log, "[ddl] get index by txn, txn is null:{}", txnId);
+            return null;
+        }
+        InfoSchema is = transaction.getIs();
+        if (is == null) {
+            LogUtils.error(log, "[ddl] get index by txn, info schema is null:{}", txnId);
+            return null;
+        }
+        if (indexId.type == CommonId.CommonType.TABLE) {
+            LogUtils.error(log, "get index, bug id type is table");
+            return is.getTable(indexId.seq);
+        } else if (indexId.type == CommonId.CommonType.INDEX) {
+            return is.getIndex(indexId.domain, indexId.seq);
+        }
+        return null;
+    }
+
+    public static long getMinTs() {
+        return trans.keySet().stream().mapToLong(txnId -> txnId.seq).min().orElse(Long.MAX_VALUE);
     }
 }

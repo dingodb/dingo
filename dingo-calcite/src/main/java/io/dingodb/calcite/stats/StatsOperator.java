@@ -20,18 +20,20 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.session.SessionManager;
+import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Utils;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.StoreKvTxn;
 import io.dingodb.store.api.transaction.StoreTxnService;
 import lombok.extern.slf4j.Slf4j;
 
-import java.sql.Connection;
-import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -44,10 +46,10 @@ public abstract class StatsOperator {
     public static StoreTxnService storeTxnService;
     public static MetaService metaService;
 
-    public static final String ANALYZE_TASK = "analyze_task";
-    public static final String TABLE_BUCKETS = "table_buckets";
-    public static final String TABLE_STATS = "table_stats";
-    public static final String CM_SKETCH = "cm_sketch";
+    public static final String ANALYZE_TASK = "ANALYZE_TASK";
+    public static final String TABLE_BUCKETS = "TABLE_BUCKETS";
+    public static final String TABLE_STATS = "TABLE_STATS";
+    public static final String CM_SKETCH = "CM_SKETCH";
 
     public static Table analyzeTaskTable;
     public static Table bucketsTable;
@@ -70,12 +72,16 @@ public abstract class StatsOperator {
 
     static {
         try {
+            io.dingodb.meta.InfoSchemaService infoSchemaService = io.dingodb.meta.InfoSchemaService.root();
+            while (!infoSchemaService.prepare()) {
+                Utils.sleep(5000L);
+            }
             storeTxnService = StoreTxnService.getDefault();
             metaService = MetaService.root().getSubMetaService("MYSQL");
-            analyzeTaskTable = metaService.getTable(ANALYZE_TASK);
-            bucketsTable = metaService.getTable(TABLE_BUCKETS);
-            statsTable = metaService.getTable(TABLE_STATS);
-            cmSketchTable = metaService.getTable(CM_SKETCH);
+            analyzeTaskTable = getTable(ANALYZE_TASK);
+            bucketsTable = getTable(TABLE_BUCKETS);
+            statsTable = getTable(TABLE_STATS);
+            cmSketchTable = getTable(CM_SKETCH);
             analyzeTaskTblId = analyzeTaskTable.tableId;
             bucketsTblId = bucketsTable.tableId;
             statsTblId = statsTable.tableId;
@@ -107,7 +113,7 @@ public abstract class StatsOperator {
             .orElseThrow("Cannot get region for " + tableId);
     }
 
-    public void upsert(StoreKvTxn store, KeyValueCodec codec, List<Object[]> rowList) {
+    public static void upsert(StoreKvTxn store, KeyValueCodec codec, List<Object[]> rowList) {
         rowList.forEach(row -> {
             KeyValue old = store.get(codec.encodeKey(row));
             KeyValue keyValue = codec.encode(row);
@@ -131,7 +137,6 @@ public abstract class StatsOperator {
 //            sqlList.add(sqlBuckets);
 //            sqlList.add(sqlStats);
 //            sqlList.add(sqlCmSketch);
-//            SessionManager.update(sqlList);
 //            StatsCache.removeCache(schemaName, tableName);
         } catch (Exception ignored) {
         }
@@ -140,7 +145,10 @@ public abstract class StatsOperator {
     public static void delStats(String table, String schemaName, String tableName) {
         String sqlTemp = "delete from %s where schema_name='%s' and table_name='%s'";
         String sql = String.format(sqlTemp, table, schemaName, tableName);
-        SessionManager.update(sql);
+        String error = SessionUtil.INSTANCE.exeUpdateInTxn(sql);
+        if (error != null) {
+            LogUtils.error(log, "delStats error:{}, table:{}, schema:{}, tableName:{}", error, table, schemaName, tableName);
+        }
     }
 
     public List<Object[]> scan(StoreKvTxn store, KeyValueCodec codec, RangeDistribution rangeDistribution) {
@@ -184,6 +192,26 @@ public abstract class StatsOperator {
         return new Object[] {schemaName, tableName, "", totalCount, null, null,
             StatsTaskState.PENDING.getState(), null, DingoConfiguration.host(), modifyCount,
             new Timestamp(System.currentTimeMillis()), 0, 0, 0, 0};
+    }
+
+    public static Table getTable(String tableName) {
+        int times = 10;
+        DdlService ddlService = DdlService.root();
+        while (times-- > 0) {
+            InfoSchema is = ddlService.getIsLatest();
+            if (is != null) {
+                Table table = is.getTable("MYSQL", tableName);
+                if (table != null) {
+                    return table;
+                }
+            }
+            try {
+                Thread.sleep(10000L);
+            } catch (Exception ignored) {
+
+            }
+        }
+        throw new RuntimeException("init user error");
     }
 
 }

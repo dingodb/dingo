@@ -23,6 +23,7 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.Optional;
+import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.sdk.service.IndexService;
 import io.dingodb.sdk.service.LockService;
@@ -63,6 +64,7 @@ import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.dingodb.common.mysql.InformationSchemaConstant.GLOBAL_VAR_PREFIX_BEGIN;
@@ -231,15 +233,15 @@ public final class SafePointUpdateTask {
             .map(Long::parseLong)
             .map($ -> requestId - (TimeUnit.SECONDS.toMillis($) << PHYSICAL_SHIFT))
             .orElseGet(() -> requestId);
-        long minLockTs = Stream.concat(
-                TableLockService.getDefault().allTableLocks().stream(),
-                ClusterService.getDefault().getComputingLocations().stream()
-                    .filter($ -> !$.equals(DingoConfiguration.location()))
-                    .map($ -> ApiRegistry.getDefault().proxy(ShowLocksOperation.Api.class, $))
-                    .flatMap($ -> $.tableLocks().stream())
-                    .filter($ -> $.getType() == ROW)
-            ).mapToLong(TableLock::getLockTs).min().orElse(Long.MAX_VALUE);
-        return Math.min(minLockTs, safeTs);
+        long remoteMinStartTs = ClusterService.getDefault().getComputingLocations().stream()
+            .filter($ -> !$.equals(DingoConfiguration.location()))
+            .map($ -> ApiRegistry.getDefault().proxy(ShowLocksOperation.Api.class, $))
+            .mapToLong(ShowLocksOperation.Api::getMinTs)
+            .min().orElse(Long.MAX_VALUE);
+        long localMinTs = TransactionManager.getMinTs();
+        long minTxnTs = Math.min(remoteMinStartTs, localMinTs);
+
+        return Math.min(minTxnTs, safeTs);
     }
 
     private static long tso() {

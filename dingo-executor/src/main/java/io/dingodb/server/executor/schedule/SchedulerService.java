@@ -19,10 +19,14 @@ package io.dingodb.server.executor.schedule;
 import com.google.auto.service.AutoService;
 import io.dingodb.calcite.stats.task.RefreshStatsTask;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.environment.ExecutionEnvironment;
+import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.scheduler.SchedulerServiceProvider;
 import io.dingodb.sdk.service.LockService;
 import io.dingodb.server.executor.Configuration;
+import io.dingodb.server.executor.prepare.PrepareMeta;
 import io.dingodb.server.executor.schedule.stats.AnalyzeProfileTask;
 import io.dingodb.server.executor.schedule.stats.AnalyzeScanTask;
 import lombok.extern.slf4j.Slf4j;
@@ -81,7 +85,10 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
 
     public void start()  {
         try {
+            LogUtils.info(log, "owner start");
             scheduler.start();
+            PrepareMeta.prepare(io.dingodb.store.proxy.Configuration.coordinators());
+            ExecutionEnvironment.INSTANCE.ddlOwner.set(true);
         } catch (SchedulerException e) {
             log.error("Start schedule failed.", e);
             throw new RuntimeException(e);
@@ -90,6 +97,9 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
 
     public void pause() {
         try {
+            LogUtils.info(log, "lose owner");
+            ExecutionEnvironment.INSTANCE.ddlOwner.set(false);
+            //DdlContext.INSTANCE.setOwnerVal(false);
             scheduler.standby();
         } catch (SchedulerException e) {
             log.error("Stop scheduler error.", e);
@@ -121,6 +131,15 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
     }
 
     public void init() {
+        SessionUtil.INSTANCE.initPool();
+        new Thread(
+            LoadInfoSchemaTask::watchGlobalSchemaVer
+        ).start();
+        new Thread(
+            LoadInfoSchemaTask::watchExpSchemaVer
+        ).start();
+        new Thread(LoadInfoSchemaTask::scheduler).start();
+        new Thread(MetaLockCheckHandler::mdlCheckLoop).start();
         this.add("analyzeTable", "0 0 0/1 * * ?", new AnalyzeScanTask());
         this.add("licenseCheck", "0 */1 * * * ?", new LicenseCheckTask());
         Executors.scheduleWithFixedDelayAsync("refreshStat", new RefreshStatsTask(),

@@ -22,6 +22,7 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.MdcUtils;
 import io.dingodb.common.profile.CommitProfile;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
@@ -32,6 +33,7 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.net.Channel;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
@@ -89,6 +91,7 @@ public abstract class BaseTransaction implements ITransaction {
     protected AtomicBoolean cancel;
     protected AtomicBoolean primaryKeyPreWrite;
     protected CommitProfile commitProfile;
+    protected InfoSchema is;
 
     protected CompletableFuture<Void> finishedFuture = new CompletableFuture<>();
 
@@ -149,28 +152,20 @@ public abstract class BaseTransaction implements ITransaction {
         return Objects.requireNonNull(type) == TransactionType.OPTIMISTIC;
     }
 
-    protected static void sleep() {
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
     public void cleanUp(JobManager jobManager) {
         MdcUtils.setTxnId(txnId.toString());
         if (future != null) {
             future.cancel(true);
-            LogUtils.info(log, "CleanUp future cancel is {}, the current {} ", future.isCancelled(), transactionOf());
+            //LogUtils.info(log, "CleanUp future cancel is {}, the current {} ", future.isCancelled(), transactionOf());
         }
         finishedFuture.complete(null);
         finishedFuture.join();
-        LogUtils.info(log, "CleanUp finishedFuture the current {} end", transactionOf());
+        //LogUtils.info(log, "CleanUp finishedFuture the current {} end", transactionOf());
         if (getType() == TransactionType.NONE) {
             return;
         }
         if (getSqlList().isEmpty() || !cache.checkCleanContinue(isPessimistic())) {
-            LogUtils.warn(log, "The current {} has no data to cleanUp", transactionOf());
+            //LogUtils.warn(log, "The current {} has no data to cleanUp", transactionOf());
             return;
         }
         Location currentLocation = MetaService.root().currentLocation();
@@ -205,7 +200,7 @@ public abstract class BaseTransaction implements ITransaction {
 
     protected void checkContinue() {
         if (cancel.get()) {
-            LogUtils.info(log, "The current {} has been canceled", transactionOf());
+            LogUtils.debug(log, "The current {} has been canceled", transactionOf());
             throw new RuntimeException(txnId + "The transaction has been canceled");
         }
     }
@@ -213,7 +208,7 @@ public abstract class BaseTransaction implements ITransaction {
     @Override
     public void cancel() {
         cancel.compareAndSet(false, true);
-        LogUtils.info(log, "{} The current {} cancel is set to true", txnId, transactionOf());
+        LogUtils.debug(log, "{} The current {} cancel is set to true", txnId, transactionOf());
     }
 
     @Override
@@ -257,7 +252,7 @@ public abstract class BaseTransaction implements ITransaction {
                     // 2、regin split
                     CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, primaryKey);
                     cacheToObject.setPartId(regionId);
-                    sleep();
+                    Utils.sleep(100);
                 } catch (CommitTsExpiredException e) {
                     LogUtils.error(log, e.getMessage(), e);
                     this.commitTs = TransactionManager.getCommitTs();
@@ -293,7 +288,7 @@ public abstract class BaseTransaction implements ITransaction {
         // begin
         // nothing
         // commit
-        LogUtils.info(log, "{} Start commit", transactionOf());
+        LogUtils.debug(log, "{} Start commit", transactionOf());
         commitProfile.start();
         if (status != TransactionStatus.START) {
             throw new RuntimeException(txnId + ":" + transactionOf() + " unavailable status is " + status);
@@ -303,7 +298,7 @@ public abstract class BaseTransaction implements ITransaction {
         }
         checkContinue();
         if (getSqlList().isEmpty() || !cache.checkContinue()) {
-            LogUtils.warn(log, "The current {} has no data to commit", transactionOf());
+            //LogUtils.warn(log, "The current {} has no data to commit", transactionOf());
             if (isPessimistic()) {
                 // PessimisticRollback
                 rollBackResidualPessimisticLock(jobManager);
@@ -381,7 +376,7 @@ public abstract class BaseTransaction implements ITransaction {
             if (cancel.get()) {
                 this.status = TransactionStatus.CANCEL;
             }
-            LogUtils.info(log, "{} PreWrite End Status:{}, Cost:{}ms", transactionOf(),
+            LogUtils.debug(log, "{} PreWrite End Status:{}, Cost:{}ms", transactionOf(),
                 status, (System.currentTimeMillis() - preWriteStart));
             jobManager.removeJob(jobId.get());
         }
@@ -397,7 +392,7 @@ public abstract class BaseTransaction implements ITransaction {
                 rollback(jobManager);
                 throw new RuntimeException(txnId + "The transaction has been canceled");
             }
-            LogUtils.info(log, "{} Start CommitPrimaryKey", transactionOf());
+            LogUtils.debug(log, "{} Start CommitPrimaryKey", transactionOf());
             // 4、get commit_ts 、CommitPrimaryKey
             this.commitTs = TransactionManager.getCommitTs();
             boolean result = commitPrimaryKey(cacheToObject);
@@ -434,7 +429,7 @@ public abstract class BaseTransaction implements ITransaction {
             if (cancel.get()) {
                 this.status = TransactionStatus.CANCEL;
             }
-            LogUtils.info(log, "{} Commit End Status:{}, Cost:{}ms", transactionOf(),
+            LogUtils.debug(log, "{} Commit End Status:{}, Cost:{}ms", transactionOf(),
                 status, (System.currentTimeMillis() - preWriteStart));
             jobManager.removeJob(jobId.get());
             if (!cancel.get()) {

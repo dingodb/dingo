@@ -20,15 +20,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -39,6 +40,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+@Slf4j
 @Getter
 @ToString
 @SuperBuilder
@@ -54,7 +56,6 @@ public class Table {
     @EqualsAndHashCode.Include
     public final String name;
 
-    @Setter
     @JsonProperty
     public final List<Column> columns;
 
@@ -97,9 +98,11 @@ public class Table {
     @JsonProperty
     public final String comment;
 
-    // TODO Remove field
     @JsonProperty
     public final String createSql;
+
+    @JsonProperty
+    public SchemaState schemaState;
 
     public TupleType tupleType() {
         return DingoTypeFactory.tuple(columns.stream().map(Column::getType).toArray(DingoType[]::new));

@@ -17,9 +17,9 @@
 package io.dingodb.common.table;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
@@ -30,7 +30,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-@JsonPropertyOrder({"name", "type", "precision", "scale", "nullable", "primary", "default",})
 @EqualsAndHashCode
 @Builder
 @Slf4j
@@ -45,7 +44,7 @@ public class ColumnDefinition {
     @Getter
     private final String name;
 
-    @JsonProperty(value = "sqlType", required = true)
+    @JsonProperty(value = "type", required = true)
     private final String type;
 
     // Element type of ARRAY & MULTISET
@@ -151,18 +150,22 @@ public class ColumnDefinition {
             .build();
     }
 
+    @JsonIgnore
     public boolean isPrimary() {
         return primary > -1;
     }
 
+    @JsonIgnore
     public DingoType getType() {
         return DingoTypeFactory.INSTANCE.fromName(type, elementType, nullable);
     }
 
+    @JsonIgnore
     public String getTypeName() {
         return type;
     }
 
+    @JsonIgnore
     public boolean isNullable() {
         return nullable;
     }

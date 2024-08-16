@@ -20,6 +20,7 @@ import com.google.common.collect.Iterators;
 import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.CoprocessorV2;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
@@ -39,6 +40,7 @@ import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Iterator;
@@ -49,6 +51,7 @@ import static io.dingodb.common.util.NoBreakFunctions.wrap;
 import static io.dingodb.exec.operator.TxnGetByIndexOperator.createGetLocal;
 import static io.dingodb.exec.operator.TxnScanWithRelOpOperatorBase.createStoreIteratorCp;
 
+@Slf4j
 public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
     public static final TxnIndexRangeScanOperator INSTANCE = new TxnIndexRangeScanOperator();
 
@@ -124,12 +127,16 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
             );
             param.setNullCoprocessor(distribution.getId());
             Iterator<Object[]> iterator = createMergedIterator(localIterator, storeIterator, param.getCodec());
-            if (param.getRelOp() != null && param.getRelOp() instanceof PipeOp) {
-                PipeOp op = (PipeOp) param.getRelOp();
-                iterator = Iterators.filter(iterator, tuple -> {
-                    Object[] res = op.put(tuple);
-                    return res != null;
-                });
+            if (param.getRelOp() != null) {
+                if (param.getRelOp() instanceof PipeOp) {
+                    PipeOp op = (PipeOp) param.getRelOp();
+                    iterator = Iterators.filter(iterator, tuple -> {
+                        Object[] res = op.put(tuple);
+                        return res != null;
+                    });
+                } else {
+                    LogUtils.error(log, "index range scan cop is null,local is not empty, but rel op :{}", param.getRelOp());
+                }
             }
             iterator = Iterators.transform(iterator, tuples -> revMap(tuples, vertex));
             if (param.getSelection() != null) {
@@ -147,12 +154,16 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
                 param.getTimeout()
             );
             Iterator<Object[]> iterator = Iterators.transform(storeIterator, wrap(param.getCodec()::decode)::apply);
-            if (param.getRelOp() != null && param.getRelOp() instanceof PipeOp) {
-                PipeOp op = (PipeOp) param.getRelOp();
-                iterator = Iterators.filter(iterator, tuple -> {
-                    Object[] res = op.put(tuple);
-                    return res != null;
-                });
+            if (param.getRelOp() != null) {
+                if (param.getRelOp() instanceof PipeOp) {
+                    PipeOp op = (PipeOp) param.getRelOp();
+                    iterator = Iterators.filter(iterator, tuple -> {
+                        Object[] res = op.put(tuple);
+                        return res != null;
+                    });
+                } else {
+                    LogUtils.error(log, "index range scan cop is null, but rel op :{}", param.getRelOp());
+                }
             }
             iterator = Iterators.transform(iterator, tuples -> revMap(tuples, vertex));
             if (param.getSelection() != null) {
