@@ -404,7 +404,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                             .regionName("I_" + id.getEntityId() + "_" + definition.getName() + "_part_" + partition.getId().getEntityId())
                             .regionType(definition.getIndexParameter().getIndexType() == IndexType.INDEX_TYPE_SCALAR ?
                                 RegionType.STORE_REGION : RegionType.INDEX_REGION)
-                            .replicaNum(withIdTableDefinition.getReplica())
+                            .replicaNum(withId.getTableDefinition().getReplica())
                             .range(partition.getRange())
                             .rawEngine(RawEngine.RAW_ENG_ROCKSDB)
                             .storeEngine(definition.getStoreEngine())
