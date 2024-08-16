@@ -49,6 +49,7 @@ import io.dingodb.sdk.service.ChannelProvider;
 import io.dingodb.sdk.service.DocumentService;
 import io.dingodb.sdk.service.IndexService;
 import io.dingodb.sdk.service.Services;
+import io.dingodb.sdk.service.entity.common.DocumentWithScore;
 import io.dingodb.sdk.service.entity.common.Location;
 import io.dingodb.sdk.service.entity.common.RangeWithOptions;
 import io.dingodb.sdk.service.entity.common.ValueType;
@@ -60,6 +61,7 @@ import io.dingodb.sdk.service.entity.common.VectorSearchParameter.SearchNest;
 import io.dingodb.sdk.service.entity.common.VectorTableData;
 import io.dingodb.sdk.service.entity.common.VectorWithDistance;
 import io.dingodb.sdk.service.entity.common.VectorWithId;
+import io.dingodb.sdk.service.entity.document.DocumentSearchRequest;
 import io.dingodb.sdk.service.entity.index.VectorAddRequest;
 import io.dingodb.sdk.service.entity.index.VectorDeleteRequest;
 import io.dingodb.sdk.service.entity.index.VectorSearchRequest;
@@ -72,6 +74,7 @@ import io.dingodb.sdk.service.entity.store.KvDeleteRangeRequest;
 import io.dingodb.sdk.service.entity.store.KvGetRequest;
 import io.dingodb.sdk.service.entity.store.KvPutIfAbsentRequest;
 import io.dingodb.sdk.service.entity.store.KvPutRequest;
+import io.dingodb.store.api.transaction.data.DocumentSearchParameter;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.proxy.service.CodecService.KeyValueCodec;
 import lombok.experimental.Delegate;
@@ -621,6 +624,22 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             }
 
             return vectorSearchResponseList;
+        }
+
+        @Override
+        public List<io.dingodb.store.api.transaction.data.DocumentWithScore> documentSearch(
+            long requestTs,
+            CommonId indexId,
+            DocumentSearchParameter documentSearchParameter
+        ) {
+            List<DocumentWithScore> documentWithScores = documentService(indexId, regionId).documentSearch(
+                requestTs,
+                DocumentSearchRequest.builder()
+                    .parameter(MAPPER.documentSearchParamTo(documentSearchParameter))
+                    .build()
+            ).getDocumentWithScores();
+
+            return documentWithScores.stream().map(MAPPER::documentWithScoreTo).collect(Collectors.toList());
         }
 
         @Override

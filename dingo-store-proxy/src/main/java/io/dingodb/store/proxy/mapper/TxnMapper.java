@@ -16,6 +16,7 @@
 
 package io.dingodb.store.proxy.mapper;
 
+import io.dingodb.sdk.service.entity.common.DocumentSearchParameter;
 import io.dingodb.sdk.service.entity.common.ScalarField;
 import io.dingodb.sdk.service.entity.common.ScalarFieldType;
 import io.dingodb.sdk.service.entity.store.Op;
@@ -29,6 +30,7 @@ import io.dingodb.sdk.service.entity.store.TxnPrewriteRequest;
 import io.dingodb.sdk.service.entity.store.TxnScanRequest;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.DocumentValue;
+import io.dingodb.store.api.transaction.data.DocumentWithScore;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.sdk.service.entity.store.TxnResolveLockRequest;
 import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatus;
@@ -79,6 +81,76 @@ public interface TxnMapper {
 
     default Op opTo(io.dingodb.store.api.transaction.data.Op op) {
         return Op.forNumber(op.getCode());
+    }
+
+    DocumentSearchParameter documentSearchParamTo(io.dingodb.store.api.transaction.data.DocumentSearchParameter documentSearchParameter);
+
+    DocumentWithScore documentWithScoreTo(io.dingodb.sdk.service.entity.common.DocumentWithScore documentWithScore);
+
+    default DocumentValue documentValueTo(io.dingodb.sdk.service.entity.common.DocumentValue documentValue) {
+        return DocumentValue.builder()
+            .fieldType(scalarFieldTypeTo(documentValue.getFieldType()))
+            .fieldValue(scalarFieldTo(documentValue.getFieldValue()))
+            .build();
+    }
+
+    default DocumentValue.ScalarFieldType scalarFieldTypeTo(io.dingodb.sdk.service.entity.common.ScalarFieldType scalarFieldType) {
+        switch (scalarFieldType) {
+            case BOOL:
+                return DocumentValue.ScalarFieldType.BOOL;
+            case INT32:
+                return DocumentValue.ScalarFieldType.INTEGER;
+            case INT64:
+                return DocumentValue.ScalarFieldType.LONG;
+            case FLOAT32:
+                return DocumentValue.ScalarFieldType.FLOAT;
+            case DOUBLE:
+                return DocumentValue.ScalarFieldType.DOUBLE;
+            case STRING:
+                return DocumentValue.ScalarFieldType.STRING;
+            case BYTES:
+                return DocumentValue.ScalarFieldType.BYTES;
+            default:
+                throw new IllegalStateException("Unexpected value: " + scalarFieldType);
+        }
+    }
+
+
+    default io.dingodb.store.api.transaction.data.ScalarField scalarFieldTo(
+        ScalarField field
+    ) {
+        switch (field.getData().nest()) {
+            case BOOL_DATA:
+                return io.dingodb.store.api.transaction.data.ScalarField.builder()
+                    .data(((ScalarField.DataNest.BoolData) field.getData()).isValue())
+                    .build();
+            case INT_DATA:
+                return io.dingodb.store.api.transaction.data.ScalarField.builder()
+                    .data(((ScalarField.DataNest.IntData) field.getData()).getValue())
+                    .build();
+            case LONG_DATA:
+                return io.dingodb.store.api.transaction.data.ScalarField.builder()
+                    .data(((ScalarField.DataNest.LongData) field.getData()).getValue())
+                    .build();
+            case FLOAT_DATA:
+                return io.dingodb.store.api.transaction.data.ScalarField.builder()
+                    .data(((ScalarField.DataNest.FloatData) field.getData()).getValue())
+                    .build();
+            case DOUBLE_DATA:
+                return io.dingodb.store.api.transaction.data.ScalarField.builder()
+                    .data(((ScalarField.DataNest.DoubleData) field.getData()).getValue())
+                    .build();
+            case STRING_DATA:
+                return io.dingodb.store.api.transaction.data.ScalarField.builder()
+                    .data(((ScalarField.DataNest.StringData) field.getData()).getValue())
+                    .build();
+            case BYTES_DATA:
+                return io.dingodb.store.api.transaction.data.ScalarField.builder()
+                    .data(((ScalarField.DataNest.BytesData) field.getData()).getValue())
+                    .build();
+            default:
+                throw new IllegalStateException("Unexpected value: " + field.getData().nest());
+        }
     }
 
     default io.dingodb.sdk.service.entity.common.DocumentValue documentValueTo(DocumentValue documentValue) {
