@@ -264,7 +264,7 @@ public class TransactionStoreInstance {
         if (indexService != null) {
             response = indexService.txnCommit(txnCommit.getStartTs(), MAPPER.commitTo(txnCommit));
         } else if (documentService != null) {
-            response = documentService.txnCommit(txnCommit.getCommitTs(), MAPPER.commitTo(txnCommit));
+            response = documentService.txnCommit(txnCommit.getStartTs(), MAPPER.commitTo(txnCommit));
         } else {
             response = storeService.txnCommit(txnCommit.getStartTs(), MAPPER.commitTo(txnCommit));
         }
@@ -295,8 +295,7 @@ public class TransactionStoreInstance {
                 txnPessimisticLock.getMutations().stream().forEach( $ -> $.setKey(Arrays.copyOf($.getKey(), VectorKeyLen)));
                 response = indexService.txnPessimisticLock(txnPessimisticLock.getStartTs(), MAPPER.pessimisticLockTo(txnPessimisticLock));
             } else if (documentService != null) {
-
-                response = documentService.txnPessimisticLock(txnPessimisticLock.getLockTtl(), MAPPER.pessimisticLockTo(txnPessimisticLock));
+                response = documentService.txnPessimisticLock(txnPessimisticLock.getStartTs(), MAPPER.pessimisticLockTo(txnPessimisticLock));
             } else {
                 response = storeService.txnPessimisticLock(txnPessimisticLock.getStartTs(), MAPPER.pessimisticLockTo(txnPessimisticLock));
             }
@@ -350,7 +349,6 @@ public class TransactionStoreInstance {
             txnPessimisticRollBack.setKeys(newKeys);
             response = indexService.txnPessimisticRollback(startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
         } else if (documentService != null) {
-
             response = documentService.txnPessimisticRollback(startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
         } else {
             response = storeService.txnPessimisticRollback(startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));

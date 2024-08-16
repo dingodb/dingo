@@ -22,6 +22,7 @@ import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.document.DocumentSearchResponse;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.vector.VectorSearchResponse;
+import io.dingodb.store.api.transaction.data.DocumentSearchParameter;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
@@ -166,14 +167,10 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default List<DocumentSearchResponse> documentSearch(
-        CommonId indexId, String[] keyword, int topN, Map<String, Object> parameterMap
-    ) {
-        return documentSearch(System.identityHashCode(keyword), indexId, keyword, topN, parameterMap, null);
-    }
-
-    default List<DocumentSearchResponse> documentSearch(
-        long requestTs, CommonId indexId, String[] keyword, int topN, Map<String, Object> parameterMap, CoprocessorV2 coprocessorV2
+    default List<io.dingodb.store.api.transaction.data.DocumentWithScore> documentSearch(
+        long requestTs,
+        CommonId indexId,
+        DocumentSearchParameter documentSearchParameter
     ) {
         throw new UnsupportedOperationException();
     }
