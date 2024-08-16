@@ -16,46 +16,18 @@
 
 package io.dingodb.store.api.transaction.data;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@Builder
 @EqualsAndHashCode
 @ToString
-@Builder
-public class DocumentValue {
-
-    private ScalarFieldType fieldType;
-    private ScalarField fieldValue;
-
-    public enum ScalarFieldType {
-        NONE(0),
-        BOOL(1),
-        INTEGER(4),
-        LONG(5),
-        FLOAT(6),
-        DOUBLE(7),
-        STRING(8),
-        BYTES(9);
-
-        private final int code;
-
-        ScalarFieldType(int code) {
-            this.code = code;
-        }
-
-        public int getCode() {
-            return code;
-        }
-
-
-    }
+public class DocumentWithScore {
+    private DocumentWithId documentWithId;
+    private float score;
 }
