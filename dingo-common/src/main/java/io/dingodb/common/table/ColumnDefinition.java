@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import lombok.Builder;
@@ -116,6 +117,12 @@ public class ColumnDefinition {
     @Setter
     @Builder.Default
     private String comment = "";
+
+    @JsonProperty("schemaState")
+    @Getter
+    @Setter
+    @Builder.Default
+    private SchemaState schemaState = SchemaState.SCHEMA_PUBLIC;
 
     @JsonCreator
     public static ColumnDefinition getInstance(

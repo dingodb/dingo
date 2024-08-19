@@ -19,6 +19,7 @@ package io.dingodb.meta;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -37,6 +38,9 @@ public interface DdlService {
     void dropTable(SchemaInfo schemaInfo, Long tableId, String tableName, String connId);
 
     void truncateTable(SchemaInfo schemaInfo, Table table, String connId);
+
+    void addColumn(SchemaInfo schemaInfo, Table table, Column column, String connId);
+    void dropColumn(SchemaInfo schemaInfo, Long tableId, String column, String connId);
 
     default void createIndex(String schemaName, String tableName, TableDefinition indexDef) {
 

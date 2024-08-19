@@ -64,7 +64,8 @@ public class TupleType extends AbstractDingoType {
         Object[] tuple = (Object[]) value;
         checkFieldCount(tuple);
         return converter.collectTuple(
-            IntStream.range(0, tuple.length)
+            IntStream.range(0, fieldCount())
+                .filter(i -> !fields[i].isHidden())
                 .mapToObj(i -> fields[i].convertTo(tuple[i], converter))
         );
     }

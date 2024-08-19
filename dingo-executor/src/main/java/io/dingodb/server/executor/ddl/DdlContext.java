@@ -41,7 +41,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class DdlContext {
     public static final DdlContext INSTANCE = new DdlContext();
 
-    public long lease = 45000;
+    public long lease = 10000;
 
     public AtomicBoolean waiting = new AtomicBoolean(true);
 

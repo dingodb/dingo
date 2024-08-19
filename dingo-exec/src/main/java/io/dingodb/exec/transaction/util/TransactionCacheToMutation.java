@@ -19,6 +19,7 @@ package io.dingodb.exec.transaction.util;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
@@ -85,7 +86,9 @@ public final class TransactionCacheToMutation {
             );
             Table table = (Table) TransactionManager.getTable(txnId, index.primaryId);
             if (table == null) {
-                throw new RuntimeException("txn cache to mutation get table is null");
+                //LogUtils.error(log, "txn cache to mutation get table is null");
+                //throw new RuntimeException("txn cache to mutation get table is null");
+                table = DdlService.root().getTable(index.primaryId);
             }
             Object[] record = keyValueCodec.decode(new KeyValue(key, value));
             Object[] tableRecord = new Object[table.columns.size()];

@@ -24,6 +24,7 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
+import io.dingodb.calcite.meta.DingoColumnMetaData;
 import io.dingodb.calcite.operation.DdlOperation;
 import io.dingodb.calcite.operation.DmlOperation;
 import io.dingodb.calcite.operation.KillConnection;
@@ -49,7 +50,6 @@ import io.dingodb.common.profile.ExecProfile;
 import io.dingodb.common.profile.PlanProfile;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.Optional;
-import io.dingodb.common.util.Utils;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.exception.TaskFinException;
@@ -60,9 +60,6 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.exception.LockWaitException;
-import io.dingodb.transaction.api.LockType;
-import io.dingodb.transaction.api.TableLock;
-import io.dingodb.transaction.api.TableLockService;
 import io.dingodb.tso.TsoService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -111,9 +108,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
@@ -148,7 +142,7 @@ public final class DingoDriverParser extends DingoParser {
     }
 
     @NonNull
-    private static List<ColumnMetaData> getColumnMetaDataList(
+    private List<ColumnMetaData> getColumnMetaDataList(
         JavaTypeFactory typeFactory,
         @NonNull RelDataType jdbcType,
         List<? extends @Nullable List<String>> originList
@@ -157,15 +151,16 @@ public final class DingoDriverParser extends DingoParser {
         final List<ColumnMetaData> columns = new ArrayList<>(fieldList.size());
         for (int i = 0; i < fieldList.size(); ++i) {
             RelDataTypeField field = fieldList.get(i);
-            if (field.getName().equalsIgnoreCase("_rowid")) {
-                continue;
-            }
+            List<String> colList = originList.get(i);
+            boolean hidden = SchemaStateUtils.columnHidden(connection, colList);
+            //continue;
             columns.add(metaData(
                 typeFactory,
                 columns.size(),
                 field.getName(),
                 field.getType(),
-                originList.get(i)
+                originList.get(i),
+                hidden
             ));
         }
         return columns;
@@ -199,10 +194,11 @@ public final class DingoDriverParser extends DingoParser {
         int ordinal,
         String fieldName,
         @NonNull RelDataType type,
-        @Nullable List<String> origins
+        @Nullable List<String> origins,
+        boolean hidden
     ) {
         ColumnMetaData.AvaticaType avaticaType = avaticaType(typeFactory, type);
-        return new ColumnMetaData(
+        return new DingoColumnMetaData(
             ordinal,
             false,
             true,
@@ -222,7 +218,8 @@ public final class DingoDriverParser extends DingoParser {
             true,
             false,
             false,
-            avaticaType.id == SqlType.FLOAT.id ? "java.lang.Float" : avaticaType.columnClassName()
+            avaticaType.id == SqlType.FLOAT.id ? "java.lang.Float" : avaticaType.columnClassName(),
+            hidden
         );
     }
 
@@ -310,7 +307,8 @@ public final class DingoDriverParser extends DingoParser {
                 Meta.CursorFactory.OBJECT,
                 Meta.StatementType.OTHER_DDL,
                 null,
-                null
+                null,
+                ImmutableList.of()
             );
         }
 
@@ -367,6 +365,13 @@ public final class DingoDriverParser extends DingoParser {
         RelDataType jdbcType = makeStruct(typeFactory, type);
         List<List<String>> originList = validator.getFieldOrigins(sqlNode);
         final List<ColumnMetaData> columns = getColumnMetaDataList(typeFactory, jdbcType, originList);
+        List<ColumnMetaData> enableColumnMetas = columns
+            .stream()
+            .filter(columnMetaData -> {
+                DingoColumnMetaData columnMetaData1 = (DingoColumnMetaData) columnMetaData;
+                return !columnMetaData1.hidden;
+            }
+        ).collect(Collectors.toList());
 
         final RelRoot relRoot = convert(sqlNode, false);
         RelNode relNode = optimize(relRoot.rel);
@@ -394,15 +399,6 @@ public final class DingoDriverParser extends DingoParser {
                 "on".equalsIgnoreCase(connection.getClientInfo("dingo_join_concurrency_enable")));
             jobSeqId = transaction.getForUpdateTs();
         }
-        // Automatically submitted selection, no locks
-        if (!(transaction.isAutoCommit() && sqlNode.getKind() == SqlKind.SELECT)) {
-            try {
-                lockTables(tables, startTs, jobSeqId, transaction.getFinishedFuture());
-            } catch (Exception e) {
-                LogUtils.error(log, e.getMessage(), e);
-                throw e;
-            }
-        }
         String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
         maxExecutionTimeStr = maxExecutionTimeStr == null ? "0" : maxExecutionTimeStr;
         long maxTimeOut = Long.parseLong(maxExecutionTimeStr);
@@ -426,7 +422,7 @@ public final class DingoDriverParser extends DingoParser {
             if (explain.getDetailLevel() == SqlExplainLevel.EXPPLAN_ATTRIBUTES) {
                 return new DingoExplainSignature(
                     new ArrayList<>(Collections.singletonList(metaData(typeFactory, 0, "PLAN",
-                        new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null))),
+                        new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false))),
                     sql,
                     createParameterList(parasType),
                     null,
@@ -439,15 +435,15 @@ public final class DingoDriverParser extends DingoParser {
                 );
             } else {
                 ColumnMetaData colMeta1 = metaData(typeFactory, 0, "id",
-                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null);
+                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
                 ColumnMetaData colMeta2 = metaData(typeFactory, 1, "estRows",
-                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.DOUBLE), null);
+                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.DOUBLE), null, false);
                 ColumnMetaData colMeta3 = metaData(typeFactory, 1, "task",
-                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null);
+                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
                 ColumnMetaData colMeta4 = metaData(typeFactory, 2, "accessObject",
-                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null);
+                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
                 ColumnMetaData colMeta5 = metaData(typeFactory, 3, "info",
-                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null);
+                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
                 List<ColumnMetaData> metaDataList = new ArrayList<>();
                 metaDataList.add(colMeta1);
                 metaDataList.add(colMeta2);
@@ -462,7 +458,7 @@ public final class DingoDriverParser extends DingoParser {
         }
         planProfile.endLock();
         return new DingoSignature(
-            columns,
+            enableColumnMetas,
             sql,
             createParameterList(parasType),
             null,
@@ -472,7 +468,8 @@ public final class DingoDriverParser extends DingoParser {
             sqlNode,
             relNode,
             parasType,
-            planProfile.getTableList()
+            planProfile.getTableList(),
+            columns
         );
     }
 
@@ -491,7 +488,7 @@ public final class DingoDriverParser extends DingoParser {
                 QueryOperation queryOperation = (QueryOperation) operation;
                 queryOperation.initExecProfile(execProfile);
                 columns = queryOperation.columns().stream().map(column -> metaData(typeFactory, 0, column,
-                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null))
+                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false))
                     .collect(Collectors.toList());
                 statementType = Meta.StatementType.SELECT;
                 if (queryOperation instanceof ShowProcessListOperation) {
@@ -559,66 +556,6 @@ public final class DingoDriverParser extends DingoParser {
         dingoAudit.setAutoCommit(transaction.isAutoCommit());
     }
 
-    private void lockTables(
-        Set<RelOptTable> tables, long startTs, long jobSeqId, CompletableFuture<Void> finishedFuture
-    ) {
-        if (!DingoConfiguration.instance().getVariable().getEnableTableLock() || true) {
-            return;
-        }
-        List<RelOptTable> waitLocktableList = new ArrayList<>();
-        if (connection.getLockTables() != null && !connection.getLockTables().isEmpty()) {
-            for (RelOptTable table : tables) {
-                if (!connection.getLockTables().contains(Objects.requireNonNull(table.unwrap(DingoTable.class)).getTableId())) {
-                    waitLocktableList.add(table);
-                    //throw new RuntimeException("Not lock table: " + table.getQualifiedName());
-                }
-            }
-            return;
-        } else {
-            waitLocktableList.addAll(tables);
-        }
-        int ttl = Optional.mapOrGet(connection.getClientInfo("lock_wait_timeout"), Integer::parseInt, () -> 50);
-        int start = Utils.currentSecond();
-        for (RelOptTable table : waitLocktableList) {
-            CompletableFuture<Boolean> lockFuture = new CompletableFuture<>();
-            CompletableFuture<Void> unlockFuture = new CompletableFuture<>();
-            TableLock lock = TableLock.builder()
-                .lockTs(startTs)
-                .currentTs(jobSeqId)
-                .type(LockType.ROW)
-                .tableId(Objects.requireNonNull(table.unwrap(DingoTable.class)).getTableId())
-                .lockFuture(lockFuture)
-                .unlockFuture(unlockFuture)
-                .build();
-            TableLockService.getDefault().lock(lock);
-            LogUtils.info(log, "lockTables, jobSeqId:{}, startTs:{}, tableId:{}", jobSeqId, startTs, lock.tableId.toString());
-            int nextTtl = (start + ttl) - Utils.currentSecond();
-            if (nextTtl < 0) {
-                lockFuture.cancel(true);
-                unlockFuture.complete(null);
-                unlockFuture.join();
-                throw new RuntimeException(String.format("Lock wait timeout exceeded. tableId: %s.", lock.tableId.toString()));
-            }
-            try {
-                lockFuture.get(nextTtl, TimeUnit.SECONDS);
-                finishedFuture.whenComplete((v, t) -> unlockFuture.complete(null));
-            } catch (TimeoutException e) {
-                LogUtils.error(log, e.getMessage(), e);
-                lockFuture.cancel(true);
-                unlockFuture.complete(null);
-                unlockFuture.join();
-                throw new RuntimeException(String.format("Lock wait timeout exceeded. tableId: %s.", lock.tableId.toString()));
-            } catch (Exception e) {
-                LogUtils.error(log, e.getMessage(), e);
-                lockFuture.cancel(true);
-                unlockFuture.complete(null);
-                unlockFuture.join();
-                throw ExceptionUtils.toRuntime(e);
-            }
-        }
-    }
-
-
     @Nonnull
     public Meta.Signature retryQuery(
         JobManager jobManager,
@@ -627,7 +564,8 @@ public final class DingoDriverParser extends DingoParser {
         RelNode relNode,
         RelDataType parasType,
         List<ColumnMetaData> columns,
-        boolean lockTable
+        boolean lockTable,
+        List<ColumnMetaData> visitColumns
     ) {
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
         Meta.StatementType statementType;
@@ -651,14 +589,6 @@ public final class DingoDriverParser extends DingoParser {
         );
         long startTs = transaction.getStartTs();
         long jobSeqId = TsoService.getDefault().tso();
-        if (!(transaction.isAutoCommit() && sqlNode.getKind() == SqlKind.SELECT) && lockTable) {
-            try {
-                lockTables(tables, startTs, jobSeqId, transaction.getFinishedFuture());
-            } catch (Exception e) {
-                LogUtils.error(log, e.getMessage(), e);
-                throw e;
-            }
-        }
         if (transaction.isPessimistic() && transaction.getPrimaryKeyLock() == null) {
             runPessimisticPrimaryKeyJob(jobSeqId, jobManager, transaction, sqlNode, relNode,
                 currentLocation, DefinitionMapper.mapToDingoType(parasType),
@@ -682,7 +612,7 @@ public final class DingoDriverParser extends DingoParser {
             "on".equalsIgnoreCase(connection.getClientInfo("dingo_join_concurrency_enable"))
         );
         return new DingoSignature(
-            columns,
+            visitColumns,
             sql,
             createParameterList(parasType),
             null,
@@ -692,7 +622,8 @@ public final class DingoDriverParser extends DingoParser {
             sqlNode,
             relNode,
             parasType,
-            null
+            null,
+            columns
         );
     }
     private static void runPessimisticPrimaryKeyJob(

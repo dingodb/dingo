@@ -655,6 +655,97 @@ SqlCreate SqlCreateIndex(Span s, boolean replace) :
     }
 }
 
+SqlCreate SqlCreateVectorIndex(Span s, boolean replace) :
+{
+    final String index;
+    SqlIdentifier table;
+    SqlIdentifier column;
+    List<SqlIdentifier> columns;
+    SqlNode create = null;
+    Boolean ifNotExists = false;
+    SqlNodeList withColumnList = null;
+    String engine = null;
+    int replica = 3;
+    Properties properties = null;
+    PartitionDefinition partitionDefinition = null;
+}
+{
+    <VECTOR>
+    <INDEX> ifNotExists = IfNotExistsOpt()
+     { index = getNextToken().image; }
+    <ON> table = CompoundIdentifier()
+    <LPAREN> column = SimpleIdentifier() { columns = new ArrayList<SqlIdentifier>(); columns.add(column); }
+    (
+       <COMMA>
+       column = SimpleIdentifier() { columns.add(column); }
+    )*
+    <RPAREN>
+    [ <WITH> withColumnList = ParenthesizedSimpleIdentifierList() ]
+    [ <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} } ]
+    [
+        <PARTITION> <BY>
+            {
+                partitionDefinition = new PartitionDefinition();
+                partitionDefinition.setFuncName(getNextToken().image);
+                partitionDefinition.setColumns(readNames());
+                partitionDefinition.setDetails(readPartitionDetails());
+            }
+    ]
+    [
+        <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
+    ]
+    [ <PARAMETERS> properties = readProperties() ]
+    {
+       return new SqlCreateVectorIndex(s.end(this), replace, ifNotExists, index, table, columns, withColumnList, engine, replica, properties, partitionDefinition);
+    }
+}
+
+SqlCreate SqlCreateDocumentIndex(Span s, boolean replace) :
+{
+    final String index;
+    SqlIdentifier table;
+    SqlIdentifier column;
+    List<SqlIdentifier> columns;
+    SqlNode create = null;
+    Boolean ifNotExists = false;
+    SqlNodeList withColumnList = null;
+    String engine = null;
+    int replica = 3;
+    Properties properties = null;
+    PartitionDefinition partitionDefinition = null;
+}
+{
+    <TEXT>
+    <INDEX> ifNotExists = IfNotExistsOpt()
+     { index = getNextToken().image; }
+    <ON> table = CompoundIdentifier()
+    <LPAREN> column = SimpleIdentifier() { columns = new ArrayList<SqlIdentifier>(); columns.add(column); }
+    (
+       <COMMA>
+       column = SimpleIdentifier() { columns.add(column); }
+    )*
+    <RPAREN>
+    [ <WITH> withColumnList = ParenthesizedSimpleIdentifierList() ]
+    [ <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} } ]
+    [
+        <PARTITION> <BY>
+            {
+                partitionDefinition = new PartitionDefinition();
+                partitionDefinition.setFuncName(getNextToken().image);
+                partitionDefinition.setColumns(readNames());
+                partitionDefinition.setDetails(readPartitionDetails());
+            }
+    ]
+    [
+        <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
+    ]
+    [ <PARAMETERS> properties = readProperties() ]
+    {
+       return new SqlCreateVectorIndex(s.end(this), replace, ifNotExists, index, table, columns, withColumnList, engine, replica, properties, partitionDefinition);
+    }
+}
+
+
 SqlDrop SqlDropSchema(Span s, boolean replace) :
 {
     final boolean ifExists;

@@ -30,6 +30,7 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
 import io.dingodb.meta.InfoSchemaService;
+import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
@@ -328,6 +329,14 @@ public final class DdlHandler {
         }
     }
 
+    public static void addColumn(SchemaInfo schemaInfo, Table table, Column column, String connId) {
+
+    }
+
+    public static void dropColumn(SchemaInfo schemaInfo, Long tableId, String column, String connId) {
+
+    }
+
     public static DdlJob createTableWithInfoJob(String schemaName, TableDefinition tableDefinition) {
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         assert infoSchemaService != null;
@@ -366,7 +375,7 @@ public final class DdlHandler {
                 LogUtils.error(log, "[ddl-error] doDdlJob error, reason: {}, job: {}", res.getValue(), job);
                 throw new RuntimeException(res.getValue());
             }
-            Utils.sleep(100);
+            Utils.sleep(50);
         }
     }
 

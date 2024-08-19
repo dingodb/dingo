@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Longs;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
+import io.dingodb.calcite.meta.DingoColumnMetaData;
 import io.dingodb.calcite.schema.SubCalciteSchema;
 import io.dingodb.calcite.schema.SubSnapshotSchema;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
@@ -567,7 +568,14 @@ public class DingoMeta extends MetaImpl {
                     iterator = createIterator(statement);
                     resultSet.setIterator(iterator);
                 }
-                DingoType dingoType = DefinitionMapper.mapToDingoType(signature.columns);
+                List<ColumnMetaData> columnMetaDataList = new ArrayList<>();
+                if (signature instanceof DingoSignature) {
+                    DingoSignature dingoSignature = (DingoSignature) signature;
+                    columnMetaDataList = dingoSignature.allColumnMetaDataList;
+                } else {
+                    columnMetaDataList = signature.columns;
+                }
+                DingoType dingoType = DefinitionMapper.mapToDingoType(columnMetaDataList);
                 AvaticaResultSetConverter converter = new AvaticaResultSetConverter(resultSet.getLocalCalendar());
                 for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
                     rows.add(dingoType.convertTo(iterator.next(), converter));
@@ -758,14 +766,14 @@ public class DingoMeta extends MetaImpl {
             // rollback pessimistic lock
             transaction.rollBackPessimisticLock(jobManager);
             DingoDriverParser parser = new DingoDriverParser((DingoConnection) connection);
+            DingoSignature dingoSignature = (DingoSignature) signature;
             Signature signature1 = parser.retryQuery(jobManager, sh.signature.sql,
                 ((DingoSignature) sh.signature).getSqlNode(), ((DingoSignature) sh.signature).getRelNode(),
                 ((DingoSignature) sh.signature).getParasType(),
-                signature.columns, false);
+                dingoSignature.allColumnMetaDataList, false, dingoSignature.columns);
             ((DingoStatement) statement).setSignature(signature1);
             resultSet.setIterator(null);
-            Frame frame = getFrame(sh, offset, fetchMaxRowCount);
-            return frame;
+            return getFrame(sh, offset, fetchMaxRowCount);
         }
         if (lockWaitException != null) {
             throw lockWaitException;
@@ -783,14 +791,15 @@ public class DingoMeta extends MetaImpl {
         while (isDisableTxnRetry() && (txnRetryLimit-- > 0) && !transaction.isPessimistic()) {
             ((DingoStatement) statement).removeJob(jobManager);
             DingoDriverParser parser = new DingoDriverParser((DingoConnection) connection);
+            DingoSignature dingoSignature = (DingoSignature) signature;
             Signature signature1 = parser.retryQuery(jobManager, sh.signature.sql,
                 ((DingoSignature) sh.signature).getSqlNode(), ((DingoSignature) sh.signature).getRelNode(),
                 ((DingoSignature) sh.signature).getParasType(),
-                signature.columns, true);
+                ((DingoSignature) signature).allColumnMetaDataList,
+                 true, dingoSignature.columns);
             ((DingoStatement) statement).setSignature(signature1);
             resultSet.setIterator(null);
-            Frame frame = getFrame(sh, offset, fetchMaxRowCount);
-            return frame;
+            return getFrame(sh, offset, fetchMaxRowCount);
         }
         if (conflictException != null) {
             throw conflictException;

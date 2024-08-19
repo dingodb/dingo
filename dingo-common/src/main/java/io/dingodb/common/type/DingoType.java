@@ -113,4 +113,8 @@ public interface DingoType extends CompileContext {
     @NonNull String format(@Nullable Object value);
 
     <R, T> R accept(@NonNull DingoTypeVisitor<R, T> visitor, T obj);
+
+    default void setHidden(boolean hidden){};
+
+    default boolean isHidden() { return false; };
 }

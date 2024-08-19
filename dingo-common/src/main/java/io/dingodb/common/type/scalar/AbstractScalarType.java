@@ -23,6 +23,7 @@ import io.dingodb.expr.runtime.type.Type;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -32,6 +33,10 @@ import java.util.List;
 public abstract class AbstractScalarType extends NullableType {
     @Getter
     protected final Type type;
+
+    @Setter
+    @Getter
+    protected boolean hidden;
 
     protected AbstractScalarType(Type type, boolean nullable) {
         super(nullable);

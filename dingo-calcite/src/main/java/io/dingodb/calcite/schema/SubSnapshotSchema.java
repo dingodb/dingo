@@ -20,7 +20,9 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.meta.DdlService;
+import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.SchemaTables;
 import io.dingodb.meta.entity.Table;
@@ -32,6 +34,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class SubSnapshotSchema extends RootSnapshotSchema {
     @Getter
@@ -60,6 +63,46 @@ public class SubSnapshotSchema extends RootSnapshotSchema {
         Table table = schemaTables.getTables().get(tableName);
         if (table == null) {
             return null;
+        }
+        return new DingoTable(
+            context,
+            ImmutableList.<String>builder().addAll(names).add(tableName).build(),
+            null,
+            table
+        );
+    }
+
+    public @Nullable DingoTable getValidateTable(String tableName) {
+        SchemaTables schemaTables;
+        if (is == null) {
+            InfoSchema isTmp = DdlService.root().getIsLatest();
+            if (isTmp == null) {
+                return null;
+            }
+            schemaTables = isTmp.schemaMap.get(schemaName);
+        } else {
+            schemaTables = is.schemaMap.get(schemaName);;
+        }
+        if (schemaTables == null) {
+            return null;
+        }
+        Table table = schemaTables.getTables().get(tableName);
+        if (table == null) {
+            return null;
+        }
+        boolean hasHidden = table.getColumns()
+            .stream().anyMatch(column -> column.getState() != 1
+                ||
+                (column.getSchemaState() != SchemaState.SCHEMA_PUBLIC && column.getSchemaState() != null)
+            );
+        if (hasHidden) {
+            List<Column> columnList = table.getColumns()
+                .stream()
+                .filter(column -> (column.getSchemaState() == null
+                    || column.getSchemaState() == SchemaState.SCHEMA_PUBLIC)
+                    && column.getState() == 1)
+                .collect(Collectors.toList());
+            table = table.copyWithColumns(columnList);
         }
         return new DingoTable(
             context,
