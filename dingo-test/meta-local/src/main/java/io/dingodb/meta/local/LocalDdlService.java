@@ -81,7 +81,7 @@ public class LocalDdlService implements DdlService {
     }
 
     @Override
-    public void dropColumn(SchemaInfo schemaInfo, Long tableId, String column, String connId) {
+    public void dropColumn(long schemaId, String schemaName, Long tableId, String tableName, String column, String markDel, String relatedIndex, String connId) {
 
     }
 

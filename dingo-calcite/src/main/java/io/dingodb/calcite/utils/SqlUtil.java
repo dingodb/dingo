@@ -30,6 +30,9 @@ public class SqlUtil {
         } else if (sqlNode instanceof SqlSetPassword) {
             sql = ((SqlSetPassword) sqlNode).toLog();
         }
+        if (sql.length() > 1000) {
+            sql = sql.substring(0, 1000) + "...";
+        }
         return sql;
     }
 }

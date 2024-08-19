@@ -21,6 +21,7 @@ import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterConvertCharset;
+import io.dingodb.calcite.grammar.ddl.SqlAlterDropColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
@@ -44,6 +45,7 @@ import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.calcite.schema.SubCalciteSchema;
 import io.dingodb.calcite.schema.SubSnapshotSchema;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.metrics.DingoMetrics;
@@ -113,6 +115,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
+import static io.dingodb.common.table.ColumnDefinition.HIDE_STATE;
+import static io.dingodb.common.table.ColumnDefinition.NORMAL_STATE;
 import static io.dingodb.common.util.Optional.mapOrNull;
 import static io.dingodb.common.util.PrivilegeUtils.getRealAddress;
 import static org.apache.calcite.util.Static.RESOURCE;
@@ -1139,6 +1143,49 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         validateDropIndex(schema, tableName, sqlDropIndex.getIndexNm());
         DdlService.root().dropIndex(schema.getSchemaName(), tableName, sqlDropIndex.getIndexNm());
+    }
+
+    public void execute(SqlAlterDropColumn sqlAlterDropColumn, CalcitePrepare.Context context) {
+        final Pair<SubSnapshotSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlAlterDropColumn.table, context);
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        Table table = schema.getTableInfo(tableName);
+        if (table == null) {
+            throw new IllegalArgumentException("table " + tableName + " does not exist");
+        }
+        boolean noneMatchCol = table.getColumns().stream()
+            .noneMatch(column -> column.getSchemaState() == SchemaState.SCHEMA_PUBLIC
+                && column.getName().equalsIgnoreCase(sqlAlterDropColumn.columnNm));
+        if (noneMatchCol) {
+            throw new RuntimeException("column " + sqlAlterDropColumn.columnNm +  " does not exists");
+        }
+        // If the index column contains the column to be deleted and the primary key only has this column,
+        // it is necessary to mark the deletion
+        List<String> indicesInfo = table.getIndexes()
+            .stream().filter(indexTable -> {
+                List<Column> keyColumns = indexTable.getColumns().stream()
+                    .filter(column -> (column.getState() & NORMAL_STATE) == NORMAL_STATE
+                        && (column.getState() & HIDE_STATE) == 0).collect(Collectors.toList());
+                if (keyColumns.size() == 1) {
+                    return keyColumns.get(0).getName().equalsIgnoreCase(sqlAlterDropColumn.columnNm);
+                }
+                return false;
+            }).map(Table::getName).collect(Collectors.toList());
+        String markedDelete = "";
+        if (!indicesInfo.isEmpty()) {
+            markedDelete = String.join(",", indicesInfo);
+        }
+
+        DdlService.root().dropColumn(
+            table.getTableId().domain,
+            schema.getSchemaName(),
+            table.tableId.seq,
+            tableName,
+            sqlAlterDropColumn.columnNm,
+             markedDelete,
+             "",
+             "");
     }
 
     public static void validateDropIndex(SubSnapshotSchema schema, String tableName, String indexName) {

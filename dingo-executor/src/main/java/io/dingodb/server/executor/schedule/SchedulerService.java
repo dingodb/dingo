@@ -89,6 +89,7 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
             scheduler.start();
             PrepareMeta.prepare(io.dingodb.store.proxy.Configuration.coordinators());
             ExecutionEnvironment.INSTANCE.ddlOwner.set(true);
+            LogUtils.info(log, "owner prepare done");
         } catch (SchedulerException e) {
             log.error("Start schedule failed.", e);
             throw new RuntimeException(e);

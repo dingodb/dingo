@@ -33,13 +33,17 @@ import io.dingodb.common.util.Utils;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.sdk.service.entity.meta.ColumnDefinition;
 import io.dingodb.store.proxy.mapper.Mapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
+import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -243,6 +247,9 @@ public class DdlWorker {
                 break;
             case ActionDropIndex:
                 res = onDropIndex(dc, job);
+                break;
+            case ActionDropColumn:
+                res = onDropColumn(dc, job);
                 break;
             default:
                 job.setState(JobState.jobStateCancelled);
@@ -600,6 +607,75 @@ public class DdlWorker {
         return Pair.of(0L, error);
     }
 
+    public static Pair<Long, String> onDropColumn(DdlContext dc, DdlJob job) {
+        String error = job.decodeArgs();
+        if (error != null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, error);
+        }
+        String columnName = job.getArgs().get(0).toString();
+        String markDel = job.getArgs().get(1).toString();
+        //String related = job.getArgs().get(2).toString();
+        InfoSchemaService.root().getTable(job.getSchemaId(), job.getTableId());
+        Pair<TableDefinitionWithId, String> tableInfoRes
+            = TableUtil.getTableInfoAndCancelFaultJob(job, job.getSchemaId());
+        if (tableInfoRes.getValue() != null) {
+            return Pair.of(0L, tableInfoRes.getValue());
+        }
+        TableDefinitionWithId tableWithId = tableInfoRes.getKey();
+        ColumnDefinition columnDef= tableWithId.getTableDefinition().getColumns()
+            .stream().filter(columnDefinition -> columnDefinition.getName().equalsIgnoreCase(columnName))
+            .findFirst().orElse(null);
+        if (columnDef == null) {
+            return Pair.of(0L, "not found drop column");
+        }
+        List<TableDefinitionWithId> markDelIndices = null;
+        if (StringUtils.isNotEmpty(markDel)) {
+            Table table = InfoSchemaService.root().getTableDef(job.getSchemaId(), job.getTableId());
+            if (StringUtils.isNotEmpty(markDel)) {
+                markDelIndices = new ArrayList<>();
+                String[] markDelList = markDel.split(",");
+                for (String markDelIndex : markDelList) {
+                    markDelIndices.add(IndexUtil.getIndexWithId(table, markDelIndex));
+                }
+            }
+        }
+        io.dingodb.sdk.service.entity.common.SchemaState originState = columnDef.getSchemaState();
+        switch (columnDef.getSchemaState()) {
+            case SCHEMA_PUBLIC:
+                columnDef.setSchemaState(SCHEMA_WRITE_ONLY);
+                checkDropColumnForStatePublic(columnDef);
+                DdlColumn.setIndicesState(markDelIndices, SCHEMA_WRITE_ONLY);
+                job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
+                return TableUtil.updateVersionAndTableInfos(dc, job, tableWithId, originState != columnDef.getSchemaState());
+            case SCHEMA_WRITE_ONLY:
+                columnDef.setSchemaState(SCHEMA_DELETE_ONLY);
+                job.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
+                DdlColumn.setIndicesState(markDelIndices, SCHEMA_DELETE_ONLY);
+                return TableUtil.updateVersionAndTableInfos(dc, job, tableWithId, originState != columnDef.getSchemaState());
+            case SCHEMA_DELETE_ONLY:
+                columnDef.setSchemaState(SCHEMA_DELETE_REORG);
+                job.setSchemaState(SchemaState.SCHEMA_DELETE_REORG);
+                DdlColumn.setIndicesState(markDelIndices, SCHEMA_DELETE_REORG);
+                return TableUtil.updateVersionAndTableInfos(dc, job, tableWithId, originState != columnDef.getSchemaState());
+            case SCHEMA_DELETE_REORG:
+                columnDef.setName(UUID.randomUUID().toString());
+                job.setSchemaState(SchemaState.SCHEMA_NONE);
+                columnDef.setSchemaState(SCHEMA_NONE);
+                DdlColumn.setIndicesState(markDelIndices, SCHEMA_NONE);
+                if (job.isRollingback()) {
+                    job.finishTableJob(JobState.jobStateRollbackDone, SchemaState.SCHEMA_NONE);
+                } else {
+                    job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_NONE);
+                }
+                return TableUtil.updateVersionAndTableInfos(dc, job, tableWithId, originState != columnDef.getSchemaState());
+            default:
+                error = "ErrInvalidDDLJob";
+        }
+
+        return Pair.of(0L, error);
+    }
+
     public static Pair<SchemaInfo, String> checkSchemaExistAndCancelNotExistJob(DdlJob job) {
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         assert infoSchemaService != null;
@@ -778,4 +854,9 @@ public class DdlWorker {
         return reorgCtx;
     }
 
+    public static void checkDropColumnForStatePublic(ColumnDefinition columnDefinition) {
+        if (!columnDefinition.isNullable() && columnDefinition.getDefaultVal() == null) {
+            DdlColumn.generateOriginDefaultValue(columnDefinition);
+        }
+    }
 }

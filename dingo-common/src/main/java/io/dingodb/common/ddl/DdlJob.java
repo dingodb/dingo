@@ -229,6 +229,8 @@ public class DdlJob {
                 t = new TypeReference<List<TableDefinition>>() {};
             } else if (actionType == ActionType.ActionDropIndex) {
                 t = new TypeReference<List<String>>() {};
+            } else if (actionType == ActionType.ActionDropColumn) {
+                t = new TypeReference<List<String>>() {};
             }
 
             this.args = (List<Object>) objectMapper.readValue(rawArgs, t);

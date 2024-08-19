@@ -108,42 +108,6 @@ public final class DdlHandler {
         asyncNotify(1, jobId);
     }
 
-    public static void insertDDLJobs2Table(List<DdlJob> ddlJobList, boolean updateRawArgs) {
-        if (ddlJobList.isEmpty()) {
-            return;
-        }
-        InfoSchemaService service = InfoSchemaService.root();
-        List<Long> ids = service.genGlobalIDs(ddlJobList.size());
-        // jdbc insert into ddlJob to table
-        // insert into dingo_ddl_job
-        StringBuilder sqlBuilder = new StringBuilder(INSERT_JOB);
-        String format = "(%d, %b, %s, %s, %s, %d, %b)";
-        long jobId = 0;
-        for (int i = 0; i < ddlJobList.size(); i++) {
-            DdlJob job = ddlJobList.get(i);
-            job.setId(ids.get(i));
-            jobId = job.getId();
-            if (i != 0) {
-                sqlBuilder.append(",");
-            }
-            job.setState(JobState.jobStateQueueing);
-            byte[] meta = job.encode(updateRawArgs);
-            String jobMeta = new String(meta);
-            sqlBuilder.append(
-                String.format(
-                    format, job.getId(), job.mayNeedReorg(), Utils.quoteForSql(job.job2SchemaIDs()),
-                    Utils.quoteForSql(job.job2TableIDs()), Utils.quoteForSql(jobMeta), job.getActionType().getCode(), !job.notStarted()
-                )
-            );
-        }
-        String sql = sqlBuilder.toString();
-        String error = SessionUtil.INSTANCE.exeUpdateInTxn(sql);
-        if (error != null) {
-            LogUtils.error(log, "[ddl-error] insert ddl to table,sql:{}", sql);
-        }
-        asyncNotify(ddlJobList.size(), jobId);
-    }
-
     public static void asyncNotify(int size, long jobId) {
         ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
         if (env.ddlOwner.get()) {
@@ -333,8 +297,33 @@ public final class DdlHandler {
 
     }
 
-    public static void dropColumn(SchemaInfo schemaInfo, Long tableId, String column, String connId) {
-
+    public static void dropColumn(
+        long schemaId,
+        String schemaName,
+        Long tableId,
+        String tableName,
+        String columnName,
+        String markDel, String relatedIndex,
+        String connId
+    ) {
+        DdlJob job = DdlJob.builder()
+            .schemaId(schemaId)
+            .tableId(tableId)
+            .schemaName(schemaName)
+            .tableName(tableName)
+            .actionType(ActionType.ActionDropColumn)
+            .build();
+        List<Object> args = new ArrayList<>();
+        args.add(columnName);
+        args.add(markDel);
+        args.add(relatedIndex);
+        job.setArgs(args);
+        try {
+            doDdlJob(job);
+        } catch (Exception e) {
+            LogUtils.error(log, "[ddl-error] dropColumn error, tableName:" + tableName + ", columnName:" + columnName, e);
+            throw e;
+        }
     }
 
     public static DdlJob createTableWithInfoJob(String schemaName, TableDefinition tableDefinition) {

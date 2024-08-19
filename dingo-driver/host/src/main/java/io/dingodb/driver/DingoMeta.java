@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Longs;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
-import io.dingodb.calcite.meta.DingoColumnMetaData;
 import io.dingodb.calcite.schema.SubCalciteSchema;
 import io.dingodb.calcite.schema.SubSnapshotSchema;
 import io.dingodb.calcite.type.converter.DefinitionMapper;

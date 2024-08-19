@@ -36,6 +36,7 @@ import io.dingodb.calcite.rel.AutoIncrementShuttle;
 import io.dingodb.calcite.rel.DingoBasicCall;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
+import io.dingodb.calcite.utils.RelNodeCache;
 import io.dingodb.calcite.utils.SqlUtil;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
@@ -372,9 +373,20 @@ public final class DingoDriverParser extends DingoParser {
                 return !columnMetaData1.hidden;
             }
         ).collect(Collectors.toList());
+        String autoDdl = connection.getContext().getOption("for_ddl");
 
-        final RelRoot relRoot = convert(sqlNode, false);
-        RelNode relNode = optimize(relRoot.rel);
+        RelNode relNode;
+        if (autoDdl.equalsIgnoreCase("on")) {
+            relNode = RelNodeCache.getDdlRelNode(connection.getSchema(), sql);
+            if (relNode == null) {
+                final RelRoot relRoot = convert(sqlNode, false);
+                relNode = optimize(relRoot.rel);
+                RelNodeCache.setDdlRelNode(connection.getSchema(), sql, relNode);
+            }
+        } else {
+            final RelRoot relRoot = convert(sqlNode, false);
+            relNode = optimize(relRoot.rel);
+        }
         planProfile.endOptimize();
         markAutoIncForDml(relNode);
         Location currentLocation = MetaService.root().currentLocation();

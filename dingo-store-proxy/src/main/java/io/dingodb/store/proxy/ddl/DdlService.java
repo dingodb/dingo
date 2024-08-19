@@ -74,8 +74,10 @@ public class DdlService implements io.dingodb.meta.DdlService {
     }
 
     @Override
-    public void dropColumn(SchemaInfo schemaInfo, Long tableId, String column, String connId) {
-        DdlHandler.dropColumn(schemaInfo, tableId, column, connId);
+    public void dropColumn(long schemaId, String schemaName,
+                           Long tableId, String tableName, String column,
+                           String markDel, String relatedIndex, String connId) {
+        DdlHandler.dropColumn(schemaId, schemaName, tableId, tableName, column, markDel, relatedIndex, connId);
     }
 
     @Override

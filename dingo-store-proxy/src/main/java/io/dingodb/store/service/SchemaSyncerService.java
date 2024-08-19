@@ -74,6 +74,7 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
             lockService.put(startTs, path, value);
         } catch (Exception e) {
             LogUtils.error(log, "updateSelfVersion info, path:{}, ver:{}", path, value);
+            LogUtils.error(log, e.getMessage(), e);
             lockService.delete(startTs, path);
             Utils.sleep(1000);
             if (retry-- >= 0) {
