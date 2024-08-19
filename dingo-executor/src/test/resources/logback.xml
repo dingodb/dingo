@@ -356,7 +356,7 @@
     <logger name="io.dingodb.driver" level="${log.level}" additivity="false">
         <appender-ref ref="ASYNC-Calcite"/>
     </logger>
-    <logger name="io.dingodb.calcite" level="${log.level}" additivity="false">
+    <logger name="io.dingodb.calcite" level="DEBUG" additivity="false">
         <appender-ref ref="ASYNC-Calcite"/>
     </logger>
 

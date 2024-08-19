@@ -60,9 +60,8 @@ public class TxnPartDocumentParam extends FilterProjectSourceParam {
 
     private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     private final CommonId indexId;
-    private final String[] keyword;
+    private final String queryString;
     private final int topN;
-    private final Map<String, Object> parameterMap;
     private final IndexTable indexTable;
 
     private RelOp relOp;
@@ -92,9 +91,8 @@ public class TxnPartDocumentParam extends FilterProjectSourceParam {
         DingoType schema,
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
-        String[] keyword,
+        String queryString,
         int topN,
-        Map<String, Object> parameterMap,
         Table indexTable,
         RelOp relOp,
         boolean pushDown,
@@ -102,16 +100,14 @@ public class TxnPartDocumentParam extends FilterProjectSourceParam {
         long scanTs,
         int isolationLevel,
         long timeOut,
-        TupleMapping resultSelection,
-        int documentIndex
+        TupleMapping resultSelection
     ) {
         super(table.tableId, partId, schema, table.version, filter, selection, table.keyMapping());
         this.table = table;
         this.distributions = distributions;
         this.indexId = indexTable.tableId;
-        this.keyword = keyword;
+        this.queryString = queryString;
         this.topN = topN;
-        this.parameterMap = parameterMap;
         this.indexTable = (IndexTable) indexTable;
         this.pushDown = pushDown;
         this.scanTs = scanTs;
@@ -127,7 +123,6 @@ public class TxnPartDocumentParam extends FilterProjectSourceParam {
 
         List<DingoType> priType = tableDataColList.stream().map(Column::getType).collect(Collectors.toList());
         this.tableDataSchema = DingoTypeFactory.tuple(priType.toArray(new DingoType[]{}));
-        this.documentIndex = documentIndex;
     }
 
     @Override

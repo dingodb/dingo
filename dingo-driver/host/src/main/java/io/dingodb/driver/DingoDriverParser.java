@@ -776,6 +776,8 @@ public final class DingoDriverParser extends DingoParser {
                 RelNode child2 = child.accept(this);
                 if (child2 instanceof DingoVector) {
                     return child2;
+                } else if (child2 instanceof DingoDocument) {
+                    return child2;
                 }
                 return null;
             }

@@ -31,4 +31,5 @@ public enum IndexType {
     IndexType(boolean isVector) {
         this.isVector = isVector;
     }
+
 }

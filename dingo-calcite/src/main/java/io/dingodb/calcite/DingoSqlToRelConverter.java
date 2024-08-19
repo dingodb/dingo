@@ -139,7 +139,7 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
                 null,
                 new ArrayList<>()
             );
-        }else if (operator instanceof SqlDocumentOperator) {
+        } else if (operator instanceof SqlDocumentOperator) {
             assert namespace != null;
             List<Object> operands = new ArrayList<>(call.getOperandList());
             callRel = new LogicalDingoDocument(

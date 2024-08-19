@@ -48,23 +48,23 @@ public final class PartDocumentOperator extends FilterProjectSourceOperator {
         List<Object[]> results = new ArrayList<>();
 
         // Get all table data response
-        List<DocumentSearchResponse> searchResponseList = instance.documentSearch(
-            param.getIndexId(),
-            param.getKeyword(),
-            param.getTopN(),
-            param.getParameterMap());
-        for (DocumentSearchResponse response : searchResponseList) {
-            CommonId regionId = PartitionService.getService(
-                    Optional.ofNullable(param.getTable().getPartitionStrategy())
-                        .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-                .calcPartId(response.getKey(), param.getDistributions());
-            StoreInstance storeInstance = StoreService.getDefault().getInstance(param.getTableId(), regionId);
-            KeyValue keyValue = storeInstance.get(response.getKey());
-            Object[] decode = param.getCodec().decode(keyValue);
-            Object[] result = Arrays.copyOf(decode, decode.length + 1);
-            result[decode.length] = response.getDistance();
-            results.add(result);
-        }
+//        List<DocumentSearchResponse> searchResponseList = instance.documentSearch(
+//            param.getIndexId(),
+//            param.getKeyword(),
+//            param.getTopN(),
+//            param.getParameterMap());
+//        for (DocumentSearchResponse response : searchResponseList) {
+//            CommonId regionId = PartitionService.getService(
+//                    Optional.ofNullable(param.getTable().getPartitionStrategy())
+//                        .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
+//                .calcPartId(response.getKey(), param.getDistributions());
+//            StoreInstance storeInstance = StoreService.getDefault().getInstance(param.getTableId(), regionId);
+//            KeyValue keyValue = storeInstance.get(response.getKey());
+//            Object[] decode = param.getCodec().decode(keyValue);
+//            Object[] result = Arrays.copyOf(decode, decode.length + 1);
+//            result[decode.length] = response.getDistance();
+//            results.add(result);
+//        }
         return results.iterator();
     }
 

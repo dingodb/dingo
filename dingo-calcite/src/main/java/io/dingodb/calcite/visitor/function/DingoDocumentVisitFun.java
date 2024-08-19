@@ -67,6 +67,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlBasicCall;
+import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
@@ -90,6 +91,7 @@ import static io.dingodb.calcite.rel.LogicalDingoTableScan.getIndexMetricType;
 import static io.dingodb.common.util.Utils.isNeedLookUp;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_DOCUMENT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_VECTOR;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_DOCUMENT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_VECTOR;
 
 @Slf4j
@@ -127,12 +129,13 @@ public final class DingoDocumentVisitFun {
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = metaService.getRangeDistribution(tableId);
         List<Object> operandsList = rel.getOperands();
 
-        SqlIdentifier documentColNmIdf = (SqlIdentifier) operandsList.get(1);
-        String documentColNm = "";
-        if (documentColNmIdf != null) {
-            documentColNm = documentColNmIdf.getSimple();
-        }
-        String[] documents = getDocumentString(operandsList);
+//        SqlIdentifier documentColNmIdf = (SqlIdentifier) operandsList.get(1);
+//        String documentColNm = "";
+//        if (documentColNmIdf != null) {
+//            documentColNm = documentColNmIdf.getSimple();
+//        }
+//        String[] documents = getDocumentString(operandsList);
+        String queryString = (String) Objects.requireNonNull((SqlCharStringLiteral) operandsList.get(2)).getStringValue();
 
         if (!(operandsList.get(3) instanceof SqlNumericLiteral)) {
             throw new IllegalArgumentException("Top n not number.");
@@ -198,7 +201,7 @@ public final class DingoDocumentVisitFun {
         }
         long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
         // Get query additional parameters
-        Map<String, Object> parameterMap = getParameterMap(operandsList);
+//        Map<String, Object> parameterMap = getParameterMap(operandsList);
         // Get all index table distributions
         NavigableMap<ComparableByteArray, RangeDistribution> indexRanges =
             metaService.getRangeDistribution(rel.getIndexTableId());
@@ -217,20 +220,11 @@ public final class DingoDocumentVisitFun {
                     td,
                     ranges,
                     rel.getIndexTableId(),
-                    documents,
-                    topN,
-                    parameterMap
+                    queryString,
+                    topN
                 );
                 vertex = new Vertex(PART_DOCUMENT, param);
             } else {
-                String finalDocumentColNm = documentColNm;
-                int documentIdx = dingoTable.getTable()
-                    .columns
-                    .stream()
-                    .filter(col -> col.getName().equalsIgnoreCase(finalDocumentColNm))
-                    .map(col -> dingoTable.getTable().columns.indexOf(col))
-                    .findFirst().orElse(10000);
-                String metricType = getIndexMetricType(dingoTable, documentColNm);
 
                 RelOp relOp = null;
                 if (rexFilter != null) {
@@ -246,9 +240,8 @@ public final class DingoDocumentVisitFun {
                     rel.tupleType(),
                     td,
                     ranges,
-                    documents,
+                    queryString,
                     topN,
-                    parameterMap,
                     indexTable,
                     relOp,
                     pushDown,
@@ -256,10 +249,9 @@ public final class DingoDocumentVisitFun {
                     scanTs,
                     transaction.getIsolationLevel(),
                     transaction.getLockTimeOut(),
-                    resultSelection,
-                    documentIdx
+                    resultSelection
                 );
-                vertex = new Vertex(TXN_PART_VECTOR, param);
+                vertex = new Vertex(TXN_PART_DOCUMENT, param);
             }
             Task task = job.getOrCreate(currentLocation, idGenerator);
             OutputHint hint = new OutputHint();

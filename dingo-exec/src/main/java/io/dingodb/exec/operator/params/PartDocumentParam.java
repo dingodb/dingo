@@ -43,9 +43,8 @@ public class PartDocumentParam extends FilterProjectSourceParam {
     private final Table table;
     private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     private final CommonId indexId;
-    private final String[] keyword;
+    private final String queryString;
     private final int topN;
-    private final Map<String, Object> parameterMap;
 
     public PartDocumentParam(
         CommonId tableId,
@@ -57,17 +56,15 @@ public class PartDocumentParam extends FilterProjectSourceParam {
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
         CommonId indexId,
-        String[] keyword,
-        int topN,
-        Map<String, Object> parameterMap
+        String queryString,
+        int topN
     ) {
         super(tableId, partId, schema, table.version, filter, selection, keyMapping);
         this.codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
         this.table = table;
         this.distributions = distributions;
         this.indexId = indexId;
-        this.keyword= keyword;
+        this.queryString= queryString;
         this.topN = topN;
-        this.parameterMap = parameterMap;
     }
 }

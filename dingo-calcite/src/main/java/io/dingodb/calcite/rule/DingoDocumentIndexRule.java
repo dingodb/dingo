@@ -21,14 +21,10 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
-import io.dingodb.calcite.rel.DingoGetDocumentByToken;
-import io.dingodb.calcite.rel.DingoGetVectorByDistance;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoDocument;
 import io.dingodb.calcite.rel.LogicalDingoDocument;
 import io.dingodb.calcite.rel.DocumentStreamConvertor;
-import io.dingodb.calcite.rel.LogicalDingoVector;
-import io.dingodb.calcite.rel.VectorStreamConvertor;
 import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
@@ -59,8 +55,6 @@ import static io.dingodb.calcite.rel.LogicalDingoTableScan.dispatchDistanceCondi
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.filterIndices;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.filterScalarIndices;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.getScalaIndices;
-import static io.dingodb.calcite.visitor.function.DingoGetDocumentByTokenVisitFun.getTargetDocument;
-import static io.dingodb.calcite.visitor.function.DingoGetVectorByDistanceVisitFun.getTargetVector;
 
 @Slf4j
 @Value.Enclosing
@@ -78,69 +72,12 @@ public class DingoDocumentIndexRule extends RelRule<RelRule.Config> {
     @Override
     public void onMatch(RelOptRuleCall call) {
         DingoDocument document = call.rel(0);
-        RelNode relNode = getDingoGetDocumentByToken(document.getFilter(), document, false);
+//        RelNode relNode = getDingoGetDocumentByToken(document.getFilter(), document, false);
+        RelNode relNode = null;
         if (relNode == null) {
             return;
         }
         call.transformTo(relNode);
-    }
-    public static RelNode getDingoGetDocumentByToken(RexNode condition, LogicalDingoDocument document, boolean forJoin) {
-        DingoTable dingoTable = document.getTable().unwrap(DingoTable.class);
-        assert dingoTable != null;
-        TupleMapping selection = getDefaultSelection(dingoTable);
-
-        if (condition != null) {
-            dispatchDistanceCondition(condition, selection, dingoTable);
-        }
-
-        List<String> targetDocument = getTargetDocument(document.getOperands());
-        // if filter matched point get by primary key, then DingoGetByKeys priority highest
-        Pair<Integer, Integer> documentIdPair = getDocumentIndex(dingoTable, targetDocument.size());
-        assert documentIdPair != null;
-        RelTraitSet traitSet = document.getTraitSet().replace(DingoRelStreaming.of(document.getTable()));
-
-        RelNode relNode = prePrimaryOrScalarPlan(condition, document, documentIdPair, traitSet, selection, false);
-        if (relNode != null) {
-            return relNode;
-        }
-
-        if (!forJoin) {
-            return null;
-        }
-        DingoTableScan dingoTableScan = new DingoTableScan(document.getCluster(),
-            traitSet,
-            ImmutableList.of(),
-            document.getTable(),
-            condition,
-            selection,
-            null,
-            null,
-            null,
-            true,
-            false
-        );
-
-        DocumentStreamConvertor documentStreamConvertor = new DocumentStreamConvertor(
-            document.getCluster(),
-            document.getTraitSet(),
-            dingoTableScan,
-            document.getIndexTableId(),
-            documentIdPair.getKey(),
-            document.getIndexTable(),
-            false);
-        return new DingoGetDocumentByToken(
-            document.getCluster(),
-            traitSet,
-            documentStreamConvertor,
-            condition,
-            document.getTable(),
-            document.getOperands(),
-            documentIdPair.getKey(),
-            documentIdPair.getValue(),
-            document.getIndexTableId(),
-            document.getSelection(),
-            document.getIndexTable()
-        );
     }
     private static DingoGetByIndex preScalarRelNode(LogicalDingoDocument dingoDocument,
                                          IndexValueMapSet<Integer, RexNode> indexValueMapSet,
@@ -188,59 +125,59 @@ public class DingoDocumentIndexRule extends RelRule<RelRule.Config> {
         }
     }
 
-    private static RelNode prePrimaryOrScalarPlan(
-                                          RexNode condition,
-                                          LogicalDingoDocument document,
-                                          Pair<Integer, Integer> documentIdPair,
-                                          RelTraitSet traitSet,
-                                          TupleMapping selection,
-                                          boolean preFilter) {
-        if (condition == null) {
-            return null;
-        }
-        DingoTable dingoTable = document.getTable().unwrap(DingoTable.class);
-        RexNode rexNode = RexUtil.toDnf(document.getCluster().getRexBuilder(), condition);
-        IndexValueMapSetVisitor visitor = new IndexValueMapSetVisitor(document.getCluster().getRexBuilder());
-        IndexValueMapSet<Integer, RexNode> indexValueMapSet = rexNode.accept(visitor);
-        assert dingoTable != null;
-        final Table td = dingoTable.getTable();
-        List<Integer> keyIndices = Arrays.stream(td.keyMapping().getMappings()).boxed().collect(Collectors.toList());
-
-        Set<Map<Integer, RexNode>> keyMapSet = filterIndices(indexValueMapSet, keyIndices, selection);
-
-        RelNode scan = null;
-        if (keyMapSet != null) {
-            scan = new DingoGetByKeys(
-                document.getCluster(),
-                document.getTraitSet(),
-                ImmutableList.of(),
-                document.getTable(),
-                condition,
-                selection,
-                keyMapSet
-            );
-        } else if (preFilter) {
-            scan = preScalarRelNode(document, indexValueMapSet, td, selection, condition);
-        }
-
-        if (scan == null) {
-            return null;
-        }
-        DocumentStreamConvertor documentStreamConvertor = new DocumentStreamConvertor(
-            document.getCluster(),
-            document.getTraitSet(),
-            scan,
-            document.getIndexTableId(),
-            documentIdPair.getKey(),
-            document.getIndexTable(),
-            false);
-
-        RelTraitSet traits = document.getCluster().traitSet()
-            .replace(DingoConvention.INSTANCE)
-            .replace(DingoRelStreaming.ROOT);
-        return new DingoStreamingConverter(document.getCluster(),
-            traits, documentStreamConvertor);
-    }
+//    private static RelNode prePrimaryOrScalarPlan(
+//                                          RexNode condition,
+//                                          LogicalDingoDocument document,
+//                                          Pair<Integer, Integer> documentIdPair,
+//                                          RelTraitSet traitSet,
+//                                          TupleMapping selection,
+//                                          boolean preFilter) {
+//        if (condition == null) {
+//            return null;
+//        }
+//        DingoTable dingoTable = document.getTable().unwrap(DingoTable.class);
+//        RexNode rexNode = RexUtil.toDnf(document.getCluster().getRexBuilder(), condition);
+//        IndexValueMapSetVisitor visitor = new IndexValueMapSetVisitor(document.getCluster().getRexBuilder());
+//        IndexValueMapSet<Integer, RexNode> indexValueMapSet = rexNode.accept(visitor);
+//        assert dingoTable != null;
+//        final Table td = dingoTable.getTable();
+//        List<Integer> keyIndices = Arrays.stream(td.keyMapping().getMappings()).boxed().collect(Collectors.toList());
+//
+//        Set<Map<Integer, RexNode>> keyMapSet = filterIndices(indexValueMapSet, keyIndices, selection);
+//
+//        RelNode scan = null;
+//        if (keyMapSet != null) {
+//            scan = new DingoGetByKeys(
+//                document.getCluster(),
+//                document.getTraitSet(),
+//                ImmutableList.of(),
+//                document.getTable(),
+//                condition,
+//                selection,
+//                keyMapSet
+//            );
+//        } else if (preFilter) {
+//            scan = preScalarRelNode(document, indexValueMapSet, td, selection, condition);
+//        }
+//
+//        if (scan == null) {
+//            return null;
+//        }
+//        DocumentStreamConvertor documentStreamConvertor = new DocumentStreamConvertor(
+//            document.getCluster(),
+//            document.getTraitSet(),
+//            scan,
+//            document.getIndexTableId(),
+//            documentIdPair.getKey(),
+//            document.getIndexTable(),
+//            false);
+//
+//        RelTraitSet traits = document.getCluster().traitSet()
+//            .replace(DingoConvention.INSTANCE)
+//            .replace(DingoRelStreaming.ROOT);
+//        return new DingoStreamingConverter(document.getCluster(),
+//            traits, documentStreamConvertor);
+//    }
 
     @Value.Immutable
     public interface Config extends RelRule.Config {
