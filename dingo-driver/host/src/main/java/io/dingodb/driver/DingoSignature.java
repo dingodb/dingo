@@ -47,6 +47,7 @@ public final class DingoSignature extends Meta.Signature {
     @Getter
     @Setter
     private List<String> fullyTableList;
+    public List<ColumnMetaData> allColumnMetaDataList;
 
     public DingoSignature(
         List<ColumnMetaData> columns,
@@ -54,10 +55,11 @@ public final class DingoSignature extends Meta.Signature {
         Meta.CursorFactory cursorFactory,
         Meta.StatementType statementType,
         @Nullable CommonId jobId,
-        List<String> fullyTableList
+        List<String> fullyTableList,
+        List<ColumnMetaData> allColumnMetaDataList
     ) {
         this(columns, sql, new ArrayList<>(), null, cursorFactory, statementType,
-            jobId, null, null, null, fullyTableList);
+            jobId, null, null, null, fullyTableList, allColumnMetaDataList);
     }
 
     public DingoSignature(
@@ -71,7 +73,8 @@ public final class DingoSignature extends Meta.Signature {
         SqlNode sqlNode,
         RelNode relNode,
         RelDataType parasType,
-        List<String> fullyTableList
+        List<String> fullyTableList,
+        List<ColumnMetaData> allColumnMetaDataList
     ) {
         super(columns, sql, parameters, internalParameters, cursorFactory, statementType);
         this.jobId = jobId;
@@ -79,5 +82,6 @@ public final class DingoSignature extends Meta.Signature {
         this.relNode = relNode;
         this.parasType = parasType;
         this.fullyTableList = fullyTableList;
+        this.allColumnMetaDataList = allColumnMetaDataList;
     }
 }

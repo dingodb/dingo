@@ -48,6 +48,8 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlCreateSchema"
       "io.dingodb.calcite.grammar.ddl.SqlCreateUser"
       "io.dingodb.calcite.grammar.ddl.SqlCreateIndex"
+      "io.dingodb.calcite.grammar.ddl.SqlCreateVectorIndex"
+      "io.dingodb.calcite.grammar.ddl.SqlCreateDocumentIndex"
       "io.dingodb.calcite.grammar.dql.SqlDesc"
       "io.dingodb.calcite.grammar.dql.SqlDescTable"
       "io.dingodb.calcite.grammar.ddl.SqlDropUser"
@@ -231,6 +233,8 @@ data: {
       "SqlCreateFunction"
       "SqlCreateIndex"
       "SqlCreateTenant"
+      "SqlCreateVectorIndex"
+      "SqlCreateDocumentIndex"
     ]
 
     # List of methods for parsing extensions to "DROP" calls.

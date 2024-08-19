@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.type.converter;
 
+import io.dingodb.calcite.meta.DingoColumnMetaData;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.DingoType;
@@ -78,7 +79,14 @@ public final class DefinitionMapper {
 
     public static @NonNull TupleType mapToDingoType(@NonNull List<ColumnMetaData> colMetaList) {
         return DingoTypeFactory.tuple(colMetaList.stream()
-            .map(DefinitionMapper::mapToDingoType)
+            .map(cmd -> {
+                DingoType dingoType = DefinitionMapper.mapToDingoType(cmd);
+                if (cmd instanceof DingoColumnMetaData) {
+                    DingoColumnMetaData columnMetaData = (DingoColumnMetaData) cmd;
+                    dingoType.setHidden(columnMetaData.hidden);
+                }
+                return dingoType;
+            })
             .toArray(DingoType[]::new));
     }
 

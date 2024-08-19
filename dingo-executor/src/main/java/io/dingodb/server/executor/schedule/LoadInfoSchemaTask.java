@@ -59,7 +59,7 @@ public final class LoadInfoSchemaTask {
             .key(io.dingodb.meta.InfoSchemaService.expSchemaVer.getBytes()).build()).build();
         String resourceKey = String.format("tenantId:{%d}", TenantConstant.TENANT_ID);
         LockService lockService = new LockService(resourceKey, Configuration.coordinators(), 45000);
-        lockService.watchAllOpLock(kv, LoadInfoSchemaTask::loadInfoByEtcd);
+        lockService.watchAllOpEvent(kv, LoadInfoSchemaTask::loadInfoByEtcd);
     }
 
     public static void watchGlobalSchemaVer() {
@@ -67,22 +67,26 @@ public final class LoadInfoSchemaTask {
             .key(io.dingodb.meta.InfoSchemaService.globalSchemaVer.getBytes()).build()).build();
         String resourceKey = String.format("tenantId:{%d}", TenantConstant.TENANT_ID);
         LockService lockService = new LockService(resourceKey, Configuration.coordinators(), 45000);
-        lockService.watchAllOpLock(kv, LoadInfoSchemaTask::loadInfoByEtcd);
+        lockService.watchAllOpEvent(kv, LoadInfoSchemaTask::loadInfoByEtcd);
     }
 
     public static void scheduler() {
-        //long lease = DdlContext.INSTANCE.getLease();
+        long lease = DdlContext.INSTANCE.getLease();
         while (!Thread.interrupted()) {
             loadInfo();
-            Utils.sleep(10000);
+            Utils.sleep(lease);
         }
         LogUtils.info(log, "[ddl] scheduler interrupted, start in loop");
         scheduler();
     }
 
-    public static void loadInfoByEtcd() {
-        Utils.sleep(40);
+    public static String loadInfoByEtcd(String typeStr) {
+        if (typeStr.equals("keyNone")) {
+            Utils.sleep(2000);
+            return "none";
+        }
         loadInfo();
+        return "done";
     }
 
     public static void loadInfo() {

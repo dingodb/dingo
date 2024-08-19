@@ -62,17 +62,22 @@ public final class DdlServer {
         LockService lockService = new LockService(resourceKey, Configuration.coordinators(), 45000);
         Kv kv = Kv.builder().kv(KeyValue.builder()
             .key(DdlUtil.ADDING_DDL_JOB_CONCURRENT_KEY.getBytes()).build()).build();
-        lockService.watchAllOpLock(kv, DdlServer::startLoadDDLAndRunByEtcd);
+        lockService.watchAllOpEvent(kv, DdlServer::startLoadDDLAndRunByEtcd);
     }
 
-    public static void startLoadDDLAndRunByEtcd() {
-        Utils.sleep(100);
+    public static String startLoadDDLAndRunByEtcd(String typeStr) {
+        if (typeStr.equals("keyNone")) {
+            Utils.sleep(1000);
+            return "none";
+        }
         Session session = SessionUtil.INSTANCE.getSession();
         try {
             session.setAutoCommit(true);
             startLoadDDLAndRun(session);
+            return "done";
         } catch (Exception e) {
             LogUtils.error(log, "startLoadDDLAndRunByEtcd error, reason:{}", e.getMessage());
+            return "runError";
         } finally {
             SessionUtil.INSTANCE.closeSession(session);
         }
@@ -131,8 +136,11 @@ public final class DdlServer {
         if (ddlJob == null) {
             return;
         }
-        long end = System.currentTimeMillis();
-        DingoMetrics.timer("loadDdlJob").update((end - start), TimeUnit.MILLISECONDS);
+        long sub = System.currentTimeMillis() - start;
+        if (sub > 150) {
+            LogUtils.info(log, "get job cost:{}", sub);
+        }
+        DingoMetrics.timer("loadDdlJob").update(sub, TimeUnit.MILLISECONDS);
         try {
             DdlWorker worker = pool.borrowObject();
             delivery2worker(worker, ddlJob, pool);

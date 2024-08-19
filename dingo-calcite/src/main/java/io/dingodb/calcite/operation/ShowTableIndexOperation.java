@@ -58,6 +58,9 @@ public class ShowTableIndexOperation extends QueryOperation {
         List<Object[]> tuples;
         InfoSchema is = DdlService.root().getIsLatest();
         Table table = is.getTable(schemaName, tableName);
+        if (table == null) {
+            throw new RuntimeException("table not exists");
+        }
         tuples = metaService.getTableIndexDefinitions(table.getTableId()).values().stream().filter(i -> !i.getName().equalsIgnoreCase(tableName)).map(
             index -> new Object[] {
                 tableName,

@@ -108,9 +108,9 @@ public class LogicalDingoVector extends TableFunctionScan {
                 List<Integer> mappingList = new ArrayList<>();
                 for (int index : selection.getMappings()) {
                     if (index < dingoTable.getTable().getColumns().size()) {
-                        if (dingoTable.getTable().getColumns().get(index).getState() == 1) {
+                        //if (dingoTable.getTable().getColumns().get(index).getState() == 1) {
                             mappingList.add(index);
-                        }
+                        //}
                     } else {
                         mappingList.add(index);
                     }
@@ -122,7 +122,7 @@ public class LogicalDingoVector extends TableFunctionScan {
             List<Integer> mapping = dingoTable.getTable()
                 .getColumns()
                 .stream()
-                .filter(col -> col.getState() == 1)
+                //.filter(col -> col.getState() == 1)
                 .map(col -> dingoTable.getTable().getColumns().indexOf(col))
                 .collect(Collectors.toList());
             mapping.add(dingoTable.getTable().getColumns().size());

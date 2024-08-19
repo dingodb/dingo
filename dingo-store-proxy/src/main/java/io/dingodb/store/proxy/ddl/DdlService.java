@@ -23,6 +23,7 @@ import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.DdlServiceProvider;
 import io.dingodb.meta.InfoSchemaService;
+import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.InfoCache;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
@@ -65,6 +66,16 @@ public class DdlService implements io.dingodb.meta.DdlService {
     @Override
     public void truncateTable(SchemaInfo schemaInfo, Table table, String connId) {
         DdlHandler.truncateTable(schemaInfo, table, connId);
+    }
+
+    @Override
+    public void addColumn(SchemaInfo schemaInfo, Table table, Column column, String connId) {
+        DdlHandler.addColumn(schemaInfo, table, column, connId);
+    }
+
+    @Override
+    public void dropColumn(SchemaInfo schemaInfo, Long tableId, String column, String connId) {
+        DdlHandler.dropColumn(schemaInfo, tableId, column, connId);
     }
 
     @Override

@@ -581,6 +581,7 @@ public final class PrepareMeta {
                     .precision(def.getPrecision())
                     .elementType(def.getElementType())
                     .comment("")
+                    .schemaState(SchemaState.SCHEMA_PUBLIC)
                     .state(1)
                     .build()
                 )
