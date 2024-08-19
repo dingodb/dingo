@@ -40,7 +40,7 @@ public interface DdlService {
     void truncateTable(SchemaInfo schemaInfo, Table table, String connId);
 
     void addColumn(SchemaInfo schemaInfo, Table table, Column column, String connId);
-    void dropColumn(SchemaInfo schemaInfo, Long tableId, String column, String connId);
+    void dropColumn(long schemaId, String schemaName, Long tableId, String tableName, String column, String markDel, String relatedIndex, String connId);
 
     default void createIndex(String schemaName, String tableName, TableDefinition indexDef) {
 

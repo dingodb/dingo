@@ -118,6 +118,8 @@ public class InfoSchemaBuilder {
                 return applyCreateTable(schemaDiff);
             case ActionTruncateTable:
                 return applyTruncateTable(schemaDiff);
+            case ActionDropColumn:
+                return applyDropColumn(schemaDiff);
             default:
                 break;
         }
@@ -253,6 +255,15 @@ public class InfoSchemaBuilder {
     }
 
     public Pair<List<Long>, String> applyTruncateTable(SchemaDiff diff) {
+        try {
+            dropTable(diff.getOldSchemaId(), diff.getOldTableId());
+            return applyCreateTable(diff);
+        } catch (Exception e) {
+            return Pair.of(null, e.getMessage());
+        }
+    }
+
+    public Pair<List<Long>, String> applyDropColumn(SchemaDiff diff) {
         try {
             dropTable(diff.getOldSchemaId(), diff.getOldTableId());
             return applyCreateTable(diff);

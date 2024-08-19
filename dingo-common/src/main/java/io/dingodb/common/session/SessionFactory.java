@@ -54,6 +54,7 @@ public class SessionFactory extends BasePooledObjectFactory<Session> {
         properties.setProperty("user", user);
         properties.setProperty("host", host);
         properties.setProperty("sql_log", "off");
+        properties.setProperty("for_ddl", "on");
         java.sql.Connection connection = null;
         try {
             connection = DriverManager.getConnection("jdbc:dingo:", properties);

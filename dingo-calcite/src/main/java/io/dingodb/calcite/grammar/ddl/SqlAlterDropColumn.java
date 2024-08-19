@@ -23,7 +23,7 @@ import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 public class SqlAlterDropColumn extends SqlAlterTable {
-    String columnNm;
+    public String columnNm;
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("ALTER TABLE DROP COLUMN", SqlKind.ALTER_TABLE);
     public SqlAlterDropColumn(SqlParserPos pos, SqlIdentifier sqlIdentifier, String columnNm) {

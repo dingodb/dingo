@@ -21,7 +21,10 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.util.Litmus;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -50,10 +53,7 @@ public final class RelNodeCache {
     private RelNodeCache() {
     }
 
-    public static RelNode getRelNode(String schema, String r, boolean prepare) {
-        if (!prepare) {
-            return null;
-        }
+    public static RelNode getDdlRelNode(String schema, String r) {
         Map<String, RelNode> relNodeMap;
         try {
             relNodeMap = relNodeCache.get(schema);
@@ -64,10 +64,7 @@ public final class RelNodeCache {
         return null;
     }
 
-    public static void setRelNode(String schema, String sql, RelNode relNode, boolean prepare) {
-        if (!prepare) {
-            return;
-        }
+    public static void setDdlRelNode(String schema, String sql, RelNode relNode) {
         Map<String, RelNode> relNodeMap;
         try {
             relNodeMap = relNodeCache.get(schema);
