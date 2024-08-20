@@ -41,6 +41,8 @@ import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
+import io.dingodb.store.api.transaction.exception.OnePcDegenerateTwoPcException;
+import io.dingodb.store.api.transaction.exception.OnePcMaxSizeExceedException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import lombok.AllArgsConstructor;
@@ -183,6 +185,8 @@ public abstract class BaseTransaction implements ITransaction {
 
     public abstract void preWritePrimaryKey();
 
+    public abstract boolean onePcStage();
+
     public abstract void rollBackResidualPessimisticLock(JobManager jobManager);
 
     public String transactionOf() {
@@ -308,33 +312,64 @@ public abstract class BaseTransaction implements ITransaction {
         long preWriteStart = System.currentTimeMillis();
         Location currentLocation = MetaService.root().currentLocation();
         AtomicReference<CommonId> jobId = new AtomicReference<>(CommonId.EMPTY_JOB);
-        this.status = TransactionStatus.PRE_WRITE_START;
         try {
-            LogUtils.info(log, "{} Start PreWritePrimaryKey", transactionOf());
             checkContinue();
-            // 1、PreWritePrimaryKey 、heartBeat
-            preWritePrimaryKey();
-            this.primaryKeyPreWrite.compareAndSet(false, true);
-            this.status = TransactionStatus.PRE_WRITE_PRIMARY_KEY;
-            commitProfile.endPreWritePrimary();
-            if (cacheToObject.getMutation().getOp() == Op.CheckNotExists) {
-                LogUtils.info(log, "{} PreWritePrimaryKey Op is CheckNotExists", transactionOf());
-                return;
+
+            boolean enableOnePc = true;
+            if(enableOnePc) {
+                try {
+                    //1PC phase。
+                    this.status = TransactionStatus.ONE_PC_START;
+                    LogUtils.info(log, "{} one pc phase start,status:{}", transactionOf(), this.status);
+
+                    if (this.onePcStage()) {
+                        this.status = TransactionStatus.COMMIT;
+                        LogUtils.info(log, "{} one pc phase success,status:{}", transactionOf(), this.status);
+                        return;
+                    } else {
+                        this.status = TransactionStatus.START;
+                        LogUtils.info(log, "{} one pc phase failed, change txn state, status:{}", transactionOf(), this.status);
+                    }
+                } catch (OnePcMaxSizeExceedException e) {
+                    //Need 2PC.
+                    LogUtils.info(log, e.getMessage());
+                    this.status = TransactionStatus.START;
+                } catch (OnePcDegenerateTwoPcException e) {
+                    //Need 2PC.
+                    LogUtils.info(log, e.getMessage());
+                    this.status = TransactionStatus.START;
+                }
             }
-            LogUtils.info(log, "{} PreWritePrimaryKey end, PrimaryKey is {}", transactionOf(), Arrays.toString(primaryKey));
-            checkContinue();
-            // 2、generator job、task、PreWriteOperator
-            long jobSeqId = TransactionManager.nextTimestamp();
-            job = jobManager.createJob(startTs, jobSeqId, txnId, null);
-            jobId.set(job.getJobId());
-            DingoTransactionRenderJob.renderPreWriteJob(job, currentLocation, this, true);
-            // 3、run PreWrite
-            Iterator<Object[]> iterator = jobManager.createIterator(job, null);
-            while (iterator.hasNext()) {
-                iterator.next();
+
+            //2PC phase.
+            if(this.status == TransactionStatus.START) {
+                this.status = TransactionStatus.PRE_WRITE_START;
+                LogUtils.info(log, "{} Start PreWritePrimaryKey", transactionOf());
+
+                // 1、PreWritePrimaryKey 、heartBeat
+                preWritePrimaryKey();
+                this.primaryKeyPreWrite.compareAndSet(false, true);
+                this.status = TransactionStatus.PRE_WRITE_PRIMARY_KEY;
+                commitProfile.endPreWritePrimary();
+                if (cacheToObject.getMutation().getOp() == Op.CheckNotExists) {
+                    LogUtils.info(log, "{} PreWritePrimaryKey Op is CheckNotExists", transactionOf());
+                    return;
+                }
+                LogUtils.info(log, "{} PreWritePrimaryKey end, PrimaryKey is {}", transactionOf(), Arrays.toString(primaryKey));
+                checkContinue();
+                // 2、generator job、task、PreWriteOperator
+                long jobSeqId = TransactionManager.nextTimestamp();
+                job = jobManager.createJob(startTs, jobSeqId, txnId, null);
+                jobId.set(job.getJobId());
+                DingoTransactionRenderJob.renderPreWriteJob(job, currentLocation, this, true);
+                // 3、run PreWrite
+                Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+                while (iterator.hasNext()) {
+                    iterator.next();
+                }
+                commitProfile.endPreWriteSecond();
+                this.status = TransactionStatus.PRE_WRITE;
             }
-            commitProfile.endPreWriteSecond();
-            this.status = TransactionStatus.PRE_WRITE;
         } catch (WriteConflictException e) {
             LogUtils.error(log, e.getMessage(), e);
             // rollback or retry

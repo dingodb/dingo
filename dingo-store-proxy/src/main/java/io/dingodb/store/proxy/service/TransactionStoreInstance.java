@@ -69,6 +69,8 @@ import io.dingodb.store.api.transaction.data.rollback.TxnPessimisticRollBack;
 import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.LockWaitException;
+import io.dingodb.store.api.transaction.exception.OnePcDegenerateTwoPcException;
+import io.dingodb.store.api.transaction.exception.OnePcMaxSizeExceedException;
 import io.dingodb.store.api.transaction.exception.PrimaryMismatchException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.store.proxy.Configuration;
@@ -100,6 +102,8 @@ public class TransactionStoreInstance {
     private final DocumentService documentService;
 
     private final static int VectorKeyLen = 17;
+    //The max data size for one rpc is 64M, we limit max 1pc data size as 56M now.
+    private final int maxRpcDataSize = 56*1024*1024;
 
     public TransactionStoreInstance(StoreService storeService, IndexService indexService, CommonId partitionId) {
         this(storeService, indexService, null, partitionId);
@@ -158,6 +162,11 @@ public class TransactionStoreInstance {
         while (true) {
             TxnPrewriteRequest request = MAPPER.preWriteTo(txnPreWrite);
             TxnPrewriteResponse response;
+
+            if(request.isTryOnePc() && request.sizeOf() > this.maxRpcDataSize) {
+                throw new OnePcMaxSizeExceedException("Data size exceed in 1pc, max:" + this.maxRpcDataSize + " cur:" +request.sizeOf());
+            }
+
             Mutation mutation = request.getMutations().get(0);
             if (mutation.getVector() == null && mutation.getDocument() == null) {
                 response = storeService.txnPrewrite(txnPreWrite.getStartTs(), request);
@@ -170,6 +179,10 @@ public class TransactionStoreInstance {
                 getJoinedPrimaryKey(txnPreWrite, response.getKeysAlreadyExist());
             }
             if (response.getTxnResult() == null || response.getTxnResult().isEmpty()) {
+                if(request.isTryOnePc() && response.getOnePcCommitTs() == 0) {
+                    //1pc failed, need triggering 2pc.
+                    throw new OnePcDegenerateTwoPcException("1pc degenerate to 2pc as commit ts:" + response.getOnePcCommitTs());
+                }
                 return true;
             }
             ResolveLockStatus resolveLockStatus = writeResolveConflict(

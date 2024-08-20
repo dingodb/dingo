@@ -28,12 +28,17 @@ import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.scalar.BinaryType;
 import io.dingodb.common.type.scalar.DoubleType;
 import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.exec.Services;
+import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.impl.TransactionManager;
+import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Document;
 import io.dingodb.store.api.transaction.data.DocumentValue;
 import io.dingodb.store.api.transaction.data.DocumentWithId;
@@ -154,6 +159,64 @@ public final class TransactionCacheToMutation {
             }
         }
         return new Mutation(Op.forNumber(op), key, value, forUpdateTs, vectorWithId, documentWithId);
+    }
+
+    /**
+     * transform TxnLocalData to Mutation.
+     * @param txnLocalData a TxnLocalData object to tranform to Mutation.
+     * @param txnType transaction type.
+     * @return a Mutation object.
+     */
+    public static Mutation localDatatoMutation(TxnLocalData txnLocalData, TransactionType txnType) {
+        CommonId.CommonType type = txnLocalData.getDataType();
+        CommonId txnId = txnLocalData.getTxnId();
+        CommonId tableId = txnLocalData.getTableId();
+        CommonId newPartId = txnLocalData.getPartId();
+        int op = txnLocalData.getOp().getCode();
+        byte[] key = txnLocalData.getKey();
+        byte[] value = txnLocalData.getValue();
+
+        StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
+        byte[] txnIdByte = txnId.encode();
+        byte[] tableIdByte = tableId.encode();
+        byte[] partIdByte = newPartId.encode();
+        int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
+        long forUpdateTs = 0;
+        if (txnType == TransactionType.PESSIMISTIC) {
+            byte[] lockBytes = ByteUtils.encode(
+                CommonId.CommonType.TXN_CACHE_LOCK,
+                key,
+                Op.LOCK.getCode(),
+                len,
+                txnIdByte, tableIdByte, partIdByte);
+            KeyValue keyValue = store.get(lockBytes);
+            if (keyValue == null) {
+                throw new RuntimeException(txnId + " lock keyValue is null ");
+            }
+            forUpdateTs = ByteUtils.decodePessimisticLockValue(keyValue);
+        } else {
+            byte[] checkBytes = ByteUtils.encode(
+                CommonId.CommonType.TXN_CACHE_CHECK_DATA,
+                key,
+                Op.CheckNotExists.getCode(),
+                len,
+                txnIdByte, tableIdByte, partIdByte);
+            KeyValue keyValue = store.get(checkBytes);
+            if (keyValue != null && keyValue.getValue() != null) {
+                switch (Op.forNumber(op)) {
+                    case PUT:
+                        op = Op.PUTIFABSENT.getCode();
+                        break;
+                    case DELETE:
+                        op = Op.CheckNotExists.getCode();
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        // cache to mutations
+        return TransactionCacheToMutation.cacheToMutation(op, key, value, forUpdateTs, tableId, newPartId, txnId);
     }
 
     public static Mutation cacheToPessimisticLockMutation(@NonNull byte[] key, byte[] value, long forUpdateTs) {

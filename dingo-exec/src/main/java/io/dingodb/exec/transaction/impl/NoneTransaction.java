@@ -120,4 +120,7 @@ public class NoneTransaction extends BaseTransaction {
     public synchronized void rollback(JobManager jobManager) {
         cleanUp(jobManager);
     }
+
+    @Override
+    public boolean onePcStage() {throw new UnsupportedOperationException();}
 }
