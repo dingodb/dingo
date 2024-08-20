@@ -39,10 +39,12 @@ import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
+import io.dingodb.store.api.transaction.data.Mutation;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.prewrite.ForUpdateTsCheck;
 import io.dingodb.store.api.transaction.data.prewrite.PessimisticCheck;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
+import io.dingodb.store.api.transaction.exception.OnePcDegenerateTwoPcException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.tso.TsoService;
 import lombok.Getter;
@@ -52,8 +54,10 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 @Slf4j
@@ -372,6 +376,76 @@ public class PessimisticTransaction extends BaseTransaction {
                 Utils.sleep(100);
             }
         }
+    }
+
+    @Override
+    public boolean onePcStage() {
+        Iterator<Object[]> transform = cache.iterator();
+        List<Mutation> mutations = new ArrayList<Mutation>();
+        Set<CommonId> partIdSet = new HashSet<CommonId>();
+        boolean forSamePart = true;
+
+        //get primary key.
+        cacheToObject = primaryLockTo();
+        primaryKey = cacheToObject.getMutation().getKey();
+
+        while (transform.hasNext()) {
+            Object[] next = transform.next();
+            TxnLocalData txnLocalData = (TxnLocalData) next[0];
+
+            //check whether having same patition id.
+            partIdSet.add(txnLocalData.getPartId());
+            if(partIdSet.size() > 1) {
+                forSamePart = false;
+                break;
+            } else {
+                //build Mutaions.
+                mutations.add(TransactionCacheToMutation.localDatatoMutation(txnLocalData, TransactionType.PESSIMISTIC));
+            }
+        }
+
+        if(forSamePart) {
+            //commit 1pc.
+            return txnOnePCCommit(mutations);
+        } else {
+            return false;
+        }
+    }
+
+    private boolean txnOnePCCommit(List<Mutation> mutations) {
+        TxnPreWrite txnPreWrite = TxnPreWrite.builder()
+            .isolationLevel(IsolationLevel.of(
+                isolationLevel
+            ))
+            .mutations(mutations)
+            .primaryLock(primaryKey)
+            .startTs(startTs)
+            .lockTtl(TransactionManager.lockTtlTm())
+            .txnSize(mutations.size())
+            .tryOnePc(true)
+            .maxCommitTs(0L)
+            .pessimisticChecks(TransactionUtil.toPessimisticCheck(mutations.size()))
+            .forUpdateTsChecks(TransactionUtil.toForUpdateTsChecks(mutations))
+            .lockExtraDatas(
+                TransactionUtil.toLockExtraDataList(
+                    cacheToObject.getTableId(),
+                    cacheToObject.getPartId(),
+                    txnId,
+                    TransactionType.PESSIMISTIC.getCode(),
+                    mutations.size()))
+            .build();
+        try {
+            StoreInstance store = Services.KV_STORE.getInstance(
+                cacheToObject.getTableId(),
+                cacheToObject.getPartId()
+            );
+            store.txnPreWrite(txnPreWrite, getLockTimeOut());
+        } catch (RegionSplitException e) {
+            LogUtils.info(log, "Received RegionSplitException exception, so degenerate to 2PC.");
+            throw new OnePcDegenerateTwoPcException("1PC degenerate to 2PC, startTs:" + startTs);
+        }
+
+        return true;
     }
 
     @Override

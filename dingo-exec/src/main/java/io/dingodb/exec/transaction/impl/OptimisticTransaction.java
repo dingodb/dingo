@@ -30,19 +30,27 @@ import io.dingodb.exec.transaction.base.BaseTransaction;
 import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.base.TransactionStatus;
 import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.transaction.base.TxnLocalData;
+import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
 import io.dingodb.meta.MetaService;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
+import io.dingodb.store.api.transaction.data.Mutation;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
+import io.dingodb.store.api.transaction.exception.OnePcDegenerateTwoPcException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 @Slf4j
@@ -219,6 +227,73 @@ public class OptimisticTransaction extends BaseTransaction {
         byte[] key = cacheToObject.getMutation().getKey();
         primaryKey = key;
         txnPreWritePrimaryKey(cacheToObject);
+    }
+
+    /**
+     * Run 1pc stage.
+     * @return
+     *      true: 1PC stage success.
+     *      false: Need degenerate to 2PC transaction.
+     */
+    @Override
+    public boolean onePcStage() {
+        Iterator<Object[]> transform = cache.iterator();
+        List<Mutation> mutations = new ArrayList<Mutation>();
+        Set<CommonId> partIdSet = new HashSet<CommonId>();
+        boolean forSamePart = true;
+
+        //get primary key.
+        cacheToObject = cache.getPrimaryKey();
+        byte[] key = cacheToObject.getMutation().getKey();
+        primaryKey = key;
+
+        while (transform.hasNext()) {
+            Object[] next = transform.next();
+            TxnLocalData txnLocalData = (TxnLocalData) next[0];
+
+            //check whether having same patition id.
+            partIdSet.add(txnLocalData.getPartId());
+            if(partIdSet.size() > 1) {
+                forSamePart = false;
+                break;
+            } else {
+                //build Mutaions.
+                mutations.add(TransactionCacheToMutation.localDatatoMutation(txnLocalData, TransactionType.OPTIMISTIC));
+            }
+        }
+
+        if(forSamePart) {
+            //commit 1pc.
+            return txnOnePCCommit(mutations);
+        } else {
+            return false;
+        }
+    }
+
+    private boolean txnOnePCCommit(List<Mutation> mutations) {
+        TxnPreWrite txnPreWrite = TxnPreWrite.builder()
+            .isolationLevel(IsolationLevel.of(
+                isolationLevel
+            ))
+            .mutations(mutations)
+            .primaryLock(primaryKey)
+            .startTs(startTs)
+            .lockTtl(TransactionManager.lockTtlTm())
+            .txnSize(mutations.size())
+            .tryOnePc(true)
+            .maxCommitTs(0L)
+            .lockExtraDatas(TransactionUtil.toLockExtraDataList(cacheToObject.getTableId(), cacheToObject.getPartId(), txnId,
+                TransactionType.OPTIMISTIC.getCode(), 1))
+            .build();
+        try {
+            StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
+            long lockTimeOut = getLockTimeOut();
+            store.txnPreWrite(txnPreWrite, lockTimeOut);
+        } catch (RegionSplitException e) {
+            LogUtils.info(log, "Received RegionSplitException exception, so degenerate to 2PC.");
+            throw new OnePcDegenerateTwoPcException("1PC degenerate to 2PC, startTs:" + startTs);
+        }
+        return true;
     }
 
     private void txnPreWritePrimaryKey(CacheToObject cacheToObject) {
