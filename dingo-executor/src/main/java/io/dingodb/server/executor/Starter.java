@@ -121,7 +121,7 @@ public class Starter {
 
         SafePointUpdateTask.run();
 
-//        DdlServer.startDispatchLoop();
+        DdlServer.startDispatchLoop();
     }
 
     public static void checkContinue() {

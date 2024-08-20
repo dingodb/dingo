@@ -19,7 +19,6 @@ package io.dingodb.store.api;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.CoprocessorV2;
-import io.dingodb.common.document.DocumentSearchResponse;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.vector.VectorSearchResponse;
 import io.dingodb.store.api.transaction.data.DocumentSearchParameter;

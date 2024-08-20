@@ -179,7 +179,7 @@ public class LogicalDingoDocument extends TableFunctionScan {
         RelDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
         builder.addAll(relDataType.getFieldList());
         builder.add(new RelDataTypeFieldImpl(
-            indexTable.getName() + "$distance",
+            indexTable.getName() + "$rank_bm25",
             relDataType.getFieldCount(),
             getCluster().getTypeFactory().createSqlType(SqlTypeName.get("FLOAT"))));
         return builder.build();
@@ -192,7 +192,7 @@ public class LogicalDingoDocument extends TableFunctionScan {
         cols.addAll(dingoTable.getTable().columns);
         cols.add(Column
             .builder()
-            .name(indexTable.getName().concat("$distance"))
+            .name(indexTable.getName().concat("$rank_bm25"))
             .sqlTypeName("FLOAT")
             .type(new FloatType(false))
             .precision(-1)

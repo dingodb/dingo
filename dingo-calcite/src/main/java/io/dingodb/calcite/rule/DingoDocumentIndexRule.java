@@ -125,60 +125,6 @@ public class DingoDocumentIndexRule extends RelRule<RelRule.Config> {
         }
     }
 
-//    private static RelNode prePrimaryOrScalarPlan(
-//                                          RexNode condition,
-//                                          LogicalDingoDocument document,
-//                                          Pair<Integer, Integer> documentIdPair,
-//                                          RelTraitSet traitSet,
-//                                          TupleMapping selection,
-//                                          boolean preFilter) {
-//        if (condition == null) {
-//            return null;
-//        }
-//        DingoTable dingoTable = document.getTable().unwrap(DingoTable.class);
-//        RexNode rexNode = RexUtil.toDnf(document.getCluster().getRexBuilder(), condition);
-//        IndexValueMapSetVisitor visitor = new IndexValueMapSetVisitor(document.getCluster().getRexBuilder());
-//        IndexValueMapSet<Integer, RexNode> indexValueMapSet = rexNode.accept(visitor);
-//        assert dingoTable != null;
-//        final Table td = dingoTable.getTable();
-//        List<Integer> keyIndices = Arrays.stream(td.keyMapping().getMappings()).boxed().collect(Collectors.toList());
-//
-//        Set<Map<Integer, RexNode>> keyMapSet = filterIndices(indexValueMapSet, keyIndices, selection);
-//
-//        RelNode scan = null;
-//        if (keyMapSet != null) {
-//            scan = new DingoGetByKeys(
-//                document.getCluster(),
-//                document.getTraitSet(),
-//                ImmutableList.of(),
-//                document.getTable(),
-//                condition,
-//                selection,
-//                keyMapSet
-//            );
-//        } else if (preFilter) {
-//            scan = preScalarRelNode(document, indexValueMapSet, td, selection, condition);
-//        }
-//
-//        if (scan == null) {
-//            return null;
-//        }
-//        DocumentStreamConvertor documentStreamConvertor = new DocumentStreamConvertor(
-//            document.getCluster(),
-//            document.getTraitSet(),
-//            scan,
-//            document.getIndexTableId(),
-//            documentIdPair.getKey(),
-//            document.getIndexTable(),
-//            false);
-//
-//        RelTraitSet traits = document.getCluster().traitSet()
-//            .replace(DingoConvention.INSTANCE)
-//            .replace(DingoRelStreaming.ROOT);
-//        return new DingoStreamingConverter(document.getCluster(),
-//            traits, documentStreamConvertor);
-//    }
-
     @Value.Immutable
     public interface Config extends RelRule.Config {
         Config DEFAULT = ImmutableDingoDocumentIndexRule.Config.builder()

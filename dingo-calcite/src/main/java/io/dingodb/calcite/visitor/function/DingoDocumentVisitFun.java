@@ -19,7 +19,6 @@ package io.dingodb.calcite.visitor.function;
 import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoDocument;
-import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.utils.VisitUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
@@ -47,9 +46,7 @@ import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.fun.document.DocumentTextFun;
 import io.dingodb.exec.operator.TxnPartDocumentOperator;
 import io.dingodb.exec.operator.params.PartDocumentParam;
-import io.dingodb.exec.operator.params.PartVectorParam;
 import io.dingodb.exec.operator.params.TxnPartDocumentParam;
-import io.dingodb.exec.operator.params.TxnPartVectorParam;
 import io.dingodb.exec.restful.DocumentExtract;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.expr.rel.RelOp;
@@ -87,12 +84,9 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static io.dingodb.calcite.rel.LogicalDingoTableScan.getIndexMetricType;
 import static io.dingodb.common.util.Utils.isNeedLookUp;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_DOCUMENT;
-import static io.dingodb.exec.utils.OperatorCodeUtils.PART_VECTOR;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_DOCUMENT;
-import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_VECTOR;
 
 @Slf4j
 public final class DingoDocumentVisitFun {
@@ -128,14 +122,7 @@ public final class DingoDocumentVisitFun {
 
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = metaService.getRangeDistribution(tableId);
         List<Object> operandsList = rel.getOperands();
-
-//        SqlIdentifier documentColNmIdf = (SqlIdentifier) operandsList.get(1);
-//        String documentColNm = "";
-//        if (documentColNmIdf != null) {
-//            documentColNm = documentColNmIdf.getSimple();
-//        }
-//        String[] documents = getDocumentString(operandsList);
-        String queryString = (String) Objects.requireNonNull((SqlCharStringLiteral) operandsList.get(2)).getStringValue();
+        String queryString = Objects.requireNonNull((SqlCharStringLiteral) operandsList.get(2)).getStringValue();
 
         if (!(operandsList.get(3) instanceof SqlNumericLiteral)) {
             throw new IllegalArgumentException("Top n not number.");
@@ -146,7 +133,7 @@ public final class DingoDocumentVisitFun {
         List<Vertex> outputs = new ArrayList<>();
 
         IndexTable indexTable = (IndexTable) rel.getIndexTable();
-        boolean pushDown = pushDown(rel.getFilter(), dingoTable.getTable(), indexTable);
+        boolean pushDown = false;
         RexNode rexFilter = rel.getFilter();
         TupleMapping resultSelection = rel.getSelection();
 
