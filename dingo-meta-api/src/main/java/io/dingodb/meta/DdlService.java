@@ -18,6 +18,7 @@ package io.dingodb.meta;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.InfoSchema;
@@ -39,8 +40,12 @@ public interface DdlService {
 
     void truncateTable(SchemaInfo schemaInfo, Table table, String connId);
 
-    void addColumn(SchemaInfo schemaInfo, Table table, Column column, String connId);
-    void dropColumn(long schemaId, String schemaName, Long tableId, String tableName, String column, String markDel, String relatedIndex, String connId);
+    default void addColumn(SchemaInfo schemaInfo, Table table, ColumnDefinition column, String connId) {}
+    default void dropColumn(
+        long schemaId, String schemaName,
+        Long tableId, String tableName, String column,
+        String markDel, String relatedIndex, String connId
+    ) {}
 
     default void createIndex(String schemaName, String tableName, TableDefinition indexDef) {
 

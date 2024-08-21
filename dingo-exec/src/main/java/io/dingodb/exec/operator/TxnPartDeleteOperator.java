@@ -75,8 +75,23 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                 .collect(Collectors.toList()));
             tableId = context.getIndexId();
             if (!param.isPessimisticTxn()) {
+                Object defaultVal = null;
+                if (columnIndices.contains(-1)) {
+                    Column addColumn = indexTable.getColumns().stream()
+                        .filter(column -> column.getSchemaState() != SchemaState.SCHEMA_PUBLIC)
+                        .findFirst().orElse(null);
+                    if (addColumn != null) {
+                        defaultVal = addColumn.getDefaultVal();
+                    }
+                }
                 Object[] finalTuple = tuple;
-                tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
+                Object finalDefaultVal = defaultVal;
+                tuple = columnIndices.stream().map(i -> {
+                    if (i == -1) {
+                        return finalDefaultVal;
+                    }
+                    return finalTuple[i];
+                }).toArray();
             }
             localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
             codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());

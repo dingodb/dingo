@@ -69,7 +69,10 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.HASH;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PARTITION;
 
 @Slf4j
-public class DingoStreamingConverterVisitFun {
+public final class DingoStreamingConverterVisitFun {
+    private DingoStreamingConverterVisitFun() {
+    }
+
     @NonNull
     public static Collection<Vertex> visit(
         Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction,
@@ -125,7 +128,7 @@ public class DingoStreamingConverterVisitFun {
             }).collect(Collectors.toList());
         }
         if (dstPartitions.size() < media.getPartitions().size()) {
-            assert dstDistribution == null && dstPartitions.size() == 0 || dstPartitions.size() == 1;
+            assert dstDistribution == null && dstPartitions.isEmpty() || dstPartitions.size() == 1;
             outputs = DingoCoalesce.coalesce(idGenerator, outputs, dstPartitions, media.getPartitions());
         }
         return outputs;

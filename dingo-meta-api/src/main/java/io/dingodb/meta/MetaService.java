@@ -106,6 +106,10 @@ public interface MetaService {
         createTables(tableDefinition, Collections.emptyList());
     }
 
+    default long createReplicaTable(long schemaId, Object tableDefinition) {
+        return 0L;
+    }
+
     long createTables(@NonNull TableDefinition tableDefinition, @NonNull List<TableDefinition> indexTableDefinitions);
 
     default void rollbackCreateTable(@NonNull TableDefinition tableDefinition, @NonNull List<TableDefinition> indexTableDefinitions) {
@@ -182,10 +186,6 @@ public interface MetaService {
         throw new UnsupportedOperationException();
     }
 
-    default void createDifferenceIndex(CommonId tableId, CommonId indexId, IndexTable indexTable) {
-        throw new UnsupportedOperationException();
-    }
-
     default void dropIndex(CommonId table, CommonId index) {
         throw new UnsupportedOperationException();
     }
@@ -222,10 +222,6 @@ public interface MetaService {
         throw new UnsupportedOperationException();
     }
 
-    TableStatistic getTableStatistic(@NonNull String tableName);
-
-    TableStatistic getTableStatistic(@NonNull CommonId tableId);
-
     Long getAutoIncrement(CommonId tableId);
 
     Long getNextAutoIncrement(CommonId tableId);
@@ -233,6 +229,10 @@ public interface MetaService {
     void updateAutoIncrement(CommonId tableId, long autoIncrementId);
 
     long getLastId(CommonId tableId);
+
+    default void invalidateDistribution(CommonId tableId) {}
+
+    default void deleteRegionByTableId(CommonId tableId) {}
 
     void close();
 }

@@ -265,6 +265,11 @@ public class MetaCache {
         distributionCache.invalidate(new CommonId(INDEX, definition.getSchemaId(), definition.getTableId()));
     }
 
+    public void invalidateDistribution(CommonId tableId) {
+        LogUtils.info(log, "Invalid table distribution {}", tableId);
+        distributionCache.invalidate(tableId);
+    }
+
     public synchronized Map<String, io.dingodb.store.proxy.meta.MetaService> getMetaServices() {
         InfoSchema infoSchema = DdlService.root().getIsLatest();
         List<SchemaInfo> schemaInfoList;

@@ -72,7 +72,10 @@ public class DistributeOperator extends SoleOutOperator {
                             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
                     Object[] indexTuple = new Object[indexTable.columns.size()];
                     for (int i = 0; i < indexTable.getMapping().size(); i++) {
-                        indexTuple[i] = tuple[indexTable.getMapping().get(i)];
+                        int colIx;
+                        if ((colIx = indexTable.getMapping().get(i)) > -1) {
+                            indexTuple[i] = tuple[colIx];
+                        }
                     }
                     KeyValueCodec indexCodec = CodecService.getDefault()
                         .createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());

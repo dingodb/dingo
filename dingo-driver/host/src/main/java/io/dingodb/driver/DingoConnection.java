@@ -570,21 +570,18 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 long jobId = jobIdVerEntry.getKey();
                 long ver = jobIdVerEntry.getValue();
                 Map<Long, Long> ids = str2LongMap(jobsIdsMap.get(jobId));
-                if (ids.containsKey(tableId) && useSchemaVer < ver) {
-                    jobVerIterator.remove();
-                    mdlLockJobMap.put(jobId, jobId);
-                    if (DdlUtil.timeOutError.get()) {
-                        LogUtils.info(log, "[ddl] conn remove mdl lock,jobId:{}, use ver:{}, "
-                        + "ver:{}, tableId:{}" , jobId, useSchemaVer, ver, tableId);
+                if (ids.containsKey(tableId)) {
+                    if (useSchemaVer < ver) {
+                        jobVerIterator.remove();
+                        mdlLockJobMap.put(jobId, jobId);
+                        if (DdlUtil.timeOutError.get()) {
+                            LogUtils.info(log, "[ddl] conn remove mdl lock,jobId:{}, use ver:{}, "
+                                + "ver:{}, tableId:{}", jobId, useSchemaVer, ver, tableId);
+                        }
+                    } else {
+                        LogUtils.info(log, "[ddl] conn remove ddl, but ver is newest,jobId:{}, use ver:{},"
+                            + "ver:{}, tableId:{}", jobId, useSchemaVer, ver, tableId);
                     }
-                    //if (transaction != null) {
-                    //    List<String> sqlList = transaction.getSqlList();
-                    //    StringBuilder sqlBuilder = new StringBuilder();
-                    //    for (String sql : sqlList) {
-                    //        sqlBuilder.append(sql).append(";");
-                    //    }
-                    //    log.info("[ddl] conn remove mdl lock,jobId:" + jobId + ", sql:" + sqlBuilder.toString());
-                    //}
                 }
             }
         }

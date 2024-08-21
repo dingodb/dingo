@@ -73,7 +73,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
         Object[] newTuple = Arrays.copyOf(tuple, tupleSize);
         Object[] copyTuple = Arrays.copyOf(tuple, tuple.length);
         boolean updated = false;
-        int i = 0;
+        int i;
         try {
             for (i = 0; i < mapping.size(); ++i) {
                 Object newValue = updates.get(i).eval(tuple);
@@ -107,14 +107,34 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
                     .map(Column::getName)
                     .collect(Collectors.toList()));
+                Object defaultVal = null;
+                if (columnIndices.contains(-1)) {
+                    Column addColumn = indexTable.getColumns().stream()
+                        .filter(column -> column.getSchemaState() != SchemaState.SCHEMA_PUBLIC)
+                        .findFirst().orElse(null);
+                    if (addColumn != null) {
+                        defaultVal = addColumn.getDefaultVal();
+                    }
+                }
                 tableId = context.getIndexId();
                 schema = indexTable.tupleType();
                 codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
                 Object[] finalNewTuple = newTuple;
-                newTuple = columnIndices.stream().map(c -> finalNewTuple[c]).toArray();
+                Object finalDefaultVal = defaultVal;
+                newTuple = columnIndices.stream().map(c -> {
+                    if (c == -1) {
+                        return finalDefaultVal;
+                    }
+                    return finalNewTuple[c];
+                }).toArray();
                 Object[] copyNewTuple = copyTuple;
-                copyTuple = columnIndices.stream().map(c -> copyNewTuple[c]).toArray();
-                if (updated && columnIndices.stream().anyMatch(c -> mapping.contains(c))) {
+                copyTuple = columnIndices.stream().map(c -> {
+                    if (c == -1) {
+                        return finalDefaultVal;
+                    }
+                    return copyNewTuple[c];
+                }).toArray();
+                if (updated && columnIndices.stream().anyMatch(mapping::contains)) {
                     PartitionService ps = PartitionService.getService(
                         Optional.ofNullable(indexTable.getPartitionStrategy())
                             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
@@ -171,7 +191,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 bytes.add(deleteKey);
                 bytes.add(insertKey);
                 List<KeyValue> keyValues = localStore.get(bytes);
-                if (keyValues != null && keyValues.size() > 0) {
+                if (keyValues != null && !keyValues.isEmpty()) {
                     if (keyValues.size() > 1) {
                         throw new RuntimeException(txnId + " PrimaryKey is not existed than two in local store");
                     }

@@ -76,16 +76,6 @@ public class LocalDdlService implements DdlService {
     }
 
     @Override
-    public void addColumn(SchemaInfo schemaInfo, Table table, Column column, String connId) {
-
-    }
-
-    @Override
-    public void dropColumn(long schemaId, String schemaName, Long tableId, String tableName, String column, String markDel, String relatedIndex, String connId) {
-
-    }
-
-    @Override
     public InfoSchema getIsLatest() {
         InfoSchema infoSchema = new InfoSchema();
         Map<String, MetaService> childrenList = localMetaService.getSubMetaServices();

@@ -130,9 +130,11 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
     |
         [<SCALAR>] columnList = ParenthesizedSimpleIdentifierList()
     )
-    [ <WITH> withColumnList = ParenthesizedSimpleIdentifierList() ]
-    [ <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} } ]
-    [
+    (
+       <WITH> withColumnList = ParenthesizedSimpleIdentifierList()
+     |
+       <ENGINE> <EQ> engine = dingoIdentifier() { if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
+     |
         <PARTITION> <BY>
             {
                 partitionDefinition = new PartitionDefinition();
@@ -140,11 +142,11 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
                 partitionDefinition.setColumns(readNames());
                 partitionDefinition.setDetails(readPartitionDetails());
             }
-    ]
-    [
+     |
         <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
-    ]
-    [ <PARAMETERS> properties = readProperties() ]
+     |
+        <PARAMETERS> properties = readProperties()
+    )*
     {
         return new SqlAlterAddIndex(
             s.end(this), id,

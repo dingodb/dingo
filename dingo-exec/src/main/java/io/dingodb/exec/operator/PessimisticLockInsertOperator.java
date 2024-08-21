@@ -21,6 +21,7 @@ import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.Services;
@@ -67,7 +68,6 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
             CommonId txnId = vertex.getTask().getTxnId();
             CommonId tableId = param.getTableId();
             CommonId partId = context.getDistribution().getId();
-            CommonId jobId = vertex.getTask().getJobId();
             byte[] primaryLockKey = param.getPrimaryLockKey();
             DingoType schema = param.getSchema();
             StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
@@ -85,9 +85,24 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                 List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
                     .map(Column::getName)
                     .collect(Collectors.toList()));
+                Object defaultVal = null;
+                if (columnIndices.contains(-1)) {
+                    Column addColumn = indexTable.getColumns().stream()
+                        .filter(column -> column.getSchemaState() != SchemaState.SCHEMA_PUBLIC)
+                        .findFirst().orElse(null);
+                    if (addColumn != null) {
+                        defaultVal = addColumn.getDefaultVal();
+                    }
+                }
                 tableId = context.getIndexId();
                 Object[] finalTuple = tuple;
-                tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
+                Object finalDefaultVal = defaultVal;
+                tuple = columnIndices.stream().map(i -> {
+                    if (i == -1) {
+                        return finalDefaultVal;
+                    }
+                    return finalTuple[i];
+                }).toArray();
                 schema = indexTable.tupleType();
                 IndexTable index = (IndexTable) TransactionManager.getIndex(txnId, tableId);
                 if (index.indexType.isVector) {

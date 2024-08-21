@@ -19,7 +19,6 @@ package io.dingodb.exec.transaction.util;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
@@ -79,7 +78,7 @@ public final class TransactionCacheToMutation {
             if (index == null) {
                 index = (IndexTable) DdlService.root().getTable(tableId);
             }
-            if (!index.indexType.isVector && index.indexType != IndexType.DOCUMENT) {
+            if ((index.indexType == null || (!index.indexType.isVector && index.indexType != IndexType.DOCUMENT))) {
                 return new Mutation(Op.forNumber(op), key, value, forUpdateTs, null, null);
             }
             KeyValueCodec keyValueCodec = CodecService.getDefault().createKeyValueCodec(
@@ -94,7 +93,10 @@ public final class TransactionCacheToMutation {
             Object[] record = keyValueCodec.decode(new KeyValue(key, value));
             Object[] tableRecord = new Object[table.columns.size()];
             for (int i = 0; i < record.length; i++) {
-                tableRecord[index.getMapping().get(i)] = record[i];
+                int colIx;
+                if ((colIx = index.getMapping().get(i)) > -1) {
+                    tableRecord[colIx] = record[i];
+                }
             }
             key = CodecService.getDefault()
                 .createKeyValueCodec(table.version, table.tupleType(), table.keyMapping())

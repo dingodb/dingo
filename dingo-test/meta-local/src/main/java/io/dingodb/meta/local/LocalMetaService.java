@@ -340,16 +340,6 @@ public class LocalMetaService implements MetaService {
     }
 
     @Override
-    public TableStatistic getTableStatistic(@NonNull String tableName) {
-        return () -> 30000d;
-    }
-
-    @Override
-    public TableStatistic getTableStatistic(@NonNull CommonId tableId) {
-        return () -> 30000d;
-    }
-
-    @Override
     public Long getAutoIncrement(CommonId tableId) {
         return autoIncrementId.getAndIncrement();
     }

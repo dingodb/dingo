@@ -27,6 +27,7 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -94,6 +95,9 @@ public class Table {
 
     @JsonProperty
     public final List<IndexTable> indexes;
+
+    @Setter
+    public Table replicaTable;
 
     @JsonProperty
     public final String comment;

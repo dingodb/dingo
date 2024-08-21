@@ -188,6 +188,17 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         txn.hInsert(schemaKey, tableKey, val);
     }
 
+    public void createReplicaTable(long schemaId, long tableId, Object table) {
+        byte[] tableKey = tableKey(tableId);
+        TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) table;
+        if (checkTableNameExists(schemaId, tableDefinitionWithId.getTableDefinition().getName())) {
+            throw new RuntimeException("table has exists");
+        }
+        byte[] replicaKey = indexKey(tableDefinitionWithId.getTableId().getEntityId());
+        byte[] val = getBytesFromObj(table);
+        txn.hInsert(tableKey, replicaKey, val);
+    }
+
     @Override
     public void createIndex(long schemaId, long tableId, Object index) {
         byte[] tableKey = tableKey(tableId);
@@ -267,7 +278,6 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         }
         byte[] val = getBytesFromObj(tenant);
         this.txn.hPut(mTenants, tenantKey, val);
-        //hUpdate(mTenants, tenantKey, val);
         return true;
     }
 
@@ -348,6 +358,17 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             return null;
         }
         return getObjFromBytes(val, TableDefinitionWithId.class);
+    }
+
+    @Override
+    public Object getReplicaTable(long schemaId, long tableId, long replicaTableId) {
+        List<Object> withIdList = listIndex(schemaId, tableId);
+        return withIdList.stream()
+            .filter(obj -> {
+                TableDefinitionWithId withId = (TableDefinitionWithId) obj;
+                return withId.getTableDefinition().getName().equalsIgnoreCase("replicaTable");
+            }).findFirst()
+            .orElse(null);
     }
 
     @Override
@@ -687,6 +708,16 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         byte[] tableKey = tableKey(tableDefinitionWithId.getTableId().getEntityId());
         byte[] val = getBytesFromObj(table);
         this.txn.hPut(schemaKey, tableKey, val);
+    }
+
+    @Override
+    public void updateReplicaTable(long schemaId, long tableId, Object table) {
+        TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) table;
+        byte[] tableKey = tableKey(tableId);
+
+        byte[] val = getBytesFromObj(table);
+        byte[] replicaKey = indexKey(tableDefinitionWithId.getTableId().getEntityId());
+        this.txn.hPut(tableKey, replicaKey, val);
     }
 
     @Override

@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import io.dingodb.calcite.DingoTable;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.util.Optional;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
@@ -83,6 +84,8 @@ public class SubCalciteSchema extends CalciteSchema {
         }
         if (table != null && inTxn) {
             DingoTable dingoTable = (DingoTable) table;
+            //LogUtils.info(log, "[ddl] mdl tableName:{}, tableId:{}",
+            //    dingoTable.getTable().getName(), dingoTable.getTable().getTableId().seq);
             rootCalciteSchema.putRelatedTable(dingoTable.getTableId().seq, ((SubSnapshotSchema) schema).getSchemaVer());
         }
         return Optional.mapOrNull(

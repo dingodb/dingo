@@ -114,15 +114,15 @@ public final class LoadInfoSchemaTask {
             if (!response.hitCache) {
                 if (response.oldSchemaVersion < response.is.schemaMetaVersion) {
                     // report to coordinator
-                    SchemaSyncerService service = SchemaSyncerService.root();
-                    try {
-                        service.updateSelfVersion(startTs, 0, response.is.schemaMetaVersion);
-                    } catch (Exception e) {
-                        LogUtils.error(log, e.getMessage(), e);
-                        LogUtils.error(log, "[ddl] update self version failed, " +
-                                "oldSchemaVersion:{}, neededSchemaVersion:{}", response.oldSchemaVersion,
-                            response.is.schemaMetaVersion);
-                    }
+//                    SchemaSyncerService service = SchemaSyncerService.root();
+//                    try {
+//                        service.updateSelfVersion(startTs, 0, response.is.schemaMetaVersion);
+//                    } catch (Exception e) {
+//                        LogUtils.error(log, e.getMessage(), e);
+//                        LogUtils.error(log, "[ddl] update self version failed, " +
+//                                "oldSchemaVersion:{}, neededSchemaVersion:{}", response.oldSchemaVersion,
+//                            response.is.schemaMetaVersion);
+//                    }
                 }
             }
             long end = System.currentTimeMillis();
