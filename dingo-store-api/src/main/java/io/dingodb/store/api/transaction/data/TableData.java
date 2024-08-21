@@ -17,22 +17,22 @@
 package io.dingodb.store.api.transaction.data;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.util.Map;
-
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
 @ToString
-public class Document {
+public class TableData {
 
-    private TableData tableData;
-    private Map<String, DocumentValue> documentData;
+    private byte[] tableValue;
+    private byte[] tableKey;
 }

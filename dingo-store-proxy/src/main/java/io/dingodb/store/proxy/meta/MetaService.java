@@ -291,7 +291,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .collect(Collectors.toList());
         TableIdWithPartIds tableIdWithPartIds =
             TableIdWithPartIds.builder().tableId(tableId).partIds(tablePartIds).build();
-        TableDefinitionWithId tableDefinitionWithId = MAPPER.tableTo(tableIdWithPartIds, tableDefinition);
+        TableDefinitionWithId tableDefinitionWithId = MAPPER.tableTo(tableIdWithPartIds, tableDefinition, TenantConstant.TENANT_ID);
         // create table
         infoSchemaService.createTableOrView(
             id.getEntityId(),
@@ -375,7 +375,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                         .partIds(indexPartIds)
                         .build();
                     TableDefinitionWithId indexWithId = Stream.of(indexTableDefinitions.get(i))
-                        .map(index -> MAPPER.tableTo(indexIdWithPartIds, index))
+                        .map(index -> MAPPER.tableTo(indexIdWithPartIds, index, TenantConstant.TENANT_ID))
                         .peek(td -> MAPPER.resetIndexParameter(td.getTableDefinition()))
                         .peek(td -> td.getTableDefinition().setName(tableName + "." + td.getTableDefinition().getName()))
                         .findAny()
@@ -507,7 +507,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .partIds(indexPartIds)
             .build();
 
-        TableDefinitionWithId indexWithId = Stream.of(index).map(i -> MAPPER.tableTo(indexIdWithPartIds, i))
+        TableDefinitionWithId indexWithId = Stream.of(index).map(i -> MAPPER.tableTo(indexIdWithPartIds, i, TenantConstant.TENANT_ID))
             .peek(td -> MAPPER.resetIndexParameter(td.getTableDefinition()))
             .peek(td -> td.getTableDefinition().setName(tableName + "." + td.getTableDefinition().getName()))
             .findAny().get();

@@ -40,6 +40,7 @@ import io.dingodb.store.api.transaction.data.DocumentWithId;
 import io.dingodb.store.api.transaction.data.Mutation;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.ScalarField;
+import io.dingodb.store.api.transaction.data.TableData;
 import io.dingodb.store.api.transaction.data.Vector;
 import io.dingodb.store.api.transaction.data.VectorTableData;
 import io.dingodb.store.api.transaction.data.VectorWithId;
@@ -130,7 +131,9 @@ public final class TransactionCacheToMutation {
                     DocumentValue documentValue = new DocumentValue(fieldType, scalarField);
                     documentData.put(columnDef.getName(), documentValue);
                 }
-                documentWithId = DocumentWithId.builder().document(new Document(documentData)).id(longId).build();
+                value = keyValueCodec.encode(record).getValue();
+                TableData tableData = TableData.builder().tableKey(key).tableValue(value).build();
+                documentWithId = DocumentWithId.builder().document(new Document(tableData, documentData)).id(longId).build();
             } else {
                 Column column1 = index.getColumns().get(1);
                 Vector vector;
@@ -150,8 +153,8 @@ public final class TransactionCacheToMutation {
                     .vector(vector)
                     .tableData(vectorTableData)
                     .build();
-                key = CODEC.encodeKeyPrefix(new Object[]{longId}, 1);
             }
+            key = CODEC.encodeKeyPrefix(new Object[]{longId}, 1);
         }
         return new Mutation(Op.forNumber(op), key, value, forUpdateTs, vectorWithId, documentWithId);
     }

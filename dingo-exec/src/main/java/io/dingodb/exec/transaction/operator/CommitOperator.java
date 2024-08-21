@@ -39,6 +39,7 @@ import io.dingodb.exec.transaction.params.CommitParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Op;
@@ -104,14 +105,14 @@ public class CommitOperator extends TransactionOperator {
             }
             if (tableId.type == CommonId.CommonType.INDEX) {
                 IndexTable indexTable = (IndexTable) TransactionManager.getIndex(txnId, tableId);
-                if (indexTable.indexType.isVector) {
+                if (indexTable.indexType.isVector || indexTable.indexType == IndexType.DOCUMENT) {
                     KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
                     Object[] decodeKey = codec.decodeKeyPrefix(key);
                     TupleMapping mapping = TupleMapping.of(new int[]{0});
                     DingoType dingoType = new LongType(false);
                     TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
-                    KeyValueCodec vectorCodec = CodecService.getDefault().createKeyValueCodec(indexTable.version, tupleType, mapping);
-                    key = vectorCodec.encodeKeyPrefix(new Object[]{decodeKey[0]}, 1);
+                    KeyValueCodec keyValueCodec = CodecService.getDefault().createKeyValueCodec(indexTable.version, tupleType, mapping);
+                    key = keyValueCodec.encodeKeyPrefix(new Object[]{decodeKey[0]}, 1);
                 }
             }
             CommonId partId = param.getPartId();

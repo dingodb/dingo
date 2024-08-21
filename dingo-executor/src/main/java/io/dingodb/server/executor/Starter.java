@@ -23,6 +23,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
+import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.Optional;
@@ -106,6 +107,10 @@ public class Starter {
         Object tenantObj = Optional.mapOrGet(InfoSchemaService.root(), __ -> __.getTenant(tenant), () -> null);
         if (tenantObj == null) {
             log.error("The tenant: {} was not found.", tenant);
+            return;
+        }
+        if (((Tenant) tenantObj).isDelete()) {
+            log.error("The tenant: {} has been deleted and is unavailable", tenant);
             return;
         }
 
