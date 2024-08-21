@@ -658,6 +658,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (TenantConstant.TENANT_ID != 0) {
             throw new RuntimeException("Regular tenants are unable to drop tenant");
         }
+        if (tenant.name.equalsIgnoreCase("root")) {
+            throw new RuntimeException("The default tenant cannot be drop");
+        }
         if (tenantService.getTenant(tenant.name) == null) {
             if (!tenant.ifExists) {
                 throw SqlUtil.newContextException(

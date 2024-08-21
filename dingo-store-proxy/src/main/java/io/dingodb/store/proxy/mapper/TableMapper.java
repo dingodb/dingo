@@ -238,7 +238,7 @@ public interface TableMapper {
     io.dingodb.sdk.service.entity.meta.TableDefinition tableTo(TableDefinition tableDefinition);
 
     default TableDefinitionWithId tableTo(
-        TableIdWithPartIds ids, TableDefinition tableDefinition
+        TableIdWithPartIds ids, TableDefinition tableDefinition, long tenantId
     ) {
         TupleType keyType = (TupleType) tableDefinition.getKeyType();
         TupleMapping keyMapping = TupleMapping.of(IntStream.range(0, keyType.fieldCount()).toArray());
@@ -256,7 +256,7 @@ public interface TableMapper {
         );
         definition.setName(definition.getName().toUpperCase());
         definition.setSchemaState(convertSchemaState(tableDefinition.getSchemaState()));
-        return TableDefinitionWithId.builder().tableDefinition(definition).tableId(ids.getTableId()).build();
+        return TableDefinitionWithId.builder().tenantId(tenantId).tableDefinition(definition).tableId(ids.getTableId()).build();
     }
 
     default SchemaState convertSchemaState(io.dingodb.common.meta.SchemaState schemaState) {
