@@ -17,7 +17,6 @@
 package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.rel.LogicalDingoDocument;
-import io.dingodb.calcite.rel.LogicalDingoVector;
 import io.dingodb.calcite.rule.dingo.DingoHashJoinRule;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
@@ -29,12 +28,8 @@ import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.immutables.value.Value;
 
-import static io.dingodb.calcite.rule.DingoVectorIndexRule.getDingoGetVectorByDistance;
 
 @Value.Enclosing
 public class DingoDocumentJoinRule extends RelRule<DingoDocumentJoinRule.Config>  {

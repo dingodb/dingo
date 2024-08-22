@@ -38,7 +38,7 @@ import java.util.Collections;
 public class SqlDocumentOperator extends SqlFunction implements SqlTableFunction {
 
     public static void register(DingoParserContext context) {
-        StandardConvertletTable.INSTANCE.registerOp(SqlUserDefinedOperators.TEXT,
+        StandardConvertletTable.INSTANCE.registerOp(SqlUserDefinedOperators.TEXT_SEARCH,
             (cx, call) -> {
                 RexBuilder rexBuilder = cx.getRexBuilder();
                 TableFunctionNamespace namespace = (TableFunctionNamespace) cx.getValidator().getNamespace(call);

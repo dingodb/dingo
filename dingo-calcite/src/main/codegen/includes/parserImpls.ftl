@@ -1222,7 +1222,7 @@ SqlNode TableFunctionCall() :
             return SqlUserDefinedOperators.VECTOR.createCall(s.end(this), list);
         }
     |
-        <TEXT> { s = span(); } <LPAREN>
+        <TEXT_SEARCH> { s = span(); } <LPAREN>
         [
             AddArg0(list, ExprContext.ACCEPT_CURSOR)
             (
@@ -1235,7 +1235,7 @@ SqlNode TableFunctionCall() :
         ]
         <RPAREN>
         {
-            return SqlUserDefinedOperators.TEXT.createCall(s.end(this), list);
+            return SqlUserDefinedOperators.TEXT_SEARCH.createCall(s.end(this), list);
         }
     )
 }

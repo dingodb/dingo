@@ -136,7 +136,7 @@ public final class DingoParserContext implements Context {
         tableInstance.register(SqlUserDefinedOperators.LIKE_BINARY);
         tableInstance.register(SqlUserDefinedOperators.NOT_LIKE_BINARY);
         tableInstance.register(SqlUserDefinedOperators.SCAN);
-        tableInstance.register(SqlUserDefinedOperators.TEXT);
+        tableInstance.register(SqlUserDefinedOperators.TEXT_SEARCH);
         SqlLikeBinaryOperator.register();
         SqlFunctionScanOperator.register(this);
         SqlVectorOperator.register(this);
