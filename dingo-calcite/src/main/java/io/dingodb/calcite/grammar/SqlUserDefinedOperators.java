@@ -40,7 +40,9 @@ public class SqlUserDefinedOperators {
 
     public static SqlVectorOperator VECTOR = new SqlVectorOperator("VECTOR", SqlKind.COLLECTION_TABLE);
 
-    public static SqlDocumentOperator DOCUMENT = new SqlDocumentOperator("TEXT", SqlKind.COLLECTION_TABLE);
+    public static SqlDocumentOperator DOCUMENT = new SqlDocumentOperator("TEXT", SqlKind.COLLECTION_TABLE );
+
+    public static SqlDocumentOperator TEXT_SEARCH = new SqlDocumentOperator("TEXT_SEARCH", SqlKind.COLLECTION_TABLE);
 
     public static SqlCosineSimilarityOperator COSINE_SIMILARITY
         = new SqlCosineSimilarityOperator(VectorCosineDistanceFun.NAME, SqlKind.OTHER_FUNCTION);
@@ -50,5 +52,7 @@ public class SqlUserDefinedOperators {
 
     public static SqlL2DistanceOperator L2_DISTANCE
         = new SqlL2DistanceOperator(VectorL2DistanceFun.NAME, SqlKind.OTHER_FUNCTION);
+
+
 
 }

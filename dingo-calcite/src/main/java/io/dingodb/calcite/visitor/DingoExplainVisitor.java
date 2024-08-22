@@ -18,6 +18,7 @@ package io.dingodb.calcite.visitor;
 
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoAggregate;
+import io.dingodb.calcite.rel.DingoDocument;
 import io.dingodb.calcite.rel.DingoExportData;
 import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoFunctionScan;
@@ -37,6 +38,7 @@ import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.DingoVector;
+import io.dingodb.calcite.rel.DocumentStreamConvertor;
 import io.dingodb.calcite.rel.VectorStreamConvertor;
 import io.dingodb.calcite.rel.dingo.DingoHashJoin;
 import io.dingodb.calcite.rel.dingo.DingoIndexScanWithRelOp;
@@ -284,6 +286,22 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
     }
 
     @Override
+    public Explain visit(@NonNull DingoDocument rel) {
+        String filter = "";
+        if (rel.getFilter() != null) {
+            filter = rel.getFilter().toString();
+        }
+        String tableNames = "";
+        if (rel.getIndexTable() != null) {
+            tableNames = rel.getIndexTable().getName();
+        }
+        return new Explain(
+            "dingDocument", rel.getRowCount(), "root",
+            tableNames, filter
+        );
+    }
+
+    @Override
     public Explain visit(@NonNull DingoGetVectorByDistance rel) {
         String accessObj = "";
         if (rel.getIndexTable() != null) {
@@ -299,6 +317,15 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
             accessObj = rel.getIndexTableDefinition().getName();
         }
         return getCommonExplain(rel, "vectorStreamConverter", accessObj, "");
+    }
+
+    @Override
+    public Explain visit(@NonNull DocumentStreamConvertor rel) {
+        String accessObj = "";
+        if (rel.getIndexTableDefinition() != null) {
+            accessObj = rel.getIndexTableDefinition().getName();
+        }
+        return getCommonExplain(rel, "documentStreamConverter", accessObj, "");
     }
 
     @Override
@@ -457,5 +484,4 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
         explain1.getChildren().add(explain);
         return explain1;
     }
-
 }

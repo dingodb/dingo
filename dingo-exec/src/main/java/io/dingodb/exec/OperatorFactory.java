@@ -44,6 +44,7 @@ import io.dingodb.exec.operator.PartRangeDeleteOperator;
 import io.dingodb.exec.operator.PartRangeScanOperator;
 import io.dingodb.exec.operator.PartUpdateOperator;
 import io.dingodb.exec.operator.PartVectorOperator;
+import io.dingodb.exec.operator.PartDocumentOperator;
 import io.dingodb.exec.operator.PartitionOperator;
 import io.dingodb.exec.operator.PessimisticLockDeleteOperator;
 import io.dingodb.exec.operator.PessimisticLockInsertOperator;
@@ -67,6 +68,7 @@ import io.dingodb.exec.operator.TxnGetByKeysOperator;
 import io.dingodb.exec.operator.TxnIndexRangeScanOperator;
 import io.dingodb.exec.operator.TxnLikeScanOperator;
 import io.dingodb.exec.operator.TxnPartDeleteOperator;
+import io.dingodb.exec.operator.TxnPartDocumentOperator;
 import io.dingodb.exec.operator.TxnPartInsertOperator;
 import io.dingodb.exec.operator.TxnPartRangeDeleteOperator;
 import io.dingodb.exec.operator.TxnPartRangeScanOperator;
@@ -114,6 +116,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.OPTIMISTIC_ROLL_BACK;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PARTITION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_COUNT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_DELETE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.PART_DOCUMENT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_RANGE_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_RANGE_SCAN;
@@ -147,6 +150,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_GET_BY_KEYS;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_INDEX_RANGE_SCAN;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_LIKE_SCAN;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_DELETE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_DOCUMENT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_RANGE_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_RANGE_SCAN;
@@ -184,6 +188,7 @@ public final class OperatorFactory {
         OPERATORS.put(PART_RANGE_SCAN, PartRangeScanOperator.INSTANCE);
         OPERATORS.put(PART_UPDATE, PartUpdateOperator.INSTANCE);
         OPERATORS.put(PART_VECTOR, PartVectorOperator.INSTANCE);
+        OPERATORS.put(PART_DOCUMENT, PartDocumentOperator.INSTANCE);
         OPERATORS.put(PROJECT, ProjectOperator.INSTANCE);
         OPERATORS.put(RECEIVE, ReceiveOperator.INSTANCE);
         OPERATORS.put(REDUCE, ReduceOperator.INSTANCE);
@@ -232,6 +237,7 @@ public final class OperatorFactory {
         OPERATORS.put(TXN_INDEX_RANGE_SCAN, TxnIndexRangeScanOperator.INSTANCE);
         OPERATORS.put(PESSIMISTIC_LOCK, PessimisticLockOperator.INSTANCE);
         OPERATORS.put(PESSIMISTIC_RESIDUAL_LOCK, PessimisticResidualLockOperator.INSTANCE);
+        OPERATORS.put(TXN_PART_DOCUMENT, TxnPartDocumentOperator.INSTANCE);
     }
 
     private OperatorFactory() {

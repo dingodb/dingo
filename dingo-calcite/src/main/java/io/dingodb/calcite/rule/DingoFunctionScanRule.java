@@ -16,8 +16,10 @@
 
 package io.dingodb.calcite.rule;
 
+import io.dingodb.calcite.rel.DingoDocument;
 import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.rel.DingoVector;
+import io.dingodb.calcite.rel.LogicalDingoDocument;
 import io.dingodb.calcite.rel.LogicalDingoVector;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
@@ -66,7 +68,22 @@ public class DingoFunctionScanRule extends ConverterRule {
                 vector.getFilter(),
                 vector.hints
             );
-        } else if (rel instanceof DingoFunctionScan) {
+        } else if (rel instanceof LogicalDingoDocument && !(rel instanceof DingoDocument)) {
+            LogicalDingoDocument document = (LogicalDingoDocument) rel;
+            return new DingoDocument(
+                document.getCluster(),
+                traits,
+                document.getCall(),
+                document.getTable(),
+                document.getOperands(),
+                document.getIndexTableId(),
+                document.getIndexTable(),
+                document.getSelection(),
+                document.getFilter(),
+                document.hints
+            );
+        }
+        else if (rel instanceof DingoFunctionScan) {
             DingoFunctionScan scan = (DingoFunctionScan) rel;
             return new DingoFunctionScan(
                 scan.getCluster(),
