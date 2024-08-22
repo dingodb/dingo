@@ -26,6 +26,7 @@ import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.DocumentService;
@@ -102,8 +103,6 @@ public class TransactionStoreInstance {
     private final DocumentService documentService;
 
     private final static int VectorKeyLen = 17;
-    //The max data size for one rpc is 64M, we limit max 1pc data size as 56M now.
-    private final int maxRpcDataSize = 56*1024*1024;
 
     public TransactionStoreInstance(StoreService storeService, IndexService indexService, CommonId partitionId) {
         this(storeService, indexService, null, partitionId);
@@ -163,8 +162,8 @@ public class TransactionStoreInstance {
             TxnPrewriteRequest request = MAPPER.preWriteTo(txnPreWrite);
             TxnPrewriteResponse response;
 
-            if(request.isTryOnePc() && request.sizeOf() > this.maxRpcDataSize) {
-                throw new OnePcMaxSizeExceedException("Data size exceed in 1pc, max:" + this.maxRpcDataSize + " cur:" +request.sizeOf());
+            if(request.isTryOnePc() && request.sizeOf() > TransactionUtil.maxRpcDataSize) {
+                throw new OnePcMaxSizeExceedException("Data size exceed in 1pc, max:" + TransactionUtil.maxRpcDataSize + " cur:" +request.sizeOf());
             }
 
             Mutation mutation = request.getMutations().get(0);
