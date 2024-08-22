@@ -262,6 +262,12 @@ public class OptimisticTransaction extends BaseTransaction {
             }
         }
 
+        if(mutations.size() > TransactionUtil.max_pre_write_count) {
+            LogUtils.info(log, "{} one pc phase failed, current mutation count:{}, max mutation size:{}",
+                transactionOf(), mutations.size(), TransactionUtil.max_pre_write_count);
+            throw new OnePcDegenerateTwoPcException("1PC degenerate to 2PC, startTs:" + startTs);
+        }
+
         if(forSamePart) {
             //commit 1pc.
             return txnOnePCCommit(mutations);
@@ -283,7 +289,7 @@ public class OptimisticTransaction extends BaseTransaction {
             .tryOnePc(true)
             .maxCommitTs(0L)
             .lockExtraDatas(TransactionUtil.toLockExtraDataList(cacheToObject.getTableId(), cacheToObject.getPartId(), txnId,
-                TransactionType.OPTIMISTIC.getCode(), 1))
+                TransactionType.OPTIMISTIC.getCode(), mutations.size()))
             .build();
         try {
             StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
