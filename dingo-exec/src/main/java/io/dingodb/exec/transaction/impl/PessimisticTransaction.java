@@ -404,6 +404,12 @@ public class PessimisticTransaction extends BaseTransaction {
             }
         }
 
+        if(mutations.size() > maxMutationsForOnePc) {
+            LogUtils.info(log, "{} one pc phase failed, current mutation count:{}, max mutation size:{}",
+                transactionOf(), mutations.size(), maxMutationsForOnePc);
+            throw new OnePcDegenerateTwoPcException("1PC degenerate to 2PC, startTs:" + startTs);
+        }
+
         if(forSamePart) {
             //commit 1pc.
             return txnOnePCCommit(mutations);

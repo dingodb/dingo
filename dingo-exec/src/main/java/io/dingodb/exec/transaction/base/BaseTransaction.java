@@ -95,6 +95,8 @@ public abstract class BaseTransaction implements ITransaction {
     protected CommitProfile commitProfile;
     protected InfoSchema is;
 
+    protected final int maxMutationsForOnePc = 1024;
+
     protected CompletableFuture<Void> finishedFuture = new CompletableFuture<>();
 
     public BaseTransaction(@NonNull CommonId txnId, int isolationLevel) {
