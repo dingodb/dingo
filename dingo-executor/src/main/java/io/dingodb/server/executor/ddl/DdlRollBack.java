@@ -74,7 +74,7 @@ public final class DdlRollBack {
             } else {
                 if (job.getErrorCount() > DdlUtil.errorCountLimit) {
                     job.setState(JobState.jobStateCancelled);
-                    job.setError("[ddl] rollback DDL job error count exceed the limit");
+                    //job.setError("[ddl] rollback DDL job error count exceed the limit");
                 }
             }
 
@@ -109,6 +109,9 @@ public final class DdlRollBack {
         }
         TableDefinition indexInfo = (TableDefinition) job.getArgs().get(0);
         TableDefinitionWithId indexWithId = IndexUtil.getIndexWithId(table, indexInfo.getName());
+        if (indexWithId == null) {
+            return "add index error";
+        }
         MetaService.root().dropIndex(table.getTableId(), Mapper.MAPPER.idFrom(indexWithId.getTableId()));
         return null;
     }

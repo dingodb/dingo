@@ -40,6 +40,7 @@ public final class DdlUtil {
     public static final String ALL_SCHEMA_VER_SYNC_NORMAL_TEMPLATE = "%s:%s:%s";
 
     public static final byte[] indexElementKey = "_idx_".getBytes();
+    public static final byte[] addColElementKey = "_addCol_".getBytes();
     public static final String tenantPrefix = String.format("tenant:%d", TenantConstant.TENANT_ID);
     public static final String ADDING_DDL_JOB_CONCURRENT_KEY = String.format("%s:%s", tenantPrefix, ADDING_DDL_JOB_CONCURRENT);
 

@@ -78,16 +78,17 @@ import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 @Slf4j
 public class IndexAddFiller implements BackFiller {
-    private Table table;
-    private IndexTable indexTable;
+    public Table table;
+    protected IndexTable indexTable;
     List<Integer> columnIndices;
+    int colLen;
     KeyValueCodec indexCodec;
     PartitionService ps;
     CommonId txnId;
     byte[] primaryKey;
     long timeOut = 50000;
     Future<?> future;
-    private static final long preBatch = 1024;
+    public static final long preBatch = 1024;
 
     long ownerRegionId;
     Iterator<Object[]> tupleIterator;
@@ -132,6 +133,7 @@ public class IndexAddFiller implements BackFiller {
         tupleIterator = Iterators.transform(iterator,
             wrap(codec::decode)::apply
         );
+        LogUtils.info(log, "[ddl] index reorg pre write primary start, index name:{}", indexTable.getName());
         boolean preRes = false;
         while (tupleIterator.hasNext()) {
             Object[] tuples = tupleIterator.next();
@@ -151,7 +153,10 @@ public class IndexAddFiller implements BackFiller {
                 op, key, value,0L, tableId, partId, txnId), tableId, partId
             );
             try {
+                long start = System.currentTimeMillis();
                 preWritePrimaryKey(primaryObj);
+                long sub = System.currentTimeMillis() - start;
+                LogUtils.info(log, "[ddl] index reorg pre write primary, cost:{}", sub);
             } catch (WriteConflictException e) {
                 conflict.incrementAndGet();
                 continue;
@@ -162,7 +167,7 @@ public class IndexAddFiller implements BackFiller {
         return preRes;
     }
 
-    private void preWritePrimaryKey(CacheToObject cacheToObject) {
+    protected void preWritePrimaryKey(CacheToObject cacheToObject) {
         primaryKey = cacheToObject.getMutation().getKey();
         // 2、call sdk preWritePrimaryKey
         TxnPreWrite txnPreWrite = TxnPreWrite.builder()
@@ -181,7 +186,9 @@ public class IndexAddFiller implements BackFiller {
             .build();
         try {
             StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
+            //LogUtils.info(log, "[ddl] index reorg call rpc start, startTs:{}", txnId.seq);
             this.future = store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
+            //LogUtils.info(log, "[ddl] index reorg call rpc end, startTs:{}", txnId.seq);
         } catch (RegionSplitException e) {
             LogUtils.error(log, e.getMessage(), e);
 
@@ -215,7 +222,6 @@ public class IndexAddFiller implements BackFiller {
     public BackFillResult backFillDataInTxn(ReorgBackFillTask task) {
         CommonId tableId = task.getTableId();
         Iterator<Object[]> tupleIterator;
-        //Utils.sleep(30000);
         long start = System.currentTimeMillis();
         if (task.getRegionId().seq != ownerRegionId) {
             StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, task.getRegionId());
@@ -390,7 +396,7 @@ public class IndexAddFiller implements BackFiller {
         }
     }
 
-    private TxnLocalData getTxnLocalData(Object[] tuples) {
+    public TxnLocalData getTxnLocalData(Object[] tuples) {
         Object[] tuplesTmp = columnIndices.stream().map(i -> tuples[i]).toArray();
         KeyValue keyValue = wrap(indexCodec::encode).apply(tuplesTmp);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
@@ -408,9 +414,9 @@ public class IndexAddFiller implements BackFiller {
             .build();
     }
 
-    private void preWriteSecondSkipConflict(List<TxnLocalData> secondList) {
+    protected void preWriteSecondSkipConflict(List<TxnLocalData> secondList) {
         try {
-            Timer.Context timeCtx = DingoMetrics.getTimeContext("indexReorgPreSecond" + secondList.size());
+            Timer.Context timeCtx = DingoMetrics.getTimeContext("ReorgPreSecond" + secondList.size());
             preWriteSecondKey(secondList);
             timeCtx.stop();
         } catch (WriteConflictException e) {

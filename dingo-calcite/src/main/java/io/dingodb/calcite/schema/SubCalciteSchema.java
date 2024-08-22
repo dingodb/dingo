@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import io.dingodb.calcite.DingoTable;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.util.Optional;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;

@@ -45,9 +45,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public final class BackFilling {
     public static final int typeAddIndexWorker = 0;
-    public static final int typeUpdateColumnWorker = 1;
-    public static final int typeCleanUpIndexWorker = 2;
-    public static final int typeAddIndexMergeTmpWorker = 3;
+    public static final int typeAddColumnWorker = 1;
 
 
     public static final BackFilling INSTANCE = new BackFilling();
@@ -55,7 +53,7 @@ public final class BackFilling {
     private BackFilling() {
     }
 
-    public String writePhysicalTableRecord(int bfWorkerType, ReorgInfo reorgInfo) {
+    public static String writePhysicalTableRecord(int bfWorkerType, ReorgInfo reorgInfo) {
         DdlJob job = reorgInfo.getDdlJob();
 
         String error = Reorg.INSTANCE.isReorgRunnable(job.getId());
@@ -74,6 +72,8 @@ public final class BackFilling {
         BackFiller filler;
         if (bfWorkerType == 0) {
             filler = new IndexAddFiller();
+        } else if (bfWorkerType == 1) {
+            filler = new AddColumnFiller();
         } else {
             throw new RuntimeException("do not support bf work type");
         }

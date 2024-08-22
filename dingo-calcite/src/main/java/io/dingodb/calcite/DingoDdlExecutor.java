@@ -59,9 +59,21 @@ import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.tenant.TenantConstant;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.scalar.BooleanType;
+import io.dingodb.common.type.scalar.DateType;
+import io.dingodb.common.type.scalar.DecimalType;
+import io.dingodb.common.type.scalar.DoubleType;
+import io.dingodb.common.type.scalar.FloatType;
+import io.dingodb.common.type.scalar.IntegerType;
+import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.type.scalar.StringType;
+import io.dingodb.common.type.scalar.TimeType;
+import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.common.util.DefinitionUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
@@ -105,6 +117,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -421,7 +436,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         int replica = getReplica(indexDeclaration.getReplica(), type);
         indexTableDefinition.setReplica(replica);
         indexTableDefinition.setProperties(properties);
-        indexTableDefinition.setEngine(indexDeclaration.getEngine());
+        String engine = null;
+        if (indexDeclaration.getEngine() != null) {
+            engine = indexDeclaration.getEngine().toUpperCase();
+        }
+        indexTableDefinition.setEngine(engine);
 
         validatePartitionBy(
             indexTableDefinition.getKeyColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
@@ -822,6 +841,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         long cost = end - start;
         if (cost > 10000) {
             LogUtils.info(log, "[ddl] create table take long time, schemaName:{} tableName:{}", schema.getSchemaName(), tableName);
+        } else {
+            LogUtils.info(log, "[ddl] create table success, schemaName:{}, tableName:{}", schema.getSchemaName(), tableName);
         }
     }
 
@@ -841,6 +862,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         final String tableName = getTableName(drop.name);
         SchemaInfo schemaInfo = schema.getSchemaInfo(schema.getSchemaName());
+        if (schemaInfo == null) {
+            throw DINGO_RESOURCE.unknownSchema(schema.getSchemaName()).ex();
+        }
         Table table = schema.getTableInfo(tableName);
         if (table == null) {
             if (drop.ifExists) {
@@ -855,6 +879,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         long cost = System.currentTimeMillis() - start;
         if (cost > 10000) {
             LogUtils.info(log, "drop table take long time, schemaName:{}, tableName:{}", schemaInfo.getName(), tableName);
+        } else {
+            LogUtils.info(log, "[ddl] drop table success, schemaName:{}, tableName:{}", schema.getSchemaName(), tableName);
         }
     }
 
@@ -879,6 +905,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         long cost = System.currentTimeMillis() - start;
         if (cost > 10000) {
             LogUtils.info(log, "truncate table cost long time, schemaName:{}, tableName:{}", schemaInfo.getName(), tableName);
+        } else {
+            LogUtils.info(log, "truncate table success, schemaName:{}, tableName:{}", schemaInfo.getName(), tableName);
         }
     }
 
@@ -916,35 +944,23 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             = getSchemaAndTableName(sqlAlterAddColumn.table, context);
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
         final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        SchemaInfo schemaInfo = schema.getSchemaInfo(schema.getSchemaName());
+        if (schemaInfo == null) {
+            throw DINGO_RESOURCE.unknownSchema(schema.getSchemaName()).ex();
+        }
         Table definition = schema.getTableInfo(tableName);
         ColumnDefinition newColumn = fromSqlColumnDeclaration(
             (DingoSqlColumn) sqlAlterAddColumn.getColumnDeclaration(),
             new ContextSqlValidator(context, true),
             definition.keyColumns().stream().map(Column::getName).collect(Collectors.toList())
         );
-        List<Column> columns = new ArrayList<>(definition.getColumns());
+        newColumn.setSchemaState(SchemaState.SCHEMA_NONE);
 
-        assert newColumn != null;
-        if (definition.getColumn(newColumn.getName()) == null) {
-            throw new RuntimeException();
+        if (definition.getColumn(newColumn.getName()) != null) {
+            throw new RuntimeException("Duplicate column name '" + newColumn.getName() + "'");
         }
-        Column column = Column.builder()
-            .name(newColumn.getName())
-            .primaryKeyIndex(newColumn.getPrimary())
-            .type(newColumn.getType())
-            .scale(newColumn.getScale())
-            .precision(newColumn.getPrecision())
-            .state(newColumn.getState())
-            .autoIncrement(newColumn.isAutoIncrement())
-            .defaultValueExpr(newColumn.getDefaultValue())
-            .elementTypeName(newColumn.getElementType())
-            .comment(newColumn.getComment())
-            .build();
-
-        columns.add(column);
-        definition.copyWithColumns(columns);
-        // todo
-        //schema.updateTable(tableName, definition);
+        validateAddColumn(newColumn);
+        DdlService.root().addColumn(schemaInfo, definition, newColumn, "");
     }
 
     public void execute(@NonNull SqlRevoke sqlRevoke, CalcitePrepare.Context context) {
@@ -1363,6 +1379,66 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         }
         return targetReplica;
+    }
+
+    private static void validateAddColumn(ColumnDefinition newColumn) {
+        DingoType type = newColumn.getType();
+        if (newColumn.getDefaultValue() == null) {
+            if (!newColumn.isNullable()) {
+                if (type instanceof StringType) {
+                    newColumn.setDefaultValue("");
+                } else if (type instanceof LongType
+                    || type instanceof IntegerType || type instanceof DoubleType
+                    || type instanceof FloatType || type instanceof DecimalType) {
+                    newColumn.setDefaultValue("0");
+                } else if (type instanceof DateType) {
+                    newColumn.setDefaultValue("0000-00-00");
+                } else if (type instanceof BooleanType) {
+                    newColumn.setDefaultValue("false");
+                } else if (type instanceof TimestampType) {
+                    newColumn.setDefaultValue("0000-00-00 00:00:00");
+                } else if (type instanceof TimeType) {
+                    newColumn.setDefaultValue("00:00:00");
+                }
+            }
+        } else {
+            try {
+                String defaultVal = newColumn.getDefaultValue();
+                if (type instanceof LongType) {
+                    Long.parseLong(defaultVal);
+                } else if (type instanceof IntegerType) {
+                    Integer.parseInt(defaultVal);
+                } else if (type instanceof DoubleType) {
+                    Double.parseDouble(defaultVal);
+                } else if (type instanceof FloatType) {
+                    Float.parseFloat(defaultVal);
+                } else if (type instanceof DateType) {
+                    if ("current_date".equalsIgnoreCase(defaultVal)) {
+                        return;
+                    }
+                    DateTimeUtils.parseDate(defaultVal);
+                } else if (type instanceof DecimalType) {
+                    new BigDecimal(defaultVal);
+                } else if (type instanceof BooleanType) {
+                    boolean res = defaultVal.equalsIgnoreCase("true")
+                        || defaultVal.equalsIgnoreCase("false") || defaultVal.equalsIgnoreCase("1")
+                        || defaultVal.equalsIgnoreCase("0");
+                    if (!res) {
+                        throw new RuntimeException("Invalid default value");
+                    }
+                } else if (type instanceof TimestampType) {
+                    if (defaultVal.equalsIgnoreCase("current_timestamp")) {
+                        return;
+                    }
+                    DateTimeUtils.parseTimestamp(defaultVal);
+                } else if (type instanceof TimeType) {
+                    DateTimeUtils.parseTime(defaultVal);
+                }
+            } catch (Exception e) {
+                throw DINGO_RESOURCE.invalidDefaultValue(newColumn.getDefaultValue()).ex();
+            }
+        }
+
     }
 
 }

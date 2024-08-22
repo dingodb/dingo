@@ -16,12 +16,15 @@
 
 package io.dingodb.server.executor.session;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.driver.DingoConnection;
+import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
 import java.util.Map;
 
+@Slf4j
 public final class SessionManager {
 
     private SessionManager() {

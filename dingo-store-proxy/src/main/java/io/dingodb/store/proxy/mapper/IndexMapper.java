@@ -56,6 +56,10 @@ import static io.dingodb.store.proxy.mapper.Mapper.JSON;
 public interface IndexMapper {
 
     default void setIndex(IndexTable.IndexTableBuilder builder, IndexParameter indexParameter) {
+        if (indexParameter == null) {
+            builder.indexType(io.dingodb.meta.entity.IndexType.SCALAR);
+            return;
+        }
         if (indexParameter.getIndexType() == IndexType.INDEX_TYPE_VECTOR) {
             switch (indexParameter.getVectorIndexParameter().getVectorIndexType()) {
                 case VECTOR_INDEX_TYPE_FLAT:

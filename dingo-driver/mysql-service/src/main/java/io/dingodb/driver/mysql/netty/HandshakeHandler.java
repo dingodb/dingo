@@ -198,7 +198,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         mysqlConnection.authed = true;
                         mysqlConnection.authPacket = authPacket;
                         DingoConnection dingoConnection = (DingoConnection) getLocalConnection(user,
-                            userDefinition.getHost());
+                            userDefinition.getHost(), mysqlConnection.getThreadId());
                         mysqlConnection.setConnection(dingoConnection);
                         PrivilegeGather privilegeGather = userService.getPrivilegeDef(user, ip);
                         env.getPrivilegeGatherMap().put(privilegeGather.key(), privilegeGather);
@@ -245,7 +245,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         }
     }
 
-    public java.sql.Connection getLocalConnection(String user, String host) {
+    public java.sql.Connection getLocalConnection(String user, String host, int mysqlConnId) {
         try {
             Class.forName("io.dingodb.driver.DingoDriver");
         } catch (ClassNotFoundException e) {
@@ -262,7 +262,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         try {
             connection = DriverManager.getConnection("jdbc:dingo:", properties);
             SessionUtil sm = ExecutionEnvironment.INSTANCE.sessionUtil;
-            sm.connectionMap.put("mysql:" + (threadId.get() - 1), connection);
+            sm.connectionMap.put("mysql:" + mysqlConnId, connection);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

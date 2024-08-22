@@ -62,17 +62,23 @@ public class ShowTableIndexOperation extends QueryOperation {
             throw new RuntimeException("table not exists");
         }
         tuples = metaService.getTableIndexDefinitions(table.getTableId()).values().stream().filter(i -> !i.getName().equalsIgnoreCase(tableName)).map(
-            index -> new Object[] {
-                tableName,
-                index.getName().toUpperCase(),
-                index.getProperties().getProperty("indexType").toUpperCase(),
-                index.getColumns().stream()
-                    .filter(this::isNormal)
-                    .map(ColumnDefinition::getName).collect(Collectors.toList()),
-                Optional.of(new Properties())
-                    .ifPresent(__ -> __.putAll(index.getProperties()))
-                    .ifPresent(__ -> __.remove("indexType")).get(),
-                index.getSchemaState()
+            index -> {
+                Properties properties = index.getProperties();
+                if (index.getName().equalsIgnoreCase("replicaTable")) {
+                     properties.put("indexType", "replicaTable");
+                }
+                return new Object[] {
+                    tableName,
+                    index.getName().toUpperCase(),
+                    properties.getProperty("indexType").toUpperCase(),
+                    index.getColumns().stream()
+                        .filter(this::isNormal)
+                        .map(ColumnDefinition::getName).collect(Collectors.toList()),
+                    Optional.of(new Properties())
+                        .ifPresent(__ -> __.putAll(index.getProperties()))
+                        .ifPresent(__ -> __.remove("indexType")).get(),
+                    index.getSchemaState()
+                };
             }
         ).collect(Collectors.toList());
         return tuples.iterator();
