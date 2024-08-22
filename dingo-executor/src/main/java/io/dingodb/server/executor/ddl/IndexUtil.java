@@ -28,7 +28,6 @@ import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.util.Pair;
-import io.dingodb.common.util.Utils;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
@@ -130,7 +129,7 @@ public final class IndexUtil {
             return null;
         }
         LogUtils.info(log, "[ddl] start to add table index, jobId:{}", reorgInfo.getDdlJob().getId());
-        return BackFilling.INSTANCE.writePhysicalTableRecord(BackFilling.typeAddIndexWorker, reorgInfo);
+        return BackFilling.writePhysicalTableRecord(BackFilling.typeAddIndexWorker, reorgInfo);
     }
 
     public static String addTableIndex(ReorgInfo reorgInfo) {

@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import lombok.Builder;
 import lombok.Data;
@@ -231,6 +232,8 @@ public class DdlJob {
                 t = new TypeReference<List<String>>() {};
             } else if (actionType == ActionType.ActionDropColumn) {
                 t = new TypeReference<List<String>>() {};
+            } else if (actionType == ActionType.ActionAddColumn) {
+                t = new TypeReference<List<ColumnDefinition>>() {};
             }
 
             this.args = (List<Object>) objectMapper.readValue(rawArgs, t);

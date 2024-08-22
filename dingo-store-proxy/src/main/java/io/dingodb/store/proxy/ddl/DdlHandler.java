@@ -26,6 +26,7 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.session.SessionUtil;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
@@ -293,8 +294,24 @@ public final class DdlHandler {
         }
     }
 
-    public static void addColumn(SchemaInfo schemaInfo, Table table, Column column, String connId) {
-
+    public static void addColumn(SchemaInfo schemaInfo, Table table, ColumnDefinition column, String connId) {
+        DdlJob job = DdlJob.builder()
+            .schemaId(schemaInfo.getSchemaId())
+            .tableId(table.tableId.seq)
+            .schemaName(schemaInfo.getName())
+            .tableName(table.getName())
+            .actionType(ActionType.ActionAddColumn)
+            .schemaState(column.getSchemaState())
+            .build();
+        List<Object> args = new ArrayList<>();
+        args.add(column);
+        job.setArgs(args);
+        try {
+            doDdlJob(job);
+        } catch (Exception e) {
+            LogUtils.error(log, "[ddl-error] add column error, tableName:" + table.getName() + ", column:" + column.getName(), e);
+            throw e;
+        }
     }
 
     public static void dropColumn(

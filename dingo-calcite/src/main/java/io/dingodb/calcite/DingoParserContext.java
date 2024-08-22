@@ -21,6 +21,7 @@ import io.dingodb.calcite.grammar.SqlUserDefinedOperators;
 import io.dingodb.calcite.schema.RootCalciteSchema;
 import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
+import io.dingodb.common.log.LogUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -99,6 +100,7 @@ public final class DingoParserContext implements Context {
             .schema(new RootSnapshotSchema(this))
             .name(RootSnapshotSchema.ROOT_SCHEMA_NAME)
             .build();
+        LogUtils.info(log, "init rootCalcite:{}, this:{}", rootSchema, this);
 
         RelProtoDataType mapType = (RelDataTypeFactory factory) -> factory.createSqlType(SqlTypeName.ANY);
         rootSchema.add("map", mapType);

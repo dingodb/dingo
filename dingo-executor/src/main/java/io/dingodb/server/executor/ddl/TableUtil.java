@@ -108,8 +108,12 @@ public final class TableUtil {
 
     public static void updateTable(long schemaId, TableDefinitionWithId tableInfo) {
         // to set startTs
-        InfoSchemaService infoSchemaService =InfoSchemaService.root();
+        InfoSchemaService infoSchemaService = InfoSchemaService.root();
         infoSchemaService.updateTable(schemaId, tableInfo);
+    }
+
+    public static void updateReplicaTable(long schemaId, long tableId, TableDefinitionWithId tableInfo) {
+        InfoSchemaService.root().updateReplicaTable(schemaId, tableId, tableInfo);
     }
 
     public static void updateIndex(TableDefinitionWithId indexInfo) {

@@ -21,6 +21,7 @@ import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.Services;
@@ -95,9 +96,24 @@ public class PessimisticLockOperator extends SoleOutOperator {
                 List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
                     .map(Column::getName)
                     .collect(Collectors.toList()));
+                Object defaultVal = null;
+                if (columnIndices.contains(-1)) {
+                    Column addColumn = indexTable.getColumns().stream()
+                        .filter(column -> column.getSchemaState() != SchemaState.SCHEMA_PUBLIC)
+                        .findFirst().orElse(null);
+                    if (addColumn != null) {
+                        defaultVal = addColumn.getDefaultVal();
+                    }
+                }
+                Object finalDefaultVal = defaultVal;
                 tableId = context.getIndexId();
                 Object[] finalTuple = tuple;
-                tuple = columnIndices.stream().map(i -> finalTuple[i]).toArray();
+                tuple = columnIndices.stream().map(i -> {
+                    if (i == -1) {
+                        return finalDefaultVal;
+                    }
+                    return finalTuple[i];
+                }).toArray();
                 schema = indexTable.tupleType();
                 if (indexTable.indexType.isVector) {
                     isVector = true;

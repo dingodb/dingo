@@ -561,6 +561,8 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
 
     public void removeLockDDLJobs(Map<Long, Long> jobsVerMap, Map<Long, String> jobsIdsMap) {
         Map<Long, Long> relatedTableForMdl = this.context.getRootSchema().getRelatedTableForMdl();
+        //LogUtils.info(log, "[ddl] check mdl, rootCalciteSchema:{}, mdl size:{}",
+        //    this.context.getRootSchema(), relatedTableForMdl.size());
         for (Map.Entry<Long, Long> useRelated : relatedTableForMdl.entrySet()) {
             Long tableId = useRelated.getKey();
             long useSchemaVer = useRelated.getValue();
@@ -570,21 +572,18 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 long jobId = jobIdVerEntry.getKey();
                 long ver = jobIdVerEntry.getValue();
                 Map<Long, Long> ids = str2LongMap(jobsIdsMap.get(jobId));
-                if (ids.containsKey(tableId) && useSchemaVer < ver) {
-                    jobVerIterator.remove();
-                    mdlLockJobMap.put(jobId, jobId);
-                    if (DdlUtil.timeOutError.get()) {
-                        LogUtils.info(log, "[ddl] conn remove mdl lock,jobId:{}, use ver:{}, "
-                        + "ver:{}, tableId:{}" , jobId, useSchemaVer, ver, tableId);
+                if (ids.containsKey(tableId)) {
+                    if (useSchemaVer < ver) {
+                        jobVerIterator.remove();
+                        mdlLockJobMap.put(jobId, jobId);
+                        if (DdlUtil.timeOutError.get()) {
+                            LogUtils.info(log, "[ddl] conn remove mdl lock,jobId:{}, use ver:{}, "
+                                + "ver:{}, tableId:{}", jobId, useSchemaVer, ver, tableId);
+                        }
+                    } else {
+                        LogUtils.debug(log, "[ddl] conn remove ddl, but ver is newest,jobId:{}, use ver:{},"
+                            + "ver:{}, tableId:{}", jobId, useSchemaVer, ver, tableId);
                     }
-                    //if (transaction != null) {
-                    //    List<String> sqlList = transaction.getSqlList();
-                    //    StringBuilder sqlBuilder = new StringBuilder();
-                    //    for (String sql : sqlList) {
-                    //        sqlBuilder.append(sql).append(";");
-                    //    }
-                    //    log.info("[ddl] conn remove mdl lock,jobId:" + jobId + ", sql:" + sqlBuilder.toString());
-                    //}
                 }
             }
         }

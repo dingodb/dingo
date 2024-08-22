@@ -20,6 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.DdlServiceProvider;
 import io.dingodb.meta.InfoSchemaService;
@@ -69,7 +70,7 @@ public class DdlService implements io.dingodb.meta.DdlService {
     }
 
     @Override
-    public void addColumn(SchemaInfo schemaInfo, Table table, Column column, String connId) {
+    public void addColumn(SchemaInfo schemaInfo, Table table, ColumnDefinition column, String connId) {
         DdlHandler.addColumn(schemaInfo, table, column, connId);
     }
 

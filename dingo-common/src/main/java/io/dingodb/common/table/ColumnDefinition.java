@@ -83,8 +83,9 @@ public class ColumnDefinition {
     @JsonProperty("default")
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     @Getter
+    @Setter
     @Builder.Default
-    private final String defaultValue = null;
+    private String defaultValue = null;
 
     @JsonProperty("autoIncrement")
     @Getter

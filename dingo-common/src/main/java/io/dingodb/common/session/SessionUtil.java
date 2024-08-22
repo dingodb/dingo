@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public final class SessionUtil {
     public static final SessionUtil INSTANCE = new SessionUtil();
 
-    public Map<String, Connection> connectionMap = new ConcurrentHashMap<>();
+    public volatile Map<String, Connection> connectionMap = new ConcurrentHashMap<>();
 
     private SessionPool sessionPool;
 

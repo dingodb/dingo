@@ -100,7 +100,6 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    @Deprecated
     default KeyValue get(byte[] key) {
         return get(System.identityHashCode(key), key);
     }
@@ -109,7 +108,6 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    @Deprecated
     default List<KeyValue> get(List<byte[]> keys) {
         return get(System.identityHashCode(keys), keys);
     }

@@ -21,13 +21,25 @@ import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.NullableType;
-import lombok.AllArgsConstructor;
+import io.dingodb.common.type.scalar.BooleanType;
+import io.dingodb.common.type.scalar.DateType;
+import io.dingodb.common.type.scalar.DecimalType;
+import io.dingodb.common.type.scalar.DoubleType;
+import io.dingodb.common.type.scalar.FloatType;
+import io.dingodb.common.type.scalar.IntegerType;
+import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.type.scalar.StringType;
+import io.dingodb.common.type.scalar.TimeType;
+import io.dingodb.common.type.scalar.TimestampType;
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
-import java.io.Serializable;
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Timestamp;
 
 @Getter
 @Builder
@@ -95,6 +107,44 @@ public class Column {
             .comment(comment)
             .schemaState(schemaState)
             .build();
+    }
+
+    public Object getDefaultVal() {
+        if (defaultValueExpr == null) {
+            return null;
+        }
+        if (type instanceof StringType) {
+            return defaultValueExpr;
+        } else if (type instanceof LongType) {
+            return Long.parseLong(defaultValueExpr);
+        } else if (type instanceof IntegerType) {
+            return Integer.parseInt(defaultValueExpr);
+        } else if (type instanceof DoubleType) {
+            return Double.parseDouble(defaultValueExpr);
+        } else if (type instanceof FloatType) {
+            return Float.parseFloat(defaultValueExpr);
+        } else if (type instanceof DateType) {
+            if ("current_date".equalsIgnoreCase(defaultValueExpr)) {
+                return new Date(System.currentTimeMillis());
+            }
+            return DateTimeUtils.parseDate(defaultValueExpr);
+        } else if (type instanceof DecimalType) {
+            return new BigDecimal(defaultValueExpr);
+        } else if (type instanceof BooleanType) {
+            if (defaultValueExpr.equalsIgnoreCase("true")) {
+                return 1;
+            } else if (defaultValueExpr.equalsIgnoreCase("false")) {
+                return 0;
+            }
+        } else if (type instanceof TimestampType) {
+            if (defaultValueExpr.equalsIgnoreCase("current_timestamp")) {
+                return new Timestamp(System.currentTimeMillis());
+            }
+            return DateTimeUtils.parseTimestamp(defaultValueExpr);
+        } else if (type instanceof TimeType) {
+            return DateTimeUtils.parseTime(defaultValueExpr);
+        }
+        return defaultValueExpr;
     }
 
 }

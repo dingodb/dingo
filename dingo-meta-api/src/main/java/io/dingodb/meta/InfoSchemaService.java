@@ -38,6 +38,7 @@ public interface InfoSchemaService {
     String mDBPrefix= "DB";
     String mTablePrefix= "Table";
     String mIndexPrefix= "Index";
+    String mReplicaTablePrefix= "ReplicaTable";
     String mSchemaDiffPrefix = "Diff";
     String TEMPLATE = "%s:%d";
     String mSchemaVersionKey = "SchemaVersionKey";
@@ -110,6 +111,16 @@ public interface InfoSchemaService {
         return 0;
     }
 
+    default byte[] replicaTableKey(long tableId) {
+        return ReplicaTableKey(tableId);
+    }
+
+    default byte[] ReplicaTableKey(long tableId) {
+        //String indexKeyStr = String.format(TEMPLATE, mReplicaTablePrefix, tableId);
+        //return indexKeyStr.getBytes();
+        return "replicaTable".getBytes();
+    }
+
     default byte[] indexKey(long indexId) {
         return IndexKey(indexId);
     }
@@ -145,6 +156,7 @@ public interface InfoSchemaService {
     boolean checkTableExists(byte[] schemaKey, byte[] tableKey);
 
     void createTableOrView(long schemaId, long tableId, Object table);
+    default void createReplicaTable(long schemaId, long tableId, Object table) {}
 
     void createIndex(long schemaId, long tableId, Object index);
 
@@ -168,6 +180,7 @@ public interface InfoSchemaService {
 
     Object getTable(long schemaId, long tableId);
     Object getTable(CommonId tableId);
+    default Object getReplicaTable(long schemaId, long tableId, long replicaTableId) { return null; }
 
     Table getTableDef(long schemaId, long tableId);
     Table getTableDef(long schemaId, String tableName);
@@ -213,6 +226,8 @@ public interface InfoSchemaService {
     void setSchemaDiff(SchemaDiff schemaDiff);
 
     void updateTable(long schemaId, Object table);
+
+    default void updateReplicaTable(long schemaId, long tableId, Object table) {}
 
     default void updateIndex(long tableId, Object index) {}
 

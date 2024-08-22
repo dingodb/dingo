@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.entity.InfoSchema;
 import lombok.Builder;
@@ -44,7 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RootCalciteSchema extends CalciteSchema {
 
     @Getter
-    private Map<Long, Long> relatedTableForMdl = new ConcurrentHashMap<>();
+    private volatile Map<Long, Long> relatedTableForMdl = new ConcurrentHashMap<>();
 
     @Builder
     protected RootCalciteSchema(
@@ -158,6 +159,11 @@ public class RootCalciteSchema extends CalciteSchema {
     public void closeTxn() {
         RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) schema;
         rootSnapshotSchema.destoryTxn();
+        //StringBuilder stringBuilder = new StringBuilder();
+        //this.relatedTableForMdl.keySet().forEach(id -> {
+        //    stringBuilder.append(id).append(",");
+        //});
+        //LogUtils.info(log, "[ddl] mdl table will remove, tableId:{}", stringBuilder.toString());
         this.relatedTableForMdl.clear();
     }
 
