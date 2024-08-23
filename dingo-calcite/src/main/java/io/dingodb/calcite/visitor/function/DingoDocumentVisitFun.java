@@ -119,10 +119,16 @@ public final class DingoDocumentVisitFun {
 
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = metaService.getRangeDistribution(tableId);
         List<Object> operandsList = rel.getOperands();
-        String queryString = Objects.requireNonNull((SqlCharStringLiteral) operandsList.get(2)).getStringValue();
+        String indexName = Objects.requireNonNull((SqlIdentifier) operandsList.get(1)).toString();
+        String indexTableName = rel.getIndexTable().getName();
+        if(!indexTableName.equalsIgnoreCase(indexName)){
+            throw new IllegalArgumentException("Can not find the text index with name: " + indexName);
+        }
+
+        String queryString = Objects.requireNonNull((SqlCharStringLiteral) operandsList.get(2)).getStringValue().toUpperCase();
 
         if (!(operandsList.get(3) instanceof SqlNumericLiteral)) {
-            throw new IllegalArgumentException("Top n not number.");
+            throw new IllegalArgumentException("Top n not a number.");
         }
 
         int topN = ((Number) Objects.requireNonNull(((SqlNumericLiteral) operandsList.get(3)).getValue())).intValue();
