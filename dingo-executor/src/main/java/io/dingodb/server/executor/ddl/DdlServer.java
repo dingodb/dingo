@@ -152,7 +152,7 @@ public final class DdlServer {
     public static void delivery2worker(DdlWorker worker, DdlJob ddlJob, DdlWorkerPool pool) {
         DdlContext dc = DdlContext.INSTANCE;
         dc.insertRunningDDLJobMap(ddlJob.getId());
-        LogUtils.info(log, "delivery 2 worker");
+        LogUtils.info(log, "delivery 2 worker, jobId:{}, state:{}", ddlJob.getId(), ddlJob.getState());
         Executors.submit("ddl-worker", () -> {
             Timer.Context timeCtx = DingoMetrics.getTimeContext("ddlJobRun");
             try {

@@ -58,7 +58,7 @@ public class SessionFactory extends BasePooledObjectFactory<Session> {
         java.sql.Connection connection = null;
         try {
             connection = DriverManager.getConnection("jdbc:dingo:", properties);
-            connection.setClientInfo("ddl_inner_profile", "on");
+            connection.setClientInfo("ddl_inner_profile", "off");
         } catch (SQLException e) {
             log.error(e.getMessage(), e);
         }

@@ -21,7 +21,7 @@
     <!-- Control the Executor module public log level -->
     <property name="log.level" value="info"/>
     <!-- Control the RPC module public log level -->
-    <property name="rpcLog.level" value="debug"/>
+    <property name="rpcLog.level" value="info"/>
     <!-- Maximum time for log storage -->
     <property name="log.maxHistory" value="7"/>
     <!-- Log storage location -->
