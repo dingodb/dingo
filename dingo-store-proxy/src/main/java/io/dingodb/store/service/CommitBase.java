@@ -100,7 +100,7 @@ public abstract class CommitBase {
     ) {
         byte[] primaryKey = mutation.getKey();
         // 2、call sdk preWritePrimaryKey
-        long lockTtl = TsoService.getDefault().timestamp() + 60;
+        long lockTtl = TsoService.getDefault().timestamp() + 60000;
 
         TxnPreWrite txnPreWrite = TxnPreWrite.builder()
             .isolationLevel(IsolationLevel.of(

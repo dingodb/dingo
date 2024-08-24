@@ -315,7 +315,7 @@ public abstract class BaseTransaction implements ITransaction {
         try {
             checkContinue();
 
-            boolean enableOnePc = true;
+            boolean enableOnePc = false;
             if(enableOnePc) {
                 try {
                     //1PC phase。

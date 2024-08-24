@@ -840,9 +840,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         long end = System.currentTimeMillis();
         long cost = end - start;
         if (cost > 10000) {
-            LogUtils.info(log, "[ddl] create table take long time, schemaName:{} tableName:{}", schema.getSchemaName(), tableName);
+            LogUtils.info(log, "[ddl] create table take long time, "
+                + "cost:{}, schemaName:{}, tableName:{}", cost, schema.getSchemaName(), tableName);
         } else {
-            LogUtils.info(log, "[ddl] create table success, schemaName:{}, tableName:{}", schema.getSchemaName(), tableName);
+            LogUtils.info(log, "[ddl] create table success, "
+                + "cost:{}, schemaName:{}, tableName:{}", cost, schema.getSchemaName(), tableName);
         }
     }
 
@@ -878,9 +880,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         timeCtx.stop();
         long cost = System.currentTimeMillis() - start;
         if (cost > 10000) {
-            LogUtils.info(log, "drop table take long time, schemaName:{}, tableName:{}", schemaInfo.getName(), tableName);
+            LogUtils.info(log, "drop table take long time, cost:{}, schemaName:{}, tableName:{}", cost, schemaInfo.getName(), tableName);
         } else {
-            LogUtils.info(log, "[ddl] drop table success, schemaName:{}, tableName:{}", schema.getSchemaName(), tableName);
+            LogUtils.info(log, "[ddl] drop table success, cost:{}, schemaName:{}, tableName:{}", cost, schema.getSchemaName(), tableName);
         }
     }
 
@@ -904,9 +906,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         timeCtx.stop();
         long cost = System.currentTimeMillis() - start;
         if (cost > 10000) {
-            LogUtils.info(log, "truncate table cost long time, schemaName:{}, tableName:{}", schemaInfo.getName(), tableName);
+            LogUtils.info(log, "truncate table cost long time, cost:{}, schemaName:{}, tableName:{}", cost, schemaInfo.getName(), tableName);
         } else {
-            LogUtils.info(log, "truncate table success, schemaName:{}, tableName:{}", schemaInfo.getName(), tableName);
+            LogUtils.info(log, "truncate table success, cost:{}, schemaName:{}, tableName:{}", cost, schemaInfo.getName(), tableName);
         }
     }
 

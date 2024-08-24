@@ -18,10 +18,12 @@ package io.dingodb.server.executor.ddl;
 
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.meta.InfoSchemaService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -31,19 +33,23 @@ public class SchemaVersionManager {
     private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private AtomicLong lockOwner = new AtomicLong(0);
 
-    public void unlockSchemaVersion(long jobId) {
+    public void unlockSchemaVersion(DdlJob job) {
+        long jobId = job.getId();
         long ownId = lockOwner.get();
         if (ownId == jobId) {
             lockOwner.set(0);
             if (this.lock.writeLock().isHeldByCurrentThread()) {
                 lock.writeLock().unlock();
-                LogUtils.info(log, "[ddl] lock schema ver unlock, jobId:{}", jobId);
+                //LogUtils.info(log, "[ddl] lock schema ver unlock, jobId:{}", jobId);
+                long sub = System.currentTimeMillis() - job.getLockVerTs();
+                DingoMetrics.timer("lockSchemaVer").update(sub, TimeUnit.MILLISECONDS);
             }
         }
     }
 
     public Long setSchemaVersion(DdlJob job) {
         lockSchemaVersion(job.getId());
+        job.setLockVerTs(System.currentTimeMillis());
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         return infoSchemaService.genSchemaVersion(1);
     }

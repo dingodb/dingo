@@ -57,6 +57,7 @@ public class DdlJob {
 
     private byte[] rawArgs;
     private DdlReorgMeta reorgMeta;
+    private long lockVerTs;
 
     @JsonIgnore
     private List<Object> args;
