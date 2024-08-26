@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
+import io.dingodb.common.tenant.TenantConstant;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,24 +102,24 @@ public class LoggerReporter extends ScheduledReporter {
 
     private void logTimer(String name, Timer timer) {
         Snapshot snapshot = timer.getSnapshot();
-        this.loggerProxy.log(this.marker, "type={}, name={}, count={}, min={}, max={}, mean={}, median={}, p75={}, p95={}, p98={}, p99={}, p999={}", "TIMER", this.prefix(name), timer.getCount(), this.convertDuration((double)snapshot.getMin()), this.convertDuration((double)snapshot.getMax()), this.convertDuration(snapshot.getMean()), this.convertDuration(snapshot.getMedian()), this.convertDuration(snapshot.get75thPercentile()), this.convertDuration(snapshot.get95thPercentile()), this.convertDuration(snapshot.get98thPercentile()), this.convertDuration(snapshot.get99thPercentile()), this.convertDuration(snapshot.get999thPercentile()));
+        this.loggerProxy.log(this.marker, "Tenant id:{} type={}, name={}, count={}, min={}, max={}, mean={}, median={}, p75={}, p95={}, p98={}, p99={}, p999={}", TenantConstant.TENANT_ID, "TIMER", this.prefix(name), timer.getCount(), this.convertDuration((double)snapshot.getMin()), this.convertDuration((double)snapshot.getMax()), this.convertDuration(snapshot.getMean()), this.convertDuration(snapshot.getMedian()), this.convertDuration(snapshot.get75thPercentile()), this.convertDuration(snapshot.get95thPercentile()), this.convertDuration(snapshot.get98thPercentile()), this.convertDuration(snapshot.get99thPercentile()), this.convertDuration(snapshot.get999thPercentile()));
     }
 
     private void logMeter(String name, Meter meter) {
-        this.loggerProxy.log(this.marker, "type={}, name={}, count={}, mean_rate={}, m1={}, m5={}, m15={}, rate_unit={}", "METER", this.prefix(name), meter.getCount(), this.convertRate(meter.getMeanRate()), this.convertRate(meter.getOneMinuteRate()), this.convertRate(meter.getFiveMinuteRate()), this.convertRate(meter.getFifteenMinuteRate()), this.getRateUnit());
+        this.loggerProxy.log(this.marker, "Tenant id:{} type={}, name={}, count={}, mean_rate={}, m1={}, m5={}, m15={}, rate_unit={}", TenantConstant.TENANT_ID, "METER", this.prefix(name), meter.getCount(), this.convertRate(meter.getMeanRate()), this.convertRate(meter.getOneMinuteRate()), this.convertRate(meter.getFiveMinuteRate()), this.convertRate(meter.getFifteenMinuteRate()), this.getRateUnit());
     }
 
     private void logHistogram(String name, Histogram histogram) {
         Snapshot snapshot = histogram.getSnapshot();
-        this.loggerProxy.log(this.marker, "type={}, name={}, count={}, min={}, max={}, mean={}, stddev={}, median={}, p75={}, p95={}, p98={}, p99={}, p999={}", "HISTOGRAM", this.prefix(name), histogram.getCount(), snapshot.getMin(), snapshot.getMax(), snapshot.getMean(), snapshot.getStdDev(), snapshot.getMedian(), snapshot.get75thPercentile(), snapshot.get95thPercentile(), snapshot.get98thPercentile(), snapshot.get99thPercentile(), snapshot.get999thPercentile());
+        this.loggerProxy.log(this.marker, "Tenant id:{} type={}, name={}, count={}, min={}, max={}, mean={}, stddev={}, median={}, p75={}, p95={}, p98={}, p99={}, p999={}", TenantConstant.TENANT_ID, "HISTOGRAM", this.prefix(name), histogram.getCount(), snapshot.getMin(), snapshot.getMax(), snapshot.getMean(), snapshot.getStdDev(), snapshot.getMedian(), snapshot.get75thPercentile(), snapshot.get95thPercentile(), snapshot.get98thPercentile(), snapshot.get99thPercentile(), snapshot.get999thPercentile());
     }
 
     private void logCounter(String name, Counter counter) {
-        this.loggerProxy.log(this.marker, "type={}, name={}, count={}", "COUNTER", this.prefix(name), counter.getCount());
+        this.loggerProxy.log(this.marker, "Tenant id:{} type={}, name={}, count={}", TenantConstant.TENANT_ID, "COUNTER", this.prefix(name), counter.getCount());
     }
 
     private void logGauge(String name, Gauge<?> gauge) {
-        this.loggerProxy.log(this.marker, "type={}, name={}, value={}", "GAUGE", this.prefix(name), gauge.getValue());
+        this.loggerProxy.log(this.marker, "Tenant id:{} type={}, name={}, value={}", TenantConstant.TENANT_ID, "GAUGE", this.prefix(name), gauge.getValue());
     }
 
     protected String getRateUnit() {

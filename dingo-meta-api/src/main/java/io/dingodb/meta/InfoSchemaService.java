@@ -38,7 +38,6 @@ public interface InfoSchemaService {
     String mDBPrefix= "DB";
     String mTablePrefix= "Table";
     String mIndexPrefix= "Index";
-    String mReplicaTablePrefix= "ReplicaTable";
     String mSchemaDiffPrefix = "Diff";
     String TEMPLATE = "%s:%d";
     String mSchemaVersionKey = "SchemaVersionKey";

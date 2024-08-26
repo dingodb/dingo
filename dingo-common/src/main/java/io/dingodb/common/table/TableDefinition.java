@@ -132,7 +132,7 @@ public class TableDefinition {
 
     @Getter
     @Setter
-    private List<TableDefinition> indices;
+    private List<IndexDefinition> indices;
 
     @Getter
     @Setter

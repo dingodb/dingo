@@ -23,6 +23,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.util.TransactionUtil;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
@@ -118,7 +119,8 @@ public final class TransactionManager {
     public static Object getTable(CommonId txnId, CommonId tableId) {
         ITransaction transaction = trans.get(txnId);
         if (transaction == null) {
-            return null;
+            LogUtils.info(log, "get table by txn is null, tableId:{}, txnId:{}", tableId, txnId);
+            return DdlService.root().getTable(tableId);
         }
         InfoSchema is = transaction.getIs();
         if (is == null) {
@@ -135,8 +137,8 @@ public final class TransactionManager {
     public static Object getIndex(CommonId txnId, CommonId indexId) {
         ITransaction transaction = trans.get(txnId);
         if (transaction == null) {
-            LogUtils.error(log, "[ddl] get index by txn, txn is null:{}", txnId);
-            return null;
+            LogUtils.info(log, "[ddl] get index by txn, txn is null:{}", txnId);
+            return DdlService.root().getTable(indexId);
         }
         InfoSchema is = transaction.getIs();
         if (is == null) {

@@ -58,6 +58,7 @@ import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import io.dingodb.common.metrics.DingoMetrics;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -125,11 +126,7 @@ public class IndexAddFiller implements BackFiller {
         // reorging when region split
         StoreInstance kvStore = Services.KV_STORE.getInstance(task.getTableId(), task.getRegionId());
         KeyValueCodec codec  = CodecService.getDefault().createKeyValueCodec(table.getVersion(), table.tupleType(), table.keyMapping());
-        Iterator<KeyValue> iterator = kvStore.txnScan(
-            task.getStartTs(),
-            new StoreInstance.Range(task.getStart(), task.getEnd(), task.isWithStart(), task.isWithEnd()),
-            50000
-        );
+        Iterator<KeyValue> iterator = getKeyValueIterator(task, kvStore);
         tupleIterator = Iterators.transform(iterator,
             wrap(codec::decode)::apply
         );
@@ -165,6 +162,27 @@ public class IndexAddFiller implements BackFiller {
             break;
         }
         return preRes;
+    }
+
+    @NonNull
+    private static Iterator<KeyValue> getKeyValueIterator(ReorgBackFillTask task, StoreInstance kvStore) {
+        Iterator<KeyValue> iterator = null;
+        int retry = 3;
+        while (retry -- > 0) {
+            try {
+                iterator = kvStore.txnScan(
+                    task.getStartTs(),
+                    new StoreInstance.Range(task.getStart(), task.getEnd(), task.isWithStart(), task.isWithEnd()),
+                    50000
+                );
+            } catch (RegionSplitException ignored) {
+
+            }
+        }
+        if (iterator == null) {
+            throw new RuntimeException("index reorg pre write get iterator null");
+        }
+        return iterator;
     }
 
     protected void preWritePrimaryKey(CacheToObject cacheToObject) {
@@ -226,21 +244,7 @@ public class IndexAddFiller implements BackFiller {
         if (task.getRegionId().seq != ownerRegionId) {
             StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, task.getRegionId());
             KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.getVersion(), table.tupleType(), table.keyMapping());
-            Iterator<KeyValue> iterator = null;
-            int retry = 3;
-            while (retry -- > 0) {
-                try {
-                    iterator = kvStore.txnScan(
-                        task.getStartTs(),
-                        new StoreInstance.Range(task.getStart(), task.getEnd(), task.isWithStart(), task.isWithEnd()),
-                        50000
-                    );
-                } catch (RegionSplitException ignored) {
-                }
-            }
-            if (iterator == null) {
-                throw new RuntimeException("index reorg scan error");
-            }
+            Iterator<KeyValue> iterator = getKeyValueIterator(task, kvStore);
             tupleIterator = Iterators.transform(iterator,
                 wrap(codec::decode)::apply
             );

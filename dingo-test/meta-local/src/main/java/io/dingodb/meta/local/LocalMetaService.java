@@ -24,6 +24,7 @@ import io.dingodb.common.Location;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.Index;
+import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
@@ -144,7 +145,7 @@ public class LocalMetaService implements MetaService {
 
     @Override
     public long createTables(@NonNull TableDefinition tableDefinition,
-                             @NonNull List<TableDefinition> indexTableDefinitions) {
+                             @NonNull List<IndexDefinition> indexTableDefinitions) {
         CommonId tableId = new CommonId(TABLE, id.seq, tableSeq.incrementAndGet());
         tableDefinitions.put(tableId, tableDefinition);
         if (tableDefinition.getPartDefinition() != null) {

@@ -333,6 +333,7 @@ public final class DdlHandler {
             .tableId(tableId)
             .schemaName(schemaName)
             .tableName(tableName)
+            .schemaState(SchemaState.SCHEMA_PUBLIC)
             .actionType(ActionType.ActionDropColumn)
             .build();
         List<Object> args = new ArrayList<>();

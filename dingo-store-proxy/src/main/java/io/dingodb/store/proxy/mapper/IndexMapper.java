@@ -22,7 +22,6 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.sdk.service.entity.common.DocumentIndexParameter;
-import io.dingodb.sdk.service.entity.common.Engine;
 import io.dingodb.sdk.service.entity.common.IndexParameter;
 import io.dingodb.sdk.service.entity.common.IndexType;
 import io.dingodb.sdk.service.entity.common.MetricType;
@@ -88,8 +87,12 @@ public interface IndexMapper {
         } else if (indexParameter.getIndexType() == IndexType.INDEX_TYPE_DOCUMENT) {
             builder.indexType(io.dingodb.meta.entity.IndexType.DOCUMENT);
         } else {
+            builder.unique(indexParameter.getScalarIndexParameter().isUnique());
             builder.indexType(io.dingodb.meta.entity.IndexType.SCALAR);
         }
+        builder.originKeyList(indexParameter.getOriginKeys());
+        builder.originWithKeyList(indexParameter.getOriginWithKeys());
+
         builder.properties(toMap(
             Optional.mapOrNull(indexParameter.getVectorIndexParameter(), VectorIndexParameter::getVectorIndexParameter)
         ));
@@ -102,7 +105,7 @@ public interface IndexMapper {
         return JSON.convertValue(target, Properties.class);
     }
 
-    default void resetIndexParameter(TableDefinition indexDefinition) {
+    default void resetIndexParameter(TableDefinition indexDefinition, io.dingodb.common.table.IndexDefinition indexDef) {
         Map<String, String> properties = indexDefinition.getProperties();
         String indexType = properties.get("indexType");
         if (indexType.equals("scalar")) {
@@ -110,10 +113,12 @@ public interface IndexMapper {
                 IndexParameter.builder()
                     .indexType(IndexType.INDEX_TYPE_SCALAR)
                     .scalarIndexParameter(ScalarIndexParameter.builder()
-                        .isUnique(false)
+                        .isUnique(indexDef.isUnique())
                         .scalarIndexType(ScalarIndexType.SCALAR_INDEX_TYPE_LSM)
                         .build()
-                    ).build()
+                    ).originKeys(indexDef.getOriginKeyList())
+                    .originWithKeys(indexDef.getOriginWithKeyList())
+                    .build()
             );
         } else if (indexType.equals("document")) {
             DocumentIndexParameter documentIndexParameter;
@@ -177,6 +182,8 @@ public interface IndexMapper {
                 IndexParameter.builder()
                     .indexType(IndexType.INDEX_TYPE_DOCUMENT)
                     .documentIndexParameter(documentIndexParameter)
+                    .originWithKeys(indexDef.getOriginKeyList())
+                    .originWithKeys(indexDef.getOriginWithKeyList())
                     .build()
             );
         } else {
@@ -271,6 +278,8 @@ public interface IndexMapper {
                 IndexParameter.builder()
                     .indexType(IndexType.INDEX_TYPE_VECTOR)
                     .vectorIndexParameter(vectorIndexParameter)
+                    .originKeys(indexDef.getOriginKeyList())
+                    .originWithKeys(indexDef.getOriginWithKeyList())
                     .build()
             );
         }

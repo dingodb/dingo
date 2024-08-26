@@ -24,6 +24,8 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+import java.util.List;
+
 @Getter
 @ToString
 @SuperBuilder
@@ -34,4 +36,6 @@ public class IndexTable extends Table {
     public final boolean unique;
     public final CommonId primaryId;
     public final TupleMapping mapping;
+    public final List<String> originKeyList;
+    public final List<String> originWithKeyList;
 }
