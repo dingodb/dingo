@@ -27,6 +27,8 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
 	    |
 	        alterTable = addIndex(s, scope, id)
         |
+            alterTable = addUniqueIndex(s, scope, id)
+        |
             alterTable = addColumn(s, scope, id)
 	    )
 	  |
@@ -151,7 +153,52 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
         return new SqlAlterAddIndex(
             s.end(this), id,
             new SqlIndexDeclaration(
-                s.end(this), index, columnList, withColumnList, properties,partitionDefinition, replica, indexType, engine
+                s.end(this), index, columnList, withColumnList, properties,partitionDefinition, replica, indexType, engine, false
+            )
+        );
+    }
+}
+
+SqlAlterTable addUniqueIndex(Span s, String scope, SqlIdentifier id): {
+    final String index;
+    Boolean autoIncrement = false;
+    Properties properties = null;
+    PartitionDefinition partitionDefinition = null;
+    int replica = 3;
+    String indexType = "scalar";
+    SqlNodeList withColumnList = null;
+    final SqlNodeList columnList;
+    String engine = null;
+} {
+ <UNIQUE><INDEX> { s.add(this); }
+    { index = getNextToken().image; }
+    (
+        <VECTOR> { indexType = "vector"; } columnList = ParenthesizedSimpleIdentifierList()
+    |
+        [<SCALAR>] columnList = ParenthesizedSimpleIdentifierList()
+    )
+    (
+       <WITH> withColumnList = ParenthesizedSimpleIdentifierList()
+     |
+       <ENGINE> <EQ> engine = dingoIdentifier() { if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
+     |
+        <PARTITION> <BY>
+            {
+                partitionDefinition = new PartitionDefinition();
+                partitionDefinition.setFuncName(getNextToken().image);
+                partitionDefinition.setColumns(readNames());
+                partitionDefinition.setDetails(readPartitionDetails());
+            }
+     |
+        <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
+     |
+        <PARAMETERS> properties = readProperties()
+    )*
+    {
+        return new SqlAlterAddIndex(
+            s.end(this), id,
+            new SqlIndexDeclaration(
+                s.end(this), index, columnList, withColumnList, properties,partitionDefinition, replica, indexType, engine, true
             )
         );
     }

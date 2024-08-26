@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 public class SqlIndexDeclaration extends SqlCall {
 
     public String index;
+    public boolean unique;
 
     public List<String> columnList;
 
@@ -69,7 +70,8 @@ public class SqlIndexDeclaration extends SqlCall {
         PartitionDefinition partDefinition,
         int replica,
         String indexType,
-        String engine
+        String engine,
+        boolean unique
     ) {
         super(pos);
         this.index = index;
@@ -94,6 +96,7 @@ public class SqlIndexDeclaration extends SqlCall {
         this.replica = replica;
         this.indexType = indexType;
         this.engine = engine;
+        this.unique = unique;
     }
 
     public SqlIndexDeclaration(

@@ -28,6 +28,7 @@ import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.session.Session;
+import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
@@ -46,7 +47,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -495,7 +495,7 @@ public class DdlWorker {
             return Pair.of(0L, error);
         }
         // get indexInfoWithId
-        TableDefinition indexInfo = (TableDefinition) job.getArgs().get(0);
+        IndexDefinition indexInfo = (IndexDefinition) job.getArgs().get(0);
         //TableDefinitionWithId indexDef = null;
         // check index exists
         Table table = InfoSchemaService.root().getTableDef(job.getSchemaId(), job.getTableId());
@@ -625,7 +625,7 @@ public class DdlWorker {
         return Pair.of(0L, error);
     }
 
-    public static Pair<Long, String> onDropColumn(DdlContext dc, DdlJob job) {
+    public Pair<Long, String> onDropColumn(DdlContext dc, DdlJob job) {
         String error = job.decodeArgs();
         if (error != null) {
             job.setState(JobState.jobStateCancelled);
@@ -641,7 +641,7 @@ public class DdlWorker {
             return Pair.of(0L, tableInfoRes.getValue());
         }
         TableDefinitionWithId tableWithId = tableInfoRes.getKey();
-        ColumnDefinition columnDef= tableWithId.getTableDefinition().getColumns()
+        ColumnDefinition columnDef = tableWithId.getTableDefinition().getColumns()
             .stream().filter(columnDefinition -> columnDefinition.getName().equalsIgnoreCase(columnName))
             .findFirst().orElse(null);
         if (columnDef == null) {
@@ -658,35 +658,71 @@ public class DdlWorker {
                 }
             }
         }
-        io.dingodb.sdk.service.entity.common.SchemaState originState = columnDef.getSchemaState();
-        switch (columnDef.getSchemaState()) {
+        switch (job.getSchemaState()) {
             case SCHEMA_PUBLIC:
-                columnDef.setSchemaState(SCHEMA_WRITE_ONLY);
-                checkDropColumnForStatePublic(columnDef);
+                //columnDef.setSchemaState(SCHEMA_WRITE_ONLY);
                 DdlColumn.setIndicesState(markDelIndices, SCHEMA_WRITE_ONLY);
+                tableWithId.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
+                tableWithId.getTableDefinition()
+                    .getColumns()
+                    .removeIf(columnDefinition -> columnDefinition.getName().equalsIgnoreCase(columnName));
+                tableWithId.getTableDefinition().setName("replicaTable");
+                tableWithId.getTableDefinition().setVersion(tableWithId.getTableDefinition().getVersion() + 1);
+                MetaService.root().createReplicaTable(job.getSchemaId(), tableWithId);
+                IndexUtil.pickBackFillType(job);
                 job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
-                return TableUtil.updateVersionAndTableInfos(dc, job, tableWithId, originState != columnDef.getSchemaState());
+                return updateSchemaVersion(dc, job);
             case SCHEMA_WRITE_ONLY:
-                columnDef.setSchemaState(SCHEMA_DELETE_ONLY);
+                TableDefinitionWithId withId = (TableDefinitionWithId) InfoSchemaService.root()
+                    .getReplicaTable(job.getSchemaId(), job.getTableId(), 0);
+                withId.getTableDefinition().setSchemaState(SCHEMA_WRITE_ONLY);
+                TableUtil.updateReplicaTable(job.getSchemaId(), job.getTableId(), withId);
                 job.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
                 DdlColumn.setIndicesState(markDelIndices, SCHEMA_DELETE_ONLY);
-                return TableUtil.updateVersionAndTableInfos(dc, job, tableWithId, originState != columnDef.getSchemaState());
+                return updateSchemaVersion(dc, job);
             case SCHEMA_DELETE_ONLY:
-                columnDef.setSchemaState(SCHEMA_DELETE_REORG);
+                withId = (TableDefinitionWithId) InfoSchemaService.root()
+                    .getReplicaTable(job.getSchemaId(), job.getTableId(), 0);
+                withId.getTableDefinition().setSchemaState(SCHEMA_WRITE_REORG);
+                TableUtil.updateReplicaTable(job.getSchemaId(), job.getTableId(), withId);
                 job.setSchemaState(SchemaState.SCHEMA_DELETE_REORG);
                 DdlColumn.setIndicesState(markDelIndices, SCHEMA_DELETE_REORG);
-                return TableUtil.updateVersionAndTableInfos(dc, job, tableWithId, originState != columnDef.getSchemaState());
+                return updateSchemaVersion(dc, job);
             case SCHEMA_DELETE_REORG:
-                columnDef.setName(UUID.randomUUID().toString());
+                withId = (TableDefinitionWithId) InfoSchemaService.root()
+                    .getReplicaTable(job.getSchemaId(), job.getTableId(), 0);
+                DingoCommonId replicaTableId = withId.getTableId();
+                // reorg
+                CommonId tableId = MapperImpl.MAPPER.idFrom(tableWithId.getTableId());
+                try {
+                    IndexUtil.INSTANCE.doReorgWorkForCreateIndex(dc, job, this, tableId, withId);
+                } catch (Exception e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                    return Pair.of(0L, "reorg failed");
+                }
+                withId.getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
+                TableUtil.updateReplicaTable(job.getSchemaId(), job.getTableId(), withId);
+                withId.setTableId(tableWithId.getTableId());
+                withId.getTableDefinition().setName(tableWithId.getTableDefinition().getName());
+                // replace replicaTable to table
+                TableUtil.updateVersionAndTableInfos(dc, job, withId, true);
+                try {
+                    // to remove replica table
+                    InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
+                    // remove old region
+                    MetaService.root().deleteRegionByTableId(tableId);
+                } catch (Exception e) {
+                    LogUtils.error(log, "drop replicaTable error", e);
+                }
+
                 job.setSchemaState(SchemaState.SCHEMA_NONE);
-                columnDef.setSchemaState(SCHEMA_NONE);
                 DdlColumn.setIndicesState(markDelIndices, SCHEMA_NONE);
                 if (job.isRollingback()) {
-                    job.finishTableJob(JobState.jobStateRollbackDone, SchemaState.SCHEMA_NONE);
+                    job.finishTableJob(JobState.jobStateRollbackDone, SchemaState.SCHEMA_PUBLIC);
                 } else {
-                    job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_NONE);
+                    job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
                 }
-                return TableUtil.updateVersionAndTableInfos(dc, job, tableWithId, originState != columnDef.getSchemaState());
+                return updateSchemaVersion(dc, job);
             default:
                 error = "ErrInvalidDDLJob";
         }
@@ -715,6 +751,7 @@ public class DdlWorker {
                 columnDefinition.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
                 definitionWithId.getTableDefinition().getColumns().add(MapperImpl.MAPPER.columnTo(columnDefinition));
                 definitionWithId.getTableDefinition().setName("replicaTable");
+                definitionWithId.getTableDefinition().setVersion(definitionWithId.getTableDefinition().getVersion() + 1);
                 MetaService.root().createReplicaTable(job.getSchemaId(), definitionWithId);
                 job.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
                 return updateSchemaVersion(dc, job);

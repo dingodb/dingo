@@ -22,9 +22,9 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.Index;
+import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
-import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -110,9 +110,9 @@ public interface MetaService {
         return 0L;
     }
 
-    long createTables(@NonNull TableDefinition tableDefinition, @NonNull List<TableDefinition> indexTableDefinitions);
+    long createTables(@NonNull TableDefinition tableDefinition, @NonNull List<IndexDefinition> indexTableDefinitions);
 
-    default void rollbackCreateTable(@NonNull TableDefinition tableDefinition, @NonNull List<TableDefinition> indexTableDefinitions) {
+    default void rollbackCreateTable(@NonNull TableDefinition tableDefinition, @NonNull List<IndexDefinition> indexTableDefinitions) {
 
     }
 
@@ -182,7 +182,7 @@ public interface MetaService {
         throw new UnsupportedOperationException();
     }
 
-    default void createIndex(CommonId tableId, String tableName, TableDefinition index) {
+    default void createIndex(CommonId tableId, String tableName, IndexDefinition index) {
         throw new UnsupportedOperationException();
     }
 

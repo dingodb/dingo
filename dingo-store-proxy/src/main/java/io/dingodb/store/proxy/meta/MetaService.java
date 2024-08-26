@@ -26,6 +26,7 @@ import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.type.TupleMapping;
@@ -247,7 +248,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public long createTables(
-        @NonNull TableDefinition tableDefinition, @NonNull List<TableDefinition> indexTableDefinitions
+        @NonNull TableDefinition tableDefinition, @NonNull List<IndexDefinition> indexTableDefinitions
     ) {
         validatePartBy(tableDefinition);
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
@@ -369,8 +370,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
                         .partIds(indexPartIds)
                         .build();
                     TableDefinitionWithId indexWithId = Stream.of(indexTableDefinitions.get(i))
-                        .map(index -> MAPPER.tableTo(indexIdWithPartIds, index, TenantConstant.TENANT_ID))
-                        .peek(td -> MAPPER.resetIndexParameter(td.getTableDefinition()))
+                        .map(index -> {
+                            TableDefinitionWithId td = MAPPER.tableTo(indexIdWithPartIds, index, TenantConstant.TENANT_ID);
+                            MAPPER.resetIndexParameter(td.getTableDefinition(), index);
+                            return td;
+                        })
                         .peek(td -> td.getTableDefinition().setName(tableName + "." + td.getTableDefinition().getName()))
                         .findAny()
                         .get();
@@ -492,7 +496,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public void rollbackCreateTable(
         @NonNull TableDefinition tableDefinition,
-        @NonNull List<TableDefinition> indexTableDefinitions) {
+        @NonNull List<IndexDefinition> indexTableDefinitions) {
         try {
             CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
             io.dingodb.meta.InfoSchemaService schemaService = io.dingodb.meta.InfoSchemaService.root();
@@ -534,7 +538,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public void createIndex(CommonId tableId, String tableName, TableDefinition index) {
+    public void createIndex(CommonId tableId, String tableName, IndexDefinition index) {
         validatePartBy(index);
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
         long indexEntityId = coordinatorService.createIds(
@@ -570,8 +574,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .partIds(indexPartIds)
             .build();
 
-        TableDefinitionWithId indexWithId = Stream.of(index).map(i -> MAPPER.tableTo(indexIdWithPartIds, i, TenantConstant.TENANT_ID))
-            .peek(td -> MAPPER.resetIndexParameter(td.getTableDefinition()))
+        TableDefinitionWithId indexWithId = Stream.of(index)
+            .map(i -> {
+                TableDefinitionWithId td = MAPPER.tableTo(indexIdWithPartIds, i, TenantConstant.TENANT_ID);
+                MAPPER.resetIndexParameter(td.getTableDefinition(), i);
+                return td;
+            })
             .peek(td -> td.getTableDefinition().setName(tableName + "." + td.getTableDefinition().getName()))
             .findAny().get();
         io.dingodb.meta.InfoSchemaService.root().createIndex(tableId.domain, tableId.seq, indexWithId);

@@ -20,6 +20,7 @@ import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.JobState;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Pair;
 import io.dingodb.meta.InfoSchemaService;
@@ -43,7 +44,6 @@ public final class TableUtil {
         tableInfo.setPrepareTableId(tableId);
 
         InfoSchemaService service = InfoSchemaService.root();
-        assert service != null;
         Object tabObj = service.getTable(schemaId, tableInfo.getName());
         if (tabObj != null) {
             ddlJob.setState(JobState.jobStateCancelled);
@@ -53,7 +53,7 @@ public final class TableUtil {
             tableInfo.setSchemaState(SchemaState.SCHEMA_PUBLIC);
             MetaService metaService = MetaService.root();
             MetaService subMs = metaService.getSubMetaService(ddlJob.getSchemaName());
-            List<TableDefinition> indices = tableInfo.getIndices();
+            List<IndexDefinition> indices = tableInfo.getIndices();
             if (indices != null) {
                 indices.forEach(index -> index.setSchemaState(SchemaState.SCHEMA_PUBLIC));
             }

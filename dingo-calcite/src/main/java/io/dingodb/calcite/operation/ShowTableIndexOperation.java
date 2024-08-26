@@ -29,6 +29,7 @@ import org.apache.calcite.sql.SqlNode;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
@@ -40,11 +41,11 @@ public class ShowTableIndexOperation extends QueryOperation {
     @Setter
     public SqlNode sqlNode;
 
-    private MetaService metaService;
+    private final MetaService metaService;
 
-    private String tableName;
+    private final String tableName;
 
-    private String schemaName;
+    private final String schemaName;
 
     public ShowTableIndexOperation(SqlNode sqlNode, String tableName) {
         this.sqlNode = sqlNode;
@@ -64,15 +65,15 @@ public class ShowTableIndexOperation extends QueryOperation {
         tuples = metaService.getTableIndexDefinitions(table.getTableId()).values().stream().filter(i -> !i.getName().equalsIgnoreCase(tableName)).map(
             index -> {
                 Properties properties = index.getProperties();
-                if (index.getName().equalsIgnoreCase("replicaTable")) {
-                     properties.put("indexType", "replicaTable");
+                if (!properties.containsKey("indexType")) {
+                    return null;
                 }
                 return new Object[] {
                     tableName,
                     index.getName().toUpperCase(),
                     properties.getProperty("indexType").toUpperCase(),
                     index.getColumns().stream()
-                        .filter(this::isNormal)
+                        .filter(ShowTableIndexOperation::isNormal)
                         .map(ColumnDefinition::getName).collect(Collectors.toList()),
                     Optional.of(new Properties())
                         .ifPresent(__ -> __.putAll(index.getProperties()))
@@ -80,7 +81,7 @@ public class ShowTableIndexOperation extends QueryOperation {
                     index.getSchemaState()
                 };
             }
-        ).collect(Collectors.toList());
+        ).filter(Objects::nonNull).collect(Collectors.toList());
         return tuples.iterator();
     }
 
@@ -96,7 +97,7 @@ public class ShowTableIndexOperation extends QueryOperation {
         return columns;
     }
 
-    private boolean isNormal(ColumnDefinition column) {
+    private static boolean isNormal(ColumnDefinition column) {
         return (column.getState() & NORMAL_STATE) == NORMAL_STATE && (column.getState() & HIDE_STATE) == 0;
     }
 

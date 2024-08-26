@@ -47,7 +47,6 @@ public final class BackFilling {
     public static final int typeAddIndexWorker = 0;
     public static final int typeAddColumnWorker = 1;
 
-
     public static final BackFilling INSTANCE = new BackFilling();
 
     private BackFilling() {

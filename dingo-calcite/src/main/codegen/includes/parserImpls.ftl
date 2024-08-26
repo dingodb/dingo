@@ -222,7 +222,7 @@ void TableElement(List<SqlNode> list) :
         )*
         {
             list.add(new SqlIndexDeclaration(s.end(this), index, columnList, withColumnList, properties,
-            partitionDefinition, replica, indexType, engine));
+            partitionDefinition, replica, indexType, engine, false));
         }
     |
         <KEY> { s.add(this); } name = SimpleIdentifier()
@@ -230,7 +230,7 @@ void TableElement(List<SqlNode> list) :
         {
             index = name.getSimple();
             list.add(new SqlIndexDeclaration(s.end(this), index, columnList, withColumnList, properties,
-            partitionDefinition, replica, indexType, null));
+            partitionDefinition, replica, indexType, null, false));
         }
     |
         <UNIQUE> { s.add(this); }

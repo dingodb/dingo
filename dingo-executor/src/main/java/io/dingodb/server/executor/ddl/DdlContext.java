@@ -64,8 +64,6 @@ public class DdlContext {
 
     private AtomicLong newVer = new AtomicLong(0);
 
-    public static final String getJobSQL = "select job_meta, processing from mysql.dingo_ddl_job where job_id in (select min(job_id) from mysql.dingo_ddl_job group by schema_ids, table_ids, processing) and %s reorg %s order by processing desc, job_id";
-
     private DdlContext() {
         DdlWorkerFactory factory = new DdlWorkerFactory();
         GenericObjectPoolConfig<DdlWorker> config = new GenericObjectPoolConfig<>();

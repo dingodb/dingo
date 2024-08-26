@@ -20,6 +20,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -110,7 +111,7 @@ public final class StmtSummaryMap {
         sqlProfile.end();
         if ((slowQueryEnabled && sqlProfile.duration > slowQueryThreshold)
             || (ddlInnerProfile && sqlProfile.duration > 100)) {
-            log.info(sqlProfile.dumpTree());
+            LogUtils.info(log, sqlProfile.dumpTree());
         }
         if (ddlInnerProfile) {
             return;

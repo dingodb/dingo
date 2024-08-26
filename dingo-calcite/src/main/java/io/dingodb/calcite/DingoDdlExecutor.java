@@ -57,6 +57,7 @@ import io.dingodb.common.privilege.SchemaPrivDefinition;
 import io.dingodb.common.privilege.TablePrivDefinition;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.type.DingoType;
@@ -118,8 +119,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -148,9 +147,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         this.userService = UserServiceProvider.getRoot();
     }
 
-    private static List<TableDefinition> getIndexDefinitions(DingoSqlCreateTable create, TableDefinition tableDefinition) {
+    private static List<IndexDefinition> getIndexDefinitions(DingoSqlCreateTable create, TableDefinition tableDefinition) {
         assert create.columnList != null;
-        List<TableDefinition> tableDefList = create.columnList.stream()
+        List<IndexDefinition> tableDefList = create.columnList.stream()
             .filter(col -> col.getKind() == SqlKind.UNIQUE)
             .filter(col -> {
                 if (col instanceof DingoSqlKeyConstraint) {
@@ -172,7 +171,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         return tableDefList;
     }
 
-    private static @Nullable TableDefinition fromSqlUniqueDeclaration(
+    private static @Nullable IndexDefinition fromSqlUniqueDeclaration(
         @NonNull SqlKeyConstraint sqlKeyConstraint,
         TableDefinition tableDefinition
     ) {
@@ -231,7 +230,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .forEach(indexColumnDefinitions::add);
 
         DingoSqlKeyConstraint dingoSqlKeyConstraint = (DingoSqlKeyConstraint) sqlKeyConstraint;
-        TableDefinition indexTableDefinition = tableDefinition.copyWithName(dingoSqlKeyConstraint.getUniqueName());
+        IndexDefinition indexTableDefinition = IndexDefinition.createIndexDefinition(
+            dingoSqlKeyConstraint.getUniqueName(), tableDefinition, true, columns, null
+        );
+        //TableDefinition indexTableDefinition = tableDefinition.copyWithName(dingoSqlKeyConstraint.getUniqueName());
         indexTableDefinition.setColumns(indexColumnDefinitions);
         indexTableDefinition.setProperties(properties);
 
@@ -244,7 +246,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         return indexTableDefinition;
     }
 
-    private static TableDefinition fromSqlIndexDeclaration(
+    private static IndexDefinition fromSqlIndexDeclaration(
         @NonNull SqlIndexDeclaration indexDeclaration,
         TableDefinition tableDefinition
     ) {
@@ -254,6 +256,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
         // Primary key list
         List<String> columns = indexDeclaration.columnList;
+        List<String> originKeyList = new ArrayList<>(columns);
 
         int keySize = columns.size();
         tableDefinition.getKeyColumns().stream()
@@ -311,7 +314,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 }
 
                 ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
-                    .findFirst().get();
+                    .findFirst().orElseThrow(() -> new RuntimeException("not found column"));
                 if (i == 0) {
                     if (!columnDefinition.getTypeName().equals("LONG")
                         && !columnDefinition.getTypeName().equals("BIGINT")) {
@@ -359,10 +362,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 }
 
                 ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
-                    .findFirst().orElse(null);
-                if (columnDefinition == null) {
-                    throw new RuntimeException("not found column");
-                }
+                    .findFirst().orElseThrow(() -> new RuntimeException("not found column"));
 
                 if (i == 0) {
                     if (!columnDefinition.getTypeName().equals("INTEGER")
@@ -430,7 +430,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 indexColumnDefinitions.add(indexColumnDefinition);
             }
         }
-        TableDefinition indexTableDefinition = tableDefinition.copyWithName(indexDeclaration.index);
+        IndexDefinition indexTableDefinition = IndexDefinition.createIndexDefinition(
+            indexDeclaration.index, tableDefinition, indexDeclaration.unique, originKeyList, indexDeclaration.withColumnList
+        );
         indexTableDefinition.setColumns(indexColumnDefinitions);
         indexTableDefinition.setPartDefinition(indexDeclaration.getPartDefinition());
         int replica = getReplica(indexDeclaration.getReplica(), type);
@@ -817,21 +819,12 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .updateTime(0)
             .build();
 
-        List<TableDefinition> indexTableDefinitions = getIndexDefinitions(create, tableDefinition);
+        List<IndexDefinition> indexTableDefinitions = getIndexDefinitions(create, tableDefinition);
 
         // Validate partition strategy
         validatePartitionBy(pks, tableDefinition, tableDefinition.getPartDefinition());
 
-        if (!indexTableDefinitions.isEmpty()) {
-            if (isNotTxnEngine(tableDefinition.getEngine())) {
-                throw new IllegalArgumentException("Table with index, the engine must be transactional.");
-            }
-            indexTableDefinitions.stream()
-                .filter(index -> isNotTxnEngine(index.getEngine()))
-                .findAny().ifPresent(index -> {
-                    throw new IllegalArgumentException("Index [" + index.getName() + "] engine must be transactional.");
-                });
-        }
+        validateEngine(indexTableDefinitions, tableDefinition.getEngine());
 
         tableDefinition.setIndices(indexTableDefinitions);
         DdlService ddlService = DdlService.root();
@@ -845,6 +838,19 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else {
             LogUtils.info(log, "[ddl] create table success, "
                 + "cost:{}, schemaName:{}, tableName:{}", cost, schema.getSchemaName(), tableName);
+        }
+    }
+
+    private static void validateEngine(List<IndexDefinition> indexTableDefinitions, String engine) {
+        if (!indexTableDefinitions.isEmpty()) {
+            if (isNotTxnEngine(engine)) {
+                throw new IllegalArgumentException("Table with index, the engine must be transactional.");
+            }
+            indexTableDefinitions.stream()
+                .filter(index -> isNotTxnEngine(index.getEngine()))
+                .findAny().ifPresent(index -> {
+                    throw new IllegalArgumentException("Index [" + index.getName() + "] engine must be transactional.");
+                });
         }
     }
 
@@ -1101,6 +1107,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         TableDefinition indexDef = fromSqlIndexDeclaration(
             sqlAlterAddIndex.getIndexDeclaration(), fromTable(table.getTable())
         );
+        if (isNotTxnEngine(table.getTable().getEngine())) {
+            throw new IllegalArgumentException("Table with index, the engine must be transactional.");
+        }
         validateIndex(schema, tableName, indexDef);
         DdlService ddlService = DdlService.root();
         ddlService.createIndex(schema.getSchemaName() , tableName, indexDef);
@@ -1143,7 +1152,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             "scalar",
             "TXN_LSM"
         );
-        TableDefinition indexDef = fromSqlIndexDeclaration(sqlIndexDeclaration, fromTable(table.getTable()));
+        if (isNotTxnEngine(table.getTable().getEngine())) {
+            throw new IllegalArgumentException("Table with index, the engine must be transactional.");
+        }
+        IndexDefinition indexDef = fromSqlIndexDeclaration(sqlIndexDeclaration, fromTable(table.getTable()));
+        indexDef.setUnique(sqlCreateIndex.isUnique);
         validateIndex(schema, tableName, indexDef);
         DdlService.root().createIndex(schema.getSchemaName(), tableName, indexDef);
     }
@@ -1220,6 +1233,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public static void validateIndex(SubSnapshotSchema schema, String tableName, TableDefinition index) {
+        if (isNotTxnEngine(index.getEngine())) {
+            throw new IllegalArgumentException("the index engine must be transactional.");
+        }
         DingoTable table = schema.getTable(tableName);
         if (table == null) {
             throw new IllegalArgumentException("table " + tableName + " does not exist ");
