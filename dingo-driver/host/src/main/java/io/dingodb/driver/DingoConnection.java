@@ -258,6 +258,9 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
 
     public synchronized void cleanTransaction() {
         if (transaction != null) {
+            if (TransactionManager.getTransaction(transaction.getTxnId()) != null) {
+                TransactionManager.unregister(transaction.getTxnId());
+            }
             this.commitProfile = transaction.getCommitProfile();
             transaction = null;
             oneTimeTxIsolation = null;

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import lombok.Builder;
 import lombok.Data;
@@ -228,7 +229,7 @@ public class DdlJob {
             } else if (actionType == ActionType.ActionTruncateTable) {
                 t = new TypeReference<List<Long>>() {};
             } else if (actionType == ActionType.ActionAddIndex) {
-                t = new TypeReference<List<TableDefinition>>() {};
+                t = new TypeReference<List<IndexDefinition>>() {};
             } else if (actionType == ActionType.ActionDropIndex) {
                 t = new TypeReference<List<String>>() {};
             } else if (actionType == ActionType.ActionDropColumn) {
