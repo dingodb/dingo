@@ -302,6 +302,9 @@ public class MetaCache {
 
     @SneakyThrows
     public NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
+        if (id == null) {
+            return new TreeMap<>();
+        }
         return distributionCache.get(id);
     }
 

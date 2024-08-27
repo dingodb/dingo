@@ -80,9 +80,9 @@ public class ShowCreateTableOperation extends QueryOperation {
         if (table == null) {
             throw new RuntimeException("Table " + tableName + " doesn't exist");
         }
-        if (table.getVersion() == 1) {
-            return table.getCreateSql();
-        }
+        //if (table.getVersion() == 1) {
+        //    return table.getCreateSql();
+        //}
         StringBuilder createTableSqlStr = new StringBuilder();
         createTableSqlStr.append("CREATE ").append("TABLE ").append("`").append(tableName.toUpperCase()).append("`");
         createTableSqlStr.append("(");
@@ -95,7 +95,7 @@ public class ShowCreateTableOperation extends QueryOperation {
             }
             createTableSqlStr.append("\r\n").append("    ");
             createTableSqlStr.append("`").append(column.getName()).append("` ");
-            createTableSqlStr.append(getTypeName(column.getSqlTypeName()));
+            createTableSqlStr.append(getTypeName(column.getSqlTypeName(), column.getElementTypeName()));
             if (column.getPrecision() > 0) {
                 createTableSqlStr.append("(").append(column.getPrecision()).append(")");
             }
@@ -267,12 +267,14 @@ public class ShowCreateTableOperation extends QueryOperation {
         return createTableSqlStr.toString();
     }
 
-    private static String getTypeName(String typeName) {
+    private static String getTypeName(String typeName, String elementTypeName) {
         switch (typeName) {
             case "INTEGER":
                 return "int";
             case "STRING":
                 return "varchar";
+            case "ARRAY":
+                return elementTypeName + " " + typeName;
             default:
                 return typeName;
         }
