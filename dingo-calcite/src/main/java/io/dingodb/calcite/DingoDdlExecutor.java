@@ -350,6 +350,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 String fields = String.valueOf(properties.get("text_fields"));
                 fields = fields.startsWith("'") ? fields.substring(1, fields.length() - 1) : fields;
                 properties.setProperty("text_fields", fields);
+            } else {
+                throw new RuntimeException("Invalid parameters");
             }
         } else {
             properties.put("indexType", "vector");
@@ -783,6 +785,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         long realColCnt = columns.size();
         if (distinctColCnt != realColCnt) {
             throw DINGO_RESOURCE.duplicateColumn().ex();
+        }
+        if (schema == null) {
+            if (context.getDefaultSchemaPath() != null && !context.getDefaultSchemaPath().isEmpty()) {
+                throw DINGO_RESOURCE.unknownSchema(context.getDefaultSchemaPath().get(0)).ex();
+            }
         }
 
         // Check table exist

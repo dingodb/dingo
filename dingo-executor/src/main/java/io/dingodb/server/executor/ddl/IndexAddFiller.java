@@ -440,25 +440,20 @@ public class IndexAddFiller implements BackFiller {
         });
     }
 
-    private void removeDoneKey(List<TxnLocalData> secondList, List<Mutation> mutationList) {
+    private void removeDoneKey(CommonId part, List<Mutation> mutationList) {
         Timer.Context timeCtx = DingoMetrics.getTimeContext("removeDoneKey");
         StoreInstance localStore = Services.LOCAL_STORE.getInstance(null, null);
         addCount.addAndGet(mutationList.size());
-        secondList.forEach(txnLocalData -> {
-            byte[] doneKey = txnLocalData.getKey();
-            boolean res =  mutationList.stream()
-                .anyMatch(mutation -> ByteArrayUtils.compare(mutation.getKey(), doneKey) == 0);
-            if (res) {
-                byte[] key = txnLocalData.getKey();
-                byte[] partId = txnLocalData.getPartId().encode();
-                byte[] ek = new byte[key.length + 1 + txnIdKey.length + partId.length];
-                ek[0] = (byte) FILL_BACK.getCode();
-                System.arraycopy(txnIdKey, 0, ek, 1, txnIdKey.length);
-                System.arraycopy(partId, 0, ek, 1 + txnIdKey.length, partId.length);
-                System.arraycopy(key, 0, ek, 1 + txnIdKey.length + partId.length, key.length);
-                KeyValue extraKeyValue = new KeyValue(ek, null);
-                localStore.put(extraKeyValue);
-            }
+        mutationList.forEach(mutation -> {
+            byte[] key = mutation.getKey();
+            byte[] partId = part.encode();
+            byte[] ek = new byte[key.length + 1 + txnIdKey.length + partId.length];
+            ek[0] = (byte) FILL_BACK.getCode();
+            System.arraycopy(txnIdKey, 0, ek, 1, txnIdKey.length);
+            System.arraycopy(partId, 0, ek, 1 + txnIdKey.length, partId.length);
+            System.arraycopy(key, 0, ek, 1 + txnIdKey.length + partId.length, key.length);
+            KeyValue extraKeyValue = new KeyValue(ek, null);
+            localStore.put(extraKeyValue);
         });
         timeCtx.stop();
     }
@@ -500,7 +495,7 @@ public class IndexAddFiller implements BackFiller {
                                 + Arrays.toString(param.getPrimaryKey()));
                         }
                         preDoneCnt += param.getMutations().size();
-                        removeDoneKey(secondList, param.getMutations());
+                        removeDoneKey(partId, param.getMutations());
                         param.getMutations().clear();
                         param.setPartId(null);
                         long tmp = System.currentTimeMillis();
@@ -516,7 +511,7 @@ public class IndexAddFiller implements BackFiller {
                             + Arrays.toString(param.getPrimaryKey()));
                     }
                     preDoneCnt += param.getMutations().size();
-                    removeDoneKey(secondList, param.getMutations());
+                    removeDoneKey(newPartId, param.getMutations());
                     param.getMutations().clear();
                     param.addMutation(mutation);
                     param.setPartId(newPartId);
@@ -536,7 +531,7 @@ public class IndexAddFiller implements BackFiller {
                         + Arrays.toString(param.getPrimaryKey()));
                 }
                 preDoneCnt += param.getMutations().size();
-                removeDoneKey(secondList, param.getMutations());
+                removeDoneKey(param.getPartId(), param.getMutations());
                 param.getMutations().clear();
             } catch (WriteConflictException e) {
                 e.doneCnt += preDoneCnt;
