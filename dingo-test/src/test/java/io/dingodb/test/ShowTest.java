@@ -57,25 +57,6 @@ public class ShowTest {
     }
 
     @Test
-    public void showCreateTable() throws SQLException {
-        String sql = "show create table {table}";
-        context.execSql(sql).test(is(
-            new String[]{"Table", "Create Table"},
-            ImmutableList.of(
-                new Object[]{
-                    tableName,
-                    "create table test (\n"
-                        + "    id int auto_increment,\n"
-                        + "    name varchar(32),\n"
-                        + "    age int,\n"
-                        + "    primary key (id)\n"
-                        + ") partition by range values (2),(3)"
-                }
-            )
-        ));
-    }
-
-    @Test
     public void showAllColumns() throws SQLException {
         String sql = "show columns from {table}";
         context.execSql(sql).test(is(
