@@ -667,7 +667,6 @@ public class DdlWorker {
                     .getColumns()
                     .removeIf(columnDefinition -> columnDefinition.getName().equalsIgnoreCase(columnName));
                 tableWithId.getTableDefinition().setName("replicaTable");
-                tableWithId.getTableDefinition().setVersion(tableWithId.getTableDefinition().getVersion() + 1);
                 MetaService.root().createReplicaTable(job.getSchemaId(), tableWithId);
                 IndexUtil.pickBackFillType(job);
                 job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
@@ -751,7 +750,6 @@ public class DdlWorker {
                 columnDefinition.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
                 definitionWithId.getTableDefinition().getColumns().add(MapperImpl.MAPPER.columnTo(columnDefinition));
                 definitionWithId.getTableDefinition().setName("replicaTable");
-                definitionWithId.getTableDefinition().setVersion(definitionWithId.getTableDefinition().getVersion() + 1);
                 MetaService.root().createReplicaTable(job.getSchemaId(), definitionWithId);
                 job.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
                 return updateSchemaVersion(dc, job);

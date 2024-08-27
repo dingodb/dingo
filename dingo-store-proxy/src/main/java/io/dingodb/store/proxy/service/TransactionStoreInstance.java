@@ -251,9 +251,7 @@ public class TransactionStoreInstance {
         TupleMapping keyMapping = table.keyMapping();
         keysAlreadyExist.forEach(
             i -> Optional.ofNullable(codec.decodeKeyPrefix(i.getKey()))
-                .ifPresent(keyValues -> {
-                    joinedKey.set(joinPrimaryKeys(joinedKey.get(), joinPrimaryKey(keyValues, keyMapping)));
-                })
+                .ifPresent(keyValues -> joinedKey.set(joinPrimaryKeys(joinedKey.get(), joinPrimaryKey(keyValues, keyMapping))))
         );
         throw new DuplicateEntryException("Duplicate entry " + joinedKey.get() + " for key '" + table.getName() + ".PRIMARY'");
     }
@@ -267,7 +265,7 @@ public class TransactionStoreInstance {
     }
 
     public boolean txnCommit(TxnCommit txnCommit) {
-        txnCommit.getKeys().stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
+        txnCommit.getKeys().stream().peek(this::setId).forEach($ -> $[0] = 't');
         return txnCommitRealKey(txnCommit);
     }
 
@@ -304,7 +302,7 @@ public class TransactionStoreInstance {
         while (true) {
             TxnPessimisticLockResponse response;
             if (indexService != null) {
-                txnPessimisticLock.getMutations().stream().forEach( $ -> $.setKey(Arrays.copyOf($.getKey(), VectorKeyLen)));
+                txnPessimisticLock.getMutations().forEach($ -> $.setKey(Arrays.copyOf($.getKey(), VectorKeyLen)));
                 response = indexService.txnPessimisticLock(txnPessimisticLock.getStartTs(), MAPPER.pessimisticLockTo(txnPessimisticLock));
             } else if (documentService != null) {
                 response = documentService.txnPessimisticLock(txnPessimisticLock.getStartTs(), MAPPER.pessimisticLockTo(txnPessimisticLock));
@@ -350,7 +348,7 @@ public class TransactionStoreInstance {
     }
 
     public boolean txnPessimisticLockRollback(TxnPessimisticRollBack txnPessimisticRollBack) {
-        txnPessimisticRollBack.getKeys().stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
+        txnPessimisticRollBack.getKeys().stream().peek(this::setId).forEach($ -> $[0] = 't');
         TxnPessimisticRollbackResponse response;
         long startTs = txnPessimisticRollBack.getStartTs();
         if (indexService != null) {
@@ -365,7 +363,7 @@ public class TransactionStoreInstance {
         } else {
             response = storeService.txnPessimisticRollback(startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
         }
-        if (response.getTxnResult() != null && response.getTxnResult().size() > 0) {
+        if (response.getTxnResult() != null && !response.getTxnResult().isEmpty()) {
             LogUtils.error(log, "txnPessimisticLockRollback txnResult:{}", response.getTxnResult().toString());
             for (TxnResultInfo txnResultInfo: response.getTxnResult()) {
                 LockInfo lockInfo = txnResultInfo.getLocked();
@@ -410,7 +408,7 @@ public class TransactionStoreInstance {
     }
 
     public List<io.dingodb.common.store.KeyValue> txnGet(long startTs, List<byte[]> keys, long timeOut) {
-        keys.stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
+        keys.stream().peek(this::setId).forEach($ -> $[0] = 't');
         return getKeyValues(startTs, keys, timeOut);
     }
 
@@ -423,7 +421,7 @@ public class TransactionStoreInstance {
             txnBatchGetRequest.setResolveLocks(resolvedLocks);
             TxnBatchGetResponse response;
             if (indexService != null) {
-                txnBatchGetRequest.getKeys().stream().forEach( $ -> Arrays.copyOf($, VectorKeyLen));
+                txnBatchGetRequest.getKeys().forEach($ -> Arrays.copyOf($, VectorKeyLen));
                 response = indexService.txnBatchGet(startTs, txnBatchGetRequest);
                 if (response.getTxnResult() == null) {
                     return response.getVectors().stream()
@@ -467,10 +465,10 @@ public class TransactionStoreInstance {
     }
 
     public boolean txnBatchRollback(TxnBatchRollBack txnBatchRollBack) {
-        txnBatchRollBack.getKeys().stream().peek($ -> setId($)).forEach($ -> $[0] = 't');
+        txnBatchRollBack.getKeys().stream().peek(this::setId).forEach($ -> $[0] = 't');
         TxnBatchRollbackResponse response;
         if (indexService != null) {
-            txnBatchRollBack.getKeys().stream().forEach( $ -> Arrays.copyOf($, VectorKeyLen));
+            txnBatchRollBack.getKeys().forEach($ -> Arrays.copyOf($, VectorKeyLen));
             response = indexService.txnBatchRollback(txnBatchRollBack.getStartTs(), MAPPER.rollbackTo(txnBatchRollBack));
         } else if (documentService != null) {
             response = documentService.txnBatchRollback(txnBatchRollBack.getStartTs(), MAPPER.rollbackTo(txnBatchRollBack));

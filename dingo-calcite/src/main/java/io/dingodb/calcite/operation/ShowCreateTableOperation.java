@@ -80,9 +80,9 @@ public class ShowCreateTableOperation extends QueryOperation {
         if (table == null) {
             throw new RuntimeException("Table " + tableName + " doesn't exist");
         }
-        if (table.getVersion() == 1) {
-            return table.getCreateSql();
-        }
+        //if (table.getVersion() == 1) {
+        //    return table.getCreateSql();
+        //}
         StringBuilder createTableSqlStr = new StringBuilder();
         createTableSqlStr.append("CREATE ").append("TABLE ").append("`").append(tableName.toUpperCase()).append("`");
         createTableSqlStr.append("(");
