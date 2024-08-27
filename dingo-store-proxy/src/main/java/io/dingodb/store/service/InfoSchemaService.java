@@ -350,7 +350,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         byte[] tenantKey = tenantKey(tenantId);
         byte[] schemaKey = schemaKey(schemaId);
         if (!checkDBExists(tenantKey, schemaKey)) {
-            throw new RuntimeException("schema is null");
+            throw new RuntimeException("schema is null, schemaId:" + schemaId);
         }
         byte[] tableKey = tableKey(tableId);
         byte[] val = txn.hGet(schemaKey, tableKey);

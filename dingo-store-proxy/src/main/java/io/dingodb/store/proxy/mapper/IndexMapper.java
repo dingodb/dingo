@@ -84,6 +84,9 @@ public interface IndexMapper {
                         "Unexpected value: " + indexParameter.getVectorIndexParameter().getVectorIndexType()
                     );
             }
+            builder.properties(toMap(
+                Optional.mapOrNull(indexParameter.getVectorIndexParameter(), VectorIndexParameter::getVectorIndexParameter)
+            ));
         } else if (indexParameter.getIndexType() == IndexType.INDEX_TYPE_DOCUMENT) {
             builder.indexType(io.dingodb.meta.entity.IndexType.DOCUMENT);
         } else {
@@ -92,10 +95,6 @@ public interface IndexMapper {
         }
         builder.originKeyList(indexParameter.getOriginKeys());
         builder.originWithKeyList(indexParameter.getOriginWithKeys());
-
-        builder.properties(toMap(
-            Optional.mapOrNull(indexParameter.getVectorIndexParameter(), VectorIndexParameter::getVectorIndexParameter)
-        ));
     }
 
     default Properties toMap(Object target) {
@@ -182,7 +181,7 @@ public interface IndexMapper {
                 IndexParameter.builder()
                     .indexType(IndexType.INDEX_TYPE_DOCUMENT)
                     .documentIndexParameter(documentIndexParameter)
-                    .originWithKeys(indexDef.getOriginKeyList())
+                    .originKeys(indexDef.getOriginKeyList())
                     .originWithKeys(indexDef.getOriginWithKeyList())
                     .build()
             );

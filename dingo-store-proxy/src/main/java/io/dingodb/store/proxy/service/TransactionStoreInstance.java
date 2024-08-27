@@ -26,6 +26,7 @@ import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.common.utils.Optional;
@@ -244,8 +245,11 @@ public class TransactionStoreInstance {
 
     public static void getJoinedPrimaryKey(TxnPreWrite txnPreWrite, List<AlreadyExist> keysAlreadyExist) {
         CommonId tableId = LockExtraDataList.decode(txnPreWrite.getLockExtraDatas().get(0).getExtraData()).getTableId();
-        InfoSchemaService infoSchemaService = new InfoSchemaService(txnPreWrite.getStartTs());
-        Table table = infoSchemaService.getTableDef(tableId.domain, tableId.seq);
+        //InfoSchemaService infoSchemaService = new InfoSchemaService(txnPreWrite.getStartTs());
+        //Table table = infoSchemaService.getTableDef(tableId.domain, tableId.seq);
+        CommonId txnId = new CommonId(CommonId.CommonType.TRANSACTION,
+            TransactionManager.getServerId().seq, txnPreWrite.getStartTs());
+        Table table = (Table) TransactionManager.getTable(txnId, tableId);
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
         AtomicReference<String> joinedKey = new AtomicReference<>("");
         TupleMapping keyMapping = table.keyMapping();

@@ -140,53 +140,22 @@ public class ShowCreateTableOperation extends QueryOperation {
                         createTableSqlStr.append("UNIQUE ");
                     }
                     createTableSqlStr.append("INDEX ").append(indexTable.getName());
-                    createTableSqlStr.append("(");
-                    int indexKeyColLen = indexTable.originKeyList.size();
-                    for (int j = 0; j < indexKeyColLen; j ++) {
-                        createTableSqlStr.append("`").append(indexTable.originKeyList.get(j)).append("`");
-                        if (j < indexKeyColLen - 1) {
-                            createTableSqlStr.append(",");
-                        }
-                    }
-                    createTableSqlStr.append(")");
-                    if (indexTable.originWithKeyList != null && !indexTable.originWithKeyList.isEmpty()) {
-                        createTableSqlStr.append(" WITH(");
-                        int withColSize = indexTable.originWithKeyList.size();
-                        for (int ix = 0; ix < withColSize; ix ++) {
-                            createTableSqlStr.append("`").append(indexTable.originWithKeyList.get(ix)).append("`");
-                            if (ix < withColSize - 1) {
-                                createTableSqlStr.append(",");
-                            }
-                        }
-                        createTableSqlStr.append(")");
-                    }
+                    appendIndexCols(indexTable, createTableSqlStr);
                 } else if (indexTable.getIndexType() == IndexType.DOCUMENT) {
-
+                    createTableSqlStr.append("    ");
+                    createTableSqlStr.append("INDEX ").append(indexTable.getName()).append(" TEXT");
+                    appendIndexCols(indexTable, createTableSqlStr);
+                    if (indexTable.getProperties() != null) {
+                        createTableSqlStr.append(" parameters(");
+                        createTableSqlStr.append("text_fields").append("=").append("'");
+                        createTableSqlStr.append(indexTable.getProperties().get("text_fields"));
+                        createTableSqlStr.append("'");
+                        createTableSqlStr.append(") ");
+                    }
                 } else {
                     createTableSqlStr.append("    ");
                     createTableSqlStr.append("INDEX ").append(indexTable.getName()).append(" VECTOR");
-                    if (indexTable.originKeyList != null && !indexTable.originKeyList.isEmpty()) {
-                        createTableSqlStr.append("(");
-                        int indexKeyColLen = indexTable.originKeyList.size();
-                        for (int j = 0; j < indexKeyColLen; j++) {
-                            createTableSqlStr.append("`").append(indexTable.originKeyList.get(j)).append("`");
-                            if (j < indexKeyColLen - 1) {
-                                createTableSqlStr.append(",");
-                            }
-                        }
-                        createTableSqlStr.append(")");
-                    }
-                    if (indexTable.originWithKeyList != null && !indexTable.originWithKeyList.isEmpty()) {
-                        createTableSqlStr.append(" WITH(");
-                        int withColSize = indexTable.originWithKeyList.size();
-                        for (int j = 0; j < withColSize; j ++) {
-                            createTableSqlStr.append("`").append(indexTable.originWithKeyList.get(j)).append("`");
-                            if (j < withColSize - 1) {
-                                createTableSqlStr.append(",");
-                            }
-                        }
-                        createTableSqlStr.append(" ) ");
-                    }
+                    appendIndexCols(indexTable, createTableSqlStr);
                     if (indexTable.getProperties() != null) {
                         createTableSqlStr.append(" parameters(");
                         createTableSqlStr.append("type=");
@@ -226,18 +195,52 @@ public class ShowCreateTableOperation extends QueryOperation {
                                         break;
                                 }
                             }
-                            createTableSqlStr.append(key).append("=").append(val).append(", ");
+                            createTableSqlStr.append(key).append("=").append(val).append(",");
                         });
-                        createTableSqlStr.deleteCharAt(createTableSqlStr.length() - 2);
+                        createTableSqlStr.deleteCharAt(createTableSqlStr.length() - 1);
                         createTableSqlStr.append(") ");
                     }
                 }
+                if (indexTable.replica != 3) {
+                    createTableSqlStr.append(" replica=").append(table.getReplica());
+                }
+                appendPart(indexTable, createTableSqlStr);
             }
         }
         createTableSqlStr.append("\r\n");
         createTableSqlStr.append(")");
         createTableSqlStr.append(" engine=").append(table.getEngine()).append(" ");
         createTableSqlStr.append(" replica=").append(table.getReplica());
+        appendPart(table, createTableSqlStr);
+        return createTableSqlStr.toString();
+    }
+
+    private static void appendIndexCols(IndexTable indexTable, StringBuilder createTableSqlStr) {
+        if (indexTable.originKeyList != null && !indexTable.originKeyList.isEmpty()) {
+            createTableSqlStr.append("(");
+            int indexKeyColLen = indexTable.originKeyList.size();
+            for (int j = 0; j < indexKeyColLen; j++) {
+                createTableSqlStr.append("`").append(indexTable.originKeyList.get(j)).append("`");
+                if (j < indexKeyColLen - 1) {
+                    createTableSqlStr.append(",");
+                }
+            }
+            createTableSqlStr.append(")");
+        }
+        if (indexTable.originWithKeyList != null && !indexTable.originWithKeyList.isEmpty()) {
+            createTableSqlStr.append(" WITH(");
+            int withColSize = indexTable.originWithKeyList.size();
+            for (int j = 0; j < withColSize; j ++) {
+                createTableSqlStr.append("`").append(indexTable.originWithKeyList.get(j)).append("`");
+                if (j < withColSize - 1) {
+                    createTableSqlStr.append(",");
+                }
+            }
+            createTableSqlStr.append(") ");
+        }
+    }
+
+    private static void appendPart(Table table, StringBuilder createTableSqlStr) {
         if (table.getPartitions().size() > 1) {
             createTableSqlStr.append(" PARTITION BY ");
             if ("hash".equalsIgnoreCase(table.getPartitionStrategy())) {
@@ -264,16 +267,18 @@ public class ShowCreateTableOperation extends QueryOperation {
                 createTableSqlStr.deleteCharAt(createTableSqlStr.length() - 1);
             }
         }
-        return createTableSqlStr.toString();
     }
 
     private static String getTypeName(String typeName, String elementTypeName) {
         switch (typeName) {
             case "INTEGER":
-                return "int";
+                return "INT";
             case "STRING":
-                return "varchar";
+                return "VARCHAR";
             case "ARRAY":
+                if (elementTypeName != null && elementTypeName.equalsIgnoreCase("INTEGER")) {
+                    elementTypeName = "INT";
+                }
                 return elementTypeName + " " + typeName;
             default:
                 return typeName;

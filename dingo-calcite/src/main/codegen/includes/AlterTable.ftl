@@ -129,6 +129,8 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
     { index = getNextToken().image; }
     (
         <VECTOR> { indexType = "vector"; } columnList = ParenthesizedSimpleIdentifierList()
+    | 
+        <TEXT> { indexType = "text"; } columnList = ParenthesizedSimpleIdentifierList() 
     |
         [<SCALAR>] columnList = ParenthesizedSimpleIdentifierList()
     )
