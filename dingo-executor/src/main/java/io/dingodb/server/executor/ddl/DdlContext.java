@@ -30,11 +30,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Data
@@ -75,40 +77,41 @@ public class DdlContext {
         DdlWorkerFactory factory1 = new DdlWorkerFactory();
         ddlReorgPool = new DdlWorkerPool(factory1, config);
 
-        DingoMetrics.metricRegistry.register("activeDdlWorkerCount", new CachedGauge<Double>(1, TimeUnit.MINUTES) {
+        DingoMetrics.metricRegistry.register("activeDdlWorkerCount", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
             @Override
-            protected Double loadValue() {
-                return (double) ddlJobPool.getNumActive();
+            protected Integer loadValue() {
+                return ddlJobPool.getNumActive();
             }
         });
 
-        DingoMetrics.metricRegistry.register("activeReorgWorkerCount", new CachedGauge<Double>(1, TimeUnit.MINUTES) {
+        DingoMetrics.metricRegistry.register("activeReorgWorkerCount", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
             @Override
-            protected Double loadValue() {
-                return (double) ddlReorgPool.getNumActive();
+            protected Integer loadValue() {
+                return ddlReorgPool.getNumActive();
             }
         });
 
-        DingoMetrics.metricRegistry.register("tableCount", new CachedGauge<Double>(1, TimeUnit.MINUTES) {
+        DingoMetrics.metricRegistry.register("tableCount", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
             @Override
-            protected Double loadValue() {
+            protected Integer loadValue() {
                 InfoSchema is = DdlService.root().getIsLatest();
                 if (is != null) {
-                    return (double) is.getSchemaMap().values().stream().mapToInt(i -> i.getTables().size()).count();
+                    return is.getSchemaMap().values().stream()
+                        .mapToInt(i -> i.getTables().size()).sum();
                 } else {
-                    return 0D;
+                    return 0;
                 }
             }
         });
 
-        DingoMetrics.metricRegistry.register("newVersion", new CachedGauge<Double>(1, TimeUnit.MINUTES) {
+        DingoMetrics.metricRegistry.register("newVersion", new CachedGauge<Long>(1, TimeUnit.MINUTES) {
             @Override
-            protected Double loadValue() {
+            protected Long loadValue() {
                 InfoSchema is = DdlService.root().getIsLatest();
                 if (is != null) {
-                    return (double) is.getSchemaMetaVersion();
+                    return is.getSchemaMetaVersion();
                 } else {
-                    return 0D;
+                    return 0L;
                 }
             }
         });
