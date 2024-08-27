@@ -16,9 +16,11 @@
 
 package io.dingodb.exec.transaction.impl;
 
+import com.codahale.metrics.CachedGauge;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
@@ -31,12 +33,30 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public final class TransactionManager {
 
     // connectionId -> Transaction
     private static final Map<CommonId, ITransaction> trans = new ConcurrentHashMap<>();
+
+    static {
+        DingoMetrics.metricRegistry.register("trans_count", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
+            @Override
+            protected Integer loadValue() {
+                if (trans.size() > 10000) {
+                    trans.values().stream().findFirst()
+                        .ifPresent(iTransaction -> {
+                            if (iTransaction.getSqlList() != null && !iTransaction.getSqlList().isEmpty()) {
+                                LogUtils.error(log, "trans too many, random tran sql:{}", iTransaction.getSqlList().get(0));
+                            }
+                        });
+                }
+                return trans.size();
+            }
+        });
+    }
 
     private TransactionManager() {
     }

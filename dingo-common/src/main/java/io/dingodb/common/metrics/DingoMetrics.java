@@ -93,17 +93,17 @@ public final class DingoMetrics {
                 return  (double) (totalMemory - freeMemory) / totalMemory * 100;
             }
         });
-        metricRegistry.register("runningJobs", new CachedGauge<Double>(1, TimeUnit.MINUTES) {
+        metricRegistry.register("runningJobs", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
             @Override
-            protected Double loadValue() {
-                return (double) RunningJobs.runningJobs.size();
+            protected Integer loadValue() {
+                return RunningJobs.runningJobs.size();
             }
         });
 
-        metricRegistry.register("activeSessionCount", new CachedGauge<Double>(1, TimeUnit.MINUTES) {
+        metricRegistry.register("activeSessionCount", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
             @Override
-            protected Double loadValue() {
-                return (double) RunningJobs.runningJobs.size();
+            protected Integer loadValue() {
+                return RunningJobs.runningJobs.size();
             }
         });
         metricRegistry.register("select-latency", new CachedGauge<Double>(5, TimeUnit.MINUTES) {

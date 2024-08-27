@@ -194,7 +194,7 @@ public class DingoParser {
         // Create SqlValidator
         sqlValidator = context.getSqlValidator();
 
-        context.resetSchemaCache();
+        //context.resetSchemaCache();
     }
 
     public SqlNode parse(String sql) throws SqlParseException {
