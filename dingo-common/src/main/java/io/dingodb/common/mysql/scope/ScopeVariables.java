@@ -108,6 +108,11 @@ public final class ScopeVariables {
         }
     }
 
+    public static boolean transaction1Pc() {
+        String transaction1Pc = executorProp.getOrDefault("transaction_1pc", "on").toString();
+        return transaction1Pc.equalsIgnoreCase("on");
+    }
+
     public static void testIndexBlock() {
         while (true) {
             String testRun = executorProp.getOrDefault("test_index", "off").toString();

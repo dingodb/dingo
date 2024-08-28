@@ -72,7 +72,7 @@ import io.dingodb.store.api.transaction.data.rollback.TxnPessimisticRollBack;
 import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.LockWaitException;
-import io.dingodb.store.api.transaction.exception.OnePcDegenerateTwoPcException;
+import io.dingodb.store.api.transaction.exception.OnePcNeedTwoPcCommit;
 import io.dingodb.store.api.transaction.exception.OnePcMaxSizeExceedException;
 import io.dingodb.store.api.transaction.exception.PrimaryMismatchException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
@@ -165,9 +165,10 @@ public class TransactionStoreInstance {
                 TxnPrewriteRequest request = MAPPER.preWriteTo(txnPreWrite);
                 TxnPrewriteResponse response;
 
-                if (request.isTryOnePc() && request.sizeOf() > TransactionUtil.maxRpcDataSize) {
-                    throw new OnePcMaxSizeExceedException("Data size exceed in 1pc, max:" + TransactionUtil.maxRpcDataSize + " cur:" + request.sizeOf());
+                if(request.isTryOnePc() && request.sizeOf() > TransactionUtil.maxRpcDataSize) {
+                    throw new OnePcMaxSizeExceedException("one pc phase Data size exceed in 1pc, max:" + TransactionUtil.maxRpcDataSize + " cur:" +request.sizeOf());
                 }
+
                 long start1 = System.currentTimeMillis();
                 Mutation mutation = request.getMutations().get(0);
                 if (mutation.getVector() == null && mutation.getDocument() == null) {
@@ -184,8 +185,8 @@ public class TransactionStoreInstance {
                 }
                 if (response.getTxnResult() == null || response.getTxnResult().isEmpty()) {
                     if (request.isTryOnePc() && response.getOnePcCommitTs() == 0) {
-                        //1pc failed, need triggering 2pc.
-                        throw new OnePcDegenerateTwoPcException("1pc degenerate to 2pc as commit ts:" + response.getOnePcCommitTs());
+                        //1pc failed, Need 2pc commit, but not 2pc pre-write.
+                        throw new OnePcNeedTwoPcCommit("one pc phase 1pc commit ts is 0 in response, so need 2pc commit, ts:" + response.getOnePcCommitTs());
                     }
                     return true;
                 }

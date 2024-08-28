@@ -19,6 +19,7 @@ package io.dingodb.store.service;
 import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Utils;
@@ -37,6 +38,8 @@ import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
 import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
+import io.dingodb.store.api.transaction.exception.OnePcDegenerateTwoPcException;
+import io.dingodb.store.api.transaction.exception.OnePcNeedTwoPcCommit;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.store.proxy.Configuration;
@@ -70,11 +73,34 @@ public abstract class CommitBase {
 
     public void commit(byte[] key, byte[] value, int opCode, long startTs) {
         CommonId txnId = getTxnId(startTs);
+        boolean need2PcPreWrite = false;
+        boolean need2PcCommit = false;
+
         try {
             Mutation mutation = new Mutation(
                 io.dingodb.store.api.transaction.data.Op.forNumber(opCode), key, value, 0, null, null
             );
-            preWritePrimaryKey(mutation, startTs);
+
+            if(ScopeVariables.transaction1Pc()) {
+                try {
+                    preWritePrimaryKey(mutation, startTs, true);
+                    return;
+                } catch (OnePcNeedTwoPcCommit e) {
+                    LogUtils.info(log, e.getMessage());
+                    need2PcCommit = true;
+                } catch (OnePcDegenerateTwoPcException e) {
+                    LogUtils.info(log, e.getMessage());
+                    need2PcPreWrite = true;
+                    need2PcCommit = true;
+                }
+            } else {
+                need2PcPreWrite = true;
+                need2PcCommit = true;
+            }
+
+            if(need2PcPreWrite) {
+                preWritePrimaryKey(mutation, startTs, false);
+            }
         } catch (WriteConflictException e) {
             LogUtils.error(log, e.getMessage(), e);
             // rollback or retry
@@ -87,16 +113,20 @@ public abstract class CommitBase {
             txnRollBack(isolationLevel, startTs, keys, txnId);
             throw e;
         }
-        long commitTs = TsoService.getDefault().tso();
-        boolean result = commitPrimaryData(isolationLevel, startTs, commitTs, key);
-        if (!result) {
-            throw new RuntimeException("txnCommitPrimaryKey false,commit_ts:" + commitTs);
+
+        if(need2PcCommit) {
+            long commitTs = TsoService.getDefault().tso();
+            boolean result = commitPrimaryData(isolationLevel, startTs, commitTs, key);
+            if (!result) {
+                throw new RuntimeException("txnCommitPrimaryKey false,commit_ts:" + commitTs);
+            }
         }
     }
 
     private void preWritePrimaryKey(
         Mutation mutation,
-        long startTs
+        long startTs,
+        boolean enableOnePc
     ) {
         byte[] primaryKey = mutation.getKey();
         // 2、call sdk preWritePrimaryKey
@@ -111,7 +141,7 @@ public abstract class CommitBase {
             .startTs(startTs)
             .lockTtl(lockTtl)
             .txnSize(1L)
-            .tryOnePc(false)
+            .tryOnePc(enableOnePc)
             .maxCommitTs(0L)
             .build();
         try {
@@ -120,17 +150,21 @@ public abstract class CommitBase {
         } catch (RegionSplitException e) {
             LogUtils.error(log, e.getMessage(), e);
 
-            boolean prewriteResult = false;
-            int i = 0;
-            while (!prewriteResult) {
-                i++;
-                try {
-                    TransactionStoreInstance storeInstanceNew = refreshRegion(primaryKey);
-                    storeInstanceNew.txnPreWrite(txnPreWrite, statementTimeout);
-                    prewriteResult = true;
-                } catch (RegionSplitException e1) {
-                    Utils.sleep(100);
-                    LogUtils.error(log, "preWrite primary region split, retry count:" + i);
+            if(enableOnePc) {
+                throw new OnePcDegenerateTwoPcException("1PC degenerate to 2PC, startTs:" + startTs);
+            }else {
+                boolean prewriteResult = false;
+                int i = 0;
+                while (!prewriteResult) {
+                    i++;
+                    try {
+                        TransactionStoreInstance storeInstanceNew = refreshRegion(primaryKey);
+                        storeInstanceNew.txnPreWrite(txnPreWrite, statementTimeout);
+                        prewriteResult = true;
+                    } catch (RegionSplitException e1) {
+                        Utils.sleep(100);
+                        LogUtils.error(log, "preWrite primary region split, retry count:" + i);
+                    }
                 }
             }
         }

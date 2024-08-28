@@ -326,8 +326,10 @@ public class PessimisticTransaction extends BaseTransaction {
     @Override
     public void preWritePrimaryKey() {
         // 1、get first key from cache
-        cacheToObject = primaryLockTo();
-        primaryKey = cacheToObject.getMutation().getKey();
+	    if (cacheToObject == null) {
+        	cacheToObject = primaryLockTo();
+        	primaryKey = cacheToObject.getMutation().getKey();
+	    }
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         while (retry-- > 0) {
             // 2、call sdk preWritePrimaryKey
@@ -388,6 +390,7 @@ public class PessimisticTransaction extends BaseTransaction {
         //get primary key.
         cacheToObject = primaryLockTo();
         primaryKey = cacheToObject.getMutation().getKey();
+	    partIdSet.add(cacheToObject.getPartId());
 
         while (transform.hasNext()) {
             Object[] next = transform.next();
@@ -407,7 +410,7 @@ public class PessimisticTransaction extends BaseTransaction {
         if(mutations.size() > TransactionUtil.max_pre_write_count) {
             LogUtils.info(log, "{} one pc phase failed, current mutation count:{}, max mutation size:{}",
                 transactionOf(), mutations.size(), TransactionUtil.max_pre_write_count);
-            throw new OnePcDegenerateTwoPcException("1PC degenerate to 2PC, startTs:" + startTs);
+            throw new OnePcDegenerateTwoPcException("one pc phase 1PC degenerate to 2PC, startTs:" + startTs);
         }
 
         if(forSamePart) {
@@ -447,8 +450,8 @@ public class PessimisticTransaction extends BaseTransaction {
             );
             store.txnPreWrite(txnPreWrite, getLockTimeOut());
         } catch (RegionSplitException e) {
-            LogUtils.info(log, "Received RegionSplitException exception, so degenerate to 2PC.");
-            throw new OnePcDegenerateTwoPcException("1PC degenerate to 2PC, startTs:" + startTs);
+            LogUtils.info(log, "one pc phase Received RegionSplitException exception, so degenerate to 2PC.");
+            throw new OnePcDegenerateTwoPcException("one pc phase 1PC degenerate to 2PC, startTs:" + startTs);
         }
 
         return true;
