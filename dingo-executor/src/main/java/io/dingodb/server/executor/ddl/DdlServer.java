@@ -86,6 +86,7 @@ public final class DdlServer {
     public static boolean startLoadDDLAndRun(DdlJobEvent ddlJobEvent) {
         Session session = SessionUtil.INSTANCE.getSession();
         try {
+            LogUtils.info(log, "startJob by local event");
             session.setAutoCommit(true);
             startLoadDDLAndRun(session);
         } catch (Exception e) {
@@ -106,7 +107,12 @@ public final class DdlServer {
         watchDdlKey();
         Session session = SessionUtil.INSTANCE.getSession();
         session.setAutoCommit(true);
-        Executors.scheduleWithFixedDelayAsync("DdlWorker", () -> startLoadDDLAndRun(session), 10000, 1000, TimeUnit.MILLISECONDS);
+        Executors.scheduleWithFixedDelayAsync("DdlWorker", () -> startLoadDDLAndRunBySchedule(session), 10000, 1000, TimeUnit.MILLISECONDS);
+    }
+
+    public static void startLoadDDLAndRunBySchedule(Session session) {
+        LogUtils.info(log, "startJob by local schedule");
+        startLoadDDLAndRun(session);
     }
 
     public static void startLoadDDLAndRun(Session session) {
