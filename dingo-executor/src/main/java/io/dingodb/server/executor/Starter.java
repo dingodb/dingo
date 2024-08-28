@@ -100,6 +100,8 @@ public class Starter {
 
         ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
         env.setRole(DingoRole.EXECUTOR);
+        SchedulerService schedulerService = SchedulerService.getDefault();
+        checkContinue();
         Object tenantObj = Optional.mapOrGet(InfoSchemaService.root(), __ -> __.getTenant(tenant), () -> null);
         if (tenantObj == null) {
             log.error("The tenant: {} was not found.", tenant);
@@ -109,8 +111,6 @@ public class Starter {
             log.error("The tenant: {} has been deleted and is unavailable", tenant);
             System.exit(0);
         }
-        SchedulerService schedulerService = SchedulerService.getDefault();
-        checkContinue();
         schedulerService.init();
 
         MysqlNetService mysqlNetService = ServiceLoader.load(MysqlNetServiceProvider.class).iterator().next().get();
