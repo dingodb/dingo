@@ -30,7 +30,7 @@ public interface DdlService {
         return DdlServiceProvider.getDefault().root();
     }
 
-    void createSchema(String schemaName, String connId);
+    void createSchema(String schemaName, long schemaId, String connId);
 
     void dropSchema(SchemaInfo schemaInfo, String connId);
 

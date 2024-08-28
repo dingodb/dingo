@@ -40,9 +40,18 @@ public class SubSnapshotSchema extends RootSnapshotSchema {
     @Getter
     String schemaName;
 
+    @Getter
+    long schemaId;
+
     public SubSnapshotSchema(InfoSchema is, String schemaName, DingoParserContext context, List<String> names) {
         super(is, context, names);
         this.schemaName = schemaName;
+        if (is != null) {
+            SchemaTables schemaTables = is.getSchemaMap().get(schemaName);
+            if (schemaTables != null) {
+                schemaId = schemaTables.getSchemaInfo().getSchemaId();
+            }
+        }
     }
 
     @Override
