@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import com.google.common.collect.Lists;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.vector.VectorCalcDistance;
@@ -29,6 +30,7 @@ import io.dingodb.tool.api.ToolService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -70,16 +72,20 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
             edge.fin(fin);
             return;
         }
-        VectorCalcDistance vectorCalcDistance = VectorCalcDistance.builder()
-            .leftList(Collections.singletonList(param.getTargetVector()))
-            .rightList(rightList)
-            .dimension(param.getDimension())
-            .algorithmType(param.getAlgType())
-            .metricType(param.getMetricType())
-            .build();
-        List<Float> floatArray = ToolService.getDefault().vectorCalcDistance(
-            param.getRangeDistribution().getId(),
-            vectorCalcDistance).get(0);
+        List<Float> floatArray = new ArrayList<>();
+        List<List<List<Float>>> partition = Lists.partition(rightList, 1024);
+        for (List<List<Float>> right : partition) {
+            VectorCalcDistance vectorCalcDistance = VectorCalcDistance.builder()
+                .leftList(Collections.singletonList(param.getTargetVector()))
+                .rightList(right)
+                .dimension(param.getDimension())
+                .algorithmType(param.getAlgType())
+                .metricType(param.getMetricType())
+                .build();
+            floatArray.addAll(ToolService.getDefault().vectorCalcDistance(
+                param.getRangeDistribution().getId(),
+                vectorCalcDistance).get(0));
+        }
 
         for (int i = 0; i < cache.size(); i ++) {
             Object[] tuple = cache.get(i);

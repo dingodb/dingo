@@ -38,7 +38,6 @@ import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.scheduler.SchedulerService;
 import io.dingodb.server.executor.ddl.DdlContext;
 import io.dingodb.server.executor.ddl.DdlServer;
-import io.dingodb.server.executor.prepare.PrepareMeta;
 import io.dingodb.server.executor.schedule.SafePointUpdateTask;
 import io.dingodb.server.executor.service.ClusterService;
 import io.dingodb.store.proxy.service.AutoIncrementService;
@@ -101,18 +100,18 @@ public class Starter {
 
         ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
         env.setRole(DingoRole.EXECUTOR);
-        SchedulerService schedulerService = SchedulerService.getDefault();
-        checkContinue();
-        schedulerService.init();
         Object tenantObj = Optional.mapOrGet(InfoSchemaService.root(), __ -> __.getTenant(tenant), () -> null);
         if (tenantObj == null) {
             log.error("The tenant: {} was not found.", tenant);
-            return;
+            System.exit(0);
         }
         if (((Tenant) tenantObj).isDelete()) {
             log.error("The tenant: {} has been deleted and is unavailable", tenant);
-            return;
+            System.exit(0);
         }
+        SchedulerService schedulerService = SchedulerService.getDefault();
+        checkContinue();
+        schedulerService.init();
 
         MysqlNetService mysqlNetService = ServiceLoader.load(MysqlNetServiceProvider.class).iterator().next().get();
         mysqlNetService.listenPort(Configuration.mysqlPort());
