@@ -265,11 +265,12 @@ public class OptimisticTransaction extends BaseTransaction {
         if(mutations.size() > TransactionUtil.max_pre_write_count) {
             LogUtils.info(log, "{} one pc phase failed, current mutation count:{}, max mutation size:{}",
                 transactionOf(), mutations.size(), TransactionUtil.max_pre_write_count);
-            throw new OnePcDegenerateTwoPcException("1PC degenerate to 2PC, startTs:" + startTs);
+            throw new OnePcDegenerateTwoPcException("one pc phase 1PC degenerate to 2PC, startTs:" + startTs);
         }
 
         if(forSamePart) {
             //commit 1pc.
+	        this.primaryKeyPreWrite.compareAndSet(false, true);
             return txnOnePCCommit(mutations);
         } else {
             return false;
@@ -296,8 +297,8 @@ public class OptimisticTransaction extends BaseTransaction {
             long lockTimeOut = getLockTimeOut();
             store.txnPreWrite(txnPreWrite, lockTimeOut);
         } catch (RegionSplitException e) {
-            LogUtils.info(log, "Received RegionSplitException exception, so degenerate to 2PC.");
-            throw new OnePcDegenerateTwoPcException("1PC degenerate to 2PC, startTs:" + startTs);
+            LogUtils.info(log, "one pc phase Received RegionSplitException exception, so degenerate to 2PC.");
+            throw new OnePcDegenerateTwoPcException("one pc phase 1PC degenerate to 2PC, startTs:" + startTs);
         }
         return true;
     }

@@ -43,6 +43,7 @@ import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.OnePcDegenerateTwoPcException;
 import io.dingodb.store.api.transaction.exception.OnePcMaxSizeExceedException;
+import io.dingodb.store.api.transaction.exception.OnePcNeedTwoPcCommit;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import lombok.AllArgsConstructor;
@@ -50,6 +51,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -312,11 +314,11 @@ public abstract class BaseTransaction implements ITransaction {
         long preWriteStart = System.currentTimeMillis();
         Location currentLocation = MetaService.root().currentLocation();
         AtomicReference<CommonId> jobId = new AtomicReference<>(CommonId.EMPTY_JOB);
+        boolean only2PcCommit = false;
         try {
             checkContinue();
 
-            boolean enableOnePc = false;
-            if(enableOnePc) {
+            if(ScopeVariables.transaction1Pc()) {
                 try {
                     //1PC phase。
                     this.status = TransactionStatus.ONE_PC_START;
@@ -325,6 +327,12 @@ public abstract class BaseTransaction implements ITransaction {
                     if (this.onePcStage()) {
                         this.status = TransactionStatus.COMMIT;
                         LogUtils.info(log, "{} one pc phase success,status:{}", transactionOf(), this.status);
+
+                        if (isPessimistic()) {
+                            // PessimisticRollback
+                            rollBackResidualPessimisticLock(jobManager);
+                        }
+
                         return;
                     } else {
                         this.status = TransactionStatus.START;
@@ -338,11 +346,16 @@ public abstract class BaseTransaction implements ITransaction {
                     //Need 2PC.
                     LogUtils.info(log, e.getMessage());
                     this.status = TransactionStatus.START;
+                } catch (OnePcNeedTwoPcCommit e) {
+                    //Only need 2pc commit, but not 2pc pre-write.
+                    LogUtils.info(log, e.getMessage());
+                    this.status = TransactionStatus.START;
+                    only2PcCommit = true;
                 }
             }
 
             //2PC phase.
-            if(this.status == TransactionStatus.START) {
+            if(this.status == TransactionStatus.START && !only2PcCommit) {
                 this.status = TransactionStatus.PRE_WRITE_START;
                 LogUtils.info(log, "{} Start PreWritePrimaryKey", transactionOf());
 
