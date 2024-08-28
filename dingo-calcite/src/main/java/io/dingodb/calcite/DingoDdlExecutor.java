@@ -41,9 +41,12 @@ import io.dingodb.calcite.grammar.ddl.SqlRevoke;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
+import io.dingodb.calcite.schema.RootCalciteSchema;
 import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.calcite.schema.SubCalciteSchema;
 import io.dingodb.calcite.schema.SubSnapshotSchema;
+import io.dingodb.common.ddl.ActionType;
+import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.meta.Tenant;
@@ -84,6 +87,7 @@ import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.tso.TsoService;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
 import io.dingodb.verify.service.UserService;
 import io.dingodb.verify.service.UserServiceProvider;
@@ -591,15 +595,23 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         String connId = (String) context.getDataContext().get("connId");
         RootSnapshotSchema rootSchema = (RootSnapshotSchema) context.getMutableRootSchema().schema;
         String schemaName = schema.name.names.get(0).toUpperCase();
+        long schemaId = 0;
         if (rootSchema.getSubSchema(schemaName) == null) {
+            InfoSchemaService infoSchemaService = InfoSchemaService.root();
+            schemaId = infoSchemaService.genSchemaId();
             DdlService ddlService = DdlService.root();
-            ddlService.createSchema(schemaName, connId);
+            ddlService.createSchema(schemaName, schemaId, connId);
         } else if (!schema.ifNotExists) {
             throw SqlUtil.newContextException(
                 schema.name.getParserPosition(),
                 RESOURCE.schemaExists(schemaName)
             );
         }
+
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        rootSnapshotSchema.applyDiff(SchemaDiff.builder().schemaId(schemaId)
+            .type(ActionType.ActionCreateSchema).build());
         timeCtx.stop();
     }
 
@@ -631,13 +643,19 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 return;
             }
         }
+        long schemaId = 0;
         if (subSchema.getTableNames().isEmpty()) {
             SchemaInfo schemaInfo = subSchema.getSchemaInfo(schemaName);
+            schemaId = schemaInfo.getSchemaId();
             DdlService ddlService = DdlService.root();
             ddlService.dropSchema(schemaInfo, connId);
         } else {
             throw new RuntimeException("Schema not empty.");
         }
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        rootSnapshotSchema.applyDiff(SchemaDiff.builder().schemaId(schemaId)
+            .type(ActionType.ActionDropSchema).build());
         timeCtx.stop();
     }
 
@@ -789,6 +807,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (schema == null) {
             if (context.getDefaultSchemaPath() != null && !context.getDefaultSchemaPath().isEmpty()) {
                 throw DINGO_RESOURCE.unknownSchema(context.getDefaultSchemaPath().get(0)).ex();
+            } else {
+                throw DINGO_RESOURCE.unknownSchema("DINGO").ex();
             }
         }
 
@@ -836,6 +856,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         tableDefinition.setIndices(indexTableDefinitions);
         DdlService ddlService = DdlService.root();
         ddlService.createTableWithInfo(schema.getSchemaName(), tableName, tableDefinition, connId, create.getOriginalCreateSql());
+
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
+            .type(ActionType.ActionCreateTable).build();
+        diff.setTableName(tableName);
+        rootSnapshotSchema.applyDiff(diff);
+
         timeCtx.stop();
         long end = System.currentTimeMillis();
         long cost = end - start;
@@ -890,6 +918,13 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         DdlService ddlService = DdlService.root();
         ddlService.dropTable(schemaInfo, table.tableId.seq, tableName, connId);
+
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
+            .type(ActionType.ActionDropTable).tableId(table.tableId.seq).build();
+        rootSnapshotSchema.applyDiff(diff);
+
         timeCtx.stop();
         long cost = System.currentTimeMillis() - start;
         if (cost > 10000) {
@@ -916,6 +951,17 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         DdlService ddlService = DdlService.root();
         ddlService.truncateTable(schemaInfo, table, connId);
+
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
+            .type(ActionType.ActionTruncateTable)
+            .oldSchemaId(schema.getSchemaId())
+            .oldTableId(table.tableId.seq)
+            .build();
+        diff.setTableName(tableName);
+        rootSnapshotSchema.applyDiff(diff);
+
         timeCtx.stop();
         long cost = System.currentTimeMillis() - start;
         if (cost > 10000) {
@@ -976,6 +1022,16 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         validateAddColumn(newColumn);
         DdlService.root().addColumn(schemaInfo, definition, newColumn, "");
+
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
+            .tableId(definition.getTableId().seq)
+            .type(ActionType.ActionAddColumn)
+            .build();
+        rootSnapshotSchema.applyDiff(diff);
+
+        LogUtils.info(log, "add column done, tableName:{}, colName:{}", tableName, newColumn.getName());
     }
 
     public void execute(@NonNull SqlRevoke sqlRevoke, CalcitePrepare.Context context) {
@@ -1120,6 +1176,15 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         validateIndex(schema, tableName, indexDef);
         DdlService ddlService = DdlService.root();
         ddlService.createIndex(schema.getSchemaName() , tableName, indexDef);
+
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
+            .tableId(table.getTableId().seq)
+            .type(ActionType.ActionAddIndex)
+            .build();
+        rootSnapshotSchema.applyDiff(diff);
+        LogUtils.info(log, "create index done, tableName:{}, index:{}", tableName, indexDef.getName());
     }
 
     public void execute(@NonNull SqlAlterIndex sqlAlterIndex, CalcitePrepare.Context context) {
@@ -1166,6 +1231,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         indexDef.setUnique(sqlCreateIndex.isUnique);
         validateIndex(schema, tableName, indexDef);
         DdlService.root().createIndex(schema.getSchemaName(), tableName, indexDef);
+
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
+            .tableId(table.getTableId().seq)
+            .type(ActionType.ActionAddIndex)
+            .build();
+        rootSnapshotSchema.applyDiff(diff);
     }
 
     public void execute(@NonNull SqlDropIndex sqlDropIndex, CalcitePrepare.Context context) {
@@ -1173,8 +1246,21 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             = getSchemaAndTableName(sqlDropIndex.table, context);
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
         final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
-        validateDropIndex(schema, tableName, sqlDropIndex.index);
+        DingoTable table = schema.getTable(tableName);
+        if (table == null) {
+            throw new IllegalArgumentException("table " + tableName + " does not exist");
+        }
+        validateDropIndex(table, sqlDropIndex.index);
         DdlService.root().dropIndex(schema.getSchemaName(), tableName, sqlDropIndex.index);
+
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
+            .tableId(table.getTableId().seq)
+            .type(ActionType.ActionDropIndex)
+            .build();
+        rootSnapshotSchema.applyDiff(diff);
+        LogUtils.info(log, "drop index done, tableName:{}, index:{}", tableName, sqlDropIndex.index);
     }
 
     public void execute(@NonNull SqlAlterDropIndex sqlDropIndex, CalcitePrepare.Context context) {
@@ -1182,8 +1268,21 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             = getSchemaAndTableName(sqlDropIndex.table, context);
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
         final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
-        validateDropIndex(schema, tableName, sqlDropIndex.getIndexNm());
+        DingoTable table = schema.getTable(tableName);
+        if (table == null) {
+            throw new IllegalArgumentException("table " + tableName + " does not exist");
+        }
+        validateDropIndex(table, sqlDropIndex.getIndexNm());
         DdlService.root().dropIndex(schema.getSchemaName(), tableName, sqlDropIndex.getIndexNm());
+
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
+            .tableId(table.getTableId().seq)
+            .type(ActionType.ActionDropIndex)
+            .build();
+        rootSnapshotSchema.applyDiff(diff);
+        LogUtils.info(log, "drop index done, tableName:{}, index:{}", tableName, sqlDropIndex.getIndexNm());
     }
 
     public void execute(SqlAlterDropColumn sqlAlterDropColumn, CalcitePrepare.Context context) {
@@ -1227,13 +1326,18 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
              markedDelete,
              "",
              "");
+
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
+            .tableId(table.getTableId().seq)
+            .type(ActionType.ActionDropColumn)
+            .build();
+        rootSnapshotSchema.applyDiff(diff);
+        LogUtils.info(log, "drop column done, tableName:{}, column:{}", tableName, sqlAlterDropColumn.columnNm);
     }
 
-    public static void validateDropIndex(SubSnapshotSchema schema, String tableName, String indexName) {
-        DingoTable table = schema.getTable(tableName);
-        if (table == null) {
-            throw new IllegalArgumentException("table " + tableName + " does not exist");
-        }
+    public static void validateDropIndex(DingoTable table, String indexName) {
         if (table.getIndexTableDefinitions().stream().map(IndexTable::getName).noneMatch(indexName::equalsIgnoreCase)) {
             throw new RuntimeException("The index " + indexName + " not exist.");
         }

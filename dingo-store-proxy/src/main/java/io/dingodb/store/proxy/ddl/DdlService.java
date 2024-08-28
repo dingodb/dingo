@@ -45,8 +45,8 @@ public class DdlService implements io.dingodb.meta.DdlService {
     }
 
     @Override
-    public void createSchema(String schemaName, String connId) {
-        DdlHandler.createSchema(schemaName, connId);
+    public void createSchema(String schemaName, long schemaId, String connId) {
+        DdlHandler.createSchema(schemaName, schemaId, connId);
     }
 
     @Override

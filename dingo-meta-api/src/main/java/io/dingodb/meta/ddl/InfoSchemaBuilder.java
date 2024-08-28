@@ -41,10 +41,13 @@ public class InfoSchemaBuilder {
     private static final int bucketCount = 100;
 
     public InfoSchemaBuilder() {
-        is = new InfoSchema();
+        //is = new InfoSchema();
     }
 
     public void initWithOldInfoSchema(InfoSchema oldSchema) {
+        if (is == null) {
+            is = new InfoSchema();
+        }
         this.is.schemaMetaVersion = oldSchema.schemaMetaVersion;
         this.is.schemaMap = deepCopy(oldSchema.schemaMap);
         this.is.sortedTablesBuckets = deepCopyBuckets(oldSchema.getSortedTablesBuckets());
@@ -74,6 +77,9 @@ public class InfoSchemaBuilder {
     }
 
     public void initWithSchemaInfos(List<SchemaInfo> schemaInfos, long schemaVersion, InfoSchemaService infoSchemaService) {
+        if (is == null) {
+            is = new InfoSchema();
+        }
         this.is.schemaMetaVersion = schemaVersion;
         for (SchemaInfo schemaInfo : schemaInfos) {
             createSchemaTablesForDB(schemaInfo, infoSchemaService);
@@ -168,7 +174,12 @@ public class InfoSchemaBuilder {
     public Pair<List<Long>, String> applyCreateTable(SchemaDiff diff) {
         try {
             InfoSchemaService schemaService = InfoSchemaService.root();
-            Table table = schemaService.getTableDef(diff.getSchemaId(), diff.getTableId());
+            Table table;
+            if (diff.getTableId() != 0) {
+                table = schemaService.getTableDef(diff.getSchemaId(), diff.getTableId());
+            } else {
+                table = schemaService.getTableDef(diff.getSchemaId(), diff.getTableName());
+            }
             SchemaInfo schemaInfo = (SchemaInfo) schemaService.getSchema(diff.getSchemaId());
             this.is.putTable(schemaInfo.getName(), table.name, table);
             int idx = bucketIdx(diff.getTableId());

@@ -86,7 +86,6 @@ public final class DdlServer {
     public static boolean startLoadDDLAndRun(DdlJobEvent ddlJobEvent) {
         Session session = SessionUtil.INSTANCE.getSession();
         try {
-            LogUtils.info(log, "start job by local event");
             session.setAutoCommit(true);
             startLoadDDLAndRun(session);
         } catch (Exception e) {

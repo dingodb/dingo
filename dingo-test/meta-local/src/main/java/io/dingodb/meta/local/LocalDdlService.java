@@ -47,7 +47,7 @@ public class LocalDdlService implements DdlService {
     }
 
     @Override
-    public void createSchema(String schemaName, String connId) {
+    public void createSchema(String schemaName, long schemaId, String connId) {
         localMetaService.createSubMetaService(schemaName);
     }
 

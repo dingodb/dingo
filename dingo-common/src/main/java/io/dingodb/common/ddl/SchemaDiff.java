@@ -30,6 +30,7 @@ public class SchemaDiff {
 
     long oldTableId;
     long oldSchemaId;
+    String tableName;
 
     boolean regenerateSchemaMap;
 

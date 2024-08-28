@@ -167,13 +167,13 @@ public final class DdlHandler {
         }
     }
 
-    public static void createSchema(String schemaName, String connId) {
+    public static void createSchema(String schemaName, long schemaId, String connId) {
         SchemaInfo schemaInfo = SchemaInfo.builder()
             .name(schemaName)
             .build();
-        InfoSchemaService infoSchemaService = InfoSchemaService.root();
-        assert infoSchemaService != null;
-        long schemaId = infoSchemaService.genSchemaId();
+        //InfoSchemaService infoSchemaService = InfoSchemaService.root();
+        //assert infoSchemaService != null;
+        //long schemaId = infoSchemaService.genSchemaId();
         schemaInfo.setSchemaId(schemaId);
         DdlJob job = DdlJob.builder()
             .actionType(ActionType.ActionCreateSchema)

@@ -25,6 +25,7 @@ import io.dingodb.meta.DdlService;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.SchemaSyncerService;
 import io.dingodb.meta.entity.InfoSchema;
+import io.dingodb.sdk.service.LockService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -32,6 +33,7 @@ import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -76,6 +78,13 @@ public class DdlContext {
 
         DdlWorkerFactory factory1 = new DdlWorkerFactory();
         ddlReorgPool = new DdlWorkerPool(factory1, config);
+
+        DingoMetrics.metricRegistry.register("lock_watch_pool", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
+            @Override
+            protected Integer loadValue() {
+                return LockService.LOCK_FUTURE_POOL.getActiveCount();
+            }
+        });
 
         DingoMetrics.metricRegistry.register("activeDdlWorkerCount", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
             @Override

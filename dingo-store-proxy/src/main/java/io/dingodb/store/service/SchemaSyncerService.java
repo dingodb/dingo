@@ -64,7 +64,7 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
         } else {
             path = String.format(DdlUtil.ALL_SCHEMA_VER_SYNC_NORMAL_TEMPLATE, tenantPrefix, DdlUtil.DDLAllSchemaVersions, DdlUtil.ddlId);
         }
-        LogUtils.info(log, "[ddl] updateSelfVersion info, path:{}, ver:{}", path, schemaVersion);
+        //LogUtils.info(log, "[ddl] updateSelfVersion info, path:{}, ver:{}", path, schemaVersion);
         lockPut(startTs, path, String.valueOf(schemaVersion), 3);
         LogUtils.info(log, "[ddl] updateSelfVersion info success, path:{}, ver:{}", path, schemaVersion);
     }

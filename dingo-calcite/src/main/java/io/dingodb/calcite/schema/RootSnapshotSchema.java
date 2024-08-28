@@ -20,9 +20,17 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ddl.SchemaDiff;
+import io.dingodb.common.ddl.TableInfoCache;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.util.Pair;
 import io.dingodb.meta.DdlService;
+import io.dingodb.meta.InfoSchemaService;
+import io.dingodb.meta.ddl.InfoSchemaBuilder;
+import io.dingodb.meta.ddl.InfoSchemaInTxnBuilder;
 import io.dingodb.meta.entity.InfoSchema;
+import io.dingodb.meta.entity.SchemaTables;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -36,6 +44,7 @@ import org.apache.calcite.schema.Schemas;
 import org.apache.calcite.schema.Table;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -165,6 +174,15 @@ public class RootSnapshotSchema implements Schema {
     @Override
     public Schema snapshot(SchemaVersion schemaVersion) {
         return this;
+    }
+
+    public void applyDiff(SchemaDiff schemaDiff) {
+        if (is == null) {
+            return;
+        }
+        InfoSchemaInTxnBuilder schemaInTxnBuilder = new InfoSchemaInTxnBuilder(is);
+        schemaInTxnBuilder.applyDiff(InfoSchemaService.root(), schemaDiff);
+        this.is = schemaInTxnBuilder.build();
     }
 
 }
