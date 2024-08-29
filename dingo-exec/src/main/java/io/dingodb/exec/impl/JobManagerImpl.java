@@ -16,10 +16,12 @@
 
 package io.dingodb.exec.impl;
 
+import com.codahale.metrics.CachedGauge;
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.ddl.RunningJobs;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.type.DingoType;
@@ -50,6 +52,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public final class JobManagerImpl implements JobManager {
@@ -66,6 +69,12 @@ public final class JobManagerImpl implements JobManager {
         channelMap = new ConcurrentHashMap<>(capacity);
         taskManager = TaskManagerImpl.INSTANCE;
         idGenerator = new IdGeneratorImpl();
+        DingoMetrics.metricRegistry.register("sql_job_size", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
+            @Override
+            protected Integer loadValue() {
+                return jobMap.size();
+            }
+        });
     }
 
     @Override

@@ -46,14 +46,8 @@ public final class MetaLockCheckHandler {
             try {
                 Utils.sleep(50);
                 MdlCheckTableInfo mdlCheckTableInfo = ExecutionEnvironment.INSTANCE.mdlCheckTableInfo;
-                if (DdlUtil.timeOutError.get()) {
-                    LogUtils.info(log, "mdl check continue, save ver:{}", saveMaxSchemaVersion);
-                }
                 mdlCheckTableInfo.wLock();
                 long maxVer = mdlCheckTableInfo.getNewestVer();
-                if (DdlUtil.timeOutError.get()) {
-                    LogUtils.info(log, "mdl check maxVer:{}, save ver:{}, jobNeedToSync:{}", maxVer, saveMaxSchemaVersion, jobNeedToSync);
-                }
                 if (maxVer > saveMaxSchemaVersion) {
                     saveMaxSchemaVersion = maxVer;
                 } else if (!jobNeedToSync) {
@@ -100,9 +94,9 @@ public final class MetaLockCheckHandler {
                         && jobCache.get(entry.getKey()) >= entry.getValue()
                     ) {
                         if (DdlUtil.timeOutError.get()) {
-                            LogUtils.info(log, "[ddl] mdl check skip, max ver:{},"
-                             +" saveMaxSchema ver:{}, new ver:{}, jobs ver:{}", maxVer,
-                              saveMaxSchemaVersion, DdlContext.INSTANCE.getNewVer(), entry.getValue());
+                            //LogUtils.info(log, "[ddl] mdl check skip, max ver:{},"
+                            // +" saveMaxSchema ver:{}, new ver:{}, jobs ver:{}", maxVer,
+                            //  saveMaxSchemaVersion, DdlContext.INSTANCE.getNewVer(), entry.getValue());
                             //DdlUtil.timeOutError.set(false);
                         }
                         continue;

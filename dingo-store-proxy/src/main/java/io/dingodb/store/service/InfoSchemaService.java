@@ -80,7 +80,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final TxStructure txn;
-    private final VersionService versionService;
+    private VersionService versionService;
     Set<Location> coordinators;
     private static final long tenantId = TenantConstant.TENANT_ID;
     public static final InfoSchemaService ROOT = new InfoSchemaService();
@@ -643,7 +643,19 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     @Override
     public void putKvToCoordinator(String key, String val) {
         PutRequest putRequest = putRequest(key, val);
-        versionService.kvPut(System.identityHashCode(putRequest), putRequest);
+        putKvToCoordinator(putRequest, 3);
+    }
+
+    public void putKvToCoordinator(PutRequest putRequest, int retry) {
+        try {
+            versionService.kvPut(System.identityHashCode(putRequest), putRequest);
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            while (retry-- > 0) {
+                resetVerService();
+                putKvToCoordinator(putRequest, retry);
+            }
+        }
     }
 
     @Override
@@ -856,6 +868,11 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             id = Long.parseLong(new String(val));
         }
         return id;
+    }
+
+    public void resetVerService() {
+        Services.invalidateVersionService(coordinators);
+        this.versionService = Services.versionService(coordinators);
     }
 
 }

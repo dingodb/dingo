@@ -93,7 +93,7 @@ public final class DingoMetrics {
                 return  (double) (totalMemory - freeMemory) / totalMemory * 100;
             }
         });
-        metricRegistry.register("runningJobs", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
+        metricRegistry.register("ddlRunningJobs", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
             @Override
             protected Integer loadValue() {
                 return RunningJobs.runningJobs.size();

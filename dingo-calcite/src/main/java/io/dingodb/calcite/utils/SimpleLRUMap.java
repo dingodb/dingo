@@ -16,33 +16,21 @@
 
 package io.dingodb.calcite.utils;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelNode;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
-@Slf4j
-public final class RelNodeCache {
-    private static final Map<String, RelNode> relNodeCache = new SimpleLRUMap(100);
-
-    private RelNodeCache() {
+public class SimpleLRUMap extends LinkedHashMap<String, RelNode> {
+    private static final long serialVersionUID = 6628220912648234506L;
+    private final int capacity;
+    public SimpleLRUMap(int capacity) {
+        super(capacity, 0.75F, true);
+        this.capacity = capacity;
     }
 
-    public static RelNode getDdlRelNode(String schema, String r) {
-        try {
-            return relNodeCache.get(r);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-        return null;
+    @Override
+    public boolean removeEldestEntry(Map.Entry<String, RelNode> eldest) {
+        return size() > capacity;
     }
-
-    public static void setDdlRelNode(String schema, String sql, RelNode relNode) {
-        try {
-            relNodeCache.put(sql, relNode);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-    }
-
 }
