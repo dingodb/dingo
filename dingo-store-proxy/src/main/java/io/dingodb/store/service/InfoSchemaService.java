@@ -651,7 +651,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             versionService.kvPut(System.identityHashCode(putRequest), putRequest);
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
-            while (retry-- > 0) {
+            if (retry-- > 0) {
                 resetVerService();
                 putKvToCoordinator(putRequest, retry);
             }

@@ -412,20 +412,9 @@ public final class DingoDriverParser extends DingoParser {
                 return !columnMetaData1.hidden;
             }
         ).collect(Collectors.toList());
-        String autoDdl = connection.getContext().getOption("for_ddl");
 
-        RelNode relNode;
-        if (autoDdl.equalsIgnoreCase("on")) {
-            relNode = RelNodeCache.getDdlRelNode(connection.getSchema(), sql);
-            if (relNode == null) {
-                final RelRoot relRoot = convert(sqlNode, false);
-                relNode = optimize(relRoot.rel);
-                RelNodeCache.setDdlRelNode(connection.getSchema(), sql, relNode);
-            }
-        } else {
-            final RelRoot relRoot = convert(sqlNode, false);
-            relNode = optimize(relRoot.rel);
-        }
+        final RelRoot relRoot = convert(sqlNode, false);
+        RelNode relNode = optimize(relRoot.rel);
         planProfile.endOptimize();
         markAutoIncForDml(relNode);
         Location currentLocation = MetaService.root().currentLocation();
