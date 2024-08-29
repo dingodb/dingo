@@ -17,6 +17,8 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.fun.DingoOperatorTable;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlBasicCall;
@@ -28,12 +30,22 @@ import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.TableFunctionNamespace;
+import org.apache.calcite.sql.validate.TableHybridFunctionNamespace;
 import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
+import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
 import org.apache.calcite.sql2rel.SqlVectorOperator;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class DingoSqlValidator extends SqlValidatorImpl {
+
+    @Getter
+    @Setter
+    private boolean hybridSearch;
+    @Getter
+    @Setter
+    private String hybridSearchSql;
+
     static Config CONFIG = Config.DEFAULT
         .withConformance(DingoParser.PARSER_CONFIG.conformance());
 
@@ -51,6 +63,8 @@ public class DingoSqlValidator extends SqlValidatorImpl {
             typeFactory,
             DingoSqlValidator.CONFIG
         );
+        this.hybridSearch = false;
+        this.hybridSearchSql = "";
     }
 
     @Override
@@ -71,6 +85,15 @@ public class DingoSqlValidator extends SqlValidatorImpl {
             super.registerNamespace(
                 usingScope, alias,
                 new TableFunctionNamespace(this, (SqlBasicCall) enclosingNode),
+                forceNullable
+            );
+            return;
+        } else if (enclosingNode instanceof SqlBasicCall
+            && (((SqlBasicCall) enclosingNode).getOperator() instanceof SqlHybridSearchOperator)
+        ) {
+            super.registerNamespace(
+                usingScope, alias,
+                new TableHybridFunctionNamespace(this, (SqlBasicCall) enclosingNode),
                 forceNullable
             );
             return;

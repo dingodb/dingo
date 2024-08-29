@@ -19,6 +19,7 @@ package io.dingodb.calcite.visitor.function;
 import io.dingodb.calcite.rel.dingo.DingoSort;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
+import io.dingodb.common.table.HybridSearchTable;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.dag.Vertex;
@@ -62,7 +63,8 @@ public class DingoSortVisitFun {
             SortParam param = new SortParam(
                 toSortCollation(rel.getCollation().getFieldCollations()),
                 rel.fetch == null ? -1 : RexLiteral.intValue(rel.fetch),
-                rel.offset == null ? 0 : RexLiteral.intValue(rel.offset));
+                rel.offset == null ? 0 : RexLiteral.intValue(rel.offset),
+                rel.getHints().stream().anyMatch( e -> e.hintName.equalsIgnoreCase(HybridSearchTable.HINT_NAME)));
             return new Vertex(SORT, param);
         }
     }

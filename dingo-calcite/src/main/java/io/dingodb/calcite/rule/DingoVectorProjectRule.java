@@ -19,9 +19,11 @@ package io.dingodb.calcite.rule;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.grammar.SqlUserDefinedOperators;
 import io.dingodb.calcite.rel.LogicalDingoVector;
+import io.dingodb.common.table.HybridSearchTable;
 import io.dingodb.common.type.TupleMapping;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.rules.SubstitutionRule;
 import org.apache.calcite.rex.RexCall;
@@ -92,6 +94,14 @@ public class DingoVectorProjectRule extends RelRule<DingoVectorProjectRule.Confi
         selectedColumns.sort(Comparator.naturalOrder());
         Mapping mapping = Mappings.target(selectedColumns, vector.getRowType().getFieldCount());
 
+        List<RelHint> hints = vector.hints;
+        if (project.getHints() != null) {
+            for (RelHint hint: project.getHints()) {
+                if (hint.hintName.equalsIgnoreCase(HybridSearchTable.HINT_NAME)) {
+                    hints.add(hint);
+                }
+            }
+        }
         LogicalDingoVector newVector = new LogicalDingoVector(
             vector.getCluster(),
             vector.getTraitSet(),
@@ -102,7 +112,7 @@ public class DingoVectorProjectRule extends RelRule<DingoVectorProjectRule.Confi
             vector.getIndexTable(),
             TupleMapping.of(selectedColumns),
             filter,
-            vector.hints
+            hints
         );
         final List<RexNode> newProjectRexNodes = RexUtil.apply(mapping, project.getProjects());
         if (RexUtil.isIdentity(newProjectRexNodes, newVector.getSelectedType())) {

@@ -206,6 +206,7 @@ data: {
       "REMARKS"
       "RENAME"
       "TEXT_SEARCH"
+      "HYBRID_SEARCH"
     ]
 
     # List of non-reserved keywords to add;

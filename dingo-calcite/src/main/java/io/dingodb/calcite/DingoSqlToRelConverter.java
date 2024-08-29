@@ -36,8 +36,10 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.TableFunctionNamespace;
+import org.apache.calcite.sql.validate.TableHybridFunctionNamespace;
 import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
+import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.SqlVectorOperator;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
@@ -105,7 +107,11 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
     @Override
     protected void convertCollectionTable(Blackboard bb, SqlCall call) {
         final SqlOperator operator = call.getOperator();
-        if (!(operator instanceof SqlFunctionScanOperator) && !(operator instanceof SqlVectorOperator) && !(operator instanceof SqlDocumentOperator)) {
+        if (!(operator instanceof SqlFunctionScanOperator)
+            && !(operator instanceof SqlVectorOperator)
+            && !(operator instanceof SqlDocumentOperator)
+            && !(operator instanceof SqlHybridSearchOperator)
+        ) {
             super.convertCollectionTable(bb, call);
             return;
         }
@@ -113,47 +119,56 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
         RelTraitSet traits = cluster.traitSetOf(DingoConvention.NONE);
         RexNode rexCall = bb.convertExpression(call);
         assert validator != null;
-        TableFunctionNamespace namespace = (TableFunctionNamespace) validator.getNamespace(call);
         RelNode callRel = null;
-        if (operator instanceof SqlFunctionScanOperator) {
-            assert namespace != null;
-            callRel = new DingoFunctionScan(
-                cluster,
-                traits,
-                (RexCall) rexCall,
-                namespace.getTable(),
-                call.getOperandList()
-            );
-        } else if (operator instanceof SqlVectorOperator) {
-            assert namespace != null;
-            List<Object> operands = new ArrayList<>(call.getOperandList());
-            callRel = new LogicalDingoVector(
-                cluster,
-                traits,
-                (RexCall) rexCall,
-                namespace.getTable(),
-                operands,
-                namespace.getIndex().getTableId(),
-                namespace.getIndex(),
-                null,
-                null,
-                new ArrayList<>()
-            );
-        } else if (operator instanceof SqlDocumentOperator) {
-            assert namespace != null;
-            List<Object> operands = new ArrayList<>(call.getOperandList());
-            callRel = new LogicalDingoDocument(
-                cluster,
-                traits,
-                (RexCall) rexCall,
-                namespace.getTable(),
-                operands,
-                namespace.getIndex().getTableId(),
-                namespace.getIndex(),
-                null,
-                null,
-                new ArrayList<>()
-            );
+        if (validator.getNamespace(call) instanceof TableFunctionNamespace) {
+            TableFunctionNamespace namespace = (TableFunctionNamespace) validator.getNamespace(call);
+            if (operator instanceof SqlFunctionScanOperator) {
+                assert namespace != null;
+                callRel = new DingoFunctionScan(
+                    cluster,
+                    traits,
+                    (RexCall) rexCall,
+                    namespace.getTable(),
+                    call.getOperandList()
+                );
+            } else if (operator instanceof SqlVectorOperator) {
+                assert namespace != null;
+                List<Object> operands = new ArrayList<>(call.getOperandList());
+                callRel = new LogicalDingoVector(
+                    cluster,
+                    traits,
+                    (RexCall) rexCall,
+                    namespace.getTable(),
+                    operands,
+                    namespace.getIndex().getTableId(),
+                    namespace.getIndex(),
+                    null,
+                    null,
+                    new ArrayList<>()
+                );
+            } else if (operator instanceof SqlDocumentOperator) {
+                assert namespace != null;
+                List<Object> operands = new ArrayList<>(call.getOperandList());
+                callRel = new LogicalDingoDocument(
+                    cluster,
+                    traits,
+                    (RexCall) rexCall,
+                    namespace.getTable(),
+                    operands,
+                    namespace.getIndex().getTableId(),
+                    namespace.getIndex(),
+                    null,
+                    null,
+                    new ArrayList<>()
+                );
+            }
+        } else if (validator.getNamespace(call) instanceof TableHybridFunctionNamespace) {
+            TableHybridFunctionNamespace namespace = (TableHybridFunctionNamespace) validator.getNamespace(call);
+
+            if (operator instanceof SqlHybridSearchOperator) {
+                assert namespace != null;
+                throw new RuntimeException("Not support convert hybrid search node.");
+            }
         }
 
         bb.setRoot(callRel, true);

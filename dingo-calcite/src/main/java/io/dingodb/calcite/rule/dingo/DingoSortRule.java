@@ -20,6 +20,7 @@ import io.dingodb.calcite.rel.dingo.DingoSort;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
@@ -51,6 +52,7 @@ public class DingoSortRule extends ConverterRule {
         return new DingoSort(
             sort.getCluster(),
             traits,
+            sort.getHints(),
             convert(sort.getInput(), inputTraits),
             sort.getCollation(),
             sort.offset,

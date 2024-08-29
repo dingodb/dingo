@@ -26,12 +26,16 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+
+import java.util.Collections;
+import java.util.List;
 
 public final class DingoSort extends Sort implements DingoRel {
     @Getter
@@ -40,12 +44,13 @@ public final class DingoSort extends Sort implements DingoRel {
     public DingoSort(
         RelOptCluster cluster,
         RelTraitSet traits,
+        List<RelHint> hints,
         RelNode child,
         RelCollation collation,
         @Nullable RexNode offset,
         @Nullable RexNode fetch
     ) {
-        super(cluster, traits, child, collation, offset, fetch);
+        super(cluster, traits, hints, child, collation, offset, fetch);
     }
 
     @Override
@@ -61,7 +66,7 @@ public final class DingoSort extends Sort implements DingoRel {
         @Nullable RexNode offset,
         @Nullable RexNode fetch
     ) {
-        return new DingoSort(getCluster(), traitSet, newInput, newCollation, offset, fetch);
+        return new DingoSort(getCluster(), traitSet, this.hints, newInput, newCollation, offset, fetch);
     }
 
     @Override

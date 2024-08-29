@@ -18,8 +18,10 @@ package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.rel.DingoDocument;
 import io.dingodb.calcite.rel.DingoFunctionScan;
+import io.dingodb.calcite.rel.DingoHybridSearch;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.rel.LogicalDingoDocument;
+import io.dingodb.calcite.rel.LogicalDingoHybridSearch;
 import io.dingodb.calcite.rel.LogicalDingoVector;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
@@ -81,6 +83,22 @@ public class DingoFunctionScanRule extends ConverterRule {
                 document.getSelection(),
                 document.getFilter(),
                 document.hints
+            );
+        } else if (rel instanceof LogicalDingoHybridSearch && !(rel instanceof DingoHybridSearch)) {
+            LogicalDingoHybridSearch hybridSearch = (LogicalDingoHybridSearch) rel;
+            return new DingoHybridSearch(
+                hybridSearch.getCluster(),
+                traits,
+                hybridSearch.getCall(),
+                hybridSearch.getTable(),
+                hybridSearch.getOperands(),
+                hybridSearch.getDocumentIndexTableId(),
+                hybridSearch.getDocumentIndexTable(),
+                hybridSearch.getVectorIndexTableId(),
+                hybridSearch.getVectorIndexTable(),
+                hybridSearch.getSelection(),
+                hybridSearch.getFilter(),
+                hybridSearch.hints
             );
         }
         else if (rel instanceof DingoFunctionScan) {

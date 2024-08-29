@@ -26,8 +26,11 @@ import io.dingodb.exec.operator.data.SortCollation;
 import io.dingodb.exec.operator.params.SortParam;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SortOperator extends SoleOutOperator {
     public static final SortOperator INSTANCE = new SortOperator();
@@ -60,16 +63,35 @@ public class SortOperator extends SoleOutOperator {
             int limit = param.getLimit();
             int offset = param.getOffset();
             List<Object[]> cache = param.getCache();
-            profile.setCount(cache.size());
+            int size = cache.size();
+            profile.setCount(size);
             Comparator<Object[]> comparator = param.getComparator();
             if (comparator != null) {
                 cache.sort(comparator);
+            }
+            List<Object[]> normalCache = cache;
+            if (param.isVectorHybrid()) {
+                // similarity score normalization
+                normalCache = new ArrayList<>(size);
+                List<Float> similarityScores = new ArrayList<>(size);
+                for (int i = 0; i < size; i++) {
+                    Object[] objects = cache.get(i);
+                    similarityScores.add((Float) objects[1]);
+
+                }
+                List<Float> floats = normalizeScores(similarityScores);
+                for (int i = 0; i < size; i++) {
+                    Object[] objects = new Object[2];
+                    objects[0] = cache.get(i)[0];
+                    objects[1] = floats.get(i);
+                    normalCache.add(objects);
+                }
             }
             profile.end();
             int o = 0;
             int c = 0;
             Edge edge = vertex.getSoleEdge();
-            for (Object[] tuple : cache) {
+            for (Object[] tuple : normalCache) {
                 if (o < offset) {
                     ++o;
                     continue;
@@ -90,5 +112,22 @@ public class SortOperator extends SoleOutOperator {
             // Reset
             param.clear();
         }
+    }
+
+    public static List<Float> normalizeScores(List<Float> scores) {
+        List<Float> validScores = scores.stream()
+            .filter(score -> score != null && score >= 0)
+            .collect(Collectors.toList());
+
+        if (validScores.isEmpty()) {
+            return  Collections.emptyList();
+        }
+
+        Float min = validScores.stream().min(Float::compare).orElse(0.0F);
+        Float max = validScores.stream().max(Float::compare).orElse(1.0F);
+
+        return validScores.stream()
+            .map(score -> (max == min) ? 0.0F : 1 - ((score - min) / (max - min)))
+            .collect(Collectors.toList());
     }
 }

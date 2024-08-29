@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParser;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoRelOptTable;
+import io.dingodb.calcite.DingoSqlValidator;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
@@ -64,6 +65,7 @@ import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.exception.LockWaitException;
 import io.dingodb.tso.TsoService;
 import lombok.Getter;
+import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaParameter;
@@ -83,10 +85,12 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.server.DdlExecutor;
+import org.apache.calcite.sql.SqlAsOperator;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainFormat;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.sql.SqlJoin;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
@@ -97,6 +101,7 @@ import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -342,28 +347,61 @@ public final class DingoDriverParser extends DingoParser {
             newTxn = true;
         }
         startTs = transaction.getStartTs();
+        Meta.StatementType statementType;
+        RelDataType type;
         SqlValidator validator = getSqlValidator();
         try {
             sqlNode = validator.validate(sqlNode);
+            switch (sqlNode.getKind()) {
+                case INSERT:
+                case DELETE:
+                case UPDATE:
+                    statementType = Meta.StatementType.IS_DML;
+                    type = RelOptUtil.createDmlRowType(sqlNode.getKind(), typeFactory);
+                    break;
+                default:
+                    statementType = Meta.StatementType.SELECT;
+                    type = validator.getValidatedNodeType(sqlNode);
+                    break;
+            }
+            if (statementType == Meta.StatementType.SELECT) {
+                if (((DingoSqlValidator)validator).isHybridSearch()) {
+                    String hybridSearchSql = ((DingoSqlValidator)validator).getHybridSearchSql();
+                    LogUtils.info(log, "HybridSearchSql: {}", hybridSearchSql);
+                    SqlNode hybridSqlNode;
+                    try {
+                        hybridSqlNode = parse(hybridSearchSql);
+                    } catch (SqlParseException e) {
+                        throw ExceptionUtils.toRuntime(e);
+                    }
+                    syntacticSugar(hybridSqlNode);
+                    SqlNode originalSqlNode;
+                    try {
+                        originalSqlNode = parse(sql);
+                    } catch (SqlParseException e) {
+                        throw ExceptionUtils.toRuntime(e);
+                    }
+                    syntacticSugar(originalSqlNode);
+                    lockUpHybridSearchNode(originalSqlNode, hybridSqlNode);
+                    LogUtils.info(log, "HybridSearch Rewrite Sql: {}", originalSqlNode.toString());
+                    if (originalSqlNode.getKind().equals(SqlKind.EXPLAIN)) {
+                        assert originalSqlNode instanceof SqlExplain;
+                        explain = (SqlExplain) originalSqlNode;
+                        originalSqlNode = explain.getExplicandum();
+                    }
+                    try {
+                        sqlNode = validator.validate(originalSqlNode);
+                    } catch (CalciteContextException e) {
+                        LogUtils.error(log, "HybridSearch parse and validate error, sql: <[{}]>.", sql, e);
+                        throw ExceptionUtils.toRuntime(e);
+                    }
+                }
+            }
         } catch (CalciteContextException e) {
             LogUtils.error(log, "Parse and validate error, sql: <[{}]>.", sql, e);
             throw ExceptionUtils.toRuntime(e);
         }
         planProfile.endValidator();
-        Meta.StatementType statementType;
-        RelDataType type;
-        switch (sqlNode.getKind()) {
-            case INSERT:
-            case DELETE:
-            case UPDATE:
-                statementType = Meta.StatementType.IS_DML;
-                type = RelOptUtil.createDmlRowType(sqlNode.getKind(), typeFactory);
-                break;
-            default:
-                statementType = Meta.StatementType.SELECT;
-                type = validator.getValidatedNodeType(sqlNode);
-                break;
-        }
         RelDataType jdbcType = makeStruct(typeFactory, type);
         List<List<String>> originList = validator.getFieldOrigins(sqlNode);
         final List<ColumnMetaData> columns = getColumnMetaDataList(typeFactory, jdbcType, originList);
@@ -839,6 +877,36 @@ public final class DingoDriverParser extends DingoParser {
             .collect(Collectors.toList());
     }
 
+    private void lockUpHybridSearchNode(SqlNode sqlNode, SqlNode subSqlNode) {
+        if (sqlNode instanceof SqlSelect) {
+            SqlNode from = ((SqlSelect) sqlNode).getFrom();
+            if (from instanceof SqlBasicCall && (((SqlBasicCall) from).getOperator() instanceof  SqlHybridSearchOperator)) {
+                ((SqlSelect) sqlNode).setFrom(subSqlNode);
+            } else {
+                if (from instanceof SqlJoin) {
+                    lockUpHybridSearchNode(((SqlJoin) from).getLeft(), subSqlNode);
+                    lockUpHybridSearchNode(((SqlJoin) from).getRight(), subSqlNode);
+                }
+            }
+        } else if (sqlNode instanceof SqlBasicCall) {
+            if (((SqlBasicCall) sqlNode).getOperator() instanceof SqlAsOperator) {
+               deepLockUpChildren(((SqlBasicCall) sqlNode).getOperandList(), subSqlNode);
+            }
+        } else if (sqlNode instanceof SqlOrderBy) {
+            lockUpHybridSearchNode(((SqlOrderBy)sqlNode).query, subSqlNode);
+        } else if (sqlNode instanceof SqlExplain) {
+            lockUpHybridSearchNode(((SqlExplain) sqlNode).getExplicandum(), subSqlNode);
+        }
+    }
+
+    private void deepLockUpChildren(List<SqlNode> sqlNodes, SqlNode subSqlNode) {
+        if (sqlNodes == null) {
+            return;
+        }
+        for (int i = 0; i < sqlNodes.size(); i ++) {
+            lockUpHybridSearchNode(sqlNodes.get(i), subSqlNode);
+        }
+    }
     private void syntacticSugar(SqlNode sqlNode) {
         if (sqlNode instanceof SqlSelect) {
             SqlNodeList sqlNodes = ((SqlSelect) sqlNode).getSelectList();
