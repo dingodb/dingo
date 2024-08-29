@@ -26,6 +26,7 @@ import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoGetVectorByDistance;
+import io.dingodb.calcite.rel.DingoHybridSearch;
 import io.dingodb.calcite.rel.DingoInfoSchemaScan;
 import io.dingodb.calcite.rel.DingoLikeScan;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
@@ -297,6 +298,25 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
         }
         return new Explain(
             "dingDocument", rel.getRowCount(), "root",
+            tableNames, filter
+        );
+    }
+
+    @Override
+    public Explain visit(@NonNull DingoHybridSearch rel) {
+        String filter = "";
+        if (rel.getFilter() != null) {
+            filter = rel.getFilter().toString();
+        }
+        String tableNames = "";
+        if (rel.getDocumentIndexTable() != null) {
+            tableNames = rel.getDocumentIndexTable().getName();
+        }
+        if (rel.getVectorIndexTable() != null) {
+            tableNames = tableNames + "," + rel.getVectorIndexTable().getName();
+        }
+        return new Explain(
+            "dingoHybridSearch", rel.getRowCount(), "root",
             tableNames, filter
         );
     }

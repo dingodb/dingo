@@ -1237,5 +1237,21 @@ SqlNode TableFunctionCall() :
         {
             return SqlUserDefinedOperators.TEXT_SEARCH.createCall(s.end(this), list);
         }
+    |
+        <HYBRID_SEARCH> { s = span(); } <LPAREN>
+        [
+            AddArg0(list, ExprContext.ACCEPT_CURSOR)
+            (
+                <COMMA> {
+                    // a comma-list can't appear where only a query is expected
+                    checkNonQueryExpression(ExprContext.ACCEPT_CURSOR);
+                }
+                AddArg(list, ExprContext.ACCEPT_CURSOR)
+            )*
+        ]
+        <RPAREN>
+        {
+            return SqlUserDefinedOperators.HYBRID_SEARCH.createCall(s.end(this), list);
+        }
     )
 }

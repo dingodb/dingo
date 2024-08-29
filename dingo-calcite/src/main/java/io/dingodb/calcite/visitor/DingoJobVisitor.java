@@ -25,6 +25,7 @@ import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoGetVectorByDistance;
+import io.dingodb.calcite.rel.DingoHybridSearch;
 import io.dingodb.calcite.rel.DingoInfoSchemaScan;
 import io.dingodb.calcite.rel.DingoLikeScan;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
@@ -245,6 +246,11 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     @Override
     public Collection<Vertex> visit(@NonNull DingoDocument rel) {
         return DingoDocumentVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel);
+    }
+
+    @Override
+    public Collection<Vertex> visit(@NonNull DingoHybridSearch rel) {
+        throw new UnsupportedOperationException("Not support dingoHybridSearch relNode");
     }
 
 

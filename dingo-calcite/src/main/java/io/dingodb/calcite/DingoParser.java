@@ -52,6 +52,7 @@ import io.dingodb.common.error.DingoException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.SqlLogUtils;
 import io.dingodb.common.profile.PlanProfile;
+import io.dingodb.common.table.HybridSearchTable;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -216,6 +217,7 @@ public class DingoParser {
         HintPredicate hintPredicate = (hint, rel) -> true;
         HintStrategyTable hintStrategyTable = new HintStrategyTable.Builder()
             .hintStrategy("vector_pre", hintPredicate)
+            .hintStrategy(HybridSearchTable.HINT_NAME, hintPredicate)
             .hintStrategy("disable_index", hintPredicate).build();
         SqlToRelConverter sqlToRelConverter = new DingoSqlToRelConverter(
             ViewExpanders.simpleContext(cluster),

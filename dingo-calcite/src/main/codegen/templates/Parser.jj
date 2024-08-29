@@ -1031,6 +1031,8 @@ void AddArg0(List<SqlNode> list, ExprContext exprContext) :
         e = TableParam()
     |
         e = PartitionedQueryOrQueryOrExpr(firstExprContext)
+    |
+        e = TableFunctionCall()
     )
     {
         if (name != null) {
@@ -1057,6 +1059,8 @@ void AddArg(List<SqlNode> list, ExprContext exprContext) :
         e = Expression(exprContext)
     |
         e = TableParam()
+    |
+        e = TableFunctionCall()
     )
     {
         if (name != null) {

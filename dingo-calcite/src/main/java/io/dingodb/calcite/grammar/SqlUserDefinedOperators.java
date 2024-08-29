@@ -23,6 +23,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql2rel.SqlCosineSimilarityOperator;
 import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
+import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
 import org.apache.calcite.sql2rel.SqlIPDistanceOperator;
 import org.apache.calcite.sql2rel.SqlL2DistanceOperator;
 import org.apache.calcite.sql2rel.SqlLikeBinaryOperator;
@@ -43,6 +44,8 @@ public class SqlUserDefinedOperators {
     public static SqlDocumentOperator DOCUMENT = new SqlDocumentOperator("TEXT", SqlKind.COLLECTION_TABLE );
 
     public static SqlDocumentOperator TEXT_SEARCH = new SqlDocumentOperator("TEXT_SEARCH", SqlKind.COLLECTION_TABLE);
+
+    public static SqlHybridSearchOperator HYBRID_SEARCH = new SqlHybridSearchOperator("HYBRID_SEARCH", SqlKind.COLLECTION_TABLE);
 
     public static SqlCosineSimilarityOperator COSINE_SIMILARITY
         = new SqlCosineSimilarityOperator(VectorCosineDistanceFun.NAME, SqlKind.OTHER_FUNCTION);

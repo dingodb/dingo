@@ -32,7 +32,7 @@ import java.util.List;
 
 @Getter
 @JsonTypeName("sort")
-@JsonPropertyOrder({"collations", "limit", "offset"})
+@JsonPropertyOrder({"collations", "limit", "offset", "vectorHybrid"})
 public class SortParam extends AbstractParams {
 
     @JsonProperty("collations")
@@ -41,6 +41,8 @@ public class SortParam extends AbstractParams {
     private final int limit;
     @JsonProperty("offset")
     private final int offset;
+    @JsonProperty("vectorHybrid")
+    private final boolean vectorHybrid;
     private final List<Object[]> cache;
     private transient Comparator<Object[]> comparator;
 
@@ -48,11 +50,13 @@ public class SortParam extends AbstractParams {
     public SortParam(
         @JsonProperty("collations") @NonNull List<SortCollation> collations,
         @JsonProperty("limit") int limit,
-        @JsonProperty("offset") int offset
+        @JsonProperty("offset") int offset,
+        @JsonProperty("vectorHybrid") boolean vectorHybrid
     ) {
         this.collations = collations;
         this.limit = limit;
         this.offset = offset;
+        this.vectorHybrid = vectorHybrid;
         this.cache = new LinkedList<>();
         if (!collations.isEmpty()) {
             Comparator<Object[]> c = collations.get(0).makeComparator();
