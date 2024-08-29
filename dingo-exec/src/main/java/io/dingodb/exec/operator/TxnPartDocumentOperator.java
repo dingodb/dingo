@@ -78,41 +78,63 @@ public class TxnPartDocumentOperator extends FilterProjectSourceOperator {
         Object[] priTuples = new Object[param.getTable().columns.size() + 1];
         if (param.isLookUp()) {
             for (DocumentWithScore document : documentWithScores) {
-                KeyValue tableData = new KeyValue(document.getDocumentWithId().getDocument().getTableData().getTableKey(),
-                    document.getDocumentWithId().getDocument().getTableData().getTableValue());
-                byte[] tmp1 = new byte[tableData.getKey().length];
-                System.arraycopy(tableData.getKey(), 0, tmp1, 0, tableData.getKey().length);
-                CommonId regionId = PartitionService.getService(
-                        Optional.ofNullable(param.getTable().getPartitionStrategy())
-                            .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-                    .calcPartId(tableData.getKey(), param.getDistributions());
-                CodecService.getDefault().setId(tmp1, regionId.domain);
-                CommonId txnId = vertex.getTask().getTxnId();
-                Iterator<Object[]> local = getLocalStore(
-                    regionId,
-                    param.getCodec(),
-                    tmp1,
-                    param.getTableId(),
-                    txnId,
-                    regionId.encode(),
-                    vertex.getTask().getTransactionType()
-                );
-                if (local != null) {
-                    while (local.hasNext()) {
-                        Object[] objects = local.next();
-                        results.add(objects);
+                if(document.getDocumentWithId().getDocument().getTableData() != null){
+                    KeyValue tableData = new KeyValue(document.getDocumentWithId().getDocument().getTableData().getTableKey(),
+                        document.getDocumentWithId().getDocument().getTableData().getTableValue());
+                    byte[] tmp1 = new byte[tableData.getKey().length];
+                    System.arraycopy(tableData.getKey(), 0, tmp1, 0, tableData.getKey().length);
+                    CommonId regionId = PartitionService.getService(
+                            Optional.ofNullable(param.getTable().getPartitionStrategy())
+                                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
+                        .calcPartId(tableData.getKey(), param.getDistributions());
+                    CodecService.getDefault().setId(tmp1, regionId.domain);
+                    CommonId txnId = vertex.getTask().getTxnId();
+                    Iterator<Object[]> local = getLocalStore(
+                        regionId,
+                        param.getCodec(),
+                        tmp1,
+                        param.getTableId(),
+                        txnId,
+                        regionId.encode(),
+                        vertex.getTask().getTransactionType()
+                    );
+                    if (local != null) {
+                        while (local.hasNext()) {
+                            Object[] objects = local.next();
+                            results.add(objects);
+                        }
+                        continue;
                     }
-                    continue;
-                }
 
-                StoreInstance storeInstance = StoreService.getDefault().getInstance(param.getTableId(), regionId);
-                KeyValue keyValue = storeInstance.txnGet(param.getScanTs(), tableData.getKey(), param.getTimeOut());
-                if (keyValue == null || keyValue.getValue() == null) {
-                    continue;
+                    StoreInstance storeInstance = StoreService.getDefault().getInstance(param.getTableId(), regionId);
+                    KeyValue keyValue = storeInstance.txnGet(param.getScanTs(), tableData.getKey(), param.getTimeOut());
+                    if (keyValue == null || keyValue.getValue() == null) {
+                        continue;
+                    }
+                    Object[] decode = param.getCodec().decode(keyValue);
+                    decode[decode.length - 1] = document.getScore();
+                    results.add(decode);
+                } else {
+                    Map<String, DocumentValue> documentData = document.getDocumentWithId().getDocument().getDocumentData();
+                    Set<Map.Entry<String, DocumentValue>> entries = documentData.entrySet();
+                    for (Map.Entry<String, DocumentValue> entry : entries) {
+                        String key = entry.getKey();
+                        DocumentValue value = entry.getValue();
+                        ScalarField fieldValue = value.getFieldValue();
+                        int idx = 0;
+                        for (int i = 0; i < columns.size(); i++) {
+                            if (columns.get(i).getName().equals(key)) {
+                                idx = i;
+                                break;
+                            }
+                        }
+                        priTuples[idx] = fieldValue.getData();
+                    }
+
+                    float score = document.getScore();
+                    priTuples[priTuples.length - 1] = score;
+                    results.add(priTuples);
                 }
-                Object[] decode = param.getCodec().decode(keyValue);
-                decode[decode.length - 1] = document.getScore();
-                results.add(decode);
             }
 
         } else {
