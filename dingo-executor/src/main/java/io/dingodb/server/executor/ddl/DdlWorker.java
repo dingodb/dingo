@@ -101,7 +101,7 @@ public class DdlWorker {
             // session reset
             session.rollback();
             String error = handleJobDone(job);
-            dc.getSv().unlockSchemaVersion(job);
+            //dc.getSv().unlockSchemaVersion(job);
             LogUtils.warn(log, "[ddl] job is cancelled, handleJobDone, jobId:{}", job.getId());
             return Pair.of(0L, error);
         }
@@ -115,7 +115,7 @@ public class DdlWorker {
         String error = registerMDLInfo(job, schemaVer);
         if (error != null) {
             session.rollback();
-            dc.getSv().unlockSchemaVersion(job);
+            //dc.getSv().unlockSchemaVersion(job);
             LogUtils.warn(log, "[ddl] registerMdlInfo failed, reason:{}, jobId:{}", error, job.getId());
             return Pair.of(0L, error);
         }
@@ -124,7 +124,7 @@ public class DdlWorker {
             // session rollback
             session.rollback();
             // unlockSchemaVersion
-            dc.getSv().unlockSchemaVersion(job);
+            //dc.getSv().unlockSchemaVersion(job);
             LogUtils.warn(log, "[ddl] update ddl job failed, reason:{}, jobId:{}", error, job.getId());
             return Pair.of(0L, error);
         }
@@ -135,7 +135,7 @@ public class DdlWorker {
             LogUtils.error(log, "[ddl] run and update ddl job commit error," + e.getMessage(), e);
         } finally {
             // unlockSchemaVersion
-            dc.getSv().unlockSchemaVersion(job);
+            //dc.getSv().unlockSchemaVersion(job);
         }
 
         registerSync(dc, job);
@@ -874,6 +874,8 @@ public class DdlWorker {
         } catch (Exception e) {
             LogUtils.error(log, "updateSchemaVersion: setSchemaVer failed, reason:{}", e.getMessage());
             return Pair.of(0L, e.getMessage());
+        } finally {
+            dc.getSv().unlockSchemaVersion(ddlJob);
         }
         try {
             SchemaDiff schemaDiff = SchemaDiff
