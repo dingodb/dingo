@@ -335,11 +335,19 @@ public final class DingoDriverParser extends DingoParser {
             transaction = connection.getTransaction();
             txn_Id = transaction.getTxnId();
         } else {
-            // autocommit is true use current txn mode
-            transaction = connection.createTransaction(
-                "pessimistic".equalsIgnoreCase(connection.getClientInfo("txn_mode")) ?
-                    TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC,
-                connection.getAutoCommit());
+            if (prepare) {
+                // prepare using optimistic transaction
+                transaction = connection.createTransaction(
+                    TransactionType.OPTIMISTIC,
+                    connection.getAutoCommit()
+                );
+            } else {
+                // autocommit is true use current txn mode
+                transaction = connection.createTransaction(
+                    "pessimistic".equalsIgnoreCase(connection.getClientInfo("txn_mode")) ?
+                        TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC,
+                    connection.getAutoCommit());
+            }
             txn_Id = transaction.getTxnId();
             if (pointTs > 0) {
                 transaction.setPointStartTs(pointTs);

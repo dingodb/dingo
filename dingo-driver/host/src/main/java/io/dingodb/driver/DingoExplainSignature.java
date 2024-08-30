@@ -17,6 +17,9 @@
 package io.dingodb.driver;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Job;
 import io.dingodb.expr.json.runtime.Parser;
 import lombok.Getter;
@@ -48,6 +51,12 @@ final class DingoExplainSignature extends Meta.Signature {
     @Setter
     private String job;
 
+    @JsonProperty("jobId")
+    @Getter
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    private final CommonId jobId;
+
     @JsonProperty("sqlExplainLevel")
     @Getter
     @Setter
@@ -69,6 +78,7 @@ final class DingoExplainSignature extends Meta.Signature {
         this.physicalPlan = physicalPlan;
         this.logicalPlan = logicalPlan;
         this.job = job.toString();
+        this.jobId = job.getJobId();
         this.sqlExplainLevel = sqlExplainLevel;
     }
 
