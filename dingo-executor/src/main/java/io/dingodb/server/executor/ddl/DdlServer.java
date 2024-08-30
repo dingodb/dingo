@@ -111,7 +111,7 @@ public final class DdlServer {
     }
 
     public static void startLoadDDLAndRunBySchedule(Session session) {
-        LogUtils.info(log, "startJob by local schedule");
+        //LogUtils.info(log, "startJob by local schedule");
         startLoadDDLAndRun(session);
     }
 
@@ -127,8 +127,34 @@ public final class DdlServer {
             Utils.sleep(1000);
             return;
         }
-        loadDDLJobAndRun(session, JobTableUtil::getGenerateJob, DdlContext.INSTANCE.getDdlJobPool());
-        loadDDLJobAndRun(session, JobTableUtil::getReorgJob, DdlContext.INSTANCE.getDdlReorgPool());
+        loadDDLJobsAndRun(session, JobTableUtil::getGenerateJobs, DdlContext.INSTANCE.getDdlJobPool());
+        //loadDDLJobsAndRun(session, JobTableUtil::getReorgJobs, DdlContext.INSTANCE.getDdlReorgPool());
+    }
+
+    static synchronized void loadDDLJobsAndRun(Session session, Function<Session, Pair<List<DdlJob>, String>> getJob, DdlWorkerPool pool) {
+        long start = System.currentTimeMillis();
+        Pair<List<DdlJob>, String> res = getJob.apply(session);
+        if (res == null || res.getValue() != null) {
+            return;
+        }
+        List<DdlJob> ddlJobs = res.getKey();
+        if (ddlJobs == null || ddlJobs.isEmpty()) {
+            return;
+        }
+        long sub = System.currentTimeMillis() - start;
+        DingoMetrics.timer("loadDdlJobs-count").update(ddlJobs.size(), TimeUnit.MILLISECONDS);
+        DingoMetrics.timer("loadDdlJobs").update(sub, TimeUnit.MILLISECONDS);
+        try {
+            if (ddlJobs.size() > 1) {
+                LogUtils.info(log, "ddl-jobs size:" + ddlJobs.size());
+            }
+            for (DdlJob ddlJob : ddlJobs) {
+                DdlWorker worker = pool.borrowObject();
+                delivery2worker(worker, ddlJob, pool);
+            }
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+        }
     }
 
     static synchronized void loadDDLJobAndRun(Session session, Function<Session, Pair<DdlJob, String>> getJob, DdlWorkerPool pool) {

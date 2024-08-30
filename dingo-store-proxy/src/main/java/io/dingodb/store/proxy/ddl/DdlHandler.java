@@ -89,7 +89,7 @@ public final class DdlHandler {
         // insert into dingo_ddl_job
         StringBuilder sqlBuilder = new StringBuilder(INSERT_JOB);
         String format = "(%d, %b, %s, %s, %s, %d, %b)";
-        long jobId = 0;
+        long jobId;
         job.setId(ids.get(0));
         jobId = job.getId();
         job.setState(JobState.jobStateQueueing);

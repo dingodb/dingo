@@ -18,6 +18,7 @@ package io.dingodb.server.executor.ddl;
 
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlUtil;
@@ -34,7 +35,11 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Date;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -42,6 +47,7 @@ import java.util.function.Function;
 public final class JobTableUtil {
     private static final String updateDDLJobSQL = "update mysql.dingo_ddl_job set job_meta = '%s' where job_id = %d";
     private static final String getJobSQL = "select job_meta, processing, job_id from mysql.dingo_ddl_job where job_id in (select min(job_id) from mysql.dingo_ddl_job group by schema_ids, table_ids, processing) and %s reorg %s order by processing desc, job_id";
+    private static final String getJobsSQL = "select job_meta, processing, job_id, table_ids from mysql.dingo_ddl_job where job_id in (select min(job_id) from mysql.dingo_ddl_job group by schema_ids, table_ids) %s order by processing desc, job_id";
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final int general = 0;
     private static final int reorg = 1;
@@ -116,6 +122,30 @@ public final class JobTableUtil {
         }
     }
 
+    public static Pair<List<DdlJob>, String> getGenerateJobs(Session session) {
+        try {
+            return getJobs(session, general, job1 -> {
+                Session session1 = SessionUtil.INSTANCE.getSession();
+                try {
+                    if (job1.getActionType() == ActionType.ActionDropSchema) {
+                        String sql = "select job_id from mysql.dingo_ddl_job where schema_ids = %s and processing limit 1";
+                        sql = String.format(sql, Utils.quoteForSql(job1.getSchemaId()));
+                        return checkJobIsRunnable(session1, sql);
+                    }
+                    String sql = "select job_id from mysql.dingo_ddl_job t1, (select table_ids from mysql.dingo_ddl_job where job_id = %d) t2 where " +
+                        " processing and t2.table_ids = t1.table_ids";
+                    sql = String.format(sql, job1.getId());
+                    return checkJobIsRunnable(session1, sql);
+                } finally {
+                    SessionUtil.INSTANCE.closeSession(session1);
+                }
+            });
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            return Pair.of(null, e.getMessage());
+        }
+    }
+
     public static Pair<Boolean, String> checkJobIsRunnable(Session session, String sql) {
         List<Object[]> resList;
         try {
@@ -126,6 +156,81 @@ public final class JobTableUtil {
             return Pair.of(false, e.getMessage());
         }
         return Pair.of(resList.isEmpty(), null);
+    }
+
+    public static Pair<List<DdlJob>, String> getJobs(
+        Session session,
+        int jobType,
+        Function<DdlJob, Pair<Boolean, String>> filter
+    ) {
+        String sql = String.format(getJobsSQL, DdlContext.INSTANCE.excludeJobIDs());
+        List<DdlJob> ddlJobList = new ArrayList<>();
+        List<CompletableFuture<Pair<DdlJob, String>>> futureList = new ArrayList<>();
+        try {
+            long start = System.currentTimeMillis();
+            List<Object[]> resList = session.executeQuery(sql);
+            long cost = System.currentTimeMillis() - start;
+
+            if (!resList.isEmpty()) {
+                DingoMetrics.metricRegistry.timer("getJobSql").update(cost, TimeUnit.MILLISECONDS);
+            }
+            if (cost > 200) {
+                LogUtils.info(log, "get job size:{}", resList.size()
+                    + ", runningJobs:" + DdlContext.INSTANCE.getRunningJobs().size()
+                    + ", query job sql cost:" + cost);
+            }
+            for (Object[] rows : resList) {
+                byte[] bytes = (byte[]) rows[0];
+                DdlJob ddlJob;
+                try {
+                    ddlJob = objectMapper.readValue(bytes, DdlJob.class);
+                } catch (Exception e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                    return Pair.of(null, e.getMessage());
+                }
+                boolean processing = Boolean.parseBoolean(rows[1].toString());
+                String tableIds = "";
+                if (rows[3] != null) {
+                    tableIds = rows[3].toString();
+                }
+                if (processing) {
+                    if (DdlContext.INSTANCE.getRunningJobs().containJobId(ddlJob.getId())) {
+                        //LogUtils.info(log, "get job process check has running,jobId:{}", ddlJob.getId());
+                        continue;
+                    } else {
+                        //LogUtils.info(log, "get job processing true, jobId:{}", ddlJob.getId());
+                        //return Pair.of(ddlJob, null);
+                        ddlJobList.add(ddlJob);
+                    }
+                }
+
+                Callable<Pair<DdlJob, String>> callable = () -> {
+                    Pair<Boolean, String> res = filter.apply(ddlJob);
+                    if (res.getValue() != null) {
+                        return Pair.of(null, res.getValue());
+                    }
+                    if (res.getKey()) {
+                        if (markJobProcessing(session, ddlJob) != null) {
+                            return Pair.of(null, null);
+                        }
+                        ddlJobList.add(ddlJob);
+                        return Pair.of(ddlJob, null);
+                    }
+                    return Pair.of(null, null);
+                };
+                futureList.add(Executors.submit("filterJob", callable));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
+        try {
+            allFutures.get();
+        } catch (ExecutionException | InterruptedException e) {
+            LogUtils.error(log, e.getMessage(), e);
+        }
+
+        return Pair.of(ddlJobList, null);
     }
 
     public static Pair<DdlJob, String> getJob(Session session, int jobType, Function<DdlJob, Pair<Boolean, String>> filter) {
@@ -184,11 +289,16 @@ public final class JobTableUtil {
     }
 
     public static String markJobProcessing(Session session, DdlJob job) {
-        Timer.Context timeCtx = DingoMetrics.getTimeContext("markJobProcessing");
-        String sql = "update mysql.dingo_ddl_job set processing = true where job_id = " + job.getId();
-        String res = markJobProcessing(session, sql, 3);
-        timeCtx.stop();
-        return res;
+        Session session1 = SessionUtil.INSTANCE.getSession();
+        try {
+            Timer.Context timeCtx = DingoMetrics.getTimeContext("markJobProcessing");
+            String sql = "update mysql.dingo_ddl_job set processing = true where job_id = " + job.getId();
+            String res = markJobProcessing(session1, sql, 3);
+            timeCtx.stop();
+            return res;
+        } finally {
+            SessionUtil.INSTANCE.closeSession(session1);
+        }
     }
 
     public static String markJobProcessing(Session session, String sql, int retry) {
@@ -207,6 +317,25 @@ public final class JobTableUtil {
         try {
             Timer.Context timeCtx = DingoMetrics.getTimeContext("reorgJob");
             Pair<DdlJob, String> res = getJob(session, reorg, job1 -> {
+                String sql = "select job_id from mysql.dingo_ddl_job where "
+                    + "(schema_ids = %s and type = %d and processing) "
+                    + " or (table_ids = %s and processing) "
+                    + " limit 1";
+                sql = String.format(sql, Utils.quoteForSql(job1.getSchemaId()), job1.getActionType().getCode(), Utils.quoteForSql(job1.getTableId()));
+                return checkJobIsRunnable(session, sql);
+            });
+            timeCtx.stop();
+            return res;
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            return Pair.of(null, e.getMessage());
+        }
+    }
+
+    public static Pair<List<DdlJob>, String> getReorgJobs(Session session) {
+        try {
+            Timer.Context timeCtx = DingoMetrics.getTimeContext("reorgJob");
+            Pair<List<DdlJob>, String> res = getJobs(session, reorg, job1 -> {
                 String sql = "select job_id from mysql.dingo_ddl_job where "
                     + "(schema_ids = %s and type = %d and processing) "
                     + " or (table_ids = %s and processing) "
