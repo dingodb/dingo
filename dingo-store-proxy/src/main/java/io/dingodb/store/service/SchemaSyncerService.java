@@ -126,7 +126,7 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
             }
             List<KeyValue> kvList = infoSchemaService.getByKey(path, pathEnd);
             if (kvList.isEmpty()) {
-                Utils.sleep(100);
+                Utils.sleep(20);
                 continue;
             }
             synced = true;
@@ -173,7 +173,7 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
                 return null;
             }
 
-            Utils.sleep(100);
+            Utils.sleep(20);
         }
     }
 

@@ -42,7 +42,10 @@ public interface InfoSchemaService {
     String TEMPLATE = "%s:%d";
     String mSchemaVersionKey = "SchemaVersionKey";
     String nextGlobalID = "NextGlobalID";
-    byte[] mDDLJobHistoryKey = "DDLJobHistory".getBytes();
+    String mDDLJobHistoryKey = "DDLJobHistory";
+    String mHistoryJobPrefix = String.format("%s:%s", DdlUtil.tenantPrefix, mDDLJobHistoryKey);
+
+    byte[] mHistoryJobPrefixKeys = mHistoryJobPrefix.getBytes();
 
     String mDdlTemplate = "%s:%s:%d";
 
@@ -148,6 +151,10 @@ public interface InfoSchemaService {
         return MysqlByteUtil.longToBytesBigEndian(jobId);
     }
 
+    default byte[] historyJobIdKey(long jobId) {
+        return (mHistoryJobPrefix + ":" + jobId).getBytes();
+    }
+
     boolean checkTenantExists(byte[] tenantKey);
 
     boolean checkDBExists(byte[] tenant, byte[] schemaKey);
@@ -223,6 +230,7 @@ public interface InfoSchemaService {
     Long genSchemaVersion(long step);
 
     void setSchemaDiff(SchemaDiff schemaDiff);
+    default void delSchemaDiff(long ver) {};
 
     void updateTable(long schemaId, Object table);
 
@@ -233,6 +241,8 @@ public interface InfoSchemaService {
     DdlJob getHistoryDDLJob(long jobId);
 
     void addHistoryDDLJob(DdlJob job, boolean updateRawArgs);
+
+    default void delHistoryDDLJob(long jobId) {};
 
     void prepareDone();
 

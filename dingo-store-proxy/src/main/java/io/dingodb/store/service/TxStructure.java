@@ -87,6 +87,12 @@ public class TxStructure {
         ddlTxn.put(ek, value, realStartTs);
     }
 
+    public void ddlDel(byte[] key) {
+        byte[] ek = CodecKvUtil.encodeStringDataKey(key);
+        long realStartTs = startTs != 0L ? startTs : TsoService.getDefault().tso();
+        ddlTxn.mDel(ek, realStartTs);
+    }
+
     public void hInsert(byte[] key, byte[] field, byte[] value) {
         byte[] dataKey = CodecKvUtil.encodeHashDataKey(key, field);
         long realStartTs = startTs != 0L ? startTs : TsoService.getDefault().tso();
@@ -121,6 +127,12 @@ public class TxStructure {
         byte[] dataKey = CodecKvUtil.encodeHashDataKey(prefix, data);
         long realStartTs = startTs != 0L ? startTs : TsoService.getDefault().tso();
         this.ddlTxn.put(dataKey, value, realStartTs);
+    }
+
+    public void ddlHDel(byte[] prefix, byte[] data) {
+        byte[] dataKey = CodecKvUtil.encodeHashDataKey(prefix, data);
+        long realStartTs = startTs != 0L ? startTs : TsoService.getDefault().tso();
+        this.ddlTxn.mDel(dataKey, realStartTs);
     }
 
     public List<byte[]> mRange(byte[] start, byte[] end) {

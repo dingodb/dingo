@@ -18,9 +18,7 @@ package io.dingodb.common.ddl;
 
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.tenant.TenantConstant;
-import org.checkerframework.checker.units.qual.A;
 
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class DdlUtil {
@@ -45,6 +43,8 @@ public final class DdlUtil {
     public static final String ADDING_DDL_JOB_CONCURRENT_KEY = String.format("%s:%s", tenantPrefix, ADDING_DDL_JOB_CONCURRENT);
 
     public static boolean mdlEnable = true;
+    public static boolean delDiff = true;
+    public static boolean historyJobEtcd = false;
 
     public static int errorCountLimit = 5;
 

@@ -23,6 +23,8 @@ import com.google.protobuf.CodedOutputStream;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.CodecKvUtil;
 import io.dingodb.common.ddl.DdlJob;
+import io.dingodb.common.ddl.DdlUtil;
+import io.dingodb.common.ddl.JobState;
 import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
@@ -710,6 +712,12 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
+    public void delSchemaDiff(long ver) {
+        byte[] key = schemaDiffKey(ver);
+        this.txn.ddlDel(key);
+    }
+
+    @Override
     public void updateTable(long schemaId, Object table) {
         byte[] tenantKey = tenantKey(tenantId);
         byte[] schemaKey = schemaKey(schemaId);
@@ -743,17 +751,71 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public DdlJob getHistoryDDLJob(long jobId) {
-        byte[] val = this.txn.ddlHGet(mDDLJobHistoryKey, jobIdKey(jobId));
-        if (val == null) {
+        if (DdlUtil.historyJobEtcd) {
+            byte[] key = historyJobIdKey(jobId);
+            RangeRequest rangeRequest = RangeRequest.builder()
+                .key(key)
+                .build();
+            RangeResponse response = this.versionService.kvRange(System.identityHashCode(rangeRequest),
+                rangeRequest);
+            if (response.getKvs() != null && !response.getKvs().isEmpty()) {
+                byte[] val = response.getKvs().get(0).getKv().getValue();
+                if (val == null) {
+                    return DdlJob.builder().id(jobId).error(null).build();
+                }
+                String valStr = new String(val);
+                if ("0".equalsIgnoreCase(valStr)) {
+                    return DdlJob.builder().id(jobId).error(null)
+                        .state(JobState.jobStateSynced).build();
+                } else {
+                    return DdlJob.builder().id(jobId).error(new String(val)).build();
+                }
+            }
             return null;
+        } else {
+            byte[] val = this.txn.ddlHGet(mHistoryJobPrefixKeys, jobIdKey(jobId));
+            if (val == null) {
+                return null;
+            }
+            return (DdlJob) getObjFromBytes(val, DdlJob.class);
         }
-        return (DdlJob) getObjFromBytes(val, DdlJob.class);
     }
 
     @Override
     public void addHistoryDDLJob(DdlJob job, boolean updateRawArgs) {
-        byte[] data = job.encode(updateRawArgs);
-        this.txn.ddlHPut(mDDLJobHistoryKey, jobIdKey(job.getId()), data);
+        if (DdlUtil.historyJobEtcd) {
+            byte[] data;
+            if (job.getError() != null) {
+                data = job.getError().getBytes();
+            } else {
+                data = "0".getBytes();
+            }
+            byte[] key = historyJobIdKey(job.getId());
+            PutRequest putRequest = PutRequest.builder()
+                .keyValue(
+                    KeyValue.builder()
+                        .key(key)
+                        .value(data)
+                        .build()
+                    )
+               .build();
+            putKvToCoordinator(putRequest, 3);
+        } else {
+            byte[] data = job.encode(updateRawArgs);
+            this.txn.ddlHPut(mHistoryJobPrefixKeys, jobIdKey(job.getId()), data);
+        }
+    }
+
+    @Override
+    public void delHistoryDDLJob(long jobId) {
+        if (DdlUtil.historyJobEtcd) {
+            byte[] key = historyJobIdKey(jobId);
+            DeleteRangeRequest deleteRangeRequest
+                = DeleteRangeRequest.builder().key(key).build();
+            this.versionService.kvDeleteRange(System.identityHashCode(deleteRangeRequest), deleteRangeRequest);
+        } else {
+            this.txn.ddlHDel(mHistoryJobPrefixKeys, jobIdKey(jobId));
+        }
     }
 
     @Override

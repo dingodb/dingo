@@ -17,6 +17,7 @@
 package io.dingodb.common.metrics;
 
 import com.codahale.metrics.CachedGauge;
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -166,6 +167,10 @@ public final class DingoMetrics {
 
     public static Timer timer(final @NonNull String name) {
         return metricRegistry.timer(name, () -> new Timer(new UniformReservoir()));
+    }
+
+    public static Counter counter(String name) {
+        return metricRegistry.counter(name, Counter::new);
     }
 
     public static Timer.Context getTimeContext(final @NonNull String name) {
