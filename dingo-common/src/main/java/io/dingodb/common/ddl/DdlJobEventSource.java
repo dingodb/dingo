@@ -16,12 +16,13 @@
 
 package io.dingodb.common.ddl;
 
-import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.util.Utils;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.EventObject;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import javax.swing.event.EventListenerList;
@@ -29,10 +30,12 @@ import javax.swing.event.EventListenerList;
 @Slf4j
 public final class DdlJobEventSource {
     private final EventListenerList listenerList = new EventListenerList();
+    private final EventListenerList verListenerList = new EventListenerList();
 
     public static DdlJobEventSource ddlJobEventSource = new DdlJobEventSource();
 
-    public final BlockingQueue<Integer> ownerJobQueue = new LinkedBlockingDeque<>(1000);
+    public final BlockingQueue<Long> ownerJobQueue = new LinkedBlockingDeque<>(1000);
+    public final BlockingQueue<Long> mdlCheckVerQueue = new LinkedBlockingDeque<>(1000);
 
     private DdlJobEventSource() {
         ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
@@ -43,7 +46,7 @@ public final class DdlJobEventSource {
                     continue;
                 }
                 try {
-                    int jobNotify = take();
+                    long jobNotify = take(ownerJobQueue);
                     ddlJob(jobNotify);
                     //Executors.execute("notify_ddl_worker", () -> ddlJob(jobNotify), true);
                     //for (int i = 0; i < jobNotify; i ++) {
@@ -54,12 +57,26 @@ public final class DdlJobEventSource {
                 }
             }
         }).start();
+        new Thread(() -> {
+            while (true) {
+                if (!env.ddlOwner.get()) {
+                    Utils.sleep(5000);
+                    continue;
+                }
+                try {
+                    long checkVerNotify = take(mdlCheckVerQueue);
+                    ddlCheckVer(checkVerNotify);
+                } catch (Exception e) {
+                    LogUtils.error(log, e.getMessage());
+                }
+            }
+        }).start();
     }
 
-    public Integer take() {
+    public Long take(BlockingQueue<Long> queue) {
         while (true) {
             try {
-                return ownerJobQueue.take();
+                return queue.take();
             } catch (InterruptedException ignored) {
             }
         }
@@ -69,7 +86,11 @@ public final class DdlJobEventSource {
         listenerList.add(DdlJobListener.class, listener);
     }
 
-    public void ddlJob(int size) {
+    public void addMdlCheckVerListener(DdlCheckMdlVerListener listener) {
+        verListenerList.add(DdlCheckMdlVerListener.class, listener);
+    }
+
+    public void ddlJob(long size) {
         DdlJobEvent event = new DdlJobEvent(size);
         Object[] listeners = listenerList.getListenerList();
         if (listeners == null) {
@@ -81,6 +102,29 @@ public final class DdlJobEventSource {
                 DdlJobListener ddlJobListener = (DdlJobListener) listener;
                 ddlJobListener.eventOccurred(event);
                 //}
+            }
+        }
+    }
+
+    public void ddlCheckVer(long size) {
+        EventObject event = new EventObject(size);
+        Object[] listeners = verListenerList.getListenerList();
+        if (listeners == null) {
+            return;
+        }
+        for (Object listener : listeners) {
+            if (listener instanceof DdlCheckMdlVerListener) {
+                ((DdlCheckMdlVerListener) listener).eventOccurred(event);
+            }
+        }
+    }
+
+    public static <T> void forcePut(@NonNull BlockingQueue<T> queue, T item) {
+        while (true) {
+            try {
+                queue.put(item);
+                break;
+            } catch (InterruptedException ignored) {
             }
         }
     }

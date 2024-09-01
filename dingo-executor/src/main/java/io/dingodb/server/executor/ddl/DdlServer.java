@@ -43,11 +43,14 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 @Slf4j
 public final class DdlServer {
+    public static BlockingQueue<Long> verDelQueue = new LinkedBlockingDeque<>(10000);
     private DdlServer() {
     }
 
@@ -55,6 +58,28 @@ public final class DdlServer {
         DdlJobListenerImpl ddlJobListener = new DdlJobListenerImpl(DdlServer::startLoadDDLAndRun);
         DdlJobEventSource ddlJobEventSource = DdlJobEventSource.ddlJobEventSource;
         ddlJobEventSource.addListener(ddlJobListener);
+        if (DdlUtil.delDiff) {
+            delVerSchemaDiff();
+        }
+    }
+
+    public static void delVerSchemaDiff() {
+        ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
+        new Thread(() -> {
+            while (true) {
+                if (!env.ddlOwner.get()) {
+                    Utils.sleep(5000);
+                    continue;
+                }
+                try {
+                    long ver = DdlJobEventSource.ddlJobEventSource.take(verDelQueue);
+                    io.dingodb.meta.InfoSchemaService.root().delSchemaDiff(ver);
+                    DingoMetrics.counter("delSchemaDiff").inc();
+                } catch (Exception e) {
+                    LogUtils.error(log, e.getMessage());
+                }
+            }
+        }).start();
     }
 
     public static void watchDdlKey() {
@@ -142,7 +167,6 @@ public final class DdlServer {
             return;
         }
         long sub = System.currentTimeMillis() - start;
-        DingoMetrics.timer("loadDdlJobs-count").update(ddlJobs.size(), TimeUnit.MILLISECONDS);
         DingoMetrics.timer("loadDdlJobs").update(sub, TimeUnit.MILLISECONDS);
         try {
             if (ddlJobs.size() > 1) {
@@ -235,7 +259,10 @@ public final class DdlServer {
                     if (ddlJob.isDone()) {
                         ddlJob.setState(JobState.jobStateSynced);
                     }
+                    long start = System.currentTimeMillis();
                     String error = worker.handleJobDone(ddlJob);
+                    long sub = System.currentTimeMillis() - start;
+                    DingoMetrics.timer("handleJobDone").update(sub, TimeUnit.MILLISECONDS);
                     if (error != null) {
                         LogUtils.error(log, "[ddl-error] handle job done error:{}", error);
                     }
@@ -243,7 +270,8 @@ public final class DdlServer {
                 dc.deleteRunningDDLJobMap(ddlJob.getId());
                 pool.returnObject(worker);
                 timeCtx.stop();
-                DdlHandler.asyncNotify(1);
+                LogUtils.info(log, "job loop done,jobId:{}", ddlJob.getId());
+                DdlHandler.asyncNotify(1L);
             }
         });
     }
@@ -305,6 +333,12 @@ public final class DdlServer {
                 }
                 LogUtils.error(log, "[ddl] wait latest schema version encounter error, latest version:{}, jobId:{}" , latestSchemaVersion, job.getId());
                 return;
+            } else {
+                if (DdlUtil.delDiff) {
+                    verDelQueue.put(latestSchemaVersion);
+                }
+                long sub = System.currentTimeMillis() - start;
+                DingoMetrics.timer("mdlWaitChanged").update(sub, TimeUnit.MILLISECONDS);
             }
         } catch (Exception e) {
             LogUtils.error(log, "[ddl] wait latest schema version encounter error, latest version:" + latestSchemaVersion, e);

@@ -26,6 +26,7 @@ import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.table.IndexDefinition;
@@ -112,7 +113,10 @@ public class DdlWorker {
             LogUtils.warn(log, "[ddl] job txn rollback done, jobId:{}", job.getId());
             schemaVer = 0;
         }
+        long start = System.currentTimeMillis();
         String error = registerMDLInfo(job, schemaVer);
+        long end = System.currentTimeMillis();
+        DingoMetrics.timer("registerMDLInfo").update((end - start), TimeUnit.MILLISECONDS);
         if (error != null) {
             session.rollback();
             //dc.getSv().unlockSchemaVersion(job);
@@ -120,6 +124,8 @@ public class DdlWorker {
             return Pair.of(0L, error);
         }
         error = updateDDLJob(job, res.getValue() != null);
+        long sub = System.currentTimeMillis() - start;
+        DingoMetrics.timer("updateDDLJob").update(sub, TimeUnit.MILLISECONDS);
         if (error != null) {
             // session rollback
             session.rollback();
@@ -156,31 +162,34 @@ public class DdlWorker {
         if (ver == 0) {
             return null;
         }
-        List<Object[]> rows;
-        try {
-            rows = this.session.executeQuery("select table_ids from mysql.dingo_ddl_job where job_id = " + job.getId());
-        } catch (Exception e) {
-            LogUtils.error(log, e.getMessage(), e);
-            return e.getMessage();
-        }
-        if (rows.isEmpty()) {
-            return "can't find ddl job " + job.getId();
-        }
-        String ids = (String) rows.get(0)[0];
+//        List<Object[]> rows;
+//        try {
+//            rows = this.session.executeQuery("select table_ids from mysql.dingo_ddl_job where job_id = " + job.getId());
+//        } catch (Exception e) {
+//            LogUtils.error(log, e.getMessage(), e);
+//            return e.getMessage();
+//        }
+//        if (rows.isEmpty()) {
+//            return "can't find ddl job " + job.getId();
+//        }
+//        String ids = (String) rows.get(0)[0];
+        String ids = job.job2TableIDs();
         boolean duplicate = false;
-        try {
-            List<Object[]> res = session.executeQuery("select job_id from mysql.dingo_mdl_info where job_id=" + job.getId());
-            if (!res.isEmpty()) {
-                duplicate = true;
-            }
-        } catch (Exception e) {
-            LogUtils.error(log, e.getMessage(), e);
-        }
+//        try {
+//            List<Object[]> res = session.executeQuery("select job_id from mysql.dingo_mdl_info where job_id=" + job.getId());
+//            if (!res.isEmpty()) {
+//                duplicate = true;
+//            }
+//        } catch (Exception e) {
+//            LogUtils.error(log, e.getMessage(), e);
+//        }
         String sql;
         if (duplicate) {
+            DingoMetrics.counter("registerMDLInfoDuplicate").inc();
             sql = "update mysql.dingo_mdl_info set version=%d and table_ids=%s where job_id=%d";
             sql = String.format(sql, ver, Utils.quoteForSql(ids), job.getId());
         } else {
+            DingoMetrics.counter("registerMDLInfoNone").inc();
             sql = "insert into mysql.dingo_mdl_info (job_id, version, table_ids) values (%d, %d, %s)";
             sql = String.format(sql, job.getId(), ver, Utils.quoteForSql(ids));
         }
@@ -208,7 +217,7 @@ public class DdlWorker {
         }
         this.session.commit();
         // clean ddl reorg
-        ReorgUtil.cleanupDDLReorgHandles(job);
+        //ReorgUtil.cleanupDDLReorgHandles(job);
         return null;
     }
 
@@ -459,15 +468,21 @@ public class DdlWorker {
 //                break;
 //            case SCHEMA_DELETE_ONLY:
                 tableInfo.getTableDefinition().setSchemaState(SCHEMA_NONE);
+                long start = System.currentTimeMillis();
                 res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo,
                     originalState.getCode() != tableInfo.getTableDefinition().getSchemaState().number());
+                long sub = System.currentTimeMillis() - start;
+                DingoMetrics.timer("updateVerAndTable").update(sub, TimeUnit.MILLISECONDS);
                 if (res.getValue() != null) {
                     return res;
                 }
                 MetaService rootMs = MetaService.root();
                 MetaService ms = rootMs.getSubMetaService(job.getSchemaName());
                 try {
+                    start = System.currentTimeMillis();
                     ms.dropTable(tableInfo.getTableDefinition().getName());
+                    sub = System.currentTimeMillis() - start;
+                    DingoMetrics.timer("metaDropTable").update(sub, TimeUnit.MILLISECONDS);
                 } catch (Exception e) {
                     LogUtils.error(log, "drop table error", e);
                 }
@@ -902,8 +917,10 @@ public class DdlWorker {
                     break;
             }
             InfoSchemaService infoSchemaService = InfoSchemaService.root();
-            LogUtils.info(log, "[ddl] put schemaDiff:{}", schemaDiff);
+            //LogUtils.info(log, "[ddl] put schemaDiff:{}", schemaDiff);
+
             infoSchemaService.setSchemaDiff(schemaDiff);
+            DingoMetrics.counter("setSchemaDiff").inc();
             return Pair.of(schemaVersion, null);
         } catch (Exception e) {
             LogUtils.error(log, "[ddl-error] put schemaDiff error, jobId:" + ddlJob.getId() + ", version:" + schemaVersion, e);
@@ -924,9 +941,9 @@ public class DdlWorker {
 
     public static String addHistoryDDLJob(Session session, DdlJob job, boolean updateRawArgs) {
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
-        assert infoSchemaService != null;
         infoSchemaService.addHistoryDDLJob(job, false);
-        return JobTableUtil.addHistoryDDLJob2Table(session, job, updateRawArgs);
+        //return JobTableUtil.addHistoryDDLJob2Table(session, job, updateRawArgs);
+        return null;
     }
 
     public static String waitSchemaSyncedForMDL(DdlContext dc, DdlJob ddlJob, long latestSchemaVersion) {

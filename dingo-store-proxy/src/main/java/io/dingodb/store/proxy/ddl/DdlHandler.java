@@ -106,14 +106,14 @@ public final class DdlHandler {
         if (error != null) {
             LogUtils.error(log, "[ddl-error] insert ddl to table,sql:{}", sql);
         }
-        asyncNotify(1, jobId);
+        asyncNotify(1L, jobId);
     }
 
-    public static void asyncNotify(int size, long jobId) {
+    public static void asyncNotify(Long size, long jobId) {
         ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
         if (env.ddlOwner.get()) {
             DdlJobEventSource ddlJobEventSource = DdlJobEventSource.ddlJobEventSource;
-            forcePut(ddlJobEventSource.ownerJobQueue, size);
+            DdlJobEventSource.forcePut(ddlJobEventSource.ownerJobQueue, size);
         } else {
             InfoSchemaService infoSchemaService = InfoSchemaService.root();
             infoSchemaService.putKvToCoordinator(DdlUtil.ADDING_DDL_JOB_CONCURRENT_KEY, String.valueOf(jobId));
@@ -121,11 +121,11 @@ public final class DdlHandler {
     }
 
 
-    public static void asyncNotify(int size) {
+    public static void asyncNotify(long size) {
         ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
         if (env.ddlOwner.get()) {
             DdlJobEventSource ddlJobEventSource = DdlJobEventSource.ddlJobEventSource;
-            forcePut(ddlJobEventSource.ownerJobQueue, size);
+            DdlJobEventSource.forcePut(ddlJobEventSource.ownerJobQueue, size);
         } else {
             InfoSchemaService infoSchemaService = InfoSchemaService.root();
             infoSchemaService.putKvToCoordinator(DdlUtil.ADDING_DDL_JOB_CONCURRENT_KEY, "1");
@@ -377,7 +377,7 @@ public final class DdlHandler {
 
     public static void doDdlJob(DdlJob job, long timeout) {
         // put job to queue
-        forcePut(asyncJobQueue, job);
+        DdlJobEventSource.forcePut(asyncJobQueue, job);
         // get history job from history
         long start = System.currentTimeMillis();
         while (!Thread.interrupted()) {
@@ -396,7 +396,13 @@ public final class DdlHandler {
             if (sub > timeout) {
                 throw new RuntimeException("wait ddl timeout");
             }
-
+        }
+        if (DdlUtil.historyJobEtcd) {
+            try {
+                InfoSchemaService.root().delHistoryDDLJob(job.getId());
+            } catch (Exception e) {
+                LogUtils.error(log, "ddlhandler del history job:" + e.getMessage(), e);
+            }
         }
     }
 
@@ -417,16 +423,6 @@ public final class DdlHandler {
     public static DdlJob getHistoryJobById(long jobId) {
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         return infoSchemaService.getHistoryDDLJob(jobId);
-    }
-
-    public static <T> void forcePut(@NonNull BlockingQueue<T> queue, T item) {
-        while (true) {
-            try {
-                queue.put(item);
-                break;
-            } catch (InterruptedException ignored) {
-            }
-        }
     }
 
 }

@@ -16,18 +16,19 @@
 
 package io.dingodb.server.executor.schedule;
 
+import io.dingodb.common.ddl.DdlJobEventSource;
 import io.dingodb.common.ddl.MdlCheckTableInfo;
 import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
-import io.dingodb.meta.SchemaSyncerService;
 import io.dingodb.meta.ddl.LoadSchemaDiffs;
 import io.dingodb.meta.ddl.RelatedSchemaChange;
 import io.dingodb.meta.entity.InfoCache;
@@ -47,6 +48,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public final class LoadInfoSchemaTask {
@@ -97,6 +99,7 @@ public final class LoadInfoSchemaTask {
         }
         try {
             refreshMDLCheckTableInfo();
+            DdlJobEventSource.forcePut(DdlJobEventSource.ddlJobEventSource.mdlCheckVerQueue, 1L);
         } catch (Exception e) {
             LogUtils.error(log, "refreshMDLCheckTableInfo error, reason:{}", e.getMessage());
         }
@@ -191,7 +194,10 @@ public final class LoadInfoSchemaTask {
         long usedVerTmp = usedVersion;
         while (usedVerTmp < newVersion) {
             usedVerTmp ++;
+            long start = System.currentTimeMillis();
             SchemaDiff schemaDiff = infoSchemaService.getSchemaDiff(usedVerTmp);
+            long sub = System.currentTimeMillis() - start;
+            DingoMetrics.timer("getSchemaDiff").update(sub, TimeUnit.MILLISECONDS);
             if (schemaDiff == null) {
                 continue;
             }
@@ -233,6 +239,7 @@ public final class LoadInfoSchemaTask {
         if (!ScopeVariables.runDdl()) {
             return;
         }
+        long start = System.currentTimeMillis();
         String sql = "select job_id, version, table_ids from mysql.dingo_mdl_info where version <= %d";
         sql = String.format(sql, schemaVer);
         MdlCheckTableInfo mdlCheckTableInfo = ExecutionEnvironment.INSTANCE.mdlCheckTableInfo;
@@ -249,6 +256,8 @@ public final class LoadInfoSchemaTask {
         } finally {
             SessionUtil.INSTANCE.closeSession(session);
         }
+        long sub = System.currentTimeMillis() - start;
+        DingoMetrics.timer("loadIsMdlGet").update(sub, TimeUnit.MILLISECONDS);
         try {
             mdlCheckTableInfo.wLock();
             mdlCheckTableInfo.setJobsIdsMap(new ConcurrentHashMap<>());

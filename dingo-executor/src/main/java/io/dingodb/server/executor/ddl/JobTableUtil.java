@@ -89,11 +89,14 @@ public final class JobTableUtil {
     }
 
     public static void cleanMDLInfo(long jobId) {
+        long start = System.currentTimeMillis();
         String sql = "delete from mysql.dingo_mdl_info where job_id = " + jobId;
         String error = SessionUtil.INSTANCE.exeUpdateInTxn(sql);
         if (error != null) {
             LogUtils.error(log, "[ddl] cleanMDLInfo error:{}, jobId:{}", error, jobId);
         }
+        long end = System.currentTimeMillis();
+        DingoMetrics.timer("delMdlInfoSql").update((end - start), TimeUnit.MILLISECONDS);
 
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         String template = DdlUtil.MDL_PREFIX_TEMPLATE;
@@ -101,6 +104,8 @@ public final class JobTableUtil {
         String endTemplate = DdlUtil.MDL_PREFIX_TEMPLATE_END;
         String keyEnd = String.format(endTemplate, DdlUtil.tenantPrefix, DdlUtil.DDLAllSchemaVersionsByJob, jobId);
         infoSchemaService.delKvFromCoordinator(key, keyEnd);
+        long sub = System.currentTimeMillis() - end;
+        DingoMetrics.timer("delMdlKeyEtcd").update(sub, TimeUnit.MILLISECONDS);
     }
 
     public static Pair<DdlJob, String> getGenerateJob(Session session) {
@@ -132,10 +137,11 @@ public final class JobTableUtil {
                         sql = String.format(sql, Utils.quoteForSql(job1.getSchemaId()));
                         return checkJobIsRunnable(session1, sql);
                     }
-                    String sql = "select job_id from mysql.dingo_ddl_job t1, (select table_ids from mysql.dingo_ddl_job where job_id = %d) t2 where " +
-                        " processing and t2.table_ids = t1.table_ids";
-                    sql = String.format(sql, job1.getId());
-                    return checkJobIsRunnable(session1, sql);
+//                    String sql = "select job_id from mysql.dingo_ddl_job t1, (select table_ids from mysql.dingo_ddl_job where job_id = %d) t2 where " +
+//                        " processing and t2.table_ids = t1.table_ids";
+//                    sql = String.format(sql, job1.getId());
+//                    return checkJobIsRunnable(session1, sql);
+                    return Pair.of(false, null);
                 } finally {
                     SessionUtil.INSTANCE.closeSession(session1);
                 }
@@ -165,20 +171,20 @@ public final class JobTableUtil {
     ) {
         String sql = String.format(getJobsSQL, DdlContext.INSTANCE.excludeJobIDs());
         List<DdlJob> ddlJobList = new ArrayList<>();
-        List<CompletableFuture<Pair<DdlJob, String>>> futureList = new ArrayList<>();
+//        List<CompletableFuture<Pair<DdlJob, String>>> futureList = new ArrayList<>();
         try {
             long start = System.currentTimeMillis();
             List<Object[]> resList = session.executeQuery(sql);
             long cost = System.currentTimeMillis() - start;
 
             if (!resList.isEmpty()) {
-                DingoMetrics.metricRegistry.timer("getJobSql").update(cost, TimeUnit.MILLISECONDS);
+                DingoMetrics.metricRegistry.timer("getJobsSql").update(cost, TimeUnit.MILLISECONDS);
             }
-            if (cost > 200) {
-                LogUtils.info(log, "get job size:{}", resList.size()
-                    + ", runningJobs:" + DdlContext.INSTANCE.getRunningJobs().size()
-                    + ", query job sql cost:" + cost);
-            }
+//            if (cost > 200) {
+//                LogUtils.info(log, "get job size:{}", resList.size()
+//                    + ", runningJobs:" + DdlContext.INSTANCE.getRunningJobs().size()
+//                    + ", query job sql cost:" + cost);
+//            }
             for (Object[] rows : resList) {
                 byte[] bytes = (byte[]) rows[0];
                 DdlJob ddlJob;
@@ -188,12 +194,12 @@ public final class JobTableUtil {
                     LogUtils.error(log, e.getMessage(), e);
                     return Pair.of(null, e.getMessage());
                 }
-                boolean processing = Boolean.parseBoolean(rows[1].toString());
-                String tableIds = "";
-                if (rows[3] != null) {
-                    tableIds = rows[3].toString();
-                }
-                if (processing) {
+//                boolean processing = Boolean.parseBoolean(rows[1].toString());
+//                String tableIds = "";
+//                if (rows[3] != null) {
+//                    tableIds = rows[3].toString();
+//                }
+                //if (processing) {
                     if (DdlContext.INSTANCE.getRunningJobs().containJobId(ddlJob.getId())) {
                         //LogUtils.info(log, "get job process check has running,jobId:{}", ddlJob.getId());
                         continue;
@@ -202,33 +208,33 @@ public final class JobTableUtil {
                         //return Pair.of(ddlJob, null);
                         ddlJobList.add(ddlJob);
                     }
-                }
+                //}
 
-                Callable<Pair<DdlJob, String>> callable = () -> {
-                    Pair<Boolean, String> res = filter.apply(ddlJob);
-                    if (res.getValue() != null) {
-                        return Pair.of(null, res.getValue());
-                    }
-                    if (res.getKey()) {
-                        if (markJobProcessing(session, ddlJob) != null) {
-                            return Pair.of(null, null);
-                        }
-                        ddlJobList.add(ddlJob);
-                        return Pair.of(ddlJob, null);
-                    }
-                    return Pair.of(null, null);
-                };
-                futureList.add(Executors.submit("filterJob", callable));
+//                Callable<Pair<DdlJob, String>> callable = () -> {
+//                    Pair<Boolean, String> res = filter.apply(ddlJob);
+//                    if (res.getValue() != null) {
+//                        return Pair.of(null, res.getValue());
+//                    }
+//                    if (res.getKey()) {
+//                        //if (markJobProcessing(session, ddlJob) != null) {
+//                        //    return Pair.of(null, null);
+//                        //}
+//                        ddlJobList.add(ddlJob);
+//                        return Pair.of(ddlJob, null);
+//                    }
+//                    return Pair.of(null, null);
+//                };
+//                futureList.add(Executors.submit("filterJob", callable));
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
-        try {
-            allFutures.get();
-        } catch (ExecutionException | InterruptedException e) {
-            LogUtils.error(log, e.getMessage(), e);
-        }
+//        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
+//        try {
+//            allFutures.get();
+//        } catch (ExecutionException | InterruptedException e) {
+//            LogUtils.error(log, e.getMessage(), e);
+//        }
 
         return Pair.of(ddlJobList, null);
     }

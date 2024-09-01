@@ -48,6 +48,7 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.audit.DingoAudit;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.common.profile.ExecProfile;
 import io.dingodb.common.profile.PlanProfile;
@@ -115,6 +116,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
@@ -263,7 +265,10 @@ public final class DingoDriverParser extends DingoParser {
     ) {
         SqlNode sqlNode;
         try {
+            long start = System.currentTimeMillis();
             sqlNode = parse(sql);
+            long sub = System.currentTimeMillis() - start;
+            DingoMetrics.timer("sql-parse").update(sub, TimeUnit.MILLISECONDS);
             if (sqlNode instanceof DingoSqlCreateTable) {
                 ((DingoSqlCreateTable) sqlNode).setOriginalCreateSql(sql);
             }
@@ -420,9 +425,11 @@ public final class DingoDriverParser extends DingoParser {
                 return !columnMetaData1.hidden;
             }
         ).collect(Collectors.toList());
-
+        long start = System.currentTimeMillis();
         final RelRoot relRoot = convert(sqlNode, false);
         RelNode relNode = optimize(relRoot.rel);
+        long sub = System.currentTimeMillis() - start;
+        DingoMetrics.timer("relOptimize").update(sub, TimeUnit.MILLISECONDS);
         planProfile.endOptimize();
         markAutoIncForDml(relNode);
         Location currentLocation = MetaService.root().currentLocation();
