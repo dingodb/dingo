@@ -138,4 +138,7 @@ public interface DingoResource {
     @BaseMessage("Error 9001 (45000): table definition illegal, multi auto_increment column")
     ExInst<DingoSqlException> multiAutoInc();
 
+    @BaseMessage("Error 8200 (HY000): can't drop column name with composite index covered or Primary Key covered now")
+    ExInst<DingoSqlException> dropColumnError();
+
 }

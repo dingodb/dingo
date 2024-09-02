@@ -426,7 +426,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public long createReplicaTable(
-        long schemaId, Object tableDefinition
+        long schemaId, Object tableDefinition, String tableName
     ) {
         TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) tableDefinition;
         long originTableId = tableDefinitionWithId.getTableId().getEntityId();
@@ -476,7 +476,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         for (Partition partition : withIdTableDefinition.getTablePartition().getPartitions()) {
             CreateRegionRequest request = CreateRegionRequest
                 .builder()
-                .regionName("T_" + schemaId + "_" + withIdTableDefinition.getName() + "_part_" + partition.getId().getEntityId())
+                .regionName("T_" + schemaId + "_" + tableName + "_part_" + partition.getId().getEntityId())
                 .regionType(RegionType.STORE_REGION)
                 .replicaNum(withIdTableDefinition.getReplica())
                 .range(partition.getRange())
