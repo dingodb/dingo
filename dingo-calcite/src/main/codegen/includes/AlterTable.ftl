@@ -59,9 +59,12 @@ SqlAlterTable addColumn(Span s, String scope, SqlIdentifier id): {
     final SqlIdentifier columnId;
     final SqlDataTypeSpec type;
     final boolean nullable;
-    final SqlNode e;
-    final SqlNode constraint;
-    final ColumnStrategy strategy;
+    SqlNode e = null;
+    SqlNode constraint = null;
+    ColumnStrategy strategy = null;
+    boolean primary = false;
+    String comment = "";
+    boolean autoInc = false;
 } {
     <COLUMN>
     columnId = SimpleIdentifier()
@@ -81,14 +84,21 @@ SqlAlterTable addColumn(Span s, String scope, SqlIdentifier id): {
         <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY)
         { strategy = ColumnStrategy.DEFAULT; }
     |
-        {
-            e = null;
-            strategy = nullable ? ColumnStrategy.NULLABLE: ColumnStrategy.NOT_NULLABLE;
-        }
-    )
+       <PRIMARY> <KEY> { primary=true; }  
+    |
+       <COMMENT> comment = dingoIdentifier()
+    |
+       <AUTO_INCREMENT> { autoInc = true;}
+    |
+       <ON> <UPDATE> <CURRENT_TIMESTAMP>
+    )*
     {
+        if (e == null) {
+                strategy = nullable ? ColumnStrategy.NULLABLE
+                    : ColumnStrategy.NOT_NULLABLE;
+        }
         return new SqlAlterAddColumn(s.end(this), id, DingoSqlDdlNodes.createColumn(
-            s.end(this), columnId, type.withNullable(nullable), e, strategy, false
+            s.end(this), columnId, type.withNullable(nullable), e, strategy, autoInc, comment, primary 
         ));
     }
 }
