@@ -19,6 +19,7 @@ package io.dingodb.exec.transaction.util;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
@@ -179,16 +180,17 @@ public final class TransactionUtil {
             .collect(Collectors.toList());
     }
 
-    public static void pessimisticLock(TxnPessimisticLock txnPessimisticLock,
+    public static KeyValue pessimisticLock(TxnPessimisticLock txnPessimisticLock,
                                        long timeOut,
                                        CommonId txnId,
                                        CommonId tableId,
                                        CommonId partId,
                                        byte[] key,
                                        boolean ignoreLockWait) {
+        List<KeyValue> kvRet = new ArrayList<KeyValue>();
         try {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
-            boolean result = store.txnPessimisticLock(txnPessimisticLock, timeOut, ignoreLockWait);
+            boolean result = store.txnPessimisticLock(txnPessimisticLock, timeOut, ignoreLockWait, kvRet);
             if (!result) {
                 throw new RuntimeException(txnId + " " + partId + ",txnPessimisticLock false, txnPessimisticLock: "
                     + txnPessimisticLock.toString());
@@ -197,12 +199,17 @@ public final class TransactionUtil {
             LogUtils.error(log, e.getMessage(), e);
             CommonId regionId = singleKeySplitRegionId(tableId, txnId, key);
             StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
-            boolean result = store.txnPessimisticLock(txnPessimisticLock, timeOut, ignoreLockWait);
+            boolean result = store.txnPessimisticLock(txnPessimisticLock, timeOut, ignoreLockWait, kvRet);
             if (!result) {
                 throw new RuntimeException(txnId + " " + partId + ",txnPessimisticLock false, txnPessimisticLock: "
                     + txnPessimisticLock.toString());
             }
         }
+
+        if(kvRet.size() == 0) {
+            return null;
+        }
+        return kvRet.get(0);
     }
 
     public static TxnPessimisticLock getTxnPessimisticLock(CommonId txnId,
@@ -212,7 +219,8 @@ public final class TransactionUtil {
                                                            byte[] key,
                                                            long startTs,
                                                            long forUpdateTs,
-                                                           int isolationLevel) {
+                                                           int isolationLevel,
+                                                           boolean returnValues) {
         return TxnPessimisticLock.builder()
             .isolationLevel(IsolationLevel.of(isolationLevel))
             .primaryLock(primaryLockKey)
@@ -231,6 +239,7 @@ public final class TransactionUtil {
             .lockTtl(TransactionManager.lockTtlTm())
             .startTs(startTs)
             .forUpdateTs(forUpdateTs)
+            .returnValues(returnValues)
             .build();
     }
 

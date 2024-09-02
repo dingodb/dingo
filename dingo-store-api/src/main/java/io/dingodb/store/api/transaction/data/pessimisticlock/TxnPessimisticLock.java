@@ -44,4 +44,5 @@ public class TxnPessimisticLock {
     // The name comes from the `SELECT ... FOR UPDATE` SQL statement which is a locking read. Each `SELECT ... FOR UPDATE`
     // in a transaction will be assigned its own timestamp.
     private long forUpdateTs;
+    private boolean returnValues;
 }

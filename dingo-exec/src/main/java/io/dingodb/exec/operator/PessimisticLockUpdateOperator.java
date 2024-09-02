@@ -232,10 +232,13 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                     key,
                     param.getStartTs(),
                     forUpdateTs,
-                    param.getIsolationLevel()
+                    param.getIsolationLevel(),
+                    true
                 );
+
+                KeyValue kvKeyValue = null;
                 try {
-                    TransactionUtil.pessimisticLock(
+                    kvKeyValue = TransactionUtil.pessimisticLock(
                         txnPessimisticLock,
                         param.getLockTimeOut(),
                         txnId,
@@ -288,28 +291,21 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                 // lockKeyValue
                 KeyValue lockKeyValue = new KeyValue(lockKey, forUpdateTsByte);
                 localStore.put(lockKeyValue);
-                KeyValue kvKeyValue = null;
-                try {
-                    // index use keyPrefix
-                    kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
-                } catch (Throwable throwable) {
-                    throw new RuntimeException(throwable);
-                } finally {
-                    if (kvKeyValue != null && kvKeyValue.getValue() != null) {
-                        // extraKeyValue
-                        KeyValue extraKeyValue = new KeyValue(
-                            ByteUtils.encode(
-                                CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
-                                key,
-                                Op.NONE.getCode(),
-                                len,
-                                jobIdByte,
-                                tableIdByte,
-                                partIdByte),
-                            kvKeyValue.getValue()
-                        );
-                        localStore.put(extraKeyValue);
-                    }
+
+                if (kvKeyValue != null && kvKeyValue.getValue() != null) {
+                    // extraKeyValue
+                    KeyValue extraKeyValue = new KeyValue(
+                        ByteUtils.encode(
+                            CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
+                            key,
+                            Op.NONE.getCode(),
+                            len,
+                            jobIdByte,
+                            tableIdByte,
+                            partIdByte),
+                        kvKeyValue.getValue()
+                    );
+                    localStore.put(extraKeyValue);
                 }
                 if (context.getIndexId() != null) {
                     LogUtils.info(log, "{}, txnPessimisticLock :{} , index is not null", txnId, Arrays.toString(key));
@@ -458,7 +454,8 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
             oldKey,
             param.getStartTs(),
             forUpdateTs,
-            param.getIsolationLevel()
+            param.getIsolationLevel(),
+            true
         );
         try {
             TransactionUtil.pessimisticLock(

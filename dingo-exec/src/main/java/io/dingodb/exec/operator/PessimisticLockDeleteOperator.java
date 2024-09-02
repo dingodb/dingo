@@ -172,10 +172,13 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
                     key,
                     param.getStartTs(),
                     forUpdateTs,
-                    param.getIsolationLevel()
+                    param.getIsolationLevel(),
+                    true
                 );
+
+                KeyValue kvKeyValue = null;
                 try {
-                    TransactionUtil.pessimisticLock(
+                    kvKeyValue = TransactionUtil.pessimisticLock(
                         txnPessimisticLock,
                         param.getLockTimeOut(),
                         txnId,
@@ -228,28 +231,21 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
                 // lockKeyValue
                 KeyValue lockKeyValue = new KeyValue(lockKey, forUpdateTsByte);
                 localStore.put(lockKeyValue);
-                KeyValue kvKeyValue = null;
-                try {
-                    // index use keyPrefix
-                    kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
-                } catch (Throwable throwable) {
-                    throw new RuntimeException(throwable);
-                } finally {
-                    if (kvKeyValue != null && kvKeyValue.getValue() != null) {
-                        // extraKeyValue
-                        KeyValue extraKeyValue = new KeyValue(
-                            ByteUtils.encode(
-                                CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
-                                key,
-                                Op.NONE.getCode(),
-                                len,
-                                jobIdByte,
-                                tableIdByte,
-                                partIdByte),
-                            kvKeyValue.getValue()
-                        );
-                        localStore.put(extraKeyValue);
-                    }
+
+                if (kvKeyValue != null && kvKeyValue.getValue() != null) {
+                    // extraKeyValue
+                    KeyValue extraKeyValue = new KeyValue(
+                        ByteUtils.encode(
+                            CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
+                            key,
+                            Op.NONE.getCode(),
+                            len,
+                            jobIdByte,
+                            tableIdByte,
+                            partIdByte),
+                        kvKeyValue.getValue()
+                    );
+                    localStore.put(extraKeyValue);
                 }
                 if (kvKeyValue == null || kvKeyValue.getValue() == null) {
                     byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, deadLockKeyBytes);
