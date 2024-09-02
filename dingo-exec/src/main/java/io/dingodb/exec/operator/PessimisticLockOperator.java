@@ -49,6 +49,7 @@ import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -173,6 +174,8 @@ public class PessimisticLockOperator extends SoleOutOperator {
                 long startTs = param.getStartTs();
                 LogUtils.debug(log, "{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, jobId.seq, Arrays.toString(primaryKey));
                 Future future = null;
+                List<KeyValue> kvKeyValue = new ArrayList<KeyValue>();
+
                 TxnPessimisticLock txnPessimisticLock = TxnPessimisticLock.builder().
                     isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
                     .primaryLock(primaryKey)
@@ -189,14 +192,16 @@ public class PessimisticLockOperator extends SoleOutOperator {
                     .lockTtl(TransactionManager.lockTtlTm())
                     .startTs(startTs)
                     .forUpdateTs(jobId.seq)
+                    .returnValues(true)
                     .build();
                 try {
-                    future = kvStore.txnPessimisticLockPrimaryKey(txnPessimisticLock, param.getLockTimeOut(), param.isScan());
+
+                    future = kvStore.txnPessimisticLockPrimaryKey(txnPessimisticLock, param.getLockTimeOut(), param.isScan(), kvKeyValue);
                 } catch (RegionSplitException e) {
                     LogUtils.error(log, e.getMessage(), e);
                     CommonId regionId = TransactionUtil.singleKeySplitRegionId(tableId, txnId, primaryKey);
                     kvStore = Services.KV_STORE.getInstance(tableId, regionId);
-                    future = kvStore.txnPessimisticLockPrimaryKey(txnPessimisticLock, param.getLockTimeOut(), param.isScan());
+                    future = kvStore.txnPessimisticLockPrimaryKey(txnPessimisticLock, param.getLockTimeOut(), param.isScan(), kvKeyValue);
                 } catch (Throwable e) {
                     LogUtils.error(log, e.getMessage(), e);
                     TransactionUtil.resolvePessimisticLock(
@@ -226,9 +231,9 @@ public class PessimisticLockOperator extends SoleOutOperator {
                         new RuntimeException(txnId + " future is null " + partId + ",txnPessimisticLockPrimaryKey false")
                     );
                 }
-                KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
+
                 if (param.isInsert()) {
-                    if (kvKeyValue != null && kvKeyValue.getValue() != null) {
+                    if (kvKeyValue.size() != 0 && kvKeyValue.get(0) != null && kvKeyValue.get(0).getValue() != null) {
                         if (future != null) {
                             future.cancel(true);
                         }
@@ -274,7 +279,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
                 }
                 transaction.setForUpdateTs(forUpdateTs);
                 transaction.setPrimaryKeyFuture(future);
-                if (kvKeyValue != null && kvKeyValue.getValue() != null) {
+                if (kvKeyValue.size() != 0 && kvKeyValue.get(0) != null && kvKeyValue.get(0).getValue() != null) {
                     // extraKeyValue
                     KeyValue extraKeyValue = new KeyValue(
                         ByteUtils.encode(
@@ -285,7 +290,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
                             jobIdByte,
                             tableIdByte,
                             partIdByte),
-                        kvKeyValue.getValue()
+                        kvKeyValue.get(0).getValue()
                     );
                     LogUtils.info(log, "PessimisticLock jobId:{}", CommonId.decode(jobIdByte));
                     localStore.put(extraKeyValue);

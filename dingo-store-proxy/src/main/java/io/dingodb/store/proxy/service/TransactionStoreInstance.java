@@ -304,8 +304,8 @@ public class TransactionStoreInstance {
         }
     }
 
-    public Future txnPessimisticLockPrimaryKey(TxnPessimisticLock txnPessimisticLock, long timeOut, boolean ignoreLockWait) {
-        if (txnPessimisticLock(txnPessimisticLock, timeOut, ignoreLockWait)) {
+    public Future txnPessimisticLockPrimaryKey(TxnPessimisticLock txnPessimisticLock, long timeOut, boolean ignoreLockWait, List<io.dingodb.common.store.KeyValue> kvRet) {
+        if (txnPessimisticLock(txnPessimisticLock, timeOut, ignoreLockWait, kvRet)) {
             LogUtils.info(log, "txn pessimistic heartbeat, startTs:{}, primaryKey is {}",
                 txnPessimisticLock.getStartTs(), Arrays.toString(txnPessimisticLock.getPrimaryLock()));
             return Executors.scheduleWithFixedDelayAsync("txn-pessimistic-heartbeat-" + txnPessimisticLock.getStartTs(), () -> heartbeat(txnPessimisticLock), 1, 1, SECONDS);
@@ -313,7 +313,7 @@ public class TransactionStoreInstance {
         throw new WriteConflictException();
     }
 
-    public boolean txnPessimisticLock(TxnPessimisticLock txnPessimisticLock, long timeOut, boolean ignoreLockWait) {
+    public boolean txnPessimisticLock(TxnPessimisticLock txnPessimisticLock, long timeOut, boolean ignoreLockWait, List<io.dingodb.common.store.KeyValue> kvRet) {
         long start = System.currentTimeMillis();
         try {
             txnPessimisticLock.getMutations().stream().peek($ -> $.setKey(setId($.getKey()))).forEach($ -> $.getKey()[0] = 't');
@@ -335,6 +335,22 @@ public class TransactionStoreInstance {
                     if (resolveLockFlag == ResolveLockStatus.LOCK_TTL && ignoreLockWait) {
                         LogUtils.warn(log, "txnPessimisticLock lock wait...");
                         throw new LockWaitException("Lock wait");
+                    }
+
+                    if(response.getKvs() != null) {
+                        kvRet.addAll(response.getKvs().stream().map(MAPPER::kvFrom).collect(Collectors.toList()));
+                    } else if(response.getVector() != null) {
+                        kvRet.addAll(response.getVector().stream()
+                            .map(vectorWithId -> vectorWithId != null ?
+                                new io.dingodb.common.store.KeyValue(vectorWithId.getTableData().getTableKey(),
+                                    vectorWithId.getTableData().getTableValue()) : null)
+                            .collect(Collectors.toList()));
+                    } else if(response.getDocuments() != null) {
+                        kvRet.addAll(response.getDocuments().stream()
+                                .map(documentWithId -> documentWithId != null ?
+                                    new io.dingodb.common.store.KeyValue(documentWithId.getDocument().getTableData().getTableKey(),
+                                        documentWithId.getDocument().getTableData().getTableValue()) : null)
+                                .collect(Collectors.toList()));
                     }
                     return true;
                 }
@@ -462,6 +478,15 @@ public class TransactionStoreInstance {
                             .map(vectorWithId -> vectorWithId != null ?
                                 new io.dingodb.common.store.KeyValue(vectorWithId.getTableData().getTableKey(),
                                     vectorWithId.getTableData().getTableValue()) : null)
+                            .collect(Collectors.toList());
+                    }
+                } else if(documentService != null){
+                    response = documentService.txnBatchGet(startTs, txnBatchGetRequest);
+                    if (response.getTxnResult() == null) {
+                        return response.getDocuments().stream()
+                            .map(documentWithId -> documentWithId != null ?
+                                new io.dingodb.common.store.KeyValue(documentWithId.getDocument().getTableData().getTableKey(),
+                                    documentWithId.getDocument().getTableData().getTableValue()): null)
                             .collect(Collectors.toList());
                     }
                 } else {

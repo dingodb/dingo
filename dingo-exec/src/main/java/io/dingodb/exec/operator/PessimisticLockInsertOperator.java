@@ -175,10 +175,13 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                     key,
                     param.getStartTs(),
                     forUpdateTs,
-                    param.getIsolationLevel()
+                    param.getIsolationLevel(),
+                    true
                 );
+
+                KeyValue kvKeyValue = null;
                 try {
-                    TransactionUtil.pessimisticLock(
+                    kvKeyValue = TransactionUtil.pessimisticLock(
                         txnPessimisticLock,
                         param.getLockTimeOut(),
                         txnId,
@@ -227,8 +230,6 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                 }
                 // get lock success, delete deadLockKey
                 localStore.delete(deadLockKeyBytes);
-                // index use keyPrefix
-                KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
                 if (kvKeyValue != null && kvKeyValue.getValue() != null) {
                     TransactionUtil.resolvePessimisticLock(
                         param.getIsolationLevel(),

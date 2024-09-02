@@ -276,19 +276,19 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default Future<?> txnPessimisticLockPrimaryKey(TxnPessimisticLock txnPessimisticLock, long timeOut, boolean ignoreLockWait) {
-        return txnPessimisticLockPrimaryKey(txnPessimisticLock.getStartTs(), txnPessimisticLock, timeOut, ignoreLockWait);
+    default Future<?> txnPessimisticLockPrimaryKey(TxnPessimisticLock txnPessimisticLock, long timeOut, boolean ignoreLockWait, List<KeyValue> kvRet) {
+        return txnPessimisticLockPrimaryKey(txnPessimisticLock.getStartTs(), txnPessimisticLock, timeOut, ignoreLockWait, kvRet);
     }
 
-    default Future txnPessimisticLockPrimaryKey(long requestTs, TxnPessimisticLock txnPessimisticLock, long timeOut, boolean ignoreLockWait) {
+    default Future txnPessimisticLockPrimaryKey(long requestTs, TxnPessimisticLock txnPessimisticLock, long timeOut, boolean ignoreLockWait, List<KeyValue> kvRet) {
         throw new UnsupportedOperationException();
     }
 
-    default boolean txnPessimisticLock(TxnPessimisticLock txnPessimisticLock, long timeOut, boolean ignoreLockWait) {
-        return txnPessimisticLock(txnPessimisticLock.getStartTs(), txnPessimisticLock, timeOut, ignoreLockWait);
+    default boolean txnPessimisticLock(TxnPessimisticLock txnPessimisticLock, long timeOut, boolean ignoreLockWait, List<KeyValue> kvRet) {
+        return txnPessimisticLock(txnPessimisticLock.getStartTs(), txnPessimisticLock, timeOut, ignoreLockWait, kvRet);
     }
 
-    default boolean txnPessimisticLock(long requestTs, TxnPessimisticLock txnPessimisticLock, long timeOut, boolean ignoreLockWait) {
+    default boolean txnPessimisticLock(long requestTs, TxnPessimisticLock txnPessimisticLock, long timeOut, boolean ignoreLockWait, List<KeyValue> kvRet) {
         throw new UnsupportedOperationException();
     }
 
