@@ -69,6 +69,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.eclipse.jetty.util.StringUtil;
 
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
@@ -649,8 +650,10 @@ public class DingoMeta extends MetaImpl {
             }
             done = fetchMaxRowCount == 0 || !iterator.hasNext();
             if (transaction != null) {
-                LogUtils.info(log, "{} sql:{} , txnAutoCommit:{}, txnType:{} ", transaction.getTxnId(),
-                    signature.sql, transaction.isAutoCommit(), transaction.getType());
+                if (StringUtil.isEmpty(((DingoConnection) connection).getContext().getOption("sql_log"))) {
+                    LogUtils.info(log, "{} sql:{} , txnAutoCommit:{}, txnType:{} ", transaction.getTxnId(),
+                        signature.sql, transaction.isAutoCommit(), transaction.getType());
+                }
                 // clean optimistic current job data
                 if (transaction.isOptimistic() && isDml(signature)) {
                     transaction.cleanOptimisticCurrentJobData(jobManager);

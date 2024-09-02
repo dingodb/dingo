@@ -676,13 +676,14 @@ public class DdlWorker {
         switch (job.getSchemaState()) {
             case SCHEMA_PUBLIC:
                 //columnDef.setSchemaState(SCHEMA_WRITE_ONLY);
+                String originTableName = tableWithId.getTableDefinition().getName();
                 DdlColumn.setIndicesState(markDelIndices, SCHEMA_WRITE_ONLY);
                 tableWithId.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
                 tableWithId.getTableDefinition()
                     .getColumns()
                     .removeIf(columnDefinition -> columnDefinition.getName().equalsIgnoreCase(columnName));
                 tableWithId.getTableDefinition().setName("replicaTable");
-                MetaService.root().createReplicaTable(job.getSchemaId(), tableWithId);
+                MetaService.root().createReplicaTable(job.getSchemaId(), tableWithId, originTableName);
                 IndexUtil.pickBackFillType(job);
                 job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
                 return updateSchemaVersion(dc, job);
@@ -761,11 +762,12 @@ public class DdlWorker {
         switch (columnDefinition.getSchemaState()) {
             case SCHEMA_NONE:
                 TableDefinitionWithId definitionWithId = tableRes.getKey();
+                String originTableName = definitionWithId.getTableDefinition().getName();
                 definitionWithId.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
                 columnDefinition.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
                 definitionWithId.getTableDefinition().getColumns().add(MapperImpl.MAPPER.columnTo(columnDefinition));
                 definitionWithId.getTableDefinition().setName("replicaTable");
-                MetaService.root().createReplicaTable(job.getSchemaId(), definitionWithId);
+                MetaService.root().createReplicaTable(job.getSchemaId(), definitionWithId, originTableName);
                 job.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
                 return updateSchemaVersion(dc, job);
             case SCHEMA_DELETE_ONLY:

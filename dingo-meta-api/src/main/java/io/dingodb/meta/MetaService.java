@@ -106,7 +106,7 @@ public interface MetaService {
         createTables(tableDefinition, Collections.emptyList());
     }
 
-    default long createReplicaTable(long schemaId, Object tableDefinition) {
+    default long createReplicaTable(long schemaId, Object tableDefinition, String tableName) {
         return 0L;
     }
 

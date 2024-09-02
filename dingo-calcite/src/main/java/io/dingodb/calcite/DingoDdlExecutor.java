@@ -132,8 +132,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
-import static io.dingodb.common.table.ColumnDefinition.HIDE_STATE;
-import static io.dingodb.common.table.ColumnDefinition.NORMAL_STATE;
 import static io.dingodb.common.util.Optional.mapOrNull;
 import static io.dingodb.common.util.PrivilegeUtils.getRealAddress;
 import static org.apache.calcite.util.Static.RESOURCE;
@@ -1009,6 +1007,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw DINGO_RESOURCE.unknownSchema(schema.getSchemaName()).ex();
         }
         Table definition = schema.getTableInfo(tableName);
+        if (definition == null) {
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        }
         ColumnDefinition newColumn = fromSqlColumnDeclaration(
             (DingoSqlColumn) sqlAlterAddColumn.getColumnDeclaration(),
             new ContextSqlValidator(context, true),
@@ -1164,7 +1165,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         DingoTable table = schema.getTable(tableName);
         if (table == null) {
-            throw new RuntimeException("table not exists");
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
         }
         TableDefinition indexDef = fromSqlIndexDeclaration(
             sqlAlterAddIndex.getIndexDeclaration(), fromTable(table.getTable())
@@ -1210,7 +1211,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         DingoTable table = schema.getTable(tableName);
         if (table == null) {
-            throw new RuntimeException("table not exists");
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
         }
         SqlIndexDeclaration sqlIndexDeclaration = new SqlIndexDeclaration(
             sqlCreateIndex.getParserPosition(),
@@ -1247,7 +1248,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         DingoTable table = schema.getTable(tableName);
         if (table == null) {
-            throw new IllegalArgumentException("table " + tableName + " does not exist");
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
         }
         validateDropIndex(table, sqlDropIndex.index);
         DdlService.root().dropIndex(schema.getSchemaName(), tableName, sqlDropIndex.index);
@@ -1269,7 +1270,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         DingoTable table = schema.getTable(tableName);
         if (table == null) {
-            throw new IllegalArgumentException("table " + tableName + " does not exist");
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
         }
         validateDropIndex(table, sqlDropIndex.getIndexNm());
         DdlService.root().dropIndex(schema.getSchemaName(), tableName, sqlDropIndex.getIndexNm());
@@ -1291,26 +1292,41 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         Table table = schema.getTableInfo(tableName);
         if (table == null) {
-            throw new IllegalArgumentException("table " + tableName + " does not exist");
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
         }
+        String dropColumn = sqlAlterDropColumn.columnNm.toUpperCase();
         boolean noneMatchCol = table.getColumns().stream()
             .noneMatch(column -> column.getSchemaState() == SchemaState.SCHEMA_PUBLIC
-                && column.getName().equalsIgnoreCase(sqlAlterDropColumn.columnNm));
+                && column.getName().equalsIgnoreCase(dropColumn));
         if (noneMatchCol) {
-            throw new RuntimeException("column " + sqlAlterDropColumn.columnNm +  " does not exists");
+            throw new RuntimeException("column " + dropColumn +  " does not exists");
         }
+
+        if (Objects.requireNonNull(table.getColumn(dropColumn)).isPrimary()) {
+            throw DINGO_RESOURCE.dropColumnError().ex();
+        }
+        // can't drop column age with composite index covered or Primary Key covered now
+        List<IndexTable> matchIndices = table.getIndexes().stream().filter(indexTable -> {
+            boolean keyContains = indexTable.getOriginKeyList().contains(dropColumn);
+            boolean withKeyContains = false;
+            if (indexTable.getOriginWithKeyList() != null) {
+                withKeyContains = indexTable.getOriginWithKeyList().contains(dropColumn);
+            }
+            return keyContains || withKeyContains;
+        }).collect(Collectors.toList());
+
         // If the index column contains the column to be deleted and the primary key only has this column,
         // it is necessary to mark the deletion
-        List<String> indicesInfo = table.getIndexes()
+        List<String> indicesInfo = matchIndices
             .stream().filter(indexTable -> {
-                List<Column> keyColumns = indexTable.getColumns().stream()
-                    .filter(column -> (column.getState() & NORMAL_STATE) == NORMAL_STATE
-                        && (column.getState() & HIDE_STATE) == 0).collect(Collectors.toList());
-                if (keyColumns.size() == 1) {
-                    return keyColumns.get(0).getName().equalsIgnoreCase(sqlAlterDropColumn.columnNm);
-                }
-                return false;
+                boolean keyContains = indexTable.getOriginKeyList().contains(dropColumn);
+                return keyContains && indexTable.getOriginKeyList().size() == 1
+                    && (indexTable.getOriginWithKeyList() == null || indexTable.getOriginWithKeyList().isEmpty());
             }).map(Table::getName).collect(Collectors.toList());
+        if (matchIndices.size() > indicesInfo.size()) {
+            throw DINGO_RESOURCE.dropColumnError().ex();
+        }
+
         String markedDelete = "";
         if (!indicesInfo.isEmpty()) {
             markedDelete = String.join(",", indicesInfo);
@@ -1348,7 +1364,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         DingoTable table = schema.getTable(tableName);
         if (table == null) {
-            throw new IllegalArgumentException("table " + tableName + " does not exist ");
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
         }
         String indexName = index.getName();
 
