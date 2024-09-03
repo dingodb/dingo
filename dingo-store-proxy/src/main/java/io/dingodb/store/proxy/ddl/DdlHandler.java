@@ -40,7 +40,6 @@ import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.store.proxy.Configuration;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -106,6 +105,7 @@ public final class DdlHandler {
         if (error != null) {
             LogUtils.error(log, "[ddl-error] insert ddl to table,sql:{}", sql);
         }
+        LogUtils.info(log, "insert job 2 table,jobId:{}", jobId);
         asyncNotify(1L, jobId);
     }
 

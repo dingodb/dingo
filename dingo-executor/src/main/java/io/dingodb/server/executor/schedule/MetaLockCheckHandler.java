@@ -103,10 +103,6 @@ public final class MetaLockCheckHandler {
             }
 
             if (jobsVerMap.isEmpty()) {
-                if (DdlUtil.timeOutError.get()) {
-                    LogUtils.info(log, "[ddl] mdl check jobs ver map is empty, save ver:{}, max ver:{}", saveMaxSchemaVersion, maxVer);
-                    //DdlUtil.timeOutError.set(false);
-                }
                 return;
             }
             for (Map.Entry<Long, Long> entry : jobsVerMap.entrySet()) {

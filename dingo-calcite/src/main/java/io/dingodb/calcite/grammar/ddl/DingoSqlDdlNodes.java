@@ -77,9 +77,11 @@ public class DingoSqlDdlNodes {
         SqlDataTypeSpec dataType,
         @Nullable SqlNode expression,
         ColumnStrategy strategy,
-        boolean autoIncrement
+        boolean autoIncrement,
+        String comment,
+        boolean primary
     ) {
-        return new DingoSqlColumn(pos, name, dataType, expression, strategy, autoIncrement);
+        return new DingoSqlColumn(pos, name, dataType, expression, strategy, autoIncrement, comment, primary);
     }
 
 }

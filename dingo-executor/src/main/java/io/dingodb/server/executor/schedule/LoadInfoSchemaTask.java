@@ -61,7 +61,12 @@ public final class LoadInfoSchemaTask {
             .key(io.dingodb.meta.InfoSchemaService.expSchemaVer.getBytes()).build()).build();
         String resourceKey = String.format("tenantId:{%d}", TenantConstant.TENANT_ID);
         LockService lockService = new LockService(resourceKey, Configuration.coordinators(), 45000);
-        lockService.watchAllOpEvent(kv, LoadInfoSchemaTask::loadInfoByEtcd);
+        try {
+            lockService.watchAllOpEvent(kv, LoadInfoSchemaTask::loadInfoByEtcd);
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            watchExpSchemaVer();
+        }
     }
 
     public static void watchGlobalSchemaVer() {
@@ -69,7 +74,12 @@ public final class LoadInfoSchemaTask {
             .key(io.dingodb.meta.InfoSchemaService.globalSchemaVer.getBytes()).build()).build();
         String resourceKey = String.format("tenantId:{%d}", TenantConstant.TENANT_ID);
         LockService lockService = new LockService(resourceKey, Configuration.coordinators(), 45000);
-        lockService.watchAllOpEvent(kv, LoadInfoSchemaTask::loadInfoByEtcd);
+        try {
+            lockService.watchAllOpEvent(kv, LoadInfoSchemaTask::loadInfoByEtcd);
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            watchGlobalSchemaVer();
+        }
     }
 
     public static void scheduler() {
@@ -86,6 +96,9 @@ public final class LoadInfoSchemaTask {
         if (typeStr.equals("keyNone")) {
             Utils.sleep(2000);
             return "none";
+        }
+        if (typeStr.equals("transferLeader")) {
+            LogUtils.info(log, "kv raft transferLeader");
         }
         loadInfo();
         return "done";
@@ -111,7 +124,7 @@ public final class LoadInfoSchemaTask {
         env.lock.lock();
         try {
             long startTs = TsoService.getDefault().tso();
-            InfoSchemaService infoSchemaService = new InfoSchemaService(startTs);
+            InfoSchemaService infoSchemaService = new InfoSchemaService();
             //LogUtils.info(log, "[ddl] loadInfoSchema start");
             LoadIsResponse response = loadInfoSchema(infoSchemaService, startTs);
             if (!response.hitCache) {
@@ -199,7 +212,11 @@ public final class LoadInfoSchemaTask {
             long sub = System.currentTimeMillis() - start;
             DingoMetrics.timer("getSchemaDiff").update(sub, TimeUnit.MILLISECONDS);
             if (schemaDiff == null) {
-                continue;
+                LogUtils.error(log, "get schema diff is null, ver:{}", usedVerTmp);
+                schemaDiff = infoSchemaService.getSchemaDiff(usedVerTmp);
+                if (schemaDiff == null) {
+                    continue;
+                }
             }
             LogUtils.info(log, "[ddl] load schemaDiff:{}", schemaDiff);
             schemaDiffList.add(schemaDiff);

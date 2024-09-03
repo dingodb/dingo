@@ -141,4 +141,10 @@ public interface DingoResource {
     @BaseMessage("Error 8200 (HY000): can't drop column name with composite index covered or Primary Key covered now")
     ExInst<DingoSqlException> dropColumnError();
 
+    @BaseMessage("ERROR 8200 (HY000): unsupported add column ''{0}'' constraint PRIMARY KEY when altering ''{1}''")
+    ExInst<DingoSqlException> addColumnPrimaryError(String columnName, String tableName);
+
+    @BaseMessage("ERROR 8200 (HY000): unsupported add column ''{0}'' constraint AUTO_INCREMENT when altering ''{1}''")
+    ExInst<DingoSqlException> addColumnAutoIncError(String columnName, String tableName);
+
 }
