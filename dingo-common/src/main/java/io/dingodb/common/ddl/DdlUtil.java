@@ -17,8 +17,22 @@
 package io.dingodb.common.ddl;
 
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.tenant.TenantConstant;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.scalar.BooleanType;
+import io.dingodb.common.type.scalar.DateType;
+import io.dingodb.common.type.scalar.DecimalType;
+import io.dingodb.common.type.scalar.DoubleType;
+import io.dingodb.common.type.scalar.FloatType;
+import io.dingodb.common.type.scalar.IntegerType;
+import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.type.scalar.StringType;
+import io.dingodb.common.type.scalar.TimeType;
+import io.dingodb.common.type.scalar.TimestampType;
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
 
+import java.math.BigDecimal;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class DdlUtil {
@@ -52,4 +66,24 @@ public final class DdlUtil {
 
     private DdlUtil() {
     }
+
+    public static String getColDefaultValIfNull(DingoType type) {
+        if (type instanceof StringType) {
+            return "";
+        } else if (type instanceof LongType
+            || type instanceof IntegerType || type instanceof DoubleType
+            || type instanceof FloatType || type instanceof DecimalType) {
+            return "0";
+        } else if (type instanceof DateType) {
+            return "0000-00-00";
+        } else if (type instanceof BooleanType) {
+            return "false";
+        } else if (type instanceof TimestampType) {
+            return "0000-00-00 00:00:00";
+        } else if (type instanceof TimeType) {
+            return "00:00:00";
+        }
+        return "";
+    }
+
 }

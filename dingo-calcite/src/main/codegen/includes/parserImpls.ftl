@@ -176,9 +176,7 @@ void TableElement(List<SqlNode> list) :
                 strategy = nullable ? ColumnStrategy.NULLABLE
                     : ColumnStrategy.NOT_NULLABLE;
             }
-            columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), id, type.withNullable(nullable), e, strategy, autoIncrement);
-            columnDec.setPrimaryKey(primaryKey);
-            columnDec.setComment(comment);
+            columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), id, type.withNullable(nullable), e, strategy, autoIncrement, comment, primaryKey);
             list.add(columnDec);
         }
     )

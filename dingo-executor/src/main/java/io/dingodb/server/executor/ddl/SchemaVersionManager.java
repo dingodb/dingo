@@ -59,7 +59,7 @@ public class SchemaVersionManager {
         if (ownId != jobId) {
             this.lock.writeLock().lock();
             this.lockOwner.set(jobId);
-            LogUtils.info(log, "[ddl] lock schema ver get lock, jobId:{}", jobId);
+            LogUtils.debug(log, "[ddl] lock schema ver get lock, jobId:{}", jobId);
         }
     }
 }

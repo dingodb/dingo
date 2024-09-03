@@ -87,7 +87,12 @@ public final class DdlServer {
         LockService lockService = new LockService(resourceKey, Configuration.coordinators(), 45000);
         Kv kv = Kv.builder().kv(KeyValue.builder()
             .key(DdlUtil.ADDING_DDL_JOB_CONCURRENT_KEY.getBytes()).build()).build();
-        lockService.watchAllOpEvent(kv, DdlServer::startLoadDDLAndRunByEtcd);
+        try {
+            lockService.watchAllOpEvent(kv, DdlServer::startLoadDDLAndRunByEtcd);
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            watchDdlKey();
+        }
     }
 
     public static String startLoadDDLAndRunByEtcd(String typeStr) {

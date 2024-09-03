@@ -722,7 +722,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final Timer.Context timeCtx = DingoMetrics.getTimeContext("createTable");
         long start = System.currentTimeMillis();
         DingoSqlCreateTable create = (DingoSqlCreateTable) createT;
-        LogUtils.info(log, "DDL execute: {}", create);
+        LogUtils.info(log, "DDL execute: {}", create.getOriginalCreateSql().toUpperCase());
         String connId = (String) context.getDataContext().get("connId");
         SubSnapshotSchema schema = getSnapShotSchema(create.name, context, false);
         SqlNodeList columnList = create.columnList;
@@ -1009,17 +1009,31 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         Table definition = schema.getTableInfo(tableName);
         if (definition == null) {
             throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        } else {
+            if (isNotTxnEngine(definition.getEngine())) {
+                throw new IllegalArgumentException("Add column, the engine must be transactional.");
+            }
         }
+        DingoSqlColumn dingoSqlColumn = (DingoSqlColumn) sqlAlterAddColumn.getColumnDeclaration();
         ColumnDefinition newColumn = fromSqlColumnDeclaration(
-            (DingoSqlColumn) sqlAlterAddColumn.getColumnDeclaration(),
+            dingoSqlColumn,
             new ContextSqlValidator(context, true),
             definition.keyColumns().stream().map(Column::getName).collect(Collectors.toList())
         );
-        newColumn.setSchemaState(SchemaState.SCHEMA_NONE);
+        if (newColumn == null) {
+            throw new RuntimeException("newColumn is null.");
+        }
 
         if (definition.getColumn(newColumn.getName()) != null) {
             throw new RuntimeException("Duplicate column name '" + newColumn.getName() + "'");
         }
+        if (dingoSqlColumn.isPrimaryKey()) {
+            throw DINGO_RESOURCE.addColumnPrimaryError(newColumn.getName(), tableName).ex();
+        }
+        if (dingoSqlColumn.isAutoIncrement()) {
+            throw DINGO_RESOURCE.addColumnAutoIncError(newColumn.getName(), tableName).ex();
+        }
+        newColumn.setSchemaState(SchemaState.SCHEMA_NONE);
         validateAddColumn(newColumn);
         DdlService.root().addColumn(schemaInfo, definition, newColumn, "");
 
@@ -1293,6 +1307,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         Table table = schema.getTableInfo(tableName);
         if (table == null) {
             throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        } else {
+            if (isNotTxnEngine(table.getEngine())) {
+                throw new IllegalArgumentException("Drop index, the engine must be transactional.");
+            }
         }
         String dropColumn = sqlAlterDropColumn.columnNm.toUpperCase();
         boolean noneMatchCol = table.getColumns().stream()
@@ -1353,6 +1371,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public static void validateDropIndex(DingoTable table, String indexName) {
+        if (isNotTxnEngine(table.getTable().getEngine())) {
+            throw new IllegalArgumentException("Drop index, the engine must be transactional.");
+        }
         if (table.getIndexTableDefinitions().stream().map(IndexTable::getName).noneMatch(indexName::equalsIgnoreCase)) {
             throw new RuntimeException("The index " + indexName + " not exist.");
         }

@@ -43,10 +43,14 @@ public class DingoSqlColumn extends SqlColumnDeclaration {
         SqlDataTypeSpec dataType,
         @Nullable SqlNode expression,
         ColumnStrategy strategy,
-        boolean autoIncrement
+        boolean autoIncrement,
+        String comment,
+        boolean primary
     ) {
         super(pos, name, dataType, expression, strategy);
         this.autoIncrement = autoIncrement;
+        this.comment = comment;
+        this.primaryKey = primary;
     }
 
     @Override

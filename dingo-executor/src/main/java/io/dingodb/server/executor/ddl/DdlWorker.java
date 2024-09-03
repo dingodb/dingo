@@ -20,6 +20,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.DdlJob;
+import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.JobState;
 import io.dingodb.common.ddl.ReorgInfo;
 import io.dingodb.common.ddl.SchemaDiff;
@@ -391,7 +392,7 @@ public class DdlWorker {
             return res1;
         }
         ddlJob.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
-        LogUtils.info(log, "[ddl] onCreateTable done, jobId:{}", ddlJob.getId());
+        LogUtils.debug(log, "[ddl] onCreateTable done, jobId:{}", ddlJob.getId());
         return res1;
     }
 
@@ -753,6 +754,9 @@ public class DdlWorker {
         }
         io.dingodb.common.table.ColumnDefinition columnDefinition
             = (io.dingodb.common.table.ColumnDefinition) job.getArgs().get(0);
+        if (!columnDefinition.isNullable() && columnDefinition.getDefaultValue() == null) {
+            columnDefinition.setDefaultValue(DdlUtil.getColDefaultValIfNull(columnDefinition.getType()));
+        }
 
         Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
         if (tableRes.getValue() != null && tableRes.getKey() == null) {
@@ -765,7 +769,18 @@ public class DdlWorker {
                 String originTableName = definitionWithId.getTableDefinition().getName();
                 definitionWithId.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
                 columnDefinition.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
-                definitionWithId.getTableDefinition().getColumns().add(MapperImpl.MAPPER.columnTo(columnDefinition));
+                List<ColumnDefinition> columnDefinitions = definitionWithId.getTableDefinition().getColumns();
+                boolean withoutPriTable = columnDefinitions.stream()
+                    .anyMatch(columnDefinition1 -> columnDefinition1.getState() == 2
+                    && columnDefinition1.getName().equalsIgnoreCase("_ROWID"));
+                if (withoutPriTable) {
+                    int colSize = columnDefinitions.size();
+                    definitionWithId.getTableDefinition().getColumns()
+                        .add(colSize - 1, MapperImpl.MAPPER.columnTo(columnDefinition));
+                } else {
+                    definitionWithId.getTableDefinition()
+                        .getColumns().add(MapperImpl.MAPPER.columnTo(columnDefinition));
+                }
                 definitionWithId.getTableDefinition().setName("replicaTable");
                 MetaService.root().createReplicaTable(job.getSchemaId(), definitionWithId, originTableName);
                 job.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
@@ -810,6 +825,8 @@ public class DdlWorker {
                     DdlColumn.doReorgWorkForAddCol(dc, job, tableId, withId, this);
                 } catch (Exception e) {
                     LogUtils.error(log, e.getMessage(), e);
+                    job.setState(JobState.jobStateCancelled);
+                    job.setError("reorg failed");
                     return Pair.of(0L, "reorg failed");
                 }
                 withId.getTableDefinition()
@@ -887,7 +904,7 @@ public class DdlWorker {
         long schemaVersion;
         try {
             schemaVersion = dc.getSv().setSchemaVersion(ddlJob);
-            LogUtils.info(log, "update version value:" + schemaVersion + ", jobId:" + ddlJob.getId());
+            LogUtils.debug(log, "update version value:" + schemaVersion + ", jobId:" + ddlJob.getId());
         } catch (Exception e) {
             LogUtils.error(log, "updateSchemaVersion: setSchemaVer failed, reason:{}", e.getMessage());
             return Pair.of(0L, e.getMessage());
