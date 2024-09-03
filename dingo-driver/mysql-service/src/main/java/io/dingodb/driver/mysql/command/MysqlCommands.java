@@ -223,7 +223,7 @@ public class MysqlCommands {
 
     public void executeStatement(ExecuteStatementPacket statementPacket,
                                  DingoPreparedStatement preparedStatement,
-                                 boolean isSelect,
+                                 Meta.StatementType statementType,
                                  AtomicLong packetId,
                                  MysqlConnection mysqlConnection
     ) {
@@ -311,13 +311,16 @@ public class MysqlCommands {
                     MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
                 }
             });
-            if (isSelect) {
+            if (statementType == Meta.StatementType.SELECT) {
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
                     MysqlResponseHandler.responsePrepareExecute(resultSet, packetId, mysqlConnection);
                 } catch (SQLException e) {
                     LogUtils.error(log, e.getMessage(), e);
                     MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
                 }
+            } else if (statementType == Meta.StatementType.OTHER_DDL) {
+                OKPacket okPacket = mysqlPacketFactory.getOkPacket(0, packetId, null);
+                MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
             } else {
                 SQLWarning sqlWarning = preparedStatement.getWarnings();
                 int affected = preparedStatement.executeUpdate();
