@@ -179,13 +179,11 @@ public final class MessageProcess {
                 int statementId = MysqlByteUtil.bytesToIntLittleEndian(statementIdBytes);
                 connection = (DingoConnection) mysqlConnection.getConnection();
                 int paramCount;
-                boolean isSelect;
                 DingoPreparedStatement preparedStatement;
                 try {
                     preparedStatement
                         = (DingoPreparedStatement) connection.getStatement(new Meta.StatementHandle(connection.id,
                         statementId, null));
-                    isSelect = preparedStatement.getStatementType() == Meta.StatementType.SELECT;
                     paramCount = preparedStatement.getParameterCount();
                 } catch (NoSuchStatementException e) {
                     throw new RuntimeException(e);
@@ -193,7 +191,7 @@ public final class MessageProcess {
                 ExecuteStatementPacket statementPacket = new ExecuteStatementPacket(paramCount,
                     preparedStatement.getTypes());
                 statementPacket.read(array);
-                commands.executeStatement(statementPacket, preparedStatement, isSelect, packetId, mysqlConnection);
+                commands.executeStatement(statementPacket, preparedStatement, preparedStatement.getStatementType(), packetId, mysqlConnection);
                 preparedStatement.setBoundTypes(statementPacket.types);
                 break;
             case NativeConstants.COM_STMT_SEND_LONG_DATA:
