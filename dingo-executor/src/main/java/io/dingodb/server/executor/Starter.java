@@ -63,6 +63,7 @@ public class Starter {
             commander.usage();
             return;
         }
+        
         DingoConfiguration.parse(config);
         CommonId serverId = ClusterService.DEFAULT_INSTANCE.getServerId(DingoConfiguration.location());
         if (serverId == null) {
