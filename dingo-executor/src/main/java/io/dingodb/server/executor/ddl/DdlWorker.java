@@ -762,6 +762,12 @@ public class DdlWorker {
         if (tableRes.getValue() != null && tableRes.getKey() == null) {
             return Pair.of(0L, tableRes.getValue());
         }
+        boolean exists = tableRes.getKey().getTableDefinition().getColumns().stream()
+            .anyMatch(columnDefinition1 -> columnDefinition1.getName().equalsIgnoreCase(columnDefinition.getName()));
+        if (exists) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, "Duplicate column name '" + columnDefinition.getName() + "'");
+        }
 
         switch (columnDefinition.getSchemaState()) {
             case SCHEMA_NONE:
@@ -772,7 +778,8 @@ public class DdlWorker {
                 List<ColumnDefinition> columnDefinitions = definitionWithId.getTableDefinition().getColumns();
                 boolean withoutPriTable = columnDefinitions.stream()
                     .anyMatch(columnDefinition1 -> columnDefinition1.getState() == 2
-                    && columnDefinition1.getName().equalsIgnoreCase("_ROWID"));
+                    && columnDefinition1.getName().equalsIgnoreCase("_ROWID")
+                    && columnDefinition1.getIndexOfKey() >= 0);
                 if (withoutPriTable) {
                     int colSize = columnDefinitions.size();
                     definitionWithId.getTableDefinition().getColumns()
@@ -968,7 +975,8 @@ public class DdlWorker {
     public static String waitSchemaSyncedForMDL(DdlContext dc, DdlJob ddlJob, long latestSchemaVersion) {
         try {
             long start = System.currentTimeMillis();
-            String error = dc.getSchemaSyncer().ownerCheckAllVersions(ddlJob.getId(), latestSchemaVersion);
+            String error = dc.getSchemaSyncer()
+                .ownerCheckAllVersions(ddlJob.getId(), latestSchemaVersion, ddlJob.mayNeedReorg());
             if (error != null) {
                 LogUtils.error(log, error);
                 return error;

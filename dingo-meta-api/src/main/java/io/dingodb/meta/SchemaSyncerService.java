@@ -16,6 +16,8 @@
 
 package io.dingodb.meta;
 
+import io.dingodb.common.ddl.ActionType;
+
 public interface SchemaSyncerService {
     static SchemaSyncerService root() {
         return SchemaSyncerServiceProvider.getDefault().root();
@@ -23,7 +25,7 @@ public interface SchemaSyncerService {
 
     void updateSelfVersion(long startTs, long jobId, long schemaVersion);
 
-    String ownerCheckAllVersions(long jobId, long latestVer);
+    String ownerCheckAllVersions(long jobId, long latestVer, boolean reorg);
 
     void ownerUpdateGlobalVersion(long version);
 

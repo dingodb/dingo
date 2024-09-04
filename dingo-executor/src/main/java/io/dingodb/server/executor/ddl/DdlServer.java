@@ -330,7 +330,8 @@ public final class DdlServer {
             LogUtils.error(log, "[ddl] update latest schema version failed, version:" + latestSchemaVersion, e);
         }
         try {
-            String error = dc.getSchemaSyncer().ownerCheckAllVersions(job.getId(), latestSchemaVersion);
+            String error = dc.getSchemaSyncer()
+                .ownerCheckAllVersions(job.getId(), latestSchemaVersion, job.mayNeedReorg());
             if (error != null) {
                 if ("Lock wait timeout exceeded".equalsIgnoreCase(error)) {
                     job.setError(error);

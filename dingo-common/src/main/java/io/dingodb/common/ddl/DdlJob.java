@@ -121,7 +121,10 @@ public class DdlJob {
     }
 
     public boolean mayNeedReorg() {
-        if (actionType == ActionType.ActionAddIndex) {
+        if (actionType == ActionType.ActionAddIndex
+            || actionType == ActionType.ActionDropColumn
+            || actionType == ActionType.ActionAddColumn
+        ) {
             return true;
         }
         return false;
