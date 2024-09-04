@@ -16,17 +16,21 @@
 
 package io.dingodb.meta.ddl;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.AffectedOption;
 import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.ddl.TableInfoCache;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
 import io.dingodb.meta.InfoSchemaService;
+import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.SchemaTables;
 import io.dingodb.meta.entity.Table;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +38,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class InfoSchemaBuilder {
 
     InfoSchema is;
@@ -88,6 +93,43 @@ public class InfoSchemaBuilder {
 
     public void createSchemaTablesForDB(SchemaInfo schemaInfo, InfoSchemaService infoSchemaService) {
         Map<String, Table> tableMap = infoSchemaService.listTableDef(schemaInfo.getSchemaId());
+        SchemaTables schemaTables = new SchemaTables(schemaInfo, tableMap);
+        is.getSchemaMap().put(schemaInfo.getName(), schemaTables);
+
+        tableMap.values().forEach(t -> {
+            int idx = bucketIdx(t.tableId.seq);
+            is.sortedTablesBuckets.computeIfAbsent(idx, k -> new ArrayList<>());
+            is.sortedTablesBuckets.computeIfPresent(idx, (k, v) -> {
+                TableInfoCache tableInfo = new TableInfoCache(t.tableId.seq, t.name, schemaInfo.getSchemaId(), schemaInfo.getName());
+                if (!v.contains(tableInfo)) {
+                    v.add(new TableInfoCache(t.tableId.seq, t.name, schemaInfo.getSchemaId(), schemaInfo.getName()));
+                }
+                return v;
+            });
+        });
+    }
+
+    public void initWithSchemaInfosByTenant(
+        List<SchemaInfo> schemaInfos,
+        long schemaVersion,
+        InfoSchemaService infoSchemaService,
+        long tenantId
+    ) {
+        if (is == null) {
+            is = new InfoSchema();
+        }
+        this.is.schemaMetaVersion = schemaVersion;
+        for (SchemaInfo schemaInfo : schemaInfos) {
+            createSchemaTablesForDBByTenant(schemaInfo, infoSchemaService, tenantId);
+        }
+    }
+
+    public void createSchemaTablesForDBByTenant(
+        SchemaInfo schemaInfo,
+        InfoSchemaService infoSchemaService,
+        long tenantId
+    ) {
+        Map<String, Table> tableMap = infoSchemaService.listTableDef(schemaInfo.getSchemaId(), tenantId);
         SchemaTables schemaTables = new SchemaTables(schemaInfo, tableMap);
         is.getSchemaMap().put(schemaInfo.getName(), schemaTables);
 
@@ -160,7 +202,7 @@ public class InfoSchemaBuilder {
         for (AffectedOption affectedOption : diff.getAffectedOpts()) {
             SchemaDiff optDiff = new SchemaDiff(diff.getVersion(), ActionType.ActionCreateTable,
                 affectedOption.getSchemaId(),
-                affectedOption.getTableId(), affectedOption.getOldSchemaId(), affectedOption.getOldTableId(),
+                affectedOption.getTableId(), affectedOption.getSchemaId(), affectedOption.getOldTableId(),
                 false, null);
             Pair<List<Long>, String> optTableIds = applyDiff(infoSchemaService, optDiff);
             if (optTableIds.getValue() != null) {
@@ -180,6 +222,9 @@ public class InfoSchemaBuilder {
             } else {
                 table = schemaService.getTableDef(diff.getSchemaId(), diff.getTableName());
             }
+            if (table == null) {
+                return Pair.of(new ArrayList<>(), null);
+            }
             SchemaInfo schemaInfo = (SchemaInfo) schemaService.getSchema(diff.getSchemaId());
             this.is.putTable(schemaInfo.getName(), table.name, table);
             int idx = bucketIdx(diff.getTableId());
@@ -196,6 +241,7 @@ public class InfoSchemaBuilder {
             tableIdList.add(table.tableId.seq);
             return Pair.of(tableIdList, null);
         } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
             return Pair.of(null, e.getMessage());
         }
     }
@@ -208,6 +254,7 @@ public class InfoSchemaBuilder {
             tableIdList.add(diff.getTableId());
             return Pair.of(tableIdList, null);
         } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
             return Pair.of(null, e.getMessage());
         }
     }
@@ -251,7 +298,7 @@ public class InfoSchemaBuilder {
 
     public Pair<List<Long>, String> applyAddIndex(SchemaDiff diff) {
         try {
-            dropTable(diff.getOldSchemaId(), diff.getOldTableId());
+            dropTable(diff.getSchemaId(), diff.getOldTableId());
             return applyCreateTable(diff);
         } catch (Exception e) {
             return Pair.of(null, e.getMessage());
@@ -260,7 +307,7 @@ public class InfoSchemaBuilder {
 
     public Pair<List<Long>, String> applyDropIndex(SchemaDiff diff) {
         try {
-            dropTable(diff.getOldSchemaId(), diff.getOldTableId());
+            dropTable(diff.getSchemaId(), diff.getOldTableId());
             return applyCreateTable(diff);
         } catch (Exception e) {
             return Pair.of(null, e.getMessage());
@@ -269,7 +316,7 @@ public class InfoSchemaBuilder {
 
     public Pair<List<Long>, String> applyTruncateTable(SchemaDiff diff) {
         try {
-            dropTable(diff.getOldSchemaId(), diff.getOldTableId());
+            //dropTable(diff.getSchemaId(), diff.getOldTableId());
             return applyCreateTable(diff);
         } catch (Exception e) {
             return Pair.of(null, e.getMessage());
@@ -278,7 +325,9 @@ public class InfoSchemaBuilder {
 
     public Pair<List<Long>, String> applyDropColumn(SchemaDiff diff) {
         try {
-            dropTable(diff.getOldSchemaId(), diff.getOldTableId());
+            dropTable(diff.getSchemaId(), diff.getTableId());
+            MetaService.root()
+                .invalidateDistribution(new CommonId(CommonId.CommonType.TABLE, diff.getSchemaId(), diff.getTableId()));
             return applyCreateTable(diff);
         } catch (Exception e) {
             return Pair.of(null, e.getMessage());
@@ -287,7 +336,9 @@ public class InfoSchemaBuilder {
 
     public Pair<List<Long>, String> applyAddColumn(SchemaDiff diff) {
         try {
-            dropTable(diff.getOldSchemaId(), diff.getOldTableId());
+            dropTable(diff.getSchemaId(), diff.getTableId());
+            MetaService.root()
+                .invalidateDistribution(new CommonId(CommonId.CommonType.TABLE, diff.getSchemaId(), diff.getTableId()));
             return applyCreateTable(diff);
         } catch (Exception e) {
             return Pair.of(null, e.getMessage());

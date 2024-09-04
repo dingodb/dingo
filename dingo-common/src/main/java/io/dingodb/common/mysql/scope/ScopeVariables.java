@@ -99,6 +99,15 @@ public final class ScopeVariables {
         return runDdl.equalsIgnoreCase("on");
     }
 
+    public static long getDdlWaitTimeout() {
+        try {
+            String timeoutStr = executorProp.getOrDefault("ddl_timeout", "180000").toString();
+            return Long.parseLong(timeoutStr);
+        } catch (Exception e) {
+            return 180000;
+        }
+    }
+
     public static void testIndexBlock() {
         while (true) {
             String testRun = executorProp.getOrDefault("test_index", "off").toString();

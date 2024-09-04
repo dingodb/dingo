@@ -19,6 +19,7 @@ package io.dingodb.store.service;
 import com.google.auto.service.AutoService;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.Location;
+import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
@@ -86,7 +87,7 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
     }
 
     @Override
-    public String ownerCheckAllVersions(long jobId, long latestVer) {
+    public String ownerCheckAllVersions(long jobId, long latestVer, boolean reorg) {
         int notMatchVerCnt = 0;
         long intervalCnt = 1000 / 20;
         Map<String, String> updateMap = new HashMap<>();
@@ -115,10 +116,10 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
 
             long end = System.currentTimeMillis();
             long cost = end - start;
-            if (cost > 30000) {
+            if (cost > 40000 && !reorg) {
                 DdlUtil.timeOutError.set(true);
             }
-            if (cost > 50000) {
+            if (cost > 50000 && !reorg) {
                 DdlUtil.timeOutError.set(false);
                 LogUtils.error(log, "[ddl] ownerCheckAllVersions take long time, "
                     + "jobId:{}, latestVer:{}", jobId, latestVer);

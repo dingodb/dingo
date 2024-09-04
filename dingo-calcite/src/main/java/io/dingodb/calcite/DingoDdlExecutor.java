@@ -46,6 +46,7 @@ import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.calcite.schema.SubCalciteSchema;
 import io.dingodb.calcite.schema.SubSnapshotSchema;
 import io.dingodb.common.ddl.ActionType;
+import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
@@ -126,8 +127,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -864,6 +867,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         timeCtx.stop();
         long end = System.currentTimeMillis();
         long cost = end - start;
+        DdlUtil.tableMap.put(tableName.toUpperCase(), schema.getSchemaName());
         if (cost > 10000) {
             LogUtils.info(log, "[ddl] create table take long time, "
                 + "cost:{}, schemaName:{}, tableName:{}", cost, schema.getSchemaName(), tableName);
@@ -924,6 +928,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
         timeCtx.stop();
         long cost = System.currentTimeMillis() - start;
+        DdlUtil.tableMap.remove(tableName.toUpperCase());
         if (cost > 10000) {
             LogUtils.info(log, "drop table take long time, cost:{}, schemaName:{}, tableName:{}", cost, schemaInfo.getName(), tableName);
         } else {

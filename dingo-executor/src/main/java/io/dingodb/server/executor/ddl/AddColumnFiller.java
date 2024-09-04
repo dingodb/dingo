@@ -53,6 +53,8 @@ import static io.dingodb.common.util.NoBreakFunctions.wrap;
 public class AddColumnFiller extends IndexAddFiller {
     private Object defaultVal = null;
 
+    boolean withoutPrimary;
+
     @Override
     public boolean preWritePrimary(ReorgBackFillTask task) {
         ownerRegionId = task.getRegionId().seq;
@@ -60,6 +62,7 @@ public class AddColumnFiller extends IndexAddFiller {
         txnIdKey = txnId.encode();
         commitTs = TsoService.getDefault().tso();
         table = InfoSchemaService.root().getTableDef(task.getTableId().domain, task.getTableId().seq);
+        withoutPrimary = table.getColumns().stream().anyMatch(column -> column.isPrimary() && column.getState() == 2);
         indexTable = InfoSchemaService.root().getIndexDef(task.getTableId().seq, task.getIndexId().seq);
 
         Column addColumn = indexTable.getColumns().stream()
@@ -126,10 +129,15 @@ public class AddColumnFiller extends IndexAddFiller {
     @NonNull
     private Object[] getNewTuples(int colLen, Object[] tuples) {
         Object[] tuplesTmp = new Object[colLen + 1];
-        for (int i = 0; i < colLen; i ++) {
+        for (int i = 0; i < colLen; i++) {
             tuplesTmp[i] = tuples[columnIndices.get(i)];
         }
-        tuplesTmp[colLen] = defaultVal;
+        if (withoutPrimary) {
+            tuplesTmp[colLen] = tuplesTmp[colLen - 1];
+            tuplesTmp[colLen - 1] = defaultVal;
+        } else {
+            tuplesTmp[colLen] = defaultVal;
+        }
         return tuplesTmp;
     }
 

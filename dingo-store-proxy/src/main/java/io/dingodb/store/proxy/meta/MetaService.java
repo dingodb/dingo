@@ -22,6 +22,7 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
@@ -62,7 +63,9 @@ import io.dingodb.sdk.service.entity.coordinator.QueryRegionRequest;
 import io.dingodb.sdk.service.entity.coordinator.RegionCmd.RequestNest.SplitRequest;
 import io.dingodb.sdk.service.entity.coordinator.SplitRegionRequest;
 import io.dingodb.sdk.service.entity.meta.CreateAutoIncrementRequest;
+import io.dingodb.sdk.service.entity.meta.CreateTenantRequest;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
+import io.dingodb.sdk.service.entity.meta.DropTenantRequest;
 import io.dingodb.sdk.service.entity.meta.EntityType;
 import io.dingodb.sdk.service.entity.meta.GetSchemasRequest;
 import io.dingodb.sdk.service.entity.meta.GetSchemasResponse;
@@ -72,6 +75,7 @@ import io.dingodb.sdk.service.entity.meta.ReservedSchemaIds;
 import io.dingodb.sdk.service.entity.meta.Schema;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.sdk.service.entity.meta.TableIdWithPartIds;
+import io.dingodb.sdk.service.entity.meta.UpdateTenantRequest;
 import io.dingodb.store.proxy.Configuration;
 import io.dingodb.store.proxy.service.AutoIncrementService;
 import io.dingodb.store.proxy.service.CodecService;
@@ -1009,6 +1013,38 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public void invalidateDistribution(CommonId tableId) {
         this.cache.invalidateDistribution(tableId);
+    }
+
+    public void createTenant(Tenant tenant) {
+        CreateTenantRequest createTenantRequest = CreateTenantRequest.builder()
+            .tenant(mapping(tenant))
+            .build();
+        this.service.createTenant(System.identityHashCode(createTenantRequest), createTenantRequest);
+    }
+
+    public void updateTenant(Tenant tenant) {
+        UpdateTenantRequest updateTenantRequest = UpdateTenantRequest.builder()
+            .tenant(mapping(tenant))
+            .build();
+        this.service.updateTenant(System.identityHashCode(updateTenantRequest), updateTenantRequest);
+    }
+
+    public void deleteTenant(long tenantId) {
+        DropTenantRequest dropTenantRequest = DropTenantRequest.builder()
+            .tenantId(tenantId)
+            .build();
+        this.service.dropTenant(System.identityHashCode(dropTenantRequest), dropTenantRequest);
+    }
+
+    static io.dingodb.sdk.service.entity.meta.Tenant mapping(Tenant tenant) {
+        return io.dingodb.sdk.service.entity.meta.Tenant.builder()
+            .id(tenant.getId())
+            .name(tenant.getName())
+            .comment(tenant.getRemarks())
+            .createTimestamp(System.currentTimeMillis())
+            .updateTimestamp(0)
+            .deleteTimestamp(0)
+            .build();
     }
 
     public void deleteRegionByTableId(CommonId tableId) {

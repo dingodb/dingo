@@ -21,10 +21,12 @@ import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.mysql.MysqlByteUtil;
 
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 
 import java.util.List;
@@ -142,6 +144,12 @@ public interface InfoSchemaService {
         return schemaVerKey.getBytes();
     }
 
+    default byte[] schemaVerKeyByTenant(long tenantId) {
+        String tenantKey = String.format("tenant:%d", tenantId);
+        String schemaVerKey = String.format(mSchemaVerTemplate, tenantKey, mSchemaVersionKey);
+        return schemaVerKey.getBytes();
+    }
+
     default byte[] nextGlobalID() {
         String globalId = String.format(mSchemaVerTemplate, DdlUtil.tenantPrefix, nextGlobalID);
         return globalId.getBytes();
@@ -168,9 +176,9 @@ public interface InfoSchemaService {
 
     void createSchema(long schemaId, SchemaInfo schema);
 
-    boolean createTenant(long tenantId, Object tenant);
+    default boolean createTenant(long tenantId, Tenant tenant) { return true; };
 
-    boolean updateTenant(long tenantId, Object tenant);
+    default boolean updateTenant(long tenantId, Tenant tenant) { return true; }
 
     Object getTenant(long tenantId);
 
@@ -197,6 +205,9 @@ public interface InfoSchemaService {
     Object getTable(long tableId);
 
     List<Object> listTable(long schemaId);
+
+    default List<Object> listTable(long schemaId, long tenantId) { return null; }
+
     List<Object> listTable(String schemaName);
 
     List<Object> listIndex(long schemaId, long tableId);
@@ -220,6 +231,7 @@ public interface InfoSchemaService {
     long getSchemaVersionWithNonEmptyDiff();
 
     Map<String, Table> listTableDef(long schemaId);
+    default Map<String, Table> listTableDef(long schemaId, long tenantId) { return null; };
 
     void putKvToCoordinator(String key, String val);
 
@@ -249,5 +261,7 @@ public interface InfoSchemaService {
     boolean prepare();
 
     List<Long> genGlobalIDs(int n);
+
+    default InfoSchema getInfoSchemaByTenantId(long tenantId) { return null; }
 
 }

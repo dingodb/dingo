@@ -19,6 +19,7 @@ package io.dingodb.meta;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.Index;
@@ -233,6 +234,12 @@ public interface MetaService {
     default void invalidateDistribution(CommonId tableId) {}
 
     default void deleteRegionByTableId(CommonId tableId) {}
+
+    default void createTenant(Tenant tenant) {};
+
+    default void updateTenant(Tenant tenant) {};
+
+    default void deleteTenant(long tenantId) {};
 
     void close();
 }

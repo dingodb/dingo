@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
+import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.tenant.TenantConstant;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -95,6 +96,9 @@ public class LoggerReporter extends ScheduledReporter {
             while(var6.hasNext()) {
                 entry = (Map.Entry)var6.next();
                 this.logTimer((String)entry.getKey(), (Timer)entry.getValue());
+            }
+            if (DdlUtil.tableMap.size() < 10) {
+                this.loggerProxy.log(this.marker, "unDropTable:" + DdlUtil.tableMap);
             }
             this.loggerProxy.log(this.marker, "------------------------------>");
         }

@@ -25,6 +25,7 @@ import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -50,8 +51,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 public final class DdlHandler {
 
     public static final DdlHandler INSTANCE = new DdlHandler();
-
-    public static final int DEFAULT_DDL_TIMEOUT = 600000;
 
     private static final BlockingQueue<DdlJob> asyncJobQueue = new LinkedBlockingDeque<>(1000);
 
@@ -142,7 +141,7 @@ public final class DdlHandler {
         ddlJob.setConnId(connId);
         //ddlJob.setQuery(sql);
         try {
-            doDdlJob(ddlJob, DEFAULT_DDL_TIMEOUT);
+            doDdlJob(ddlJob);
         } catch (Exception e) {
             LogUtils.error(log, "[ddl-error] create table error,reason:" + e.getMessage() + ", tabDef" + tableDefinition, e);
             throw e;
@@ -160,7 +159,7 @@ public final class DdlHandler {
             .build();
         job.setConnId(connId);
         try {
-            doDdlJob(job, DEFAULT_DDL_TIMEOUT);
+            doDdlJob(job);
         } catch (Exception e) {
             LogUtils.error(log, "[ddl-error] drop table error,reason:" + e.getMessage() + ", tabDef" + tableName, e);
             throw e;
@@ -184,7 +183,7 @@ public final class DdlHandler {
         job.setArgs(args);
         job.setConnId(connId);
         try {
-            doDdlJob(job, DEFAULT_DDL_TIMEOUT);
+            doDdlJob(job);
         } catch (Exception e) {
             LogUtils.error(log, "[ddl-error] createSchema error, reason:" + e.getMessage(), e);
             throw e;
@@ -199,7 +198,7 @@ public final class DdlHandler {
             .schemaId(schemaInfo.getSchemaId()).build();
         job.setConnId(connId);
         try {
-            doDdlJob(job, DEFAULT_DDL_TIMEOUT);
+            doDdlJob(job);
         } catch (Exception e) {
             LogUtils.error(log, "[ddl-error] dropSchema error, schema:" + schemaInfo.getName(), e);
             throw e;
@@ -226,7 +225,7 @@ public final class DdlHandler {
         args.add(tableEntityId);
         job.setArgs(args);
         try {
-            doDdlJob(job, DEFAULT_DDL_TIMEOUT);
+            doDdlJob(job);
         } catch (Exception e) {
             LogUtils.error(log, "[ddl-error] truncate table error, table:" + table.getName(), e);
             throw e;
@@ -256,7 +255,7 @@ public final class DdlHandler {
         args.add(indexDef);
         job.setArgs(args);
         try {
-            doDdlJob(job, DEFAULT_DDL_TIMEOUT);
+            doDdlJob(job);
         } catch (Exception e) {
             LogUtils.error(log, "[ddl-error] createIndex error, tableName:" + tableName, e);
             throw e;
@@ -292,7 +291,7 @@ public final class DdlHandler {
         args.add(indexName);
         job.setArgs(args);
         try {
-            doDdlJob(job, DEFAULT_DDL_TIMEOUT);
+            doDdlJob(job);
         } catch (Exception e) {
             LogUtils.error(log, "[ddl-error] dropIndex error, tableName:" + tableName + ", indexName:" + indexName, e);
             throw e;
@@ -312,7 +311,7 @@ public final class DdlHandler {
         args.add(column);
         job.setArgs(args);
         try {
-            doDdlJob(job, DEFAULT_DDL_TIMEOUT);
+            doDdlJob(job);
         } catch (Exception e) {
             LogUtils.error(log, "[ddl-error] add column error, tableName:" + table.getName() + ", column:" + column.getName(), e);
             throw e;
@@ -342,7 +341,7 @@ public final class DdlHandler {
         args.add(relatedIndex);
         job.setArgs(args);
         try {
-            doDdlJob(job, DEFAULT_DDL_TIMEOUT);
+            doDdlJob(job);
         } catch (Exception e) {
             LogUtils.error(log, "[ddl-error] dropColumn error, tableName:" + tableName + ", columnName:" + columnName, e);
             throw e;
@@ -375,7 +374,11 @@ public final class DdlHandler {
             .build();
     }
 
-    public static void doDdlJob(DdlJob job, long timeout) {
+    public static void doDdlJob(DdlJob job) {
+        long timeout = ScopeVariables.getDdlWaitTimeout();
+        if (job.mayNeedReorg()) {
+            timeout = 0;
+        }
         // put job to queue
         DdlJobEventSource.forcePut(asyncJobQueue, job);
         // get history job from history

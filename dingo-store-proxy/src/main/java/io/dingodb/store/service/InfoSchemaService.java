@@ -31,7 +31,9 @@ import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.meta.InfoSchemaServiceProvider;
+import io.dingodb.meta.ddl.InfoSchemaBuilder;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
@@ -58,9 +60,11 @@ import io.dingodb.sdk.service.entity.version.RangeRequest;
 import io.dingodb.sdk.service.entity.version.RangeResponse;
 import io.dingodb.store.proxy.Configuration;
 
+import io.dingodb.store.proxy.meta.MetaService;
 import io.dingodb.store.proxy.service.TsoService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -262,24 +266,26 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
-    public boolean createTenant(long tenantId, Object tenant) {
+    public boolean createTenant(long tenantId, Tenant tenant) {
         byte[] tenantKey = tenantKey(tenantId);
         if (checkTenantExists(tenantKey)) {
             return false;
         }
         byte[] val = getBytesFromObj(tenant);
         txn.hInsert(mTenants, tenantKey, val);
+        MetaService.ROOT.createTenant(tenant);
         return true;
     }
 
     @Override
-    public boolean updateTenant(long tenantId, Object tenant) {
+    public boolean updateTenant(long tenantId, Tenant tenant) {
         byte[] tenantKey = tenantKey(tenantId);
         if (!checkTenantExists(tenantKey)) {
             return false;
         }
         byte[] val = getBytesFromObj(tenant);
         this.txn.hPut(mTenants, tenantKey, val);
+        MetaService.ROOT.updateTenant(tenant);
         return true;
     }
 
@@ -337,14 +343,25 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     public List<SchemaInfo> listSchema() {
         byte[] tenantKey = tenantKey(tenantId);
 
+        return getSchemaInfos(tenantKey);
+    }
+
+    @NonNull
+    private List<SchemaInfo> getSchemaInfos(byte[] tenantKey) {
         List<byte[]> valueList = txn.hGetAll(tenantKey);
         if (!valueList.isEmpty()) {
             return valueList
-              .stream()
-              .map(val -> getObjFromBytes(val, SchemaInfo.class)).map(object -> (SchemaInfo)object)
-              .collect(Collectors.toList());
+                .stream()
+                .map(val -> getObjFromBytes(val, SchemaInfo.class)).map(object -> (SchemaInfo) object)
+                .collect(Collectors.toList());
         }
         return new ArrayList<>();
+    }
+
+    public List<SchemaInfo> listSchema(long tenantId) {
+        byte[] tenantKey = tenantKey(tenantId);
+
+        return getSchemaInfos(tenantKey);
     }
 
     @Override
@@ -446,6 +463,16 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     @Override
     public List<Object> listTable(long schemaId) {
         byte[] tenantKey = tenantKey(tenantId);
+        return listTable(schemaId, tenantKey);
+    }
+
+    public List<Object> listTable(long schemaId, long tenantId) {
+        byte[] tenantKey = tenantKey(tenantId);
+        return listTable(schemaId, tenantKey);
+    }
+
+    @NonNull
+    private List<Object> listTable(long schemaId, byte[] tenantKey) {
         byte[] schemaKey = schemaKey(schemaId);
         if (!checkDBExists(tenantKey, schemaKey)) {
             throw new RuntimeException("schema is null");
@@ -456,7 +483,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         List<byte[]> valueList = txn.mRange(dataPrefix, end);
         if (!valueList.isEmpty()) {
             return valueList.stream().map(val -> getObjFromBytes(val, TableDefinitionWithId.class))
-                .map(object -> (TableDefinitionWithId)object)
+                .map(object -> (TableDefinitionWithId) object)
                 .collect(Collectors.toList());
         }
         return new ArrayList<>();
@@ -515,6 +542,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     public void dropTenant(long tenantId) {
         byte[] tenantKey = tenantKey(tenantId);
         txn.hDel(mTenants, tenantKey);
+        MetaService.ROOT.deleteTenant(tenantId);
     }
 
     @Override
@@ -635,6 +663,16 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     @Override
     public Map<String, Table> listTableDef(long schemaId) {
         List<Object> objList = listTable(schemaId);
+        return objList.stream()
+            .map(obj -> (TableDefinitionWithId) obj)
+            .map(tableWithId -> MAPPER.tableFrom(tableWithId,
+                getIndexes(tableWithId, tableWithId.getTableId())))
+            .collect(Collectors.toConcurrentMap(t -> t.name, t -> t));
+    }
+
+    @Override
+    public Map<String, Table> listTableDef(long schemaId, long tenantId) {
+        List<Object> objList = listTable(schemaId, tenantId);
         return objList.stream()
             .map(obj -> (TableDefinitionWithId) obj)
             .map(tableWithId -> MAPPER.tableFrom(tableWithId,
@@ -849,6 +887,15 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         ).getIds();
     }
 
+    @Override
+    public InfoSchema getInfoSchemaByTenantId(long tenantId) {
+        long neededSchemaVersion = this.getSchemaVerByTenant(tenantId);
+        List<SchemaInfo> schemaInfoList = listSchema(tenantId);
+        InfoSchemaBuilder builder = new InfoSchemaBuilder();
+        builder.initWithSchemaInfosByTenant(schemaInfoList, neededSchemaVersion, this, tenantId);
+        return builder.build();
+    }
+
     private long genId(IdEpochType idEpochType) {
         long startTs = TsoService.INSTANCE.tso();
         CoordinatorService coordinatorService = Services.coordinatorService(coordinators);
@@ -920,6 +967,22 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     public long getSchemaVer() {
         RangeRequest rangeRequest = RangeRequest.builder()
             .key(genSchemaVerKey)
+            .build();
+        RangeResponse response = versionService
+            .kvRange(System.identityHashCode(rangeRequest), rangeRequest);
+
+        long id = 0L;
+        if (response.getKvs() != null && !response.getKvs().isEmpty()) {
+            byte[] val = response.getKvs().get(0).getKv().getValue();
+            id = Long.parseLong(new String(val));
+        }
+        return id;
+    }
+
+    public long getSchemaVerByTenant(long tenantId) {
+        byte[] key = CodecKvUtil.encodeStringDataKey(schemaVerKeyByTenant(tenantId));
+        RangeRequest rangeRequest = RangeRequest.builder()
+            .key(key)
             .build();
         RangeResponse response = versionService
             .kvRange(System.identityHashCode(rangeRequest), rangeRequest);

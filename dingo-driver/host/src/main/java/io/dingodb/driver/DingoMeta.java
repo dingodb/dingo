@@ -1018,7 +1018,6 @@ public class DingoMeta extends MetaImpl {
     public void commit(ConnectionHandle ch) {
         try {
             DingoConnection dingoConnection = (DingoConnection) connection;
-            dingoConnection.getContext().getRootSchema().closeTxn();
             if (dingoConnection.getCommitProfile() != null) {
                 dingoConnection.getCommitProfile().reset();
             }

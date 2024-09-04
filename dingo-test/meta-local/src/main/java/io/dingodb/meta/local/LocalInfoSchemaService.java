@@ -83,16 +83,6 @@ public class LocalInfoSchemaService implements InfoSchemaService {
     }
 
     @Override
-    public boolean createTenant(long tenantId, Object tenant) {
-        return false;
-    }
-
-    @Override
-    public boolean updateTenant(long tenantId, Object tenant) {
-        return false;
-    }
-
-    @Override
     public Object getTenant(long tenantId) {
         return 0;
     }
