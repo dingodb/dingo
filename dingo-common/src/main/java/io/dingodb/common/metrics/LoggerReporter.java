@@ -97,7 +97,7 @@ public class LoggerReporter extends ScheduledReporter {
                 entry = (Map.Entry)var6.next();
                 this.logTimer((String)entry.getKey(), (Timer)entry.getValue());
             }
-            if (DdlUtil.tableMap.size() < 10) {
+            if (DdlUtil.tableMap.size() < 150) {
                 this.loggerProxy.log(this.marker, "unDropTable:" + DdlUtil.tableMap);
             }
             this.loggerProxy.log(this.marker, "------------------------------>");

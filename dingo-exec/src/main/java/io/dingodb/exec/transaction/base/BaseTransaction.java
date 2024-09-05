@@ -267,7 +267,7 @@ public abstract class BaseTransaction implements ITransaction {
                 }
             }
         } catch (Throwable throwable) {
-            LogUtils.error(log, throwable.getMessage(), throwable);
+            LogUtils.error(log, "commitPrimaryKey commit_ts:{}, error: {}", commitTs, throwable);
         }
         return false;
     }
@@ -464,7 +464,7 @@ public abstract class BaseTransaction implements ITransaction {
             if (cancel.get()) {
                 this.status = TransactionStatus.CANCEL;
             }
-            LogUtils.debug(log, "{} Commit End Status:{}, Cost:{}ms", transactionOf(),
+            LogUtils.debug(log, "{} Commit End commit_ts:{}, Status:{}, Cost:{}ms", transactionOf(), commitTs,
                 status, (System.currentTimeMillis() - preWriteStart));
             jobManager.removeJob(jobId.get());
             if (!cancel.get()) {

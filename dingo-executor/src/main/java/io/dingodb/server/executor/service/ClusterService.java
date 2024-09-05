@@ -182,7 +182,7 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
             "cluster-heartbeat",
             () -> coordinatorService.executorHeartbeat(TsoService.getDefault().tso(), executorHeartbeatRequest()),
             0,
-            1,
+            10,
             TimeUnit.SECONDS
         );
     }

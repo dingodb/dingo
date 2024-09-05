@@ -123,32 +123,42 @@ public class TransactionStoreInstance {
     }
 
     public void heartbeat(TxnPreWrite txnPreWrite) {
-        TxnHeartBeatRequest request = TxnHeartBeatRequest.builder()
-            .primaryLock(txnPreWrite.getPrimaryLock())
-            .startTs(txnPreWrite.getStartTs())
-            .adviseLockTtl(TsoService.INSTANCE.timestamp() + SECONDS.toMillis(5))
-            .build();
-        if (indexService != null) {
-            indexService.txnHeartBeat(request.getStartTs(), request);
-        } else if (documentService != null) {
-            documentService.txnHeartBeat(request.getStartTs(), request);
-        } else {
-            storeService.txnHeartBeat(request.getStartTs(), request);
+        try {
+            TxnHeartBeatRequest request = TxnHeartBeatRequest.builder()
+                .primaryLock(txnPreWrite.getPrimaryLock())
+                .startTs(txnPreWrite.getStartTs())
+                .adviseLockTtl(TsoService.INSTANCE.timestamp() + SECONDS.toMillis(60))
+                .build();
+            if (indexService != null) {
+                indexService.txnHeartBeat(request.getStartTs(), request);
+            } else if (documentService != null) {
+                documentService.txnHeartBeat(request.getStartTs(), request);
+            } else {
+                storeService.txnHeartBeat(request.getStartTs(), request);
+            }
+        } catch (Exception e) {
+            LogUtils.error(log, "txn heartbeat, startTs:{}, error:{}", txnPreWrite.getStartTs(), e);
+            throw e;
         }
     }
 
     public void heartbeat(TxnPessimisticLock txnPessimisticLock) {
-        TxnHeartBeatRequest request = TxnHeartBeatRequest.builder()
-            .primaryLock(txnPessimisticLock.getPrimaryLock())
-            .startTs(txnPessimisticLock.getStartTs())
-            .adviseLockTtl(TsoService.INSTANCE.timestamp() + SECONDS.toMillis(5))
-            .build();
-        if (indexService != null) {
-            indexService.txnHeartBeat(request.getStartTs(), request);
-        } else if (documentService != null) {
-            documentService.txnHeartBeat(request.getStartTs(), request);
-        } else {
-            storeService.txnHeartBeat(request.getStartTs(), request);
+        try {
+            TxnHeartBeatRequest request = TxnHeartBeatRequest.builder()
+                .primaryLock(txnPessimisticLock.getPrimaryLock())
+                .startTs(txnPessimisticLock.getStartTs())
+                .adviseLockTtl(TsoService.INSTANCE.timestamp() + SECONDS.toMillis(60))
+                .build();
+            if (indexService != null) {
+                indexService.txnHeartBeat(request.getStartTs(), request);
+            } else if (documentService != null) {
+                documentService.txnHeartBeat(request.getStartTs(), request);
+            } else {
+                storeService.txnHeartBeat(request.getStartTs(), request);
+            }
+        } catch (Exception e) {
+            LogUtils.error(log, "pessimistic txn heartbeat, startTs:{}, error:{}", txnPessimisticLock.getStartTs(), e);
+            throw e;
         }
     }
 
@@ -273,7 +283,13 @@ public class TransactionStoreInstance {
     public Future<?> txnPreWritePrimaryKey(TxnPreWrite txnPreWrite, long timeOut) {
         if (txnPreWrite(txnPreWrite, timeOut)) {
             LogUtils.info(log, "txn heartbeat, startTs:{}", txnPreWrite.getStartTs());
-            return Executors.scheduleWithFixedDelayAsync("txn-heartbeat-" + txnPreWrite.getStartTs(), () -> heartbeat(txnPreWrite), 1, 1, SECONDS);
+            return Executors.scheduleWithFixedDelayAsync(
+                "txn-heartbeat-" + txnPreWrite.getStartTs(),
+                () -> heartbeat(txnPreWrite),
+                30,
+                10,
+                SECONDS
+            );
         }
         throw new WriteConflictException();
     }
@@ -308,7 +324,13 @@ public class TransactionStoreInstance {
         if (txnPessimisticLock(txnPessimisticLock, timeOut, ignoreLockWait, kvRet)) {
             LogUtils.info(log, "txn pessimistic heartbeat, startTs:{}, primaryKey is {}",
                 txnPessimisticLock.getStartTs(), Arrays.toString(txnPessimisticLock.getPrimaryLock()));
-            return Executors.scheduleWithFixedDelayAsync("txn-pessimistic-heartbeat-" + txnPessimisticLock.getStartTs(), () -> heartbeat(txnPessimisticLock), 1, 1, SECONDS);
+            return Executors.scheduleWithFixedDelayAsync(
+                "txn-pessimistic-heartbeat-" + txnPessimisticLock.getStartTs(),
+                () -> heartbeat(txnPessimisticLock),
+                30,
+                10,
+                SECONDS
+            );
         }
         throw new WriteConflictException();
     }
