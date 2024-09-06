@@ -8137,6 +8137,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < PRIVILEGES: "PRIVILEGES" >
 |   < PROCEDURE: "PROCEDURE" >
 |   < PUBLIC: "PUBLIC" >
+|   < PURGE_RESOURCES: "PURGE_RESOURCES" >
 |   < QUARTER: "QUARTER" >
 |   < QUARTERS: "QUARTERS" >
 |   < RANGE: "RANGE" >

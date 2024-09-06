@@ -193,14 +193,18 @@ public interface InfoSchemaService {
     List<SchemaInfo> listSchema();
 
     Object getTable(long schemaId, long tableId);
+    Object getTable(long schemaId, long tableId, long tenantId);
     Object getTable(CommonId tableId);
+    Object getTable(CommonId tableId, long tenantId);
     default Object getReplicaTable(long schemaId, long tableId, long replicaTableId) { return null; }
 
     Table getTableDef(long schemaId, long tableId);
     Table getTableDef(long schemaId, String tableName);
+    Table getTableDef(long schemaId, String tableName, long tenantId);
     IndexTable getIndexDef(long tableId, long indexId);
 
     Object getTable(long schemaId, String tableName);
+    Object getTable(long schemaId, String tableName, long tenantId);
     Object getTable(String schemaName, String tableName);
     Object getTable(long tableId);
 
@@ -211,6 +215,7 @@ public interface InfoSchemaService {
     List<Object> listTable(String schemaName);
 
     List<Object> listIndex(long schemaId, long tableId);
+    List<Object> listIndex(long schemaId, long tableId, long tenantId);
     Object getIndex(long tableId, long indexId);
 
     void dropTenant(long tenantId);

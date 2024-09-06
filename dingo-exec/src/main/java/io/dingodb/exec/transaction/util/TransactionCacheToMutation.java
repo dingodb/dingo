@@ -16,6 +16,9 @@
 
 package io.dingodb.exec.transaction.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
@@ -27,6 +30,7 @@ import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.scalar.BinaryType;
 import io.dingodb.common.type.scalar.DoubleType;
 import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.base.TxnLocalData;
@@ -54,6 +58,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -111,10 +116,26 @@ public final class TransactionCacheToMutation {
             List<String> colNames = index.getColumns().stream().map(Column::getName).collect(Collectors.toList());
             long longId = Long.parseLong(String.valueOf(record[colNames.indexOf(column.getName())]));
             if (index.indexType == IndexType.DOCUMENT) {
+                String json = Optional.mapOrGet(index.getProperties().get("text_fields"), __ -> (String)__, () -> null);
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode jsonNode;
+                try {
+                    jsonNode = json == null ? null : mapper.readTree(json);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+
                 Map<String, DocumentValue> documentData = new HashMap<>();
-                documentData.put(column.getName(), new DocumentValue(DocumentValue.ScalarFieldType.LONG, new ScalarField(longId)));
+                documentData.put(column.getName(), new DocumentValue(
+                    DocumentValue.ScalarFieldType.LONG,
+                    new ScalarField(longId))
+                );
                 for (int i = 1; i < index.getColumns().size(); i++) {
                     Column columnDef = index.getColumns().get(i);
+                    if (jsonNode != null && jsonNode.get(columnDef.getName().toLowerCase()) == null
+                        && jsonNode.get(columnDef.getName().toUpperCase()) == null) {
+                        continue;
+                    }
                     DingoType type = columnDef.type;
                     ScalarField scalarField;
                     DocumentValue.ScalarFieldType fieldType;
@@ -140,17 +161,28 @@ public final class TransactionCacheToMutation {
                 }
                 value = keyValueCodec.encode(record).getValue();
                 TableData tableData = TableData.builder().tableKey(key).tableValue(value).build();
-                documentWithId = DocumentWithId.builder().document(new Document(tableData, documentData)).id(longId).build();
+                documentWithId = DocumentWithId.builder()
+                    .document(new Document(tableData, documentData))
+                    .id(longId)
+                    .build();
             } else {
                 Column column1 = index.getColumns().get(1);
                 Vector vector;
                 if (column1.getElementTypeName().equalsIgnoreCase("FLOAT")) {
                     List<Float> values = (List<Float>) record[colNames.indexOf(column1.getName())];
-                    vector = Vector.builder().dimension(values.size()).floatValues(values).valueType(Vector.ValueType.FLOAT).build();
+                    vector = Vector.builder()
+                        .dimension(values.size())
+                        .floatValues(values)
+                        .valueType(Vector.ValueType.FLOAT)
+                        .build();
                     record[colNames.indexOf(column1.getName())] = Collections.emptyList();
                 } else {
                     List<byte[]> values = (List<byte[]>) record[colNames.indexOf(column1.getName())];
-                    vector = Vector.builder().dimension(values.size()).binaryValues(values).valueType(Vector.ValueType.UINT8).build();
+                    vector = Vector.builder()
+                        .dimension(values.size())
+                        .binaryValues(values)
+                        .valueType(Vector.ValueType.UINT8)
+                        .build();
                     record[colNames.indexOf(column1.getName())] = Collections.emptyList();
                 }
                 value = keyValueCodec.encode(record).getValue();

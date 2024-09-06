@@ -29,11 +29,13 @@ import java.util.List;
 public class SqlDropTenant extends SqlDrop {
 
     public final String name;
+    public final boolean purgeResources;
     private static final SqlOperator OPERATOR = new SqlSpecialOperator("DROP TENANT", SqlKind.OTHER_DDL);
 
-    public SqlDropTenant(SqlParserPos pos, boolean ifExists, String name) {
+    public SqlDropTenant(SqlParserPos pos, boolean ifExists, String name, boolean purgeResources) {
         super(OPERATOR, pos, ifExists);
         this.name = name.startsWith("'") ? name.replace("'", "") : name;
+        this.purgeResources = purgeResources;
     }
 
     @Override
@@ -46,5 +48,8 @@ public class SqlDropTenant extends SqlDrop {
         writer.keyword("DROP");
         writer.keyword("TENANT");
         writer.keyword(name);
+        if (purgeResources) {
+            writer.keyword("PURGE RESOURCES");
+        }
     }
 }

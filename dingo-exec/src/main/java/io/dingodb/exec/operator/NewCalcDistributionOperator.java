@@ -17,14 +17,17 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.RangeUtils;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.DistributionSourceParam;
+import io.dingodb.meta.MetaService;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.transaction.exception.LockWaitException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
@@ -82,54 +85,64 @@ public class NewCalcDistributionOperator extends SourceOperator {
     @Override
     public boolean push(Context context, @NonNull Vertex vertex) {
         DistributionSourceParam param = vertex.getParam();
-        Set<RangeDistribution> distributions = getRangeDistributions(param);
-        if (log.isTraceEnabled()) {
-            if (distributions.isEmpty()) {
-                log.trace(
-                    "No data distribution from ({}) to ({})",
-                    Arrays.toString(param.getStartKey()),
-                    Arrays.toString(param.getEndKey())
-                );
-            }
-        }
-        boolean parallel = Utils.parallel(param.getKeepOrder());
-        //boolean rangePart = "range".equalsIgnoreCase(param.getTd().getPartitionStrategy());
-        //boolean rangePart = false;
-        if (!parallel || distributions.size() == 1) {
-            for (RangeDistribution distribution : distributions) {
+        Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
+        while (retry-- > 0) {
+            try {
+                Set<RangeDistribution> distributions = getRangeDistributions(param);
                 if (log.isTraceEnabled()) {
-                    log.trace("Push distribution: {}", distribution);
+                    if (distributions.isEmpty()) {
+                        log.trace(
+                            "No data distribution from ({}) to ({})",
+                            Arrays.toString(param.getStartKey()),
+                            Arrays.toString(param.getEndKey())
+                        );
+                    }
                 }
-                context.setDistribution(distribution);
-                if (!vertex.getSoleEdge().transformToNext(context, null)) {
-                    break;
-                }
-            }
-        } else {
-            CompletableFuture<Void> allFutures = CompletableFuture.allOf(
-                distributions.stream().map(distribution -> {
-                    Callable<Boolean> callable = () -> {
+                boolean parallel = Utils.parallel(param.getKeepOrder());
+                //boolean rangePart = "range".equalsIgnoreCase(param.getTd().getPartitionStrategy());
+                //boolean rangePart = false;
+                if (!parallel || distributions.size() == 1) {
+                    for (RangeDistribution distribution : distributions) {
                         if (log.isTraceEnabled()) {
                             log.trace("Push distribution: {}", distribution);
                         }
-                        Context context1 = context.copy();
-                        context1.setDistribution(distribution);
-                        return vertex.getSoleEdge().transformToNext(context1, null);
-                    };
-                    return Executors.submit("newCalc", callable);
-                }).toArray(CompletableFuture[]::new));
-            try {
-                allFutures.get();
-            } catch (ExecutionException | InterruptedException e) {
-                if (e.getMessage().contains("RegionSplitException")) {
-                    throw new RegionSplitException("io.dingodb.sdk.common.DingoClientException$InvalidRouteTableException");
-                } else if (e.getCause() instanceof LockWaitException) {
-                    throw new LockWaitException("Lock wait");
+                        context.setDistribution(distribution);
+                        if (!vertex.getSoleEdge().transformToNext(context, null)) {
+                            break;
+                        }
+                    }
                 } else {
-                    throw new RuntimeException(e);
+                    CompletableFuture<Void> allFutures = CompletableFuture.allOf(
+                        distributions.stream().map(distribution -> {
+                            Callable<Boolean> callable = () -> {
+                                if (log.isTraceEnabled()) {
+                                    log.trace("Push distribution: {}", distribution);
+                                }
+                                Context context1 = context.copy();
+                                context1.setDistribution(distribution);
+                                return vertex.getSoleEdge().transformToNext(context1, null);
+                            };
+                            return Executors.submit("newCalc", callable);
+                        }).toArray(CompletableFuture[]::new));
+                    try {
+                        allFutures.get();
+                    } catch (ExecutionException | InterruptedException e) {
+                        if (e.getMessage().contains("RegionSplitException")) {
+                            throw new RegionSplitException("io.dingodb.sdk.common.DingoClientException$InvalidRouteTableException");
+                        } else if (e.getCause() instanceof LockWaitException) {
+                            throw new LockWaitException("Lock wait");
+                        } else {
+                            throw new RuntimeException(e);
+                        }
+                    }
                 }
+                return false;
+            } catch (RegionSplitException e) {
+                LogUtils.error(log, e.getMessage());
+                NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distribution =
+                    MetaService.root().getRangeDistribution(param.getTd().getTableId());
+                param.setRangeDistribution(distribution);
             }
-
         }
         return false;
     }
