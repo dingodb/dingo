@@ -366,6 +366,11 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public Object getTable(long schemaId, long tableId) {
+        return getTable(schemaId, tableId, tenantId);
+    }
+
+    @Override
+    public Object getTable(long schemaId, long tableId, long tenantId) {
         byte[] tenantKey = tenantKey(tenantId);
         byte[] schemaKey = schemaKey(schemaId);
         if (!checkDBExists(tenantKey, schemaKey)) {
@@ -392,8 +397,13 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public Object getTable(CommonId tableId) {
+        return getTable(tableId,-1);
+    }
+
+    @Override
+    public Object getTable(CommonId tableId, long tenantId) {
         if (tableId.type == CommonId.CommonType.TABLE) {
-            return getTable(tableId.domain, tableId.seq);
+            return tenantId != -1 ? getTable(tableId.domain, tableId.seq, tenantId) : getTable(tableId.domain, tableId.seq);
         } else if (tableId.type == CommonId.CommonType.INDEX) {
             return getIndex(tableId.domain, tableId.seq);
         }
@@ -406,16 +416,21 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         if (tableWithId == null) {
             return null;
         }
-        return MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
+        return MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId(), tenantId));
     }
 
     @Override
     public Table getTableDef(long schemaId, String tableName) {
-        TableDefinitionWithId tableWithId = (TableDefinitionWithId) getTable(schemaId, tableName);
+        return getTableDef(schemaId, tableName, tenantId);
+    }
+
+    @Override
+    public Table getTableDef(long schemaId, String tableName, long tenantId) {
+        TableDefinitionWithId tableWithId = (TableDefinitionWithId) getTable(schemaId, tableName, tenantId);
         if (tableWithId == null) {
             return null;
         }
-        return MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
+        return MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId(), tenantId));
     }
 
     @Override
@@ -424,7 +439,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         if (tableWithId == null) {
             return null;
         }
-        Table table =  MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
+        Table table =  MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId(), tenantId));
         return table.getIndexes()
             .stream().filter(indexTable -> indexTable.getTableId().seq == indexId)
             .findFirst().orElse(null);
@@ -432,7 +447,12 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public Object getTable(long schemaId, String tableName) {
-        List<Object> tableList = listTable(schemaId);
+        return getTable(schemaId, tableName, tenantId);
+    }
+
+    @Override
+    public Object getTable(long schemaId, String tableName, long tenantId) {
+        List<Object> tableList = listTable(schemaId, tenantId);
         return tableList.stream().map(object -> (TableDefinitionWithId)object)
             .filter(tableDefinitionWithId -> tableDefinitionWithId.getTableDefinition().getName().equalsIgnoreCase(tableName))
             .findFirst().orElse(null);
@@ -511,6 +531,11 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public List<Object> listIndex(long schemaId, long tableId) {
+        return listIndex(schemaId, tableId, tenantId);
+    }
+
+    @Override
+    public List<Object> listIndex(long schemaId, long tableId, long tenantId) {
         byte[] tenantKey = tenantKey(tenantId);
         byte[] schemaKey = schemaKey(schemaId);
         if (!checkDBExists(tenantKey, schemaKey)) {
@@ -666,7 +691,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         return objList.stream()
             .map(obj -> (TableDefinitionWithId) obj)
             .map(tableWithId -> MAPPER.tableFrom(tableWithId,
-                getIndexes(tableWithId, tableWithId.getTableId())))
+                getIndexes(tableWithId, tableWithId.getTableId(), tenantId)))
             .collect(Collectors.toConcurrentMap(t -> t.name, t -> t));
     }
 
@@ -676,7 +701,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         return objList.stream()
             .map(obj -> (TableDefinitionWithId) obj)
             .map(tableWithId -> MAPPER.tableFrom(tableWithId,
-                getIndexes(tableWithId, tableWithId.getTableId())))
+                getIndexes(tableWithId, tableWithId.getTableId(), tenantId)))
             .collect(Collectors.toConcurrentMap(t -> t.name, t -> t));
     }
 
@@ -936,13 +961,17 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         return (SchemaDiff) object;
     }
 
-    private List<TableDefinitionWithId> getIndexes(TableDefinitionWithId tableWithId, DingoCommonId tableId) {
+    private List<TableDefinitionWithId> getIndexes(
+        TableDefinitionWithId tableWithId,
+        DingoCommonId tableId,
+        long tenantId
+    ) {
         try {
             if (tableWithId.getTableId().getEntityType() == EntityType.ENTITY_TYPE_INDEX) {
                 return new ArrayList<>();
             }
             List<Object> indexList = this
-                .listIndex(tableId.getParentEntityId(), tableId.getEntityId());
+                .listIndex(tableId.getParentEntityId(), tableId.getEntityId(), tenantId);
             return indexList.stream()
                 .map(object -> (TableDefinitionWithId) object)
                 .peek(indexWithId -> {

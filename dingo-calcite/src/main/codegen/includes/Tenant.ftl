@@ -15,6 +15,15 @@
 // limitations under the License.
 -->
 
+boolean IfPurgeResourcesOpt() :
+{
+}
+{
+    <IF> <PURGE_RESOURCES> { return true; }
+|
+    { return false; }
+}
+
 SqlCreate SqlCreateTenant(Span s, boolean replace) :
 {
     final boolean ifNotExists;
@@ -35,15 +44,16 @@ SqlCreate SqlCreateTenant(Span s, boolean replace) :
 SqlDrop SqlDropTenant(Span s, boolean replace) :
 {
     final boolean ifExists;
-    final SqlIdentifier id;
     String name;
+    boolean purgeResources = false;
 }
 {
     <TENANT> ifExists = IfExistsOpt()
     ( <QUOTED_STRING> | <IDENTIFIER> )
     { name = token.image; }
+    purgeResources = IfPurgeResourcesOpt()
     {
-        return new SqlDropTenant(s.end(this), ifExists, name);
+        return new SqlDropTenant(s.end(this), ifExists, name, purgeResources);
     }
 }
 

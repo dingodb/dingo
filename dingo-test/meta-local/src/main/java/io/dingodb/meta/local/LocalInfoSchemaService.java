@@ -123,6 +123,31 @@ public class LocalInfoSchemaService implements InfoSchemaService {
     }
 
     @Override
+    public Object getTable(long schemaId, long tableId, long tenantId) {
+        return null;
+    }
+
+    @Override
+    public Object getTable(CommonId tableId, long tenantId) {
+        return null;
+    }
+
+    @Override
+    public Table getTableDef(long schemaId, String tableName, long tenantId) {
+        return null;
+    }
+
+    @Override
+    public Object getTable(long schemaId, String tableName, long tenantId) {
+        return null;
+    }
+
+    @Override
+    public List<Object> listIndex(long schemaId, long tableId, long tenantId) {
+        return null;
+    }
+
+    @Override
     public Table getTableDef(long schemaId, long tableId) {
         return null;
     }

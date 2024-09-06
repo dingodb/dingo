@@ -25,6 +25,7 @@ import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.net.api.ApiRegistry;
+import io.dingodb.sdk.service.DocumentService;
 import io.dingodb.sdk.service.IndexService;
 import io.dingodb.sdk.service.LockService;
 import io.dingodb.sdk.service.Services;
@@ -50,22 +51,16 @@ import io.dingodb.sdk.service.entity.version.Kv;
 import io.dingodb.sdk.service.entity.version.RangeRequest;
 import io.dingodb.sdk.service.entity.version.RangeResponse;
 import io.dingodb.store.proxy.Configuration;
-import io.dingodb.transaction.api.TableLock;
-import io.dingodb.transaction.api.TableLockService;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static io.dingodb.common.mysql.InformationSchemaConstant.GLOBAL_VAR_PREFIX_BEGIN;
 import static io.dingodb.sdk.common.utils.ByteArrayUtils.toHex;
@@ -74,7 +69,6 @@ import static io.dingodb.sdk.service.entity.store.Action.TTLExpirePessimisticRol
 import static io.dingodb.sdk.service.entity.store.Action.TTLExpireRollback;
 import static io.dingodb.sdk.service.entity.store.Op.Lock;
 import static io.dingodb.store.proxy.Configuration.coordinatorSet;
-import static io.dingodb.transaction.api.LockType.ROW;
 import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -151,6 +145,8 @@ public final class SafePointUpdateTask {
                         .startKey(startKey).endKey(endKey).maxTs(safeTs).limit(1024).build();
                     if (isIndexRegion(region)) {
                         scanLockResponse = indexRegionService(regionId).txnScanLock(reqTs, req);
+                    } else if (isDocumentRegion(region)) {
+                        scanLockResponse = documentService(regionId).txnScanLock(reqTs, req);
                     } else {
                         scanLockResponse = storeRegionService(regionId).txnScanLock(reqTs, req);
                     }
@@ -202,6 +198,15 @@ public final class SafePointUpdateTask {
             .isPresent();
     }
 
+    private static boolean isDocumentRegion(Region region) {
+        return Optional.ofNullable(region)
+            .map(Region::getDefinition)
+            .map(RegionDefinition::getIndexParameter)
+            .map(IndexParameter::getIndexType)
+            .filter($ -> $ == IndexType.INDEX_TYPE_DOCUMENT)
+            .isPresent();
+    }
+
     private static boolean isDisable(long reqTs) {
        return Optional.of(Services.versionService(coordinatorSet()).kvRange(reqTs, enableKeyReq))
             .map(RangeResponse::getKvs)
@@ -220,6 +225,10 @@ public final class SafePointUpdateTask {
 
     private static IndexService indexRegionService(long regionId) {
         return Services.indexRegionService(Configuration.coordinatorSet(), regionId, 30);
+    }
+
+    private static DocumentService documentService(long regionId) {
+        return Services.documentRegionService(Configuration.coordinatorSet(), regionId, 30);
     }
 
     private static long safeTs(Set<Location> coordinators, long requestId) {
@@ -264,6 +273,9 @@ public final class SafePointUpdateTask {
         if (isIndexRegion(region)) {
             return indexRegionService(region.getId()).txnPessimisticRollback(reqTs, req).getTxnResult() == null;
         }
+        if (isDocumentRegion(region)) {
+            return documentService(region.getId()).txnPessimisticRollback(reqTs, req).getTxnResult() == null;
+        }
         return storeRegionService(region.getId()).txnPessimisticRollback(reqTs, req).getTxnResult() == null;
     }
 
@@ -278,6 +290,9 @@ public final class SafePointUpdateTask {
             .build();
         if (isIndexRegion(region)) {
             return indexRegionService(region.getId()).txnResolveLock(reqTs, req).getTxnResult() == null;
+        }
+        if (isDocumentRegion(region)) {
+            return documentService(region.getId()).txnResolveLock(reqTs, req).getTxnResult() == null;
         }
         return storeRegionService(region.getId()).txnResolveLock(reqTs, req).getTxnResult() == null;
     }

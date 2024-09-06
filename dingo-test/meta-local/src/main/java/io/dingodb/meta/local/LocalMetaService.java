@@ -26,6 +26,7 @@ import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
@@ -165,6 +166,11 @@ public class LocalMetaService implements MetaService {
 
     @Override
     public boolean dropTable(String tableName) {
+        return dropTable(TenantConstant.TENANT_ID, -1, tableName);
+    }
+
+    @Override
+    public boolean dropTable(long tenantId, long schemaId, String tableName) {
         tableName = tableName.toUpperCase();
         CommonId tableId = getTable(tableName).getTableId();
         if (tableId != null) {

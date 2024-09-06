@@ -130,6 +130,8 @@ public interface MetaService {
      */
     boolean dropTable(String tableName);
 
+    boolean dropTable(long tenantId, long schemaId, String tableName);
+
     long truncateTable(@NonNull String tableName, long tableEntityId);
 
 //    boolean dropTables(@NonNull Collection<CommonId> tableIds);

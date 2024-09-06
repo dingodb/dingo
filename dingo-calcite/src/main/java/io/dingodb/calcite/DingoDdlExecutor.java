@@ -86,6 +86,7 @@ import io.dingodb.meta.TenantService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.InfoSchema;
+import io.dingodb.meta.entity.SchemaTables;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
@@ -124,12 +125,14 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -714,6 +717,32 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 );
             } else {
                 return;
+            }
+        }
+
+
+        InfoSchemaService infoSchemaService = InfoSchemaService.root();
+        Long tenantId = tenantService.getTenantId(tenant.name);
+        if (tenant.purgeResources) {
+            InfoSchema infoSchema = infoSchemaService.getInfoSchemaByTenantId(tenantId);
+            for (Map.Entry<String, SchemaTables> entry : infoSchema.schemaMap.entrySet()) {
+                MetaService metaService = MetaService.root();
+                SchemaTables schemaTables = entry.getValue();
+                if (schemaTables.getSchemaInfo() == null) {
+                    throw DINGO_RESOURCE.unknownSchema(entry.getKey()).ex();
+                }
+                for (Map.Entry<String, Table> tableEntry : schemaTables.getTables().entrySet()) {
+                    metaService.dropTable(tenantId, schemaTables.getSchemaInfo().getSchemaId(), tableEntry.getKey());
+                }
+            }
+        } else {
+            InfoSchema infoSchema = infoSchemaService.getInfoSchemaByTenantId(tenantId);
+            List<String> schemas = Arrays.asList("MYSQL", "META", "INFORMATION_SCHEMA");
+            for (Map.Entry<String, SchemaTables> entry : infoSchema.schemaMap.entrySet()) {
+                if (schemas.contains(entry.getKey())) {
+                    continue;
+                }
+                throw new RuntimeException("Tenants cannot be deleted, tables need to be cleared first");
             }
         }
         tenantService.dropTenant(tenant.name);
