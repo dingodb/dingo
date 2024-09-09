@@ -30,9 +30,7 @@ import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
 
-import java.math.BigDecimal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,6 +61,7 @@ public final class DdlUtil {
     public static boolean mdlEnable = true;
     public static boolean delDiff = true;
     public static boolean historyJobEtcd = false;
+    public static String ddlTmpTableName = "replicaTable";
 
     public static int errorCountLimit = 5;
 

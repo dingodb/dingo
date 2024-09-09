@@ -102,7 +102,7 @@ import static java.util.function.Function.identity;
 @Slf4j
 public final class StoreService implements io.dingodb.store.api.StoreService {
     public static final StoreService DEFAULT_INSTANCE = new StoreService();
-    public static final int RETRY = 40;
+    public static final int RETRY = 60;
 
     @AutoService(io.dingodb.store.api.StoreServiceProvider.class)
     public static final class StoreServiceProvider implements io.dingodb.store.api.StoreServiceProvider {

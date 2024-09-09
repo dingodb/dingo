@@ -49,30 +49,4 @@ public interface MetaServiceApi {
     @ApiDeclaration
     void syncTableLock(TableLock lock) throws Exception;
 
-    @ApiDeclaration
-    void createTables(long requestId, String schema, String table, CreateTablesRequest request) throws Exception;
-
-    @ApiDeclaration
-    void dropTables(long requestId, String schema, String table, DropTablesRequest request) throws Exception;
-
-    @ApiDeclaration
-    void createSchema(long requestId, String schema, CreateSchemaRequest request) throws Exception;
-
-    @ApiDeclaration
-    void dropSchema(long requestId, String schema, DropSchemaRequest request) throws Exception;
-
-    @ApiDeclaration
-    void createIndex(long requestId, String schema, String table, String index, CreateIndexRequest request) throws Exception;
-
-    @ApiDeclaration
-    void addIndexOnTable(long requestId, String schema, AddIndexOnTableRequest request) throws Exception;
-
-    @ApiDeclaration
-    void updateIndex(long requestId, String schema, UpdateIndexRequest request) throws Exception;
-
-    @ApiDeclaration
-    void dropIndex(long requestId, String schema, DropIndexRequest request) throws Exception;
-
-    @ApiDeclaration
-    void dropIndexOnTable(long requestId, String schema, DropIndexOnTableRequest request) throws Exception;
 }

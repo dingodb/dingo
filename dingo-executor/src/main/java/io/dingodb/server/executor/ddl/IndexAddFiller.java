@@ -165,7 +165,7 @@ public class IndexAddFiller implements BackFiller {
     }
 
     @NonNull
-    private static Iterator<KeyValue> getKeyValueIterator(ReorgBackFillTask task, StoreInstance kvStore) {
+    public static Iterator<KeyValue> getKeyValueIterator(ReorgBackFillTask task, StoreInstance kvStore) {
         Iterator<KeyValue> iterator = null;
         int retry = 3;
         while (retry -- > 0) {

@@ -32,6 +32,7 @@ import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
 import io.dingodb.meta.InfoSchemaService;
@@ -481,7 +482,7 @@ public class DdlWorker {
                 MetaService ms = rootMs.getSubMetaService(job.getSchemaName());
                 try {
                     start = System.currentTimeMillis();
-                    ms.dropTable(tableInfo.getTableDefinition().getName());
+                    ms.dropTable(job.getSchemaId(), tableInfo.getTableDefinition().getName());
                     sub = System.currentTimeMillis() - start;
                     DingoMetrics.timer("metaDropTable").update(sub, TimeUnit.MILLISECONDS);
                 } catch (Exception e) {
@@ -683,7 +684,7 @@ public class DdlWorker {
                 tableWithId.getTableDefinition()
                     .getColumns()
                     .removeIf(columnDefinition -> columnDefinition.getName().equalsIgnoreCase(columnName));
-                tableWithId.getTableDefinition().setName("replicaTable");
+                tableWithId.getTableDefinition().setName(DdlUtil.ddlTmpTableName);
                 MetaService.root().createReplicaTable(job.getSchemaId(), tableWithId, originTableName);
                 IndexUtil.pickBackFillType(job);
                 job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
@@ -733,6 +734,16 @@ public class DdlWorker {
 
                 job.setSchemaState(SchemaState.SCHEMA_NONE);
                 DdlColumn.setIndicesState(markDelIndices, SCHEMA_NONE);
+                if (markDelIndices != null) {
+                    try {
+                        markDelIndices.forEach(index -> {
+                            MetaService.root().deleteRegionByTableId(Mapper.MAPPER.idFrom(index.getTableId()));
+                            InfoSchemaService.root().dropIndex(tableId.seq, index.getTableId().getEntityId());
+                        });
+                    } catch (Exception e) {
+                        LogUtils.error(log, "drop mark del indices error", e);
+                    }
+                }
                 if (job.isRollingback()) {
                     job.finishTableJob(JobState.jobStateRollbackDone, SchemaState.SCHEMA_PUBLIC);
                 } else {
@@ -756,6 +767,12 @@ public class DdlWorker {
             = (io.dingodb.common.table.ColumnDefinition) job.getArgs().get(0);
         if (!columnDefinition.isNullable() && columnDefinition.getDefaultValue() == null) {
             columnDefinition.setDefaultValue(DdlUtil.getColDefaultValIfNull(columnDefinition.getType()));
+        }
+        if (columnDefinition.getDefaultValue() != null && columnDefinition.getType() instanceof StringType) {
+            String defaultVal = columnDefinition.getDefaultValue();
+            if (defaultVal.startsWith("'") && defaultVal.endsWith("'")) {
+                columnDefinition.setDefaultValue(defaultVal.substring(1, defaultVal.length() - 1));
+            }
         }
 
         Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
@@ -952,7 +969,7 @@ public class DdlWorker {
             LogUtils.error(log, "[ddl-error] put schemaDiff error, jobId:" + ddlJob.getId() + ", version:" + schemaVersion, e);
             return Pair.of(0L, e.getMessage());
         } finally {
-            LogUtils.info(log, "[ddl] updateSchemaVersion done, jobId:{}", ddlJob.getId());
+            LogUtils.info(log, "[ddl] updateSchemaVersion done, jobId:{}, version:{}", ddlJob.getId(), schemaVersion);
         }
     }
 

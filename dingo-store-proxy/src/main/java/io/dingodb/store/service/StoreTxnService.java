@@ -22,7 +22,6 @@ import io.dingodb.store.api.transaction.StoreKvTxn;
 
 public class StoreTxnService implements io.dingodb.store.api.transaction.StoreTxnService {
     public static final StoreTxnService DEFAULT_INSTANCE = new StoreTxnService();
-    public static final int RETRY = 60;
 
     @AutoService(io.dingodb.store.api.transaction.StoreTxnServiceProvider.class)
     public static final class StoreKvTxnServiceProvider

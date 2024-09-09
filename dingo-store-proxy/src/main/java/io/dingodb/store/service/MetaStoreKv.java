@@ -45,6 +45,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import static io.dingodb.store.proxy.service.StoreService.RETRY;
+
 @Slf4j
 public class MetaStoreKv {
     boolean ddl;
@@ -85,13 +87,13 @@ public class MetaStoreKv {
             partId = new CommonId(CommonId.CommonType.PARTITION, 0, 0);
             long metaPartId = checkMetaRegion();
             metaId = new CommonId(CommonId.CommonType.META, 0, metaPartId);
-            storeService = Services.storeRegionService(coordinators, metaPartId, 60);
+            storeService = Services.storeRegionService(coordinators, metaPartId, RETRY);
             metaKvTxn = new MetaKvTxn(storeService, partId, r -> getMetaRegionKey(), r -> getMetaRegionEndKey());
         } else {
             partId = new CommonId(CommonId.CommonType.PARTITION, 0, 3);
             long metaPartId = checkMetaRegion();
             metaId = new CommonId(CommonId.CommonType.META, 0, metaPartId);
-            storeService = Services.storeRegionService(coordinators, metaPartId, 60);
+            storeService = Services.storeRegionService(coordinators, metaPartId, RETRY);
             metaKvTxn = new MetaKvTxn(storeService, partId, r -> getMetaRegionKey(), r -> getMetaRegionEndKey());
         }
     }

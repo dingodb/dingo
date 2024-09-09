@@ -128,7 +128,7 @@ public interface MetaService {
      * @param tableName table name
      * @return true if success
      */
-    boolean dropTable(String tableName);
+    boolean dropTable(long schemaId, String tableName);
 
     boolean dropTable(long tenantId, long schemaId, String tableName);
 

@@ -390,7 +390,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         return withIdList.stream()
             .filter(obj -> {
                 TableDefinitionWithId withId = (TableDefinitionWithId) obj;
-                return withId.getTableDefinition().getName().equalsIgnoreCase("replicaTable");
+                return withId.getTableDefinition().getName().equalsIgnoreCase(DdlUtil.ddlTmpTableName);
             }).findFirst()
             .orElse(null);
     }

@@ -127,7 +127,7 @@ public class TransactionStoreInstance {
             TxnHeartBeatRequest request = TxnHeartBeatRequest.builder()
                 .primaryLock(txnPreWrite.getPrimaryLock())
                 .startTs(txnPreWrite.getStartTs())
-                .adviseLockTtl(TsoService.INSTANCE.timestamp() + SECONDS.toMillis(60))
+                .adviseLockTtl(TsoService.INSTANCE.timestamp() + SECONDS.toMillis(80))
                 .build();
             if (indexService != null) {
                 indexService.txnHeartBeat(request.getStartTs(), request);

@@ -207,14 +207,13 @@ public final class LoadInfoSchemaTask {
         long usedVerTmp = usedVersion;
         while (usedVerTmp < newVersion) {
             usedVerTmp ++;
-            long start = System.currentTimeMillis();
             SchemaDiff schemaDiff = infoSchemaService.getSchemaDiff(usedVerTmp);
-            long sub = System.currentTimeMillis() - start;
-            DingoMetrics.timer("getSchemaDiff").update(sub, TimeUnit.MILLISECONDS);
+            DingoMetrics.counter("getSchemaDiff").inc();
             if (schemaDiff == null) {
                 LogUtils.error(log, "get schema diff is null, ver:{}", usedVerTmp);
                 schemaDiff = infoSchemaService.getSchemaDiff(usedVerTmp);
                 if (schemaDiff == null) {
+                    DingoMetrics.counter("getSchemaDiffNull").inc();
                     continue;
                 }
             }

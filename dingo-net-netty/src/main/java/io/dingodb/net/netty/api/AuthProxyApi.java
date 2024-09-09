@@ -63,7 +63,7 @@ public interface AuthProxyApi {
                         result.put(service.tag(), new Object[]{cert, service.validate(cert)});
                     }
                 }
-                if (result.size() == 0) {
+                if (result.isEmpty()) {
                     throw new Exception("identity and token: both authentication failed. ");
                 }
                 return result;

@@ -48,10 +48,6 @@ public final class DdlJobEventSource {
                 try {
                     long jobNotify = take(ownerJobQueue);
                     ddlJob(jobNotify);
-                    //Executors.execute("notify_ddl_worker", () -> ddlJob(jobNotify), true);
-                    //for (int i = 0; i < jobNotify; i ++) {
-                    //    Executors.execute("notify_ddl_worker", () -> ddlJob(jobNotify), true);
-                    //}
                 } catch (Exception e) {
                     LogUtils.error(log, e.getMessage());
                 }
@@ -59,10 +55,6 @@ public final class DdlJobEventSource {
         }).start();
         new Thread(() -> {
             while (true) {
-                if (!env.ddlOwner.get()) {
-                    Utils.sleep(5000);
-                    continue;
-                }
                 try {
                     long checkVerNotify = take(mdlCheckVerQueue);
                     ddlCheckVer(checkVerNotify);
